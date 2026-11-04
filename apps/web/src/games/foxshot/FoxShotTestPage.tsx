@@ -2,9 +2,27 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import * as THREE from 'three';
 import {
-  FS_ARENA,
   FS_SPAWN,
-  FS_BOTS,
+  fsAssister,
+  fsDmFlash,
+  fsDmHeading,
+  fsDmHear,
+  fsDmHurt,
+  fsDmNew,
+  fsDmPickWeapon,
+  fsDmStep,
+  fsMatchResult,
+  fsMatchScore,
+  fsPickSpawn,
+  fsSeparate,
+  FS_RESPAWN_S,
+  type FsDamageEntry,
+  type FsDmAction,
+  type FsDmBrain,
+  type FsDmFoe,
+  type FsMatchConfig,
+  type FsMatchRow,
+  type FsTargetSpec,
   FS_BOT_SPEED,
   FS_GRENADES,
   fsClearLine,
@@ -20,7 +38,6 @@ import {
   fsDamage,
   fsFlinch,
   fsFlinchAt,
-  FS_TARGETS,
   fsBotStep,
   fsNewBot,
   FS_WEAPONS,
@@ -41,7 +58,8 @@ import {
   type FsWeaponId,
 } from '@nocap/games';
 import { fsAudio } from '@/lib/foxshot-audio';
-import { FoxShotScene, type Quality } from './FoxShotScene';
+import { FoxShotScene, FS_WORLD_TEST, fsWorldDust, type Quality } from './FoxShotScene';
+import { FsMatchEnd } from './FsMatchEnd';
 import { FsControls } from './fs-controls';
 import { bindLabel, fsSettings, useFsSettings } from './fs-settings';
 import { FsMenu } from './FsMenu';
@@ -63,12 +81,10 @@ import {
 import './foxshot.css';
 
 const STEP = 1 / 120;
-const MATCH_S = 300;
+const MATCH_S_TEST = 300;
 /** A raposa cai (~1 s), fica no chão e afunda antes de nascer outra. */
 const REVIVE_S = 3.6;
 /** Armas soltas no chão: no máximo isto (as mais antigas somem) e somem sozinhas depois de um tempo, para não pesar. */
-/** Alvos parados e bots de treino: tudo o que leva tiro. */
-const ALL_TARGETS = [...FS_TARGETS, ...FS_BOTS];
 const PICK_AUTO_R = 0.9;
 const DROP_MAX = 6;
 const DROP_LIFE_S = 25;
@@ -99,6 +115,11 @@ interface TargetState {
   alive: boolean;
   reviveAt: number;
   deaths: number;
+  /** Mata-mata: placar de cada bot. */
+  kills: number;
+  assists: number;
+  hs: number;
+  damage: number;
 }
 
 interface MyStats {
@@ -159,7 +180,7 @@ interface Marker {
  * alvos parados (sem colete, com colete, com colete e capacete). HUD no desenho do CS: tempo e jogadores em cima, mapa à
  * esquerda, abates à direita, vida e colete embaixo à esquerda, arma e munição à direita; Tab abre o placar e Esc o menu.
  */
-export function FoxShotTestPage() {
+export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchConfig; onExit?: () => void; onAgain?: () => void } = {}) {
   const root = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const stickEl = useRef<HTMLDivElement>(null);
@@ -168,12 +189,17 @@ export function FoxShotTestPage() {
   const [hud, setHud] = useState<Hud | null>(null);
   const [marker, setMarker] = useState<Marker | null>(null);
   const [feed, setFeed] = useState<FeedItem[]>([]);
+  const [result, setResult] = useState<FsMatchRow[] | null>(null);
+  const endedRef = useRef(false);
+  const onAgainRef = useRef<() => void>(() => undefined);
+  onAgainRef.current = () => onAgain?.();
   const [paused, setPausedState] = useState(true);
   const [board, setBoard] = useState(false);
   const [needClick, setNeedClick] = useState(false);
   const [shop, setShopState] = useState(false);
   const shopRef = useRef(false);
   const blindEl = useRef<HTMLDivElement>(null);
+  const hitEl = useRef<HTMLDivElement>(null);
   const shopClosedAt = useRef(0);
   const buyRef = useRef<(item: FsShopItem) => void>(() => undefined);
   const setShop = useCallback((v: boolean) => {
@@ -246,6 +272,7 @@ export function FoxShotTestPage() {
         }
       },
       (locked) => {
+        if (endedRef.current) return;
         // o mouse soltou (Esc ou clique fora): abre o menu; prendeu: some o menu
         if (!locked && !pausedRef.current && !shopRef.current && performance.now() - shopClosedAt.current > 600) setPaused(true);
         if (locked) {
@@ -257,6 +284,7 @@ export function FoxShotTestPage() {
 
     // Esc com o menu aberto volta ao jogo (com o mouse preso, o navegador já consome o Esc e solta o mouse)
     const onKey = (e: KeyboardEvent) => {
+      if (endedRef.current) return;
       if (e.code === 'Escape' && shopRef.current) {
         e.preventDefault();
         setShop(false);
@@ -303,7 +331,25 @@ export function FoxShotTestPage() {
     };
     resumeRef.current = resume;
 
-    const scene = new FoxShotScene(cv);
+    // ---- o mundo: a arena de teste ou o Duna com os bots do mata-mata
+    const dmNames = Array.from({ length: match?.bots ?? 0 }, (_, i) => `Bot ${i + 1}`);
+    const dmSpecs: FsTargetSpec[] = [];
+    const firstSpawn = match ? fsPickSpawn([]) : null;
+    if (match) {
+      const placed: { x: number; z: number }[] = [{ x: firstSpawn!.x, z: firstSpawn!.z }];
+      dmNames.forEach((n, i) => {
+        const sp = fsPickSpawn(placed);
+        placed.push({ x: sp.x, z: sp.z });
+        dmSpecs.push({ id: `d${i + 1}`, label: n, x: sp.x, z: sp.z, armor: 0, helmet: false });
+      });
+    }
+    const world = match ? fsWorldDust(dmSpecs.map((d) => ({ id: d.id, x: d.x, z: d.z }))) : FS_WORLD_TEST;
+    const ARENA = world.boxes;
+    const ALL_TARGETS: FsTargetSpec[] = [...world.targets, ...world.bots, ...dmSpecs];
+    const isDm = (id: string) => dmSpecs.some((d) => d.id === id);
+    const MATCH_S = match ? match.minutes * 60 : MATCH_S_TEST;
+    const rnd = Math.random;
+    const scene = new FoxShotScene(cv, world);
     const resize = () => scene.resize(el.clientWidth, el.clientHeight);
     resize();
     const ro = new ResizeObserver(resize);
@@ -318,15 +364,15 @@ export function FoxShotTestPage() {
     applyQuality();
 
     // ---- estado do jogo
-    const mover = fsNewMover(FS_SPAWN.x, FS_SPAWN.z);
-    const view = { yaw: 0, pitch: 0, rYaw: 0, rPitch: 0 };
+    const mover = fsNewMover(firstSpawn?.x ?? FS_SPAWN.x, firstSpawn?.z ?? FS_SPAWN.z);
+    const view = { yaw: firstSpawn?.yaw ?? 0, pitch: 0, rYaw: 0, rPitch: 0 };
     const me = { hp: 100, armor: 0, helmet: false };
     const stats: MyStats = { kills: 0, deaths: 0, assists: 0, hs: 0, damage: 0 };
     const loadout = new FsLoadout(null, 'pistol');
     const targets = new Map<string, TargetState>(
       ALL_TARGETS.map((t) => [
         t.id,
-        { hp: 100, armor: t.armor, crouch: 0, alive: true, reviveAt: 0, deaths: 0 },
+        { hp: 100, armor: t.armor, crouch: 0, alive: true, reviveAt: 0, deaths: 0, kills: 0, assists: 0, hs: 0, damage: 0 },
       ]),
     );
     let markerKey = 0;
@@ -348,11 +394,28 @@ export function FoxShotTestPage() {
     let last = performance.now();
     let fps = 60;
 
-    const botSt = new Map(FS_BOTS.map((b) => [b.id, fsNewBot(b)]));
+    const botSt = new Map(world.bots.map((b) => [b.id, fsNewBot(b)]));
+    const brains = new Map<string, FsDmBrain>();
+    const dmgLog = new Map<string, FsDamageEntry[]>();
+    const logDamage = (victim: string, attacker: string) => {
+      const l = dmgLog.get(victim) ?? [];
+      l.push({ attacker, time: clock });
+      if (l.length > 24) l.shift();
+      dmgLog.set(victim, l);
+    };
+    const nameOf = (id: string) => {
+      if (id === 'me') return 'Você';
+      const di = dmSpecs.findIndex((d) => d.id === id);
+      if (di >= 0) return dmSpecs[di]!.label;
+      const bi = world.bots.findIndex((t) => t.id === id);
+      return bi >= 0 ? `Bot ${bi + 1}` : `Raposa ${world.targets.findIndex((t) => t.id === id) + 1}`;
+    };
     const posOf = (id: string): [number, number, number] => {
+      const br = brains.get(id);
+      if (br) return [br.mover.x, br.mover.y, br.mover.z];
       const b = botSt.get(id);
       if (b) return [b.x, b.y, b.z];
-      const t = FS_TARGETS.find((x) => x.id === id)!;
+      const t = world.targets.find((x) => x.id === id)!;
       return [t.x, 0, t.z];
     };
     const bodies = (): FsBody[] =>
@@ -375,10 +438,29 @@ export function FoxShotTestPage() {
         s.hp = 100;
         s.armor = t.armor;
         s.deaths = 0;
-        scene.reviveTarget(t.id);
+        s.kills = s.assists = s.hs = s.damage = 0;
+        if (isDm(t.id)) spawnBot(t.id);
+        else scene.reviveTarget(t.id);
       }
+      dmgLog.clear();
       matchStart = clock;
       setFeed([]);
+    };
+    /** Fim do tempo no mata-mata: congela o jogo e mostra a tabela de resultados. */
+    const finishMatch = () => {
+      if (endedRef.current) return;
+      endedRef.current = true;
+      const rows = fsMatchResult([
+        { id: 'me', name: 'Você', kills: stats.kills, assists: stats.assists, deaths: stats.deaths },
+        ...dmSpecs.map((d) => {
+          const t = targets.get(d.id)!;
+          return { id: d.id, name: d.label, kills: t.kills, assists: t.assists, deaths: t.deaths };
+        }),
+      ]);
+      setResult(rows);
+      setShopState(false);
+      shopRef.current = false;
+      controls.releaseLock();
     };
     endMatchRef.current = () => {
       resetMatch();
@@ -388,7 +470,7 @@ export function FoxShotTestPage() {
     // ---- atiradores (s1 pistola, s2 fuzil, s3 sniper): atiram em você, dão dano e você pode matá-los
     // só para os testes automáticos (modo de desenvolvimento): desliga os atiradores para não matarem o jogador durante o teste
     const shootersOff = import.meta.env.DEV && (() => { try { return localStorage.getItem('fs-no-shooters') === '1'; } catch { return false; } })();
-    const shooterSt = new Map(FS_BOTS.filter((b) => b.kind === 'shoot').map((b) => [b.id, fsNewShooter()]));
+    const shooterSt = new Map(world.bots.filter((b) => b.kind === 'shoot').map((b) => [b.id, fsNewShooter()]));
     let deadUntil = 0;
     let deadSince = 0;
     let hurtKey = 0;
@@ -400,6 +482,9 @@ export function FoxShotTestPage() {
     /** Tiro recebido desacelera um instante (como no CS). */
     let flinch = { mul: 1, dur: 0 };
     let flinchAt = -1e9;
+    const hitMarks: { x: number; z: number; at: number }[] = [];
+    /** Só para os testes automáticos: mantém os arcos de dano visíveis (o teste tira a foto com calma). */
+    let hitHold = false;
     /** Dano recebido na última 1,2 s (para saber quando é "muito dano"). */
     let recent: { t: number; d: number }[] = [];
     const pushFeedDeath = (killer: string, weapon: FsWeaponId | FsGrenadeId, head: boolean) => {
@@ -407,7 +492,7 @@ export function FoxShotTestPage() {
       setFeed((f) => [...f.slice(-4), { key, killer, weapon, victim: 'Você', head, you: false, youVictim: true }]);
       window.setTimeout(() => setFeed((f) => f.filter((x) => x.key !== key)), 6000);
     };
-    const shooterFire = (b: (typeof FS_BOTS)[number], bs: ReturnType<typeof fsNewBot>) => {
+    const shooterFire = (b: (typeof world.bots)[number], bs: ReturnType<typeof fsNewBot>) => {
       const wid = b.weapon as 'pistol' | 'ak' | 'sniper';
       const w = FS_WEAPONS[wid];
       const origin: [number, number, number] = [bs.x + Math.cos(bs.h) * 0.4, 1.0, bs.z + Math.sin(bs.h) * 0.4];
@@ -424,15 +509,21 @@ export function FoxShotTestPage() {
       const r = Math.sqrt(Math.random()) * err;
       const dir = fsDir(yaw + Math.cos(a) * r, pitch + Math.sin(a) * r);
       const me3: FsBody = { id: 'me', pos: [mover.x, mover.y, mover.z], alive: true, armor: me.armor, helmet: me.helmet, crouch: mover.crouchK };
-      const tr = fsTrace(w, origin, dir, FS_ARENA, [me3], FS_SHOOTER[wid].range + 15);
+      const tr = fsTrace(w, origin, dir, ARENA, [me3], FS_SHOOTER[wid].range + 15);
       scene.tracer(new THREE.Vector3(origin[0], origin[1], origin[2]), new THREE.Vector3(tr.point[0], tr.point[1], tr.point[2]), wid);
       scene.puff(new THREE.Vector3(origin[0], origin[1], origin[2]), 0xffd27a, 0.25, 0.1);
       fsAudio.shotAt(wid, bs.x, 1, bs.z, mover.x, mover.z);
-      if (tr.kind === 'player' && tr.damage) hurtPlayer(tr.damage.hp, tr.damage.armorLoss, tr.zone === 'head', b.label.replace('atirador ', 'Atirador '), wid);
+      if (tr.kind === 'player' && tr.damage) hurtPlayer(tr.damage.hp, tr.damage.armorLoss, tr.zone === 'head', b.label.replace('atirador ', 'Atirador '), wid, undefined, { x: bs.x, z: bs.z });
     };
     /** Você levou dano (tiro ou explosão): vida, colete, efeitos e morte. */
-    function hurtPlayer(hp: number, armorLoss: number, head: boolean, killer: string, icon: FsWeaponId | FsGrenadeId) {
+    function hurtPlayer(hp: number, armorLoss: number, head: boolean, killer: string, icon: FsWeaponId | FsGrenadeId, by?: string, src?: { x: number; z: number }) {
       if (clock < deadUntil) return;
+      // de onde veio o tiro (o arco vermelho em volta da mira aponta para lá)
+      if (src) {
+        hitMarks.push({ x: src.x, z: src.z, at: performance.now() });
+        if (hitMarks.length > 4) hitMarks.shift();
+      }
+      if (by && match) logDamage('me', by);
       me.hp -= hp;
       if (hp > 0) {
         flinch = fsFlinch(hp);
@@ -441,7 +532,6 @@ export function FoxShotTestPage() {
       me.armor = Math.max(0, me.armor - armorLoss);
       hurtKey++;
       hurtAt = performance.now();
-      fsAudio.hurt();
       // tiro na cabeça que não mata: a câmera treme forte; os outros tiros sacodem leve
       shake = Math.max(shake, head && me.hp > 0 ? 2.6 : 0.5);
       // muito dano de uma vez (35+ num tiro ou 55+ em 1,2 s): efeito vermelho mais forte que depois some
@@ -454,13 +544,25 @@ export function FoxShotTestPage() {
       if (me.hp <= 0) {
         me.hp = 0;
         stats.deaths++;
-        deadUntil = clock + 3;
+        deadUntil = clock + FS_RESPAWN_S;
         deadSince = clock;
-        pushFeedDeath(killer, icon, head);
+        if (match && by) {
+          // quem matou ganha o abate; o último que bateu antes dele, a assistência
+          const kb = by !== 'me' ? targets.get(by) : undefined;
+          if (kb) {
+            kb.kills++;
+            if (head) kb.hs++;
+          }
+          const as = fsAssister(dmgLog.get('me') ?? [], by, clock);
+          const ab = as ? targets.get(as) : undefined;
+          if (ab) ab.assists++;
+          dmgLog.delete('me');
+          pushKill(killer, icon, 'Você', head, { youVictim: true, assist: as ? nameOf(as) : undefined });
+        } else pushFeedDeath(killer, icon, head);
       }
     }
     // ---- granadas: as que estão voando, o efeito de cegueira e os atiradores cegos
-    const nades: { h: number; body: FsGrenadeBody; bounceSeen: number; bounceAt: number }[] = [];
+    const nades: { h: number; body: FsGrenadeBody; bounceSeen: number; bounceAt: number; owner?: string }[] = [];
     let blindTotal = 0;
     let blindUntil = 0;
     const flashedUntil: Record<string, number> = {};
@@ -475,7 +577,11 @@ export function FoxShotTestPage() {
       nades.push({ h: scene.addGrenade(kind), body, bounceSeen: 0, bounceAt: -1 });
     };
     /** Dano de explosão em quem estiver no raio e à vista (sem parede no meio). */
-    const damageTarget = (id: string, hp: number, icon: FsGrenadeId, fromX: number, fromZ: number) => {
+    const damageTarget = (id: string, hp: number, icon: FsGrenadeId, fromX: number, fromZ: number, owner = 'me') => {
+      if (match) {
+        dealDamage(id, owner, hp, 0, false, icon, fromX, fromZ);
+        return;
+      }
       const st = targets.get(id)!;
       if (!st.alive) return;
       stats.damage += Math.min(st.hp, hp);
@@ -488,15 +594,15 @@ export function FoxShotTestPage() {
         scene.killTarget(id, fromX, fromZ, 3.2);
         fsAudio.hit('kill');
         showMarker('kill', 'ABATE');
-        const bi = FS_BOTS.findIndex((t) => t.id === id);
-        pushFeed(icon, bi >= 0 ? `Bot ${bi + 1}` : `Raposa ${FS_TARGETS.findIndex((t) => t.id === id) + 1}`, false);
+        const bi = world.bots.findIndex((t) => t.id === id);
+        pushFeed(icon, bi >= 0 ? `Bot ${bi + 1}` : `Raposa ${world.targets.findIndex((t) => t.id === id) + 1}`, false);
       } else {
         scene.hitTarget(id);
         fsAudio.hit('body');
         showMarker('body', `-${hp}`);
       }
     };
-    const explode = (g: FsGrenadeBody) => {
+    const explode = (g: FsGrenadeBody, owner = 'me') => {
       const blast: [number, number, number] = [g.x, g.y + 0.25, g.z];
       scene.explosion(g.kind, g.x, g.y, g.z);
       fsAudio.nadeAt(g.kind === 'frag' ? 'boom-frag' : 'boom-flash', g.x, g.y, g.z, mover.x, mover.z);
@@ -507,31 +613,38 @@ export function FoxShotTestPage() {
           const p = posOf(t.id);
           const c: [number, number, number] = [p[0], p[1] + 0.6, p[2]];
           const dmg = fsFragDamage(Math.hypot(c[0] - blast[0], c[1] - blast[1], c[2] - blast[2]));
-          if (dmg > 0 && fsClearLine(FS_ARENA, blast, c)) damageTarget(t.id, dmg, 'frag', g.x, g.z);
+          if (dmg > 0 && fsClearLine(ARENA, blast, c)) damageTarget(t.id, dmg, 'frag', g.x, g.z, owner);
         }
         // você também leva (se estiver perto e à vista)
         const me3: [number, number, number] = [mover.x, mover.y + 0.7, mover.z];
         const d = Math.hypot(me3[0] - blast[0], me3[1] - blast[1], me3[2] - blast[2]);
         const dmg = fsFragDamage(d);
-        if (dmg > 0 && fsClearLine(FS_ARENA, blast, me3)) hurtPlayer(dmg, 0, false, 'Você', 'frag');
+        if (dmg > 0 && fsClearLine(ARENA, blast, me3)) hurtPlayer(dmg, 0, false, nameOf(owner), 'frag', owner, { x: g.x, z: g.z });
         // o chão treme para quem está perto
         shake = Math.max(shake, Math.max(0, 3.2 * (1 - d / 16)));
         return;
       }
       // luz: cega quem olha e enxerga, ensurdece quem está perto (mesmo sem ver)
       const eye = eyeNow();
-      const r = fsFlashEffect(eye, fsDir(view.yaw + view.rYaw, view.pitch + view.rPitch), blast, fsClearLine(FS_ARENA, eye, blast));
+      const r = fsFlashEffect(eye, fsDir(view.yaw + view.rYaw, view.pitch + view.rPitch), blast, fsClearLine(ARENA, eye, blast));
       if (r.blind > 0) {
         blindTotal = r.blind;
         blindUntil = clock + r.blind;
       }
       if (r.deaf > 0) fsAudio.deafen(r.deaf);
+      // os bots do mata-mata: cegam como o jogador (olhando para a luz e à vista dela)
+      for (const [id, b] of brains) {
+        if (!targets.get(id)!.alive) continue;
+        const be: [number, number, number] = [b.mover.x, b.mover.y + fsEyeHeight(b.mover), b.mover.z];
+        const rr = fsFlashEffect(be, fsDir(b.yaw, b.pitch), blast, fsClearLine(ARENA, be, blast));
+        if (rr.blind > 0) fsDmFlash(b, clock + rr.blind);
+      }
       // os atiradores à vista da luz também ficam cegos por um tempo (não atiram)
-      for (const b of FS_BOTS) {
+      for (const b of world.bots) {
         if (b.kind !== 'shoot') continue;
         const bs = botSt.get(b.id)!;
         const bd = Math.hypot(bs.x - blast[0], bs.z - blast[2]);
-        if (bd < FS_GRENADES.flash.radius && fsClearLine(FS_ARENA, blast, [bs.x, 1.0, bs.z])) flashedUntil[b.id] = clock + 1.5 + 3 * (1 - bd / FS_GRENADES.flash.radius);
+        if (bd < FS_GRENADES.flash.radius && fsClearLine(ARENA, blast, [bs.x, 1.0, bs.z])) flashedUntil[b.id] = clock + 1.5 + 3 * (1 - bd / FS_GRENADES.flash.radius);
       }
     };
     const stepNades = (dt: number) => {
@@ -539,7 +652,7 @@ export function FoxShotTestPage() {
         const n = nades[i]!;
         let boom = false;
         const sub = Math.max(1, Math.ceil(dt / (1 / 120)));
-        for (let k = 0; k < sub && !boom; k++) boom = fsGrenadeStep(n.body, dt / sub, FS_ARENA);
+        for (let k = 0; k < sub && !boom; k++) boom = fsGrenadeStep(n.body, dt / sub, ARENA);
         scene.setGrenade(n.h, n.body.x, n.body.y, n.body.z, n.body.age * 9);
         if (n.body.bounces > n.bounceSeen && clock - n.bounceAt > 0.1 && Math.hypot(n.body.vx, n.body.vy, n.body.vz) > 1.2) {
           fsAudio.nadeAt('bounce', n.body.x, n.body.y, n.body.z, mover.x, mover.z);
@@ -549,7 +662,7 @@ export function FoxShotTestPage() {
         if (boom) {
           scene.removeGrenade(n.h);
           nades.splice(i, 1);
-          explode(n.body);
+          explode(n.body, n.owner);
         }
       }
     };
@@ -557,6 +670,183 @@ export function FoxShotTestPage() {
       const key = ++feedKey;
       setFeed((f) => [...f.slice(-4), { key, killer: 'Você', weapon, victim, head, you: true }]);
       window.setTimeout(() => setFeed((f) => f.filter((x) => x.key !== key)), 6000);
+    };
+
+    const pushKill = (
+      killer: string,
+      weapon: FsWeaponId | FsGrenadeId,
+      victim: string,
+      head: boolean,
+      f: { you?: boolean; youVictim?: boolean; assist?: string; youAssist?: boolean },
+    ) => {
+      const key = ++feedKey;
+      setFeed((l) => [...l.slice(-4), { key, killer, weapon, victim, head, you: !!f.you, youVictim: f.youVictim, assist: f.assist, youAssist: f.youAssist }]);
+      window.setTimeout(() => setFeed((l) => l.filter((x) => x.key !== key)), 6000);
+    };
+    /** Mata-mata: um bot (ou você) leva dano de `attacker`. Cuida de vida, colete, abate, assistência, pontos e do aviso na tela. */
+    function dealDamage(victim: string, attacker: string, hp: number, armorLoss: number, head: boolean, icon: FsWeaponId | FsGrenadeId, fx: number, fz: number): 'kill' | 'hit' | null {
+      if (victim === 'me') {
+        hurtPlayer(hp, armorLoss, head, nameOf(attacker), icon, attacker, { x: fx, z: fz });
+        return me.hp <= 0 ? 'kill' : 'hit';
+      }
+      const st = targets.get(victim);
+      if (!st || !st.alive) return null;
+      logDamage(victim, attacker);
+      const dealt = Math.min(st.hp, hp);
+      st.hp -= hp;
+      st.armor = Math.max(0, st.armor - armorLoss);
+      if (attacker === 'me') stats.damage += dealt;
+      else {
+        const a = targets.get(attacker);
+        if (a) a.damage += dealt;
+      }
+      const vb = brains.get(victim);
+      if (vb && attacker !== victim) fsDmHurt(vb, fx, fz);
+      if (st.hp > 0) {
+        scene.hitTarget(victim);
+        return 'hit';
+      }
+      st.alive = false;
+      st.deaths++;
+      st.reviveAt = clock + REVIVE_S;
+      const self = attacker === victim;
+      const as = self ? null : fsAssister(dmgLog.get(victim) ?? [], attacker, clock);
+      dmgLog.delete(victim);
+      if (!self) {
+        if (attacker === 'me') {
+          stats.kills++;
+          if (head) stats.hs++;
+        } else {
+          const a = targets.get(attacker);
+          if (a) {
+            a.kills++;
+            if (head) a.hs++;
+          }
+        }
+      }
+      if (as === 'me') {
+        stats.assists++;
+        showMarker('body', 'ASSISTÊNCIA');
+      } else if (as) {
+        const a = targets.get(as);
+        if (a) a.assists++;
+      }
+      const power = icon === 'frag' ? 3.2 : icon === 'flash' ? 1 : (({ knife: 0.8, pistol: 1, usp: 0.8, sniper: 2.8, shotgun: 2.4 }) as Partial<Record<string, number>>)[icon] ?? 1.4;
+      scene.killTarget(victim, fx, fz, power);
+      if (attacker === 'me') {
+        fsAudio.hit('kill');
+        showMarker('kill', head ? 'CABEÇA' : 'ABATE');
+      }
+      pushKill(nameOf(attacker), icon, nameOf(victim), head, { you: attacker === 'me', assist: as ? nameOf(as) : undefined, youAssist: as === 'me' });
+      return 'kill';
+    }
+    /** Põe um bot do mata-mata em campo (cérebro, arma, colete). `x, z, yaw` vêm do ponto de nascimento. */
+    function initBot(id: string, x: number, z: number, yaw: number) {
+      const spec = dmSpecs.find((d) => d.id === id)!;
+      const st = targets.get(id)!;
+      st.alive = true;
+      st.hp = 100;
+      st.crouch = 0;
+      const vest = rnd() < 0.55;
+      st.armor = vest ? 100 : 0;
+      spec.helmet = vest && rnd() < 0.5;
+      brains.set(id, fsDmNew(id, x, z, yaw, fsDmPickWeapon(rnd), rnd));
+      const bs = fsNewBot({ ...spec, kind: 'turn', x, z, x1: x, z1: z });
+      bs.h = fsDmHeading(yaw);
+      botSt.set(id, bs);
+      dmgLog.delete(id);
+    }
+    /** Quem está vivo (e onde): para escolher onde nascer longe deles. */
+    const aliveFoes = (except: string) => {
+      const out: { x: number; z: number }[] = [];
+      if (except !== 'me' && clock >= deadUntil) out.push({ x: mover.x, z: mover.z });
+      for (const d of dmSpecs) if (d.id !== except && targets.get(d.id)!.alive) out.push({ x: brains.get(d.id)!.mover.x, z: brains.get(d.id)!.mover.z });
+      return out;
+    };
+    function spawnBot(id: string) {
+      const sp = fsPickSpawn(aliveFoes(id), rnd);
+      initBot(id, sp.x, sp.z, sp.yaw);
+      scene.reviveTarget(id);
+      scene.setBot(id, sp.x, 0, sp.z, botSt.get(id)!.h, 'idle', 1);
+    }
+    for (const d of dmSpecs) initBot(d.id, d.x, d.z, firstSpawn ? (Math.atan2(d.x, d.z) * 180) / Math.PI + 180 : 0);
+
+    // ---- os bots do mata-mata jogando
+    const foesFor = (self: string): FsDmFoe[] => {
+      const out: FsDmFoe[] = [];
+      if (self !== 'me' && clock >= deadUntil) {
+        out.push({ id: 'me', x: mover.x, y: mover.y, z: mover.z, crouch: mover.crouchK, noisy: mover.onGround && Math.hypot(mover.vx, mover.vz) > 3.4 && mover.crouchK < 0.5 });
+      }
+      for (const [id, b] of brains) {
+        if (id !== self && targets.get(id)!.alive) out.push({ id, x: b.mover.x, y: b.mover.y, z: b.mover.z, crouch: b.mover.crouchK, noisy: b.speed > 3.4 && b.mover.crouchK < 0.5 });
+      }
+      return out;
+    };
+    const bodiesFor = (self: string): FsBody[] => {
+      const out = bodies().filter((b) => b.id !== self);
+      out.push({ id: 'me', pos: [mover.x, mover.y, mover.z], alive: clock >= deadUntil, armor: me.armor, helmet: me.helmet, crouch: mover.crouchK });
+      return out;
+    };
+    const dmFire = (b: FsDmBrain, a: Extract<FsDmAction, { type: 'fire' }>) => {
+      const w = FS_WEAPONS[a.weapon];
+      const others = bodiesFor(b.id);
+      const o = new THREE.Vector3(a.origin[0] + a.rays[0]![0] * 0.5, a.origin[1] + a.rays[0]![1] * 0.5, a.origin[2] + a.rays[0]![2] * 0.5);
+      const pool = new Map<string, { hp: number; armorLoss: number; head: boolean }>();
+      for (const ray of a.rays) {
+        const tr = fsTrace(w, a.origin, ray, ARENA, others);
+        scene.tracer(o, new THREE.Vector3(tr.point[0], tr.point[1], tr.point[2]), a.weapon);
+        if (tr.kind === 'player' && tr.targetId && tr.damage) {
+          const cur = pool.get(tr.targetId) ?? { hp: 0, armorLoss: 0, head: false };
+          cur.hp += tr.damage.hp;
+          cur.armorLoss += tr.damage.armorLoss;
+          cur.head = cur.head || tr.zone === 'head';
+          pool.set(tr.targetId, cur);
+        }
+      }
+      scene.puff(o, 0xffd27a, 0.25, 0.1);
+      fsAudio.shotAt(a.weapon, b.mover.x, 1, b.mover.z, mover.x, mover.z);
+      for (const [vid, d] of pool) dealDamage(vid, b.id, d.hp, d.armorLoss, d.head, a.weapon, b.mover.x, b.mover.z);
+      for (const [id, other] of brains) if (id !== b.id) fsDmHear(other, a.weapon, b.mover.x, b.mover.z);
+    };
+    const dmStepT: Record<string, number> = {};
+    /** Só para os testes automáticos: congela os bots (sem andar nem atirar). */
+    let dmOff = false;
+    const stepDm = (dt: number) => {
+      const movers: { x: number; z: number }[] = [];
+      for (const d of dmSpecs) {
+        if (!targets.get(d.id)!.alive) continue;
+        const b = brains.get(d.id)!;
+        const acts = fsDmStep(b, { now: clock, dt, rng: rnd, boxes: ARENA, foes: foesFor(d.id) });
+        for (const a of acts) {
+          if (a.type === 'fire') dmFire(b, a);
+          else if (a.type === 'throw') {
+            const body = fsGrenadeLaunch(a.kind, a.origin, a.dir, a.power, [b.mover.vx, b.mover.vz]);
+            nades.push({ h: scene.addGrenade(a.kind), body, bounceSeen: 0, bounceAt: -1, owner: d.id });
+          }
+        }
+        movers.push(b.mover);
+      }
+      fsSeparate(movers);
+      for (const d of dmSpecs) {
+        const st = targets.get(d.id)!;
+        if (!st.alive) continue;
+        const b = brains.get(d.id)!;
+        const bs = botSt.get(d.id)!;
+        bs.x = b.mover.x;
+        bs.y = b.mover.y;
+        bs.z = b.mover.z;
+        bs.h = fsDmHeading(b.yaw);
+        bs.crouch = b.mover.crouchK;
+        const still = b.mover.crouchK > 0.5 && b.speed < 1;
+        scene.setBot(d.id, bs.x, bs.y, bs.z, bs.h, still ? 'crouchwalk' : b.anim, still ? 0 : b.animSpeed);
+        if (b.speed > 3.4 && b.mover.onGround && b.mover.crouchK < 0.5) {
+          dmStepT[d.id] = (dmStepT[d.id] ?? 0) - dt * (b.speed / 3.4);
+          if (dmStepT[d.id]! <= 0) {
+            dmStepT[d.id] = 0.5;
+            fsAudio.stepAt(bs.x, 0, bs.z, mover.x, mover.z);
+          }
+        }
+      }
     };
 
     const applyHit = (
@@ -568,6 +858,20 @@ export function FoxShotTestPage() {
       if (tr.kind === 'world') {
         scene.puff(to, 0xd8c8a8, 0.3, 0.4);
         fsAudio.impact();
+      } else if (tr.kind === 'player' && tr.targetId && tr.damage && match) {
+        const d = tr.damage;
+        scene.puff(to, tr.zone === 'head' ? 0xffd45a : 0xff9a4a, 0.4, 0.3);
+        const res = dealDamage(tr.targetId, 'me', d.hp, d.armorLoss, tr.zone === 'head', id, mover.x, mover.z);
+        if (res === 'hit') {
+          const kind = tr.zone === 'head' ? 'head' : d.protectedByArmor ? 'armor' : 'body';
+          if (pool) {
+            pool.total += d.hp;
+            if (kind === 'head' || pool.kind === 'body') pool.kind = kind;
+          } else {
+            fsAudio.hit(kind);
+            showMarker(kind, `-${d.hp}`);
+          }
+        }
       } else if (tr.kind === 'player' && tr.targetId && tr.damage) {
         const st = targets.get(tr.targetId)!;
         const d = tr.damage;
@@ -584,8 +888,8 @@ export function FoxShotTestPage() {
           scene.killTarget(tr.targetId, mover.x, mover.z, id === 'knife' ? 0.8 : id === 'pistol' ? 1.0 : id === 'sniper' ? 2.8 : 1.4);
           fsAudio.hit('kill');
           showMarker('kill', tr.zone === 'head' ? 'CABEÇA' : 'ABATE');
-          const bi = FS_BOTS.findIndex((t) => t.id === tr.targetId);
-          pushFeed(id, bi >= 0 ? `Bot ${bi + 1}` : `Raposa ${FS_TARGETS.findIndex((t) => t.id === tr.targetId) + 1}`, tr.zone === 'head');
+          const bi = world.bots.findIndex((t) => t.id === tr.targetId);
+          pushFeed(id, bi >= 0 ? `Bot ${bi + 1}` : `Raposa ${world.targets.findIndex((t) => t.id === tr.targetId) + 1}`, tr.zone === 'head');
         } else {
           scene.hitTarget(tr.targetId);
           const kind = tr.zone === 'head' ? 'head' : d.protectedByArmor ? 'armor' : 'body';
@@ -614,7 +918,7 @@ export function FoxShotTestPage() {
       const killsBefore = stats.kills;
       for (const ray of rays) {
         const dir = fsDir(view.yaw + view.rYaw + ray.devYaw, view.pitch + view.rPitch + ray.devPitch);
-        const tr = fsTrace(w, eye, dir, FS_ARENA, bodies());
+        const tr = fsTrace(w, eye, dir, ARENA, bodies());
         const to = new THREE.Vector3(tr.point[0], tr.point[1], tr.point[2]);
         scene.tracer(from, to, id);
         applyHit(id, tr, to, pool);
@@ -625,6 +929,7 @@ export function FoxShotTestPage() {
       }
       scene.fireFx(({ sniper: 2.4, shotgun: 3.2, pistol: 0.5, usp: 0.28, smg: 0.8, m4: 0.95, ak: 1, knife: 0 } as Record<FsWeaponId, number>)[id]);
       fsAudio.shot(id);
+      for (const b of brains.values()) fsDmHear(b, id, mover.x, mover.z);
       view.rPitch += shot.kickPitch;
       view.rYaw += shot.kickYaw;
     };
@@ -634,14 +939,14 @@ export function FoxShotTestPage() {
       const eye: [number, number, number] = [mover.x, mover.y + fsEyeHeight(mover), mover.z];
       const dir = fsDir(view.yaw + view.rYaw, view.pitch + view.rPitch);
       const w = kind === 'stab' ? { ...kw, damage: kw.melee!.stab } : kw;
-      let tr = fsTrace(w, eye, dir, FS_ARENA, bodies(), kw.melee!.range);
+      let tr = fsTrace(w, eye, dir, ARENA, bodies(), kw.melee!.range);
       // facada (botão direito) nas costas de quem acertou: 100 de dano (mata na hora) e animação própria
       let back = false;
       if (kind === 'stab' && tr.kind === 'player' && tr.targetId) {
         const body = bodies().find((b) => b.id === tr.targetId);
         if (body?.facing && fsIsBackstab(body.facing, [body.pos[0], body.pos[2]], [mover.x, mover.z])) {
           back = true;
-          tr = fsTrace({ ...kw, damage: kw.melee!.backstab }, eye, dir, FS_ARENA, bodies(), kw.melee!.range);
+          tr = fsTrace({ ...kw, damage: kw.melee!.backstab }, eye, dir, ARENA, bodies(), kw.melee!.range);
         }
       }
       scene.knifeSwing(back ? 'backstab' : kind);
@@ -716,20 +1021,22 @@ export function FoxShotTestPage() {
         assists: stats.assists,
         hs: stats.hs,
         damage: stats.damage,
+        points: match ? fsMatchScore(stats) : undefined,
       },
-      ...ALL_TARGETS.map((t, i) => {
+      ...ALL_TARGETS.map((t) => {
         const s = targets.get(t.id)!;
         return {
           id: t.id,
-          name: i < FS_TARGETS.length ? `Raposa ${i + 1}` : `Bot ${i - FS_TARGETS.length + 1}`,
+          name: nameOf(t.id),
           you: false,
           alive: s.alive,
           armor: s.armor,
-          kills: 0,
+          kills: s.kills,
           deaths: s.deaths,
-          assists: 0,
-          hs: 0,
-          damage: 0,
+          assists: s.assists,
+          hs: s.hs,
+          damage: s.damage,
+          points: match ? fsMatchScore(s) : undefined,
         };
       }),
     ];
@@ -764,7 +1071,7 @@ export function FoxShotTestPage() {
           nz = d.z + d.vz * dt,
           ny = d.y + d.vy * dt;
         // parede ou caixa: para o avanço e deixa cair
-        const hit = FS_ARENA.some(
+        const hit = ARENA.some(
           (b) => nx > b.min[0] && nx < b.max[0] && nz > b.min[2] && nz < b.max[2] && ny > b.min[1] && ny < b.max[1],
         );
         if (hit) {
@@ -809,7 +1116,7 @@ export function FoxShotTestPage() {
       const st = fsSettings();
       applyQuality();
       const baseFov = st.fov;
-      const isPaused = pausedRef.current;
+      const isPaused = pausedRef.current || endedRef.current;
       const inp = controls.read();
       const playerDead = clock < deadUntil;
       // cai a câmera ao morrer (0 a 1 em 0,7 s)
@@ -824,8 +1131,13 @@ export function FoxShotTestPage() {
         me.hp = 100;
         me.armor = 0;
         me.helmet = false;
-        mover.x = FS_SPAWN.x;
-        mover.z = FS_SPAWN.z;
+        const sp = match ? fsPickSpawn(aliveFoes('me'), rnd) : FS_SPAWN;
+        if (match) {
+          view.yaw = sp.yaw;
+          view.pitch = view.rPitch = view.rYaw = 0;
+        }
+        mover.x = sp.x;
+        mover.z = sp.z;
         mover.y = 0;
         mover.vx = mover.vz = mover.vy = 0;
         prev.x = mover.x;
@@ -904,7 +1216,7 @@ export function FoxShotTestPage() {
         // o clique de pular vale por 0,15 s: apertar um pouco antes de pousar já pula no pouso (bunny hop sem segurar a tecla)
         if (inp.jump) jumpBuf = 0.15;
         // quem está vivo é um obstáculo (dá para esbarrar); quem morreu deixa de ser (dá para passar por cima)
-        const solids: FsBox[] = [...FS_ARENA];
+        const solids: FsBox[] = [...ARENA];
         for (const t of ALL_TARGETS) {
           if (!targets.get(t.id)!.alive) continue;
           const p = posOf(t.id);
@@ -996,8 +1308,9 @@ export function FoxShotTestPage() {
         // granadas no ar e a força do arremesso (o braço vai para trás enquanto segura)
         if (loadout.held) scene.nadeCharge(loadout.pinOut ? (loadout.throwStyle === 'far' ? 1 : loadout.throwStyle === 'mid' ? 0.6 : 0.1) : 0);
         stepNades(dt);
+        if (match && !dmOff) stepDm(dt);
         // bots andando, pulando e girando
-        for (const b of FS_BOTS) {
+        for (const b of world.bots) {
           const bs = botSt.get(b.id)!;
           if (!targets.get(b.id)!.alive) continue;
           fsBotStep(bs, b, dt);
@@ -1012,7 +1325,7 @@ export function FoxShotTestPage() {
             const dist = Math.hypot(dx, dz);
             const eye: [number, number, number] = [bs.x, 1.0, bs.z];
             const toMe = fsDir((Math.atan2(-dx, -dz) * 180) / Math.PI, (Math.atan2(0.8 - 1.0, dist) * 180) / Math.PI);
-            const los = fsTrace(FS_WEAPONS.ak, eye, toMe, FS_ARENA, [{ id: 'me', pos: [mover.x, mover.y, mover.z], alive: true, armor: 0, helmet: false, crouch: mover.crouchK }], dist + 1);
+            const los = fsTrace(FS_WEAPONS.ak, eye, toMe, ARENA, [{ id: 'me', pos: [mover.x, mover.y, mover.z], alive: true, armor: 0, helmet: false, crouch: mover.crouchK }], dist + 1);
             const sees = !playerDead && !shootersOff && los.kind === 'player' && clock >= (flashedUntil[b.id] ?? 0);
             const st = shooterSt.get(b.id)!;
             const fired = fsShooterStep(st, b.weapon as 'pistol' | 'ak' | 'sniper', dt, dist, sees);
@@ -1036,13 +1349,20 @@ export function FoxShotTestPage() {
           if (!s.alive && clock >= s.reviveAt) {
             s.alive = true;
             s.hp = 100;
+            if (isDm(t.id)) {
+              spawnBot(t.id);
+              continue;
+            }
             s.armor = t.armor;
-            const spec = FS_BOTS.find((b) => b.id === t.id);
+            const spec = world.bots.find((b) => b.id === t.id);
             if (spec) botSt.set(t.id, fsNewBot(spec));
             scene.reviveTarget(t.id);
           }
         }
-        if (clock - matchStart >= MATCH_S) resetMatch();
+        if (clock - matchStart >= MATCH_S) {
+          if (match) finishMatch();
+          else resetMatch();
+        }
       }
       setBoardState(inp.board && !isPaused);
 
@@ -1056,6 +1376,23 @@ export function FoxShotTestPage() {
         const left = isPaused ? 0 : blindUntil - clock;
         const o = left <= 0 ? 0 : left > blindTotal * 0.45 ? 1 : left / (blindTotal * 0.45);
         blindEl.current.style.opacity = String(Math.max(0, Math.min(1, o)));
+      }
+      // arcos vermelhos em volta da mira: apontam de onde veio cada tiro e somem em ~1,6 s
+      {
+        const arcs = hitEl.current?.children;
+        const nowMs = performance.now();
+        for (let i = 0; arcs && i < arcs.length; i++) {
+          const el = arcs[i] as HTMLElement;
+          const m = hitMarks[i];
+          const age = m ? (hitHold ? 0.2 : (nowMs - m.at) / 1000) : 9;
+          if (!m || age > 1.6 || playerDead) {
+            el.style.opacity = '0';
+            continue;
+          }
+          const bearing = (Math.atan2(-(m.x - mover.x), -(m.z - mover.z)) * 180) / Math.PI;
+          el.style.transform = `rotate(${-(bearing - view.yaw)}deg)`;
+          el.style.opacity = String(Math.min(1, (1.6 - age) / 0.9));
+        }
       }
       // tremor: passa rápido e some em ~0,5 s
       if (!isPaused) shake *= Math.exp(-6 * dt);
@@ -1101,7 +1438,9 @@ export function FoxShotTestPage() {
         x: mover.x,
         z: mover.z,
         yaw: view.yaw,
-        targets: ALL_TARGETS.map((t) => ({
+        boxes: ARENA,
+        // no mata-mata todos são inimigos e o radar não entrega onde estão
+        targets: (match ? [] : ALL_TARGETS).map((t) => ({
           x: posOf(t.id)[0],
           z: posOf(t.id)[2],
           alive: targets.get(t.id)!.alive,
@@ -1276,6 +1615,18 @@ export function FoxShotTestPage() {
         },
         pose: (kind: 'slash' | 'stab' | 'inspect' | null, u?: number) => scene.debugKnife(kind, u),
         stats: () => ({ ...stats }),
+        match: () => ({ ended: endedRef.current, clock, matchStart, dm: dmSpecs.map((d) => ({ id: d.id, ...targets.get(d.id)!, weapon: brains.get(d.id)?.weapon, x: brains.get(d.id)?.mover.x, z: brains.get(d.id)?.mover.z })) }),
+        finish: () => finishMatch(),
+        holdHit: (v: boolean) => {
+          hitHold = v;
+        },
+        hurt: (x: number, z: number) => hurtPlayer(1, 0, false, 'teste', 'pistol', undefined, { x, z }),
+        dmOff: (v: boolean) => {
+          dmOff = v;
+        },
+        skip: (sec: number) => {
+          matchStart -= sec;
+        },
         mover,
         drops: () => drops.map((d) => ({ id: d.id, ammo: d.ammo })),
         buy: (id: string) => buyRef.current({ id } as FsShopItem),
@@ -1322,6 +1673,12 @@ export function FoxShotTestPage() {
     <div className="fs" ref={root} data-testid="fs-root">
       <canvas ref={canvas} className="fs-canvas" data-testid="fs-canvas" />
       <div className="fs-blind" ref={blindEl} data-testid="fs-blind" aria-hidden="true" />
+      <div className="fs-hitdir" ref={hitEl} data-testid="fs-hitdir" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+        <i />
+      </div>
       {status === 'loading' && <div className="fs-load mono">CARREGANDO A ARENA...</div>}
       {status === 'error' && (
         <div className="fs-load mono">Não deu para carregar os modelos. Atualize a página.</div>
@@ -1359,6 +1716,7 @@ export function FoxShotTestPage() {
             timeLeft={hud.timeLeft}
             kills={hud.me.kills}
             deaths={hud.me.deaths}
+            points={match ? fsMatchScore(hud.me) : undefined}
           />
           {settings.showMinimap && <FsMinimap get={getMini} />}
           <div className="fsh-rcol">
@@ -1413,7 +1771,7 @@ export function FoxShotTestPage() {
               ]}
             />
           )}
-          {board && <FsScoreboard players={hud.players} timeLeft={hud.timeLeft} />}
+          {board && !result && <FsScoreboard players={hud.players} timeLeft={hud.timeLeft} title={match ? `Mata-mata · Duna · ${match.minutes} min` : undefined} />}
           {needClick && !paused && (
             <div className="fs-hint mono" data-testid="fs-needclick">
               Clique na tela para prender o mouse
@@ -1488,7 +1846,10 @@ export function FoxShotTestPage() {
               </div>
             </>
           )}
-          {paused && !portrait && (
+          {result && match && (
+            <FsMatchEnd rows={result} minutes={match.minutes} onAgain={() => onAgainRef.current()} onExit={() => onExit?.()} />
+          )}
+          {paused && !portrait && !result && (
             <FsMenu
               touch={touch}
               onResume={() => resumeRef.current()}

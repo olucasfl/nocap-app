@@ -963,7 +963,7 @@
 @media (prefers-reduced-motion: reduce) { .fss-toast, .fss-item.bought { animation: none; } .fss-item { transition: none; } }
 
 /* levar tiro: um clarão vermelho leve nas bordas; muito dano de uma vez: um efeito bem mais forte que some devagar (só opacity) */
-.fs-hurt { position: absolute; inset: 0; pointer-events: none; z-index: 7; box-shadow: inset 0 0 90px 12px rgba(255, 40, 40, 0.38); animation: fs-hurt 0.35s ease-out forwards; }
+.fs-hurt { position: absolute; inset: 0; pointer-events: none; z-index: 7; box-shadow: inset 0 0 90px 12px rgba(255, 30, 30, 0.5); animation: fs-hurt 0.5s ease-out forwards; }
 .fs-hurt.heavy { z-index: 8; background: radial-gradient(ellipse at center, rgba(120, 0, 0, 0) 35%, rgba(150, 0, 0, 0.55) 100%); box-shadow: inset 0 0 220px 70px rgba(230, 15, 15, 0.9); animation: fs-heavy 1.6s ease-out forwards; }
 @keyframes fs-hurt { from { opacity: 1; } to { opacity: 0; } }
 @keyframes fs-heavy { 0% { opacity: 1; } 35% { opacity: 0.9; } 100% { opacity: 0; } }
@@ -982,3 +982,146 @@
 /* comandos por categoria */
 .fsm-cat { margin: 10px 0 4px; }
 .fsm-cat h4 { margin: 0 0 6px; padding: 4px 8px; background: #1b1535; color: #ffd23f; font: 900 11px var(--font-display, system-ui); letter-spacing: 0.12em; text-transform: uppercase; }
+
+/* ---- Counter Fox: preparar a partida e fim de partida (spec 057) */
+.cfx {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: #f4f4ef;
+  color: #1b1535;
+}
+.cfx-card {
+  width: min(520px, 100%);
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 4px solid #1b1535;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 6px 0 #1b1535;
+}
+.cfx-card header span {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.cfx-card h1 {
+  margin: 2px 0 0;
+  font: 900 28px var(--font-display, system-ui);
+  text-transform: uppercase;
+}
+.cfx-rule {
+  margin: 0;
+  font-size: 12px;
+}
+.cfx fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: grid;
+  gap: 6px;
+}
+.cfx legend {
+  padding: 0;
+  font: 900 13px var(--font-display, system-ui);
+  text-transform: uppercase;
+}
+.cfx-opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cfx-opts button {
+  min-width: 56px;
+  min-height: 44px;
+  padding: 6px 12px;
+  border: 3px solid #1b1535;
+  border-radius: 12px;
+  background: #fff;
+  color: #1b1535;
+  font: 900 15px var(--font-display, system-ui);
+  cursor: pointer;
+  box-shadow: 0 3px 0 #1b1535;
+}
+.cfx-opts.bots button {
+  min-width: 44px;
+}
+.cfx-opts button.on {
+  background: #ffd23f;
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #1b1535;
+}
+.cfx-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+.cfx-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.cfx-table th,
+.cfx-table td {
+  padding: 5px 8px;
+  text-align: right;
+  border-bottom: 2px solid rgba(27, 21, 53, 0.15);
+}
+.cfx-table th:nth-child(2),
+.cfx-table td:nth-child(2) {
+  text-align: left;
+}
+.cfx-table tr.win td {
+  background: #fff3b8;
+}
+.cfx-table tr.you td {
+  font-weight: 900;
+}
+.cfx-end .fsm-card {
+  width: min(620px, 100%);
+}
+.fsh-pts {
+  align-self: center;
+  margin-top: 2px;
+  padding: 1px 10px;
+  border: 3px solid var(--fsh-ink);
+  border-radius: 10px;
+  background: var(--fsh-panel);
+  font: 900 13px var(--font-display, system-ui);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* arcos vermelhos em volta da mira: de onde veio o tiro (como no CS); só transform e opacity */
+.fs-hitdir {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+.fs-hitdir i {
+  position: absolute;
+  left: -120px;
+  top: -120px;
+  width: 240px;
+  height: 240px;
+  box-sizing: border-box;
+  border: 9px solid transparent;
+  border-top-color: rgba(226, 38, 45, 0.92);
+  border-radius: 50%;
+  opacity: 0;
+  will-change: transform, opacity;
+  filter: drop-shadow(0 0 3px rgba(120, 0, 0, 0.7));
+}
+@media (prefers-reduced-motion: reduce) {
+  .fs-hitdir i {
+    transition: none;
+  }
+}

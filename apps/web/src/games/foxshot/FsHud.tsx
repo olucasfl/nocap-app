@@ -14,6 +14,8 @@ export interface FsPlayerRow {
   assists: number;
   hs: number;
   damage: number;
+  /** Pontos da partida (100 por abate, 50 por assistência); só no mata-mata. */
+  points?: number;
 }
 
 export interface FeedItem {
@@ -36,6 +38,8 @@ export interface MinimapData {
   z: number;
   yaw: number;
   targets: { x: number; z: number; alive: boolean; armor: number }[];
+  /** Paredes e caixas do mapa (padrão: a arena de teste). */
+  boxes?: readonly { min: readonly [number, number, number]; max: readonly [number, number, number] }[];
 }
 
 export const clock = (s: number) =>
@@ -47,11 +51,13 @@ export function FsTopBar({
   timeLeft,
   kills,
   deaths,
+  points,
 }: {
   players: FsPlayerRow[];
   timeLeft: number;
   kills: number;
   deaths: number;
+  points?: number;
 }) {
   const slots = Array.from({ length: 10 }, (_, i) => players[i] ?? null);
   return (
@@ -67,7 +73,7 @@ export function FsTopBar({
               key={i}
               className={`${p ? (p.alive ? 'on' : 'dead') : 'empty'}${p?.you ? ' you' : ''}${p && p.armor > 0 ? ' vest' : ''}`}
             >
-              {p ? <span>{p.you ? 'EU' : p.name.replace(/\D/g, '')}</span> : <span>?</span>}
+              {p ? <span>{p.you ? 'EU' : p.name.replace(/\D/g, '') || p.name.slice(0, 2)}</span> : <span>?</span>}
               {p && !p.alive && <SkullIcon className="fsh-skull" />}
             </li>
           ))}
@@ -80,6 +86,11 @@ export function FsTopBar({
       <div className="fsh-time" data-testid="fs-time">
         {clock(Math.max(0, timeLeft))}
       </div>
+      {points !== undefined && (
+        <div className="fsh-pts mono" data-testid="fs-points">
+          {points} pts
+        </div>
+      )}
     </div>
   );
 }
@@ -128,7 +139,7 @@ export function FsMinimap({ get }: { get: () => MinimapData }) {
       g.rotate(yaw);
       g.translate(-d.x * k, -d.z * k);
       g.fillStyle = 'rgba(190,200,215,.55)';
-      for (const b of FS_ARENA) {
+      for (const b of d.boxes ?? FS_ARENA) {
         g.fillRect(
           b.min[0] * k,
           b.min[2] * k,
@@ -322,14 +333,15 @@ export function FsCrosshair({ spreadPx }: { spreadPx: number }) {
 }
 
 /** Placar (Tab): todos os jogadores com abates, mortes, % de cabeça e dano, como o do CS. */
-export function FsScoreboard({ players, timeLeft }: { players: FsPlayerRow[]; timeLeft: number }) {
+export function FsScoreboard({ players, timeLeft, title = 'Mata-mata · Arena de teste' }: { players: FsPlayerRow[]; timeLeft: number; title?: string }) {
   const binds = useFsSettings((st) => st.binds);
-  const rows = [...players].sort((a, b) => b.kills - a.kills || a.deaths - b.deaths);
+  const withPts = players.some((p) => p.points !== undefined);
+  const rows = [...players].sort((a, b) => (b.points ?? 0) - (a.points ?? 0) || b.kills - a.kills || a.deaths - b.deaths);
   return (
     <div className="fsh-board" role="dialog" aria-label="Placar" data-testid="fs-board">
       <div className="fsh-board-card">
         <header>
-          <span className="mono">Mata-mata · Arena de teste</span>
+          <span className="mono">{title}</span>
           <b>{clock(Math.max(0, timeLeft))}</b>
         </header>
         <table>
@@ -337,6 +349,7 @@ export function FsScoreboard({ players, timeLeft }: { players: FsPlayerRow[]; ti
             <tr>
               <th />
               <th>Jogador</th>
+              {withPts && <th>Pontos</th>}
               <th>Abates</th>
               <th>Assist.</th>
               <th>Mortes</th>
@@ -354,6 +367,7 @@ export function FsScoreboard({ players, timeLeft }: { players: FsPlayerRow[]; ti
                   {p.name}
                   {p.you ? ' (você)' : ''}
                 </td>
+                {withPts && <td><b>{p.points}</b></td>}
                 <td>{p.kills}</td>
                 <td>{p.assists}</td>
                 <td>{p.deaths}</td>
@@ -365,6 +379,7 @@ export function FsScoreboard({ players, timeLeft }: { players: FsPlayerRow[]; ti
               <tr key={`e${i}`} className="empty">
                 <td />
                 <td>vaga livre</td>
+                {withPts && <td>-</td>}
                 <td>-</td>
                 <td>-</td>
                 <td>-</td>

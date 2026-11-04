@@ -183,8 +183,11 @@ export function FoxCapPage() {
                 helpTestId="help-bola"
               />
             </div>
-            <Link to="/fox-cap/fox-shot-teste" className="btn" data-sfx="start" data-testid="foxcap-foxshot">
-              Counter Fox (teste de visual e tiro)
+            <Link to="/fox-cap/counter-fox" className="btn" data-sfx="start" data-testid="foxcap-counterfox">
+              Counter Fox (mata-mata contra bots)
+            </Link>
+            <Link to="/fox-cap/fox-shot-teste" className="btn ghost" data-sfx="start" data-testid="foxcap-foxshot">
+              Counter Fox: arena de teste
             </Link>
             <HubNote>
               O Atravessa! guarda recorde e ranking. O Desmorona!, o Fut Fox e o Ping Fox! são só
