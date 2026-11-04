@@ -1114,9 +1114,13 @@ describe('Duna: enfeites', () => {
     for (const m of ['arch_a', 'lamp', 'bld_a']) expect(a.some((p) => p.model === m), m).toBe(true);
     expect(a.length).toBeLessThan(600);
   });
-  it('nenhum prédio fica sobre o chão andável', () => {
-    for (const p of fsDustDecor().filter((q) => q.model.startsWith('bld_'))) {
-      expect(fsDustWalkable(fsDustCol(p.x), fsDustRow(p.z))).toBe(false);
+  it('nenhum prédio chega perto de chão andável (nada atravessa corredor)', () => {
+    const blds = fsDustDecor().filter((q) => q.model.startsWith('bld_'));
+    expect(blds.length).toBeGreaterThan(8);
+    for (const p of blds) {
+      const c0 = fsDustCol(p.x);
+      const r0 = fsDustRow(p.z);
+      for (let dr = -8; dr <= 8; dr++) for (let dc = -8; dc <= 8; dc++) expect(fsDustLevel(c0 + dc, r0 + dr) < 0, `${c0},${r0}`).toBe(true);
     }
   });
 });

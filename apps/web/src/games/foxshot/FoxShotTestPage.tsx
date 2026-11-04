@@ -1873,6 +1873,8 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
           {paused && !portrait && !result && (
             <FsMenu
               touch={touch}
+              exitTo={match ? '/fox-cap/counter-fox' : '/fox-cap'}
+              exitLabel={match ? 'Voltar ao menu do Counter Fox' : 'Sair do Counter Fox'}
               onResume={() => resumeRef.current()}
               onEnd={() => endMatchRef.current()}
             />

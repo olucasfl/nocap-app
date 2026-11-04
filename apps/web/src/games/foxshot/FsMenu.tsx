@@ -101,7 +101,7 @@ function Seg<T extends string>({
 }
 
 /** Comandos: lista de tudo, com o botão de cada ação; clicar e apertar uma tecla (ou botão do mouse) troca. Esc cancela. */
-function Commands({ touch }: { touch: boolean }) {
+export function Commands({ touch }: { touch: boolean }) {
   const binds = useFsSettings((s) => s.binds);
   const bind = useFsSettings((s) => s.bind);
   const reset = useFsSettings((s) => s.reset);
@@ -198,11 +198,15 @@ function Commands({ touch }: { touch: boolean }) {
   );
 }
 
-function Customize() {
+export function Customize({ only }: { only?: 'aim' | 'screen' } = {}) {
   const s = useFsSettings();
   const muted = useMuted();
+  const aim = only !== 'screen';
+  const screen = only !== 'aim';
   return (
     <div data-testid="fsm-custom">
+      {aim && (
+        <>
       <h3>Mira e câmera</h3>
       <Slider
         label="Sensibilidade"
@@ -279,6 +283,10 @@ function Customize() {
         value={s.crossDynamic}
         onChange={(v) => s.set({ crossDynamic: v })}
       />
+        </>
+      )}
+      {screen && (
+        <>
       <h3>Tela e som</h3>
       <Seg<FsSettingsQuality>
         label="Qualidade gráfica"
@@ -307,6 +315,8 @@ function Customize() {
         onChange={(v) => s.set({ showTelemetry: v })}
       />
       <Toggle label="Som" value={!muted} onChange={() => toggleMute()} />
+        </>
+      )}
     </div>
   );
 }
@@ -318,11 +328,15 @@ export function FsMenu({
   onResume,
   onEnd,
   children,
+  exitTo = '/fox-cap',
+  exitLabel = 'Sair do Counter Fox',
 }: {
   touch: boolean;
   onResume: () => void;
   onEnd: () => void;
   children?: ReactNode;
+  exitTo?: string;
+  exitLabel?: string;
 }) {
   const [tab, setTab] = useState<Tab>('jogo');
   const [sure, setSure] = useState(false);
@@ -373,12 +387,12 @@ export function FsMenu({
                 {sure ? 'Toque de novo para encerrar' : 'Encerrar a partida'}
               </button>
               <Link
-                to="/fox-cap"
+                to={exitTo}
                 className="fsm-item danger"
                 data-sfx="back"
                 data-testid="fsm-exit"
               >
-                Sair do Counter Fox
+                {exitLabel}
               </Link>
               {children}
               <p className="fsm-hint mono">

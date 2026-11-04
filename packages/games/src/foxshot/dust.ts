@@ -651,6 +651,9 @@ export interface FsDustPlacement {
 }
 
 /** Zonas de salas abertas, onde as fachadas com arcos e os postes fazem sentido. */
+/** Folga (células) entre o centro de um prédio do horizonte e qualquer chão. */
+export const FS_DUST_CLEAR = 8;
+
 const HALLS: ReadonlySet<FsDustZoneId> = new Set<FsDustZoneId>(['A', 'B', 'CT', 'TR', 'yard', 'long']);
 
 function lcg(seed: number) {
@@ -697,25 +700,26 @@ export function fsDustDecor(): FsDustPlacement[] {
     const off = (rnd() - 0.5) * (f.len - 3);
     out.push({ model: rnd() < 0.5 ? 'barrier' : 'railing', x: f.x + (alongX ? off : 0) + f.nx * 0.5, y: f.y, z: f.z + (alongX ? 0 : off) + f.nz * 0.5, rot: Math.atan2(f.nx, f.nz) + Math.PI / 2, h: 0 });
   }
-  // horizonte: prédios sobre o miolo maciço (a 5+ células de qualquer chão) e numa faixa em volta do mapa
-  const models = ['bld_a', 'bld_b', 'bld_c', 'bld_d', 'bld_e', 'bld_tower'];
+  // horizonte: prédios sobre o miolo maciço, no tamanho natural do modelo (7 a 9 m de largura; a meia-diagonal é de ~6,5 m, então
+  // só entram onde não há chão a 8 células ou menos: nada atravessa corredor nenhum) e numa faixa em volta do mapa
+  const models = ['bld_a', 'bld_b', 'bld_c', 'bld_d', 'bld_e'];
   const farFromFloor = (c: number, r: number) => {
-    for (let dr = -5; dr <= 5; dr++) for (let dc = -5; dc <= 5; dc++) if (isFloor(c + dc, r + dr)) return false;
+    for (let dr = -FS_DUST_CLEAR; dr <= FS_DUST_CLEAR; dr++) for (let dc = -FS_DUST_CLEAR; dc <= FS_DUST_CLEAR; dc++) if (isFloor(c + dc, r + dr)) return false;
     return true;
   };
-  for (let r = -14; r < FS_DUST_ROWS + 14; r += 9) {
-    for (let c = -14; c < FS_DUST_COLS + 14; c += 9) {
+  for (let r = -16; r < FS_DUST_ROWS + 16; r += 10) {
+    for (let c = -16; c < FS_DUST_COLS + 16; c += 10) {
       const jc = c + Math.round((rnd() - 0.5) * 3);
       const jr = r + Math.round((rnd() - 0.5) * 3);
       if (!farFromFloor(jc, jr)) continue;
-      const tower = rnd() < 0.18;
+      const tower = rnd() < 0.2;
       out.push({
-        model: tower ? 'bld_tower' : models[Math.floor(rnd() * 5)]!,
+        model: tower ? 'bld_tower' : models[Math.floor(rnd() * models.length)]!,
         x: FS_DUST_X0 + (jc + 0.5) * FS_CELL,
         y: 0,
         z: FS_DUST_Z0 + (jr + 0.5) * FS_CELL,
         rot: Math.floor(rnd() * 4) * (Math.PI / 2),
-        h: tower ? 13 + rnd() * 6 : 7 + rnd() * 6,
+        h: 0,
       });
     }
   }
