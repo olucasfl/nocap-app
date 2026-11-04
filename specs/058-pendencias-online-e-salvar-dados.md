@@ -142,7 +142,22 @@ Pedido do Lucas (04/11/2026).
 5. Contagem inicial do online (5 s) continua aparecendo e a pessoa já pode olhar em volta.
 6. Testes: e2e que abre cada tipo de partida e confere que o menu do Esc **não** está visível no começo e que Esc abre o menu.
 
-## 7. Outras pendências lembradas
+## 7. Trocar de arma tem que ser instantâneo
+
+Pedido do Lucas (04/11/2026).
+
+**Problema:** ao apertar a tecla para pegar uma arma (primária, secundária, faca ou granada), a arma **demora para aparecer na mão** e, enquanto isso, não dá para fazer nada: por exemplo, pega a faca e aperta inspecionar logo em seguida e **ainda não dá para inspecionar**.
+
+**Por que é assim hoje:** cada arma tem um tempo de saque (`draw` em `weapons.ts`, de 0,5 a 1,1 s) durante o qual o jogo bloqueia atirar, recarregar e inspecionar (`drawT`), e a cena mostra a animação de sacar.
+
+**Como deve ficar:**
+1. **A arma aparece na mão na hora** que a tecla é apertada: sem animação longa de sacar (no máximo um brilho curto de 1 a 3 quadros, ou nenhuma).
+2. **Inspecionar, recarregar, mirar e atirar funcionam logo depois** da troca (a faca inspeciona na hora; a pistola atira na hora). Vale para todas as armas, a faca e as granadas (pegar granada e já poder segurar para jogar).
+3. Tirar o bloqueio por saque do cliente e da simulação do servidor (`FsLoadout.drawT` e `fsNetSim`), para a pessoa e o servidor concordarem. Repetir a troca rápido (1, 2, 3, Q, roda do mouse) não pode travar nem soltar tiro duplicado.
+4. Cuidar do que o saque lento evitava: **trocar e atirar no mesmo instante** não vira vantagem injusta (ex.: sniper, que hoje tem 1,1 s de saque): se for preciso, manter só um intervalo mínimo muito curto entre trocas (cerca de 0,1 s) igual para todas as armas.
+5. Atualizar os testes de lógica que contam o saque (`gun`/`FsLoadout`) e o e2e que troca de arma, e conferir online que o servidor aceita a troca e o tiro seguintes.
+
+## 8. Outras pendências lembradas
 
 - Atualizar a spec 057, `ARCHITECTURE.md` e `docs/ROADMAP.md` com as últimas mudanças do Counter Fox (radar estilo CS, ícones do kill feed, times só em cor, aliados desligados, menus).
 - Conferir na tela o que só foi testado em código: raposas azuis, Bomba B no jogo, ícones do kill feed, aliado com nome e silhueta (desligado hoje), mapa grande no online e menu das salas.
