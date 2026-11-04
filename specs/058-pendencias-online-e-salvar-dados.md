@@ -67,7 +67,34 @@ Convidado (sem conta) continua só no aparelho; ao criar a conta, o que já esta
 
 Pergunta para o Lucas antes de começar: aprovar a opção **A**, e dizer o que deve ser **do aparelho** e não da conta.
 
-## 3. Outras pendências lembradas
+## 3. Chat dos jogos do Fox Cap! (estilo CS) e convidar no meio da partida
+
+Pedido do Lucas (04/11/2026), com 3 imagens de referência: onde ele quer o chat (no canto de baixo à esquerda, **em cima da vida e do colete**), o chat do CS **só recebendo** mensagens (fundo transparente, sem o jogador digitar) e o chat do CS **aberto para digitar** (fundo preto).
+
+### Problemas de hoje
+- Em **todos os jogos do Fox Cap!**, ao apertar **T** para abrir o chat, o menu do **Esc abre por cima** do chat (estranho: os dois brigam pela tecla/foco).
+- Quando alguém manda mensagem, ela **não aparece para todo mundo durante a partida**; precisa abrir o chat.
+- O chat fica "em cima" da tela em vez de no canto de baixo à esquerda.
+- Na aba **Convidar** aberta no meio da partida, o **Esc não fecha** só ela.
+
+### Como deve ficar
+1. **Chat sempre no canto de baixo à esquerda**, acima da vida e do colete (HUD do Counter Fox) e num canto livre nos outros jogos.
+2. **Modo "recebendo" (padrão)**: toda mensagem nova, de qualquer pessoa, aparece ali com **fundo translúcido** (sem moldura), fica alguns segundos (cerca de 6 a 8 s) e **some devagar**. Só mostra as últimas linhas (as mais velhas somem primeiro).
+3. **O que entra nessa lista** (não só conversa): mensagens, **entrou na sala**, **saiu da sala**, **foi removido**, aviso de sala encerrada, líder trocou, e outras mensagens do sistema, com cor própria (sistema em cinza ou amarelo, conversa na cor do time/raposa, espectador em cinza).
+4. **Enter** (e também **T**, que já existe) **abre o chat completo**: fundo escuro, histórico rolável, campo para digitar, botão de enviar. **Enter** envia e volta ao modo "recebendo"; **Esc** fecha só o chat.
+5. **Esc nunca abre o menu do jogo enquanto o chat está aberto** (ou o campo de digitar tem o foco): primeiro o Esc fecha o chat; um segundo Esc é que abre o menu. O mouse não deve soltar nem prender de forma estranha ao abrir e fechar.
+6. **Convidar no meio da partida**: o **Esc fecha só a janela de Convidar** e volta para o menu do Esc que estava aberto antes do clique em Convidar (não fecha tudo nem solta o jogo).
+7. Em **todos os jogos** do Fox Cap! (Counter Fox, Fut Fox, Ping Fox!, Desmorona!, Atravessa!), com o mesmo componente (`GameChat`), sem mudar o servidor (já tem histórico e mensagens de sistema).
+8. Respeitar `prefers-reduced-motion` (some sem animação) e só animar `transform`/`opacity` (regra 5 do RULES.md). Sem emoji (regra 6). Tamanho de letra legível (números e textos maiores, como pedido nas outras telas).
+
+### Plano de trabalho proposto
+1. Mapear o `GameChat` e quem trata T, Enter e Esc em cada jogo (Counter Fox, Fut Fox, Ping Fox!, Desmorona!, Atravessa!) para achar quem abre o menu por cima.
+2. Criar um **gerenciador de foco do chat** (um só lugar decide o que o Esc faz: chat aberto > janela de convidar > menu > abrir menu).
+3. Fazer o modo "recebendo" (lista curta com tempo de vida por mensagem) e o modo "aberto" (histórico + campo), com os eventos de sistema (entrou, saiu, removido).
+4. Reposicionar para o canto de baixo à esquerda em cada jogo, sem cobrir a vida/colete, o mapa pequeno nem os botões de toque no celular.
+5. Testes: unidade (tempo de vida, ordem, Esc em camadas) e e2e (T abre só o chat; Esc fecha só o chat; mensagem da outra janela aparece e some; Convidar fecha com Esc e volta ao menu anterior).
+
+## 4. Outras pendências lembradas
 
 - Atualizar a spec 057, `ARCHITECTURE.md` e `docs/ROADMAP.md` com as últimas mudanças do Counter Fox (radar estilo CS, ícones do kill feed, times só em cor, aliados desligados, menus).
 - Conferir na tela o que só foi testado em código: raposas azuis, Bomba B no jogo, ícones do kill feed, aliado com nome e silhueta (desligado hoje), mapa grande no online e menu das salas.
