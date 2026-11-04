@@ -126,7 +126,23 @@ Pedido do Lucas (04/11/2026), com captura do menu principal.
 4. O mesmo cuidado no **mapa pequeno** e no **mapa grande (M)** do jogo, que usam as mesmas marcações (`FS_DUST_MARKS`).
 5. Teste: captura do menu em 3 tamanhos de tela (grande, médio e celular deitado) e conferir que não há texto sobreposto.
 
-## 6. Outras pendências lembradas
+## 6. Partida abre já com o menu do Esc aberto
+
+Pedido do Lucas (04/11/2026).
+
+**Problema:** toda vez que uma partida começa (offline, treino ou online), o jogo abre com o **menu do Esc aparecendo** (tela de "Continuar jogando", Personalizar, Comandos...). O Lucas quer que a pessoa **entre direto na tela do jogo**, e o menu só abra quando ela apertar Esc.
+
+**Por que é assim hoje:** os navegadores só deixam prender o mouse (pointer lock) e entrar em tela cheia depois de um **clique ou tecla da pessoa**. O jogo começa "pausado" com o menu aberto e o botão "Continuar jogando" é o clique que libera isso.
+
+**Como deve ficar:**
+1. A partida abre direto na cena do jogo, sem o menu do Esc. A pessoa já veio de um clique (Jogar, Começar, Entrar na sala), então dá para **pedir o mouse preso nesse mesmo clique** quando o navegador permitir.
+2. Se o navegador **não** deixar prender o mouse na hora (cliques de sala online, recarregar a página, link direto), mostrar só um aviso leve no meio da tela ("Clique para jogar") e **não o menu inteiro**; o primeiro clique no jogo prende o mouse e some o aviso.
+3. Esc abre o menu como hoje (e fecha com Esc de novo). Tela cheia e trava de teclas (Ctrl+W) continuam funcionando, pedidas no primeiro clique.
+4. Vale para: partida offline, Mapa de Treino, partida online (inclusive entrar no meio, espectando) e o reinício depois do fim de partida.
+5. Contagem inicial do online (5 s) continua aparecendo e a pessoa já pode olhar em volta.
+6. Testes: e2e que abre cada tipo de partida e confere que o menu do Esc **não** está visível no começo e que Esc abre o menu.
+
+## 7. Outras pendências lembradas
 
 - Atualizar a spec 057, `ARCHITECTURE.md` e `docs/ROADMAP.md` com as últimas mudanças do Counter Fox (radar estilo CS, ícones do kill feed, times só em cor, aliados desligados, menus).
 - Conferir na tela o que só foi testado em código: raposas azuis, Bomba B no jogo, ícones do kill feed, aliado com nome e silhueta (desligado hoje), mapa grande no online e menu das salas.
