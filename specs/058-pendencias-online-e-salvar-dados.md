@@ -18,6 +18,18 @@ O que o Lucas sentiu jogando online:
 6. **Rede**: tudo vai por WebSocket (TCP): uma perda de pacote trava tudo (cabeça de fila). Vale ver se compensa mandar menos coisa (quadros só com o que mudou) ou usar um canal sem ordem garantida.
 7. **Cliente**: com 165 FPS e GPU fraca a thread principal pode atrasar o envio de entradas (`sendRoomQuiet('fsin')` só a cada 2 passos).
 
+### Opção: usar WebRTC como o Ping Fox! e o Fut Fox (ideia do Lucas, 04/11/2026)
+
+Por que lá não trava: o canal de dados do WebRTC é **sem ordem e sem retransmissão** (uma perda não segura os pacotes seguintes, ao contrário do WebSocket/TCP do Counter Fox) e, no P2P, os dados vão **direto de um jogador ao outro**, sem passar pelo servidor. No Fut Fox e no Ping Fox quem simula é o dispositivo de um dos jogadores (com a sala do servidor de reserva).
+
+Como seria no Counter Fox (**líder simula**, igual ao Fut Fox):
+- o navegador do líder roda a `FsNetSim` (a mesma simulação pura de hoje) e os outros jogadores mandam as entradas e recebem os quadros pelo canal WebRTC direto; a sala do servidor continua para lobby, chat e **reserva** (se o WebRTC não conectar, cai no servidor como hoje).
+- Ganha: nada de salto ao servidor (menos atraso), sem bloqueio por perda de pacote, e tira carga do servidor.
+- Custa: **vantagem do líder** (ping zero para ele) e o líder saindo derruba a partida (no Fut Fox a partida acaba); **trapaça possível** (o líder controla a simulação), o que combina com o que já temos (sala com amigos, nunca entra em ranking, regra 2 do RULES.md); o líder precisa de upload para 9 jogadores (estimativa: ~100 KB/s com 30 quadros por segundo, a confirmar); algumas redes não conectam P2P sem um servidor de retransmissão (TURN), que é custo novo.
+- **Não resolve sozinho** o que depende do nosso código: tiro pouco confiável vem também de `viewTick`, interpolação e janela de atraso, que continuam valendo (a compensação de atraso precisa existir no líder).
+
+Recomendação: **fazer a medição e as correções do servidor primeiro** (valem como reserva e mostram quanto da trava é rede e quanto é nosso código) e **depois prototipar o líder-simula**, reaproveitando `lib/bola-p2p.ts` / `bola-link.ts`. Se o protótipo ficar claramente melhor, vira o padrão com o servidor de reserva. Decisão do Lucas: aprovar essa ordem ou ir direto para o WebRTC.
+
 ### Plano de trabalho proposto
 1. **Medir primeiro**: painel de depuração (dev) com ping, jitter, idade do quadro, passos por segundo da sala, tamanho do pacote, erro de previsão e quantos tiros foram "fora da janela de atraso". Gravar uma partida de teste com 2 pessoas e 8 bots.
 2. **Tiro**: registrar no servidor, por tiro, o `viewTick` pedido, o usado, e se acertou por corpo/zona; devolver ao atirador um "motivo" (acerto, errou, fora da janela). Testar com o ping simulado (50, 100, 200 ms).
