@@ -962,6 +962,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           view.rPitch = view.rYaw = 0;
         },
         resume: () => resume(),
+        ads: () => ({ amount: scene.adsAmount, locked: controls.locked, enabled: controls.enabled, paused: pausedRef.current }),
       };
     }
 
