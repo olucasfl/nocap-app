@@ -13,6 +13,7 @@ import {
 import { NicknameDialog } from '@/components/NicknameDialog';
 import { RoomConflictDialog } from '@/components/RoomConflictDialog';
 import { useRoomEntry } from '@/lib/my-room';
+import { setReturnTo, useAuth } from '@/lib/auth';
 import { FoxShotTestPage } from './FoxShotTestPage';
 import { CounterFoxLogo } from './CounterFoxLogo';
 import { CounterFoxBackdrop as Backdrop } from './CounterFoxBackdrop';
@@ -143,7 +144,7 @@ function Options({ onBack }: { onBack: () => void }) {
 }
 
 /** Counter Fox: menu principal, jogar (offline ou com amigos), opções e a partida contra bots no Duna (spec 057). */
-export function CounterFoxPage() {
+function CounterFoxInner() {
   const [screen, setScreen] = useState<Screen>('main');
   const [cfg, setCfg] = useState<FsMatchConfig>(saved);
   const [run, setRun] = useState(0);
@@ -317,6 +318,54 @@ export function CounterFoxPage() {
       <div className="cfh-foot">COUNTER FOX · FOX CAP!</div>
       <NicknameDialog nick={entry.nick} />
       <RoomConflictDialog open={!!entry.conflict} code={entry.conflict?.code ?? null} onBack={entry.backToCurrent} onLeave={() => void entry.leaveAndContinue()} onCancel={entry.dismissConflict} />
+    </main>
+  );
+}
+
+/** Counter Fox só com conta: sem ela, a tela explica e leva para criar a conta ou entrar (e volta para cá depois). */
+export function CounterFoxPage() {
+  const user = useAuth((st) => st.user);
+  const status = useAuth((st) => st.status);
+  if (user) return <CounterFoxInner />;
+  if (status === 'loading') return <main className="cfh" data-testid="cfh-auth-loading" />;
+  return <CounterFoxGate />;
+}
+
+function CounterFoxGate() {
+  useEffect(() => {
+    const id = 'cfx-fonts';
+    if (!document.getElementById(id)) {
+      const l = document.createElement('link');
+      l.id = id;
+      l.rel = 'stylesheet';
+      l.href = FONTS;
+      document.head.appendChild(l);
+    }
+  }, []);
+  const remember = () => setReturnTo('/fox-cap/counter-fox');
+  return (
+    <main className="cfh" data-testid="cfh-gate">
+      <Backdrop />
+      <div className="cfh-wrap">
+        <div className="cfh-left">
+          <CounterFoxLogo />
+          <section className="cfh-panel cfh-gate" role="alert" data-testid="cfh-gate-card">
+            <h2>Você precisa de uma conta</h2>
+            <p>O Counter Fox é jogado com conta no NoCap: assim a partida, os amigos e a sala ficam com o seu nome. Criar leva menos de um minuto.</p>
+            <div className="cfh-gate-btns">
+              <Link to="/criar-conta" className="cfh-btn main" onClick={remember} data-sfx="start" data-testid="cfh-gate-register">
+                Criar conta
+              </Link>
+              <Link to="/entrar" className="cfh-btn" onClick={remember} data-sfx="start" data-testid="cfh-gate-login">
+                Já tenho conta: entrar
+              </Link>
+              <Link to="/fox-cap" className="cfh-btn danger" data-sfx="back" data-testid="cfh-gate-back">
+                Voltar ao Fox Cap!
+              </Link>
+            </div>
+          </section>
+        </div>
+      </div>
     </main>
   );
 }

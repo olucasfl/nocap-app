@@ -4,7 +4,7 @@ import { BackButton } from '@/components/BackButton';
 import { sfx } from '@/lib/sfx';
 import { Field } from '@/components/Field';
 import { validateLogin } from '@/lib/account-form';
-import { login } from '@/lib/auth';
+import { login, takeReturnTo } from '@/lib/auth';
 import './account.css';
 import { Page } from '@/components/Page';
 
@@ -25,7 +25,8 @@ export function Login() {
     setBusy(true);
     try {
       await login(identifier, password);
-      await navigate({ to: '/perfil' });
+      const back = takeReturnTo();
+      await navigate({ to: back ?? '/perfil' });
     } catch (err) {
       sfx.error();
       setFailure(err instanceof Error ? err.message : 'Não foi possível entrar.');

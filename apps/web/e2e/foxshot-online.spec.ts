@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { loginAs } from './account';
 
 /**
  * Counter Fox online com DUAS janelas de verdade (spec 057): criar sala pelo menu, entrar com o código, regras, começar, andar,
@@ -14,11 +15,6 @@ test.beforeEach(({ page: _page }, info) => {
 });
 test.setTimeout(240_000);
 
-async function nick(page: Page, name: string) {
-  await page.getByRole('dialog').locator('input').first().fill(name);
-  await page.getByRole('button', { name: 'Entrar na sala' }).click();
-}
-
 interface St {
   mover: { x: number; z: number };
   self: { seq: number; x: number; z: number; hp: number; alive: boolean; ammo: number } | null;
@@ -33,14 +29,15 @@ const fsn = <T,>(p: Page, fn: string, ...a: unknown[]) =>
   p.evaluate(([f, args]) => ((window as unknown as { __fsn: Record<string, (...x: unknown[]) => unknown> }).__fsn[f as string] as (...x: unknown[]) => T)(...(args as unknown[])), [fn, a] as [string, unknown[]]) as Promise<T>;
 
 test('duas janelas: criar sala pelo menu, entrar pelo código, jogar e ver o servidor mandar', async ({ browser }) => {
-  const mk = async () => {
+  const mk = async (name: string) => {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 }, locale: 'pt-BR' });
     const page = await ctx.newPage();
+    await loginAs(page, name);
     await page.addInitScript(() => localStorage.setItem('nocap-fs-settings-lock2', '1'));
     return page;
   };
-  const ana = await mk();
-  const bia = await mk();
+  const ana = await mk('Ana');
+  const bia = await mk('Bia');
 
   // Ana cria a sala pelo menu do Counter Fox
   await ana.goto('/fox-cap/counter-fox');
@@ -48,7 +45,6 @@ test('duas janelas: criar sala pelo menu, entrar pelo código, jogar e ver o ser
   await ana.getByTestId('cfh-play').click();
   await ana.getByTestId('cfh-online').click();
   await ana.getByTestId('cfh-create').click();
-  await nick(ana, 'Ana');
   await expect(ana.getByTestId('cfl')).toBeVisible({ timeout: 30_000 });
   const code = (await ana.getByTestId('cfl-code').locator('b').textContent())!.trim();
   expect(code).toMatch(/^[A-Z0-9]{4}$/);
@@ -61,7 +57,6 @@ test('duas janelas: criar sala pelo menu, entrar pelo código, jogar e ver o ser
   await bia.getByTestId('cfh-online').click();
   await bia.getByTestId('cfh-code').fill(code);
   await bia.getByTestId('cfh-join').click();
-  await nick(bia, 'Bia');
   await expect(bia.getByTestId('cfl')).toBeVisible({ timeout: 30_000 });
 
   // jogadores, modo e regras
@@ -151,12 +146,12 @@ test('uma pessoa com bot joga até o fim do tempo: tabela final e jogar de novo 
   test.setTimeout(280_000);
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 }, locale: 'pt-BR' });
   const page = await ctx.newPage();
+  await loginAs(page, 'Solo');
   await page.goto('/fox-cap/counter-fox');
   await page.getByRole('button', { name: 'Agora não' }).click({ timeout: 3000 }).catch(() => undefined);
   await page.getByTestId('cfh-play').click();
   await page.getByTestId('cfh-online').click();
   await page.getByTestId('cfh-create').click();
-  await nick(page, 'Solo');
   await expect(page.getByTestId('cfl')).toBeVisible({ timeout: 30_000 });
   await page.getByTestId('cfl-tab-modo').click();
   await page.getByTestId('cfl-min-2').click();

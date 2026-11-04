@@ -292,6 +292,7 @@ export class ColorRoom extends Room {
           other.leave(4002);
         }
       }
+      if (auth.guest && this.engine.game === 'foxshot') throw new RoomError('O Counter Fox precisa de uma conta. Crie uma conta ou entre para jogar.');
       this.engine.join(auth.id, auth.username);
     } catch (e) {
       throw new ServerError(409, e instanceof RoomError ? e.message : 'Não foi possível entrar');
@@ -986,6 +987,9 @@ export class FoxRoom extends ColorRoom {
     if (typeof game !== 'string' || !(game in FOX_GAMES)) throw new RoomError('Jogo inválido');
     const g = game as FoxGame;
     if (this.engine.game === g) return;
+    if (g === 'foxshot' && this.clients.some((c) => (c.userData as AuthData | undefined)?.guest)) {
+      throw new RoomError('O Counter Fox precisa de conta e tem convidado sem conta na sala.');
+    }
     const next = FOX_GAMES[g].make(this.engineOpts);
     if (this.engine.memberCount > next.capacity) {
       throw new RoomError(

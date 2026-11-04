@@ -228,3 +228,23 @@ export async function restoreSession() {
 
 /** Sem conta (e a sessão já foi conferida): joga, mas nada é salvo nem vai para o ranking. */
 export const useIsGuest = (): boolean => useAuth((s) => s.status === 'ready' && s.user === null);
+
+const RETURN_KEY = 'nocap-return-to';
+/** Guarda para onde voltar depois de entrar ou criar a conta (ex.: o Counter Fox, que pede conta). */
+export function setReturnTo(path: string) {
+  try {
+    sessionStorage.setItem(RETURN_KEY, path);
+  } catch {
+    /* sem storage: volta para o perfil mesmo */
+  }
+}
+/** Lê e apaga o destino guardado (só caminhos do próprio app). */
+export function takeReturnTo(): string | null {
+  try {
+    const v = sessionStorage.getItem(RETURN_KEY);
+    sessionStorage.removeItem(RETURN_KEY);
+    return v && v.startsWith('/') && !v.startsWith('//') ? v : null;
+  } catch {
+    return null;
+  }
+}

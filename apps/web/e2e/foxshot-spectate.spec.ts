@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { loginAs } from './account';
 
 /**
  * Counter Fox: entrar com a partida rolando (spec 057). A pessoa escolhe "Entrar para jogar" ou "Entrar para espectar", espectando
@@ -10,10 +11,6 @@ test.beforeEach(({ page: _page }, info) => {
 });
 test.setTimeout(240_000);
 
-async function nick(page: Page, name: string) {
-  await page.getByRole('dialog').locator('input').first().fill(name);
-  await page.getByRole('button', { name: 'Entrar na sala' }).click();
-}
 interface St {
   roster: { id: string; name: string; bot: boolean }[];
   me: string;
@@ -23,19 +20,19 @@ const st = (p: Page) => p.evaluate(() => (window as unknown as { __fsn: { state(
 const shots = process.env.FS_SHOTS ?? '/tmp';
 
 test('convidado chega no meio da partida, espectando ou jogando', async ({ browser }) => {
-  const mk = async () => {
+  const mk = async (name: string) => {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 }, locale: 'pt-BR' });
     const page = await ctx.newPage();
+    await loginAs(page, name);
     await page.addInitScript(() => localStorage.setItem('nocap-fs-settings-lock2', '1'));
     return page;
   };
-  const ana = await mk();
+  const ana = await mk('Ana');
   await ana.goto('/fox-cap/counter-fox');
   await ana.getByRole('button', { name: 'Agora não' }).click({ timeout: 3000 }).catch(() => undefined);
   await ana.getByTestId('cfh-play').click();
   await ana.getByTestId('cfh-online').click();
   await ana.getByTestId('cfh-create').click();
-  await nick(ana, 'Ana');
   await expect(ana.getByTestId('cfl')).toBeVisible({ timeout: 30_000 });
   const code = (await ana.getByTestId('cfl-code').locator('b').textContent())!.trim();
   await ana.getByTestId('cfl-tab-modo').click();
@@ -61,14 +58,13 @@ test('convidado chega no meio da partida, espectando ou jogando', async ({ brows
   await ana.getByTestId('invite-close').click();
 
   // Bia entra com a partida rolando: aparece a escolha
-  const bia = await mk();
+  const bia = await mk('Bia');
   await bia.goto('/fox-cap/counter-fox');
   await bia.getByRole('button', { name: 'Agora não' }).click({ timeout: 3000 }).catch(() => undefined);
   await bia.getByTestId('cfh-play').click({ force: true, timeout: 60_000 });
   await bia.getByTestId('cfh-online').click({ force: true, timeout: 60_000 });
   await bia.getByTestId('cfh-code').fill(code);
   await bia.getByTestId('cfh-join').click();
-  await nick(bia, 'Bia');
   await expect(bia.getByTestId('fsr-choice')).toBeVisible({ timeout: 40_000 });
   await bia.screenshot({ path: `${shots}/cfx-escolha.png` });
   await bia.getByTestId('fsr-choice-watch').click();

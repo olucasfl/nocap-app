@@ -12,7 +12,7 @@ import {
   type RegisterErrors,
   type RegisterForm,
 } from '@/lib/account-form';
-import { register } from '@/lib/auth';
+import { register, takeReturnTo } from '@/lib/auth';
 import './account.css';
 import { Page } from '@/components/Page';
 
@@ -37,7 +37,8 @@ export function Register() {
     setBusy(true);
     try {
       await register(form);
-      await navigate({ to: '/perfil' });
+      const back = takeReturnTo();
+      await navigate({ to: back ?? '/perfil' });
     } catch (err) {
       sfx.error();
       setFailure(err instanceof Error ? err.message : 'Não foi possível criar a conta.');

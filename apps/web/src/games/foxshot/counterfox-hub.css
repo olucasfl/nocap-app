@@ -698,3 +698,9 @@
 }
 .fsr-choice-card small { font: 700 13px var(--cfx-ui); letter-spacing: 0.34em; color: var(--cfx-amber); }
 .fsr-choice-card h2 { margin: 0 0 6px; font: 400 28px var(--cfx-title); }
+
+/* sem conta: o aviso e os três caminhos */
+.cfh-gate h2 { margin: 0 0 8px; font: 400 clamp(26px, 3.4vw, 38px) var(--cfx-title); color: var(--cfx-ink); }
+.cfh-gate p { margin: 0 0 18px; font: 600 clamp(16px, 1.6vw, 19px)/1.35 var(--cfx-ui); color: var(--cfx-muted); max-width: 46ch; }
+.cfh-gate-btns { display: grid; gap: 12px; }
+.cfh-gate .cfh-btn { text-decoration: none; }

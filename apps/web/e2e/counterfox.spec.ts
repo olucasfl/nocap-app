@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { installApi } from './mock-api';
 
 /** Counter Fox, mata-mata no Duna (spec 057): preparar a partida, bots jogando, pontos e tela final. */
 const fs = <T>(page: Page, fn: string, ...args: unknown[]) =>
@@ -9,6 +10,7 @@ const fs = <T>(page: Page, fn: string, ...args: unknown[]) =>
   ) as Promise<T>;
 
 async function start(page: Page, minutes: number, bots: number) {
+  await installApi(page);
   await page.goto('/fox-cap/counter-fox');
   await page.getByRole('button', { name: 'Agora não' }).click({ timeout: 3000 }).catch(() => undefined);
   await page.getByTestId('cfh-play').click();
@@ -26,6 +28,7 @@ const dm = (page: Page) => fs<{ ended: boolean; dm: Dm[] }>(page, 'match');
 test('escolhe minutos e bots e a partida começa com essa gente', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
   await page.setViewportSize({ width: 1280, height: 720 });
+  await installApi(page);
   await page.goto('/fox-cap/counter-fox');
   await page.getByRole('button', { name: 'Agora não' }).click({ timeout: 3000 }).catch(() => undefined);
   await expect(page.getByTestId('cfh-main')).toBeVisible();

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { installApi } from './mock-api';
 
 /**
  * Counter Fox, Mapa de Treino (spec 057): abre pelo menu (Jogar → Mapa de Treino), o dano estilo CS vale nos alvos de cada área,
@@ -12,6 +13,7 @@ const fs = <T>(page: Page, fn: string, ...args: unknown[]) =>
   ) as Promise<T>;
 
 async function open(page: Page) {
+  await installApi(page);
   await page.goto('/fox-cap/counter-fox');
   await page.getByRole('button', { name: 'Agora não' }).click({ timeout: 3000 }).catch(() => undefined);
   await page.getByTestId('cfh-play').click();
@@ -25,6 +27,7 @@ const alive = async (page: Page, id: string) => (await fs<{ alive: boolean }>(pa
 test('o mapa de treino carrega, mostra o HUD e a rota antiga redireciona', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
   await page.setViewportSize({ width: 1280, height: 720 });
+  await installApi(page);
   await page.goto('/fox-cap/fox-shot-teste');
   await expect(page).toHaveURL(/\/fox-cap\/counter-fox$/);
   await open(page);
@@ -188,6 +191,7 @@ test('celular em pé pede para girar o aparelho', async ({ browser }, info) => {
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
   const page = await ctx.newPage();
+  await installApi(page);
   await page.goto('/fox-cap/counter-fox');
   await page.getByRole('button', { name: 'Agora não' }).click({ timeout: 3000 }).catch(() => undefined);
   await page.getByTestId('cfh-play').click();
