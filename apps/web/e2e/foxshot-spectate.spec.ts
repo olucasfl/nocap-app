@@ -23,6 +23,7 @@ test('convidado chega no meio da partida, espectando ou jogando', async ({ brows
   const mk = async (name: string) => {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 }, locale: 'pt-BR' });
     const page = await ctx.newPage();
+    page.on('console', (m) => { if (['error', 'warning'].includes(m.type())) console.log(`console ${name}:`, m.text().slice(0, 300)); });
     page.on('pageerror', (e) => console.log(`pageerror ${name}:`, e.message.slice(0, 500)));
     await loginAs(page, name);
     await page.addInitScript(() => localStorage.setItem('nocap-fs-settings-lock2', '1'));
@@ -66,6 +67,8 @@ test('convidado chega no meio da partida, espectando ou jogando', async ({ brows
   await bia.getByTestId('cfh-online').click({ force: true, timeout: 60_000 });
   await bia.getByTestId('cfh-code').fill(code);
   await bia.getByTestId('cfh-join').click();
+  await bia.waitForTimeout(15_000);
+  console.log('bia url', bia.url(), (await bia.locator('body').innerText().catch(() => 'ERR')).slice(0, 300));
   await expect(bia.getByTestId('fsr-choice')).toBeVisible({ timeout: 40_000 });
   await bia.screenshot({ path: `${shots}/cfx-escolha.png` });
   await bia.getByTestId('fsr-choice-watch').click();
