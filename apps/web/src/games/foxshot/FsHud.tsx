@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { FS_ARENA, FS_TARGETS, type FsGrenadeId, type FsWeaponId } from '@nocap/games';
 import { HeartIcon, KillIcon, SkullIcon, VestIcon, WeaponIcon } from './fs-icons';
-import { bindLabel, CROSS_COLORS, fsSettings, useFsSettings } from './fs-settings';
+import { bindLabel, crossHex, fsSettings, useFsSettings } from './fs-settings';
 
 export interface FsPlayerRow {
   id: string;
@@ -429,7 +429,7 @@ export function FsCrosshair({ spreadPx }: { spreadPx: number }) {
         ['--g' as string]: `${gap}px`,
         ['--l' as string]: `${s.crossSize}px`,
         ['--t' as string]: `${s.crossThick}px`,
-        ['--c' as string]: CROSS_COLORS[s.crossColor],
+        ['--c' as string]: crossHex(s),
       }}
     >
       <i />

@@ -263,10 +263,16 @@ export function Customize({ only }: { only?: 'aim' | 'screen' } = {}) {
         value={s.crossColor}
         options={(Object.keys(CROSS_COLORS) as CrosshairColor[]).map((c) => [
           c,
-          { white: 'Branca', green: 'Verde', yellow: 'Amarela', cyan: 'Ciano', pink: 'Rosa' }[c],
+          ({ white: 'Branca', green: 'Verde', lime: 'Limão', yellow: 'Amarela', orange: 'Laranja', red: 'Vermelha', pink: 'Rosa', purple: 'Roxa', blue: 'Azul', cyan: 'Ciano', black: 'Preta', custom: 'Outra...' } as Record<CrosshairColor, string>)[c],
         ])}
         onChange={(v) => s.set({ crossColor: v })}
       />
+      {s.crossColor === 'custom' && (
+        <label className="fsm-color">
+          <span>Escolha a cor</span>
+          <input type="color" value={s.crossCustom} onChange={(e) => s.set({ crossCustom: e.target.value })} data-testid="cross-custom" />
+        </label>
+      )}
       <Slider
         label="Tamanho"
         value={s.crossSize}

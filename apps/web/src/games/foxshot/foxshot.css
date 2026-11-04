@@ -795,16 +795,18 @@
   gap: 4px;
 }
 .fsm-binds li {
-  display: flex;
+  /* nome à esquerda, a tecla numa coluna do mesmo tamanho e o "Tirar" na última: tudo alinhado em linha reta */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 190px 64px;
   align-items: center;
-  justify-content: space-between;
   gap: 10px;
   padding: 3px 0;
   border-bottom: 1px dashed rgba(27, 21, 53, 0.25);
   font: 700 13px var(--font-display, system-ui);
 }
 .fsm-binds button {
-  min-width: 150px;
+  width: 100%;
+  min-width: 0;
   height: 30px;
   padding: 0 10px;
   border: 3px solid var(--fsh-ink);
@@ -816,8 +818,7 @@
 }
 .fsm-binds button.fsm-unbind {
   min-width: 0;
-  flex: none;
-  margin-left: -4px;
+  margin-left: 0;
   background: #ffe4e0;
   color: #8a1c10;
   border-color: #8a1c10;
@@ -1241,3 +1242,15 @@
   .fsh-radar.medium { width: 104px; height: 104px; }
   .fsh-radar.large { width: 150px; height: 150px; }
 }
+
+/* linhas fixas (Esc, roda do mouse): a tecla fica na mesma coluna das outras */
+.fsm-binds li.fixed { grid-template-columns: minmax(0, 1fr) 190px 64px; }
+.fsm-binds li.fixed b { grid-column: 2; text-align: center; }
+@media (max-width: 520px) {
+  .fsm-binds li, .fsm-binds li.fixed { grid-template-columns: minmax(0, 1fr) 120px 54px; }
+}
+
+/* cor livre da mira */
+.fsm-color { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 0; font: 700 13px var(--font-display, system-ui); }
+.fsm-color input[type='color'] { width: 64px; height: 34px; padding: 0; border: 3px solid var(--fsh-ink, #1b1535); border-radius: 9px; background: #fff; cursor: pointer; }
+.cfh-optbody .fsm-color { color: var(--cfx-ink); }

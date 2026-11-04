@@ -62,14 +62,24 @@ export const FS_DEFAULT_BINDS: Record<FsAction, string> = {
   map: 'KeyM',
 };
 
-export type CrosshairColor = 'white' | 'green' | 'yellow' | 'cyan' | 'pink';
+export type CrosshairColor = 'white' | 'green' | 'lime' | 'yellow' | 'orange' | 'red' | 'pink' | 'purple' | 'blue' | 'cyan' | 'black' | 'custom';
 export const CROSS_COLORS: Record<CrosshairColor, string> = {
   white: '#ffffff',
   green: '#4dff7c',
+  lime: '#b6ff3b',
   yellow: '#ffe14d',
-  cyan: '#4df2ff',
+  orange: '#ff9a2e',
+  red: '#ff3b3b',
   pink: '#ff7ad9',
+  purple: '#a56bff',
+  blue: '#4d8dff',
+  cyan: '#4df2ff',
+  black: '#0b0b12',
+  /** Valor de reserva: a cor escolhida de verdade fica em `crossCustom`. */
+  custom: '#ff3b3b',
 };
+/** A cor da mira de agora (uma da lista ou a que a pessoa escolheu). */
+export const crossHex = (s: { crossColor: CrosshairColor; crossCustom?: string }) => (s.crossColor === 'custom' ? s.crossCustom || CROSS_COLORS.custom : CROSS_COLORS[s.crossColor]);
 
 export interface FsSettings {
   /** Graus por pixel do mouse. */
@@ -81,6 +91,8 @@ export interface FsSettings {
   /** Mira: cor, comprimento, espessura, vão fixo, ponto no centro e se abre com a dispersão. */
   crossColor: CrosshairColor;
   crossSize: number;
+  /** Cor livre da mira (usada quando a cor é "Outra"). */
+  crossCustom: string;
   crossThick: number;
   crossGap: number;
   crossDot: boolean;
@@ -103,6 +115,7 @@ export const FS_DEFAULTS: FsSettings = {
   invertY: false,
   crossColor: 'white',
   crossSize: 9,
+  crossCustom: '#ff3b3b',
   crossThick: 2,
   crossGap: 4,
   crossDot: false,
