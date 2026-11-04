@@ -651,7 +651,7 @@ export interface FsDustPlacement {
 }
 
 /** Zonas de salas abertas, onde as fachadas com arcos e os postes fazem sentido. */
-const HALLS: ReadonlySet<FsDustZoneId> = new Set<FsDustZoneId>(['A', 'B', 'CT', 'TR', 'yard', 'long', 'mid', 'catwalk']);
+const HALLS: ReadonlySet<FsDustZoneId> = new Set<FsDustZoneId>(['A', 'B', 'CT', 'TR', 'yard', 'long']);
 
 function lcg(seed: number) {
   let a = seed >>> 0;
@@ -669,15 +669,18 @@ export function fsDustDecor(): FsDustPlacement[] {
   const rnd = lcg(20261104);
   const out: FsDustPlacement[] = [];
   const faces = fsDustFaces();
-  // fachadas com arcos: nas paredes retas das salas, uma a cada ~3,4 m
+  // fachadas com arcos: nas paredes retas das salas, painéis de 2,9 m lado a lado em duas fileiras (1,71 m cada), encostados na parede
   for (const f of faces) {
-    if (!f.zone || !HALLS.has(f.zone) || f.len < 3.5) continue;
+    if (!f.zone || !HALLS.has(f.zone) || f.len < 4) continue;
     const alongX = f.nz !== 0;
-    const n = Math.floor((f.len - 0.4) / 3.4);
+    const n = Math.floor((f.len - 0.3) / 2.9);
     for (let k = 0; k < n; k++) {
-      const off = (k - (n - 1) / 2) * 3.4;
+      const off = (k - (n - 1) / 2) * 2.9;
       const rot = Math.atan2(f.nx, f.nz);
-      out.push({ model: rnd() < 0.5 ? 'arch_a' : 'arch_b', x: f.x + (alongX ? off : 0) + f.nx * 0.02, y: f.y, z: f.z + (alongX ? 0 : off) + f.nz * 0.02, rot, h: 3.4 });
+      const model = rnd() < 0.5 ? 'arch_a' : 'arch_b';
+      for (const dy of [0, 1.71]) {
+        out.push({ model, x: f.x + (alongX ? off : 0) + f.nx * 0.18, y: f.y + dy, z: f.z + (alongX ? 0 : off) + f.nz * 0.18, rot, h: 0 });
+      }
     }
   }
   // postes de luz junto às paredes das salas grandes

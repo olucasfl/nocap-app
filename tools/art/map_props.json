@@ -122,5 +122,25 @@
   "axis": "x",
   "size": 2.9,
   "px": 512
+ },
+ {
+  "src": "castle.usdz",
+  "names": [
+   "Object_3"
+  ],
+  "out": "arch_a.glb",
+  "axis": "x",
+  "size": 2.9,
+  "px": 512
+ },
+ {
+  "src": "castle.usdz",
+  "names": [
+   "Object_2"
+  ],
+  "out": "arch_b.glb",
+  "axis": "x",
+  "size": 2.9,
+  "px": 512
  }
 ]

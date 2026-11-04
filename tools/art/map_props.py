@@ -38,9 +38,6 @@ def keep_only(names, exclude):
         if o.type != 'MESH':
             continue
         bpy.data.objects.remove(o, do_unlink=True)
-    for o in list(bpy.context.scene.objects):
-        if o.type == 'EMPTY':
-            bpy.data.objects.remove(o, do_unlink=True)
 
 
 def flatten_hierarchy():
@@ -51,6 +48,10 @@ def flatten_hierarchy():
     bpy.context.view_layer.objects.active = meshes[0]
     bpy.ops.object.parent_clear(type='CLEAR_KEEP_TRANSFORM')
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    # só agora os "pais" vazios podem sair (antes disso eles carregam a rotação e a escala das peças)
+    for o in list(bpy.context.scene.objects):
+        if o.type == 'EMPTY':
+            bpy.data.objects.remove(o, do_unlink=True)
 
 
 def bbox(meshes):

@@ -1112,7 +1112,7 @@ describe('Duna: enfeites', () => {
     const b = fsDustDecor();
     expect(a).toEqual(b);
     for (const m of ['arch_a', 'lamp', 'bld_a']) expect(a.some((p) => p.model === m), m).toBe(true);
-    expect(a.length).toBeLessThan(400);
+    expect(a.length).toBeLessThan(600);
   });
   it('nenhum prédio fica sobre o chão andável', () => {
     for (const p of fsDustDecor().filter((q) => q.model.startsWith('bld_'))) {
