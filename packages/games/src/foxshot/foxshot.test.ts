@@ -9,6 +9,7 @@ import { fsDir, fsTrace, type FsBody } from './trace';
 import { FS_HEAR_RANGE, FS_WEAPONS } from './weapons';
 import { FS_BOTS, FS_SHOOTER, fsBotStep, fsNewBot, fsNewShooter, fsShooterStep } from './bots';
 import { fsAssister } from './assist';
+import { FS_GRENADES, fsClearLine, fsFlashEffect, fsFragDamage, fsGrenadeLaunch, fsGrenadeStep, fsThrowPower } from './grenades';
 
 const hit = (o: Partial<FsHitInfo>): FsHitInfo => ({ zone: 'chest', dist: 10, armor: 0, helmet: false, wall: 1, ...o });
 
@@ -407,7 +408,7 @@ describe('três armas: primária, secundária e faca', () => {
   it('a loja tem 5 colunas e só itens reais podem ser comprados', () => {
     expect(FS_SHOP).toHaveLength(5);
     const real = FS_SHOP.flatMap((c) => c.items).filter((i) => !i.soon);
-    expect(real.map((i) => i.id).sort()).toEqual(['ak', 'm4', 'pistol', 'shotgun', 'smg', 'sniper', 'usp', 'vest', 'vesthelm']);
+    expect(real.map((i) => i.id).sort()).toEqual(['ak', 'flash', 'frag', 'm4', 'pistol', 'shotgun', 'smg', 'sniper', 'usp', 'vest', 'vesthelm']);
   });
 });
 
@@ -732,5 +733,116 @@ describe('assistência', () => {
   it('o matador não ganha assistência e sem outro dano não há assistência', () => {
     expect(fsAssister([{ attacker: 'k', time: 5 }, { attacker: 'k', time: 6 }], 'k', 7)).toBeNull();
     expect(fsAssister([], 'k', 7)).toBeNull();
+  });
+});
+
+describe('granadas', () => {
+  const mv = { moving: false, airborne: false, ads: false };
+  it('explosiva: dano cheio (60) no centro, menos longe e nada fora do raio', () => {
+    expect(fsFragDamage(0)).toBe(60);
+    expect(fsFragDamage(3.5)).toBe(30);
+    expect(fsFragDamage(6.9)).toBeLessThan(3);
+    expect(fsFragDamage(7)).toBe(0);
+    expect(fsFragDamage(20)).toBe(0);
+    expect(fsFragDamage(1)).toBeGreaterThan(fsFragDamage(4));
+  });
+  it('a parede no meio protege da explosão e da luz', () => {
+    const wall: FsBox[] = [{ min: [-5, 0, -0.2], max: [5, 3, 0.2], pen: 0, mat: 'wall' }];
+    expect(fsClearLine(wall, [0, 1, -3], [0, 1, 3])).toBe(false);
+    expect(fsClearLine(wall, [0, 1, 3], [0, 1, 6])).toBe(true);
+  });
+  it('luz: cega quem olha, não cega quem está de costas ou atrás da parede, perto cega mais', () => {
+    const eye: [number, number, number] = [0, 1.2, 0];
+    const flashAt = (z: number): [number, number, number] => [0, 1.5, z];
+    const front = fsFlashEffect(eye, [0, 0, -1], flashAt(-5), true);
+    expect(front.blind).toBeGreaterThan(2.5);
+    expect(fsFlashEffect(eye, [0, 0, 1], flashAt(-5), true).blind).toBe(0); // de costas
+    expect(fsFlashEffect(eye, [0, 0, -1], flashAt(-5), false).blind).toBe(0); // parede no meio
+    expect(fsFlashEffect(eye, [0, 0, -1], flashAt(-2), true).blind).toBeGreaterThan(fsFlashEffect(eye, [0, 0, -1], flashAt(-15), true).blind);
+    expect(fsFlashEffect(eye, [0, 0, -1], flashAt(-40), true)).toEqual({ blind: 0, deaf: 0 });
+    // quem não vê ouve o estouro
+    expect(fsFlashEffect(eye, [0, 0, 1], flashAt(-5), true).deaf).toBeGreaterThan(2);
+    // olhando de lado cega só um pouco
+    const side = fsFlashEffect(eye, [1, 0, 0], flashAt(-5), true);
+    expect(side.blind).toBeGreaterThan(0);
+    expect(side.blind).toBeLessThan(front.blind * 0.5);
+  });
+  it('arremesso: clique rápido sai médio, segurar e soltar sai mais forte', () => {
+    expect(fsThrowPower(0.05)).toBeCloseTo(0.55);
+    expect(fsThrowPower(0.9)).toBeGreaterThan(fsThrowPower(0.05));
+    expect(fsThrowPower(5)).toBe(1);
+    const far = fsGrenadeLaunch('frag', [0, 1.5, 0], [0, 0, -1], 1);
+    const mid = fsGrenadeLaunch('frag', [0, 1.5, 0], [0, 0, -1], 0.55);
+    const land = (g: typeof far) => {
+      for (let i = 0; i < 600 && g.age < 4; i++) fsGrenadeStep(g, 1 / 120, []);
+      return -g.z;
+    };
+    expect(land(far)).toBeGreaterThan(land(mid) + 2);
+  });
+  it('explode depois do tempo e quica na parede', () => {
+    const g = fsGrenadeLaunch('frag', [0, 1.2, 0], [0, 0, -1], 0.8);
+    const wall: FsBox[] = [{ min: [-5, 0, -4.1], max: [5, 4, -4], pen: 0, mat: 'wall' }];
+    let boom = false;
+    let t = 0;
+    while (!boom && t < 5) {
+      boom = fsGrenadeStep(g, 1 / 120, wall);
+      t += 1 / 120;
+    }
+    expect(t).toBeGreaterThanOrEqual(FS_GRENADES.frag.fuse - 0.02);
+    expect(t).toBeLessThan(FS_GRENADES.frag.fuse + 0.05);
+    expect(g.z).toBeGreaterThan(-4.1); // não atravessou a parede
+    expect(g.bounces).toBeGreaterThan(0);
+  });
+  it('inventário: máximo de 2 de cada, tecla 4 passa pela primeira, pela outra e volta à arma', () => {
+    const l = new FsLoadout('ak', 'pistol');
+    expect(fsBuy(l, 'frag').ok).toBe(true);
+    expect(fsBuy(l, 'frag').ok).toBe(true);
+    expect(fsBuy(l, 'frag')).toMatchObject({ ok: false, reason: 'owned' });
+    expect(fsBuy(l, 'flash').ok).toBe(true);
+    expect(l.selectGrenade('next')).toEqual([{ type: 'grenadeDraw', grenade: 'frag' }]);
+    expect(l.held).toBe('frag');
+    expect(l.selectGrenade('next')).toEqual([{ type: 'grenadeDraw', grenade: 'flash' }]);
+    expect(l.held).toBe('flash');
+    expect(l.selectGrenade('next')[0]).toMatchObject({ type: 'draw' });
+    expect(l.held).toBeNull();
+    // tecla específica
+    l.selectGrenade('flash');
+    expect(l.held).toBe('flash');
+    l.selectGrenade('flash');
+    expect(l.held).toBeNull();
+  });
+  it('clicar uma vez tira o pino e arremessa; segurar carrega a força; sem granada sobrando volta à arma', () => {
+    const l = new FsLoadout('ak', 'pistol');
+    fsBuy(l, 'frag');
+    l.selectGrenade('frag');
+    l.drawT = 0;
+    const evs = (input: boolean, secs: number) => {
+      const out: string[] = [];
+      const powers: number[] = [];
+      for (let i = 0; i < Math.round(secs * 120); i++)
+        for (const e of l.update(1 / 120, { trigger: input, reload: false }, mv, 'p')) {
+          out.push(e.type);
+          if (e.type === 'throw') powers.push(e.power);
+        }
+      return { out, powers };
+    };
+    // clique rápido (aperta e solta)
+    const a1 = evs(true, 0.05);
+    const a2 = evs(false, 0.05);
+    expect(a1.out).toContain('pin');
+    expect(a2.powers[0]).toBeCloseTo(0.55);
+    expect(l.grenades.frag).toBe(0);
+    // sem granada: depois do arremesso volta à arma
+    const a3 = evs(false, 1);
+    expect(a3.out).toContain('draw');
+    expect(l.held).toBeNull();
+    // segurando
+    fsBuy(l, 'flash');
+    l.selectGrenade('flash');
+    l.drawT = 0;
+    evs(true, 0.9);
+    expect(l.pinOut).toBe(true);
+    const b = evs(false, 0.05);
+    expect(b.powers[0]).toBeGreaterThan(0.8);
   });
 });

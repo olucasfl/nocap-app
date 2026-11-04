@@ -8,3 +8,4 @@ export * from './gun';
 export * from './shop';
 export * from './bots';
 export * from './assist';
+export * from './grenades';

@@ -1,4 +1,5 @@
 import { fsFire, fsGunTick, fsNewGunState, type FsGunState, type FsMoveState, type FsShot } from './recoil';
+import { FS_GRENADES, fsThrowPower, type FsGrenadeId } from './grenades';
 import { FS_SLOT_ORDER, FS_WEAPONS, type FsSlot, type FsWeapon, type FsWeaponId } from './weapons';
 
 export type FsGunEvent =
@@ -9,7 +10,11 @@ export type FsGunEvent =
   | { type: 'reloaded'; weapon: FsWeapon }
   | { type: 'draw'; weapon: FsWeapon }
   | { type: 'inspect'; weapon: FsWeapon }
-  | { type: 'bolt'; weapon: FsWeapon };
+  | { type: 'bolt'; weapon: FsWeapon }
+  /** Granada: tirou o pino (começa a segurar) e arremesso (força de 0 a 1). */
+  | { type: 'pin'; grenade: FsGrenadeId }
+  | { type: 'throw'; grenade: FsGrenadeId; power: number }
+  | { type: 'grenadeDraw'; grenade: FsGrenadeId };
 
 interface Slot {
   id: FsWeaponId;
@@ -71,7 +76,87 @@ export class FsLoadout {
     return FS_SLOT_ORDER.indexOf(slot);
   }
 
+  // ---- granadas: quantas tem, qual está na mão, o arremesso em andamento
+  grenades: Record<FsGrenadeId, number> = { frag: 0, flash: 0 };
+  held: FsGrenadeId | null = null;
+  /** Segundos segurando o botão com o pino já tirado (força do arremesso). */
+  charge = 0;
+  pinOut = false;
+  private throwCd = 0;
+
+  /** Pega uma granada (loja ou chão). Falso se já está no máximo. */
+  addGrenade(kind: FsGrenadeId): boolean {
+    if (this.grenades[kind] >= FS_GRENADES[kind].max) return false;
+    this.grenades[kind]++;
+    return true;
+  }
+
+  /** Põe a granada na mão (ou, se já está nela, volta para a arma). `next` passa pela primeira e pela outra e depois volta à arma. */
+  selectGrenade(which: FsGrenadeId | 'next'): FsGunEvent[] {
+    if (this.pinOut) return []; // soltando a granada não troca
+    const have = (['frag', 'flash'] as FsGrenadeId[]).filter((k) => this.grenades[k] > 0);
+    let to: FsGrenadeId | null;
+    if (which === 'next') {
+      if (!this.held) to = have[0] ?? null;
+      else {
+        const i = have.indexOf(this.held);
+        to = i >= 0 && i + 1 < have.length ? have[i + 1]! : null;
+      }
+      if (!this.held && !to) return [];
+    } else {
+      if (this.grenades[which] <= 0 && this.held !== which) return [];
+      to = this.held === which ? null : which;
+    }
+    this.reloadT = 0;
+    this.inspectT = 0;
+    this.charge = 0;
+    this.triggerWas = false;
+    this.held = to;
+    if (to) {
+      this.drawT = 0.5;
+      return [{ type: 'grenadeDraw', grenade: to }];
+    }
+    this.drawT = this.weapon.draw;
+    return [{ type: 'draw', weapon: this.weapon }];
+  }
+
+  /** Roda do mouse: passa por todas as armas e granadas (1, 2, 3, granadas), na ordem. */
+  cycleAll(dir: 1 | -1 = 1): FsGunEvent[] {
+    if (this.pinOut) return [];
+    type Entry = { t: 'slot'; i: number } | { t: 'g'; k: FsGrenadeId };
+    const list: Entry[] = [];
+    this.slots.forEach((s, i) => s && list.push({ t: 'slot', i }));
+    (['frag', 'flash'] as FsGrenadeId[]).forEach((k) => this.grenades[k] > 0 && list.push({ t: 'g', k }));
+    const cur = list.findIndex((e) => (this.held ? e.t === 'g' && e.k === this.held : e.t === 'slot' && e.i === this.current));
+    const next = list[(Math.max(0, cur) + dir + list.length) % list.length]!;
+    if (next.t === 'g') {
+      if (this.held === next.k) return [];
+      this.held = null;
+      return this.selectGrenade(next.k);
+    }
+    const wasHeld = this.held;
+    this.held = null;
+    this.charge = 0;
+    if (wasHeld && next.i === this.current) {
+      this.drawT = this.weapon.draw;
+      return [{ type: 'draw', weapon: this.weapon }];
+    }
+    return this.switchTo(next.i);
+  }
+
   switchTo(index: number): FsGunEvent[] {
+    if (this.pinOut) return [];
+    const wasHeld = this.held;
+    if (wasHeld) {
+      // saindo da granada para uma arma
+      this.held = null;
+      this.charge = 0;
+      if (index === this.current) {
+        this.drawT = this.weapon.draw;
+        this.triggerWas = false;
+        return [{ type: 'draw', weapon: this.weapon }];
+      }
+    }
     if (index === this.current || index < 0 || index >= this.slots.length || !this.slots[index]) return [];
     this.current = index;
     this.reloadT = 0;
@@ -116,6 +201,41 @@ export class FsLoadout {
     const ev: FsGunEvent[] = [];
     const w = this.weapon;
     const s = this.slot;
+    // com uma granada na mão: segurar o botão tira o pino e carrega a força; soltar arremessa
+    if (this.held) {
+      const g = this.held;
+      if (this.drawT > 0) this.drawT = Math.max(0, this.drawT - dt);
+      if (this.throwCd > 0) {
+        this.throwCd -= dt;
+        if (this.throwCd <= 0) {
+          // acabou o arremesso: fica com a outra granada, se tiver, ou volta para a arma
+          this.throwCd = 0;
+          if (this.grenades[g] > 0) return ev;
+          const other = (['frag', 'flash'] as FsGrenadeId[]).find((k) => this.grenades[k] > 0);
+          this.held = other ?? null;
+          this.drawT = other ? 0.5 : this.weapon.draw;
+          ev.push(other ? { type: 'grenadeDraw', grenade: other } : { type: 'draw', weapon: this.weapon });
+        }
+        this.triggerWas = input.trigger;
+        return ev;
+      }
+      if (!this.pinOut && input.trigger && !this.triggerWas && this.drawT <= 0) {
+        this.pinOut = true;
+        this.charge = 0;
+        ev.push({ type: 'pin', grenade: g });
+      } else if (this.pinOut) {
+        if (input.trigger) this.charge = Math.min(1.2, this.charge + dt);
+        else {
+          ev.push({ type: 'throw', grenade: g, power: fsThrowPower(this.charge) });
+          this.grenades[g]--;
+          this.pinOut = false;
+          this.charge = 0;
+          this.throwCd = 0.6;
+        }
+      }
+      this.triggerWas = input.trigger;
+      return ev;
+    }
     fsGunTick(w, s.gun, dt);
     if (this.drawT > 0) this.drawT = Math.max(0, this.drawT - dt);
     if (this.cooldown > 0) this.cooldown = Math.max(0, this.cooldown - dt);

@@ -1,4 +1,5 @@
 import type { FsLoadout } from './gun';
+import type { FsGrenadeId } from './grenades';
 import type { FsWeaponId } from './weapons';
 
 /** Item da loja (tecla B). `weapon` entra no espaço da arma; os outros viram equipamento. `soon` = ainda não existe. */
@@ -10,6 +11,8 @@ export interface FsShopItem {
   weapon?: FsWeaponId;
   /** Colete (e capacete, se `helmet`). */
   armor?: { points: number; helmet: boolean };
+  /** Granada que o item dá. */
+  grenade?: FsGrenadeId;
   soon?: boolean;
   /** Frase curta para a dica do item. */
   note?: string;
@@ -70,9 +73,9 @@ export const FS_SHOP: FsShopCategory[] = [
     id: 'grenades',
     label: 'Granadas',
     items: [
-      { id: 'flash', name: 'Granada de luz', price: 200, kind: 'grenade', soon: true },
+      { id: 'flash', name: 'Granada de luz', price: 200, kind: 'grenade', grenade: 'flash' },
       { id: 'smoke', name: 'Granada de fumaça', price: 300, kind: 'grenade', soon: true },
-      { id: 'frag', name: 'Granada explosiva', price: 300, kind: 'grenade', soon: true },
+      { id: 'frag', name: 'Granada explosiva', price: 300, kind: 'grenade', grenade: 'frag' },
       { id: 'fire', name: 'Granada incendiária', price: 600, kind: 'grenade', soon: true },
     ],
   },
@@ -94,6 +97,7 @@ export function fsBuy(loadout: FsLoadout, itemId: string): FsBuyResult {
   if (!item) return { ok: false, reason: 'unknown' };
   if (item.soon) return { ok: false, reason: 'soon' };
   if (item.armor) return { ok: true, armor: item.armor };
+  if (item.grenade) return loadout.addGrenade(item.grenade) ? { ok: true } : { ok: false, reason: 'owned' };
   // a faca já vem de série e não se compra, vende nem larga
   if (item.weapon === 'knife') return { ok: false, reason: 'unknown' };
   if (item.weapon) {
