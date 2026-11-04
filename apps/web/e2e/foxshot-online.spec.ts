@@ -146,3 +146,29 @@ test('duas janelas: criar sala pelo menu, entrar pelo código, jogar e ver o ser
   await ana.close();
   await bia.close();
 });
+
+test('uma pessoa com bot joga até o fim do tempo: tabela final e jogar de novo volta ao lobby', async ({ browser }) => {
+  test.setTimeout(280_000);
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 }, locale: 'pt-BR' });
+  const page = await ctx.newPage();
+  await page.goto('/fox-cap/counter-fox');
+  await page.getByRole('button', { name: 'Agora não' }).click({ timeout: 3000 }).catch(() => undefined);
+  await page.getByTestId('cfh-play').click();
+  await page.getByTestId('cfh-online').click();
+  await page.getByTestId('cfh-create').click();
+  await nick(page, 'Solo');
+  await expect(page.getByTestId('cfl')).toBeVisible({ timeout: 30_000 });
+  await page.getByTestId('cfl-tab-modo').click();
+  await page.getByTestId('cfl-min-2').click();
+  await page.getByTestId('cfl-bots-3').click();
+  await expect(page.getByTestId('cfl-bots-3')).toHaveAttribute('aria-checked', 'true');
+  await page.getByTestId('cfl-start').click();
+  await expect(page.getByTestId('fs-root')).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId('fsr-final')).toBeVisible({ timeout: 200_000 });
+  await expect(page.getByTestId('fsr-final-title')).toBeVisible();
+  await expect(page.locator('[data-testid^="fsr-row-"]')).toHaveCount(4);
+  await page.screenshot({ path: `${process.env.FS_SHOTS ?? '/tmp'}/cfl-final.png` });
+  await page.getByTestId('fsr-final-again').click();
+  await expect(page.getByTestId('cfl')).toBeVisible({ timeout: 15_000 });
+  await ctx.close();
+});

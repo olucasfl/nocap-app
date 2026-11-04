@@ -1,6 +1,6 @@
 # 057: Counter Fox, partida mata-mata e primeiro mapa (Duna)
 
-Status: em andamento (04/11/2026): mapa, bots, pontos, preparar partida e resultado prontos e testados (93 testes de lógica + e2e); falta jogar e ajustar. Continua a spec 056 (fase 0: arena de teste).
+Status: em andamento (04/11/2026): mapa, bots, pontos, menu, sala online e servidor prontos e testados (106 testes de lógica, 2 testes com servidor real, e2e offline e com 2 janelas); falta jogar e ajustar. Continua a spec 056 (fase 0: arena de teste).
 
 ## 1. O que é
 
@@ -68,6 +68,21 @@ Assistência: o último dano de outro jogador antes do abate, em até 10 s (`fsA
 4. Tela de preparar, tempo, pontos e tela final.
 5. Docs e e2e.
 
-## 8. Fora do escopo
+## 8. Menu, sala e online (pedido de 04/11/2026)
+
+**Menu principal** (`/fox-cap/counter-fox`, tema próprio, tudo animado): logo, fundo de deserto à noite, **Jogar**, **Opções** e **Sair do Counter Fox** (vermelho, embaixo).
+- **Jogar** → **Offline** (tempo e bots, entra) ou **Com amigos** (Criar sala / Entrar com código).
+- **Opções**: Mira e câmera, Imagem e som (qualidade, tela cheia e trava de teclas, mapa, fps, som), Comandos.
+
+**Sala online** (jogo `foxshot` dentro da sala do Fox Cap!, reaproveita código, convite por link e amigos, líder, "pronto", chat e reconexão): lobby com abas **Sala** (código grande, resumo, o que falta), **Jogadores** (cartões, remover, bots), **Modo** (hoje só Mata-mata; tempo e bots, só o líder muda), **Convidar** (copiar código e link, buscar @usuário, amigos) e **Chat**. Começar: líder, com todo mundo pronto e ao menos 2 jogadores (pessoas + bots). Até 10 no total.
+
+**Servidor** (`FsNetSim` em `packages/games`, `FoxShotRoomEngine` e `FoxShotRoom` em `apps/api/src/rooms`): a sala manda em tudo (regra "o servidor sempre recalcula").
+- Entradas de 1/60 s (teclas, mira, botões, comandos de troca e compra) em pacotes de até 4 entradas (`fsin`, ~30 por segundo: o que se perde é coberto pelo pacote seguinte).
+- Quadro para todos (`fss`) a cada ~50 ms: uma linha de inteiros por jogador, granadas no ar, eventos (tiro, acerto, abate, granada, explosão, luz, renascer) e, só para cada pessoa, o corpo exato dela (para a previsão).
+- **Compensação de atraso**: o tiro é conferido contra os corpos como estavam na tela de quem atirou (até 250 ms atrás).
+- **Cliente**: prevê o próprio movimento com o mesmo `fsStepMover`, refaz as entradas não vistas ao receber o quadro (correção suave: a câmera desliza o erro), interpola os outros 100 ms atrás, e o relógio da simulação segue o tempo real (tela lenta roda vários passos por quadro).
+- Quem sai no meio vira bot. Sem ranking nem histórico. Sem arma no chão (largar e pegar) online e sem controles de celular nesta versão.
+
+## 9. Fora do escopo
 
 Online, bomba de verdade (A/B são só pontos de referência do mapa), dificuldade dos bots, rampas inclinadas (só degraus/plataformas), ranking.

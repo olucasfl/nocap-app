@@ -161,7 +161,7 @@ Tiro em primeira pessoa das raposas, em `packages/games/src/foxshot` (lógica pu
 - **Mapa** (`dust.ts`): lista de retângulos de chão (57 x 68 células de 1 m, níveis de 0,3 m) de onde saem as caixas de colisão, as zonas (base CT/TR, bombas A e B, meio, túneis, Long A), os pontos de nascimento, a navegação (A* na grade, com degraus) e os enfeites (fachadas, postes, prédios do horizonte). Segue a estrutura da Dust 2; nenhum arquivo do mapa original entra no repositório. Modelos de terceiros em `apps/web/public/models/foxshot/map/` (`docs/CREDITS-3D.md`, convertidos por `tools/art/map_props.py`).
 - **Partida** (`match.ts`): 2, 3, 5, 7 ou 10 min; 1 a 9 bots; abate 10 pontos, assistência 5; resultado com desempate. Sem ranking.
 - **Bots** (`dm.ts`): cérebro puro (percepção por visão e som, combate, armas, granadas) que usa o mesmo movimento e a mesma dispersão do jogador; a página (`FoxShotTestPage.tsx`) aplica o dano (`dealDamage`: vida, colete, abate, assistência, placar).
-- O servidor ainda não participa (tudo local, fase 0).
+- **Online** (`netsim.ts`, `foxshot-room.engine.ts`, `FoxShotRoom`): o servidor roda o mesmo jogo (`FsNetSim`, 60 passos por segundo) e manda o quadro ~20 vezes por segundo (`fss`); o aparelho prevê o próprio movimento e interpola os outros. O menu e o lobby temáticos estão em `CounterFoxPage.tsx` e `screens/room/lobby/CounterFoxLobby.tsx`.
 
 ## 13. Histórico removido (19/10/2026)
 
