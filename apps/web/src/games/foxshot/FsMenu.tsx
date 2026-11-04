@@ -360,13 +360,24 @@ export function FsMenu({
   children,
   exitTo = '/fox-cap',
   exitLabel = 'Sair do Counter Fox',
+  endLabel = 'Encerrar a partida',
+  endConfirm = true,
+  onBack,
+  backLabel = 'Voltar ao menu do Counter Fox',
 }: {
   touch: boolean;
   onResume: () => void;
   onEnd: () => void;
   children?: ReactNode;
-  exitTo?: string;
+  /** `null` esconde o botão de sair do Counter Fox (na sala online o jeito de sair é o botão da sala). */
+  exitTo?: string | null;
   exitLabel?: string;
+  /** Texto do botão de encerrar (e se pede um segundo toque para confirmar). */
+  endLabel?: string;
+  endConfirm?: boolean;
+  /** Volta ao menu do Counter Fox (que é uma tela dentro da mesma página, então não dá para ser um link). */
+  onBack?: () => void;
+  backLabel?: string;
 }) {
   const [tab, setTab] = useState<Tab>('jogo');
   const [sure, setSure] = useState(false);
@@ -410,20 +421,27 @@ export function FsMenu({
               <button
                 type="button"
                 className={`fsm-item${sure ? ' sure' : ''}`}
-                onClick={() => (sure ? (setSure(false), onEnd()) : setSure(true))}
+                onClick={() => (!endConfirm || sure ? (setSure(false), onEnd()) : setSure(true))}
                 onBlur={() => setSure(false)}
                 data-testid="fsm-end"
               >
-                {sure ? 'Toque de novo para encerrar' : 'Encerrar a partida'}
+                {sure ? 'Toque de novo para confirmar' : endLabel}
               </button>
-              <Link
-                to={exitTo}
-                className="fsm-item danger"
-                data-sfx="back"
-                data-testid="fsm-exit"
-              >
-                {exitLabel}
-              </Link>
+              {onBack && (
+                <button type="button" className="fsm-item" data-sfx="back" onClick={onBack} data-testid="fsm-back">
+                  {backLabel}
+                </button>
+              )}
+              {exitTo && (
+                <Link
+                  to={exitTo}
+                  className="fsm-item danger"
+                  data-sfx="back"
+                  data-testid="fsm-exit"
+                >
+                  {exitLabel}
+                </Link>
+              )}
               {children}
               <p className="fsm-hint mono">
                 Esc abre e fecha este menu. As suas configurações ficam salvas neste aparelho.

@@ -1147,7 +1147,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           {inviteOpen && <InviteDialog onClose={() => setInviteOpen(false)} />}
           <GameChat enabled onClosed={(wasLocked) => wasLocked && ctl.current?.requestLock()} />
           {paused && (
-            <FsMenu touch={false} onResume={() => resumeRef.current()} onEnd={() => void leaveRoom()} exitTo="/fox-cap/counter-fox" exitLabel="Sair da partida">
+            <FsMenu touch={false} onResume={() => resumeRef.current()} onEnd={() => void leaveRoom()} endLabel="Sair da sala" endConfirm={false} exitTo={null}>
               <button type="button" className="fsm-item" onClick={() => setInviteOpen(true)} data-sfx="start" data-testid="fsr-invite">
                 Convidar amigos
               </button>
@@ -1156,9 +1156,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
                   Entrar para jogar
                 </button>
               )}
-              <button type="button" className="fsm-item danger" onClick={() => void leaveRoom()} data-testid="fsr-leave">
-                Sair da sala
-              </button>
+
             </FsMenu>
           )}
         </>

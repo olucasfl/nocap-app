@@ -1955,10 +1955,12 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
           {paused && !portrait && !result && (
             <FsMenu
               touch={touch}
-              exitTo="/fox-cap/counter-fox"
-              exitLabel="Voltar ao menu do Counter Fox"
+              // partida: "Encerrar a partida" volta ao menu do Counter Fox; treino: reinicia os alvos e há um botão para voltar ao menu
+              endLabel={match ? 'Encerrar a partida' : 'Reiniciar o treino'}
+              endConfirm={!!match}
+              onBack={match ? undefined : () => onExit?.()}
               onResume={() => resumeRef.current()}
-              onEnd={() => endMatchRef.current()}
+              onEnd={() => (match ? onExit?.() : endMatchRef.current())}
             />
           )}
         </>
