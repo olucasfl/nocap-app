@@ -11,6 +11,7 @@ import {
   DesmoronaRoom,
   FoxRoom,
   PingRoom,
+  FoxShotRoom,
   roomDeps,
 } from '../src/rooms/color.room';
 
@@ -19,6 +20,7 @@ const server = new Server({ transport: new WebSocketTransport({ server: http }) 
 for (const [name, room] of [
   ['foxcap', FoxRoom],
   ['pingpong', PingRoom],
+  ['foxshot', FoxShotRoom],
   ['desmorona', DesmoronaRoom],
   ['atravessa', AtravessaRoom],
   ['bola', BolaRoom],

@@ -166,7 +166,8 @@ export class FsNetSim {
   over = false;
 
   constructor(opts: FsNetOptions) {
-    this.cfg = fsMatchConfig(opts.minutes, opts.bots);
+    const base = fsMatchConfig(opts.minutes, 1);
+    this.cfg = { minutes: base.minutes, bots: Math.max(0, Math.min(9, Math.round(Number.isFinite(opts.bots) ? opts.bots : 0))) };
     this.endTick = this.cfg.minutes * 60 * FS_NET_HZ;
     this.boxes = opts.boxes ?? FS_DUST_BOXES;
     this.rng = opts.rng ?? Math.random;
@@ -199,6 +200,19 @@ export class FsNetSim {
     const vest = this.rng() < 0.55;
     p.armor = vest ? 100 : 0;
     p.helmet = vest && this.rng() < 0.5;
+  }
+
+  /** Quem saiu no meio da partida vira bot (o corpo não fica parado esperando tiro). */
+  takeOver(id: string): void {
+    const p = this.players.get(id);
+    if (!p || p.bot) return;
+    p.bot = true;
+    p.queue = [];
+    const w = p.loadout.weapon.melee ? 'pistol' : (p.loadout.weapon.id as Exclude<FsWeaponId, 'knife'>);
+    p.brain = fsDmNew(id, p.mover.x, p.mover.z, p.yaw, w, this.rng, p.mover.y);
+    p.brain.mover = p.mover;
+    const r = this.roster.find((q) => q.id === id);
+    if (r) r.bot = true;
   }
 
   // ---------------------------------------------------------------- entrada

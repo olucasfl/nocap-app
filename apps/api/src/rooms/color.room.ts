@@ -11,6 +11,7 @@ import { BolaRoomEngine } from './bola-room.engine';
 import { FoxLobbyEngine } from './fox-lobby.engine';
 import { DesmoronaRoomEngine } from './desmorona-room.engine';
 import { PingRoomEngine } from './ping-room.engine';
+import { FoxShotRoomEngine } from './foxshot-room.engine';
 import {
   ATR_ROOM_MAX_PLAYERS,
   BOL_ROOM_MAX,
@@ -499,6 +500,7 @@ export class ColorRoom extends Room {
           game === 'desmorona' ||
           game === 'bola' ||
           game === 'pingpong' ||
+          game === 'foxshot' ||
           game === 'foxcap'
             ? 'color'
             : game,
@@ -860,11 +862,51 @@ export class PingRoom extends ColorRoom {
   }
 }
 
+/**
+ * Sala do Counter Fox (spec 057): mata-mata online. A sala é árbitra e roda a simulação inteira; as pessoas mandam só as entradas
+ * ("fsin", as últimas por pacote, cerca de 30 pacotes por segundo) e recebem o quadro ("fss", cerca de 20 por segundo) com o
+ * corpo exato da própria pessoa (para a previsão), a posição dos outros, os eventos (tiros, abates, granadas) e o tempo.
+ */
+const fsSentAt = new WeakMap<object, number>();
+
+export class FoxShotRoom extends ColorRoom {
+  override maxClients = 10;
+  protected override tickMs = 16;
+
+  protected override makeEngine(opts: ConstructorParameters<typeof ColorRoomEngine>[0]) {
+    return new FoxShotRoomEngine(opts);
+  }
+
+  protected override registerGameMessages() {
+    const engine = () => this.engine as FoxShotRoomEngine;
+    this.onMessage('fsin', (c, m) => {
+      const id = (c.userData as AuthData | undefined)?.id;
+      if (id) engine().receive(id, m);
+    });
+  }
+
+  protected override afterTick() {
+    const engine = this.engine as FoxShotRoomEngine;
+    if (engine.currentPhase !== 'play' || !engine.sim) return;
+    const now = Date.now();
+    if (now - (fsSentAt.get(this) ?? 0) < 48) return;
+    fsSentAt.set(this, now);
+    const ev = engine.drainEvents();
+    for (const client of this.clients) {
+      const id = (client.userData as AuthData | undefined)?.id;
+      if (!id) continue;
+      const fr = engine.frameFor(id);
+      if (fr) client.send('fss', { ...fr, e: ev });
+    }
+  }
+}
+
 /** Nomes e limites dos jogos que a sala do Fox Cap! pode jogar. */
 const FOX_GAMES = {
   atravessa: { name: 'Atravessa!', make: (o: EngineOpts) => new AtravessaRoomEngine(o) },
   desmorona: { name: 'Desmorona!', make: (o: EngineOpts) => new DesmoronaRoomEngine(o) },
   pingpong: { name: 'Ping Fox!', make: (o: EngineOpts) => new PingRoomEngine(o) },
+  foxshot: { name: 'Counter Fox', make: (o: EngineOpts) => new FoxShotRoomEngine(o) },
   bola: {
     name: 'Fut Fox',
     make: (o: EngineOpts) => {
@@ -903,6 +945,7 @@ export class FoxRoom extends ColorRoom {
       ['desmorona', DesmoronaRoom],
       ['bola', BolaRoom],
       ['pingpong', PingRoom],
+      ['foxshot', FoxShotRoom],
     ] as const) {
       const twin = Object.create(this) as { onMessage: unknown };
       twin.onMessage = (type: string | number, cb: (c: Client, m: unknown) => void) => {
@@ -947,7 +990,7 @@ export class FoxRoom extends ColorRoom {
   protected override step() {
     const now = Date.now();
     // o Fut Fox roda a cada passo de 16 ms; os outros jogos, a cada 100 ms (como as salas deles)
-    if (this.engine.game !== 'bola' && this.engine.game !== 'pingpong' && now - this.lastStep < 92)
+    if (this.engine.game !== 'bola' && this.engine.game !== 'pingpong' && this.engine.game !== 'foxshot' && now - this.lastStep < 92)
       return;
     this.lastStep = now;
     super.step();
@@ -959,6 +1002,7 @@ export class FoxRoom extends ColorRoom {
       desmorona: DesmoronaRoom,
       bola: BolaRoom,
       pingpong: PingRoom,
+      foxshot: FoxShotRoom,
     }[this.engine.game as FoxGame]?.prototype as unknown as { afterTick?: () => void } | undefined;
     proto?.afterTick?.call(this);
   }
