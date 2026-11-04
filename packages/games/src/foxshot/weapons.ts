@@ -91,6 +91,9 @@ export const FS_WEAPONS: Record<FsWeaponId, FsWeapon> = {
   },
 };
 
+/** Até onde o tiro de cada arma se escuta (m): a pistola silenciada é a mais discreta, o fuzil vai mais longe e a sniper cobre a arena toda. */
+export const FS_HEAR_RANGE: Record<FsWeaponId, number> = { pistol: 22, ak: 40, sniper: 80, knife: 6 };
+
 export const FS_SLOTS: Record<FsSlot, FsWeaponId[]> = { primary: ['ak', 'sniper'], secondary: ['pistol'], knife: ['knife'] };
 
 /** A ordem dos 3 espaços: 1 primária, 2 secundária, 3 faca. */

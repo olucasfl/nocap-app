@@ -6,6 +6,10 @@ import {
   FS_SPAWN,
   FS_BOTS,
   FS_BOT_SPEED,
+  FS_SHOOTER,
+  fsNewShooter,
+  fsShooterStep,
+  fsDamage,
   FS_TARGETS,
   fsBotStep,
   fsNewBot,
@@ -103,6 +107,9 @@ interface Hud {
   mag: number;
   weapon: string;
   weaponId: FsWeaponId;
+  /** Conta os tiros que você levou (cada um dispara o clarão vermelho) e se está morto esperando renascer. */
+  hurtKey: number;
+  dead: boolean;
   slots: FsSlotInfo[];
   current: number;
   /** Velocidade no chão (m/s) e abertura da mira (para borrar a luneta andando). */
@@ -360,6 +367,52 @@ export function FoxShotTestPage() {
       resume();
     };
 
+    // ---- atiradores (s1 pistola, s2 fuzil, s3 sniper): atiram em você, dão dano e você pode matá-los
+    // só para os testes automáticos (modo de desenvolvimento): desliga os atiradores para não matarem o jogador durante o teste
+    const shootersOff = import.meta.env.DEV && (() => { try { return localStorage.getItem('fs-no-shooters') === '1'; } catch { return false; } })();
+    const shooterSt = new Map(FS_BOTS.filter((b) => b.kind === 'shoot').map((b) => [b.id, fsNewShooter()]));
+    let deadUntil = 0;
+    let hurtKey = 0;
+    const pushFeedDeath = (killer: string, weapon: FsWeaponId, head: boolean) => {
+      const key = ++feedKey;
+      setFeed((f) => [...f.slice(-4), { key, killer, weapon, victim: 'Você', head, you: false, youVictim: true }]);
+      window.setTimeout(() => setFeed((f) => f.filter((x) => x.key !== key)), 6000);
+    };
+    const shooterFire = (b: (typeof FS_BOTS)[number], bs: ReturnType<typeof fsNewBot>) => {
+      const wid = b.weapon as 'pistol' | 'ak' | 'sniper';
+      const w = FS_WEAPONS[wid];
+      const origin: [number, number, number] = [bs.x + Math.cos(bs.h) * 0.4, 1.0, bs.z + Math.sin(bs.h) * 0.4];
+      // mira no peito de quem joga, com erro que cresce com a distância e com a velocidade dele
+      const dist = Math.hypot(mover.x - bs.x, mover.z - bs.z);
+      const aimY = mover.y + 0.8 * (1 - 0.27 * mover.crouchK);
+      const dx = mover.x - origin[0];
+      const dy = aimY - origin[1];
+      const dz = mover.z - origin[2];
+      const yaw = (Math.atan2(-dx, -dz) * 180) / Math.PI;
+      const pitch = (Math.atan2(dy, Math.hypot(dx, dz)) * 180) / Math.PI;
+      const err = FS_SHOOTER[wid].aimErr * (0.6 + dist / 25) * (1 + Math.hypot(mover.vx, mover.vz) * 0.25);
+      const a = Math.random() * Math.PI * 2;
+      const r = Math.sqrt(Math.random()) * err;
+      const dir = fsDir(yaw + Math.cos(a) * r, pitch + Math.sin(a) * r);
+      const me3: FsBody = { id: 'me', pos: [mover.x, mover.y, mover.z], alive: true, armor: me.armor, helmet: me.helmet, crouch: mover.crouchK };
+      const tr = fsTrace(w, origin, dir, FS_ARENA, [me3], FS_SHOOTER[wid].range + 15);
+      scene.tracer(new THREE.Vector3(origin[0], origin[1], origin[2]), new THREE.Vector3(tr.point[0], tr.point[1], tr.point[2]), wid);
+      scene.puff(new THREE.Vector3(origin[0], origin[1], origin[2]), 0xffd27a, 0.25, 0.1);
+      fsAudio.shotAt(wid, bs.x, 1, bs.z, mover.x, mover.z);
+      if (tr.kind === 'player' && tr.damage && clock >= deadUntil) {
+        const d = tr.damage;
+        me.hp -= d.hp;
+        me.armor = Math.max(0, me.armor - d.armorLoss);
+        hurtKey++;
+        fsAudio.hurt();
+        if (me.hp <= 0) {
+          me.hp = 0;
+          stats.deaths++;
+          deadUntil = clock + 2.6;
+          pushFeedDeath(b.label.replace('atirador ', 'Atirador '), wid, tr.zone === 'head');
+        }
+      }
+    };
     const pushFeed = (weapon: FsWeaponId, victim: string, head: boolean) => {
       const key = ++feedKey;
       setFeed((f) => [...f.slice(-4), { key, killer: 'Você', weapon, victim, head, you: true }]);
@@ -439,9 +492,19 @@ export function FoxShotTestPage() {
       }
       scene.knifeSwing(back ? 'backstab' : kind);
       fsAudio.shot('knife');
+      const point = new THREE.Vector3(tr.point[0], tr.point[1], tr.point[2]);
+      if (back) {
+        // facada nas costas: o abate espera a faca descer na animação (~0,27 s) e só então acontece, junto com o som
+        const victim = tr.targetId;
+        window.setTimeout(() => {
+          if (victim && !targets.get(victim)?.alive) return;
+          fsAudio.stab();
+          applyHit('knife', tr, point);
+        }, 270);
+        return;
+      }
       if (tr.kind === 'player') fsAudio.stab();
-      if (back) fsAudio.stab();
-      applyHit('knife', tr, new THREE.Vector3(tr.point[0], tr.point[1], tr.point[2]));
+      applyHit('knife', tr, point);
     };
     const handle = (events: ReturnType<FsLoadout['update']>) => {
       for (const e of events) {
@@ -580,6 +643,24 @@ export function FoxShotTestPage() {
       const baseFov = st.fov;
       const isPaused = pausedRef.current;
       const inp = controls.read();
+      const playerDead = clock < deadUntil;
+      if (playerDead) {
+        inp.fwd = inp.strafe = 0;
+        inp.jump = inp.trigger = inp.ads = inp.reload = inp.crouch = inp.walk = inp.inspect = inp.buy = inp.drop = inp.pickup = false;
+      } else if (deadUntil > 0) {
+        // renasce no ponto de partida, vida cheia, sem colete (como no CS)
+        deadUntil = 0;
+        me.hp = 100;
+        me.armor = 0;
+        me.helmet = false;
+        mover.x = FS_SPAWN.x;
+        mover.z = FS_SPAWN.z;
+        mover.y = 0;
+        mover.vx = mover.vz = mover.vy = 0;
+        prev.x = mover.x;
+        prev.y = 0;
+        prev.z = mover.z;
+      }
       const w = loadout.weapon;
       let speed = Math.hypot(mover.vx, mover.vz);
       let adsOn = false;
@@ -743,6 +824,24 @@ export function FoxShotTestPage() {
           const bs = botSt.get(b.id)!;
           if (!targets.get(b.id)!.alive) continue;
           fsBotStep(bs, b, dt);
+          if (b.kind === 'shoot') {
+            // vira para você e atira se enxerga (sem parede no meio) e você está no alcance
+            const dx = mover.x - bs.x;
+            const dz = mover.z - bs.z;
+            const want = Math.atan2(dz, dx);
+            let da = want - bs.h;
+            da = Math.atan2(Math.sin(da), Math.cos(da));
+            bs.h += Math.abs(da) < 5 * dt ? da : Math.sign(da) * 5 * dt;
+            const dist = Math.hypot(dx, dz);
+            const eye: [number, number, number] = [bs.x, 1.0, bs.z];
+            const toMe = fsDir((Math.atan2(-dx, -dz) * 180) / Math.PI, (Math.atan2(0.8 - 1.0, dist) * 180) / Math.PI);
+            const los = fsTrace(FS_WEAPONS.ak, eye, toMe, FS_ARENA, [{ id: 'me', pos: [mover.x, mover.y, mover.z], alive: true, armor: 0, helmet: false, crouch: mover.crouchK }], dist + 1);
+            const sees = !playerDead && !shootersOff && los.kind === 'player';
+            const st = shooterSt.get(b.id)!;
+            const fired = fsShooterStep(st, b.weapon as 'pistol' | 'ak' | 'sniper', dt, dist, sees);
+            if (fired) shooterFire(b, bs);
+            bs.anim = st.burstLeft > 0 || (sees && st.cool > FS_SHOOTER[b.weapon as 'pistol' | 'ak' | 'sniper'].interval - 0.15) ? 'shoot' : 'idle';
+          }
           scene.setBot(b.id, bs.x, bs.y, bs.z, bs.h, bs.anim, bs.animSpeed);
           // passos do bot que anda normalmente: som 3D (quem anda no shift ou agachado não faz barulho)
           if (b.kind === 'walk' && bs.anim === 'run' && bs.y <= 0) {
@@ -850,6 +949,8 @@ export function FoxShotTestPage() {
         setHud({
           look,
           hp: me.hp,
+          hurtKey,
+          dead: clock < deadUntil,
           armor: me.armor,
           helmet: me.helmet,
           ammo: loadout.slot.ammo,
@@ -954,6 +1055,7 @@ export function FoxShotTestPage() {
         },
         bot: (id: string) => ({ ...botSt.get(id)!, alive: targets.get(id)!.alive }),
         pos: (id: string) => posOf(id),
+        hp: () => me.hp,
         crouchTarget(id: string, on: boolean) {
           targets.get(id)!.crouch = on ? 1 : 0;
           scene.setTargetCrouch(id, on);
@@ -1064,6 +1166,12 @@ export function FoxShotTestPage() {
           )}
           <FsKillFeed items={feed} />
           </div>
+          {hud.hurtKey > 0 && <div key={hud.hurtKey} className="fs-hurt" aria-hidden="true" />}
+          {hud.dead && (
+            <div className="fs-dead" role="status" data-testid="fs-dead">
+              Você morreu
+            </div>
+          )}
           <FsVitals hp={hud.hp} armor={hud.armor} helmet={hud.helmet} />
           <FsAmmo
             weapon={hud.weapon}

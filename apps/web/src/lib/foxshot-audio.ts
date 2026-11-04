@@ -1,3 +1,4 @@
+import { FS_HEAR_RANGE, type FsWeaponId } from '@nocap/games';
 import { audioKit } from './sfx';
 
 /**
@@ -188,6 +189,16 @@ const RECIPES: Record<string, Recipe> = {
     },
   },
   jump: { len: 0.12, variants: 1, make: (s) => s.burst({ type: 'lowpass', freq: 500, dur: 0.06, peak: 0.1 }) },
+  hurt: {
+    // levar tiro: pancada no corpo (grave) + estalo curto
+    len: 0.25,
+    variants: 1,
+    make: (s) => {
+      s.tone('sine', 140, 55, 0.14, 0.5);
+      s.burst({ type: 'bandpass', freq: 1200, q: 1, dur: 0.05, peak: 0.3 });
+      s.burst({ type: 'lowpass', freq: 500, dur: 0.15, peak: 0.2, delay: 0.02 });
+    },
+  },
 };
 
 /**
@@ -373,6 +384,49 @@ export const fsAudio = {
   /** Faca acertando alguém. */
   stab() {
     play('stab');
+  },
+  /** Você levou um tiro. */
+  hurt() {
+    play('hurt');
+  },
+  /**
+   * Tiro de outro jogador em (x, y, z): vem da direção dele (som 3D), mais baixo e mais "abafado" com a distância e some além
+   * do alcance da arma (pistola 22 m, fuzil 40 m, sniper 80 m).
+   */
+  shotAt(id: FsWeaponId, x: number, y: number, z: number, listenerX: number, listenerZ: number) {
+    const kit = audioKit();
+    if (!kit || kit.muted() || id === 'knife') return;
+    const range = FS_HEAR_RANGE[id];
+    const d = Math.hypot(x - listenerX, z - listenerZ);
+    if (d > range) return;
+    const k = d / range; // 0 perto, 1 no limite
+    const fade = k > 0.7 ? Math.max(0, (1 - k) / 0.3) : 1;
+    // o ar come os agudos: de longe o tiro fica mais grave e surdo
+    const air = kit.ctx.createBiquadFilter();
+    air.type = 'lowpass';
+    air.frequency.value = 12000 - 10500 * Math.min(1, k * 1.1);
+    const p = kit.ctx.createPanner();
+    p.panningModel = 'equalpower';
+    p.distanceModel = 'inverse';
+    p.refDistance = 5;
+    p.rolloffFactor = 1.1;
+    p.maxDistance = range;
+    try {
+      if (p.positionX) {
+        p.positionX.value = x;
+        p.positionY.value = y;
+        p.positionZ.value = z;
+      } else p.setPosition(x, y, z);
+    } catch {
+      /* sem posição: toca no centro */
+    }
+    air.connect(p).connect(busFor(kit));
+    const loud = id === 'sniper' ? 1.1 : id === 'ak' ? 0.9 : 0.6;
+    play(`shot-${id}`, { gain: loud * fade * 1.4, dest: air });
+    window.setTimeout(() => {
+      air.disconnect();
+      p.disconnect();
+    }, 1400);
   },
   /** Seu passo (fica na orelha, baixo). */
   step() {

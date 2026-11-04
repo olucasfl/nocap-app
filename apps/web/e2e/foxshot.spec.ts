@@ -15,7 +15,16 @@ const fs = <T>(page: Page, fn: string, ...args: unknown[]) =>
     [fn, args] as [string, unknown[]],
   ) as Promise<T>;
 
-async function open(page: Page) {
+async function open(page: Page, shooters = false) {
+  // os atiradores ficam desligados nos testes (senão matam o jogador no meio); o teste deles liga
+  await page.addInitScript((off) => {
+    try {
+      if (off) localStorage.setItem('fs-no-shooters', '1');
+      else localStorage.removeItem('fs-no-shooters');
+    } catch {
+      /* sem armazenamento */
+    }
+  }, !shooters);
   await page.goto('/fox-cap/fox-shot-teste');
   await expect(page.getByTestId('fs-perf')).toBeVisible({ timeout: 40_000 });
   await page
@@ -368,4 +377,22 @@ test('bots de treino andam, agacham, pulam, morrem caindo e nascem de novo', asy
   await page.waitForTimeout(8000);
   await expect.poll(async () => (await bot('b5')).alive, { timeout: 20_000 }).toBe(true);
   expect((await bot('b5')).alive, 'nasceu outro').toBe(true);
+});
+
+test('atiradores no canto: atiram em você, dão dano e você pode matá-los', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'um projeto basta');
+  test.setTimeout(200_000);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await open(page, true);
+  await page.getByTestId('fsm-resume').click();
+  // perto e à vista do atirador do fuzil
+  await fs(page, 'teleport', 13.2, -8);
+  await expect.poll(async () => fs<number>(page, 'hp'), { timeout: 60_000 }).toBeLessThan(100);
+  await expect(page.locator('.fs-hurt')).toHaveCount(1);
+  // mata o atirador do fuzil com a cabeça (arma comprada)
+  await fs(page, 'buy', 'ak');
+  await fs(page, 'weapon', 0);
+  await fs(page, 'aimAt', 's2', 'head');
+  await fs(page, 'shoot', 1);
+  expect((await fs<{ alive: boolean }>(page, 'bot', 's2')).alive).toBe(false);
 });

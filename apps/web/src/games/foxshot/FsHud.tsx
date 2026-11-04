@@ -27,6 +27,8 @@ export interface FeedItem {
   /** Quem deu a assistência (se houve) e se fui eu. */
   assist?: string;
   youAssist?: boolean;
+  /** Fui eu que morri? (também fica em destaque, como no CS) */
+  youVictim?: boolean;
 }
 
 export interface MinimapData {
@@ -86,7 +88,7 @@ export function FsKillFeed({ items }: { items: FeedItem[] }) {
   return (
     <ul className="fsh-feed" aria-live="polite" data-testid="fs-feed">
       {items.map((f) => (
-        <li key={f.key} className={f.you || f.youAssist ? 'mine' : 'other'} data-testid={f.you || f.youAssist ? 'fs-feed-mine' : 'fs-feed-other'}>
+        <li key={f.key} className={f.you || f.youAssist || f.youVictim ? 'mine' : 'other'} data-testid={f.you || f.youAssist || f.youVictim ? 'fs-feed-mine' : 'fs-feed-other'}>
           <b>{f.killer}</b>
           {f.assist && <span className="fsh-assist"> + {f.assist}</span>}
           <WeaponIcon id={f.weapon} className="fsh-feed-w" />

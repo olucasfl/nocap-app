@@ -6,8 +6,8 @@ import { FS_ARENA, type FsBox } from './map';
 import { fsBodyHeight, fsEyeHeight, fsNewMover, fsQuiet, fsStepMover, FS_MOVE } from './movement';
 import { fsFire, fsNewGunState, fsSpreadDeg } from './recoil';
 import { fsDir, fsTrace, type FsBody } from './trace';
-import { FS_WEAPONS } from './weapons';
-import { FS_BOTS, fsBotStep, fsNewBot } from './bots';
+import { FS_HEAR_RANGE, FS_WEAPONS } from './weapons';
+import { FS_BOTS, FS_SHOOTER, fsBotStep, fsNewBot, fsNewShooter, fsShooterStep } from './bots';
 import { fsAssister } from './assist';
 
 const hit = (o: Partial<FsHitInfo>): FsHitInfo => ({ zone: 'chest', dist: 10, armor: 0, helmet: false, wall: 1, ...o });
@@ -588,6 +588,30 @@ describe('contra-strafe: tiro reto quando o boneco para', () => {
     }
     expect(best).toBeLessThan(0.9);
     expect(at(best)).toBeCloseTo(w.spread.stand, 5);
+  });
+});
+
+describe('atiradores', () => {
+  it('só atiram vendo você e dentro do alcance; o fuzil em rajadas, a sniper devagar', () => {
+    const run = (w: 'pistol' | 'ak' | 'sniper', dist: number, sees: boolean, secs = 10) => {
+      const st = fsNewShooter();
+      let n = 0;
+      for (let i = 0; i < secs * 60; i++) if (fsShooterStep(st, w, 1 / 60, dist, sees)) n++;
+      return n;
+    };
+    expect(run('ak', 20, false)).toBe(0);
+    expect(run('ak', 60, true)).toBe(0); // fora do alcance
+    expect(run('pistol', 30, true)).toBe(0);
+    expect(run('ak', 20, true)).toBeGreaterThan(run('pistol', 20, true));
+    expect(run('sniper', 20, true)).toBeLessThan(run('pistol', 20, true));
+    expect(run('sniper', 70, true)).toBeGreaterThan(0); // a sniper alcança longe
+    expect(FS_SHOOTER.sniper.range).toBeGreaterThan(FS_SHOOTER.ak.range);
+    expect(FS_SHOOTER.ak.range).toBeGreaterThan(FS_SHOOTER.pistol.range);
+  });
+  it('o alcance do som: pistola menor, fuzil maior, sniper maior ainda', () => {
+    expect(FS_HEAR_RANGE.pistol).toBeLessThan(FS_HEAR_RANGE.ak);
+    expect(FS_HEAR_RANGE.ak).toBeLessThan(FS_HEAR_RANGE.sniper);
+    expect(FS_BOTS.filter((b) => b.kind === 'shoot').map((b) => b.weapon)).toEqual(['pistol', 'ak', 'sniper']);
   });
 });
 

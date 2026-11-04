@@ -2,6 +2,8 @@ import * as THREE from 'three';
 
 /** Um pose da faca: posição e giro da faca (e da mão que a segura) mais a mão esquerda, no espaço da câmera da arma. */
 export interface KnifeKey {
+  /** Chega a este quadro rápido e desacelera (golpes): sem isso a faca "acordava" devagar. */
+  e?: 'out';
   t: number;
   p: [number, number, number];
   r: [number, number, number];
@@ -9,21 +11,34 @@ export interface KnifeKey {
 }
 
 const HOLD: KnifeKey = { t: 0, p: [0.12, -0.16, -0.38], r: [0.6, 0.2, 0], l: [-0.12, -0.14, -0.36] };
-const k = (t: number, p: KnifeKey['p'], r: KnifeKey['r'], l: KnifeKey['l'] = HOLD.l): KnifeKey => ({ t, p, r, l });
+const k = (t: number, p: KnifeKey['p'], r: KnifeKey['r'], l: KnifeKey['l'] = HOLD.l, e?: 'out'): KnifeKey => ({ t, p, r, l, e });
 
-/** Corte: recua para a direita, varre para a esquerda e volta (0,35 s). */
+/**
+ * Corte (0,3 s): sai NA HORA (o primeiro quadro já é o armar rápido, 0,03 s), cruza a tela de cima-direita para baixo-esquerda no
+ * meio da animação (o dano é no instante do clique) e termina com um embalo antes de voltar. Alterna com o corte espelhado.
+ */
 export const KNIFE_SLASH: KnifeKey[] = [
   { ...HOLD, t: 0 },
-  k(0.22, [0.26, -0.08, -0.32], [0.1, -0.5, -1.0]),
-  k(0.55, [-0.2, -0.26, -0.42], [0.7, 1.0, 0.6]),
+  k(0.1, [0.24, -0.06, -0.32], [0.2, -0.55, -0.9], [-0.14, -0.16, -0.34], 'out'),
+  k(0.4, [0.0, -0.2, -0.5], [0.55, 0.15, -0.1], [-0.16, -0.18, -0.34], 'out'),
+  k(0.58, [-0.24, -0.28, -0.42], [0.75, 1.05, 0.65], [-0.2, -0.2, -0.3], 'out'),
+  k(0.72, [-0.2, -0.26, -0.4], [0.7, 0.95, 0.55], [-0.18, -0.19, -0.32]),
   k(1, HOLD.p, HOLD.r),
 ];
-/** Estocada: puxa a faca para trás e empurra para a frente (0,55 s). */
+const mirror = (key: KnifeKey): KnifeKey => ({
+  ...key,
+  p: [-key.p[0] + HOLD.p[0] * 2 * (key.t === 0 || key.t === 1 ? 1 : 0), key.p[1], key.p[2]],
+  r: [key.r[0], -key.r[1], -key.r[2]],
+  l: key.l,
+});
+/** Corte espelhado (da esquerda para a direita), para o segundo golpe seguido não ser igual ao primeiro. */
+export const KNIFE_SLASH_B: KnifeKey[] = KNIFE_SLASH.map((kf, i) => (i === 0 || i === KNIFE_SLASH.length - 1 ? kf : mirror(kf)));
+/** Estocada (0,45 s): puxa um palmo e empurra rápido; o dano é no instante do clique. */
 export const KNIFE_STAB: KnifeKey[] = [
   { ...HOLD, t: 0 },
-  k(0.28, [0.2, -0.22, -0.2], [0.15, 0.1, 0]),
-  k(0.45, [0.1, -0.14, -0.7], [0.05, 0.05, 0]),
-  k(0.62, [0.1, -0.15, -0.66], [0.05, 0.05, 0]),
+  k(0.1, [0.2, -0.2, -0.22], [0.2, 0.1, 0], HOLD.l, 'out'),
+  k(0.24, [0.08, -0.15, -0.74], [0.0, 0.05, 0], [-0.1, -0.14, -0.5], 'out'),
+  k(0.5, [0.08, -0.15, -0.7], [0.0, 0.05, 0], [-0.1, -0.14, -0.48]),
   k(1, HOLD.p, HOLD.r),
 ];
 /** Facada nas costas: levanta a faca bem alto e crava de cima para baixo, segura um instante torcendo e volta (0,9 s). */
@@ -54,7 +69,8 @@ export function sampleKnife(keys: KnifeKey[], u: number): KnifeKey {
   while (i < keys.length - 2 && u > keys[i + 1]!.t) i++;
   const a = keys[i]!;
   const b = keys[i + 1]!;
-  const f = smooth(Math.min(1, Math.max(0, (u - a.t) / Math.max(1e-6, b.t - a.t))));
+  const x = Math.min(1, Math.max(0, (u - a.t) / Math.max(1e-6, b.t - a.t)));
+  const f = b.e === 'out' ? 1 - (1 - x) * (1 - x) * (1 - x) : smooth(x);
   const mix = (x: number[], y: number[]) => x.map((v, n) => v + (y[n]! - v) * f) as [number, number, number];
   return { t: u, p: mix(a.p, b.p), r: mix(a.r, b.r), l: mix(a.l, b.l) };
 }

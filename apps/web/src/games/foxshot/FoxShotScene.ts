@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
-import { FsHands, KNIFE_BACKSTAB, KNIFE_HOLD, KNIFE_INSPECT, KNIFE_SLASH, KNIFE_STAB, makeKnife, sampleKnife, type KnifeKey } from './FsHands';
+import { FsHands, KNIFE_BACKSTAB, KNIFE_HOLD, KNIFE_INSPECT, KNIFE_SLASH, KNIFE_SLASH_B, KNIFE_STAB, makeKnife, sampleKnife, type KnifeKey } from './FsHands';
 import { FS_ARENA, FS_BOTS, FS_MOVE_SIGNS, FS_TARGETS, type FsBox, type FsWeaponId } from '@nocap/games';
 
 export type Quality = 'low' | 'mid' | 'high';
@@ -288,6 +288,13 @@ export class FoxShotScene {
   private reloadK = -1;
   private boltK = -1;
   private hands = new FsHands();
+  private slashParity = false;
+  /** Risco branco do corte: tempo desde o golpe (0 = parado) e a malha. */
+  private arcT = 0;
+  private arc = new THREE.Mesh(
+    new THREE.RingGeometry(0.27, 0.292, 32, 1, 0.1, Math.PI * 0.75),
+    new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, side: THREE.DoubleSide, depthTest: false, fog: false }),
+  );
   /** Recarga: carregador novo na mão, carregador velho caindo e o que já foi feito. */
   private heldMag: THREE.Object3D | null = null;
   private fallMag: { o: THREE.Object3D; v: THREE.Vector3; w: THREE.Vector3; t: number } | null = null;
@@ -489,6 +496,11 @@ export class FoxShotScene {
     this.weapons.set('knife', kHolder);
     this.vmPivot.add(kHolder);
     this.vm.add(this.hands.group, this.knifeObj);
+    this.arc.position.set(-0.02, -0.12, -0.44);
+    this.arc.rotation.z = Math.PI * 0.18;
+    this.arc.renderOrder = 20;
+    this.arc.visible = false;
+    this.vm.add(this.arc);
     // raposas-alvo e bots de treino
     const makeFox = (id: string, x: number, z: number, yaw: number, text: string, color: string) => {
       const root = new THREE.Group();
@@ -542,6 +554,7 @@ export class FoxShotScene {
     }
     // placas da faixa de bots
     for (const spec of FS_BOTS) {
+      if (spec.kind === 'shoot') continue;
       const sign = labelSprite(spec.label, '#1b1535');
       sign.position.set(-19.2, 1.5, spec.z);
       sign.scale.set(2.2, 0.55, 1);
@@ -650,10 +663,21 @@ export class FoxShotScene {
   /** Corte (botão de atirar) ou estocada (botão de mirar) com a faca. */
   knifeSwing(kind: 'slash' | 'stab' | 'backstab') {
     if (kind === 'backstab') {
-      this.knifeAnim = { keys: KNIFE_BACKSTAB, t: 0, dur: 0.9, inspect: false };
+      this.knifeAnim = { keys: KNIFE_BACKSTAB, t: 0, dur: 0.7, inspect: false };
+      this.kickVel += 5;
       return;
     }
-    this.knifeAnim = kind === 'slash' ? { keys: KNIFE_SLASH, t: 0, dur: 0.35, inspect: false } : { keys: KNIFE_STAB, t: 0, dur: 0.55, inspect: false };
+    if (kind === 'slash') {
+      // cortes alternados (direita para esquerda e volta), com um risco branco que some e um tranco na câmera da arma
+      this.slashParity = !this.slashParity;
+      this.knifeAnim = { keys: this.slashParity ? KNIFE_SLASH : KNIFE_SLASH_B, t: 0, dur: 0.3, inspect: false };
+      this.arcT = 0.001;
+      this.arc.scale.x = this.slashParity ? 1 : -1;
+      this.kickRotVel += this.slashParity ? 4 : -4;
+    } else {
+      this.knifeAnim = { keys: KNIFE_STAB, t: 0, dur: 0.45, inspect: false };
+      this.kickVel += 3.2;
+    }
   }
   /** Inspeção da arma na mão (F): olha de um lado, do outro e volta. */
   gunInspect(on: boolean, seconds = 3) {
@@ -821,6 +845,14 @@ export class FoxShotScene {
     }
     this.boltPhase = phase;
     if (bolt) bolt.position.x = -phase * (this.cur === 'sniper' ? 0.1 : 0.05);
+    // risco do corte: aparece junto com o golpe e some em 0,16 s
+    if (this.arcT > 0) {
+      this.arcT += dt;
+      const u = this.arcT / 0.16;
+      this.arc.visible = u < 1 && this.cur === 'knife';
+      (this.arc.material as THREE.MeshBasicMaterial).opacity = Math.max(0, 0.7 * (1 - u));
+      if (u >= 1) this.arcT = 0;
+    } else this.arc.visible = false;
     this.vm.rotation.set(pitch, yawAdd, roll);
     this.updateHands(dt, cfg, mag, bolt);
     this.vmPivot.rotation.set(0, 0, 0);

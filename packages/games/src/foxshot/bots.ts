@@ -1,6 +1,7 @@
 import type { FsTargetSpec } from './map';
+import type { FsWeaponId } from './weapons';
 
-export type FsBotKind = 'walk' | 'shift' | 'crouch' | 'jump' | 'turn';
+export type FsBotKind = 'walk' | 'shift' | 'crouch' | 'jump' | 'turn' | 'shoot';
 
 /** Bot de treino: anda de um ponto a outro (ou pula parado, ou gira), só para ver as animações e treinar a mira. */
 export interface FsBotSpec extends FsTargetSpec {
@@ -8,6 +9,8 @@ export interface FsBotSpec extends FsTargetSpec {
   /** Ponto final do trajeto (anda de x,z até aqui e volta). */
   x1: number;
   z1: number;
+  /** Só dos atiradores: a arma que usam. */
+  weapon?: FsWeaponId;
 }
 
 /** Faixa de bots no canto noroeste da arena: uma raia por movimento, cada uma com uma placa. */
@@ -17,7 +20,44 @@ export const FS_BOTS: readonly FsBotSpec[] = [
   { id: 'b3', label: 'agachado', kind: 'crouch', x: -18, z: -14.6, x1: -10, z1: -14.6, armor: 0, helmet: false },
   { id: 'b4', label: 'pulando', kind: 'jump', x: -13, z: -16.4, x1: -13, z1: -16.4, armor: 0, helmet: false },
   { id: 'b5', label: 'girando', kind: 'turn', x: -13, z: -18.2, x1: -13, z1: -18.2, armor: 0, helmet: false },
+  // atiradores no canto nordeste, longe do nascimento: um com cada arma (atiram em você e dão dano)
+  { id: 's1', label: 'atirador pistola', kind: 'shoot', weapon: 'pistol', x: 17, z: -19, x1: 17, z1: -19, armor: 0, helmet: false },
+  { id: 's2', label: 'atirador fuzil', kind: 'shoot', weapon: 'ak', x: 13.2, z: -19.2, x1: 13.2, z1: -19.2, armor: 0, helmet: false },
+  { id: 's3', label: 'atirador sniper', kind: 'shoot', weapon: 'sniper', x: 9.4, z: -19.2, x1: 9.4, z1: -19.2, armor: 0, helmet: false },
 ];
+
+/**
+ * Comportamento dos atiradores: alcance de combate (m), tempo entre tiros (s), rajada (tiros seguidos e pausa) e erro de mira
+ * (graus a 10 m: cresce com a distância). O fuzil atira em rajadas curtas, a pistola um tiro de cada vez, a sniper devagar e forte.
+ */
+export const FS_SHOOTER: Record<'pistol' | 'ak' | 'sniper', { range: number; interval: number; burst: number; pause: number; aimErr: number; firstDelay: number }> = {
+  pistol: { range: 26, interval: 0.5, burst: 1, pause: 0.25, aimErr: 1.6, firstDelay: 0.7 },
+  ak: { range: 42, interval: 0.11, burst: 5, pause: 0.9, aimErr: 2.2, firstDelay: 0.9 },
+  sniper: { range: 80, interval: 1.9, burst: 1, pause: 0.4, aimErr: 0.9, firstDelay: 1.3 },
+};
+
+export interface FsShooterState {
+  cool: number;
+  burstLeft: number;
+}
+export const fsNewShooter = (): FsShooterState => ({ cool: 0.6, burstLeft: 0 });
+
+/** Um passo do atirador: devolve se atira agora. Só atira se enxerga você e está no alcance. */
+export function fsShooterStep(st: FsShooterState, weapon: 'pistol' | 'ak' | 'sniper', dt: number, dist: number, sees: boolean): boolean {
+  const c = FS_SHOOTER[weapon];
+  if (!sees || dist > c.range) {
+    // perdeu você de vista: recomeça a mirar quando voltar a ver
+    st.cool = Math.max(st.cool, c.firstDelay);
+    st.burstLeft = 0;
+    return false;
+  }
+  st.cool -= dt;
+  if (st.cool > 0) return false;
+  if (st.burstLeft <= 0) st.burstLeft = c.burst;
+  st.burstLeft--;
+  st.cool = st.burstLeft > 0 ? c.interval : c.interval + c.pause;
+  return true;
+}
 
 /** Velocidades (m/s) de cada tipo de caminhada. */
 export const FS_BOT_SPEED: Record<'walk' | 'shift' | 'crouch', number> = { walk: 2.8, shift: 1.4, crouch: 1.1 };
@@ -34,7 +74,7 @@ export interface FsBotState {
   out: boolean;
   /** Tempo até o próximo pulo. */
   jumpIn: number;
-  anim: 'idle' | 'run' | 'crouchwalk' | 'jump';
+  anim: 'idle' | 'run' | 'crouchwalk' | 'jump' | 'shoot';
   /** Velocidade de reprodução da animação (andar devagar = mais lento). */
   animSpeed: number;
 }
@@ -54,6 +94,11 @@ const angDiff = (a: number, b: number) => {
 
 /** Um passo do bot: anda, vira antes de voltar, pula ou gira. Puro e determinístico (sem sorteio). */
 export function fsBotStep(st: FsBotState, s: FsBotSpec, dt: number): void {
+  if (s.kind === 'shoot') {
+    st.anim = 'idle';
+    st.animSpeed = 1;
+    return;
+  }
   if (s.kind === 'turn') {
     st.h += 1.1 * dt;
     st.anim = 'idle';
