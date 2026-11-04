@@ -47,6 +47,7 @@ export const MIN_PLAYERS: Record<RoomGame, number> = {
   // com bots, uma pessoa só já joga
   bola: 1,
   pingpong: 2,
+  foxshot: 1,
   foxcap: 1,
 };
 
@@ -55,6 +56,7 @@ export const GAME_NAME: Record<RoomGame, string> = {
   desmorona: 'Desmorona!',
   bola: 'Fut Fox',
   pingpong: 'Ping Fox!',
+  foxshot: 'Counter Fox',
   foxcap: 'Fox Cap!',
   color: 'Mesmíssima',
   time: 'Já Deu?',
@@ -72,6 +74,7 @@ export const GAME_OF: Record<RoomGame, string> = {
   desmorona: 'do Desmorona!',
   bola: 'do Fut Fox',
   pingpong: 'do Ping Fox!',
+  foxshot: 'do Counter Fox',
   foxcap: 'do Fox Cap!',
 };
 
@@ -86,6 +89,13 @@ const SIZE_NAME: Record<string, string> = {
 /** Modos de cada jogo na sala, com uma linha que explica cada um. */
 export const MODES: Record<RoomGame, { id: string; label: string; note: string }[]> = {
   foxcap: [],
+  foxshot: [
+    {
+      id: 'mata',
+      label: 'Mata-mata',
+      note: 'Todos contra todos no mapa Duna. Abate vale 10 pontos e assistência 5; vence quem tiver mais pontos quando o tempo acaba. Sem ranking.',
+    },
+  ],
   pingpong: [
     {
       id: 'classico',
@@ -178,6 +188,7 @@ export function rulesSummary(s: RoomSnapshot): string {
   if (s.game === 'foxcap') return 'Fox Cap! · sem jogo escolhido';
   if (s.game === 'desmorona') return 'Desmorona! · Último de pé';
   if (s.game === 'pingpong') return 'Ping Fox! · 1 contra 1 · 11 pontos';
+  if (s.game === 'foxshot') return `Counter Fox · Mata-mata · ${s.foxshot?.minutes ?? 5} min`;
   if (s.game === 'bola' && s.bola) {
     const f = s.bola.format;
     return `Fut Fox · ${Array.from({ length: f.teams }, () => f.perTeam).join('x')} · ${f.minutes} min`;
@@ -199,7 +210,7 @@ export function rulesSummary(s: RoomSnapshot): string {
 }
 
 export function rulesFor(s: RoomSnapshot): RuleDef[] {
-  if (s.game === 'desmorona' || s.game === 'bola' || s.game === 'pingpong' || s.game === 'foxcap')
+  if (s.game === 'desmorona' || s.game === 'bola' || s.game === 'pingpong' || s.game === 'foxshot' || s.game === 'foxcap')
     return [];
   const out: RuleDef[] = [];
   const cfg = s.settings;

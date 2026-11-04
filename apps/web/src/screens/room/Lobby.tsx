@@ -1,4 +1,5 @@
-import { useMeId, type RoomSnapshot } from '@/lib/rooms';
+import { useEffect } from 'react';
+import { sendRoom, useMeId, type RoomSnapshot } from '@/lib/rooms';
 import { HostLobby } from './lobby/HostLobby';
 import { BolaLobby } from './lobby/BolaLobby';
 import { PingLobby } from './lobby/PingLobby';
@@ -13,6 +14,18 @@ import { MemberLobby } from './lobby/MemberLobby';
 export function Lobby({ snapshot }: { snapshot: RoomSnapshot }) {
   const me = useMeId();
   const leader = snapshot.members.find((m) => m.id === snapshot.hostId);
+
+  // sala criada pelo menu do Counter Fox: já nasce com o jogo dele escolhido
+  useEffect(() => {
+    if (snapshot.game !== 'foxcap' || snapshot.hostId !== me) return;
+    try {
+      if (sessionStorage.getItem('cfx-new-room') !== '1') return;
+      sessionStorage.removeItem('cfx-new-room');
+    } catch {
+      return;
+    }
+    sendRoom('pickgame', { game: 'foxshot' });
+  }, [snapshot.game, snapshot.hostId, me]);
 
   if (snapshot.game === 'foxcap') return <FoxLobby snapshot={snapshot} me={me} />;
   if (snapshot.game === 'bola') return <BolaLobby snapshot={snapshot} me={me} />;

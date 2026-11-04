@@ -25,6 +25,8 @@ import { AtravessaRoomFinalPage } from '@/games/atravessa/AtravessaRoomFinalPage
 import { BolaRoomPlay } from '@/games/bola/BolaRoomPlay';
 import { PingRoomPlay } from '@/games/pingpong/PingRoomPlay';
 import { PingRoomFinal } from '@/games/pingpong/PingRoomFinal';
+import { CounterFoxLobby } from './room/lobby/CounterFoxLobby';
+import { FoxShotRoomPlay } from '@/games/foxshot/FoxShotRoomPlay';
 import './account.css';
 import './friends.css';
 import './room.css';
@@ -54,7 +56,7 @@ function Header({ round }: { round?: string }) {
 
 /** A página de cada jogo (o Intruso é jogado a partir da Mesmíssima). */
 const GAME_PAGE: Record<
-  Exclude<RoomGame, 'desmorona' | 'bola' | 'pingpong' | 'foxcap'>,
+  Exclude<RoomGame, 'desmorona' | 'bola' | 'pingpong' | 'foxshot' | 'foxcap'>,
   '/cor' | '/tempo' | '/eco' | '/atravessa'
 > = {
   color: '/cor',
@@ -68,6 +70,7 @@ const GAME_NAME: Record<RoomGame, string> = {
   desmorona: 'Desmorona!',
   bola: 'Fut Fox',
   pingpong: 'Ping Fox!',
+  foxshot: 'Counter Fox',
   foxcap: 'Fox Cap!',
   color: 'Mesmíssima',
   time: 'Já Deu?',
@@ -77,6 +80,8 @@ const GAME_NAME: Record<RoomGame, string> = {
 };
 
 const ENTRY_LEAD: Record<RoomGame, string> = {
+  foxshot:
+    'Counter Fox com os amigos: mata-mata no mapa Duna, de 2 a 10 minutos, abate vale 10 pontos e assistência 5. Até 10 jogadores na sala, com bots para completar.',
   foxcap:
     'Sala do Fox Cap!: a sala nasce sem jogo. Dentro dela você convida a galera e escolhe (e troca) o jogo: Fut Fox, Ping Fox!, Atravessa! ou Desmorona!.',
   bola: 'Fut Fox com os amigos: futebol de raposas com 2, 3 ou 4 times, até 15 pessoas na sala (12 jogam e o resto assiste). Você escolhe o formato e completa os times com bots dentro da sala.',
@@ -208,6 +213,7 @@ function RoomPageInner({ code, game = 'color' }: { code?: string; game?: RoomGam
       lastGame === 'desmorona' ||
       lastGame === 'bola' ||
       lastGame === 'pingpong' ||
+      lastGame === 'foxshot' ||
       lastGame === 'foxcap' ||
       lastGame === 'atravessa'
     )
@@ -292,6 +298,12 @@ function RoomPageInner({ code, game = 'color' }: { code?: string; game?: RoomGam
     return <DesmoronaRoomPlay snapshot={snapshot} />;
   }
 
+  if (snapshot?.game === 'foxshot' && snapshot.phase === 'lobby') {
+    return <CounterFoxLobby snapshot={snapshot} />;
+  }
+  if (snapshot?.game === 'foxshot') {
+    return <FoxShotRoomPlay snapshot={snapshot} />;
+  }
   if (snapshot?.game === 'pingpong' && (snapshot.phase === 'show' || snapshot.phase === 'play')) {
     return <PingRoomPlay snapshot={snapshot} />;
   }

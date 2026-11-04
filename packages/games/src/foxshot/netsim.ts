@@ -541,7 +541,7 @@ export class FsNetSim {
     const lo = q.loadout;
     return {
       x: r2(q.mover.x), y: r2(q.mover.y), z: r2(q.mover.z), vx: r2(q.mover.vx), vy: r2(q.mover.vy), vz: r2(q.mover.vz),
-      og: q.mover.onGround, ck: r2(q.mover.crouchK), seq: q.lastSeq, hp: Math.max(0, Math.round(q.hp)), armor: Math.round(q.armor), helmet: q.helmet, alive: q.alive,
+      og: q.mover.onGround, ck: r2(q.mover.crouchK), seq: q.lastSeq, yaw: r2(q.yaw), pitch: r2(q.pitch), hp: Math.max(0, Math.round(q.hp)), armor: Math.round(q.armor), helmet: q.helmet, alive: q.alive,
       respawnIn: q.alive ? 0 : Math.max(0, (q.respawnAt - this.tick) / FS_NET_HZ),
       cur: lo.current, held: lo.held, ammo: lo.held ? lo.grenades[lo.held] : lo.slot.ammo, reloading: lo.reloading,
       slots: lo.slots.map((s) => (s ? fsNetWeaponIndex(s.id) : -1)),

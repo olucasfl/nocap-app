@@ -19,6 +19,7 @@ export type RoomGame =
   | 'desmorona'
   | 'bola'
   | 'pingpong'
+  | 'foxshot'
   | 'foxcap';
 export type Phase =
   | 'lobby'
@@ -218,6 +219,17 @@ export interface BolaRoomState {
   } | null;
 }
 
+/** Counter Fox em sala (spec 057): regras, quem joga e a tabela de pontos (o quadro rápido vem por `fss`). */
+export interface FoxShotRoomState {
+  minutes: number;
+  bots: number;
+  startAt: number | null;
+  roster: { id: string; name: string; bot: boolean }[] | null;
+  hz: number;
+  over: boolean;
+  score: { id: string; name: string; points: number; kills: number; assists: number; deaths: number }[] | null;
+}
+
 export interface RoomSnapshot {
   code: string;
   game: RoomGame;
@@ -250,6 +262,7 @@ export interface RoomSnapshot {
   desmorona?: DesmoronaRoomState;
   bola?: BolaRoomState;
   pingpong?: PingRoomState;
+  foxshot?: FoxShotRoomState;
 }
 
 /** Estado do Intruso, por pessoa: cor, dica e papéis só chegam a quem pode vê-los. */
@@ -336,7 +349,8 @@ type LiveType =
   | 'fin'
   | 'pev'
   | 'prej'
-  | 'ppads';
+  | 'ppads'
+  | 'fss';
 const live: Record<LiveType, Set<(m: unknown) => void>> = {
   pos: new Set(),
   ack: new Set(),
@@ -349,6 +363,7 @@ const live: Record<LiveType, Set<(m: unknown) => void>> = {
   pev: new Set(),
   prej: new Set(),
   ppads: new Set(),
+  fss: new Set(),
 };
 /** Só no desenvolvimento e nos testes de tela: injeta uma mensagem como se tivesse vindo da sala. */
 if (import.meta.env.DEV)
@@ -508,6 +523,7 @@ function attach(r: Room) {
     'pev',
     'prej',
     'ppads',
+    'fss',
   ] as const)
     r.onMessage(type, (m: unknown) => live[type].forEach((fn) => fn(m)));
   r.onMessage('chat', (m: ChatMessage) =>

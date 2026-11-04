@@ -3,6 +3,12 @@ import { sendRoom, type RoomSnapshot } from '@/lib/rooms';
 /** Os jogos que a sala do Fox Cap! pode jogar (spec 049). */
 export const FOX_GAMES = [
   {
+    id: 'foxshot',
+    name: 'Counter Fox',
+    note: 'Mata-mata em primeira pessoa no mapa Duna, com bots.',
+    cap: 'até 10',
+  },
+  {
     id: 'bola',
     name: 'Fut Fox',
     note: 'Futebol de raposas com 2 a 4 times e bots.',
