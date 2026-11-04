@@ -307,6 +307,8 @@ export function FoxShotTestPage() {
     let chargePlayed = false;
     let stepT = 0;
     let acc = 0;
+    /** Posição antes do último passo da física: a câmera mostra o meio-termo entre ela e a atual (sem trancos com a mira ampliada). */
+    const prev = { x: mover.x, y: mover.y, z: mover.z };
     const botStepT: Record<string, number> = {};
     let jumpBuf = 0;
     let slowT = 0;
@@ -643,6 +645,9 @@ export function FoxShotTestPage() {
         while (acc >= STEP) {
           acc -= STEP;
           const wasGround = mover.onGround;
+          prev.x = mover.x;
+          prev.y = mover.y;
+          prev.z = mover.z;
           fsStepMover(
             mover,
             {
@@ -752,10 +757,12 @@ export function FoxShotTestPage() {
       const scoped = adsOn && loadout.weapon.adsFov > 0;
       const adsTarget = adsOn ? 1 : 0;
       const fov = baseFov + ((loadout.weapon.adsFov || 62) - baseFov) * (adsOn ? 1 : 0);
+      // física em passos fixos de 1/120 s: interpola para a câmera andar liso em qualquer taxa de quadros
+      const alpha = isPaused ? 1 : Math.min(1, acc / STEP);
       scene.setView(
-        mover.x,
-        mover.y + fsEyeHeight(mover),
-        mover.z,
+        prev.x + (mover.x - prev.x) * alpha,
+        prev.y + (mover.y - prev.y) * alpha + fsEyeHeight(mover),
+        prev.z + (mover.z - prev.z) * alpha,
         view.yaw + view.rYaw,
         view.pitch + view.rPitch,
         THREE.MathUtils.lerp(scene.fovNow ?? baseFov, fov, Math.min(1, dt * 12)),
@@ -882,6 +889,8 @@ export function FoxShotTestPage() {
         teleport(x: number, z: number) {
           mover.x = x;
           mover.z = z;
+          prev.x = x;
+          prev.z = z;
         },
         shoot(count = 1) {
           // solta o gatilho antes (a pistola só atira em clique novo)

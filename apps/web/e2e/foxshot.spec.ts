@@ -29,7 +29,7 @@ test('a arena carrega, mostra o HUD e o medidor de desempenho', async ({ page },
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
   await page.setViewportSize({ width: 1280, height: 720 });
   await open(page);
-  await expect(page.getByTestId('fs-ammo')).toContainText('12');
+  await expect(page.getByTestId('fs-ammo')).toContainText('18');
   await expect(page.getByTestId('fs-menu')).toBeVisible();
   await expect(page.getByTestId('fs-bars')).toBeVisible();
   await expect(page.getByTestId('fs-speed')).toContainText('m/s');

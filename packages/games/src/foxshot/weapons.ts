@@ -69,7 +69,7 @@ export const FS_WEAPONS: Record<FsWeaponId, FsWeapon> = {
     moveMul: 0.92, adsFov: 0, boltS: 0, inspect: 3.4,
   },
   pistol: {
-    id: 'pistol', name: 'Pistola', slot: 'secondary', auto: false, rpm: 400, mag: 12, reload: 1.7, draw: 0.5,
+    id: 'pistol', name: 'Pistola', slot: 'secondary', auto: false, rpm: 400, mag: 18, reload: 1.7, draw: 0.5,
     damage: 34, armorRatio: 0.5, rangeMod: 0.45, headMult: 4, legMult: 0.75, penPower: 0.6,
     recoil: [[1.0, 0.15], [0.95, -0.2], [0.9, 0.2], [0.85, -0.15]], recoilResetS: 0.3, recoilRecover: 16,
     spread: { stand: 0.3, move: 1.5, air: 3.2, ads: 0.25, adsMove: 1.1 }, bloom: 0.9, bloomPerShot: 0.25,

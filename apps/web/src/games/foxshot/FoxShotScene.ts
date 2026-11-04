@@ -737,10 +737,15 @@ export class FoxShotScene {
     // molas do coice
     const kz = 180,
       kd = 18;
-    this.kickVel += (-kz * this.kickZ - kd * this.kickVel) * dt;
-    this.kickZ += this.kickVel * dt;
-    this.kickRotVel += (-kz * this.kickRot - kd * this.kickRotVel) * dt;
-    this.kickRot += this.kickRotVel * dt;
+    // mola em passos pequenos e fixos: com um passo só por quadro (até 50 ms) ela oscilava e a arma "flicava" nos quadros lentos
+    for (let rem = dt; rem > 1e-6; ) {
+      const h = Math.min(rem, 1 / 240);
+      this.kickVel += (-kz * this.kickZ - kd * this.kickVel) * h;
+      this.kickZ += this.kickVel * h;
+      this.kickRotVel += (-kz * this.kickRot - kd * this.kickRotVel) * h;
+      this.kickRot += this.kickRotVel * h;
+      rem -= h;
+    }
     const moving = Math.min(1, p.speed / 5);
     this.bob += dt * (4 + moving * 7);
     const sway = 1 - this.adsK * 0.85;
