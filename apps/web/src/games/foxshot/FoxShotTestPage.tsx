@@ -1572,7 +1572,11 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         // a arma inicial é a pistola: o modelo na mão tem de ser o dela (antes aparecia o fuzil)
         scene.selectWeapon(loadout.weapon.id, true);
         // times (só a cor): você é contra-terrorista (azul), o 1º bot terrorista (laranja), o 2º azul...
-        dmSpecs.forEach((d, i) => scene.setTeam(d.id, i % 2 === 0 ? 't' : 'ct'));
+        dmSpecs.forEach((d, i) => {
+          scene.setTeam(d.id, i % 2 === 0 ? 't' : 'ct');
+          // os do seu time (azul) aparecem com o nome e por trás das paredes
+          if (i % 2 === 1) scene.setAlly(d.id, true, d.label);
+        });
         setStatus('ready');
         last = performance.now();
         raf = requestAnimationFrame(frame);

@@ -430,6 +430,10 @@ interface FoxView {
   /** Giro suave do corpo para cair na direção do tiro. */
   turn: { from: number; to: number; t: number } | null;
   yaw0: number;
+  /** Aliado (mesmo time): silhueta que aparece por trás das paredes e o nome em cima da cabeça. */
+  ghost?: THREE.Object3D[];
+  tag?: THREE.Sprite;
+  tagText?: string;
 }
 
 interface Puff {
@@ -864,6 +868,49 @@ export class FoxShotScene {
   }
 
   /** Enfeites do Duna (modelos de terceiros, ver docs/CREDITS-3D.md): fachadas, postes, barreiras e o horizonte de prédios, tudo instanciado. */
+  /**
+   * Raposa do mesmo time que você (como o CS): o nome fica em cima da cabeça e o corpo aparece em azul por trás das paredes
+   * (só onde está escondido). Vale só para aliados: os outros continuam escondidos pelo mapa.
+   */
+  setAlly(id: string, ally: boolean, name = '') {
+    const f = this.foxes.get(id);
+    if (!f) return;
+    if (ally && !f.ghost) {
+      const mat = new THREE.MeshBasicMaterial({ color: 0x4da3ff, transparent: true, opacity: 0.5, depthTest: true, depthFunc: THREE.GreaterDepth, depthWrite: false });
+      f.ghost = [];
+      const skins: THREE.SkinnedMesh[] = [];
+      f.root.traverse((o) => {
+        if ((o as THREE.SkinnedMesh).isSkinnedMesh) skins.push(o as THREE.SkinnedMesh);
+      });
+      for (const sk of skins) {
+        if (!sk.parent) continue;
+        const g = new THREE.SkinnedMesh(sk.geometry, mat);
+        g.bind(sk.skeleton, sk.bindMatrix);
+        g.frustumCulled = false;
+        g.renderOrder = 4;
+        g.position.copy(sk.position);
+        g.quaternion.copy(sk.quaternion);
+        g.scale.copy(sk.scale);
+        sk.parent.add(g);
+        f.ghost.push(g);
+      }
+    }
+    f.ghost?.forEach((g) => (g.visible = ally));
+    if (ally) {
+      if (!f.tag || f.tagText !== name) {
+        if (f.tag) f.root.remove(f.tag);
+        const tag = labelSprite(name, '#1f5fe0');
+        tag.position.set(0, 1.95, 0);
+        tag.scale.set(1.6, 0.4, 1);
+        tag.renderOrder = 12;
+        f.root.add(tag);
+        f.tag = tag;
+        f.tagText = name;
+      }
+      f.tag.visible = true;
+    } else if (f.tag) f.tag.visible = false;
+  }
+
   /**
    * Time da raposa: contra-terrorista com pelo azul, terrorista com o pelo laranja de sempre. Só o material do pelo troca
    * (os dois materiais são compartilhados entre as raposas).

@@ -288,7 +288,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
     let lastK = 0;
     let lastFrameAt = 0;
     let timeLeft = info.minutes * 60;
-    const remotes = new Map<string, { buf: Snap[]; alive: boolean; shown: boolean; weapon: number; team?: 'ct' | 't' }>();
+    const remotes = new Map<string, { buf: Snap[]; alive: boolean; shown: boolean; weapon: number; team?: 'ct' | 't'; teamBit?: 0 | 1; ally?: boolean; allyName?: string }>();
     for (const id of SLOTS) remotes.set(id, { buf: [], alive: true, shown: false, weapon: 0 });
     const rows = new Map<string, Row>();
     const nades = new Map<number, number>();
@@ -391,6 +391,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           rm.team = team;
           scene.setTeam(key, team);
         }
+        rm.teamBit = (r.flags & 128) !== 0 ? 1 : 0;
         if (alive && (!rm.alive || !rm.shown)) {
           rm.alive = true;
           rm.shown = true;
@@ -400,6 +401,19 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           rm.alive = false;
           const from = killFrom.get(id) ?? [r.x, r.z + 1];
           scene.killTarget(key, from[0], from[1], 1.4);
+        }
+      }
+      // aliados (mesmo time que eu): nome em cima da cabeça e silhueta por trás das paredes, como no CS
+      const mine = rows.get(meId);
+      const myBit = mine && isPlayerNow() ? ((mine.flags & 128) !== 0 ? 1 : 0) : undefined;
+      for (const [key, rm] of remotes) {
+        const idx = Number(key.slice(1));
+        const who = rosterNow()[idx];
+        const ally = !!who && who.id !== meId && myBit !== undefined && rm.teamBit === myBit;
+        if (rm.ally !== ally || (ally && rm.allyName !== who?.name)) {
+          rm.ally = ally;
+          rm.allyName = who?.name;
+          scene.setAlly(key, ally, who?.name ?? '');
         }
       }
       // granadas no ar
