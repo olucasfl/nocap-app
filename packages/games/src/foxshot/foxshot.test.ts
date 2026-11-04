@@ -856,7 +856,6 @@ import {
   FS_DUST_BOXES, FS_DUST_COLS, FS_DUST_GRID, FS_DUST_HOTSPOTS, FS_DUST_SPAWNS, FS_DUST_ZONES, FS_DUST_ROWS,
   fsDustCol, fsDustPath, fsDustRow, fsDustWalkable, fsDustZoneAt, fsDustCellX, fsDustCellZ, fsPickSpawn, fsDustLineWalkable,
   FS_MATCH_BOTS, fsMatchConfig, fsMatchResult, fsMatchScore, FS_MATCH_MINUTES,
-  fsNewMover, fsStepMover, fsTrace, FS_WEAPONS,
 } from './index';
 
 describe('Duna: mapa', () => {
