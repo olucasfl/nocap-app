@@ -50,15 +50,24 @@ export const KNIFE_BACKSTAB: KnifeKey[] = [
   k(0.68, [0.06, -0.22, -0.64], [-0.85, 0.05, -0.4], [-0.06, -0.15, -0.52]),
   k(1, HOLD.p, HOLD.r),
 ];
-/** Inspeção (F, 4,8 s): levanta a faca, gira nos dedos, mostra a lâmina para a câmera e a mão esquerda toca nela. */
+const TAU = Math.PI * 2;
+/**
+ * Inspeção da faca (F, 4 s), ao estilo dos jogos de tiro táticos: sai NA HORA (primeiro quadro já em movimento), levanta a faca
+ * e mostra a lâmina, gira ao redor do próprio eixo, joga de ponta a ponta sobre os dedos, a outra mão toca a lâmina, mostra o outro
+ * lado, gira de novo no dedo e assenta. As voltas completas (múltiplos de 2π) acabam na mesma pose da mão, então não há salto ao terminar.
+ */
 export const KNIFE_INSPECT: KnifeKey[] = [
   { ...HOLD, t: 0 },
-  k(0.08, [0.06, -0.12, -0.3], [0.95, 0.2, 0]),
-  k(0.27, [0.05, -0.12, -0.3], [0.95, 0.2, Math.PI * 2]),
-  k(0.4, [0.0, -0.13, -0.28], [0.7, -1.3, Math.PI * 2], [-0.05, -0.16, -0.26]),
-  k(0.55, [0.0, -0.13, -0.28], [0.7, -1.3, Math.PI * 2], [-0.02, -0.17, -0.27]),
-  k(0.75, [0.05, -0.12, -0.3], [0.95 + Math.PI * 2, 0.2, Math.PI * 2], HOLD.l),
-  k(1, HOLD.p, [HOLD.r[0] + Math.PI * 2, HOLD.r[1], Math.PI * 2]),
+  k(0.05, [0.05, -0.11, -0.31], [0.95, -0.3, 0.2], [-0.13, -0.17, -0.34], 'out'),
+  k(0.13, [0.0, -0.1, -0.28], [0.45, -1.15, 0.45], [-0.1, -0.14, -0.3], 'out'),
+  k(0.22, [0.0, -0.1, -0.28], [0.45, -1.15, 0.45 + TAU], [-0.14, -0.17, -0.33], 'out'),
+  k(0.32, [0.02, -0.07, -0.3], [0.45 + TAU, -0.7, 0.45 + TAU], [-0.16, -0.18, -0.35], 'out'),
+  k(0.42, [0.03, -0.1, -0.29], [0.7 + TAU, 0.85, -0.5 + TAU], [-0.12, -0.15, -0.3], 'out'),
+  k(0.52, [0.01, -0.1, -0.28], [0.7 + TAU, 0.95, -0.5 + TAU], [-0.03, -0.14, -0.26], 'out'),
+  k(0.6, [0.01, -0.1, -0.28], [0.7 + TAU, 0.95, -0.5 + TAU], [-0.02, -0.15, -0.27]),
+  k(0.7, [0.04, -0.09, -0.3], [0.7 + TAU, 0.2, -0.5 + TAU * 2], [-0.14, -0.17, -0.34], 'out'),
+  k(0.82, [0.1, -0.13, -0.34], [0.62 + TAU, 0.2, TAU * 2 + 0.05], [-0.14, -0.18, -0.36], 'out'),
+  k(1, HOLD.p, [HOLD.r[0] + TAU, HOLD.r[1], TAU * 2 + HOLD.r[2]]),
 ];
 
 const smooth = (x: number) => x * x * (3 - 2 * x);

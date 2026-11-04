@@ -540,11 +540,7 @@ export class FoxShotScene {
       this.vm.add(hand);
       this.nadeHand[kind] = hand;
     }
-    this.arc.position.set(-0.02, -0.12, -0.44);
-    this.arc.rotation.z = Math.PI * 0.18;
-    this.arc.renderOrder = 20;
-    this.arc.visible = false;
-    this.vm.add(this.arc);
+
     // raposas-alvo e bots de treino
     const makeFox = (id: string, x: number, z: number, yaw: number, text: string, color: string) => {
       const root = new THREE.Group();
@@ -717,8 +713,6 @@ export class FoxShotScene {
       // cortes alternados (direita para esquerda e volta), com um risco branco que some e um tranco na câmera da arma
       this.slashParity = !this.slashParity;
       this.knifeAnim = { keys: this.slashParity ? KNIFE_SLASH : KNIFE_SLASH_B, t: 0, dur: 0.3, inspect: false };
-      this.arcT = 0.001;
-      this.arc.scale.x = this.slashParity ? 1 : -1;
       this.kickRotVel += this.slashParity ? 4 : -4;
     } else {
       this.knifeAnim = { keys: KNIFE_STAB, t: 0, dur: 0.45, inspect: false };
@@ -740,8 +734,8 @@ export class FoxShotScene {
     this.knifeAnim = { keys, t: u * 4.8, dur: 4.8, inspect: false, freeze: true };
   }
   /** Inspeção da faca (tecla F): levanta, gira e mostra a lâmina. */
-  knifeInspect(on: boolean) {
-    if (on) this.knifeAnim = { keys: KNIFE_INSPECT, t: 0, dur: 4.8, inspect: true };
+  knifeInspect(on: boolean, seconds = 4) {
+    if (on) this.knifeAnim = { keys: KNIFE_INSPECT, t: 0, dur: seconds, inspect: true };
     else if (this.knifeAnim?.inspect) this.knifeAnim = null;
   }
   // ---- armas no chão (a página limita quantas existem)

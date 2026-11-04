@@ -520,3 +520,18 @@ test('fotos das explosões (só com FS_SHOTS)', async ({ page }, info) => {
     await shot(`x-flash-${i}`);
   }
 });
+
+test('fotos da inspeção da faca (só com FS_SHOTS)', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop' || !process.env.FS_SHOTS, 'só para conferir o visual');
+  test.setTimeout(200_000);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await open(page);
+  await page.getByTestId('fsm-resume').click();
+  await fs(page, 'weapon', 2);
+  await page.waitForTimeout(1200);
+  for (const u of [0.05, 0.13, 0.22, 0.32, 0.42, 0.52, 0.7, 0.82, 0.95]) {
+    await fs(page, 'pose', 'inspect', u);
+    await page.waitForTimeout(350);
+    await page.screenshot({ path: `${process.env.FS_SHOTS}/k-insp-${Math.round(u * 100)}.png` });
+  }
+});

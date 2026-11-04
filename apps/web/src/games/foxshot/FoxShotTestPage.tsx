@@ -656,7 +656,7 @@ export function FoxShotTestPage() {
         }
         else if (e.type === 'melee') melee(e.kind);
         else if (e.type === 'inspect') {
-          if (e.weapon.id === 'knife') scene.knifeInspect(true);
+          if (e.weapon.id === 'knife') scene.knifeInspect(true, e.weapon.inspect);
           else scene.gunInspect(true, e.weapon.inspect);
         }
         else if (e.type === 'dry') fsAudio.dry();
