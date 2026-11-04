@@ -963,7 +963,7 @@ import {
   FS_DUST_BOXES, FS_DUST_COLS, FS_DUST_GRID, FS_DUST_HOTSPOTS, FS_DUST_SPAWNS, FS_DUST_ZONES, FS_DUST_ROWS,
   fsDustLevel, fsDustCol, fsDustPath, fsDustRow, fsDustWalkable, fsDustZoneAt, fsDustCellX, fsDustCellZ, fsPickSpawn, fsDustLineWalkable,
   fsDmNew, fsDmStep, fsDmFlash, type FsDmFoe, type FsDmAction,
-  fsFlinch, fsFlinchAt, fsDustDecor, FS_DUST_MARKS, fsDustWalkable, fsDustCol, fsDustRow, FsNetSim, fsNetParseInput, type FsNetCmd,
+  fsFlinch, fsFlinchAt, fsDustDecor, FS_DUST_MARKS, FsNetSim, fsNetParseInput, type FsNetCmd, type FsNetInput,
   FS_MATCH_BOTS, fsMatchConfig, fsMatchResult, fsMatchScore, FS_MATCH_MINUTES,
 } from './index';
 
@@ -1470,5 +1470,25 @@ describe('Times (cor): contra-terrorista azul e terrorista laranja, alternando p
       expect(m.x > m.x0 && m.x < m.x1 && m.z > m.z0 && m.z < m.z1, m.id).toBe(true);
       expect(fsDustWalkable(fsDustCol(m.x), fsDustRow(m.z)), `${m.id} livre`).toBe(true);
     }
+  });
+});
+
+describe('Kill feed: efeitos do abate (cego, sem mirar, varando parede, cabeça)', () => {
+  const inp = (o: Partial<FsNetInput> = {}): FsNetInput => ({ seq: 1, fwd: 0, strafe: 0, jump: false, crouch: false, walk: false, yaw: 0, pitch: 0, trigger: false, alt: false, reload: false, inspect: false, viewTick: 0, cmds: [], ...o });
+  it('o evento de abate traz wall, noscope e blind (falsos por padrão, verdadeiros quando é o caso)', () => {
+    const sim = new FsNetSim({ minutes: 2, humans: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }], bots: 0, rng: createRng('kf') });
+    const A = sim.players.get('a')!;
+    const B = sim.players.get('b')!;
+    B.hp = 1;
+    A.blindUntil = sim.tick + 600;
+    sim.damage('b', 'a', 50, 0, true, 'sniper', false, undefined, { wall: true, noscope: true });
+    const k = sim.drainEvents().find((e) => e.k === 'kill');
+    expect(k).toMatchObject({ k: 'kill', killer: 'a', victim: 'b', head: true, wall: true, noscope: true, blind: true });
+    // sem nada disso: tudo falso
+    const sim2 = new FsNetSim({ minutes: 2, humans: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }], bots: 0, rng: createRng('kf2') });
+    sim2.players.get('b')!.hp = 1;
+    sim2.damage('b', 'a', 50, 0, false, 'ak', false);
+    expect(sim2.drainEvents().find((e) => e.k === 'kill')).toMatchObject({ wall: false, noscope: false, blind: false });
+    expect(inp()).toBeTruthy();
   });
 });

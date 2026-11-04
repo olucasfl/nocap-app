@@ -477,7 +477,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         }
         if (e.killer === meId) showMarker('kill', e.head ? 'CABEÇA' : 'ABATE');
         else if (e.assist === meId) showMarker('body', 'ASSISTÊNCIA');
-        pushFeed({ killer: nameOf(e.killer), weapon: e.w, victim: nameOf(e.victim), head: e.head, you: e.killer === meId, youVictim: e.victim === meId, assist: e.assist ? nameOf(e.assist) : undefined, youAssist: e.assist === meId });
+        pushFeed({ killer: nameOf(e.killer), weapon: e.w, victim: nameOf(e.victim), head: e.head, you: e.killer === meId, youVictim: e.victim === meId, assist: e.assist ? nameOf(e.assist) : undefined, youAssist: e.assist === meId, wall: e.wall, noscope: e.noscope, blindKiller: e.blind });
       } else if (e.k === 'boom') {
         scene.explosion(e.kind, e.x, e.y, e.z);
         fsAudio.nadeAt(e.kind === 'frag' ? 'boom-frag' : 'boom-flash', e.x, e.y, e.z, px, pz);

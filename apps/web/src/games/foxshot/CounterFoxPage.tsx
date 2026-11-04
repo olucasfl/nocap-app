@@ -2,6 +2,9 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link } from '@tanstack/react-router';
 import {
   FS_DUST_COLS,
+  FS_DUST_MARKS,
+  FS_DUST_X0,
+  FS_DUST_Z0,
   FS_DUST_GRID,
   FS_DUST_ROWS,
   FS_MATCH_BOTS,
@@ -59,6 +62,53 @@ function MapCard() {
           g.fillStyle = `rgb(${120 + v * 22},${150 + v * 14},${190 - v * 6})`;
         }
         g.fillRect(c * S, r * S, S, S);
+      }
+    }
+    // as bases (áreas tingidas) e as bombas A e B com o nome
+    const px = (x: number) => (x - FS_DUST_X0) * S;
+    const pz = (z: number) => (z - FS_DUST_Z0) * S;
+    for (const m of FS_DUST_MARKS) {
+      if (m.kind !== 'base') continue;
+      const col = m.id === 'CT' ? '63,130,255' : '255,122,40';
+      g.fillStyle = `rgba(${col},0.38)`;
+      g.fillRect(px(m.x0), pz(m.z0), px(m.x1) - px(m.x0), pz(m.z1) - pz(m.z0));
+      g.strokeStyle = `rgba(${col},1)`;
+      g.lineWidth = 2;
+      g.setLineDash([8, 5]);
+      g.strokeRect(px(m.x0), pz(m.z0), px(m.x1) - px(m.x0), pz(m.z1) - pz(m.z0));
+      g.setLineDash([]);
+    }
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.lineJoin = 'round';
+    for (const m of FS_DUST_MARKS) {
+      const x = px(m.x);
+      const z = pz(m.z);
+      if (m.kind === 'site') {
+        g.beginPath();
+        g.arc(x, z, 30, 0, Math.PI * 2);
+        g.fillStyle = 'rgba(10,16,34,0.55)';
+        g.fill();
+        g.lineWidth = 4;
+        g.strokeStyle = '#ffb347';
+        g.stroke();
+        g.font = '900 38px "Saira Stencil One", Rajdhani, system-ui, sans-serif';
+        g.lineWidth = 5;
+        g.strokeStyle = 'rgba(5,8,20,.95)';
+        g.strokeText(m.short, x, z + 2);
+        g.fillStyle = '#ffd27a';
+        g.fillText(m.short, x, z + 2);
+        g.font = '800 17px Rajdhani, system-ui, sans-serif';
+        g.lineWidth = 4;
+        g.strokeText(m.name.toUpperCase(), x, z + 46);
+        g.fillText(m.name.toUpperCase(), x, z + 46);
+      } else {
+        g.font = '800 17px Rajdhani, system-ui, sans-serif';
+        g.lineWidth = 4;
+        g.strokeStyle = 'rgba(5,8,20,.95)';
+        g.strokeText(m.name.toUpperCase(), x, z);
+        g.fillStyle = m.id === 'CT' ? '#9cc4ff' : '#ffb98a';
+        g.fillText(m.name.toUpperCase(), x, z);
       }
     }
   }, []);

@@ -364,6 +364,13 @@
 .fsh-assist {
   opacity: 0.85;
 }
+.fsh-ki {
+  flex: none;
+  width: 26px;
+  height: 19px;
+  color: #fff;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.55));
+}
 .fsh-feed-w {
   width: 54px;
   height: 22px;
@@ -806,6 +813,18 @@
   color: #1b1535;
   font: 800 12px var(--font-display, system-ui);
   cursor: pointer;
+}
+.fsm-binds button.fsm-unbind {
+  min-width: 0;
+  flex: none;
+  margin-left: -4px;
+  background: #ffe4e0;
+  color: #8a1c10;
+  border-color: #8a1c10;
+}
+.fsm-binds button.fsm-unbind:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 .fsm-binds button.listen {
   background: #ffd23f;

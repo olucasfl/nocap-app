@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { FS_ARENA, FS_TARGETS, type FsGrenadeId, type FsWeaponId } from '@nocap/games';
-import { HeartIcon, SkullIcon, VestIcon, WeaponIcon } from './fs-icons';
+import { HeartIcon, KillIcon, SkullIcon, VestIcon, WeaponIcon } from './fs-icons';
 import { bindLabel, CROSS_COLORS, fsSettings, useFsSettings } from './fs-settings';
 
 export interface FsPlayerRow {
@@ -33,6 +33,10 @@ export interface FeedItem {
   youAssist?: boolean;
   /** Fui eu que morri? (também fica em destaque, como no CS) */
   youVictim?: boolean;
+  /** Efeitos do abate (ícones, como no CS2): o tiro varou parede, foi sem mirar (sniper) e o atirador estava cego. */
+  wall?: boolean;
+  noscope?: boolean;
+  blindKiller?: boolean;
 }
 
 export interface MinimapData {
@@ -200,14 +204,13 @@ export function FsKillFeed({ items }: { items: FeedItem[] }) {
     <ul className="fsh-feed" aria-live="polite" data-testid="fs-feed">
       {items.map((f) => (
         <li key={f.key} className={f.you || f.youAssist || f.youVictim ? 'mine' : 'other'} data-testid={f.you || f.youAssist || f.youVictim ? 'fs-feed-mine' : 'fs-feed-other'}>
+          {f.blindKiller && <KillIcon id="blind" className="fsh-ki" />}
           <b>{f.killer}</b>
           {f.assist && <span className="fsh-assist"> + {f.assist}</span>}
           <WeaponIcon id={f.weapon} className="fsh-feed-w" />
-          {f.head && (
-            <span className="fsh-hs" title="Cabeça">
-              CABEÇA
-            </span>
-          )}
+          {f.noscope && <KillIcon id="noscope" className="fsh-ki" />}
+          {f.wall && <KillIcon id="wall" className="fsh-ki" />}
+          {f.head && <KillIcon id="head" className="fsh-ki" />}
           <b>{f.victim}</b>
         </li>
       ))}

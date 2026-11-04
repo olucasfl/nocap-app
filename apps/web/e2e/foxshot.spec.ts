@@ -18,7 +18,7 @@ async function open(page: Page) {
   await page.getByRole('button', { name: 'Agora não' }).click({ timeout: 3000 }).catch(() => undefined);
   await page.getByTestId('cfh-play').click();
   await page.getByTestId('cfh-train').click();
-  await expect(page.getByTestId('fs-perf')).toBeVisible({ timeout: 40_000 });
+  await expect(page.getByTestId('fs-ammo')).toBeVisible({ timeout: 40_000 });
   await page.getByTestId('fsm-resume').click();
   await page.waitForTimeout(400);
 }

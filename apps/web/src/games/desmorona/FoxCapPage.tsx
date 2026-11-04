@@ -161,15 +161,15 @@ export function FoxCapPage() {
                 helpTestId="help-atravessa"
               />
               <HubModeCard
-                tone="orange"
-                art={<DesmoronaTrainingArt />}
-                name="Desmorona! Treino"
-                desc="O chão some debaixo dos pés. Contra raposas do jogo."
-                tags={['1 a 7 bots', 'Offline']}
-                onPlay={() => setFlow('dsm-pick')}
-                onHelp={() => setHelp('desmorona')}
-                testId="foxcap-desmorona"
-                helpTestId="help-desmorona"
+                tone="green"
+                art={<BolaArt />}
+                name="Fut Fox Treino"
+                desc="Futebol de raposas contra bots. Escolha o formato."
+                tags={['2 a 4 times', 'Offline']}
+                onPlay={() => setFlow('bola-pick')}
+                onHelp={() => setHelp('bola')}
+                testId="foxcap-bola"
+                helpTestId="help-bola"
               />
               <HubModeCard
                 tone="blue"
@@ -183,15 +183,15 @@ export function FoxCapPage() {
                 helpTestId="help-pingpong"
               />
               <HubModeCard
-                tone="green"
-                art={<BolaArt />}
-                name="Fut Fox Treino"
-                desc="Futebol de raposas contra bots. Escolha o formato."
-                tags={['2 a 4 times', 'Offline']}
-                onPlay={() => setFlow('bola-pick')}
-                onHelp={() => setHelp('bola')}
-                testId="foxcap-bola"
-                helpTestId="help-bola"
+                tone="orange"
+                art={<DesmoronaTrainingArt />}
+                name="Desmorona! Treino"
+                desc="O chão some debaixo dos pés. Contra raposas do jogo."
+                tags={['1 a 7 bots', 'Offline']}
+                onPlay={() => setFlow('dsm-pick')}
+                onHelp={() => setHelp('desmorona')}
+                testId="foxcap-desmorona"
+                helpTestId="help-desmorona"
               />
             </div>
             <HubNote>

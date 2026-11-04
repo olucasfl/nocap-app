@@ -53,7 +53,7 @@ export type FsNetEvent =
   | { k: 'shot'; by: string; from: Vec3; to: Vec3; w: FsWeaponId }
   | { k: 'hit'; by: string; vic: string; dmg: number; head: boolean; armor: boolean; kill: boolean }
   | { k: 'hurt'; vic: string; by: string; x: number; z: number; dmg: number; head: boolean }
-  | { k: 'kill'; killer: string; victim: string; w: FsWeaponId | FsGrenadeId; head: boolean; assist: string | null }
+  | { k: 'kill'; killer: string; victim: string; w: FsWeaponId | FsGrenadeId; head: boolean; assist: string | null; wall: boolean; noscope: boolean; blind: boolean }
   | { k: 'spawn'; id: string; x: number; z: number }
   | { k: 'nade'; id: number; by: string; kind: FsGrenadeId }
   | { k: 'boom'; id: number; kind: FsGrenadeId; x: number; y: number; z: number }
@@ -102,6 +102,8 @@ export interface FsNetPlayer {
   heardAt: number;
   /** Time (só a cor por enquanto, o mata-mata é de todos contra todos): 0 contra-terrorista (azul), 1 terrorista (laranja). */
   team: 0 | 1;
+  /** Até que tick está cego (luz de granada): o abate sai com o ícone de cego no kill feed. */
+  blindUntil: number;
 }
 
 export interface FsNetOptions {
@@ -191,7 +193,7 @@ export class FsNetSim {
     const p: FsNetPlayer = {
       id, name, bot, mover, yaw: sp.yaw, pitch: 0, hp: 100, armor: 0, helmet: false, alive: true, respawnAt: 0,
       loadout: new FsLoadout(null, 'pistol'), kills: 0, assists: 0, deaths: 0, hs: 0, damage: 0, queue: [], last: null, lastSeq: 0,
-      hist: [], brain: null, dmgLog: [], flinch: { mul: 1, dur: 0 }, flinchAt: -1e9, firedAt: -1e9, heardAt: 0, team: bot ? botTeam : ((this.humansIn++ % 2) as 0 | 1),
+      hist: [], brain: null, dmgLog: [], flinch: { mul: 1, dur: 0 }, flinchAt: -1e9, firedAt: -1e9, heardAt: 0, team: bot ? botTeam : ((this.humansIn++ % 2) as 0 | 1), blindUntil: 0,
     };
     if (bot) {
       p.brain = fsDmNew(id, sp.x, sp.z, sp.yaw, fsDmPickWeapon(this.rng), this.rng, sp.y);
@@ -340,7 +342,7 @@ export class FsNetSim {
     for (const e of evs) {
       if (e.type === 'fire') {
         const rays = e.shot.pellets ?? [{ devYaw: e.shot.devYaw, devPitch: e.shot.devPitch }];
-        this.fire(p, e.weapon.id, rays.map((r) => fsDir(inp!.yaw + r.devYaw, inp!.pitch + r.devPitch)), inp.viewTick);
+        this.fire(p, e.weapon.id, rays.map((r) => fsDir(inp!.yaw + r.devYaw, inp!.pitch + r.devPitch)), inp.viewTick, undefined, adsOn && e.weapon.adsFov > 0);
       } else if (e.type === 'melee') this.melee(p, e.kind, inp.viewTick);
       else if (e.type === 'throw') {
         const dir = fsDir(inp.yaw, inp.pitch);
@@ -404,25 +406,28 @@ export class FsNetSim {
     return out;
   }
 
-  private fire(p: FsNetPlayer, wid: FsWeaponId, rays: Vec3[], viewTick: number, originOverride?: Vec3) {
+  private fire(p: FsNetPlayer, wid: FsWeaponId, rays: Vec3[], viewTick: number, originOverride?: Vec3, scoped = true) {
     const w = FS_WEAPONS[wid];
     p.firedAt = this.tick;
     const eye: Vec3 = originOverride ?? [p.mover.x, p.mover.y + fsEyeHeight(p.mover), p.mover.z];
     const bodies = this.bodiesAt(p.id, viewTick);
-    const pool = new Map<string, { hp: number; armorLoss: number; head: boolean; armorHit: boolean }>();
+    const pool = new Map<string, { hp: number; armorLoss: number; head: boolean; armorHit: boolean; wall: boolean }>();
+    // abate de sniper sem a luneta é "sem mirar" (ícone no kill feed)
+    const noscope = wid === 'sniper' && !scoped;
     for (const dir of rays) {
       const tr = fsTrace(w, eye, dir, this.boxes, bodies);
       this.events.push({ k: 'shot', by: p.id, from: eye.map(r2) as Vec3, to: tr.point.map(r2) as Vec3, w: wid });
       if (tr.kind === 'player' && tr.targetId && tr.damage) {
-        const c = pool.get(tr.targetId) ?? { hp: 0, armorLoss: 0, head: false, armorHit: false };
+        const c = pool.get(tr.targetId) ?? { hp: 0, armorLoss: 0, head: false, armorHit: false, wall: false };
         c.hp += tr.damage.hp;
         c.armorLoss += tr.damage.armorLoss;
         c.head = c.head || tr.zone === 'head';
         c.armorHit = c.armorHit || tr.damage.protectedByArmor;
+        c.wall = c.wall || tr.wall < 1;
         pool.set(tr.targetId, c);
       }
     }
-    for (const [vid, d] of pool) this.damage(vid, p.id, d.hp, d.armorLoss, d.head, wid, d.armorHit);
+    for (const [vid, d] of pool) this.damage(vid, p.id, d.hp, d.armorLoss, d.head, wid, d.armorHit, undefined, { wall: d.wall, noscope });
     // quem está por perto ouve
     for (const q of this.players.values()) if (q.brain && q.id !== p.id) fsDmHear(q.brain, wid, p.mover.x, p.mover.z);
   }
@@ -449,7 +454,7 @@ export class FsNetSim {
   // ---------------------------------------------------------------- dano, pontos e renascer
 
   /** Tira vida de `vic` por causa de `by`. Cuida de colete, abate, assistência, pontos e do renascimento. */
-  damage(vic: string, by: string, hp: number, armorLoss: number, head: boolean, w: FsWeaponId | FsGrenadeId, armorHit: boolean, at?: { x: number; z: number }): void {
+  damage(vic: string, by: string, hp: number, armorLoss: number, head: boolean, w: FsWeaponId | FsGrenadeId, armorHit: boolean, at?: { x: number; z: number }, mods?: { wall?: boolean; noscope?: boolean }): void {
     const v = this.players.get(vic);
     const a = this.players.get(by);
     if (!v || !v.alive || this.over) return;
@@ -482,7 +487,7 @@ export class FsNetSim {
     }
     const asP = as ? this.players.get(as) : undefined;
     if (asP) asP.assists++;
-    this.events.push({ k: 'kill', killer: by, victim: vic, w, head, assist: as });
+    this.events.push({ k: 'kill', killer: by, victim: vic, w, head, assist: as, wall: !!mods?.wall, noscope: !!mods?.noscope, blind: !!a && a !== v && a.blindUntil > this.tick });
     // o que ele segurava some do mundo (as granadas no ar continuam)
     v.queue = [];
   }
@@ -545,6 +550,7 @@ export class FsNetSim {
         const eye: Vec3 = [q.mover.x, q.mover.y + fsEyeHeight(q.mover), q.mover.z];
         const r = fsFlashEffect(eye, fsDir(q.yaw, q.pitch), blast, fsClearLine(this.boxes, eye, blast), FS_GRENADES.flash.radius);
         if (r.blind > 0 || r.deaf > 0) this.events.push({ k: 'flash', vic: q.id, blind: r.blind, deaf: r.deaf });
+        if (r.blind > 0) q.blindUntil = Math.max(q.blindUntil, this.tick + Math.round(r.blind * FS_NET_HZ));
         if (q.brain && r.blind > 0) fsDmFlash(q.brain, this.tick / FS_NET_HZ + r.blind);
       }
     }

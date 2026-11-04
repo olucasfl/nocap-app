@@ -593,6 +593,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     const nades: { h: number; body: FsGrenadeBody; bounceSeen: number; bounceAt: number; owner?: string }[] = [];
     let blindTotal = 0;
     let blindUntil = 0;
+    let scopedNow = false;
     const eyeNow = (): [number, number, number] => [mover.x, mover.y + fsEyeHeight(mover), mover.z];
     const throwNade = (kind: FsGrenadeId, power: number, style: 'far' | 'mid' | 'near' = 'far') => {
       const dir = fsDir(view.yaw + view.rYaw, view.pitch + view.rPitch);
@@ -692,6 +693,8 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       window.setTimeout(() => setFeed((f) => f.filter((x) => x.key !== key)), 6000);
     };
 
+    /** Efeitos do abate que está sendo contado agora (o kill feed mostra um ícone de cada): parede varada, sem mirar e atirador cego. */
+    let curMods = { wall: false, noscope: false, blind: false };
     const pushKill = (
       killer: string,
       weapon: FsWeaponId | FsGrenadeId,
@@ -700,7 +703,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       f: { you?: boolean; youVictim?: boolean; assist?: string; youAssist?: boolean },
     ) => {
       const key = ++feedKey;
-      setFeed((l) => [...l.slice(-4), { key, killer, weapon, victim, head, you: !!f.you, youVictim: f.youVictim, assist: f.assist, youAssist: f.youAssist }]);
+      setFeed((l) => [...l.slice(-4), { key, killer, weapon, victim, head, you: !!f.you, youVictim: f.youVictim, assist: f.assist, youAssist: f.youAssist, wall: curMods.wall, noscope: curMods.noscope, blindKiller: curMods.blind }]);
       window.setTimeout(() => setFeed((l) => l.filter((x) => x.key !== key)), 6000);
     };
     /** Mata-mata: um bot (ou você) leva dano de `attacker`. Cuida de vida, colete, abate, assistência, pontos e do aviso na tela. */
@@ -811,12 +814,13 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       const w = FS_WEAPONS[a.weapon];
       const others = bodiesFor(b.id);
       const o = new THREE.Vector3(a.origin[0] + a.rays[0]![0] * 0.5, a.origin[1] + a.rays[0]![1] * 0.5, a.origin[2] + a.rays[0]![2] * 0.5);
-      const pool = new Map<string, { hp: number; armorLoss: number; head: boolean }>();
+      const pool = new Map<string, { hp: number; armorLoss: number; head: boolean; wall: boolean }>();
       for (const ray of a.rays) {
         const tr = fsTrace(w, a.origin, ray, ARENA, others);
         scene.tracer(o, new THREE.Vector3(tr.point[0], tr.point[1], tr.point[2]), a.weapon);
         if (tr.kind === 'player' && tr.targetId && tr.damage) {
-          const cur = pool.get(tr.targetId) ?? { hp: 0, armorLoss: 0, head: false };
+          const cur = pool.get(tr.targetId) ?? { hp: 0, armorLoss: 0, head: false, wall: false };
+          cur.wall = cur.wall || tr.wall < 1;
           cur.hp += tr.damage.hp;
           cur.armorLoss += tr.damage.armorLoss;
           cur.head = cur.head || tr.zone === 'head';
@@ -825,7 +829,11 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       }
       scene.puff(o, 0xffd27a, 0.25, 0.1);
       fsAudio.shotAt(a.weapon, b.mover.x, 1, b.mover.z, mover.x, mover.z);
-      for (const [vid, d] of pool) dealDamage(vid, b.id, d.hp, d.armorLoss, d.head, a.weapon, b.mover.x, b.mover.z);
+      for (const [vid, d] of pool) {
+        curMods = { wall: d.wall, noscope: false, blind: false };
+        dealDamage(vid, b.id, d.hp, d.armorLoss, d.head, a.weapon, b.mover.x, b.mover.z);
+        curMods = { wall: false, noscope: false, blind: false };
+      }
       for (const [id, other] of brains) if (id !== b.id) fsDmHear(other, a.weapon, b.mover.x, b.mover.z);
     };
     const dmStepT: Record<string, number> = {};
@@ -881,7 +889,9 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       } else if (tr.kind === 'player' && tr.targetId && tr.damage && match) {
         const d = tr.damage;
         scene.puff(to, tr.zone === 'head' ? 0xffd45a : 0xff9a4a, 0.4, 0.3);
+        curMods = { wall: tr.wall < 1, noscope: id === 'sniper' && !scopedNow, blind: blindUntil > clock };
         const res = dealDamage(tr.targetId, 'me', d.hp, d.armorLoss, tr.zone === 'head', id, mover.x, mover.z);
+        curMods = { wall: false, noscope: false, blind: false };
         if (res === 'hit') {
           const kind = tr.zone === 'head' ? 'head' : d.protectedByArmor ? 'armor' : 'body';
           if (pool) {
@@ -1382,6 +1392,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       setBoardState(inp.board && !isPaused);
 
       const scoped = adsOn && loadout.weapon.adsFov > 0;
+      scopedNow = scoped;
       const adsTarget = adsOn ? 1 : 0;
       const fov = baseFov + ((loadout.weapon.adsFov || 62) - baseFov) * (adsOn ? 1 : 0);
       // física em passos fixos de 1/120 s: interpola para a câmera andar liso em qualquer taxa de quadros
@@ -1633,6 +1644,12 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
           view.rPitch = view.rYaw = 0;
         },
         rangeShots: () => rangeShots,
+        feedDemo: () => {
+          curMods = { wall: true, noscope: true, blind: true };
+          pushKill('Você', 'sniper', 'Bot 1', true, { you: true });
+          curMods = { wall: false, noscope: false, blind: false };
+          pushKill('Bot 2', 'ak', 'Você', true, { youVictim: true });
+        },
         bot: (id: string) => ({ ...botSt.get(id)!, alive: targets.get(id)!.alive }),
         pos: (id: string) => posOf(id),
         hp: () => me.hp,

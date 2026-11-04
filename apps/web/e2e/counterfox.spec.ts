@@ -18,7 +18,7 @@ async function start(page: Page, minutes: number, bots: number) {
   await page.getByTestId(`cfx-min-${minutes}`).click();
   await page.getByTestId(`cfx-bots-${bots}`).click();
   await page.getByTestId('cfx-start').click();
-  await expect(page.getByTestId('fs-perf')).toBeVisible({ timeout: 40_000 });
+  await expect(page.getByTestId('fs-ammo')).toBeVisible({ timeout: 40_000 });
   await page.getByTestId('fsm-resume').click();
 }
 
@@ -103,6 +103,6 @@ test('abate vale 10 pontos e o fim do tempo mostra a tabela com o vencedor', asy
   await expect(page.getByTestId('fs-end-row-d1')).toBeVisible();
   if (process.env.FS_SHOTS) await page.screenshot({ path: `${process.env.FS_SHOTS}/cfx-end.png` });
   await page.getByTestId('fs-end-again').click();
-  await expect(page.getByTestId('fs-perf')).toBeVisible({ timeout: 40_000 });
+  await expect(page.getByTestId('fs-ammo')).toBeVisible({ timeout: 40_000 });
   await expect(page.getByTestId('fs-end')).toHaveCount(0);
 });

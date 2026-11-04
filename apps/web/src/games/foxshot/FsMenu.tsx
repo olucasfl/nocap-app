@@ -173,6 +173,20 @@ export function Commands({ touch }: { touch: boolean }) {
             >
               {listen === a.id ? 'Aperte...' : bindLabel(binds[a.id])}
             </button>
+            <button
+              type="button"
+              className="fsm-unbind"
+              disabled={!binds[a.id]}
+              onClick={() => {
+                bind(a.id, '');
+                setListen(null);
+              }}
+              title="Tirar o comando (fica vazio)"
+              aria-label={`Tirar o comando de ${a.label}`}
+              data-testid={`unbind-${a.id}`}
+            >
+              Tirar
+            </button>
           </li>
           );
         })}

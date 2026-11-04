@@ -105,7 +105,7 @@ export const FS_DEFAULTS: FsSettings = {
   crossGap: 4,
   crossDot: false,
   crossDynamic: true,
-  showTelemetry: true,
+  showTelemetry: false,
   showMinimap: true,
   fullscreenLock: true,
   quality: 'auto',
@@ -123,6 +123,11 @@ function load(): FsSettings {
     if (localStorage.getItem(KEY + '-lock2') !== '1') {
       p.fullscreenLock = true;
       localStorage.setItem(KEY + '-lock2', '1');
+    }
+    // o medidor de desempenho (FPS) passou a vir desligado: quem já tinha salvo "ligado" também recebe o novo padrão uma vez
+    if (localStorage.getItem(KEY + '-perf2') !== '1') {
+      p.showTelemetry = false;
+      localStorage.setItem(KEY + '-perf2', '1');
     }
     return { ...FS_DEFAULTS, ...p, binds: { ...FS_DEFAULT_BINDS, ...(p.binds ?? {}) } };
   } catch {
