@@ -13,6 +13,8 @@ export interface FsBody {
   helmet: boolean;
   /** Agachado (0 de pé, 1 agachado): a cabeça e o corpo descem junto com a raposa. */
   crouch?: number;
+  /** Para onde olha no plano (x, z): usado pela facada nas costas. */
+  facing?: [number, number];
 }
 
 /** Medidas da raposa (m): cabeça é esfera; corpo, três cilindros verticais. */

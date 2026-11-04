@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fsDamage, fsKills, FS_HP, type FsHitInfo } from './damage';
+import { fsDamage, fsIsBackstab, fsKills, FS_HP, type FsHitInfo } from './damage';
 import { FsLoadout } from './gun';
 import { FS_SHOP, fsBuy } from './shop';
 import { FS_ARENA, type FsBox } from './map';
@@ -574,6 +574,21 @@ describe('contra-strafe: tiro reto quando o boneco para', () => {
     }
     expect(best).toBeLessThan(0.9);
     expect(at(best)).toBeCloseTo(w.spread.stand, 5);
+  });
+});
+
+describe('facada nas costas', () => {
+  const face: [number, number] = [0, -1]; // o alvo olha para -z
+  it('só vale nas costas de verdade: na diagonal é a facada comum', () => {
+    expect(fsIsBackstab(face, [0, 0], [0, 2])).toBe(true); // bem atrás
+    expect(fsIsBackstab(face, [0, 0], [1, 2])).toBe(true); // ~27 graus
+    expect(fsIsBackstab(face, [0, 0], [2, 1.2])).toBe(false); // ~59 graus da linha das costas: diagonal
+    expect(fsIsBackstab(face, [0, 0], [2, -1])).toBe(false); // de lado/frente
+    expect(fsIsBackstab(face, [0, 0], [0, -2])).toBe(false); // de frente
+  });
+  it('a facada nas costas mata na hora (100) e a comum dá 70', () => {
+    expect(FS_WEAPONS.knife.melee!.backstab).toBeGreaterThanOrEqual(FS_HP);
+    expect(FS_WEAPONS.knife.melee!.stab).toBeLessThan(FS_HP);
   });
 });
 

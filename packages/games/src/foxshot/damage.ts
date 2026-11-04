@@ -42,5 +42,19 @@ export function fsDamage(w: FsWeapon, h: FsHitInfo): FsDamage {
   return { hp: Math.round(hp), armorLoss: Math.min(h.armor, Math.round((raw - hp) / 2)), raw, protectedByArmor };
 }
 
+/**
+ * Facada nas costas: quem ataca está dentro de um cone estreito atrás do alvo (`coneDeg` para cada lado, 35 por padrão). Na
+ * diagonal das costas (fora do cone) vale a facada comum. `facing` é para onde o alvo olha no plano (x, z).
+ */
+export function fsIsBackstab(facing: [number, number], target: [number, number], attacker: [number, number], coneDeg = 35): boolean {
+  const fl = Math.hypot(facing[0], facing[1]);
+  const ax = attacker[0] - target[0];
+  const az = attacker[1] - target[1];
+  const al = Math.hypot(ax, az);
+  if (fl < 1e-6 || al < 1e-6) return false;
+  const cos = (facing[0] * ax + facing[1] * az) / (fl * al);
+  return cos <= -Math.cos((coneDeg * Math.PI) / 180);
+}
+
 /** Esse tiro mata alguém com `hp` de vida? */
 export const fsKills = (d: FsDamage, hp = FS_HP) => d.hp >= hp;

@@ -26,6 +26,15 @@ export const KNIFE_STAB: KnifeKey[] = [
   k(0.62, [0.1, -0.15, -0.66], [0.05, 0.05, 0]),
   k(1, HOLD.p, HOLD.r),
 ];
+/** Facada nas costas: levanta a faca bem alto e crava de cima para baixo, segura um instante torcendo e volta (0,9 s). */
+export const KNIFE_BACKSTAB: KnifeKey[] = [
+  { ...HOLD, t: 0 },
+  k(0.2, [0.14, 0.02, -0.26], [1.35, 0.1, 0.1], [-0.1, -0.12, -0.34]),
+  k(0.38, [0.06, -0.2, -0.62], [-0.85, 0.05, 0], [-0.06, -0.14, -0.5]),
+  k(0.5, [0.06, -0.22, -0.64], [-0.85, 0.05, 0.5], [-0.06, -0.15, -0.52]),
+  k(0.68, [0.06, -0.22, -0.64], [-0.85, 0.05, -0.4], [-0.06, -0.15, -0.52]),
+  k(1, HOLD.p, HOLD.r),
+];
 /** Inspeção (F, 4,8 s): levanta a faca, gira nos dedos, mostra a lâmina para a câmera e a mão esquerda toca nela. */
 export const KNIFE_INSPECT: KnifeKey[] = [
   { ...HOLD, t: 0 },

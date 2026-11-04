@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
-import { FsHands, KNIFE_HOLD, KNIFE_INSPECT, KNIFE_SLASH, KNIFE_STAB, makeKnife, sampleKnife, type KnifeKey } from './FsHands';
+import { FsHands, KNIFE_BACKSTAB, KNIFE_HOLD, KNIFE_INSPECT, KNIFE_SLASH, KNIFE_STAB, makeKnife, sampleKnife, type KnifeKey } from './FsHands';
 import { FS_ARENA, FS_BOTS, FS_MOVE_SIGNS, FS_TARGETS, type FsBox, type FsWeaponId } from '@nocap/games';
 
 export type Quality = 'low' | 'mid' | 'high';
@@ -648,7 +648,11 @@ export class FoxShotScene {
     if (this.cur === 'sniper') this.boltK = -0.3;
   }
   /** Corte (botão de atirar) ou estocada (botão de mirar) com a faca. */
-  knifeSwing(kind: 'slash' | 'stab') {
+  knifeSwing(kind: 'slash' | 'stab' | 'backstab') {
+    if (kind === 'backstab') {
+      this.knifeAnim = { keys: KNIFE_BACKSTAB, t: 0, dur: 0.9, inspect: false };
+      return;
+    }
     this.knifeAnim = kind === 'slash' ? { keys: KNIFE_SLASH, t: 0, dur: 0.35, inspect: false } : { keys: KNIFE_STAB, t: 0, dur: 0.55, inspect: false };
   }
   /** Inspeção da arma na mão (F): olha de um lado, do outro e volta. */

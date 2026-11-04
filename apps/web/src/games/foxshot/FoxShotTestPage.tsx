@@ -14,6 +14,7 @@ import {
   fsDir,
   fsBuy,
   fsEyeHeight,
+  fsIsBackstab,
   fsQuiet,
   type FsShopItem,
   fsNewMover,
@@ -256,6 +257,8 @@ export function FoxShotTestPage() {
     window.addEventListener('keydown', onKey);
     const resume = () => {
       setPaused(false);
+      // prepara os sons (um clique já aconteceu): sintetiza todos uma vez
+      fsAudio.init();
       if (!touch) {
         // tela cheia + trava de teclado: o navegador deixa de fechar a aba com Ctrl+W (e de recarregar com Ctrl+R) enquanto joga
         if (fsSettings().fullscreenLock) {
@@ -331,7 +334,9 @@ export function FoxShotTestPage() {
       ALL_TARGETS.map((t) => {
         const s = targets.get(t.id)!;
         const b = botSt.get(t.id);
-        return { id: t.id, pos: posOf(t.id), alive: s.alive, armor: s.armor, helmet: t.helmet, crouch: b ? b.crouch : s.crouch };
+        // para onde olha (a facada nas costas precisa disso): bots olham para onde andam; os alvos parados, para o ponto de nascimento
+        const fl = b ? ([Math.cos(b.h), Math.sin(b.h)] as [number, number]) : ([0 - t.x, 14 - t.z] as [number, number]);
+        return { id: t.id, pos: posOf(t.id), alive: s.alive, armor: s.armor, helmet: t.helmet, crouch: b ? b.crouch : s.crouch, facing: fl };
       });
 
     const showMarker = (kind: Marker['kind'], text: string) =>
@@ -422,10 +427,20 @@ export function FoxShotTestPage() {
       const eye: [number, number, number] = [mover.x, mover.y + fsEyeHeight(mover), mover.z];
       const dir = fsDir(view.yaw + view.rYaw, view.pitch + view.rPitch);
       const w = kind === 'stab' ? { ...kw, damage: kw.melee!.stab } : kw;
-      const tr = fsTrace(w, eye, dir, FS_ARENA, bodies(), kw.melee!.range);
-      scene.knifeSwing(kind);
+      let tr = fsTrace(w, eye, dir, FS_ARENA, bodies(), kw.melee!.range);
+      // facada (botão direito) nas costas de quem acertou: 100 de dano (mata na hora) e animação própria
+      let back = false;
+      if (kind === 'stab' && tr.kind === 'player' && tr.targetId) {
+        const body = bodies().find((b) => b.id === tr.targetId);
+        if (body?.facing && fsIsBackstab(body.facing, [body.pos[0], body.pos[2]], [mover.x, mover.z])) {
+          back = true;
+          tr = fsTrace({ ...kw, damage: kw.melee!.backstab }, eye, dir, FS_ARENA, bodies(), kw.melee!.range);
+        }
+      }
+      scene.knifeSwing(back ? 'backstab' : kind);
       fsAudio.shot('knife');
       if (tr.kind === 'player') fsAudio.stab();
+      if (back) fsAudio.stab();
       applyHit('knife', tr, new THREE.Vector3(tr.point[0], tr.point[1], tr.point[2]));
     };
     const handle = (events: ReturnType<FsLoadout['update']>) => {
