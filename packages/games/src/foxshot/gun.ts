@@ -55,6 +55,20 @@ export class FsLoadout {
     this.current = primary ? 0 : secondary ? 1 : 2;
   }
 
+  /** Renasceu: os pentes de todas as armas voltam cheios (as granadas gastas não voltam: compra de novo na loja). */
+  refillAmmo() {
+    for (const sl of this.slots) {
+      if (!sl) continue;
+      sl.ammo = FS_WEAPONS[sl.id].mag;
+      sl.gun = fsNewGunState();
+    }
+    this.reloadT = 0;
+    this.cooldown = 0;
+    this.inspectT = 0;
+    this.buffered = 0;
+    this.dryClicked = false;
+  }
+
   get slot(): Slot {
     return this.slots[this.current]!;
   }

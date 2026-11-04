@@ -740,7 +740,7 @@ export function fsDustDecor(): FsDustPlacement[] {
     if (!f.zone || !['yard', 'TR', 'long'].includes(f.zone) || f.len < 6) continue;
     const alongX = f.nz !== 0;
     const off = (rnd() - 0.5) * (f.len - 3);
-    out.push({ model: rnd() < 0.5 ? 'barrier' : 'railing', x: f.x + (alongX ? off : 0) + f.nx * 0.5, y: f.y, z: f.z + (alongX ? 0 : off) + f.nz * 0.5, rot: Math.atan2(f.nx, f.nz) + Math.PI / 2, h: 0 });
+    out.push({ model: rnd() < 0.5 ? 'barrier' : 'railing', x: f.x + (alongX ? off : 0) + f.nx * 0.5, y: f.y, z: f.z + (alongX ? 0 : off) + f.nz * 0.5, rot: Math.atan2(f.nx, f.nz), h: 0 });
   }
   // horizonte: prédios sobre o miolo maciço, no tamanho natural do modelo (7 a 9 m de largura; a meia-diagonal é de ~6,5 m, então
   // só entram onde não há chão a 8 células ou menos: nada atravessa corredor nenhum) e numa faixa em volta do mapa
@@ -765,7 +765,64 @@ export function fsDustDecor(): FsDustPlacement[] {
       });
     }
   }
-  return out;
+  // nada de enfeite com corpo em cima de um ponto de nascimento (a pessoa nasceria presa dentro dele)
+  const solid = new Set(['arch_a', 'arch_b', 'lamp', 'barrier', 'railing']);
+  return out.filter((d) => !solid.has(d.model) || !FS_DUST_SPAWNS.some((sp) => Math.hypot(sp.x - d.x, sp.z - d.z) < 2.6));
 }
 
 export const FS_DUST_DECOR: readonly FsDustPlacement[] = fsDustDecor();
+
+
+/**
+ * Corpos duros dos enfeites que ficam dentro das salas (fachadas com arcos, barreiras, grades e postes): quem anda, os bots e as
+ * balas também esbarram neles. Só físicos: a cena desenha os modelos, não estas caixas.
+ */
+export function fsDustDecorBoxes(decor: readonly FsDustPlacement[] = FS_DUST_DECOR): FsBox[] {
+  const out: FsBox[] = [];
+  const seen = new Set<string>();
+  for (const d of decor) {
+    // a normal da parede é de eixo: o enfeite fica de frente ou de lado, nunca torto
+    const faceX = Math.abs(Math.sin(d.rot)) > 0.7;
+    let along = 0;
+    let depth = 0;
+    let height = 0;
+    let mat: FsBox['mat'] = 'wall';
+    let pen = 0;
+    if (d.model === 'arch_a' || d.model === 'arch_b') {
+      // as duas fileiras de 1,71 m viram um corpo só de 3,42 m
+      const key = `${d.x.toFixed(2)},${d.z.toFixed(2)}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      along = 2.9;
+      depth = 0.35;
+      height = 3.42;
+      mat = 'sandstone';
+    } else if (d.model === 'barrier') {
+      along = 1.6;
+      depth = 0.79;
+      height = 1.05;
+      mat = 'metal';
+      pen = 0.3;
+    } else if (d.model === 'railing') {
+      along = 2.0;
+      depth = 0.25;
+      height = 1.26;
+      mat = 'metal';
+      pen = 0.8;
+    } else if (d.model === 'lamp') {
+      along = 0.4;
+      depth = 0.4;
+      height = 5.5;
+      mat = 'metal';
+      pen = 0.3;
+    } else continue;
+    // o rumo do enfeite (rot) aponta o "para a frente" para fora da parede: "along" corre ao longo da parede
+    const hx = (faceX ? depth : along) / 2;
+    const hz = (faceX ? along : depth) / 2;
+    out.push({ min: [d.x - hx, d.y, d.z - hz], max: [d.x + hx, d.y + height, d.z + hz], pen, mat });
+  }
+  return out;
+}
+
+/** O que bloqueia andar e atirar no Duna: as paredes e os corpos duros dos enfeites. A cena desenha só `FS_DUST_BOXES`. */
+export const FS_DUST_SOLIDS: readonly FsBox[] = [...FS_DUST_BOXES, ...fsDustDecorBoxes()];

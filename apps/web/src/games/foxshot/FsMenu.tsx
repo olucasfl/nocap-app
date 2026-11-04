@@ -318,6 +318,16 @@ export function Customize({ only }: { only?: 'aim' | 'screen' } = {}) {
         value={s.fullscreenLock}
         onChange={(v) => s.set({ fullscreenLock: v })}
       />
+      <Seg<'small' | 'medium' | 'large'>
+        label="Tamanho do mapa no canto"
+        value={s.minimapSize}
+        options={[
+          ['small', 'Pequeno'],
+          ['medium', 'Médio'],
+          ['large', 'Grande'],
+        ]}
+        onChange={(v) => s.set({ minimapSize: v })}
+      />
       <Toggle
         label="Mapa no canto"
         value={s.showMinimap}

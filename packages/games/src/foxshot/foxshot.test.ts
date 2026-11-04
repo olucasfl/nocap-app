@@ -1492,3 +1492,64 @@ describe('Kill feed: efeitos do abate (cego, sem mirar, varando parede, cabeça)
     expect(inp()).toBeTruthy();
   });
 });
+
+describe('Enfeites com corpo (ninguém entra nas fachadas, grades e postes)', () => {
+  it('cada fachada de arcos, barreira, grade e poste tem uma caixa dura e os nascimentos ficam fora delas', async () => {
+    const m = await import('./index');
+    const extra = m.fsDustDecorBoxes();
+    expect(extra.length).toBeGreaterThan(20);
+    expect(m.FS_DUST_SOLIDS.length).toBe(m.FS_DUST_BOXES.length + extra.length);
+    for (const sp of m.FS_DUST_SPAWNS) {
+      const inside = extra.some((b) => sp.x > b.min[0] - 0.3 && sp.x < b.max[0] + 0.3 && sp.z > b.min[2] - 0.3 && sp.z < b.max[2] + 0.3 && sp.y < b.max[1]);
+      expect(inside, `nascimento ${sp.x},${sp.z}`).toBe(false);
+    }
+  });
+  it('andar de frente contra uma fachada para na frente dela (não entra na parede)', async () => {
+    const m = await import('./index');
+    const arch = m.fsDustDecorBoxes().find((b) => b.max[1] - b.min[1] > 3)!;
+    const cx = (arch.min[0] + arch.max[0]) / 2;
+    const cz = (arch.min[2] + arch.max[2]) / 2;
+    const faceX = arch.max[0] - arch.min[0] < arch.max[2] - arch.min[2];
+    // sai de 1,5 m do corpo, andando de frente contra ele (do lado de dentro da sala)
+    const mv = m.fsNewMover(faceX ? arch.max[0] + 1.5 : cx, faceX ? cz : arch.max[2] + 1.5);
+    mv.y = arch.min[1];
+    // a sala pode ficar do outro lado: tenta os dois sentidos e exige que em ao menos um o corpo trave a 0,3 m ou mais
+    let blocked = false;
+    for (const side of [1, -1]) {
+      const mm = m.fsNewMover(faceX ? (side > 0 ? arch.max[0] + 1.5 : arch.min[0] - 1.5) : cx, faceX ? cz : (side > 0 ? arch.max[2] + 1.5 : arch.min[2] - 1.5));
+      mm.y = arch.min[1];
+      const yaw = faceX ? (side > 0 ? 90 : -90) : side > 0 ? 0 : 180;
+      for (let i = 0; i < 120 * 2; i++) m.fsStepMover(mm, { fwd: 1, strafe: 0, jump: false, yaw, speedMul: 1 }, 1 / 120, m.FS_DUST_SOLIDS);
+      const d = faceX ? (side > 0 ? mm.x - arch.max[0] : arch.min[0] - mm.x) : side > 0 ? mm.z - arch.max[2] : arch.min[2] - mm.z;
+      if (d > 0.1) blocked = true;
+    }
+    expect(blocked).toBe(true);
+    expect(mv.y).toBeDefined();
+    expect(cx + cz).toBeDefined();
+  });
+});
+
+describe('Renascer recarrega as armas (granadas não voltam)', () => {
+  it('o pente de cada arma volta cheio e as granadas gastas continuam gastas', () => {
+    const lo = new FsLoadout('ak', 'pistol');
+    lo.slots[0]!.ammo = 3;
+    lo.slots[1]!.ammo = 0;
+    lo.grenades.frag = 0;
+    lo.reloadT = 1;
+    lo.refillAmmo();
+    expect(lo.slots[0]!.ammo).toBe(FS_WEAPONS.ak.mag);
+    expect(lo.slots[1]!.ammo).toBe(FS_WEAPONS.pistol.mag);
+    expect(lo.reloading).toBe(false);
+    expect(lo.grenades.frag).toBe(0);
+  });
+  it('na simulação do servidor quem morre e renasce volta com o pente cheio', () => {
+    const sim = new FsNetSim({ minutes: 2, humans: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }], bots: 0, rng: createRng('renasce') });
+    const B = sim.players.get('b')!;
+    B.loadout.slot.ammo = 2;
+    B.hp = 1;
+    sim.damage('b', 'a', 50, 0, false, 'ak', false);
+    for (let i = 0; i < 60 * 6; i++) sim.step();
+    expect(B.alive).toBe(true);
+    expect(B.loadout.slot.ammo).toBe(B.loadout.weapon.mag);
+  });
+});

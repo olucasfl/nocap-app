@@ -87,6 +87,8 @@ export interface FsSettings {
   crossDynamic: boolean;
   showTelemetry: boolean;
   showMinimap: boolean;
+  /** Tamanho do mapa pequeno no canto. */
+  minimapSize: 'small' | 'medium' | 'large';
   /** Joga em tela cheia e trava as teclas do navegador (Ctrl+W, Ctrl+R, Ctrl+T...) enquanto joga. */
   fullscreenLock: boolean;
   /** 'auto' deixa o jogo subir e descer a qualidade pelo fps. */
@@ -107,6 +109,7 @@ export const FS_DEFAULTS: FsSettings = {
   crossDynamic: true,
   showTelemetry: false,
   showMinimap: true,
+  minimapSize: 'medium',
   fullscreenLock: true,
   quality: 'auto',
   binds: { ...FS_DEFAULT_BINDS },

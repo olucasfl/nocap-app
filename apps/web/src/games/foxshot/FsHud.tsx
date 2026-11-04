@@ -221,6 +221,8 @@ export function FsKillFeed({ items }: { items: FeedItem[] }) {
 /** Radar redondo: gira com o jogador (a frente é sempre para cima); mostra caixas, alvos e quem tem colete. */
 export function FsMinimap({ get }: { get: () => MinimapData }) {
   const cv = useRef<HTMLCanvasElement>(null);
+  const size = useFsSettings((st) => st.minimapSize);
+  const px = size === 'small' ? 112 : size === 'large' ? 230 : 150;
   useEffect(() => {
     const c = cv.current!;
     const g = c.getContext('2d')!;
@@ -282,13 +284,13 @@ export function FsMinimap({ get }: { get: () => MinimapData }) {
     draw();
     const id = window.setInterval(draw, 66);
     return () => window.clearInterval(id);
-  }, [get]);
+  }, [get, px]);
   return (
     <canvas
       ref={cv}
-      className="fsh-radar"
-      width={150}
-      height={150}
+      className={`fsh-radar ${size}`}
+      width={px}
+      height={px}
       data-testid="fs-radar"
       aria-label="Mapa"
     />

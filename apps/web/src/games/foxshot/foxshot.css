@@ -1232,3 +1232,12 @@
   -webkit-mask-size: contain;
   mask-size: contain;
 }
+
+/* tamanho do mapa no canto (Opções): pequeno, médio e grande */
+.fsh-radar.small { width: 104px; height: 104px; }
+.fsh-radar.large { width: 214px; height: 214px; }
+@media (max-height: 520px) {
+  .fsh-radar.small { width: 84px; height: 84px; }
+  .fsh-radar.medium { width: 104px; height: 104px; }
+  .fsh-radar.large { width: 150px; height: 150px; }
+}

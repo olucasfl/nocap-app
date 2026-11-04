@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import {
-  FS_DUST_BOXES,
+  FS_DUST_SOLIDS,
   FS_DUST_MARKS,
   FS_GRENADES,
   FS_WEAPONS,
@@ -43,7 +43,7 @@ import './counterfox-hub.css';
 /** Passo da simulação (igual ao servidor) e atraso da interpolação dos outros jogadores. */
 const TICK = 1 / 60;
 const INTERP_MS = 100;
-const ARENA = FS_DUST_BOXES;
+const ARENA = FS_DUST_SOLIDS;
 
 interface Row {
   idx: number;
@@ -106,6 +106,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
   const root = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const blindEl = useRef<HTMLDivElement>(null);
+  const scopeEl = useRef<HTMLDivElement>(null);
   const hitEl = useRef<HTMLDivElement>(null);
   const ctl = useRef<FsControls | null>(null);
   const pausedRef = useRef(mePlayer);
@@ -505,6 +506,8 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         pending.length = 0;
         errOff.x = errOff.y = errOff.z = 0;
         if (!haveSelf || (aliveNow && !wasAlive)) {
+          // renasceu: pentes cheios (as granadas gastas não voltam)
+          if (haveSelf) loadout.refillAmmo();
           view.yaw = s.yaw;
           view.pitch = 0;
           view.rPitch = view.rYaw = 0;
@@ -801,6 +804,11 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         const o = left <= 0 ? 0 : left > blindTotal * 0.45 ? 1 : left / (blindTotal * 0.45);
         blindEl.current.style.opacity = String(Math.max(0, Math.min(1, o)));
       }
+      // luneta da sniper: o círculo escuro e a cruz abrem junto com a mira fechando
+      if (scopeEl.current) {
+        const on = player && loadout.weapon.adsFov > 0 && !loadout.reloading && !isPaused && scene.adsAmount > 0.93 && adsOn && alive;
+        scopeEl.current.style.opacity = on ? '1' : '0';
+      }
       const arcs = hitEl.current?.children;
       for (let i = 0; arcs && i < arcs.length; i++) {
         const elA = arcs[i] as HTMLElement;
@@ -1014,7 +1022,13 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       {status === 'error' && <div className="fs-load mono">Não deu para carregar os modelos. Atualize a página.</div>}
       {h && status === 'ready' && (
         <>
-          {!spectating && <FsCrosshair spreadPx={h.spreadPx} />}
+          {!spectating && !h.scoped && <FsCrosshair spreadPx={h.spreadPx} />}
+          {!spectating && (
+            <div className="fs-scope" ref={scopeEl} aria-hidden="true" style={{ opacity: 0 }} data-testid="fs-scope">
+              <i />
+              <b />
+            </div>
+          )}
           {marker && (
             <div key={marker.key} className={`fs-marker ${marker.kind}`} aria-hidden="true" data-testid="fs-marker">
               <span className="fs-x" />

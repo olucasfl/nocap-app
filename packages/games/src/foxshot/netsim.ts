@@ -7,7 +7,7 @@
  */
 import { fsAssister, type FsDamageEntry } from './assist';
 import { fsFlinch, fsFlinchAt, fsIsBackstab } from './damage';
-import { FS_DUST_BOXES, fsPickSpawn } from './dust';
+import { FS_DUST_SOLIDS, fsPickSpawn } from './dust';
 import { fsDmFlash, fsDmHear, fsDmHurt, fsDmNew, fsDmPickWeapon, fsDmStep, type FsDmBrain, type FsDmFoe } from './dm';
 import { fsClearLine, fsFlashEffect, fsFragDamage, fsGrenadeLaunch, fsGrenadeStep, FS_GRENADES, type FsGrenadeBody, type FsGrenadeId } from './grenades';
 import { FsLoadout } from './gun';
@@ -175,7 +175,7 @@ export class FsNetSim {
     const base = fsMatchConfig(opts.minutes, 1);
     this.cfg = { minutes: base.minutes, bots: Math.max(0, Math.min(9, Math.round(Number.isFinite(opts.bots) ? opts.bots : 0))) };
     this.endTick = this.cfg.minutes * 60 * FS_NET_HZ;
-    this.boxes = opts.boxes ?? FS_DUST_BOXES;
+    this.boxes = opts.boxes ?? FS_DUST_SOLIDS;
     this.rng = opts.rng ?? Math.random;
     const humans = opts.humans.slice(0, 10);
     const botCount = Math.max(0, Math.min(this.cfg.bots, 10 - humans.length));
@@ -507,6 +507,8 @@ export class FsNetSim {
     p.hist = [];
     p.last = null;
     p.queue = [];
+    // renasce com os pentes cheios (granadas não voltam)
+    if (!p.bot) p.loadout.refillAmmo();
     if (p.bot) {
       p.brain = fsDmNew(p.id, sp.x, sp.z, sp.yaw, fsDmPickWeapon(this.rng), this.rng, sp.y);
       p.mover = p.brain.mover;

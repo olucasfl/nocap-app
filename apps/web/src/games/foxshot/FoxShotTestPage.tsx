@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router';
 import * as THREE from 'three';
 import {
   FS_DUST_MARKS,
+  FS_DUST_SOLIDS,
   FS_SPAWN,
   fsAssister,
   fsDmFlash,
@@ -300,12 +301,12 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
 
     // Esc com o menu aberto volta ao jogo (com o mouse preso, o navegador já consome o Esc e solta o mouse)
     const onKey = (e: KeyboardEvent) => {
-      if (endedRef.current) return;
       if (e.code === 'Escape' && bigMapRef.current) {
         e.preventDefault();
         setMap(false);
         return;
       }
+      if (endedRef.current) return;
       if (e.code === 'Escape' && shopRef.current) {
         e.preventDefault();
         setShop(false);
@@ -367,7 +368,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       });
     }
     const world = match ? fsWorldDust(dmSpecs.map((d) => ({ id: d.id, x: d.x, z: d.z }))) : FS_WORLD_TRAIN;
-    const ARENA = world.boxes;
+    const ARENA = world.style === 'dust' ? FS_DUST_SOLIDS : world.boxes;
     const ALL_TARGETS: FsTargetSpec[] = [...world.targets, ...world.bots, ...dmSpecs];
     const isDm = (id: string) => dmSpecs.some((d) => d.id === id);
     const MATCH_S = match ? match.minutes * 60 : MATCH_S_TEST;
@@ -474,6 +475,9 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     const finishMatch = () => {
       if (endedRef.current) return;
       endedRef.current = true;
+      // o fim da partida fecha o mapa grande e a loja (senão ficavam por cima da tabela, sem como sair)
+      bigMapRef.current = false;
+      setBigMap(false);
       const rows = fsMatchResult([
         { id: 'me', name: 'Você', kills: stats.kills, assists: stats.assists, deaths: stats.deaths },
         ...dmSpecs.map((d) => {
@@ -1163,6 +1167,9 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         me.hp = 100;
         me.armor = 0;
         me.helmet = false;
+        // renasce com os pentes cheios (as granadas gastas não voltam: compra de novo na loja)
+        loadout.refillAmmo();
+        scene.endReload();
         const sp = match ? fsPickSpawn(aliveFoes('me'), rnd) : FS_SPAWN;
         {
           view.yaw = sp.yaw;
@@ -1777,7 +1784,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
             deaths={hud.me.deaths}
           />
           {settings.showMinimap && <FsMinimap get={getMini} />}
-          {bigMap && <FsBigMap get={getMini} title={match ? 'Mapa · Duna' : 'Mapa · Treino'} />}
+          {bigMap && !result && <FsBigMap get={getMini} title={match ? 'Mapa · Duna' : 'Mapa · Treino'} />}
           <div className="fsh-rcol">
           {settings.showTelemetry && (
             <FsTelemetry
