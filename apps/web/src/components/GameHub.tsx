@@ -7,7 +7,7 @@ import './game-hub.css';
  * As peças das telas de abertura dos jogos (Block's, Atravessa!...), no mesmo estilo do Word's: um banner
  * colorido com a arte, abas "Jogar / Como jogar", cartões grandes e regras em passos numerados.
  */
-export type HubAccent = 'yellow' | 'red' | 'green' | 'blue' | 'orange';
+export type HubAccent = 'yellow' | 'red' | 'green' | 'blue' | 'orange' | 'night';
 
 export function HubHero({
   accent,
@@ -171,6 +171,7 @@ export function HubModeCard({
   onHelp,
   testId,
   helpTestId,
+  cardTestId,
 }: {
   tone: HubAccent;
   art: ReactNode;
@@ -179,12 +180,14 @@ export function HubModeCard({
   tags?: string[];
   cta?: string;
   onPlay: () => void;
-  onHelp: () => void;
+  /** Sem isso o cartão fica só com "Jogar" (o Counter Fox explica o jogo no próprio menu). */
+  onHelp?: () => void;
   testId?: string;
   helpTestId?: string;
+  cardTestId?: string;
 }) {
   return (
-    <article className={`gh-card gh-mode ${tone}`}>
+    <article className={`gh-card gh-mode ${tone}`} data-testid={cardTestId}>
       <span className="gh-card-art" aria-hidden="true">
         {art}
       </span>
@@ -211,15 +214,17 @@ export function HubModeCard({
         >
           {cta} <ArrowRight />
         </button>
-        <button
-          type="button"
-          className="gh-mode-help"
-          data-sfx="select"
-          onClick={onHelp}
-          data-testid={helpTestId}
-        >
-          Como jogar?
-        </button>
+        {onHelp && (
+          <button
+            type="button"
+            className="gh-mode-help"
+            data-sfx="select"
+            onClick={onHelp}
+            data-testid={helpTestId}
+          >
+            Como jogar?
+          </button>
+        )}
       </span>
     </article>
   );

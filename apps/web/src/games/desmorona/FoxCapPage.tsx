@@ -7,6 +7,7 @@ import { HowToPlay, type HowGame } from '@/components/HowToPlay';
 import {
   AtravessaArt,
   BolaArt,
+  CounterFoxArt,
   DesmoronaTrainingArt,
   FoxCapArt,
   PingArt,
@@ -18,7 +19,6 @@ import { Page } from '@/components/Page';
 import { RoomBanner } from '@/components/RoomBanner';
 import { RoomConflictDialog } from '@/components/RoomConflictDialog';
 import { useRoomEntry } from '@/lib/my-room';
-import { CounterFoxCard } from '../foxshot/CounterFoxCard';
 import { BolaPicker } from '../bola/BolaPicker';
 import type { BolaSetup } from '../bola/BolaPlay';
 import { DesmoronaPicker } from './DesmoronaPicker';
@@ -138,7 +138,16 @@ export function FoxCapPage() {
         {tab === 'offline' ? (
           <>
             <div className="gh-modes two">
-              <CounterFoxCard />
+              <HubModeCard
+                tone="night"
+                art={<CounterFoxArt />}
+                name="Counter Fox"
+                desc="Mata-mata das raposas no mapa Duna. Offline, com bots, ou online com os amigos. Tem mapa de treino."
+                tags={['Mata-mata', 'Até 10 jogadores', 'Online']}
+                onPlay={() => void navigate({ to: '/fox-cap/counter-fox' })}
+                testId="foxcap-counterfox"
+                cardTestId="foxcap-counterfox-card"
+              />
               <HubModeCard
                 tone="red"
                 art={<AtravessaArt />}

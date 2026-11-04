@@ -926,3 +926,29 @@ export function FoxAvatar({ fur, cap = '#2f5bff' }: { fur: string; cap?: string 
     </svg>
   );
 }
+
+/** Counter Fox: noite no Duna, lua, dunas e a raposa com a mira em volta. */
+export function CounterFoxArt() {
+  return (
+    <svg className="ha ha-cfx" viewBox="0 0 200 150" aria-hidden="true">
+      <defs>
+        <linearGradient id="cfx-sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#0c1427" />
+          <stop offset="0.6" stopColor="#3a1f4a" />
+          <stop offset="1" stopColor="#ff7a3a" />
+        </linearGradient>
+      </defs>
+      <rect width="200" height="150" fill="url(#cfx-sky)" />
+      <circle cx="152" cy="40" r="17" fill="#ffd9a0" />
+      <path d="M0 104 Q50 78 100 100 T200 92 V150 H0Z" fill="#2a1630" />
+      <path d="M0 124 Q70 100 140 122 T200 116 V150 H0Z" fill="#120b1c" />
+      <g transform="translate(14 -23) scale(1)">
+        <FoxBody />
+      </g>
+      <g fill="none" stroke="#ff6a2b" strokeWidth="3.5" strokeLinecap="square">
+        <circle cx="100" cy="76" r="44" opacity="0.9" />
+        <path d="M100 22 V38 M100 114 V130 M46 76 H62 M138 76 H154" />
+      </g>
+    </svg>
+  );
+}

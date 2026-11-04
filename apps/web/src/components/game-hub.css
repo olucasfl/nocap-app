@@ -162,6 +162,10 @@
 .gh-card.orange {
   background: var(--orange);
 }
+.gh-card.night {
+  background: #101a33;
+  color: #fff;
+}
 .gh-card:disabled {
   opacity: 0.7;
   cursor: default;
@@ -418,3 +422,8 @@
 @media (max-width: 560px) {
   .gh-modes.two { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Counter Fox no Fox Cap!: mesmo cartão dos outros modos, em azul-noite com o laranja do jogo no botão */
+.gh-card.night .gh-card-body .mono { color: #c8d2ea; }
+.gh-card.night .gh-card-tag { background: #1d2b50; color: #ffd9a0; border-color: #ffd9a0; }
+.gh-card.night .gh-mode-play { background: #ff6a2b; color: #1a0d05; }
