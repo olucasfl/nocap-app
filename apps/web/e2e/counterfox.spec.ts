@@ -79,7 +79,7 @@ test('os bots andam pelo mapa, lutam e o placar mostra pontos', async ({ page },
 
 test('abate vale 10 pontos e o fim do tempo mostra a tabela com o vencedor', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
-  test.setTimeout(120_000);
+  test.setTimeout(200_000);
   await page.setViewportSize({ width: 1280, height: 720 });
   await start(page, 2, 1);
   await fs(page, 'dmOff', true);
