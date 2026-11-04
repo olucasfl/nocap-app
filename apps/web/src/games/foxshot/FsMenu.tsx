@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
 import { toggleMute, useMuted } from '@/lib/sfx';
 import {
-  FS_ACTIONS,
+  FS_ACTIONS, FS_CATS,
   bindLabel,
   useFsSettings,
   CROSS_COLORS,
@@ -112,7 +112,9 @@ function Commands({ touch }: { touch: boolean }) {
     const kd = (e: KeyboardEvent) => {
       e.preventDefault();
       e.stopImmediatePropagation();
-      if (e.code !== 'Escape') bind(listen, e.code);
+      // Esc cancela; Backspace ou Delete tira a tecla da ação (fica sem tecla)
+      if (e.code === 'Backspace' || e.code === 'Delete') bind(listen, '');
+      else if (e.code !== 'Escape') bind(listen, e.code);
       setListen(null);
     };
     const md = (e: MouseEvent) => {
@@ -145,11 +147,14 @@ function Commands({ touch }: { touch: boolean }) {
   return (
     <div data-testid="fsm-commands">
       <p className="fsm-hint mono">
-        Clique numa ação e aperte a nova tecla (ou botão do mouse). Esc cancela. Setas também andam.
+        Clique numa ação e aperte a nova tecla (ou botão do mouse). Esc cancela, Backspace tira a tecla. Setas também andam.
       </p>
+      {FS_CATS.map((cat) => (
+      <section key={cat.id} className="fsm-cat" data-testid={`cat-${cat.id}`}>
+      <h4>{cat.label}</h4>
       <ul className="fsm-binds">
-        {FS_ACTIONS.map((a) => {
-          const clash = FS_ACTIONS.filter((o) => o.id !== a.id && binds[o.id] === binds[a.id]);
+        {cat.ids.map((id) => FS_ACTIONS.find((x) => x.id === id)!).map((a) => {
+          const clash = FS_ACTIONS.filter((o) => o.id !== a.id && binds[a.id] !== '' && binds[o.id] === binds[a.id]);
           return (
           <li key={a.id} className={clash.length ? 'conflict' : ''}>
             <span>
@@ -171,15 +176,21 @@ function Commands({ touch }: { touch: boolean }) {
           </li>
           );
         })}
-        <li className="fixed">
-          <span>Soltar o mouse / abrir este menu</span>
-          <b className="mono">Esc</b>
-        </li>
-        <li className="fixed">
-          <span>Trocar de arma</span>
-          <b className="mono">Roda do mouse</b>
-        </li>
+        {cat.id === 'general' && (
+          <li className="fixed">
+            <span>Soltar o mouse / abrir este menu</span>
+            <b className="mono">Esc</b>
+          </li>
+        )}
+        {cat.id === 'weapons' && (
+          <li className="fixed">
+            <span>Passar pelas armas e granadas</span>
+            <b className="mono">Roda do mouse</b>
+          </li>
+        )}
       </ul>
+      </section>
+      ))}
       <button type="button" className="fsm-link" onClick={reset}>
         Restaurar tudo ao padrão
       </button>

@@ -974,3 +974,11 @@
 .fs-deadscreen span { font-size: 18px; letter-spacing: 0.08em; text-transform: uppercase; text-shadow: 0 2px 0 #000; }
 @keyframes fs-deadin { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .fs-hurt, .fs-hurt.heavy, .fs-deadscreen { animation-duration: 0.01s; } }
+
+/* granadas na lista de armas */
+.fsh-slots .fsh-n { font-style: normal; font: 900 11px var(--font-display, system-ui); color: #ffd23f; }
+.fs-blind { position: absolute; inset: 0; z-index: 10; pointer-events: none; background: #fffdf2; opacity: 0; }
+
+/* comandos por categoria */
+.fsm-cat { margin: 10px 0 4px; }
+.fsm-cat h4 { margin: 0 0 6px; padding: 4px 8px; background: #1b1535; color: #ffd23f; font: 900 11px var(--font-display, system-ui); letter-spacing: 0.12em; text-transform: uppercase; }

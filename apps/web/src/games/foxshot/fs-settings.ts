@@ -20,9 +20,20 @@ export const FS_ACTIONS = [
   { id: 'drop', label: 'Largar a arma' },
   { id: 'pickup', label: 'Pegar do chão' },
   { id: 'next', label: 'Próxima arma' },
+  { id: 'grenade', label: 'Pegar granada (passa por todas)' },
+  { id: 'grenadeFrag', label: 'Pegar a granada explosiva' },
+  { id: 'grenadeFlash', label: 'Pegar a granada de luz' },
   { id: 'scoreboard', label: 'Placar (segurar)' },
 ] as const;
 export type FsAction = (typeof FS_ACTIONS)[number]['id'];
+
+/** Os comandos agrupados por categoria (a ordem é a da tela de Comandos). */
+export const FS_CATS: { id: string; label: string; ids: FsAction[] }[] = [
+  { id: 'move', label: 'Movimento', ids: ['forward', 'back', 'left', 'right', 'jump', 'crouch', 'walk'] },
+  { id: 'weapons', label: 'Armas', ids: ['fire', 'ads', 'reload', 'inspect', 'slot1', 'slot2', 'slot3', 'next', 'drop', 'pickup', 'buy'] },
+  { id: 'grenades', label: 'Granadas', ids: ['grenade', 'grenadeFrag', 'grenadeFlash'] },
+  { id: 'general', label: 'Geral', ids: ['scoreboard'] },
+];
 
 export const FS_DEFAULT_BINDS: Record<FsAction, string> = {
   forward: 'KeyW',
@@ -43,6 +54,9 @@ export const FS_DEFAULT_BINDS: Record<FsAction, string> = {
   drop: 'KeyG',
   pickup: 'KeyE',
   next: 'KeyQ',
+  grenade: 'Digit4',
+  grenadeFrag: '',
+  grenadeFlash: '',
   scoreboard: 'Tab',
 };
 
@@ -165,6 +179,7 @@ const NAMES: Record<string, string> = {
 
 /** Nome legível de uma tecla ou botão. */
 export function bindLabel(code: string): string {
+  if (!code) return 'Nenhuma';
   if (NAMES[code]) return NAMES[code]!;
   if (code.startsWith('Key')) return code.slice(3);
   if (code.startsWith('Digit')) return code.slice(5);

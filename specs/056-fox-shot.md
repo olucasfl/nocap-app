@@ -220,3 +220,10 @@ Nomes (decisão do Lucas, 04/11/2026: diferentes do padrão, mas dentro da ideia
 - Fuzil leve (M4): 31 de dano, 700 rpm, 25 balas, recuo regular e puxando para a direita.
 - Pistola silenciada (USP-S): 28 de dano (a Faísca dá 34), 12 balas, dispersão ~5x menor, som de "pft", ouve-se só a 12 m.
 - Modelos (`tools/art/*_from_ref.py`): MP5, escopeta, M4 e USP-S enviados pelo Lucas, em `public/models/foxshot/ref/`. Licenças a confirmar.
+
+## 19. Granadas (implementado na fase 0)
+
+- Duas granadas (modelos do Lucas em `ref/frag.glb` e `ref/flash.glb`): explosiva (explode 1,9 s depois de jogada; 60 de dano no centro, caindo em linha reta até 0 em 7 m; parede protege) e de luz (1,5 s; cega por até 4,6 s quem olha e enxerga, quem não vê só ouve o estouro; zumbido nos ouvidos e som abafado que passam aos poucos).
+- Arremesso: clique rápido = força média; segurar e soltar = mais forte. Tirar o pino (mão esquerda) ao segurar; o braço vai para trás conforme a força.
+- Inventário: máximo de 2 de cada; compra na loja (coluna Granadas). Tecla 4 (configurável) pega a primeira, de novo a outra, de novo volta à arma; teclas próprias para cada granada nos Comandos (sem tecla por padrão; Backspace tira a tecla); a roda do mouse passa por armas e granadas.
+- Comandos agrupados por categoria: Movimento, Armas, Granadas, Geral.

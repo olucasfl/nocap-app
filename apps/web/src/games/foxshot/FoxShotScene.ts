@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { FsHands, KNIFE_BACKSTAB, KNIFE_HOLD, KNIFE_INSPECT, KNIFE_SLASH, KNIFE_SLASH_B, KNIFE_STAB, makeKnife, sampleKnife, type KnifeKey } from './FsHands';
-import { FS_ARENA, FS_BOTS, FS_MOVE_SIGNS, FS_TARGETS, type FsBox, type FsWeaponId } from '@nocap/games';
+import { FS_ARENA, FS_BOTS, FS_MOVE_SIGNS, FS_TARGETS, type FsBox, type FsGrenadeId, type FsWeaponId } from '@nocap/games';
 
 export type Quality = 'low' | 'mid' | 'high';
 
@@ -292,6 +292,16 @@ export class FoxShotScene {
   private reloadK = -1;
   private boltK = -1;
   private hands = new FsHands();
+  // ---- granadas: modelos, a que está na mão (com a animação do pino e do arremesso), as que voam e o clarão da explosão
+  private nadeTpl: Partial<Record<FsGrenadeId, THREE.Object3D>> = {};
+  private nadeHand: Partial<Record<FsGrenadeId, THREE.Object3D>> = {};
+  private nadeWorld = new Map<number, THREE.Object3D>();
+  private nadeSeq = 0;
+  private nade: { kind: FsGrenadeId; phase: 'idle' | 'pin' | 'charge' | 'throw'; t: number; charge: number } | null = null;
+  private blast: THREE.PointLight | null = null;
+  private blastT = 0;
+  private blastDur = 0.4;
+  private blastPeak = 40;
   private slashParity = false;
   /** Risco branco do corte: tempo desde o golpe (0 = parado) e a malha. */
   private arcT = 0;
@@ -509,6 +519,27 @@ export class FoxShotScene {
     this.weapons.set('knife', kHolder);
     this.vmPivot.add(kHolder);
     this.vm.add(this.hands.group, this.knifeObj);
+    // granadas (modelos do Lucas; se faltarem, uma forma simples)
+    for (const [kind, file] of [['frag', 'ref/frag.glb'], ['flash', 'ref/flash.glb']] as const) {
+      let tpl: THREE.Object3D;
+      try {
+        const g = await loader.loadAsync(base + file);
+        tpl = g.scene;
+      } catch {
+        tpl = new THREE.Mesh(
+          kind === 'frag' ? new THREE.SphereGeometry(0.045, 12, 10) : new THREE.CylinderGeometry(0.03, 0.03, 0.13, 12),
+          new THREE.MeshStandardMaterial({ color: kind === 'frag' ? 0x2a3a1a : 0x8a8d94, roughness: 0.6, metalness: 0.4 }),
+        );
+      }
+      tpl.traverse((o) => {
+        (o as THREE.Mesh).frustumCulled = false;
+      });
+      this.nadeTpl[kind] = tpl;
+      const hand = tpl.clone(true);
+      hand.visible = false;
+      this.vm.add(hand);
+      this.nadeHand[kind] = hand;
+    }
     this.arc.position.set(-0.02, -0.12, -0.44);
     this.arc.rotation.z = Math.PI * 0.18;
     this.arc.renderOrder = 20;
@@ -751,6 +782,96 @@ export class FoxShotScene {
   /** Só para conferir: posição e giro da arma na tela (para achar tremedeira). */
   debugVm() {
     return [this.vm.position.x, this.vm.position.y, this.vm.position.z, this.vm.rotation.x, this.vm.rotation.y, this.vm.rotation.z, this.cam.fov];
+  }
+  // ---- granadas
+  /** Põe a granada na mão (null = volta a mostrar a arma). */
+  selectNade(kind: FsGrenadeId | null) {
+    for (const k of ['frag', 'flash'] as const) if (this.nadeHand[k]) this.nadeHand[k]!.visible = false;
+    if (!kind) {
+      this.nade = null;
+      return;
+    }
+    for (const g of this.weapons.values()) g.visible = false;
+    this.knifeObj.visible = false;
+    this.nade = { kind, phase: 'idle', t: 0, charge: 0 };
+    this.drawK = 0;
+    this.knifeAnim = null;
+    this.inspK = -1;
+  }
+  /** Tirou o pino (a outra mão puxa). */
+  nadePin() {
+    if (this.nade) {
+      this.nade.phase = 'pin';
+      this.nade.t = 0;
+    }
+  }
+  /** Segurando o botão: o braço vai para trás conforme a força (0 a 1,2). */
+  nadeCharge(c: number) {
+    if (this.nade) this.nade.charge = c;
+  }
+  nadeThrow() {
+    if (this.nade) {
+      this.nade.phase = 'throw';
+      this.nade.t = 0;
+    }
+  }
+  /** Uma granada voando (modelo no mundo); devolve o número para mover e remover. */
+  addGrenade(kind: FsGrenadeId): number {
+    const h = ++this.nadeSeq;
+    const tpl = this.nadeTpl[kind];
+    if (!tpl) return h;
+    const o = tpl.clone(true);
+    o.traverse((c) => {
+      (c as THREE.Mesh).castShadow = true;
+    });
+    this.scene.add(o);
+    this.nadeWorld.set(h, o);
+    return h;
+  }
+  setGrenade(h: number, x: number, y: number, z: number, spin: number) {
+    const o = this.nadeWorld.get(h);
+    if (!o) return;
+    o.position.set(x, y, z);
+    o.rotation.set(spin * 1.7, spin * 0.6, spin);
+  }
+  removeGrenade(h: number) {
+    const o = this.nadeWorld.get(h);
+    if (!o) return;
+    this.scene.remove(o);
+    this.nadeWorld.delete(h);
+  }
+  /** Explosão: bola de fogo, fumaça, faíscas e um clarão de luz (a de luz é um clarão branco enorme). */
+  explosion(kind: FsGrenadeId, x: number, y: number, z: number) {
+    const at = new THREE.Vector3(x, y, z);
+    if (kind === 'flash') {
+      this.puff(at, 0xffffff, 9, 0.3);
+      this.puff(at, 0xfff6d0, 5, 0.5);
+      for (let i = 0; i < 8; i++) this.puff(at.clone().add(new THREE.Vector3((Math.random() - 0.5) * 2, Math.random() * 1.2, (Math.random() - 0.5) * 2)), 0xffffff, 1.2, 0.35);
+      this.flashLight(0xffffff, 80, 0.5, at);
+      return;
+    }
+    this.puff(at, 0xff9a2a, 4.2, 0.4);
+    this.puff(at.clone().add(new THREE.Vector3(0, 0.4, 0)), 0xffe08a, 2.6, 0.25);
+    for (let i = 0; i < 7; i++) {
+      const p = at.clone().add(new THREE.Vector3((Math.random() - 0.5) * 2.4, 0.3 + Math.random() * 1.8, (Math.random() - 0.5) * 2.4));
+      this.puff(p, i % 2 ? 0x55504a : 0x3c3935, 2.2 + Math.random() * 2.2, 1.1 + Math.random() * 0.6);
+    }
+    for (let i = 0; i < 12; i++) {
+      const p = at.clone().add(new THREE.Vector3((Math.random() - 0.5) * 3.2, Math.random() * 2, (Math.random() - 0.5) * 3.2));
+      this.puff(p, 0xffc060, 0.35, 0.45);
+    }
+    this.flashLight(0xff9a40, 60, 0.4, at);
+  }
+  private flashLight(color: number, peak: number, dur: number, at: THREE.Vector3) {
+    if (!this.blast) {
+      this.blast = new THREE.PointLight(0xffffff, 0, 40, 1.6);
+      this.scene.add(this.blast);
+    }
+    this.blast.color.setHex(color);
+    this.blast.position.copy(at).add(new THREE.Vector3(0, 0.8, 0));
+    this.blastPeak = peak;
+    this.blastDur = dur;
+    this.blastT = dur;
   }
   startReload() {
     this.reloadK = 0;
@@ -1051,6 +1172,54 @@ export class FoxShotScene {
   private updateHands(dt: number, cfg: VmCfg, mag: THREE.Object3D | null, bolt: THREE.Object3D | null) {
     const h = this.hv;
     const fwd = new THREE.Vector3(0, 0, -0.2);
+    if (this.nade) {
+      const n = this.nade;
+      n.t += dt;
+      const E = FoxShotScene.smooth;
+      const hold = new THREE.Vector3(0.17, -0.17, -0.36);
+      const left = new THREE.Vector3(-0.17, -0.2, -0.38);
+      const c = Math.min(1, n.charge);
+      h.r.copy(hold);
+      h.l.copy(left);
+      let rot = new THREE.Euler(0.3, 0.2, 0.1);
+      let show = true;
+      if (n.phase === 'pin') {
+        // a mão esquerda sobe até o pino, puxa e se afasta
+        const u = Math.min(1, n.t / 0.32);
+        const top = new THREE.Vector3(0.13, -0.09, -0.34);
+        const away = new THREE.Vector3(-0.14, -0.15, -0.3);
+        h.l.lerpVectors(left, top, E(Math.min(1, u * 2)));
+        if (u > 0.5) h.l.lerpVectors(top, away, E((u - 0.5) * 2));
+        if (n.t >= 0.32) n.phase = 'charge';
+      }
+      if (n.phase === 'charge' || (n.phase === 'pin' && n.t >= 0.32)) {
+        h.r.add(new THREE.Vector3(0.05 * c, 0.05 * c, 0.15 * c));
+        rot = new THREE.Euler(0.3 + 0.5 * c, 0.2, 0.1 + 0.3 * c);
+        h.l.lerp(left.clone().add(new THREE.Vector3(-0.03, -0.04, 0.04)), 0.5);
+      }
+      if (n.phase === 'throw') {
+        const u = Math.min(1, n.t / 0.38);
+        const back = hold.clone().add(new THREE.Vector3(0.05 * c, 0.05 * c, 0.15 * c));
+        const fwdPos = new THREE.Vector3(0.04, -0.12, -0.66);
+        const rest = new THREE.Vector3(0.1, -0.24, -0.46);
+        if (u < 0.45) h.r.lerpVectors(back, fwdPos, 1 - (1 - u / 0.45) ** 3);
+        else h.r.lerpVectors(fwdPos, rest, E((u - 0.45) / 0.55));
+        rot = new THREE.Euler(0.2 - 0.8 * Math.min(1, u * 2), 0.1, 0);
+        show = u < 0.42; // a granada sai da mão no meio do arremesso
+        h.l.lerp(left, 0.6);
+      }
+      const hand = this.nadeHand[n.kind];
+      if (hand) {
+        hand.visible = show;
+        hand.position.copy(h.r).add(new THREE.Vector3(0, 0.025, 0));
+        hand.rotation.copy(rot);
+      }
+      h.ra.copy(h.r).add(fwd);
+      h.la.copy(h.l).add(fwd);
+      this.hands.setLeftVisible(true);
+      this.hands.set(h.r, h.ra, h.l, h.la);
+      return;
+    }
     if (this.cur === 'knife') {
       this.hands.setLeftVisible(true);
       this.knifeObj.visible = true;
@@ -1288,6 +1457,10 @@ export class FoxShotScene {
       const k = q.age / q.life;
       q.s.scale.setScalar(q.grow * (0.4 + k * 1.2));
       (q.s.material as THREE.SpriteMaterial).opacity = (1 - k) * 0.8;
+    }
+    if (this.blast && this.blastT > 0) {
+      this.blastT = Math.max(0, this.blastT - dt);
+      this.blast.intensity = (this.blastT / this.blastDur) ** 2 * this.blastPeak;
     }
     for (const [h, o] of this.drops) if (this.dropFloat.get(h) !== false) o.position.y = 0.14 + Math.sin(this.t * 2 + o.position.x) * 0.02;
     this.updateViewmodel(dt, { ...p, ads: p.adsTarget > 0.5 });

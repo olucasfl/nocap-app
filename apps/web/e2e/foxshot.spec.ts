@@ -427,3 +427,96 @@ test('escopeta: de perto mata com um tiro, de longe quase não acerta', async ({
   expect(far.alive, 'de longe não mata').toBe(true);
   expect(far.hp, 'de longe quase nada acerta').toBeGreaterThan(55);
 });
+
+test('granadas: explosiva dá dano por distância, de luz cega só quem olha, tecla 4 passa pelas duas', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'um projeto basta');
+  test.setTimeout(200_000);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await open(page);
+  await page.getByTestId('fsm-resume').click();
+  // loja: compra as duas (máximo de 2 de cada)
+  await page.keyboard.press('KeyB');
+  await page.getByTestId('fs-buy-frag').dispatchEvent('click');
+  await page.getByTestId('fs-buy-flash').dispatchEvent('click');
+  await page.keyboard.press('KeyB');
+  const inv = await fs<{ frag: number; flash: number; held: string | null }>(page, 'nades');
+  expect(inv.frag).toBe(1);
+  expect(inv.flash).toBe(1);
+  // tecla 4: primeira granada, de novo: a outra, de novo: volta à arma
+  await page.keyboard.press('Digit4');
+  await expect(page.getByTestId('fs-ammo')).toContainText('Granada explosiva');
+  await page.keyboard.press('Digit4');
+  await expect(page.getByTestId('fs-ammo')).toContainText('Granada de luz');
+  await page.keyboard.press('Digit4');
+  expect((await fs<{ held: string | null }>(page, 'nades')).held).toBeNull();
+  // explosiva: no centro (t1 em -8, 2) tira bastante; a 5 m tira pouco
+  const hp = async (id: string) => (await fs<{ hp: number }>(page, 'target', id)).hp;
+  await fs(page, 'blastAt', 'frag', -8, 2);
+  await expect.poll(async () => hp('t1'), { timeout: 15_000 }).toBeLessThan(50);
+  await fs(page, 'blastAt', 'frag', -2.5, -2.5); // a ~5 m de t2 (-2.5, 2.5)
+  await expect.poll(async () => hp('t2'), { timeout: 15_000 }).toBeLessThan(100);
+  expect(await hp('t2')).toBeGreaterThan(70);
+  // luz: de frente cega (a vista está para -z), de costas não
+  await fs(page, 'teleport', 0, 14);
+  await fs(page, 'blastAt', 'flash', 0, 8);
+  await expect.poll(async () => fs<number>(page, 'blind'), { timeout: 15_000 }).toBeGreaterThan(1);
+  await expect(page.getByTestId('fs-blind')).toBeAttached();
+  await fs(page, 'blastAt', 'flash', 0, 19);
+  await page.waitForTimeout(3000);
+  // (a cegueira anterior pode ter acabado; o que vale é que a de costas não somou)
+  expect(await fs<number>(page, 'blind')).toBeLessThan(5);
+});
+
+test('fotos das granadas (só com FS_SHOTS)', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop' || !process.env.FS_SHOTS, 'só para conferir o visual');
+  test.setTimeout(300_000);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await open(page);
+  await page.getByTestId('fsm-resume').click();
+  const shot = (n: string) => page.screenshot({ path: `${process.env.FS_SHOTS}/${n}.png` });
+  await page.keyboard.press('KeyB');
+  await page.getByTestId('fs-buy-frag').dispatchEvent('click');
+  await page.getByTestId('fs-buy-flash').dispatchEvent('click');
+  await page.keyboard.press('KeyB');
+  for (const kind of ['frag', 'flash'] as const) {
+    await fs(page, 'teleport', 0, 14);
+    await fs(page, 'grab', kind);
+    await page.waitForTimeout(1200);
+    await shot(`g-${kind}-hold`);
+    await fs(page, 'fireBtn', true);
+    await page.waitForTimeout(700);
+    await shot(`g-${kind}-pin`);
+    await page.waitForTimeout(700);
+    await shot(`g-${kind}-charge`);
+    await fs(page, 'fireBtn', false);
+    await page.waitForTimeout(300);
+    await shot(`g-${kind}-throw`);
+    await page.waitForTimeout(900);
+    await shot(`g-${kind}-fly`);
+    await page.waitForTimeout(1200);
+    await shot(`g-${kind}-boom`);
+    await page.waitForTimeout(1500);
+    await shot(`g-${kind}-after`);
+  }
+});
+
+test('fotos das explosões (só com FS_SHOTS)', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop' || !process.env.FS_SHOTS, 'só para conferir o visual');
+  test.setTimeout(200_000);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await open(page);
+  await page.getByTestId('fsm-resume').click();
+  const shot = (n: string) => page.screenshot({ path: `${process.env.FS_SHOTS}/${n}.png` });
+  await fs(page, 'teleport', 0, 14);
+  await fs(page, 'blastAt', 'frag', 0, 9);
+  for (const [i, t] of [150, 250, 500, 1200].entries()) {
+    await page.waitForTimeout(t);
+    await shot(`x-frag-${i}`);
+  }
+  await page.waitForTimeout(2500);
+  await fs(page, 'blastAt', 'flash', 0, 10);
+  for (const [i, t] of [150, 500, 1500, 2500].entries()) {
+    await page.waitForTimeout(t);
+    await shot(`x-flash-${i}`);
+  }
+});

@@ -152,6 +152,51 @@ const RECIPES: Record<string, Recipe> = {
       s.burst({ type: 'bandpass', freq: jit(3200), q: 3, dur: 0.008, peak: 0.05, delay: 0.035 });
     },
   },
+  // granadas: pino, arremesso, quique e as duas explosões
+  'nade-pin': {
+    len: 0.25,
+    variants: 1,
+    make: (s) => {
+      s.tone('triangle', 2600, 1800, 0.05, 0.2);
+      s.burst({ type: 'bandpass', freq: 3000, q: 4, dur: 0.012, peak: 0.25, delay: 0.06 });
+      s.tone('triangle', 1500, 1100, 0.04, 0.12, 0.1);
+    },
+  },
+  'nade-throw': { len: 0.4, variants: 1, make: (s) => s.burst({ type: 'bandpass', freq: 500, freqEnd: 1800, q: 0.7, dur: 0.28, peak: 0.16 }) },
+  'nade-bounce': {
+    len: 0.3,
+    variants: 2,
+    make: (s) => {
+      s.tone('triangle', jit(1900), 1300, 0.07, 0.22);
+      s.burst({ type: 'bandpass', freq: jit(2400), q: 2, dur: 0.03, peak: 0.2 });
+      s.tone('sine', 140, 80, 0.06, 0.2);
+    },
+  },
+  // explosão: estrondo grave longo, estalo, crepitar e a cauda de eco
+  'boom-frag': {
+    len: 2.2,
+    variants: 1,
+    make: (s) => {
+      s.tone('sine', 62, 20, 0.9, 1.0);
+      s.tone('sine', 120, 40, 0.35, 0.7);
+      s.burst({ type: 'lowpass', freq: 320, q: 0.5, dur: 1.2, peak: 0.55 });
+      s.burst({ type: 'bandpass', freq: 900, q: 0.5, dur: 0.35, peak: 0.8 });
+      s.burst({ type: 'highpass', freq: 3000, dur: 0.12, peak: 0.55 });
+      s.burst({ type: 'bandpass', freq: 1400, q: 0.8, dur: 0.5, peak: 0.18, delay: 0.12 });
+      s.burst({ type: 'lowpass', freq: 260, dur: 1.0, peak: 0.2, delay: 0.3 });
+    },
+  },
+  // granada de luz: estalo agudo muito alto, chiado e zumbido curto
+  'boom-flash': {
+    len: 1.2,
+    variants: 1,
+    make: (s) => {
+      s.burst({ type: 'highpass', freq: 2200, dur: 0.14, peak: 0.95 });
+      s.burst({ type: 'bandpass', freq: 2600, q: 0.6, dur: 0.3, peak: 0.7 });
+      s.tone('sine', 1200, 600, 0.12, 0.5);
+      s.burst({ type: 'highpass', freq: 4000, dur: 0.6, peak: 0.18, delay: 0.1 });
+    },
+  },
   'shot-knife': {
     len: 0.2,
     variants: 2,
@@ -289,7 +334,7 @@ function stepBuffer(ctx: BaseAudioContext, v: number): AudioBuffer {
 
 // ------------------------------------------------------------------ banco de sons e saída
 let bank: { ctx: AudioContext; bufs: Map<string, AudioBuffer[]>; building: boolean } | null = null;
-let bus: { ctx: AudioContext; input: AudioNode } | null = null;
+let bus: { ctx: AudioContext; input: AudioNode; muffle: BiquadFilterNode } | null = null;
 let voices = 0;
 const MAX_VOICES = 24;
 
@@ -304,8 +349,12 @@ function busFor(kit: Kit): AudioNode {
     lim.ratio.value = 14;
     lim.attack.value = 0.001;
     lim.release.value = 0.08;
-    input.connect(lim).connect(kit.out);
-    bus = { ctx: kit.ctx, input };
+    // filtro que "abafa" tudo quando a granada de luz estoura (zumbido nos ouvidos)
+    const muffle = kit.ctx.createBiquadFilter();
+    muffle.type = 'lowpass';
+    muffle.frequency.value = 20000;
+    input.connect(muffle).connect(lim).connect(kit.out);
+    bus = { ctx: kit.ctx, input, muffle };
   }
   return bus.input;
 }
@@ -469,6 +518,75 @@ export const fsAudio = {
       air.disconnect();
       p.disconnect();
     }, 1400);
+  },
+  /** Sons das granadas que você joga (sem direção). */
+  nade(name: 'pin' | 'throw') {
+    play(`nade-${name}`);
+  },
+  /** Quique e explosões no mundo: som 3D, mais baixo e abafado com a distância, e some além do alcance. */
+  nadeAt(name: 'bounce' | 'boom-frag' | 'boom-flash', x: number, y: number, z: number, listenerX: number, listenerZ: number) {
+    const kit = audioKit();
+    if (!kit || kit.muted()) return;
+    const range = name === 'bounce' ? 20 : name === 'boom-frag' ? 75 : 60;
+    const d = Math.hypot(x - listenerX, z - listenerZ);
+    if (d > range) return;
+    const k = d / range;
+    const fade = k > 0.7 ? Math.max(0, (1 - k) / 0.3) : 1;
+    const air = kit.ctx.createBiquadFilter();
+    air.type = 'lowpass';
+    air.frequency.value = 12000 - 10000 * Math.min(1, k * 1.1);
+    const p = kit.ctx.createPanner();
+    p.panningModel = 'equalpower';
+    p.distanceModel = 'inverse';
+    p.refDistance = name === 'bounce' ? 2 : 6;
+    p.rolloffFactor = 1.1;
+    p.maxDistance = range;
+    try {
+      if (p.positionX) {
+        p.positionX.value = x;
+        p.positionY.value = y;
+        p.positionZ.value = z;
+      } else p.setPosition(x, y, z);
+    } catch {
+      /* sem posição */
+    }
+    air.connect(p).connect(busFor(kit));
+    play(`nade-${name === 'bounce' ? 'bounce' : name}`.replace('nade-boom', 'boom'), { gain: (name === 'bounce' ? 0.7 : 1.3) * fade, dest: air });
+    window.setTimeout(() => {
+      air.disconnect();
+      p.disconnect();
+    }, 2600);
+  },
+  /** Granada de luz: zumbido nos ouvidos e tudo abafado, que vai passando aos poucos (`seconds`). */
+  deafen(seconds: number) {
+    const kit = audioKit();
+    if (!kit || kit.muted() || seconds <= 0.05) return;
+    const b = busFor(kit) && bus;
+    if (!b) return;
+    const t = kit.ctx.currentTime;
+    b.muffle.frequency.cancelScheduledValues(t);
+    b.muffle.frequency.setValueAtTime(500, t);
+    b.muffle.frequency.setValueAtTime(500, t + seconds * 0.35);
+    b.muffle.frequency.exponentialRampToValueAtTime(20000, t + seconds);
+    const o = kit.ctx.createOscillator();
+    const g = kit.ctx.createGain();
+    o.type = 'sine';
+    o.frequency.value = 3150;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.06, t + 0.15);
+    g.gain.setValueAtTime(0.06, t + seconds * 0.3);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + seconds);
+    o.connect(g).connect(kit.out);
+    o.start(t);
+    o.stop(t + seconds + 0.1);
+    o.addEventListener('ended', () => {
+      try {
+        o.disconnect();
+        g.disconnect();
+      } catch {
+        /* já solto */
+      }
+    });
   },
   /** Seu passo (fica na orelha, baixo). */
   step() {

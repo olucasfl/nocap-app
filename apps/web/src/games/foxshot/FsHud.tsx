@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { FS_ARENA, FS_TARGETS, type FsWeaponId } from '@nocap/games';
+import { FS_ARENA, FS_TARGETS, type FsGrenadeId, type FsWeaponId } from '@nocap/games';
 import { HeartIcon, SkullIcon, VestIcon, WeaponIcon } from './fs-icons';
 import { bindLabel, CROSS_COLORS, useFsSettings } from './fs-settings';
 
@@ -19,7 +19,7 @@ export interface FsPlayerRow {
 export interface FeedItem {
   key: number;
   killer: string;
-  weapon: FsWeaponId;
+  weapon: FsWeaponId | FsGrenadeId;
   victim: string;
   head: boolean;
   /** Fui eu que matei? */
@@ -217,6 +217,8 @@ export function FsAmmo({
   reloading,
   slots,
   current,
+  nades,
+  heldNade,
 }: {
   weapon: string;
   id: FsWeaponId;
@@ -225,6 +227,9 @@ export function FsAmmo({
   reloading: boolean;
   slots: FsSlotInfo[];
   current: number;
+  /** Granadas que tem (com a tecla de cada uma) e a que está na mão. */
+  nades: { id: FsGrenadeId; name: string; count: number; key: string }[];
+  heldNade: FsGrenadeId | null;
 }) {
   const binds = useFsSettings((st) => st.binds);
   return (
@@ -236,13 +241,21 @@ export function FsAmmo({
       <ul className="fsh-slots" aria-label="Armas">
         {slots.map((s, i) =>
           s.id ? (
-            <li key={s.key} className={i === current ? 'on' : ''} data-testid={`fs-slot-${s.key}`}>
+            <li key={s.key} className={i === current && !heldNade ? 'on' : ''} data-testid={`fs-slot-${s.key}`}>
               <i>{bindLabel(binds[`slot${s.key}` as 'slot1'])}</i>
               <WeaponIcon id={s.id} className="fsh-w" />
-              {i === current && <small>{s.name}</small>}
+              {i === current && !heldNade && <small>{s.name}</small>}
             </li>
           ) : null,
         )}
+        {nades.map((n) => (
+          <li key={n.id} className={heldNade === n.id ? 'on' : ''} data-testid={`fs-nade-${n.id}`}>
+            <i>{n.key}</i>
+            <WeaponIcon id={n.id} className="fsh-w" />
+            {heldNade === n.id && <small>{n.name}</small>}
+            <em className="fsh-n">x{n.count}</em>
+          </li>
+        ))}
       </ul>
       <span className="fsh-sr">
         {weapon} {id}

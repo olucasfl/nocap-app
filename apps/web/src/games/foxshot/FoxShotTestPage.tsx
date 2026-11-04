@@ -6,6 +6,14 @@ import {
   FS_SPAWN,
   FS_BOTS,
   FS_BOT_SPEED,
+  FS_GRENADES,
+  fsClearLine,
+  fsFlashEffect,
+  fsFragDamage,
+  fsGrenadeLaunch,
+  fsGrenadeStep,
+  type FsGrenadeBody,
+  type FsGrenadeId,
   FS_SHOOTER,
   fsNewShooter,
   fsShooterStep,
@@ -17,6 +25,7 @@ import {
   FsLoadout,
   fsDir,
   fsBuy,
+  fsShopItem,
   fsEyeHeight,
   fsIsBackstab,
   fsQuiet,
@@ -107,6 +116,8 @@ interface Hud {
   mag: number;
   weapon: string;
   weaponId: FsWeaponId;
+  heldNade: FsGrenadeId | null;
+  nades: { id: FsGrenadeId; name: string; count: number; key: string }[];
   /** Conta os tiros que você levou (cada um dispara o clarão vermelho) e se está morto esperando renascer. */
   hurtKey: number;
   heavyKey: number;
@@ -160,6 +171,7 @@ export function FoxShotTestPage() {
   const [needClick, setNeedClick] = useState(false);
   const [shop, setShopState] = useState(false);
   const shopRef = useRef(false);
+  const blindEl = useRef<HTMLDivElement>(null);
   const shopClosedAt = useRef(0);
   const buyRef = useRef<(item: FsShopItem) => void>(() => undefined);
   const setShop = useCallback((v: boolean) => {
@@ -385,7 +397,7 @@ export function FoxShotTestPage() {
     let shake = 0;
     /** Dano recebido na última 1,2 s (para saber quando é "muito dano"). */
     let recent: { t: number; d: number }[] = [];
-    const pushFeedDeath = (killer: string, weapon: FsWeaponId, head: boolean) => {
+    const pushFeedDeath = (killer: string, weapon: FsWeaponId | FsGrenadeId, head: boolean) => {
       const key = ++feedKey;
       setFeed((f) => [...f.slice(-4), { key, killer, weapon, victim: 'Você', head, you: false, youVictim: true }]);
       window.setTimeout(() => setFeed((f) => f.filter((x) => x.key !== key)), 6000);
@@ -411,32 +423,126 @@ export function FoxShotTestPage() {
       scene.tracer(new THREE.Vector3(origin[0], origin[1], origin[2]), new THREE.Vector3(tr.point[0], tr.point[1], tr.point[2]), wid);
       scene.puff(new THREE.Vector3(origin[0], origin[1], origin[2]), 0xffd27a, 0.25, 0.1);
       fsAudio.shotAt(wid, bs.x, 1, bs.z, mover.x, mover.z);
-      if (tr.kind === 'player' && tr.damage && clock >= deadUntil) {
-        const d = tr.damage;
-        me.hp -= d.hp;
-        me.armor = Math.max(0, me.armor - d.armorLoss);
-        hurtKey++;
-        hurtAt = performance.now();
-        fsAudio.hurt();
-        // tiro na cabeça que não mata: a câmera treme forte; os outros tiros sacodem leve
-        shake = Math.max(shake, tr.zone === 'head' && me.hp > 0 ? 2.6 : 0.5);
-        // muito dano de uma vez (35+ num tiro ou 55+ em 1,2 s): efeito vermelho mais forte que depois some
-        recent = recent.filter((r) => clock - r.t < 1.2);
-        recent.push({ t: clock, d: d.hp });
-        if (d.hp >= 35 || recent.reduce((s, r) => s + r.d, 0) >= 55) {
-          heavyKey++;
-          heavyAt = performance.now();
+      if (tr.kind === 'player' && tr.damage) hurtPlayer(tr.damage.hp, tr.damage.armorLoss, tr.zone === 'head', b.label.replace('atirador ', 'Atirador '), wid);
+    };
+    /** Você levou dano (tiro ou explosão): vida, colete, efeitos e morte. */
+    function hurtPlayer(hp: number, armorLoss: number, head: boolean, killer: string, icon: FsWeaponId | FsGrenadeId) {
+      if (clock < deadUntil) return;
+      me.hp -= hp;
+      me.armor = Math.max(0, me.armor - armorLoss);
+      hurtKey++;
+      hurtAt = performance.now();
+      fsAudio.hurt();
+      // tiro na cabeça que não mata: a câmera treme forte; os outros tiros sacodem leve
+      shake = Math.max(shake, head && me.hp > 0 ? 2.6 : 0.5);
+      // muito dano de uma vez (35+ num tiro ou 55+ em 1,2 s): efeito vermelho mais forte que depois some
+      recent = recent.filter((r) => clock - r.t < 1.2);
+      recent.push({ t: clock, d: hp });
+      if (hp >= 35 || recent.reduce((s, r) => s + r.d, 0) >= 55) {
+        heavyKey++;
+        heavyAt = performance.now();
+      }
+      if (me.hp <= 0) {
+        me.hp = 0;
+        stats.deaths++;
+        deadUntil = clock + 3;
+        deadSince = clock;
+        pushFeedDeath(killer, icon, head);
+      }
+    }
+    // ---- granadas: as que estão voando, o efeito de cegueira e os atiradores cegos
+    const nades: { h: number; body: FsGrenadeBody; bounceSeen: number; bounceAt: number }[] = [];
+    let blindTotal = 0;
+    let blindUntil = 0;
+    const flashedUntil: Record<string, number> = {};
+    const eyeNow = (): [number, number, number] => [mover.x, mover.y + fsEyeHeight(mover), mover.z];
+    const throwNade = (kind: FsGrenadeId, power: number) => {
+      const dir = fsDir(view.yaw + view.rYaw, view.pitch + view.rPitch);
+      const e = eyeNow();
+      const origin: [number, number, number] = [e[0] + dir[0] * 0.4, e[1] - 0.15 + dir[1] * 0.4, e[2] + dir[2] * 0.4];
+      const body = fsGrenadeLaunch(kind, origin, dir, power, [mover.vx, mover.vz]);
+      nades.push({ h: scene.addGrenade(kind), body, bounceSeen: 0, bounceAt: -1 });
+    };
+    /** Dano de explosão em quem estiver no raio e à vista (sem parede no meio). */
+    const damageTarget = (id: string, hp: number, icon: FsGrenadeId, fromX: number, fromZ: number) => {
+      const st = targets.get(id)!;
+      if (!st.alive) return;
+      stats.damage += Math.min(st.hp, hp);
+      st.hp -= hp;
+      if (st.hp <= 0) {
+        st.alive = false;
+        st.deaths++;
+        st.reviveAt = clock + REVIVE_S;
+        stats.kills++;
+        scene.killTarget(id, fromX, fromZ, 3.2);
+        fsAudio.hit('kill');
+        showMarker('kill', 'ABATE');
+        const bi = FS_BOTS.findIndex((t) => t.id === id);
+        pushFeed(icon, bi >= 0 ? `Bot ${bi + 1}` : `Raposa ${FS_TARGETS.findIndex((t) => t.id === id) + 1}`, false);
+      } else {
+        scene.hitTarget(id);
+        fsAudio.hit('body');
+        showMarker('body', `-${hp}`);
+      }
+    };
+    const explode = (g: FsGrenadeBody) => {
+      const blast: [number, number, number] = [g.x, g.y + 0.25, g.z];
+      scene.explosion(g.kind, g.x, g.y, g.z);
+      fsAudio.nadeAt(g.kind === 'frag' ? 'boom-frag' : 'boom-flash', g.x, g.y, g.z, mover.x, mover.z);
+      if (g.kind === 'frag') {
+        for (const t of ALL_TARGETS) {
+          const st = targets.get(t.id)!;
+          if (!st.alive) continue;
+          const p = posOf(t.id);
+          const c: [number, number, number] = [p[0], p[1] + 0.6, p[2]];
+          const dmg = fsFragDamage(Math.hypot(c[0] - blast[0], c[1] - blast[1], c[2] - blast[2]));
+          if (dmg > 0 && fsClearLine(FS_ARENA, blast, c)) damageTarget(t.id, dmg, 'frag', g.x, g.z);
         }
-        if (me.hp <= 0) {
-          me.hp = 0;
-          stats.deaths++;
-          deadUntil = clock + 3;
-          deadSince = clock;
-          pushFeedDeath(b.label.replace('atirador ', 'Atirador '), wid, tr.zone === 'head');
+        // você também leva (se estiver perto e à vista)
+        const me3: [number, number, number] = [mover.x, mover.y + 0.7, mover.z];
+        const d = Math.hypot(me3[0] - blast[0], me3[1] - blast[1], me3[2] - blast[2]);
+        const dmg = fsFragDamage(d);
+        if (dmg > 0 && fsClearLine(FS_ARENA, blast, me3)) hurtPlayer(dmg, 0, false, 'Você', 'frag');
+        // o chão treme para quem está perto
+        shake = Math.max(shake, Math.max(0, 3.2 * (1 - d / 16)));
+        return;
+      }
+      // luz: cega quem olha e enxerga, ensurdece quem está perto (mesmo sem ver)
+      const eye = eyeNow();
+      const r = fsFlashEffect(eye, fsDir(view.yaw + view.rYaw, view.pitch + view.rPitch), blast, fsClearLine(FS_ARENA, eye, blast));
+      if (r.blind > 0) {
+        blindTotal = r.blind;
+        blindUntil = clock + r.blind;
+      }
+      if (r.deaf > 0) fsAudio.deafen(r.deaf);
+      // os atiradores à vista da luz também ficam cegos por um tempo (não atiram)
+      for (const b of FS_BOTS) {
+        if (b.kind !== 'shoot') continue;
+        const bs = botSt.get(b.id)!;
+        const bd = Math.hypot(bs.x - blast[0], bs.z - blast[2]);
+        if (bd < FS_GRENADES.flash.radius && fsClearLine(FS_ARENA, blast, [bs.x, 1.0, bs.z])) flashedUntil[b.id] = clock + 1.5 + 3 * (1 - bd / FS_GRENADES.flash.radius);
+      }
+    };
+    const stepNades = (dt: number) => {
+      for (let i = nades.length - 1; i >= 0; i--) {
+        const n = nades[i]!;
+        let boom = false;
+        const sub = Math.max(1, Math.ceil(dt / (1 / 120)));
+        for (let k = 0; k < sub && !boom; k++) boom = fsGrenadeStep(n.body, dt / sub, FS_ARENA);
+        scene.setGrenade(n.h, n.body.x, n.body.y, n.body.z, n.body.age * 9);
+        if (n.body.bounces > n.bounceSeen && clock - n.bounceAt > 0.1 && Math.hypot(n.body.vx, n.body.vy, n.body.vz) > 1.2) {
+          fsAudio.nadeAt('bounce', n.body.x, n.body.y, n.body.z, mover.x, mover.z);
+          n.bounceAt = clock;
+        }
+        n.bounceSeen = n.body.bounces;
+        if (boom) {
+          scene.removeGrenade(n.h);
+          nades.splice(i, 1);
+          explode(n.body);
         }
       }
     };
-    const pushFeed = (weapon: FsWeaponId, victim: string, head: boolean) => {
+    const pushFeed = (weapon: FsWeaponId | FsGrenadeId, victim: string, head: boolean) => {
       const key = ++feedKey;
       setFeed((f) => [...f.slice(-4), { key, killer: 'Você', weapon, victim, head, you: true }]);
       window.setTimeout(() => setFeed((f) => f.filter((x) => x.key !== key)), 6000);
@@ -562,8 +668,21 @@ export function FoxShotTestPage() {
         } else if (e.type === 'reloaded') {
           scene.endReload();
           if (e.weapon.id === 'sniper') fsAudio.bolt();
-        } else if (e.type === 'draw') fsAudio.draw();
-        else if (e.type === 'bolt') boltAt = clock + 0.45;
+        } else if (e.type === 'draw') {
+          fsAudio.draw();
+          scene.selectNade(null);
+          scene.selectWeapon(loadout.weapon.id);
+        } else if (e.type === 'grenadeDraw') {
+          fsAudio.draw();
+          scene.selectNade(e.grenade);
+        } else if (e.type === 'pin') {
+          fsAudio.nade('pin');
+          scene.nadePin();
+        } else if (e.type === 'throw') {
+          fsAudio.nade('throw');
+          scene.nadeThrow();
+          throwNade(e.grenade, e.power);
+        } else if (e.type === 'bolt') boltAt = clock + 0.45;
       }
     };
 
@@ -665,7 +784,8 @@ export function FoxShotTestPage() {
         me.helmet = me.helmet || r.armor.helmet;
       }
       if (r.dropped) dropAhead(r.dropped.id, r.dropped.ammo);
-      afterEquip();
+      // comprar granada só guarda (não troca o que está na mão)
+      if (!fsShopItem(item.id)?.grenade) afterEquip();
       fsAudio.draw();
     };
 
@@ -762,7 +882,10 @@ export function FoxShotTestPage() {
         }
         if (shopOpen) inp.pick = -1;
         if (inp.pick >= 0) switchTo(inp.pick);
-        else if (inp.cycle) switchTo((loadout.current + 1) % loadout.slots.length);
+        else if (inp.cycle) handle(loadout.cycleAll(1));
+        if (inp.grenade) handle(loadout.selectGrenade('next'));
+        if (inp.grenadeFrag) handle(loadout.selectGrenade('frag'));
+        if (inp.grenadeFlash) handle(loadout.selectGrenade('flash'));
 
         const speed0 = speed;
         const mul = loadout.weapon.moveMul * (adsOn ? 0.65 : 1);
@@ -859,6 +982,9 @@ export function FoxShotTestPage() {
           view.rPitch = dec(view.rPitch);
           view.rYaw = dec(view.rYaw);
         }
+        // granadas no ar e a força do arremesso (o braço vai para trás enquanto segura)
+        if (loadout.held) scene.nadeCharge(loadout.charge);
+        stepNades(dt);
         // bots andando, pulando e girando
         for (const b of FS_BOTS) {
           const bs = botSt.get(b.id)!;
@@ -876,7 +1002,7 @@ export function FoxShotTestPage() {
             const eye: [number, number, number] = [bs.x, 1.0, bs.z];
             const toMe = fsDir((Math.atan2(-dx, -dz) * 180) / Math.PI, (Math.atan2(0.8 - 1.0, dist) * 180) / Math.PI);
             const los = fsTrace(FS_WEAPONS.ak, eye, toMe, FS_ARENA, [{ id: 'me', pos: [mover.x, mover.y, mover.z], alive: true, armor: 0, helmet: false, crouch: mover.crouchK }], dist + 1);
-            const sees = !playerDead && !shootersOff && los.kind === 'player';
+            const sees = !playerDead && !shootersOff && los.kind === 'player' && clock >= (flashedUntil[b.id] ?? 0);
             const st = shooterSt.get(b.id)!;
             const fired = fsShooterStep(st, b.weapon as 'pistol' | 'ak' | 'sniper', dt, dist, sees);
             if (fired) shooterFire(b, bs);
@@ -914,6 +1040,12 @@ export function FoxShotTestPage() {
       const fov = baseFov + ((loadout.weapon.adsFov || 62) - baseFov) * (adsOn ? 1 : 0);
       // física em passos fixos de 1/120 s: interpola para a câmera andar liso em qualquer taxa de quadros
       const alpha = isPaused ? 1 : Math.min(1, acc / STEP);
+      // granada de luz: tela branca cheia enquanto dura a primeira parte e depois some aos poucos
+      if (blindEl.current) {
+        const left = isPaused ? 0 : blindUntil - clock;
+        const o = left <= 0 ? 0 : left > blindTotal * 0.45 ? 1 : left / (blindTotal * 0.45);
+        blindEl.current.style.opacity = String(Math.max(0, Math.min(1, o)));
+      }
       // tremor: passa rápido e some em ~0,5 s
       if (!isPaused) shake *= Math.exp(-6 * dt);
       const sk = shake > 0.02 ? shake : 0;
@@ -1002,15 +1134,19 @@ export function FoxShotTestPage() {
           respawnIn: Math.max(0, deadUntil - clock),
           armor: me.armor,
           helmet: me.helmet,
-          ammo: loadout.slot.ammo,
-          mag: loadout.weapon.mag,
-          weapon: loadout.weapon.name,
+          ammo: loadout.held ? loadout.grenades[loadout.held] : loadout.slot.ammo,
+          mag: loadout.held ? FS_GRENADES[loadout.held].max : loadout.weapon.mag,
+          weapon: loadout.held ? FS_GRENADES[loadout.held].name : loadout.weapon.name,
           weaponId: loadout.weapon.id,
+          heldNade: loadout.held,
+          nades: (['frag', 'flash'] as FsGrenadeId[])
+            .filter((k) => loadout.grenades[k] > 0)
+            .map((k) => ({ id: k, name: FS_GRENADES[k].name, count: loadout.grenades[k], key: bindLabel((k === 'frag' ? fsSettings().binds.grenadeFrag : fsSettings().binds.grenadeFlash) || fsSettings().binds.grenade) })),
           speed: Math.round(speed * 10) / 10,
           blur: Math.min(1, fsSpreadDeg(loadout.weapon, mvs, loadout.slot.gun) / 6),
           slots: loadout.slots.map((sl, i) => ({ id: sl?.id ?? null, name: sl ? FS_WEAPONS[sl.id].name : '', key: i + 1 })),
           current: loadout.current,
-          reloading: loadout.reloading,
+          reloading: !loadout.held && loadout.reloading,
           scoped,
           spreadPx: Math.min(60, fsSpreadDeg(loadout.weapon, mvs, loadout.slot.gun) * 4),
           fps: Math.round(fps),
@@ -1105,6 +1241,15 @@ export function FoxShotTestPage() {
         bot: (id: string) => ({ ...botSt.get(id)!, alive: targets.get(id)!.alive }),
         pos: (id: string) => posOf(id),
         hp: () => me.hp,
+        nades: () => ({ ...loadout.grenades, held: loadout.held, flying: nades.length }),
+        grab: (k: FsGrenadeId | 'next') => handle(loadout.selectGrenade(k)),
+        throwNow: (k: FsGrenadeId, power = 0.6) => throwNade(k, power),
+        blind: () => Math.max(0, blindUntil - clock),
+        fireBtn: (on: boolean) => controls.setTouch('fire', on),
+        blastAt: (kind: FsGrenadeId, x: number, z: number) => {
+          const body = { kind, x, y: 0.15, z, vx: 0, vy: 0, vz: 0, age: 0, fuse: 0.05, bounces: 0 } as FsGrenadeBody;
+          nades.push({ h: scene.addGrenade(kind), body, bounceSeen: 0, bounceAt: -1 });
+        },
         ads: (on: boolean) => controls.setTouch('ads', on),
         vm: () => scene.debugVm(),
         crouchTarget(id: string, on: boolean) {
@@ -1164,6 +1309,7 @@ export function FoxShotTestPage() {
   return (
     <div className="fs" ref={root} data-testid="fs-root">
       <canvas ref={canvas} className="fs-canvas" data-testid="fs-canvas" />
+      <div className="fs-blind" ref={blindEl} data-testid="fs-blind" aria-hidden="true" />
       {status === 'loading' && <div className="fs-load mono">CARREGANDO A ARENA...</div>}
       {status === 'error' && (
         <div className="fs-load mono">Não deu para carregar os modelos. Atualize a página.</div>
@@ -1236,6 +1382,8 @@ export function FoxShotTestPage() {
             reloading={hud.reloading}
             slots={hud.slots}
             current={hud.current}
+            nades={hud.nades}
+            heldNade={hud.heldNade}
           />
           {shop && !paused && (
             <FsShop
@@ -1248,6 +1396,7 @@ export function FoxShotTestPage() {
                 ...hud.slots.flatMap((x) => (x.id ? [x.id] : [])),
                 ...(hud.armor > 0 ? ['vest'] : []),
                 ...(hud.armor > 0 && hud.helmet ? ['vesthelm'] : []),
+                ...hud.nades.filter((n) => n.count >= FS_GRENADES[n.id].max).map((n) => n.id),
               ]}
             />
           )}
