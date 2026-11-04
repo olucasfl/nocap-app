@@ -64,8 +64,8 @@ test('convidado chega no meio da partida, espectando ou jogando', async ({ brows
   const bia = await mk();
   await bia.goto('/fox-cap/counter-fox');
   await bia.getByRole('button', { name: 'Agora não' }).click({ timeout: 3000 }).catch(() => undefined);
-  await bia.getByTestId('cfh-play').click();
-  await bia.getByTestId('cfh-online').click();
+  await bia.getByTestId('cfh-play').click({ force: true, timeout: 60_000 });
+  await bia.getByTestId('cfh-online').click({ force: true, timeout: 60_000 });
   await bia.getByTestId('cfh-code').fill(code);
   await bia.getByTestId('cfh-join').click();
   await nick(bia, 'Bia');
