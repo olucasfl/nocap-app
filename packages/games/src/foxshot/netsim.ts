@@ -215,6 +215,52 @@ export class FsNetSim {
     if (r) r.bot = true;
   }
 
+  /**
+   * Quem chega no meio da partida pede para jogar: volta ao corpo que virou bot (se saiu daqui), toma o lugar de um bot
+   * ou, se ainda houver vaga (máx. 10 no total), ganha uma raposa nova. Sem vaga, devolve false (fica espectando).
+   */
+  joinAs(id: string, name: string): boolean {
+    const mine = this.players.get(id);
+    if (mine) {
+      if (!mine.bot) return true;
+      mine.bot = false;
+      mine.brain = null;
+      mine.queue = [];
+      mine.last = null;
+      mine.heardAt = this.tick;
+      const r = this.roster.find((q) => q.id === id);
+      if (r) r.bot = false;
+      return true;
+    }
+    const slot = this.roster.findIndex((r) => r.bot);
+    if (slot < 0) {
+      if (this.roster.length >= 10) return false;
+      const placed = [...this.players.values()].filter((q) => q.alive).map((q) => ({ x: q.mover.x, z: q.mover.z }));
+      this.addPlayer(id, name, false, placed);
+      return true;
+    }
+    // toma o lugar do bot de menos pontos (o índice no pacote continua o mesmo)
+    const old = this.roster
+      .map((r, i) => ({ r, i, q: this.players.get(r.id)! }))
+      .filter((x) => x.r.bot)
+      .sort((a, b) => fsMatchScore(a.q) - fsMatchScore(b.q))[0]!;
+    const p = old.q;
+    this.players.delete(old.r.id);
+    p.id = id;
+    p.name = name;
+    p.bot = false;
+    p.brain = null;
+    p.kills = p.assists = p.deaths = p.hs = p.damage = 0;
+    p.lastSeq = 0;
+    p.loadout = new FsLoadout(null, 'pistol');
+    p.dmgLog = [];
+    p.heardAt = this.tick;
+    this.players.set(id, p);
+    this.roster[old.i] = { id, name, bot: false };
+    this.respawn(p);
+    return true;
+  }
+
   // ---------------------------------------------------------------- entrada
 
   /** Entrada de uma pessoa (confira com `fsNetParseInput` antes). Ignora a que já passou (número menor que o último). */

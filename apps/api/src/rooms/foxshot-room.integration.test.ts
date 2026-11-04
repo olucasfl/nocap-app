@@ -167,4 +167,31 @@ describe('Counter Fox online com servidor de verdade', () => {
     await until(() => ana.frames.some((f) => f.f.p.some((r) => (r[8]! & 4) !== 0)), 8000);
     expect(ana.snap!.phase).toBe('play');
   }, 40_000);
+
+  it('convidado chega no meio da partida, espectando, e pede para jogar', async () => {
+    const ana = watch(await new Client(url).create('foxcap', { token: 'ana' }));
+    await until(() => ana.snap?.members.length === 1);
+    ana.room.send('pickgame', { game: 'foxshot' });
+    await until(() => ana.snap?.game === 'foxshot');
+    ana.room.send('configure', { minutes: 2, bots: 3 });
+    await until(() => ana.snap?.settings?.bots === 3);
+    ana.room.send('start');
+    await until(() => ana.snap?.phase === 'play', 9000);
+    const rosterBefore = ana.snap!.foxshot!.roster!.length;
+    // entra com a partida rolando (antes dava "já começou")
+    const cris = watch(await new Client(url).joinById(ana.room.roomId, { token: 'cris' }));
+    await until(() => cris.snap?.phase === 'play' && ana.snap?.members.length === 2);
+    expect(cris.snap!.foxshot!.roster!.some((r) => r.id === 'cris')).toBe(false);
+    await until(() => cris.frames.length > 3);
+    expect(cris.frames[cris.frames.length - 1]!.s).toBeNull();
+    // pede para jogar: entra no lugar de um bot
+    cris.room.send('fsplay');
+    await until(() => cris.snap!.foxshot!.roster!.some((r) => r.id === 'cris' && !r.bot));
+    expect(cris.snap!.foxshot!.roster!).toHaveLength(rosterBefore);
+    await until(() => cris.frames.some((f) => f.s !== null), 6000);
+    // convidar no meio da partida vale
+    ana.room.send('invite', { username: 'zeca' });
+    await wait(300);
+    expect(ana.errors.join('|')).not.toContain('Só dá para convidar no lobby');
+  }, 40_000);
 });

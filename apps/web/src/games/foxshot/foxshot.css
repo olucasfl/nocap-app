@@ -361,8 +361,8 @@
   opacity: 0.85;
 }
 .fsh-feed-w {
-  width: 38px;
-  height: 15px;
+  width: 54px;
+  height: 22px;
   color: #fff;
 }
 .fsh-hs {
@@ -448,8 +448,8 @@
   gap: 8px;
 }
 .fsh-w {
-  width: 54px;
-  height: 22px;
+  width: 76px;
+  height: 30px;
   color: #fff;
   filter: drop-shadow(0 2px 0 var(--fsh-ink));
 }
@@ -874,10 +874,10 @@
 .fsh-slots { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 4px; justify-items: end; }
 .fsh-slots li { display: flex; align-items: center; gap: 8px; padding: 3px 8px; opacity: 0.6; border-right: 4px solid transparent; }
 .fsh-slots li i { font: 900 12px var(--font-display, system-ui); font-style: normal; opacity: 0.8; }
-.fsh-slots li .fsh-w { width: 46px; height: 18px; }
+.fsh-slots li .fsh-w { width: 64px; height: 24px; }
 .fsh-slots li small { font: 900 12px var(--font-display, system-ui); letter-spacing: 0.1em; text-transform: uppercase; }
 .fsh-slots li.on { opacity: 1; background: rgba(12, 16, 38, 0.74); border-right-color: #ffd23f; transform: translateX(-4px); padding: 6px 10px; }
-.fsh-slots li.on .fsh-w { width: 78px; height: 30px; }
+.fsh-slots li.on .fsh-w { width: 112px; height: 40px; }
 .fsh-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; }
 
 /* mira da sniper: a tela escurece em volta de um círculo com a cruz no meio */
@@ -930,7 +930,7 @@
 .fss-item:active:not(.soon) { transform: scale(0.97); }
 .fss-n { position: absolute; top: 5px; left: 8px; font: 900 10px var(--font-display, system-ui); font-style: normal; opacity: 0.7; }
 .fss-art { grid-column: 1 / -1; grid-row: 1; display: grid; place-items: center; padding-top: 6px; }
-.fss-ico { width: 100%; max-width: 124px; height: 40px; color: #eaf0ff; filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.5)); }
+.fss-ico { width: 100%; max-width: 150px; height: 52px; color: #eaf0ff; filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.5)); }
 .fss-ico.vest { max-width: 46px; height: 40px; color: #7fa6ff; }
 .fss-blank { width: 70%; height: 3px; background: rgba(255, 255, 255, 0.16); }
 .fss-name { grid-row: 2; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
@@ -952,7 +952,7 @@
 .fss-chip.empty { border-color: rgba(255, 255, 255, 0.2); background: transparent; opacity: 0.5; }
 .fss-chip i { font: 900 10px var(--font-display, system-ui); font-style: normal; opacity: 0.8; }
 .fss-chip b { font: 800 11px var(--font-display, system-ui); text-transform: uppercase; letter-spacing: 0.06em; }
-.fss-chip-ico { width: 34px; height: 14px; color: #eaf0ff; }
+.fss-chip-ico { width: 48px; height: 20px; color: #eaf0ff; }
 .fss-close { margin-left: auto; padding: 7px 16px; border: 3px solid #1b1535; background: #ffd23f; color: #1b1535; font: 900 12px var(--font-display, system-ui); cursor: pointer; }
 @media (max-height: 520px) {
   .fss { gap: 6px; }
@@ -1192,3 +1192,16 @@
 .fs-bigmap header b { font: 900 24px var(--font-display, system-ui); letter-spacing: 0.06em; text-transform: uppercase; }
 .fs-bigmap header span { font-size: 13px; opacity: 0.8; }
 .fs-bigmap canvas { width: 100%; height: 100%; min-height: 0; display: block; }
+
+/* ícones de arma: silhueta dos modelos 3D pintada com a cor do texto */
+.fs-wi {
+  display: inline-block;
+  flex: none;
+  background-color: currentColor;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}

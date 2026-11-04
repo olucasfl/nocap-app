@@ -11,7 +11,7 @@ import { BolaRoomEngine } from './bola-room.engine';
 import { FoxLobbyEngine } from './fox-lobby.engine';
 import { DesmoronaRoomEngine } from './desmorona-room.engine';
 import { PingRoomEngine } from './ping-room.engine';
-import { FoxShotRoomEngine } from './foxshot-room.engine';
+import { FOXSHOT_ROOM_MAX, FoxShotRoomEngine } from './foxshot-room.engine';
 import {
   ATR_ROOM_MAX_PLAYERS,
   BOL_ROOM_MAX,
@@ -870,7 +870,7 @@ export class PingRoom extends ColorRoom {
 const fsSentAt = new WeakMap<object, number>();
 
 export class FoxShotRoom extends ColorRoom {
-  override maxClients = 10;
+  override maxClients = FOXSHOT_ROOM_MAX;
   protected override tickMs = 16;
 
   protected override makeEngine(opts: ConstructorParameters<typeof ColorRoomEngine>[0]) {
@@ -882,6 +882,16 @@ export class FoxShotRoom extends ColorRoom {
     this.onMessage('fsin', (c, m) => {
       const id = (c.userData as AuthData | undefined)?.id;
       if (id) engine().receive(id, m);
+    });
+    this.onMessage('fsplay', (c) => {
+      const id = (c.userData as AuthData | undefined)?.id;
+      if (!id) return;
+      try {
+        engine().joinPlay(id);
+        this.publish();
+      } catch (e) {
+        c.send('error', e instanceof RoomError ? e.message : 'Não deu para entrar na partida');
+      }
     });
   }
 

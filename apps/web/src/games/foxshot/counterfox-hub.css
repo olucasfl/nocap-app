@@ -653,3 +653,48 @@
 .cfh-table tr.win td { background: rgba(255, 179, 71, 0.18); }
 .cfh-table tr.you td { color: #fff; font-weight: 700; }
 .cfh-table th, .cfh-table td { border-bottom-color: rgba(255, 255, 255, 0.1); }
+
+/* espectar (entrou com a partida rolando) e a escolha de como entrar: só opacity/transform animam */
+.fsr-spec {
+  position: absolute;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 12px 22px;
+  background: var(--cfx-panel);
+  border: 1px solid var(--cfx-line);
+  border-radius: 6px;
+  font-family: var(--cfx-ui);
+  color: var(--cfx-ink);
+  z-index: 6;
+}
+.fsr-spec small { font: 700 13px var(--cfx-ui); letter-spacing: 0.34em; color: var(--cfx-amber); }
+.fsr-spec b { font: 400 30px var(--cfx-title); line-height: 1.1; }
+.fsr-spec .mono { font-size: 13px; color: var(--cfx-muted); }
+.fsr-spec .cfh-btn { margin-top: 8px; }
+.fsr-choice {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  background: rgba(4, 7, 16, 0.72);
+  animation: cfh-pop 0.25s both;
+}
+.fsr-choice-card {
+  display: grid;
+  gap: 12px;
+  width: min(92vw, 420px);
+  padding: 26px;
+  background: var(--cfx-panel);
+  border: 1px solid var(--cfx-line);
+  border-radius: 8px;
+  text-align: center;
+  font-family: var(--cfx-ui);
+  color: var(--cfx-ink);
+}
+.fsr-choice-card small { font: 700 13px var(--cfx-ui); letter-spacing: 0.34em; color: var(--cfx-amber); }
+.fsr-choice-card h2 { margin: 0 0 6px; font: 400 28px var(--cfx-title); }

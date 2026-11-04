@@ -1397,4 +1397,34 @@ describe('Simulação do servidor (mata-mata online)', () => {
     const total = [...sim.players.values()].reduce((s, p) => s + p.kills + p.deaths, 0);
     expect(total).toBeGreaterThan(0);
   });
+
+  it('quem chega no meio pede para jogar: toma o lugar de um bot, ou ganha raposa nova se houver vaga', () => {
+    const sim = new FsNetSim({ minutes: 2, humans: [{ id: 'a', name: 'A' }], bots: 3, rng: createRng('entrar') });
+    for (let i = 0; i < 120; i++) sim.step();
+    expect(sim.joinAs('n', 'Nova')).toBe(true);
+    expect(sim.roster.length).toBe(4);
+    const r = sim.roster.find((q) => q.id === 'n')!;
+    expect(r.bot).toBe(false);
+    expect(sim.players.get('n')!.brain).toBeNull();
+    expect(sim.roster.filter((q) => q.bot).length).toBe(2);
+    // já jogando: pedir de novo não muda nada
+    expect(sim.joinAs('n', 'Nova')).toBe(true);
+    expect(sim.roster.length).toBe(4);
+    // sala cheia de humanos: sem bot para trocar e sem vaga, fica espectando
+    const full = new FsNetSim({ minutes: 2, humans: Array.from({ length: 10 }, (_, i) => ({ id: `h${i}`, name: `H${i}` })), bots: 0, rng: createRng('cheio') });
+    expect(full.joinAs('x', 'X')).toBe(false);
+    // quem saiu virou bot e volta ao próprio corpo
+    full.takeOver('h3');
+    expect(full.joinAs('h3', 'H3')).toBe(true);
+    expect(full.players.get('h3')!.bot).toBe(false);
+    expect(full.roster.find((q) => q.id === 'h3')!.bot).toBe(false);
+    // o novo jogador anda com entradas normais
+    const before = sim.players.get('n')!.mover.x;
+    for (let k = 1; k <= 60; k++) {
+      sim.pushInput('n', { seq: k, fwd: 1, strafe: 0, jump: false, crouch: false, walk: false, yaw: 0, pitch: 0, trigger: false, alt: false, reload: false, inspect: false, viewTick: 0, cmds: [] } as never);
+      sim.step();
+    }
+    expect(sim.players.get('n')!.lastSeq).toBeGreaterThan(0);
+    expect(before).toBeDefined();
+  });
 });

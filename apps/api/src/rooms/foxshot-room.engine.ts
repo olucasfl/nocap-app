@@ -11,6 +11,10 @@ import { ColorRoomEngine, RoomError, type AnySettings, type EngineOptions, type 
 
 /** Contagem antes de começar (ms). */
 export const FOXSHOT_COUNTDOWN_MS = 5000;
+/** Quantas pessoas cabem na sala (quem passa dos 10 jogadores só espectaram). */
+export const FOXSHOT_ROOM_MAX = 15;
+/** Jogadores humanos + bots numa partida. */
+const PLAYERS_MAX = 10;
 /** O pódio espera um pouco para o último abate ser visto (ms). */
 const OVER_MS = 2500;
 /** No máximo estes passos por chamada: se a sala atrasou, anda um pouco mais rápido sem travar tudo. */
@@ -42,7 +46,7 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
   private dirty = false;
 
   constructor(opts: EngineOptions) {
-    super({ ...opts, maxPlayers: 10 });
+    super({ ...opts, maxPlayers: FOXSHOT_ROOM_MAX });
     this.mode = 'mata';
     this.settings = { rounds: 1, minutes: 5, bots: 0 } as unknown as AnySettings;
   }
@@ -60,6 +64,35 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
       m.bots >= 0 &&
       m.bots <= FS_MATCH_BOTS.max
     );
+  }
+
+  /** Dá para entrar (e ser convidado) com a partida rolando: a pessoa chega espectando e escolhe se joga. */
+  override get joinableInPlay(): boolean {
+    return true;
+  }
+
+  override join(id: string, username: string) {
+    const existing = this.members.get(id);
+    if (existing) {
+      existing.connected = true;
+      existing.username = username;
+      this.ensureHost();
+      this.dirty = true;
+      return;
+    }
+    if (this.phase === 'lobby' && this.members.size >= PLAYERS_MAX) throw new RoomError('A sala está cheia');
+    if (this.members.size >= FOXSHOT_ROOM_MAX) throw new RoomError('A sala está cheia');
+    this.members.set(id, { id, username, connected: true, ready: false, joinedAt: this.now() });
+    this.ensureHost();
+    this.dirty = true;
+  }
+
+  /** Quem está espectando pede para jogar (toma o lugar de um bot ou ganha uma raposa nova). */
+  joinPlay(id: string): void {
+    const m = this.members.get(id);
+    if (!m || !this.sim || (this.phase !== 'play' && this.phase !== 'show')) return;
+    if (!this.sim.joinAs(id, m.username)) throw new RoomError('A partida já tem 10 jogadores. Siga espectando.');
+    this.dirty = true;
   }
 
   protected override pausable(): boolean {

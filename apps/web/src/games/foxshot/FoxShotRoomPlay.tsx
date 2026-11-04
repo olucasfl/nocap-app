@@ -28,6 +28,7 @@ import {
 import { fsAudio } from '@/lib/foxshot-audio';
 import { leaveRoom, sendRoom, sendRoomQuiet, serverNow, subscribeRoom, type RoomSnapshot } from '@/lib/rooms';
 import { GameChat } from '@/components/GameChat';
+import { InviteDialog } from '@/components/InviteDialog';
 import { FoxShotScene, fsWorldDust, type Quality } from './FoxShotScene';
 import { FsControls } from './fs-controls';
 import { bindLabel, fsSettings, useFsSettings } from './fs-settings';
@@ -75,6 +76,7 @@ interface RoomHud {
   ammo: number; mag: number; weapon: string; weaponId: FsWeaponId; heldNade: FsGrenadeId | null;
   nades: { id: FsGrenadeId; name: string; count: number; key: string }[];
   speed: number; slots: { id: FsWeaponId | null; name: string; key: number }[]; current: number; reloading: boolean; scoped: boolean; spreadPx: number;
+  spec: string | null;
   fps: number; timeLeft: number; players: FsPlayerRow[]; points: number; tris: number; calls: number; level: Quality; dpr: number; pos: number[]; k: number;
 }
 interface Snap {
@@ -96,12 +98,16 @@ export function FoxShotRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
 }
 
 function Match({ snapshot }: { snapshot: RoomSnapshot }) {
+  // quem chega com a partida rolando começa espectando; escolhe entrar para jogar ou seguir espectando
+  const mePlayer = (snapshot.foxshot?.roster ?? []).some((r) => r.id === snapshot.me && !r.bot);
+  const [decided, setDecided] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const blindEl = useRef<HTMLDivElement>(null);
   const hitEl = useRef<HTMLDivElement>(null);
   const ctl = useRef<FsControls | null>(null);
-  const pausedRef = useRef(true);
+  const pausedRef = useRef(mePlayer);
   const shopRef = useRef(false);
   const buyRef = useRef<(item: FsShopItem) => void>(() => undefined);
   const resumeRef = useRef<() => void>(() => undefined);
@@ -110,7 +116,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
   snapRef.current = snapshot;
   const settings = useFsSettings();
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
-  const [paused, setPausedState] = useState(true);
+  const [paused, setPausedState] = useState(mePlayer);
   const [needClick, setNeedClick] = useState(false);
   const [shop, setShopState] = useState(false);
   const [board, setBoard] = useState(false);
@@ -143,10 +149,20 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
     const el = root.current!;
     const cv = canvas.current!;
     const info = snapRef.current.foxshot!;
-    const roster = info.roster ?? [];
+    // a lista de jogadores muda no meio da partida (alguém toma o lugar de um bot): sempre se lê a mais nova
+    const rosterNow = () => snapRef.current.foxshot?.roster ?? [];
     const meId = snapRef.current.me ?? '';
-    const others = roster.filter((r) => r.id !== meId);
-    const nameOf = (id: string) => roster.find((r) => r.id === id)?.name ?? '?';
+    const isPlayerNow = () => rosterNow().some((r) => r.id === meId && !r.bot);
+    const nameOf = (id: string) => rosterNow().find((r) => r.id === id)?.name ?? '?';
+    // a cena guarda uma raposa por posição na lista (não por pessoa), então trocar de dono não mexe nela
+    const SLOTS = Array.from({ length: 10 }, (_, i) => `s${i}`);
+    const slotOf = (id: string) => {
+      const i = rosterNow().findIndex((r) => r.id === id);
+      return i < 0 ? null : `s${i}`;
+    };
+    let wasPlayer = isPlayerNow();
+    let followId: string | null = null;
+    const cam = { x: 0, y: 0, z: 0, yaw: 0, ok: false };
     const touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
     let dead = false;
     let raf = 0;
@@ -165,7 +181,25 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         }
       },
     );
+    const cycleFollow = (d: 1 | -1) => {
+      const live = rosterNow().filter((r) => r.id !== meId && remotes.get(slotOf(r.id) ?? '')?.alive);
+      if (!live.length) return;
+      const at = live.findIndex((r) => r.id === followId);
+      followId = live[(at + d + live.length) % live.length]!.id;
+    };
     const onKey = (e: KeyboardEvent) => {
+      if (document.querySelector('[data-testid="invite-dialog"]')) return;
+      if (!isPlayerNow() && !e.repeat) {
+        if (e.code === 'ArrowRight' || e.code === 'KeyD') cycleFollow(1);
+        else if (e.code === 'ArrowLeft' || e.code === 'KeyA') cycleFollow(-1);
+        else if (e.code === 'KeyM' && !pausedRef.current) {
+          bigMapRef.current = !bigMapRef.current;
+          setBigMap(bigMapRef.current);
+        } else if (e.code === 'Tab' && !pausedRef.current) {
+          e.preventDefault();
+          setBoard(true);
+        }
+      }
       if (e.code === 'Escape' && bigMapRef.current) {
         e.preventDefault();
         bigMapRef.current = false;
@@ -189,9 +223,14 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       }
     };
     window.addEventListener('keydown', onKey);
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Tab' && !isPlayerNow()) setBoard(false);
+    };
+    window.addEventListener('keyup', onKeyUp);
     const resume = () => {
       setPaused(false);
       fsAudio.init();
+      if (!isPlayerNow()) return;
       if (!touch) {
         if (fsSettings().fullscreenLock) {
           const rootEl = document.documentElement;
@@ -208,7 +247,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
     };
     resumeRef.current = resume;
 
-    const world = fsWorldDust(others.map((o) => ({ id: o.id, x: 0, z: 0 })));
+    const world = fsWorldDust(SLOTS.map((id) => ({ id, x: 0, z: 0 })));
     const scene = new FoxShotScene(cv, world);
     const resize = () => scene.resize(el.clientWidth, el.clientHeight);
     resize();
@@ -245,7 +284,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
     let lastFrameAt = 0;
     let timeLeft = info.minutes * 60;
     const remotes = new Map<string, { buf: Snap[]; alive: boolean; shown: boolean; weapon: number }>();
-    for (const o of others) remotes.set(o.id, { buf: [], alive: true, shown: false, weapon: 0 });
+    for (const id of SLOTS) remotes.set(id, { buf: [], alive: true, shown: false, weapon: 0 });
     const rows = new Map<string, Row>();
     const nades = new Map<number, number>();
     const nadeLast = new Map<number, number[]>();
@@ -323,11 +362,21 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       timeLeft = fr.f.left / 60;
       for (const raw of fr.f.p) {
         const r = toRow(raw);
-        const id = roster[r.idx]?.id;
+        const id = rosterNow()[r.idx]?.id;
         if (!id) continue;
         rows.set(id, r);
-        const rm = remotes.get(id);
+        const key = `s${r.idx}`;
+        const rm = remotes.get(key);
         if (!rm) continue;
+        if (id === meId) {
+          // este corpo agora é meu (entrei no lugar de um bot): some da cena dos outros
+          if (rm.shown) {
+            rm.shown = false;
+            rm.alive = false;
+            scene.hideTarget(key);
+          }
+          continue;
+        }
         const alive = (r.flags & 1) !== 0;
         rm.buf.push({ t: now, x: r.x, y: r.y, z: r.z, yaw: r.yaw, crouch: r.crouch, flags: r.flags });
         if (rm.buf.length > 24) rm.buf.shift();
@@ -335,12 +384,12 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         if (alive && (!rm.alive || !rm.shown)) {
           rm.alive = true;
           rm.shown = true;
-          scene.reviveTarget(id);
-          scene.setBot(id, r.x, r.y, r.z, fsDmHeading(r.yaw), 'idle', 1);
+          scene.reviveTarget(key);
+          scene.setBot(key, r.x, r.y, r.z, fsDmHeading(r.yaw), 'idle', 1);
         } else if (!alive && rm.alive) {
           rm.alive = false;
           const from = killFrom.get(id) ?? [r.x, r.z + 1];
-          scene.killTarget(id, from[0], from[1], 1.4);
+          scene.killTarget(key, from[0], from[1], 1.4);
         }
       }
       // granadas no ar
@@ -385,7 +434,10 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
             showMarker(e.head ? 'head' : e.armor ? 'armor' : 'body', `-${e.dmg}`);
           }
         }
-        if (e.vic !== meId) scene.hitTarget(e.vic);
+        if (e.vic !== meId) {
+          const k = slotOf(e.vic);
+          if (k) scene.hitTarget(k);
+        }
       } else if (e.k === 'hurt') {
         if (e.vic !== meId) return;
         hurtKey++;
@@ -407,10 +459,11 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         if (kr && e.victim !== meId) killFrom.set(e.victim, [kr.x, kr.z]);
         else if (vr) killFrom.set(e.victim, [vr.x, vr.z + 1]);
         if (e.victim !== meId) {
-          const rm = remotes.get(e.victim);
-          if (rm && rm.alive && kr) {
+          const vk = slotOf(e.victim);
+          const rm = vk ? remotes.get(vk) : undefined;
+          if (vk && rm && rm.alive && kr) {
             rm.alive = false;
-            scene.killTarget(e.victim, kr.x, kr.z, 1.4);
+            scene.killTarget(vk, kr.x, kr.z, 1.4);
           }
         }
         if (e.killer === meId) showMarker('kill', e.head ? 'CABEÇA' : 'ABATE');
@@ -569,6 +622,21 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       applyQuality();
       const phase = snapRef.current.phase;
       const live = phase === 'play';
+      const player = isPlayerNow();
+      if (player !== wasPlayer) {
+        wasPlayer = player;
+        if (player) {
+          // virou jogador: o corpo vem do servidor e a pessoa clica em Continuar para prender o mouse
+          haveSelf = false;
+          self = null;
+          wasAlive = true;
+          pendingSelf = null;
+          pending.length = 0;
+          setPaused(true);
+          bigMapRef.current = false;
+          setBigMap(false);
+        }
+      }
       const isPaused = pausedRef.current;
       const inpRaw = controls.read();
       const inp = forced ? { ...inpRaw, fwd: forced.fwd, strafe: forced.strafe } : inpRaw;
@@ -588,7 +656,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       }
       const alive = !self || self.alive;
       const deathK = !alive && deadSince >= 0 ? Math.min(1, (clock - deadSince) / 0.7) : 0;
-      scene.hideViewmodel = deathK > 0.15;
+      scene.hideViewmodel = !player || deathK > 0.15;
 
       let adsOn = false;
       const w = loadout.weapon;
@@ -743,6 +811,40 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       if (!isPaused) shake *= Math.exp(-6 * dt);
       const sk = shake > 0.02 ? shake : 0;
       const e = deathK * deathK * (3 - 2 * deathK);
+      if (!player) {
+        // espectando: câmera atrás da raposa que se segue (Esquerda e Direita trocam)
+        const alivePeers = rosterNow().filter((r) => r.id !== meId && remotes.get(slotOf(r.id) ?? '')?.alive);
+        const cur = followId ? remotes.get(slotOf(followId) ?? '') : undefined;
+        if (!cur || !cur.alive || !cur.shown) {
+          const best = alivePeers.map((r) => ({ id: r.id, pts: fsMatchScore({ kills: rows.get(r.id)?.kills ?? 0, assists: rows.get(r.id)?.assists ?? 0 }) })).sort((a, b) => b.pts - a.pts)[0];
+          if (best) followId = best.id;
+        }
+        const tr = followId ? remotes.get(slotOf(followId) ?? '') : undefined;
+        const tp = tr ? sample(tr.buf, rt) : null;
+        if (tp) {
+          const d = fsDir(tp.yaw, 0);
+          const tx = tp.x - d[0] * 3.2;
+          const ty = tp.y + 2.1;
+          const tz = tp.z - d[2] * 3.2;
+          const k = cam.ok ? Math.min(1, dt * 9) : 1;
+          cam.x += (tx - cam.x) * k;
+          cam.y += (ty - cam.y) * k;
+          cam.z += (tz - cam.z) * k;
+          let dy = tp.yaw - cam.yaw;
+          if (dy > 180) dy -= 360;
+          if (dy < -180) dy += 360;
+          cam.yaw += cam.ok ? dy * k : dy;
+          cam.ok = true;
+        }
+        if (cam.ok) {
+          mover.x = cam.x;
+          mover.y = cam.y - 1.6;
+          mover.z = cam.z;
+          scene.setView(cam.x, cam.y, cam.z, cam.yaw, -9, st.fov, 0);
+          view.yaw = cam.yaw;
+          fsAudio.listener(cam.x, cam.y, cam.z, fsDir(cam.yaw, 0));
+        }
+      } else
       scene.setView(
         prev.x + (mover.x - prev.x) * alpha + errOff.x,
         prev.y + (mover.y - prev.y) * alpha + errOff.y + fsEyeHeight(mover) - e * (fsEyeHeight(mover) - 0.22),
@@ -752,7 +854,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         THREE.MathUtils.lerp(scene.fovNow ?? st.fov, fov, Math.min(1, dt * 12)),
         (sk ? Math.sin(clock * 97) * sk * 0.6 : 0) + e * 24,
       );
-      fsAudio.listener(mover.x, mover.y + fsEyeHeight(mover), mover.z, fsDir(view.yaw + view.rYaw, view.pitch + view.rPitch));
+      if (player) fsAudio.listener(mover.x, mover.y + fsEyeHeight(mover), mover.z, fsDir(view.yaw + view.rYaw, view.pitch + view.rPitch));
       scene.update(isPaused ? 0 : dt, { speed: Math.hypot(mover.vx, mover.vz), adsTarget: adsOn ? 1 : 0, airborne: !mover.onGround });
       scene.render();
 
@@ -775,13 +877,13 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       }
 
       mini.current = { x: mover.x, z: mover.z, yaw: view.yaw, targets: [], boxes: ARENA, labels: world.labels };
-      setBoardState(inp.board && !isPaused);
+      if (player) setBoardState(inp.board && !isPaused);
 
       hudT += dt;
       if (hudT > 0.1) {
         hudT = 0;
         const sc = scene.stats();
-        const players: FsPlayerRow[] = roster.map((r) => {
+        const players: FsPlayerRow[] = rosterNow().map((r) => {
           const row = rows.get(r.id);
           const mine = r.id === meId;
           const k = row?.kills ?? 0;
@@ -803,7 +905,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           current: loadout.current, reloading: !loadout.held && loadout.reloading, scoped,
           spreadPx: Math.min(60, fsSpreadDeg(loadout.weapon, { moving: Math.hypot(mover.vx, mover.vz) > 0.8, speed: Math.hypot(mover.vx, mover.vz), airborne: !mover.onGround, ads: adsOn }, loadout.slot.gun) * 4),
           fps: Math.round(fps), timeLeft, players, points: mp?.points ?? 0, tris: sc.tris, calls: sc.calls, level: scene.level, dpr: Math.round(scene.renderer.getPixelRatio() * 100) / 100,
-          pos: [mover.x, mover.y, mover.z], k: lastK,
+          pos: [mover.x, mover.y, mover.z], k: lastK, spec: player ? null : followId ? nameOf(followId) : '',
         });
         const startAt = snapRef.current.foxshot?.startAt;
         setCount(phase === 'show' && startAt ? Math.max(0, Math.ceil((startAt - serverNow()) / 1000)) : null);
@@ -817,7 +919,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       .then(() => {
         if (dead) return;
         scene.selectWeapon(loadout.weapon.id, true);
-        for (const o of others) scene.hideTarget(o.id);
+        for (const id of SLOTS) scene.hideTarget(id);
         setStatus('ready');
         last = performance.now();
         raf = requestAnimationFrame(frame);
@@ -826,7 +928,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
 
     if (import.meta.env.DEV) {
       (window as unknown as { __fsn?: unknown }).__fsn = {
-        state: () => ({ mover: { ...mover }, view: { ...view }, self, k: lastK, left: timeLeft, rows: [...rows.values()], pending: pending.length, seq, roster, me: meId, phase: snapRef.current.phase }),
+        state: () => ({ mover: { ...mover }, view: { ...view }, self, k: lastK, left: timeLeft, rows: [...rows.values()], pending: pending.length, seq, roster: rosterNow(), me: meId, phase: snapRef.current.phase }),
         setView: (yaw: number, pitch: number) => {
           view.yaw = yaw;
           view.pitch = pitch;
@@ -855,6 +957,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       unsub();
       ro.disconnect();
       window.removeEventListener('keydown', onKey);
+      window.removeEventListener('keyup', onKeyUp);
       controls.detach();
       scene.dispose();
       try {
@@ -870,6 +973,12 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
   const setBoardState = useCallback((v: boolean) => setBoard((b) => (b === v ? b : v)), []);
   const h = hud;
   const players = h?.players ?? [];
+  const spectating = !!h && h.spec !== null;
+  const canPlay = (snapshot.foxshot?.roster ?? []).some((r) => r.bot) || (snapshot.foxshot?.roster?.length ?? 0) < 10;
+  const playNow = () => {
+    setDecided(true);
+    sendRoom('fsplay');
+  };
 
   return (
     <div className="fs" ref={root} data-testid="fs-root">
@@ -885,7 +994,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       {status === 'error' && <div className="fs-load mono">Não deu para carregar os modelos. Atualize a página.</div>}
       {h && status === 'ready' && (
         <>
-          <FsCrosshair spreadPx={h.spreadPx} />
+          {!spectating && <FsCrosshair spreadPx={h.spreadPx} />}
           {marker && (
             <div key={marker.key} className={`fs-marker ${marker.kind}`} aria-hidden="true" data-testid="fs-marker">
               <span className="fs-x" />
@@ -898,16 +1007,28 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           <div className="fsh-rcol">
             <FsKillFeed items={feed} />
           </div>
-          {(h.hurtAge) < 0.45 && !h.dead && <div key={`h${h.hurtKey}`} className="fs-hurt" aria-hidden="true" />}
-          {(h.heavyAge) < 1.7 && !h.dead && <div key={`v${h.heavyKey}`} className="fs-hurt heavy" aria-hidden="true" />}
-          {h.dead && !paused && (
+          {(h.hurtAge) < 0.45 && !h.dead && !spectating && <div key={`h${h.hurtKey}`} className="fs-hurt" aria-hidden="true" />}
+          {(h.heavyAge) < 1.7 && !h.dead && !spectating && <div key={`v${h.heavyKey}`} className="fs-hurt heavy" aria-hidden="true" />}
+          {h.dead && !paused && !spectating && (
             <div className="fs-deadscreen" role="status" data-testid="fs-dead">
               <b>Você morreu</b>
               <span className="mono" data-testid="fs-respawn">Renascendo em {(h.respawnIn).toFixed(1)}</span>
             </div>
           )}
-          <FsVitals hp={h.hp} armor={h.armor} helmet={h.helmet} />
-          <FsAmmo weapon={h.weapon} id={h.weaponId} ammo={h.ammo} mag={h.mag} reloading={h.reloading} slots={h.slots} current={h.current} nades={h.nades} heldNade={h.heldNade} />
+          {!spectating && <FsVitals hp={h.hp} armor={h.armor} helmet={h.helmet} />}
+          {!spectating && <FsAmmo weapon={h.weapon} id={h.weaponId} ammo={h.ammo} mag={h.mag} reloading={h.reloading} slots={h.slots} current={h.current} nades={h.nades} heldNade={h.heldNade} />}
+          {spectating && !paused && (
+            <div className="fsr-spec" data-testid="fsr-spec">
+              <small>ESPECTANDO</small>
+              <b data-testid="fsr-spec-name">{h.spec || '...'}</b>
+              <span className="mono">Esquerda / Direita troca de jogador</span>
+              {canPlay && (
+                <button type="button" className="cfh-btn" onClick={playNow} data-sfx="start" data-testid="fsr-join-play">
+                  Entrar para jogar
+                </button>
+              )}
+            </div>
+          )}
           {shop && !paused && (
             <FsShop
               onBuy={(i) => buyRef.current(i)}
@@ -936,9 +1057,32 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
               Clique na tela para prender o mouse
             </div>
           )}
+          {spectating && !decided && snapshot.phase !== 'lobby' && (
+            <div className="fsr-choice" role="dialog" aria-modal="true" aria-label="Entrar na partida" data-testid="fsr-choice">
+              <div className="fsr-choice-card">
+                <small>A PARTIDA JÁ COMEÇOU</small>
+                <h2>Como você quer entrar?</h2>
+                <button type="button" className="cfh-btn" onClick={playNow} data-sfx="start" data-testid="fsr-choice-play">
+                  Entrar para jogar
+                </button>
+                <button type="button" className="cfh-btn ghost" onClick={() => setDecided(true)} data-sfx="back" data-testid="fsr-choice-watch">
+                  Entrar para espectar
+                </button>
+              </div>
+            </div>
+          )}
+          {inviteOpen && <InviteDialog onClose={() => setInviteOpen(false)} />}
           <GameChat enabled onClosed={(wasLocked) => wasLocked && ctl.current?.requestLock()} />
           {paused && (
             <FsMenu touch={false} onResume={() => resumeRef.current()} onEnd={() => void leaveRoom()} exitTo="/fox-cap/counter-fox" exitLabel="Sair da partida">
+              <button type="button" className="fsm-item" onClick={() => setInviteOpen(true)} data-sfx="start" data-testid="fsr-invite">
+                Convidar amigos
+              </button>
+              {spectating && canPlay && (
+                <button type="button" className="fsm-item" onClick={playNow} data-sfx="start" data-testid="fsr-menu-play">
+                  Entrar para jogar
+                </button>
+              )}
               <button type="button" className="fsm-item danger" onClick={() => void leaveRoom()} data-testid="fsr-leave">
                 Sair da sala
               </button>

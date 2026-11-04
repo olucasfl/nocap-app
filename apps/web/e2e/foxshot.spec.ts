@@ -40,7 +40,7 @@ test('dano estilo CS nos alvos do mapa de treino', async ({ page }, info) => {
   await fs(page, 'buy', 'ak');
   await fs(page, 'weapon', 0);
   // fuzil, cabeça: mata sem colete (t1) e com colete e capacete (t3)
-  for (const [id, x, z] of [['t1', -36, -11], ['t3', -24, -11]] as const) {
+  for (const [id, x, z] of [['t1', -34, -11], ['t3', -22, -11]] as const) {
     await fs(page, 'teleport', x, z);
     await fs(page, 'aimAt', id, 'head');
     await fs(page, 'shoot', 1);
@@ -85,7 +85,7 @@ test('escopeta: de perto mata com um tiro, de longe quase não acerta', async ({
   await fs(page, 'buy', 'shotgun');
   await fs(page, 'weapon', 0);
   await expect(page.getByTestId('fs-ammo')).toContainText('SPAS-12');
-  await fs(page, 'teleport', -36, -11);
+  await fs(page, 'teleport', -34, -11);
   await fs(page, 'aimAt', 't1', 'chest');
   await fs(page, 'shoot', 1);
   expect(await alive(page, 't1'), 'de perto mata').toBe(false);
@@ -99,6 +99,7 @@ test('escopeta: de perto mata com um tiro, de longe quase não acerta', async ({
 
 test('granadas: explosiva dá dano por distância e a de luz cega só quem olha', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
+  test.setTimeout(240_000);
   await page.setViewportSize({ width: 1280, height: 720 });
   await open(page);
   await page.keyboard.press('KeyB');
@@ -132,34 +133,31 @@ test('granadas: explosiva dá dano por distância e a de luz cega só quem olha'
 
 test('bots andam, agacham, pulam, morrem e nascem de novo', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
-  test.setTimeout(120_000);
+  test.setTimeout(240_000);
   await page.setViewportSize({ width: 1280, height: 720 });
   await open(page);
   type Bot = { x: number; y: number; z: number; crouch: number; alive: boolean };
   const bot = (id: string) => fs<Bot>(page, 'bot', id);
+  // (o navegador de teste roda sem placa de vídeo e o relógio do jogo anda devagar: espera por condição, não por tempo fixo)
   const x0 = (await bot('b1')).x;
-  await page.waitForTimeout(2500);
-  expect(Math.abs((await bot('b1')).x - x0), 'o bot anda').toBeGreaterThan(1);
+  await expect.poll(async () => Math.abs((await bot('b1')).x - x0), { timeout: 60_000 }).toBeGreaterThan(1);
   let maxY = 0;
-  for (let i = 0; i < 25; i++) {
-    maxY = Math.max(maxY, (await bot('b4')).y);
-    await page.waitForTimeout(150);
-  }
-  expect(maxY, 'o bot pula').toBeGreaterThan(0.3);
-  await page.waitForTimeout(2000);
-  expect((await bot('b3')).crouch, 'o bot agachado').toBeGreaterThan(0.9);
+  await expect
+    .poll(async () => (maxY = Math.max(maxY, (await bot('b4')).y)), { timeout: 60_000, intervals: [100] })
+    .toBeGreaterThan(0.3);
+  await expect.poll(async () => (await bot('b3')).crouch, { timeout: 30_000 }).toBeGreaterThan(0.9);
   await fs(page, 'buy', 'ak');
   await fs(page, 'weapon', 0);
   await fs(page, 'teleport', -5, -24.5);
   await fs(page, 'aimAt', 'b5', 'head');
   await fs(page, 'shoot', 1);
   expect((await bot('b5')).alive, 'bot morreu').toBe(false);
-  await expect.poll(async () => (await bot('b5')).alive, { timeout: 30_000 }).toBe(true);
+  await expect.poll(async () => (await bot('b5')).alive, { timeout: 90_000 }).toBe(true);
 });
 
 test('estande: os atiradores só atiram para a frente, e só quando a pessoa está na galeria', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
-  test.setTimeout(120_000);
+  test.setTimeout(200_000);
   await page.setViewportSize({ width: 1280, height: 720 });
   await open(page);
   // fora da galeria (no meio da pista) os atiradores ficam quietos
@@ -169,9 +167,8 @@ test('estande: os atiradores só atiram para a frente, e só quando a pessoa est
   expect(await fs<number>(page, 'hp'), 'fora da galeria ninguém atira').toBe(100);
   // dentro da galeria, de frente para eles: nunca levam tiro (atiram só para o norte, para o paredão)
   await fs(page, 'teleport', 31, -11);
-  await page.waitForTimeout(6000);
+  await expect.poll(async () => fs<number>(page, 'rangeShots'), { timeout: 90_000, message: 'os atiradores atiraram de verdade' }).toBeGreaterThan(5);
   expect(await fs<number>(page, 'hp'), 'na galeria o tiro não vem na sua direção').toBe(100);
-  expect(await fs<number>(page, 'rangeShots'), 'os atiradores atiraram de verdade').toBeGreaterThan(3);
 });
 
 test('M abre o mapa grande com onde estou e Esc fecha', async ({ page }, info) => {

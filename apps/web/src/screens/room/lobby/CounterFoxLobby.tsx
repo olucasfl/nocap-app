@@ -35,34 +35,55 @@ function hint(s: RoomSnapshot): { text: string; ok: boolean } {
   return { text: 'Tudo certo: pode começar', ok: true };
 }
 
+/** Convidar: igual às outras salas do NoCap (enviar o link, copiar, procurar por @usuário, chamar e chamar de novo). */
 function Invite({ snapshot }: { snapshot: RoomSnapshot }) {
   const user = useAuth((st) => st.user);
   const invited = useRoom((s) => s.invited);
+  const invitedEver = useRoom((s) => s.invitedEver);
   const friends = useQuery({ queryKey: ['friends'], queryFn: fetchFriends, enabled: !!user });
   const [handle, setHandle] = useState('');
+  const [filter, setFilter] = useState('');
   const [term, setTerm] = useState('');
   const [done, setDone] = useState('');
   const found = useQuery({ queryKey: ['user-search', term], queryFn: () => searchUsers(term), enabled: term.length >= MIN_SEARCH });
   const link = `${location.origin}/sala/${snapshot.code}`;
+  const message = `Entra na minha sala do Counter Fox: ${snapshot.code} ${link}`;
+  const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
   const inRoom = new Set(snapshot.members.map((m) => m.username));
-  const list = (friends.data?.friends ?? []).filter((f) => !inRoom.has(f.username));
+  const all = friends.data?.friends ?? [];
+  const list = all.filter((f) => !inRoom.has(f.username)).filter((f) => f.username.includes(filter.trim().toLowerCase().replace(/^@/, '')));
+  const results = (found.data ?? []).filter((u) => !inRoom.has(u.username));
+  const flash = (what: string) => {
+    setDone(what);
+    window.setTimeout(() => setDone(''), 1800);
+  };
   const copy = async (text: string, what: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      setDone(what);
-      window.setTimeout(() => setDone(''), 1800);
+      flash(what);
     } catch {
       /* sem permissão: o texto continua na tela */
     }
   };
-  const row = (u: string) => (
+  const share = async () => {
+    if (!canShare) return copy(message, 'share');
+    try {
+      await navigator.share({ title: 'NoCap', text: message, url: link });
+    } catch {
+      /* cancelou a folha de compartilhar */
+    }
+  };
+  const row = (u: string, badge?: string) => (
     <li key={u} className="cfl-inv-row">
-      <span>@{u}</span>
+      <span>
+        @{u}
+        {badge && <small className="mono"> {badge}</small>}
+      </span>
       {invited.includes(u) ? (
         <em>Enviado</em>
       ) : (
-        <button type="button" className="cfl-mini" data-sfx="send" onClick={() => inviteFriend(u)}>
-          Chamar
+        <button type="button" className="cfl-mini" data-sfx="send" onClick={() => inviteFriend(u)} data-testid={`cfl-call-${u}`}>
+          {invitedEver.includes(u) ? 'Chamar de novo' : 'Chamar'}
         </button>
       )}
     </li>
@@ -74,6 +95,9 @@ function Invite({ snapshot }: { snapshot: RoomSnapshot }) {
           <small>CÓDIGO</small>
           <b>{snapshot.code}</b>
         </div>
+        <button type="button" className="cfl-mini" onClick={() => void share()} data-sfx="send" data-testid="cfl-share">
+          {done === 'share' ? 'Mensagem copiada' : 'Enviar convite'}
+        </button>
         <button type="button" className="cfl-mini" onClick={() => void copy(snapshot.code, 'code')} data-sfx="send" data-testid="cfl-copy-code">
           {done === 'code' ? 'Copiado' : 'Copiar código'}
         </button>
@@ -81,7 +105,7 @@ function Invite({ snapshot }: { snapshot: RoomSnapshot }) {
           {done === 'link' ? 'Link copiado' : 'Copiar link'}
         </button>
       </div>
-      <p className="cfl-note">Quem recebe o link entra direto, mesmo sem conta.</p>
+      <p className="cfl-note">Quem recebe o link entra direto, mesmo sem conta. Dá para convidar também com a partida rolando: a pessoa escolhe entre jogar e espectar.</p>
       {user ? (
         <>
           <h4>Procurar por @usuário</h4>
@@ -92,15 +116,24 @@ function Invite({ snapshot }: { snapshot: RoomSnapshot }) {
               setTerm(handle.trim().replace(/^@/, '').toLowerCase());
             }}
           >
-            <input value={handle} onChange={(e) => setHandle(e.target.value)} placeholder="@amigo" aria-label="Procurar por usuário" autoCapitalize="none" autoCorrect="off" />
-            <button type="submit" className="cfl-mini">
+            <input value={handle} onChange={(e) => setHandle(e.target.value)} placeholder={`@usuário (mín. ${MIN_SEARCH} letras)`} aria-label="Procurar por usuário" autoCapitalize="none" autoCorrect="off" data-testid="cfl-search" />
+            <button type="submit" className="cfl-mini" disabled={handle.trim().replace(/^@/, '').length < MIN_SEARCH}>
               Buscar
             </button>
           </form>
-          {found.isSuccess && (found.data ?? []).filter((u) => !inRoom.has(u.username)).length === 0 && <p className="cfl-note">Ninguém encontrado.</p>}
-          <ul className="cfl-inv">{(found.data ?? []).filter((u) => !inRoom.has(u.username)).map((u) => row(u.username))}</ul>
+          {found.isFetching && <p className="cfl-note">Procurando...</p>}
+          {found.isError && <p className="cfl-note">Não deu para pesquisar. Tente de novo.</p>}
+          {found.isSuccess && results.length === 0 && <p className="cfl-note">Ninguém encontrado.</p>}
+          {results.length > 0 && <ul className="cfl-inv">{results.map((u) => row(u.username, u.state === 'friends' ? 'amigo' : undefined))}</ul>}
           <h4>Seus amigos</h4>
-          {friends.isPending ? <p className="cfl-note">Carregando...</p> : list.length === 0 ? <p className="cfl-note">Nenhum amigo para chamar agora. Use o link acima.</p> : <ul className="cfl-inv">{list.map((f) => row(f.username))}</ul>}
+          {all.length >= 8 && <input className="cfl-filter" value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Buscar amigo" aria-label="Buscar amigo" autoCapitalize="none" autoCorrect="off" />}
+          {friends.isPending ? (
+            <p className="cfl-note">Carregando...</p>
+          ) : list.length === 0 ? (
+            <p className="cfl-note">{all.length === 0 ? 'Você ainda não tem amigos no NoCap. Use o link acima.' : filter ? 'Ninguém com esse nome.' : 'Todos os seus amigos já estão na sala.'}</p>
+          ) : (
+            <ul className="cfl-inv">{list.map((f) => row(f.username))}</ul>
+          )}
         </>
       ) : (
         <p className="cfl-note">Crie uma conta para chamar amigos do NoCap direto daqui.</p>
