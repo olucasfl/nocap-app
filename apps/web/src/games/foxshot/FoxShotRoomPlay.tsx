@@ -37,7 +37,7 @@ import { FsControls } from './fs-controls';
 import { bindLabel, fsSettings, useFsSettings } from './fs-settings';
 import { FsMenu } from './FsMenu';
 import { FsShop } from './FsShop';
-import { FsBigMap, FsAmmo, FsCrosshair, FsKillFeed, FsMinimap, FsScoreboard, FsTopBar, FsVitals, type FeedItem, type FsIntelDot, type FsPlayerRow, type MinimapData } from './FsHud';
+import { FsBigMap, FsTelemetry, FsAmmo, FsCrosshair, FsKillFeed, FsMinimap, FsScoreboard, FsTopBar, FsVitals, type FeedItem, type FsIntelDot, type FsPlayerRow, type MinimapData } from './FsHud';
 import { FoxShotRoomFinal } from './FoxShotRoomFinal';
 import './foxshot.css';
 import './counterfox-hub.css';
@@ -1092,6 +1092,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           {settings.showMinimap && <FsMinimap get={getMini} />}
           {bigMap && <FsBigMap get={getMini} title="Mapa · Duna" />}
           <div className="fsh-rcol">
+            {settings.showTelemetry && <FsTelemetry fps={h.fps} tris={h.tris} calls={h.calls} level={h.level} dpr={h.dpr} speed={h.speed} ref="" />}
             <FsKillFeed items={feed} />
           </div>
           {(h.hurtAge) < 0.45 && !h.dead && !spectating && <div key={`h${h.hurtKey}`} className="fs-hurt" aria-hidden="true" />}
