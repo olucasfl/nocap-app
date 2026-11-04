@@ -208,12 +208,13 @@ function RoomPageInner({ code, game = 'color' }: { code?: string; game?: RoomGam
       showNotice(message);
       useRoom.setState({ message: '' });
     }
+    // o Counter Fox volta para o menu dele (só sai do Counter Fox quem clica em "Sair do Counter Fox")
+    if (lastGame === 'foxshot') void navigate({ to: '/fox-cap/counter-fox' });
     // os jogos do Fox Cap! (Fut Fox, Desmorona!, Atravessa!) voltam para a tela do Fox Cap!
-    if (
+    else if (
       lastGame === 'desmorona' ||
       lastGame === 'bola' ||
       lastGame === 'pingpong' ||
-      lastGame === 'foxshot' ||
       lastGame === 'foxcap' ||
       lastGame === 'atravessa'
     )
