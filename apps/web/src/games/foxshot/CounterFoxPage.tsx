@@ -244,8 +244,8 @@ function CounterFoxInner() {
     void entry.join(code);
   };
 
-  if (training) return <FoxShotTestPage key="train" onExit={() => setTraining(false)} />;
-  if (playing) return <FoxShotTestPage key={run} match={cfg} onExit={() => setPlaying(false)} onAgain={() => setRun((r) => r + 1)} />;
+  if (training) return <FoxShotTestPage key="train" onExit={() => { setTraining(false); setScreen('main'); }} />;
+  if (playing) return <FoxShotTestPage key={run} match={cfg} onExit={() => { setPlaying(false); setScreen('main'); }} onAgain={() => setRun((r) => r + 1)} />;
 
   return (
     <main className="cfh" data-testid="cfh" data-screen={screen}>
