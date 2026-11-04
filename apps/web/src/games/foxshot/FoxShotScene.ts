@@ -1793,7 +1793,8 @@ export class FoxShotScene {
     for (const a of Object.values(f.actions)) a.stop();
     f.actions.idle?.reset().setEffectiveWeight(1).play();
     f.anim = 'idle';
-    f.label.visible = !this.world.bots.some((b) => b.id === id) && !this.world.dm.some((b) => b.id === id);
+    // o nome dos alvos agora está nas placas escuras do mapa de treino: a etiqueta branca em cima da cabeça ficava duplicada
+    f.label.visible = false;
   }
 
   // ---- efeitos
