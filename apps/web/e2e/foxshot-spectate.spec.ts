@@ -23,6 +23,7 @@ test('convidado chega no meio da partida, espectando ou jogando', async ({ brows
   const mk = async (name: string) => {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 }, locale: 'pt-BR' });
     const page = await ctx.newPage();
+    page.on('pageerror', (e) => console.log(`pageerror ${name}:`, e.message.slice(0, 500)));
     await loginAs(page, name);
     await page.addInitScript(() => localStorage.setItem('nocap-fs-settings-lock2', '1'));
     return page;
