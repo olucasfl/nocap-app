@@ -48,7 +48,8 @@ const VM: Record<FsWeaponId, VmCfg> = {
   smg: { scale: 0.74, hip: [0.16, -0.17, -0.38], ads: [0.0, -0.13, -0.3], mag: ['Magazine'], bolt: [], slide: [] },
   shotgun: { scale: 0.8, hip: [0.17, -0.17, -0.38], ads: [0.0, -0.13, -0.3], mag: [], bolt: ['Pump'], slide: [] },
   m4: { scale: 0.85, hip: [0.16, -0.18, -0.37], ads: [0.0, -0.135, -0.3], mag: ['Magazine'], bolt: ['Bolt'], slide: [] },
-  usp: { scale: 1.1, hip: [0.12, -0.09, -0.34], ads: [0.0, -0.065, -0.28], mag: [], bolt: [], slide: ['Slide'] },
+  // modelo com silenciador (~0,45 m): escala menor para o corpo e o cabo ficarem do tamanho da Glock; origem no gatilho
+  usp: { scale: 0.62, hip: [0.12, -0.075, -0.34], ads: [0.0, -0.06, -0.28], mag: [], bolt: [], slide: ['Slide'] },
   // a faca e as mãos são desenhadas em FsHands, já no espaço da câmera
   knife: { scale: 1, hip: [0, 0, 0], ads: [0, 0, 0], mag: [], bolt: [], slide: [], rotY: 0 },
 };
@@ -297,7 +298,7 @@ export class FoxShotScene {
   private nadeHand: Partial<Record<FsGrenadeId, THREE.Object3D>> = {};
   private nadeWorld = new Map<number, THREE.Object3D>();
   private nadeSeq = 0;
-  private nade: { kind: FsGrenadeId; phase: 'idle' | 'pin' | 'charge' | 'throw'; t: number; charge: number } | null = null;
+  private nade: { kind: FsGrenadeId; phase: 'idle' | 'pin' | 'charge' | 'throw'; t: number; charge: number; style: 'far' | 'mid' | 'near' } | null = null;
   private blast: THREE.PointLight | null = null;
   private blastT = 0;
   private blastDur = 0.4;
@@ -505,7 +506,7 @@ export class FoxShotScene {
         smg: [0.42, 0.28, 0.2, 0.2],
         shotgun: [0.34, 0.32, 0.62, 0.48],
         m4: [0.34, 0.3, 0.64, 0.5],
-        usp: [0.46, 0.3, 0.62, 0.26],
+        usp: [0.15, 0.3, 0.3, 0.2],
       };
       const q = f[id]!;
       this.grips.set(id, {
@@ -787,7 +788,7 @@ export class FoxShotScene {
     }
     for (const g of this.weapons.values()) g.visible = false;
     this.knifeObj.visible = false;
-    this.nade = { kind, phase: 'idle', t: 0, charge: 0 };
+    this.nade = { kind, phase: 'idle', t: 0, charge: 0, style: 'far' };
     this.drawK = 0;
     this.knifeAnim = null;
     this.inspK = -1;
@@ -803,8 +804,9 @@ export class FoxShotScene {
   nadeCharge(c: number) {
     if (this.nade) this.nade.charge = c;
   }
-  nadeThrow() {
+  nadeThrow(style: 'far' | 'mid' | 'near' = 'far') {
     if (this.nade) {
+      this.nade.style = style;
       this.nade.phase = 'throw';
       this.nade.t = 0;
     }
@@ -1187,18 +1189,22 @@ export class FoxShotScene {
         if (n.t >= 0.32) n.phase = 'charge';
       }
       if (n.phase === 'charge' || (n.phase === 'pin' && n.t >= 0.32)) {
-        h.r.add(new THREE.Vector3(0.05 * c, 0.05 * c, 0.15 * c));
+        // direito (perto): a mão desce e vai um pouco para trás por baixo; esquerdo (longe): o braço sobe e vai para trás
+        if (n.style === 'near' || (c < 0.3 && c > 0)) h.r.add(new THREE.Vector3(0.02, -0.08, 0.06));
+        else h.r.add(new THREE.Vector3(0.05 * c, 0.05 * c, 0.15 * c));
         rot = new THREE.Euler(0.3 + 0.5 * c, 0.2, 0.1 + 0.3 * c);
         h.l.lerp(left.clone().add(new THREE.Vector3(-0.03, -0.04, 0.04)), 0.5);
       }
       if (n.phase === 'throw') {
-        const u = Math.min(1, n.t / 0.38);
-        const back = hold.clone().add(new THREE.Vector3(0.05 * c, 0.05 * c, 0.15 * c));
-        const fwdPos = new THREE.Vector3(0.04, -0.12, -0.66);
-        const rest = new THREE.Vector3(0.1, -0.24, -0.46);
+        const near = n.style === 'near';
+        const u = Math.min(1, n.t / (near ? 0.34 : 0.38));
+        // esquerdo: por cima, braço lá atrás e chicote para a frente; direito: por baixo, um empurrão curto e baixo
+        const back = near ? new THREE.Vector3(0.14, -0.3, -0.24) : hold.clone().add(new THREE.Vector3(0.05 * c, 0.05 * c, 0.15 * c));
+        const fwdPos = near ? new THREE.Vector3(0.1, -0.2, -0.56) : new THREE.Vector3(0.04, -0.12, -0.66);
+        const rest = near ? new THREE.Vector3(0.12, -0.3, -0.42) : new THREE.Vector3(0.1, -0.24, -0.46);
         if (u < 0.45) h.r.lerpVectors(back, fwdPos, 1 - (1 - u / 0.45) ** 3);
         else h.r.lerpVectors(fwdPos, rest, E((u - 0.45) / 0.55));
-        rot = new THREE.Euler(0.2 - 0.8 * Math.min(1, u * 2), 0.1, 0);
+        rot = near ? new THREE.Euler(0.2, 0.1, 0) : new THREE.Euler(0.2 - 0.8 * Math.min(1, u * 2), 0.1, 0);
         show = u < 0.42; // a granada sai da mão no meio do arremesso
         h.l.lerp(left, 0.6);
       }

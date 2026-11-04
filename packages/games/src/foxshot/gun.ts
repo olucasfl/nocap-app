@@ -13,7 +13,7 @@ export type FsGunEvent =
   | { type: 'bolt'; weapon: FsWeapon }
   /** Granada: tirou o pino (começa a segurar) e arremesso (força de 0 a 1). */
   | { type: 'pin'; grenade: FsGrenadeId }
-  | { type: 'throw'; grenade: FsGrenadeId; power: number }
+  | { type: 'throw'; grenade: FsGrenadeId; power: number; style: 'far' | 'mid' | 'near' }
   | { type: 'grenadeDraw'; grenade: FsGrenadeId };
 
 interface Slot {
@@ -79,9 +79,16 @@ export class FsLoadout {
   // ---- granadas: quantas tem, qual está na mão, o arremesso em andamento
   grenades: Record<FsGrenadeId, number> = { frag: 0, flash: 0 };
   held: FsGrenadeId | null = null;
-  /** Segundos segurando o botão com o pino já tirado (força do arremesso). */
+  /** Segundos com o pino tirado (só para animação). */
   charge = 0;
   pinOut = false;
+  /** Botões usados desde que o pino saiu: esquerdo = lança longe, direito = lança perto, os dois = média distância (como no CS). */
+  private nadeL = false;
+  private nadeR = false;
+  /** Como vai ser o arremesso agora. */
+  get throwStyle(): 'far' | 'mid' | 'near' {
+    return this.nadeL && this.nadeR ? 'mid' : this.nadeR ? 'near' : 'far';
+  }
   private throwCd = 0;
 
   /** Pega uma granada (loja ou chão). Falso se já está no máximo. */
@@ -219,21 +226,30 @@ export class FsLoadout {
         this.triggerWas = input.trigger;
         return ev;
       }
-      if (!this.pinOut && input.trigger && !this.triggerWas && this.drawT <= 0) {
+      const any = input.trigger || !!input.alt;
+      if (!this.pinOut && any && !(this.triggerWas || this.altWas) && this.drawT <= 0) {
+        // apertar tira o pino; o botão apertado define o arremesso
         this.pinOut = true;
         this.charge = 0;
+        this.nadeL = input.trigger;
+        this.nadeR = !!input.alt;
         ev.push({ type: 'pin', grenade: g });
       } else if (this.pinOut) {
-        if (input.trigger) this.charge = Math.min(1.2, this.charge + dt);
-        else {
-          ev.push({ type: 'throw', grenade: g, power: fsThrowPower(this.charge) });
+        this.charge = Math.min(1.2, this.charge + dt);
+        if (input.trigger) this.nadeL = true;
+        if (input.alt) this.nadeR = true;
+        if (!any) {
+          const style = this.throwStyle;
+          ev.push({ type: 'throw', grenade: g, power: fsThrowPower(style), style });
           this.grenades[g]--;
           this.pinOut = false;
           this.charge = 0;
+          this.nadeL = this.nadeR = false;
           this.throwCd = 0.6;
         }
       }
       this.triggerWas = input.trigger;
+      this.altWas = !!input.alt;
       return ev;
     }
     fsGunTick(w, s.gun, dt);

@@ -136,7 +136,7 @@ export function fsFlashEffect(eye: Vec3, dir: Vec3, flash: Vec3, clear: boolean,
   return { blind: Math.round(blind * 100) / 100, deaf: Math.round(deaf * 100) / 100 };
 }
 
-/** Força do arremesso: clique rápido = média; segurar e soltar = mais forte (até 1). */
-export function fsThrowPower(held: number): number {
-  return held < 0.2 ? 0.55 : Math.min(1, 0.3 + held / 1.0);
+/** Força do arremesso como no CS: botão esquerdo lança longe (1), o direito joga perto por baixo (0,22), os dois juntos média distância. */
+export function fsThrowPower(style: 'far' | 'mid' | 'near'): number {
+  return style === 'far' ? 1 : style === 'mid' ? 0.55 : 0.1;
 }

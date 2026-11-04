@@ -767,17 +767,18 @@ describe('granadas', () => {
     expect(side.blind).toBeGreaterThan(0);
     expect(side.blind).toBeLessThan(front.blind * 0.5);
   });
-  it('arremesso: clique rápido sai médio, segurar e soltar sai mais forte', () => {
-    expect(fsThrowPower(0.05)).toBeCloseTo(0.55);
-    expect(fsThrowPower(0.9)).toBeGreaterThan(fsThrowPower(0.05));
-    expect(fsThrowPower(5)).toBe(1);
-    const far = fsGrenadeLaunch('frag', [0, 1.5, 0], [0, 0, -1], 1);
-    const mid = fsGrenadeLaunch('frag', [0, 1.5, 0], [0, 0, -1], 0.55);
-    const land = (g: typeof far) => {
+  it('arremesso como no CS: esquerdo lança longe, direito joga perto, os dois média distância', () => {
+    expect(fsThrowPower('far')).toBe(1);
+    expect(fsThrowPower('near')).toBeLessThan(fsThrowPower('mid'));
+    expect(fsThrowPower('mid')).toBeLessThan(fsThrowPower('far'));
+    const land = (p: number) => {
+      const g = fsGrenadeLaunch('frag', [0, 1.5, 0], [0, 0, -1], p);
       for (let i = 0; i < 600 && g.age < 4; i++) fsGrenadeStep(g, 1 / 120, []);
       return -g.z;
     };
-    expect(land(far)).toBeGreaterThan(land(mid) + 2);
+    expect(land(1)).toBeGreaterThan(land(0.55) + 3);
+    expect(land(0.55)).toBeGreaterThan(land(0.1) + 2);
+    expect(land(0.1)).toBeLessThan(6.5); // "aqui perto"
   });
   it('explode depois do tempo e quica na parede', () => {
     const g = fsGrenadeLaunch('frag', [0, 1.2, 0], [0, 0, -1], 0.8);
@@ -811,38 +812,41 @@ describe('granadas', () => {
     l.selectGrenade('flash');
     expect(l.held).toBeNull();
   });
-  it('clicar uma vez tira o pino e arremessa; segurar carrega a força; sem granada sobrando volta à arma', () => {
+  it('apertar o botão esquerdo tira o pino e soltar lança longe; o direito lança perto; sem granada sobrando volta à arma', () => {
     const l = new FsLoadout('ak', 'pistol');
     fsBuy(l, 'frag');
+    fsBuy(l, 'frag');
+    fsBuy(l, 'flash');
     l.selectGrenade('frag');
     l.drawT = 0;
-    const evs = (input: boolean, secs: number) => {
+    const run = (trigger: boolean, alt: boolean, secs: number) => {
       const out: string[] = [];
-      const powers: number[] = [];
+      const th: { power: number; style: string }[] = [];
       for (let i = 0; i < Math.round(secs * 120); i++)
-        for (const e of l.update(1 / 120, { trigger: input, reload: false }, mv, 'p')) {
+        for (const e of l.update(1 / 120, { trigger, alt, reload: false }, mv, 'p')) {
           out.push(e.type);
-          if (e.type === 'throw') powers.push(e.power);
+          if (e.type === 'throw') th.push({ power: e.power, style: e.style });
         }
-      return { out, powers };
+      return { out, th };
     };
-    // clique rápido (aperta e solta)
-    const a1 = evs(true, 0.05);
-    const a2 = evs(false, 0.05);
-    expect(a1.out).toContain('pin');
-    expect(a2.powers[0]).toBeCloseTo(0.55);
-    expect(l.grenades.frag).toBe(0);
-    // sem granada: depois do arremesso volta à arma
-    const a3 = evs(false, 1);
-    expect(a3.out).toContain('draw');
-    expect(l.held).toBeNull();
-    // segurando
-    fsBuy(l, 'flash');
-    l.selectGrenade('flash');
+    // esquerdo: aperta (pino), solta (longe)
+    expect(run(true, false, 0.1).out).toContain('pin');
+    const far = run(false, false, 0.05);
+    expect(far.th[0]).toEqual({ power: 1, style: 'far' });
+    run(false, false, 0.7); // acabou o arremesso
+    // direito: perto
+    expect(l.held).toBe('frag');
+    run(false, true, 0.1);
+    expect(run(false, false, 0.05).th[0]).toEqual({ power: 0.1, style: 'near' });
+    run(false, false, 0.7);
+    // acabaram as explosivas: passa para a de luz; os dois botões = média distância
+    expect(l.held).toBe('flash');
     l.drawT = 0;
-    evs(true, 0.9);
-    expect(l.pinOut).toBe(true);
-    const b = evs(false, 0.05);
-    expect(b.powers[0]).toBeGreaterThan(0.8);
+    run(true, false, 0.05);
+    run(true, true, 0.1);
+    expect(run(false, false, 0.05).th[0]).toEqual({ power: 0.55, style: 'mid' });
+    // sem granada: volta à arma
+    expect(run(false, false, 1).out).toContain('draw');
+    expect(l.held).toBeNull();
   });
 });

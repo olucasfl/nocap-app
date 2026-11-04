@@ -31,6 +31,7 @@ export function FsShop({
   equipped,
   armor,
   helmet,
+  nades = [],
 }: {
   onBuy: (item: FsShopItem) => void;
   onClose: () => void;
@@ -40,6 +41,8 @@ export function FsShop({
   equipped: Equipped[];
   armor: number;
   helmet: boolean;
+  /** Granadas que tem (aparecem na faixa Seu equipamento). */
+  nades?: { id: 'frag' | 'flash'; name: string; count: number }[];
 }) {
   const buyKey = useFsSettings((st) => st.binds.buy);
   const [toast, setToast] = useState<{ key: number; text: string; warn?: boolean } | null>(null);
@@ -127,8 +130,8 @@ export function FsShop({
                     >
                       <i className="fss-n">{ii + 1}</i>
                       <span className="fss-art" aria-hidden="true">
-                        {it.weapon ? (
-                          <WeaponIcon id={it.weapon} className="fss-ico" />
+                        {it.weapon || it.grenade ? (
+                          <WeaponIcon id={(it.weapon ?? it.grenade)!} className="fss-ico" />
                         ) : it.armor ? (
                           <VestIcon className="fss-ico vest" />
                         ) : (
@@ -163,6 +166,12 @@ export function FsShop({
             </span>
           ),
         )}
+        {nades.map((n) => (
+          <span key={n.id} className="fss-chip" data-testid={`fs-shop-nade-${n.id}`}>
+            <WeaponIcon id={n.id} className="fss-chip-ico" />
+            <b>{n.name} x{n.count}</b>
+          </span>
+        ))}
         <span className={`fss-chip${armor > 0 ? '' : ' empty'}`}>
           <VestIcon className="fss-chip-ico" />
           <b>{armor > 0 ? 'Colete' : 'Sem colete'}</b>

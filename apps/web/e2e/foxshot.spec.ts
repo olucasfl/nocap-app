@@ -477,18 +477,19 @@ test('fotos das granadas (só com FS_SHOTS)', async ({ page }, info) => {
   await page.keyboard.press('KeyB');
   await page.getByTestId('fs-buy-frag').dispatchEvent('click');
   await page.getByTestId('fs-buy-flash').dispatchEvent('click');
+  if (process.env.FS_SHOTS) await page.screenshot({ path: `${process.env.FS_SHOTS}/g-shop.png` });
   await page.keyboard.press('KeyB');
-  for (const kind of ['frag', 'flash'] as const) {
+  for (const kind of ['flash'] as const) {
     await fs(page, 'teleport', 0, 14);
     await fs(page, 'grab', kind);
     await page.waitForTimeout(1200);
     await shot(`g-${kind}-hold`);
-    await fs(page, 'fireBtn', true);
+    await fs(page, kind === 'frag' ? 'fireBtn' : 'altBtn', true);
     await page.waitForTimeout(700);
     await shot(`g-${kind}-pin`);
     await page.waitForTimeout(700);
     await shot(`g-${kind}-charge`);
-    await fs(page, 'fireBtn', false);
+    await fs(page, kind === 'frag' ? 'fireBtn' : 'altBtn', false);
     await page.waitForTimeout(300);
     await shot(`g-${kind}-throw`);
     await page.waitForTimeout(900);
@@ -533,5 +534,19 @@ test('fotos da inspeção da faca (só com FS_SHOTS)', async ({ page }, info) =>
     await fs(page, 'pose', 'inspect', u);
     await page.waitForTimeout(350);
     await page.screenshot({ path: `${process.env.FS_SHOTS}/k-insp-${Math.round(u * 100)}.png` });
+  }
+});
+
+test('fotos das pistolas (só com FS_SHOTS)', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop' || !process.env.FS_SHOTS, 'só para conferir o visual');
+  test.setTimeout(200_000);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await open(page);
+  await page.getByTestId('fsm-resume').click();
+  for (const id of ['pistol', 'usp'] as const) {
+    await fs(page, 'buy', id);
+    await fs(page, 'weapon', 1);
+    await page.waitForTimeout(1500);
+    await page.screenshot({ path: `${process.env.FS_SHOTS}/p-${id}.png` });
   }
 });

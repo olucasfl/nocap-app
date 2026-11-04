@@ -42,12 +42,23 @@ def join(objs, name):
     return j
 
 
-def center_origin(o, scale):
-    """Origem no centro da peça, escala em metros."""
+def bake(objs):
+    """Leva a posição/giro/escala do arquivo para dentro da malha (transform_apply)."""
+    bpy.ops.object.select_all(action='DESELECT')
+    for o in objs:
+        o.select_set(True)
+    bpy.context.view_layer.objects.active = objs[0]
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+
+
+def center_origin(o, scale, c=None):
+    """Origem no centro da peça (ou em `c`), escala em metros. Devolve o centro usado."""
     bpy.context.view_layer.update()
-    c = sum((o.matrix_world @ Vector(b) for b in o.bound_box), Vector()) / 8
+    if c is None:
+        c = sum((o.matrix_world @ Vector(b) for b in o.bound_box), Vector()) / 8
     for v in o.data.vertices:
         v.co = (v.co - c) * scale
+    return c
 
 
 # --- fragmentação
@@ -57,6 +68,7 @@ olive = material('olive', (0.1, 0.14, 0.06), metal=0.5, rough=0.5, wear=0.6, bum
 fox = material('foxaccent', (1.0, 0.36, 0.06), metal=0.0, rough=0.45, wear=0.4, scale=30)
 gray = material('flashgray', (0.55, 0.57, 0.6), metal=0.6, rough=0.4, wear=0.5, scale=40)
 frag.name = 'Grenade'
+bake([frag])
 center_origin(frag, 1.0)
 frag.data.materials.clear()
 frag.data.materials.append(olive)
@@ -77,12 +89,10 @@ lever = [o for o in parts if o.name.startswith('hendler')]
 rest = [o for o in parts if o not in lever]
 body = join(rest, 'Body')
 lev = join(lever, 'Lever')
-center_origin(body, 0.5)
-# a alavanca usa a mesma origem/escala do corpo
-bpy.context.view_layer.update()
-for v in lev.data.vertices:
-    v.co = v.co * 0.5
-lev.location = Vector((0, 0, 0))
+bake([body, lev])
+# a alavanca e o corpo usam o MESMO centro e a mesma escala (antes só o corpo era centrado e a alavanca ficava deslocada)
+c = center_origin(body, 0.5)
+center_origin(lev, 0.5, c)
 for o, mat in ((body, gray), (lev, fox)):
     o.data.materials.clear()
     o.data.materials.append(mat)

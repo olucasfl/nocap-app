@@ -2,8 +2,8 @@ import type { FsGrenadeId, FsWeaponId } from '@nocap/games';
 
 /** Silhuetas das armas para o HUD, o placar e o kill feed (desenhadas à mão, sem emoji). */
 const PATHS: Record<FsWeaponId | FsGrenadeId, string> = {
-  frag: 'M44 4 H56 V9 H62 L66 13 H58 V17 C70 19 74 28 70 34 C66 38 34 38 30 34 C26 28 30 19 42 17 V9 H44 Z',
-  flash: 'M40 5 H60 V11 H64 V31 C64 35 36 35 36 31 V11 H40 Z M45 14 H55 V19 H45 Z',
+  frag: 'M46 4 H56 V9 H64 L70 6 V12 L63 15 C71 18 74 25 72 31 C70 37 62 39 50 39 C38 39 30 37 28 31 C26 25 29 18 37 15 V9 H46 Z M36 22 H64 V24 H36 Z M34 28 H66 V30 H34 Z M38 16 H62 V18 H38 Z',
+  flash: 'M42 3 H58 V8 H62 L67 5 V11 L62 12 V14 H37 V10 H42 Z M37 16 H63 V35 C63 38 37 38 37 35 Z M41 21 H59 V23 H41 Z M41 27 H59 V29 H41 Z',
   ak: 'M2 19 L20 14 L50 14 L54 12 L92 12 L92 15 L56 16 L50 17 L40 17 L36 31 L30 31 L32 17 L22 18 L15 31 L9 31 L12 21 Z',
   pistol: 'M24 10 H74 V18 H48 L42 32 H30 L34 18 H24 Z',
   knife: 'M6 26 L10 20 L58 12 L84 15 L60 24 L36 27 L14 32 Z',
@@ -17,7 +17,7 @@ const PATHS: Record<FsWeaponId | FsGrenadeId, string> = {
 export function WeaponIcon({ id, className }: { id: FsWeaponId | FsGrenadeId; className?: string }) {
   return (
     <svg viewBox="0 0 100 40" className={className} aria-hidden="true" focusable="false">
-      <path d={PATHS[id]} fill="currentColor" />
+      <path d={PATHS[id]} fill="currentColor" fillRule="evenodd" />
     </svg>
   );
 }

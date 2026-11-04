@@ -456,10 +456,12 @@ export function FoxShotTestPage() {
     let blindUntil = 0;
     const flashedUntil: Record<string, number> = {};
     const eyeNow = (): [number, number, number] => [mover.x, mover.y + fsEyeHeight(mover), mover.z];
-    const throwNade = (kind: FsGrenadeId, power: number) => {
+    const throwNade = (kind: FsGrenadeId, power: number, style: 'far' | 'mid' | 'near' = 'far') => {
       const dir = fsDir(view.yaw + view.rYaw, view.pitch + view.rPitch);
       const e = eyeNow();
       const origin: [number, number, number] = [e[0] + dir[0] * 0.4, e[1] - 0.15 + dir[1] * 0.4, e[2] + dir[2] * 0.4];
+      // por baixo (direito): sai mais baixo e mais devagar
+      if (style === 'near') origin[1] -= 0.35;
       const body = fsGrenadeLaunch(kind, origin, dir, power, [mover.vx, mover.vz]);
       nades.push({ h: scene.addGrenade(kind), body, bounceSeen: 0, bounceAt: -1 });
     };
@@ -680,8 +682,8 @@ export function FoxShotTestPage() {
           scene.nadePin();
         } else if (e.type === 'throw') {
           fsAudio.nade('throw');
-          scene.nadeThrow();
-          throwNade(e.grenade, e.power);
+          scene.nadeThrow(e.style);
+          throwNade(e.grenade, e.power, e.style);
         } else if (e.type === 'bolt') boltAt = clock + 0.45;
       }
     };
@@ -983,7 +985,7 @@ export function FoxShotTestPage() {
           view.rYaw = dec(view.rYaw);
         }
         // granadas no ar e a força do arremesso (o braço vai para trás enquanto segura)
-        if (loadout.held) scene.nadeCharge(loadout.charge);
+        if (loadout.held) scene.nadeCharge(loadout.pinOut ? (loadout.throwStyle === 'far' ? 1 : loadout.throwStyle === 'mid' ? 0.6 : 0.1) : 0);
         stepNades(dt);
         // bots andando, pulando e girando
         for (const b of FS_BOTS) {
@@ -1244,6 +1246,7 @@ export function FoxShotTestPage() {
         nades: () => ({ ...loadout.grenades, held: loadout.held, flying: nades.length }),
         grab: (k: FsGrenadeId | 'next') => handle(loadout.selectGrenade(k)),
         throwNow: (k: FsGrenadeId, power = 0.6) => throwNade(k, power),
+        altBtn: (on: boolean) => controls.setTouch('ads', on),
         blind: () => Math.max(0, blindUntil - clock),
         fireBtn: (on: boolean) => controls.setTouch('fire', on),
         blastAt: (kind: FsGrenadeId, x: number, z: number) => {
@@ -1390,6 +1393,7 @@ export function FoxShotTestPage() {
               onBuy={(i) => buyRef.current(i)}
               onClose={() => setShop(false)}
               equipped={hud.slots}
+              nades={hud.nades}
               armor={hud.armor}
               helmet={hud.helmet}
               owned={[
