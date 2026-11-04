@@ -598,6 +598,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     let blindTotal = 0;
     let blindUntil = 0;
     let scopedNow = false;
+    let adsHold = 0;
     const eyeNow = (): [number, number, number] => [mover.x, mover.y + fsEyeHeight(mover), mover.z];
     const throwNade = (kind: FsGrenadeId, power: number, style: 'far' | 'mid' | 'near' = 'far') => {
       const dir = fsDir(view.yaw + view.rYaw, view.pitch + view.rPitch);
@@ -1191,7 +1192,9 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         clock += dt;
         // a luz (cegueira) não passa enquanto está morto: continua depois de renascer
         if (playerDead) blindUntil += dt;
-        adsOn = inp.ads && !loadout.reloading && !loadout.weapon.melee;
+        // o botão de mirar segurado não pode piscar: uma queda de 0,12 s no sinal não solta a mira
+        adsHold = inp.ads ? 0.12 : Math.max(0, adsHold - dt);
+        adsOn = (inp.ads || adsHold > 0) && !loadout.reloading && !loadout.weapon.melee;
         const adsScale = Math.min(1, (w.adsFov || 62) / baseFov) * st.adsSens;
         const look = controls.takeLook(adsOn ? adsScale : 1);
         view.yaw += look.yaw;

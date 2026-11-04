@@ -303,6 +303,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
     let hurtAt = -1e9;
     let heavyAt = -1e9;
     let shake = 0;
+    let adsHold = 0;
     let recent: { t: number; d: number }[] = [];
     let blindTotal = 0;
     let blindUntil = 0;
@@ -688,7 +689,9 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       const w = loadout.weapon;
       if (!isPaused) clock += dt;
       if (live && haveSelf && !isPaused) {
-        adsOn = alive && inp.ads && !loadout.reloading && !w.melee;
+        // o botão de mirar segurado não pode piscar: uma queda de 0,12 s no sinal não solta a mira
+        adsHold = inp.ads ? 0.12 : Math.max(0, adsHold - dt);
+        adsOn = alive && (inp.ads || adsHold > 0) && !loadout.reloading && !w.melee;
         const adsScale = Math.min(1, (w.adsFov || 62) / st.fov) * st.adsSens;
         const look = controls.takeLook(adsOn ? adsScale : 1);
         view.yaw += look.yaw;
