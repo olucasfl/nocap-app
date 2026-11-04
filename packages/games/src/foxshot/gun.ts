@@ -40,8 +40,8 @@ export class FsLoadout {
   private triggerWas = false;
   /** Clique dado um instante antes de a arma poder atirar: dispara assim que puder (até 0,3 s). */
   private buffered = 0;
-  /** Depois do clique de arma vazia, a recarga começa em instantes (dá para ouvir o clique antes do som de tirar o carregador). */
-  private dryPending = 0;
+  /** Já deu o clique de arma vazia (o próximo clique recarrega). */
+  private dryClicked = false;
   private altWas = false;
 
   constructor(primary: FsWeaponId | null = 'ak', secondary: FsWeaponId | null = 'pistol') {
@@ -156,14 +156,7 @@ export class FsLoadout {
       this.inspectT = w.inspect;
       ev.push({ type: 'inspect', weapon: w });
     }
-    if (this.dryPending > 0) {
-      this.dryPending -= dt;
-      if (this.dryPending <= 0 && s.ammo <= 0 && this.reloadT <= 0 && this.drawT <= 0) {
-        this.reloadT = w.reload;
-        ev.push({ type: 'reload', weapon: w });
-        return ev;
-      }
-    }
+    if (s.ammo > 0) this.dryClicked = false;
     if (this.reloadT > 0) {
       this.reloadT -= dt;
       if (this.reloadT <= 0) {
@@ -179,17 +172,25 @@ export class FsLoadout {
       ev.push({ type: 'reload', weapon: w });
       return ev;
     }
+    // sem bala: segurando o gatilho faz o clique de arma vazia sozinho (uma vez); clicar de novo recarrega
+    if (s.ammo <= 0 && this.drawT <= 0 && this.cooldown <= 0) {
+      if (!this.dryClicked) {
+        if (input.trigger) {
+          this.dryClicked = true;
+          this.cooldown = 0.25;
+          this.inspectT = 0;
+          ev.push({ type: 'dry', weapon: w });
+        }
+      } else if (pressed) {
+        this.reloadT = w.reload;
+        this.inspectT = 0;
+        ev.push({ type: 'reload', weapon: w });
+      }
+      return ev;
+    }
     const want = w.auto ? input.trigger : pressed;
     if (want && this.drawT <= 0 && this.cooldown <= 0) {
       this.inspectT = 0;
-      if (s.ammo <= 0) {
-        if (pressed) {
-          ev.push({ type: 'dry', weapon: w });
-          this.dryPending = 0.3;
-          this.cooldown = 0.3;
-        }
-        return ev;
-      }
       s.ammo--;
       this.cooldown = Math.max(60 / w.rpm, w.boltS);
       ev.push({ type: 'fire', shot: fsFire(w, s.gun, move, playerId), weapon: w });

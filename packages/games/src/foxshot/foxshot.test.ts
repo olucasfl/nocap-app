@@ -245,17 +245,31 @@ describe('agachado: o corpo desce junto', () => {
 });
 
 describe('arma vazia', () => {
-  it('puxar o gatilho sem bala faz o clique e só depois começa a recarregar', () => {
+  it('segurando o gatilho faz o clique sozinho (uma vez); clicar de novo recarrega', () => {
     const l = new FsLoadout('ak', 'pistol');
     l.drawT = 0;
     l.slot.ammo = 0;
     const mv = { moving: false, airborne: false, ads: false };
-    const ev = l.update(0.016, { trigger: true, reload: false }, mv, 'p');
-    expect(ev.map((e) => e.type)).toEqual(['dry']);
+    const types = (ev: ReturnType<FsLoadout['update']>) => ev.map((e) => e.type);
+    // segura o gatilho: clique de vazio na hora, sem apertar de novo
+    expect(types(l.update(0.016, { trigger: true, reload: false }, mv, 'p'))).toEqual(['dry']);
+    // continua segurando: não repete o clique nem recarrega
+    for (let i = 0; i < 60; i++) expect(types(l.update(0.016, { trigger: true, reload: false }, mv, 'p'))).toEqual([]);
     expect(l.reloading).toBe(false);
-    let reloaded = false;
-    for (let i = 0; i < 40 && !reloaded; i++) reloaded = l.update(0.016, { trigger: false, reload: false }, mv, 'p').some((e) => e.type === 'reload');
-    expect(reloaded).toBe(true);
+    // solta e clica de novo: só recarrega (sem outro clique de vazio)
+    l.update(0.016, { trigger: false, reload: false }, mv, 'p');
+    expect(types(l.update(0.016, { trigger: true, reload: false }, mv, 'p'))).toEqual(['reload']);
+    expect(l.reloading).toBe(true);
+  });
+  it('quando o último tiro sai com o gatilho segurado, o clique de vazio vem logo depois', () => {
+    const l = new FsLoadout('ak', 'pistol');
+    l.drawT = 0;
+    l.slot.ammo = 1;
+    const mv = { moving: false, airborne: false, ads: false };
+    const seen: string[] = [];
+    for (let i = 0; i < 40; i++) for (const e of l.update(0.016, { trigger: true, reload: false }, mv, 'p')) seen.push(e.type);
+    expect(seen.slice(0, 2)).toEqual(['fire', 'dry']);
+    expect(seen.filter((x) => x === 'dry')).toHaveLength(1);
   });
 });
 
