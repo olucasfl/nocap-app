@@ -1162,9 +1162,13 @@
 .fsh-rank li.vest .fsh-rk-av {
   border-color: #7fa6ff;
 }
+.fsh-rank li.ct .fsh-rk-av {
+  background: #3f82ff;
+  color: #fff;
+}
 .fsh-rank li.you .fsh-rk-av {
   border-color: #7dff9a;
-  background: #3cbf6b;
+  box-shadow: 0 0 0 2px rgba(125, 255, 154, 0.35);
 }
 .fsh-rank li.dead {
   opacity: 0.45;

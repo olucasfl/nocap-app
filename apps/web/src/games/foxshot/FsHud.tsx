@@ -149,7 +149,7 @@ export function FsTopBar({
       <div className="fsh-top" data-testid="fs-topbar">
         <ul className="fsh-rank" aria-label="Pontuação dos jogadores" data-testid="fs-rank">
           {ranked.map((p) => (
-            <li key={p.id} className={`${p.alive ? '' : 'dead'}${p.you ? ' you' : ''}${p.armor > 0 ? ' vest' : ''}`} data-testid={`fs-rank-${p.id}`}>
+            <li key={p.id} className={`${p.alive ? '' : 'dead'}${p.you ? ' you' : ''}${p.armor > 0 ? ' vest' : ''}${p.team ? ` ${p.team}` : ''}`} data-testid={`fs-rank-${p.id}`}>
               <span className="fsh-rk-av">
                 {p.you ? 'EU' : p.name.replace(/\D/g, '') || p.name.slice(0, 2)}
                 {!p.alive && <SkullIcon className="fsh-skull" />}
