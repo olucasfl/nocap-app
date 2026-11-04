@@ -1574,11 +1574,15 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
           view.pitch = (Math.atan2(dy, Math.hypot(dx, dz)) * 180) / Math.PI;
           view.rPitch = view.rYaw = 0;
         },
-        teleport(x: number, z: number) {
+        teleport(x: number, z: number, y?: number) {
           mover.x = x;
           mover.z = z;
           prev.x = x;
           prev.z = z;
+          if (y !== undefined) {
+            mover.y = y;
+            prev.y = y;
+          }
         },
         shoot(count = 1) {
           // solta o gatilho antes (a pistola só atira em clique novo)
