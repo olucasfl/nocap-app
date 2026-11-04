@@ -157,7 +157,25 @@ Pedido do Lucas (04/11/2026).
 4. Cuidar do que o saque lento evitava: **trocar e atirar no mesmo instante** não vira vantagem injusta (ex.: sniper, que hoje tem 1,1 s de saque): se for preciso, manter só um intervalo mínimo muito curto entre trocas (cerca de 0,1 s) igual para todas as armas.
 5. Atualizar os testes de lógica que contam o saque (`gun`/`FsLoadout`) e o e2e que troca de arma, e conferir online que o servidor aceita a troca e o tiro seguintes.
 
-## 8. Outras pendências lembradas
+## 8. Sniper com dois níveis de zoom, mirando por clique (não segurando)
+
+Pedido do Lucas (04/11/2026).
+
+**Hoje:** a sniper tem uma mira só (luneta com zoom único, campo de visão de 28 graus em `weapons.ts`) e, como as outras armas, a mira vale **enquanto se segura** o botão de mirar.
+
+**Como deve ficar (só a sniper; as outras armas continuam segurando o botão):**
+1. **Um clique no botão de mirar** abre a luneta no **zoom 1** (o que já existe hoje).
+2. **Um segundo clique** vai para o **zoom 2**, mais perto (campo de visão menor, por exemplo cerca de 10 a 12 graus; valor a definir testando).
+3. **Um terceiro clique sai da mira** (volta ao normal). Depois disso o ciclo recomeça: zoom 1, zoom 2, sair.
+4. **Não é de segurar**: soltar o botão não fecha a luneta; ela fica no nível escolhido até o próximo clique.
+5. **Atirar, recarregar ou trocar de arma** com a luneta aberta: ao trocar de arma ou morrer, sai da mira. Ao puxar o ferrolho entre os tiros da sniper, o jogo decide se mantém o zoom (como no CS, o zoom fecha e reabre; definir testando) e isso deve ser igual para todo mundo.
+6. **Sensibilidade do mouse** acompanha o zoom (zoom 2 = movimento mais lento, proporcional ao campo de visão), usando o ajuste "Sensibilidade ao mirar" que já existe.
+7. **Luneta na tela**: o círculo escuro com a cruz continua; no zoom 2 a cruz e o borrão do movimento seguem a mesma regra (mais borrão ao andar), e o tiro sem mirar (zoom fechado) continua valendo como "sem mirar" no kill feed.
+8. **Online**: o servidor precisa saber o nível de zoom (hoje só sabe se está mirando) para calcular o tiro "sem mirar" e a dispersão; o cliente manda o nível junto das entradas.
+9. **Comandos**: o botão de mirar continua o mesmo (Mouse 2 por padrão, remapeável); só muda o comportamento quando a arma na mão é a sniper. Texto da ajuda dos Comandos explica isso.
+10. Testes: lógica (ciclo 0, 1, 2, 0; trocar de arma fecha; campo de visão por nível) e e2e (clicar três vezes e conferir a luneta e o campo de visão em cada passo).
+
+## 9. Outras pendências lembradas
 
 - Atualizar a spec 057, `ARCHITECTURE.md` e `docs/ROADMAP.md` com as últimas mudanças do Counter Fox (radar estilo CS, ícones do kill feed, times só em cor, aliados desligados, menus).
 - Conferir na tela o que só foi testado em código: raposas azuis, Bomba B no jogo, ícones do kill feed, aliado com nome e silhueta (desligado hoje), mapa grande no online e menu das salas.
