@@ -33,7 +33,7 @@ import { FsControls } from './fs-controls';
 import { bindLabel, fsSettings, useFsSettings } from './fs-settings';
 import { FsMenu } from './FsMenu';
 import { FsShop } from './FsShop';
-import { FsAmmo, FsCrosshair, FsKillFeed, FsMinimap, FsScoreboard, FsTopBar, FsVitals, type FeedItem, type FsPlayerRow, type MinimapData } from './FsHud';
+import { FsBigMap, FsAmmo, FsCrosshair, FsKillFeed, FsMinimap, FsScoreboard, FsTopBar, FsVitals, type FeedItem, type FsPlayerRow, type MinimapData } from './FsHud';
 import { FoxShotRoomFinal } from './FoxShotRoomFinal';
 import './foxshot.css';
 import './counterfox-hub.css';
@@ -114,6 +114,8 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
   const [needClick, setNeedClick] = useState(false);
   const [shop, setShopState] = useState(false);
   const [board, setBoard] = useState(false);
+  const [bigMap, setBigMap] = useState(false);
+  const bigMapRef = useRef(false);
   const [feed, setFeed] = useState<FeedItem[]>([]);
   const [marker, setMarker] = useState<{ key: number; kind: 'body' | 'head' | 'kill' | 'armor'; text: string } | null>(null);
   const [hud, setHud] = useState<RoomHud | null>(null);
@@ -164,6 +166,12 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       },
     );
     const onKey = (e: KeyboardEvent) => {
+      if (e.code === 'Escape' && bigMapRef.current) {
+        e.preventDefault();
+        bigMapRef.current = false;
+        setBigMap(false);
+        return;
+      }
       if (e.code === 'Escape' && shopRef.current) {
         e.preventDefault();
         setShop(false);
@@ -591,6 +599,10 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         const look = controls.takeLook(adsOn ? adsScale : 1);
         view.yaw += look.yaw;
         view.pitch = Math.max(-88, Math.min(88, view.pitch + look.pitch));
+        if (inp.map) {
+          bigMapRef.current = !bigMapRef.current;
+          setBigMap(bigMapRef.current);
+        }
         if (inp.buy) setShop(!shopRef.current);
         const shopOpen = shopRef.current;
         if (alive) {
@@ -762,7 +774,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         }
       }
 
-      mini.current = { x: mover.x, z: mover.z, yaw: view.yaw, targets: [], boxes: ARENA };
+      mini.current = { x: mover.x, z: mover.z, yaw: view.yaw, targets: [], boxes: ARENA, labels: world.labels };
       setBoardState(inp.board && !isPaused);
 
       hudT += dt;
@@ -882,6 +894,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           )}
           <FsTopBar players={players} timeLeft={h.timeLeft} kills={0} deaths={0} />
           {settings.showMinimap && <FsMinimap get={getMini} />}
+          {bigMap && <FsBigMap get={getMini} title="Mapa · Duna" />}
           <div className="fsh-rcol">
             <FsKillFeed items={feed} />
           </div>

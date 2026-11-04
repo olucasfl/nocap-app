@@ -200,10 +200,13 @@ const bolaRoute = createRoute({
   },
 });
 
+// o mapa de teste antigo virou o Mapa de Treino, que se abre pelo menu do Counter Fox
 const foxShotTestRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/fox-cap/fox-shot-teste',
-  component: lazyRouteComponent(() => import('@/games/foxshot/FoxShotTestPage'), 'FoxShotTestPage'),
+  beforeLoad: () => {
+    throw redirect({ to: '/fox-cap/counter-fox' });
+  },
 });
 
 const counterFoxRoute = createRoute({

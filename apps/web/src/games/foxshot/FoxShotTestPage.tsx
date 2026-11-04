@@ -32,9 +32,9 @@ import {
   fsGrenadeStep,
   type FsGrenadeBody,
   type FsGrenadeId,
-  FS_SHOOTER,
-  fsNewShooter,
-  fsShooterStep,
+  FS_TRAIN_GALLERY,
+  fsNewRange,
+  fsRangeStep,
   fsFlinch,
   fsFlinchAt,
   fsBotStep,
@@ -57,13 +57,14 @@ import {
   type FsWeaponId,
 } from '@nocap/games';
 import { fsAudio } from '@/lib/foxshot-audio';
-import { FoxShotScene, FS_WORLD_TEST, fsWorldDust, type Quality } from './FoxShotScene';
+import { FoxShotScene, FS_WORLD_TRAIN, fsWorldDust, type Quality } from './FoxShotScene';
 import { FsMatchEnd } from './FsMatchEnd';
 import { FsControls } from './fs-controls';
 import { bindLabel, fsSettings, useFsSettings } from './fs-settings';
 import { FsMenu } from './FsMenu';
 import { FsShop } from './FsShop';
 import {
+  FsBigMap,
   FsAmmo,
   FsCrosshair,
   FsKillFeed,
@@ -194,6 +195,8 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
   onAgainRef.current = () => onAgain?.();
   const [paused, setPausedState] = useState(true);
   const [board, setBoard] = useState(false);
+  const [bigMap, setBigMap] = useState(false);
+  const bigMapRef = useRef(false);
   const [needClick, setNeedClick] = useState(false);
   const [shop, setShopState] = useState(false);
   const shopRef = useRef(false);
@@ -285,6 +288,12 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     // Esc com o menu aberto volta ao jogo (com o mouse preso, o navegador já consome o Esc e solta o mouse)
     const onKey = (e: KeyboardEvent) => {
       if (endedRef.current) return;
+      if (e.code === 'Escape' && bigMapRef.current) {
+        e.preventDefault();
+        bigMapRef.current = false;
+        setBigMap(false);
+        return;
+      }
       if (e.code === 'Escape' && shopRef.current) {
         e.preventDefault();
         setShop(false);
@@ -345,7 +354,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         dmSpawnY.set(`d${i + 1}`, sp.y);
       });
     }
-    const world = match ? fsWorldDust(dmSpecs.map((d) => ({ id: d.id, x: d.x, z: d.z }))) : FS_WORLD_TEST;
+    const world = match ? fsWorldDust(dmSpecs.map((d) => ({ id: d.id, x: d.x, z: d.z }))) : FS_WORLD_TRAIN;
     const ARENA = world.boxes;
     const ALL_TARGETS: FsTargetSpec[] = [...world.targets, ...world.bots, ...dmSpecs];
     const isDm = (id: string) => dmSpecs.some((d) => d.id === id);
@@ -368,7 +377,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     // ---- estado do jogo
     const mover = fsNewMover(firstSpawn?.x ?? FS_SPAWN.x, firstSpawn?.z ?? FS_SPAWN.z);
     mover.y = firstSpawn?.y ?? 0;
-    const view = { yaw: firstSpawn?.yaw ?? 0, pitch: 0, rYaw: 0, rPitch: 0 };
+    const view = { yaw: firstSpawn?.yaw ?? FS_SPAWN.yaw, pitch: 0, rYaw: 0, rPitch: 0 };
     const me = { hp: 100, armor: 0, helmet: false };
     const stats: MyStats = { kills: 0, deaths: 0, assists: 0, hs: 0, damage: 0 };
     const loadout = new FsLoadout(null, 'pistol');
@@ -426,7 +435,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         const s = targets.get(t.id)!;
         const b = botSt.get(t.id);
         // para onde olha (a facada nas costas precisa disso): bots olham para onde andam; os alvos parados, para o ponto de nascimento
-        const fl = b ? ([Math.cos(b.h), Math.sin(b.h)] as [number, number]) : ([0 - t.x, 14 - t.z] as [number, number]);
+        const fl = b ? ([Math.cos(b.h), Math.sin(b.h)] as [number, number]) : ((t as FsTargetSpec).facing ?? ([0, 1] as [number, number]));
         return { id: t.id, pos: posOf(t.id), alive: s.alive, armor: s.armor, helmet: t.helmet, crouch: b ? b.crouch : s.crouch, facing: fl };
       });
 
@@ -470,10 +479,10 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       resume();
     };
 
-    // ---- atiradores (s1 pistola, s2 fuzil, s3 sniper): atiram em você, dão dano e você pode matá-los
-    // só para os testes automáticos (modo de desenvolvimento): desliga os atiradores para não matarem o jogador durante o teste
-    const shootersOff = import.meta.env.DEV && (() => { try { return localStorage.getItem('fs-no-shooters') === '1'; } catch { return false; } })();
-    const shooterSt = new Map(world.bots.filter((b) => b.kind === 'shoot').map((b) => [b.id, fsNewShooter()]));
+    // ---- estande de tiro: os atiradores só atiram para a frente (norte), em rajadas, e só quando você está na galeria
+    const rangeSt = new Map(world.bots.filter((b) => b.kind === 'shoot').map((b) => [b.id, fsNewRange()]));
+    const rangeFiredAt: Record<string, number> = {};
+    let rangeShots = 0;
     let deadUntil = 0;
     let deadSince = 0;
     let hurtKey = 0;
@@ -498,28 +507,26 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       setFeed((f) => [...f.slice(-4), { key, killer, weapon, victim: 'Você', head, you: false, youVictim: true }]);
       window.setTimeout(() => setFeed((f) => f.filter((x) => x.key !== key)), 6000);
     };
-    const shooterFire = (b: (typeof world.bots)[number], bs: ReturnType<typeof fsNewBot>) => {
-      const wid = b.weapon as 'pistol' | 'ak' | 'sniper';
+    /** Um tiro do estande: sempre para a frente do bot (nunca mira em ninguém), com uma dispersão pequena. */
+    const rangeFire = (b: (typeof world.bots)[number], bs: ReturnType<typeof fsNewBot>) => {
+      const wid = b.weapon as FsWeaponId;
       const w = FS_WEAPONS[wid];
       const origin: [number, number, number] = [bs.x + Math.cos(bs.h) * 0.4, 1.0, bs.z + Math.sin(bs.h) * 0.4];
-      // mira no peito de quem joga, com erro que cresce com a distância e com a velocidade dele
-      const dist = Math.hypot(mover.x - bs.x, mover.z - bs.z);
-      const aimY = mover.y + 0.8 * (1 - 0.27 * mover.crouchK);
-      const dx = mover.x - origin[0];
-      const dy = aimY - origin[1];
-      const dz = mover.z - origin[2];
-      const yaw = (Math.atan2(-dx, -dz) * 180) / Math.PI;
-      const pitch = (Math.atan2(dy, Math.hypot(dx, dz)) * 180) / Math.PI;
-      const err = FS_SHOOTER[wid].aimErr * (0.6 + dist / 25) * (1 + Math.hypot(mover.vx, mover.vz) * 0.25);
-      const a = Math.random() * Math.PI * 2;
-      const r = Math.sqrt(Math.random()) * err;
-      const dir = fsDir(yaw + Math.cos(a) * r, pitch + Math.sin(a) * r);
-      const me3: FsBody = { id: 'me', pos: [mover.x, mover.y, mover.z], alive: true, armor: me.armor, helmet: me.helmet, crouch: mover.crouchK };
-      const tr = fsTrace(w, origin, dir, ARENA, [me3], FS_SHOOTER[wid].range + 15);
-      scene.tracer(new THREE.Vector3(origin[0], origin[1], origin[2]), new THREE.Vector3(tr.point[0], tr.point[1], tr.point[2]), wid);
+      const yawDeg = (Math.atan2(-Math.cos(bs.h), -Math.sin(bs.h)) * 180) / Math.PI;
+      const pellets = wid === 'shotgun' ? 5 : 1;
+      let last: THREE.Vector3 | null = null;
+      for (let i = 0; i < pellets; i++) {
+        const spread = wid === 'shotgun' ? 3 : 0.8;
+        const dir = fsDir(yawDeg + (Math.random() - 0.5) * spread, (Math.random() - 0.5) * spread * 0.6);
+        const tr = fsTrace(w, origin, dir, ARENA, []);
+        last = new THREE.Vector3(tr.point[0], tr.point[1], tr.point[2]);
+        scene.tracer(new THREE.Vector3(origin[0], origin[1], origin[2]), last, wid);
+        if (tr.kind === 'world') scene.puff(last, 0xd8c8a8, 0.3, 0.4);
+      }
       scene.puff(new THREE.Vector3(origin[0], origin[1], origin[2]), 0xffd27a, 0.25, 0.1);
       fsAudio.shotAt(wid, bs.x, 1, bs.z, mover.x, mover.z);
-      if (tr.kind === 'player' && tr.damage) hurtPlayer(tr.damage.hp, tr.damage.armorLoss, tr.zone === 'head', b.label.replace('atirador ', 'Atirador '), wid, undefined, { x: bs.x, z: bs.z });
+      rangeFiredAt[b.id] = clock;
+      rangeShots++;
     };
     /** Você levou dano (tiro ou explosão): vida, colete, efeitos e morte. */
     function hurtPlayer(hp: number, armorLoss: number, head: boolean, killer: string, icon: FsWeaponId | FsGrenadeId, by?: string, src?: { x: number; z: number }) {
@@ -571,7 +578,6 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     const nades: { h: number; body: FsGrenadeBody; bounceSeen: number; bounceAt: number; owner?: string }[] = [];
     let blindTotal = 0;
     let blindUntil = 0;
-    const flashedUntil: Record<string, number> = {};
     const eyeNow = (): [number, number, number] => [mover.x, mover.y + fsEyeHeight(mover), mover.z];
     const throwNade = (kind: FsGrenadeId, power: number, style: 'far' | 'mid' | 'near' = 'far') => {
       const dir = fsDir(view.yaw + view.rYaw, view.pitch + view.rPitch);
@@ -644,13 +650,6 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         const be: [number, number, number] = [b.mover.x, b.mover.y + fsEyeHeight(b.mover), b.mover.z];
         const rr = fsFlashEffect(be, fsDir(b.yaw, b.pitch), blast, fsClearLine(ARENA, be, blast));
         if (rr.blind > 0) fsDmFlash(b, clock + rr.blind);
-      }
-      // os atiradores à vista da luz também ficam cegos por um tempo (não atiram)
-      for (const b of world.bots) {
-        if (b.kind !== 'shoot') continue;
-        const bs = botSt.get(b.id)!;
-        const bd = Math.hypot(bs.x - blast[0], bs.z - blast[2]);
-        if (bd < FS_GRENADES.flash.radius && fsClearLine(ARENA, blast, [bs.x, 1.0, bs.z])) flashedUntil[b.id] = clock + 1.5 + 3 * (1 - bd / FS_GRENADES.flash.radius);
       }
     };
     const stepNades = (dt: number) => {
@@ -1138,7 +1137,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         me.armor = 0;
         me.helmet = false;
         const sp = match ? fsPickSpawn(aliveFoes('me'), rnd) : FS_SPAWN;
-        if (match) {
+        {
           view.yaw = sp.yaw;
           view.pitch = view.rPitch = view.rYaw = 0;
         }
@@ -1163,6 +1162,10 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         const look = controls.takeLook(adsOn ? adsScale : 1);
         view.yaw += look.yaw;
         view.pitch = Math.max(-88, Math.min(88, view.pitch + look.pitch));
+        if (inp.map) {
+          bigMapRef.current = !bigMapRef.current;
+          setBigMap(bigMapRef.current);
+        }
         if (inp.buy) setShop(!shopRef.current);
         const shopOpen = shopRef.current;
         if (inp.drop) {
@@ -1323,22 +1326,12 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
           if (!targets.get(b.id)!.alive) continue;
           fsBotStep(bs, b, dt);
           if (b.kind === 'shoot') {
-            // vira para você e atira se enxerga (sem parede no meio) e você está no alcance
-            const dx = mover.x - bs.x;
-            const dz = mover.z - bs.z;
-            const want = Math.atan2(dz, dx);
-            let da = want - bs.h;
-            da = Math.atan2(Math.sin(da), Math.cos(da));
-            bs.h += Math.abs(da) < 5 * dt ? da : Math.sign(da) * 5 * dt;
-            const dist = Math.hypot(dx, dz);
-            const eye: [number, number, number] = [bs.x, 1.0, bs.z];
-            const toMe = fsDir((Math.atan2(-dx, -dz) * 180) / Math.PI, (Math.atan2(0.8 - 1.0, dist) * 180) / Math.PI);
-            const los = fsTrace(FS_WEAPONS.ak, eye, toMe, ARENA, [{ id: 'me', pos: [mover.x, mover.y, mover.z], alive: true, armor: 0, helmet: false, crouch: mover.crouchK }], dist + 1);
-            const sees = !playerDead && !shootersOff && los.kind === 'player' && clock >= (flashedUntil[b.id] ?? 0);
-            const st = shooterSt.get(b.id)!;
-            const fired = fsShooterStep(st, b.weapon as 'pistol' | 'ak' | 'sniper', dt, dist, sees);
-            if (fired) shooterFire(b, bs);
-            bs.anim = st.burstLeft > 0 || (sees && st.cool > FS_SHOOTER[b.weapon as 'pistol' | 'ak' | 'sniper'].interval - 0.15) ? 'shoot' : 'idle';
+            // só atiram com a pessoa na galeria; sempre para a frente, nunca na direção dela
+            const g = FS_TRAIN_GALLERY;
+            const watching = mover.x > g.x0 - 2 && mover.x < g.x1 + 2 && mover.z > g.z0 - 3 && mover.z < g.z1 + 0.5 && !playerDead;
+            const st = rangeSt.get(b.id)!;
+            if (watching && fsRangeStep(st, b.weapon as FsWeaponId, dt, Math.random)) rangeFire(b, bs);
+            bs.anim = clock - (rangeFiredAt[b.id] ?? -9) < 0.25 ? 'shoot' : 'idle';
           }
           scene.setBot(b.id, bs.x, bs.y, bs.z, bs.h, bs.anim, bs.animSpeed);
           // passos do bot que anda normalmente: som 3D (quem anda no shift ou agachado não faz barulho)
@@ -1463,6 +1456,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         z: mover.z,
         yaw: view.yaw,
         boxes: ARENA,
+        labels: world.labels,
         // no mata-mata todos são inimigos e o radar não entrega onde estão
         targets: (match ? [] : ALL_TARGETS).map((t) => ({
           x: posOf(t.id)[0],
@@ -1612,6 +1606,12 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
             ),
           );
         },
+        look(yaw: number, pitch = 0) {
+          view.yaw = yaw;
+          view.pitch = pitch;
+          view.rPitch = view.rYaw = 0;
+        },
+        rangeShots: () => rangeShots,
         bot: (id: string) => ({ ...botSt.get(id)!, alive: targets.get(id)!.alive }),
         pos: (id: string) => posOf(id),
         hp: () => me.hp,
@@ -1703,7 +1703,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         <i />
         <i />
       </div>
-      {status === 'loading' && <div className="fs-load mono">CARREGANDO A ARENA...</div>}
+      {status === 'loading' && <div className="fs-load mono">CARREGANDO O TREINO...</div>}
       {status === 'error' && (
         <div className="fs-load mono">Não deu para carregar os modelos. Atualize a página.</div>
       )}
@@ -1739,6 +1739,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
             deaths={hud.me.deaths}
           />
           {settings.showMinimap && <FsMinimap get={getMini} />}
+          {bigMap && <FsBigMap get={getMini} title={match ? 'Mapa · Duna' : 'Mapa · Treino'} />}
           <div className="fsh-rcol">
           {settings.showTelemetry && (
             <FsTelemetry
@@ -1872,8 +1873,8 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
           {paused && !portrait && !result && (
             <FsMenu
               touch={touch}
-              exitTo={match ? '/fox-cap/counter-fox' : '/fox-cap'}
-              exitLabel={match ? 'Voltar ao menu do Counter Fox' : 'Sair do Counter Fox'}
+              exitTo="/fox-cap/counter-fox"
+              exitLabel="Voltar ao menu do Counter Fox"
               onResume={() => resumeRef.current()}
               onEnd={() => endMatchRef.current()}
             />

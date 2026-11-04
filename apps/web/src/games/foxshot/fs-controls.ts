@@ -27,6 +27,8 @@ export interface FsFrameInput {
   grenadeFrag: boolean;
   grenadeFlash: boolean;
   buy: boolean;
+  /** M: abre e fecha o mapa grande (toque único). */
+  map: boolean;
   drop: boolean;
   pickup: boolean;
 }
@@ -43,7 +45,7 @@ export class FsControls {
   private cycleQueued = false;
   private reloadQueued = false;
   private jumpQueued = false;
-  private once = { inspect: false, buy: false, drop: false, pickup: false, grenade: false, grenadeFrag: false, grenadeFlash: false };
+  private once = { map: false, inspect: false, buy: false, drop: false, pickup: false, grenade: false, grenadeFrag: false, grenadeFlash: false };
   private dx = 0;
   private dy = 0;
   private stick: { id: number; ox: number; oy: number; x: number; y: number } | null = null;
@@ -192,8 +194,8 @@ export class FsControls {
     const pick = this.pickKey;
     this.pickKey = -1;
     const on = this.enabled;
-    const { inspect, buy, drop, pickup, grenade, grenadeFrag, grenadeFlash } = this.once;
-    this.once = { inspect: false, buy: false, drop: false, pickup: false, grenade: false, grenadeFrag: false, grenadeFlash: false };
+    const { inspect, buy, drop, pickup, grenade, grenadeFrag, grenadeFlash, map } = this.once;
+    this.once = { map: false, inspect: false, buy: false, drop: false, pickup: false, grenade: false, grenadeFrag: false, grenadeFlash: false };
     return {
       fwd: on ? fwd : 0,
       strafe: on ? strafe : 0,
@@ -211,6 +213,7 @@ export class FsControls {
       grenadeFrag: on && grenadeFrag,
       grenadeFlash: on && grenadeFlash,
       buy: buy,
+      map,
       drop: on && drop,
       pickup: on && pickup,
     };
@@ -233,6 +236,7 @@ export class FsControls {
     if (!e.repeat) {
       if (e.code === b.inspect) this.once.inspect = true;
       else if (e.code === b.buy) this.once.buy = true;
+      else if (e.code === b.map) this.once.map = true;
       else if (e.code === b.drop) this.once.drop = true;
       else if (e.code === b.pickup) this.once.pickup = true;
       else if (b.grenade && e.code === b.grenade) this.once.grenade = true;

@@ -148,6 +148,7 @@ export function CounterFoxPage() {
   const [cfg, setCfg] = useState<FsMatchConfig>(saved);
   const [run, setRun] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const [training, setTraining] = useState(false);
   const [code, setCode] = useState('');
   const entry = useRoomEntry({ resume: true });
 
@@ -192,6 +193,7 @@ export function CounterFoxPage() {
     void entry.join(code);
   };
 
+  if (training) return <FoxShotTestPage key="train" onExit={() => setTraining(false)} />;
   if (playing) return <FoxShotTestPage key={run} match={cfg} onExit={() => setPlaying(false)} onAgain={() => setRun((r) => r + 1)} />;
 
   return (
@@ -229,6 +231,10 @@ export function CounterFoxPage() {
                 <button type="button" className="cfh-card" style={{ ['--d' as string]: '140ms' }} onClick={() => setScreen('online')} data-sfx="start" data-testid="cfh-online">
                   <b>Com amigos</b>
                   <span>Crie uma sala ou entre com o código de uma sala de amigos.</span>
+                </button>
+                <button type="button" className="cfh-card" style={{ ['--d' as string]: '240ms' }} onClick={() => setTraining(true)} data-sfx="start" data-testid="cfh-train">
+                  <b>Mapa de Treino</b>
+                  <span>Sozinho, sem pressa: alvos, bots, estande de tiro, movimento, granadas e paredes. Todas as armas na loja.</span>
                 </button>
               </div>
             </section>

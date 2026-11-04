@@ -10,7 +10,9 @@ import {
   FS_DUST_DECALS,
   FS_DUST_DECOR,
   FS_DUST_HALF,
+  FS_DUST_LABELS,
   FS_MOVE_SIGNS,
+  FS_TRAIN_LABELS,
   FS_TARGETS,
   fsDustHeight,
   fsDustRectWorld,
@@ -23,7 +25,7 @@ import {
 
 /** O mundo que a cena monta: a arena de teste (alvos, bots de treino, placas) ou o mapa Duna (com os bots do mata-mata). */
 export interface FsWorld {
-  style: 'test' | 'dust';
+  style: 'train' | 'dust';
   boxes: readonly FsBox[];
   targets: readonly FsTargetSpec[];
   bots: readonly FsBotSpec[];
@@ -31,9 +33,13 @@ export interface FsWorld {
   dm: readonly { id: string; x: number; z: number }[];
   /** Meio-tamanho do mapa (x, z). */
   half: readonly [number, number];
+  /** Nomes das áreas (mapa grande). */
+  labels: readonly { x: number; z: number; text: string }[];
+  /** Placas no ar (texto). */
+  signs: readonly { text: string; x: number; y: number; z: number; big?: boolean }[];
 }
-export const FS_WORLD_TEST: FsWorld = { style: 'test', boxes: FS_ARENA, targets: FS_TARGETS, bots: FS_BOTS, dm: [], half: [20, 20] };
-export const fsWorldDust = (dm: FsWorld['dm']): FsWorld => ({ style: 'dust', boxes: FS_DUST_BOXES, targets: [], bots: [], dm, half: FS_DUST_HALF });
+export const FS_WORLD_TRAIN: FsWorld = { style: 'train', boxes: FS_ARENA, targets: FS_TARGETS, bots: FS_BOTS, dm: [], half: [45, 27], labels: FS_TRAIN_LABELS, signs: FS_MOVE_SIGNS };
+export const fsWorldDust = (dm: FsWorld['dm']): FsWorld => ({ style: 'dust', boxes: FS_DUST_BOXES, targets: [], bots: [], dm, half: FS_DUST_HALF, labels: FS_DUST_LABELS, signs: [] });
 
 export type Quality = 'low' | 'mid' | 'high';
 
@@ -291,6 +297,7 @@ function materials(): Record<FsBox['mat'] | 'ground', THREE.MeshStandardMaterial
     metal: mk(metal, 0.5, 0.5),
     floorpad: mk(ground, 0.95),
     brick: mk(brick, 0.9),
+    glass: new THREE.MeshStandardMaterial({ color: 0x9fd8ff, transparent: true, opacity: 0.2, roughness: 0.08, metalness: 0.1, depthWrite: false }),
     plaster: mk(plaster, 0.95),
     sandstone: mk(sandstone, 0.92),
     tile: mk(tile, 0.8),
@@ -456,7 +463,7 @@ export class FoxShotScene {
   private view = { fov: 75 };
   usingRef = { ak: false, pistol: false, sniper: false, knife: false, smg: false, shotgun: false, m4: false, usp: false } as Record<FsWeaponId, boolean>;
 
-  constructor(canvas: HTMLCanvasElement, private world: FsWorld = FS_WORLD_TEST) {
+  constructor(canvas: HTMLCanvasElement, private world: FsWorld = FS_WORLD_TRAIN) {
     this.renderer = new THREE.WebGLRenderer({
       canvas,
       antialias: true,
@@ -550,7 +557,7 @@ export class FoxShotScene {
   private buildArena() {
     const mats = materials();
     const dust = this.world.style === 'dust';
-    const gsize = dust ? Math.max(...this.world.half) * 2 + 60 : 80;
+    const gsize = Math.max(...this.world.half) * 2 + 60;
     const rep = (gsize / 80) * 14;
     const ground = new THREE.Mesh(new THREE.PlaneGeometry(gsize, gsize), mats.ground);
     ground.rotation.x = -Math.PI / 2;
@@ -569,8 +576,8 @@ export class FoxShotScene {
         (b.min[1] + b.max[1]) / 2,
         (b.min[2] + b.max[2]) / 2,
       );
-      m.castShadow = true;
-      m.receiveShadow = true;
+      m.castShadow = b.mat !== 'glass';
+      m.receiveShadow = b.mat !== 'glass';
       this.scene.add(m);
     }
     for (const m of Object.values(mats)) if (m.map) m.map.repeat.set(1, 1);
@@ -767,8 +774,10 @@ export class FoxShotScene {
       this.foxes.set(id, { root, mixer, actions, label, hitT: 0, anim: 'idle', vel: new THREE.Vector3(), fall: 0, dead: false, home: new THREE.Vector3(x, 0, z), turn: null, yaw0: yaw });
     };
     for (const spec of this.world.targets) {
-      // olham para a posição de nascimento do jogador (0, 14)
-      makeFox(spec.id, spec.x, spec.z, Math.atan2(-(14 - spec.z), 0 - spec.x), spec.label, spec.armor > 0 ? '#2f5bff' : '#c4571a');
+      // olham para onde `facing` manda (no plano x, z); a cena gira o modelo pelo ângulo de rumo
+      const f = spec.facing ?? [0, 1];
+      makeFox(spec.id, spec.x, spec.z, -Math.atan2(f[1], f[0]), spec.label, spec.armor > 0 ? '#2f5bff' : '#c4571a');
+      this.foxes.get(spec.id)!.label.visible = false;
     }
     for (const d of this.world.dm) {
       makeFox(d.id, d.x, d.z, 0, '', '#1f7a3a');
@@ -779,19 +788,12 @@ export class FoxShotScene {
       // o nome do movimento fica na placa da raia, não em cima do bot
       this.foxes.get(spec.id)!.label.visible = false;
     }
-    // placas da área de teste de movimento
-    for (const sg of this.world.style === 'test' ? FS_MOVE_SIGNS : []) {
-      const sign = labelSprite(sg.text, '#1b1535');
+    // placas no ar (nome das salas, o que fazer em cada canto, marcas de distância)
+    for (const sg of this.world.signs) {
+      const sign = labelSprite(sg.text, sg.big ? '#10213f' : '#1b1535');
       sign.position.set(sg.x, sg.y, sg.z);
-      sign.scale.set(sg.text.length > 20 ? 5.2 : 2.4, sg.text.length > 20 ? 0.9 : 0.6, 1);
-      this.scene.add(sign);
-    }
-    // placas da faixa de bots
-    for (const spec of this.world.bots) {
-      if (spec.kind === 'shoot') continue;
-      const sign = labelSprite(spec.label, '#1b1535');
-      sign.position.set(-19.2, 1.5, spec.z);
-      sign.scale.set(2.2, 0.55, 1);
+      const w = Math.min(sg.big ? 10 : 6, Math.max(1.8, sg.text.length * (sg.big ? 0.32 : 0.2)));
+      sign.scale.set(w, w * (sg.big ? 0.2 : 0.22), 1);
       this.scene.add(sign);
     }
     if (this.world.style === 'dust') await this.buildDustProps(loader, base).catch(() => undefined);
@@ -871,7 +873,7 @@ export class FoxShotScene {
   hideViewmodel = false;
   setView(x: number, y: number, z: number, yawDeg: number, pitchDeg: number, fov: number, rollDeg = 0) {
     this.cam.position.set(x, y, z);
-    if (this.world.style === 'dust') {
+    {
       // a sombra cobre só o que está perto de quem joga: o sol acompanha a câmera
       this.sun.target.position.set(x, 0, z);
       this.sun.position.set(x - 18, 30, z + 14);

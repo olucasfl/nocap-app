@@ -3,12 +3,16 @@ import { describe, expect, it } from 'vitest';
 import { fsDamage, fsIsBackstab, fsKills, FS_HP, type FsHitInfo } from './damage';
 import { FsLoadout } from './gun';
 import { FS_SHOP, fsBuy } from './shop';
-import { FS_ARENA, type FsBox } from './map';
+import { FS_ARENA, FS_ARENA_HALF, FS_MOVE_SIGNS, FS_SPAWN, FS_TARGETS, FS_TRAIN_AREAS, FS_TRAIN_GALLERY, type FsBox } from './map';
+
+/** Sala simples para os testes de movimento: paredes a 20 m e um caixote de 1,2 m. */
+const wallBox = (x0: number, z0: number, x1: number, z1: number, h = 4, pen = 0): FsBox => ({ min: [x0, 0, z0], max: [x1, h, z1], pen, mat: 'wall' });
+const ROOM: readonly FsBox[] = [wallBox(-20.5, -20.5, 20.5, -20), wallBox(-20.5, 20, 20.5, 20.5), wallBox(-20.5, -20, -20, 20), wallBox(20, -20, 20.5, 20), { min: [-12, 0, -8], max: [-10, 1.2, -6], pen: 0.5, mat: 'crate' }];
 import { fsBodyHeight, fsEyeHeight, fsNewMover, fsQuiet, fsStepMover, FS_MOVE } from './movement';
 import { fsFire, fsNewGunState, fsSpreadDeg } from './recoil';
 import { fsDir, fsTrace, type FsBody } from './trace';
 import { FS_HEAR_RANGE, FS_WEAPONS } from './weapons';
-import { FS_BOTS, FS_SHOOTER, fsBotStep, fsNewBot, fsNewShooter, fsShooterStep } from './bots';
+import { FS_BOTS, fsBotStep, fsNewBot, fsNewRange, fsRangeStep } from './bots';
 import { fsAssister } from './assist';
 import { FS_GRENADES, fsClearLine, fsFlashEffect, fsFragDamage, fsGrenadeLaunch, fsGrenadeStep, fsThrowPower } from './grenades';
 
@@ -155,19 +159,19 @@ describe('raio do tiro', () => {
 describe('movimento', () => {
   it('anda para a frente, para na parede e sobe degraus baixos', () => {
     const m = fsNewMover(0, 18);
-    for (let i = 0; i < 400; i++) fsStepMover(m, { fwd: 1, strafe: 0, jump: false, yaw: 0, speedMul: 1 }, 1 / 120, FS_ARENA);
+    for (let i = 0; i < 400; i++) fsStepMover(m, { fwd: 1, strafe: 0, jump: false, yaw: 0, speedMul: 1 }, 1 / 120, ROOM);
     // seguiu para -Z e parou no muro (pilar em z 6..7,4 está em x -1..0,4: não é o caminho)
     expect(m.z).toBeLessThan(18);
-    for (let i = 0; i < 1200; i++) fsStepMover(m, { fwd: 1, strafe: 0, jump: false, yaw: 0, speedMul: 1 }, 1 / 120, FS_ARENA);
+    for (let i = 0; i < 1200; i++) fsStepMover(m, { fwd: 1, strafe: 0, jump: false, yaw: 0, speedMul: 1 }, 1 / 120, ROOM);
     expect(m.z).toBeGreaterThan(-20 + FS_MOVE.radius - 0.01);
   });
 
   it('o pulo sobe e volta ao chão', () => {
     const m = fsNewMover(5, 18);
-    fsStepMover(m, { fwd: 0, strafe: 0, jump: true, yaw: 0, speedMul: 1 }, 1 / 120, FS_ARENA);
+    fsStepMover(m, { fwd: 0, strafe: 0, jump: true, yaw: 0, speedMul: 1 }, 1 / 120, ROOM);
     let top = 0;
     for (let i = 0; i < 300; i++) {
-      fsStepMover(m, { fwd: 0, strafe: 0, jump: false, yaw: 0, speedMul: 1 }, 1 / 120, FS_ARENA);
+      fsStepMover(m, { fwd: 0, strafe: 0, jump: false, yaw: 0, speedMul: 1 }, 1 / 120, ROOM);
       top = Math.max(top, m.y);
     }
     expect(top).toBeGreaterThan(0.5);
@@ -180,7 +184,7 @@ describe('movimento', () => {
     // caixote em x -12..-10, z -8..-6 (1,2 m): vai para -Z em x = -11
     m.x = -11;
     m.z = -3;
-    for (let i = 0; i < 500; i++) fsStepMover(m, { fwd: 1, strafe: 0, jump: false, yaw: 0, speedMul: 1 }, 1 / 120, FS_ARENA);
+    for (let i = 0; i < 500; i++) fsStepMover(m, { fwd: 1, strafe: 0, jump: false, yaw: 0, speedMul: 1 }, 1 / 120, ROOM);
     expect(m.z).toBeGreaterThan(-6 + FS_MOVE.radius - 0.05);
   });
 });
@@ -416,7 +420,7 @@ describe('três armas: primária, secundária e faca', () => {
 describe('agachar e andar devagar', () => {
   const run = (inp: Partial<Parameters<typeof fsStepMover>[1]>, secs = 1.5) => {
     const m = fsNewMover(5, 18);
-    for (let i = 0; i < secs * 120; i++) fsStepMover(m, { fwd: 1, strafe: 0, jump: false, yaw: 0, speedMul: 1, ...inp }, 1 / 120, FS_ARENA);
+    for (let i = 0; i < secs * 120; i++) fsStepMover(m, { fwd: 1, strafe: 0, jump: false, yaw: 0, speedMul: 1, ...inp }, 1 / 120, ROOM);
     return m;
   };
 
@@ -468,8 +472,8 @@ describe('bots de treino', () => {
     expect(st.x).toBeLessThanOrEqual(Math.max(spec.x, spec.x1) + 0.01);
   });
   it('shift anda mais devagar e agachado usa a animação de agachado', () => {
-    const a = run('b1', 3).st.x - -18;
-    const b = run('b2', 3).st.x - -18;
+    const a = run('b1', 3).st.x - -12;
+    const b = run('b2', 3).st.x - -12;
     expect(b).toBeLessThan(a * 0.7);
     expect(run('b3', 4).seen.has('crouchwalk')).toBe(true);
     expect(run('b3', 4).st.crouch).toBeGreaterThan(0.99);
@@ -681,27 +685,110 @@ describe('armas novas', () => {
   });
 });
 
-describe('atiradores', () => {
-  it('só atiram vendo você e dentro do alcance; o fuzil em rajadas, a sniper devagar', () => {
-    const run = (w: 'pistol' | 'ak' | 'sniper', dist: number, sees: boolean, secs = 10) => {
-      const st = fsNewShooter();
+describe('atiradores do estande (só atiram para a frente)', () => {
+  const shooters = FS_BOTS.filter((x) => x.kind === 'shoot');
+  const rand = createRng('estande');
+  it('há um atirador por arma de fogo, cada um numa cabine', () => {
+    expect(shooters.map((x) => x.weapon)).toEqual(['pistol', 'usp', 'smg', 'm4', 'ak', 'shotgun', 'sniper']);
+    expect(new Set(shooters.map((x) => x.x)).size).toBe(7);
+  });
+  it('olham para o paredão (norte) e a bala bate nele, nunca na galeria nem nas cabines vizinhas', () => {
+    for (const sh of shooters) {
+      const st = fsNewBot(sh);
+      // o rumo (x, z) do bot: frente = (cos h, sin h) = norte (z negativo)
+      expect(Math.cos(st.h)).toBeCloseTo(0, 5);
+      expect(Math.sin(st.h)).toBeCloseTo(-1, 5);
+      const origin: [number, number, number] = [sh.x, 1, sh.z - 0.4];
+      const tr = fsTrace(FS_WEAPONS[sh.weapon!], origin, [0, 0, -1], FS_ARENA, []);
+      expect(tr.kind).toBe('world');
+      expect(tr.point[2]).toBeLessThan(-26);
+      expect(Math.abs(tr.point[0] - sh.x)).toBeLessThan(0.5);
+      // e a galeria (z de -13 a -9) fica atrás: o tiro nunca vai para lá
+      expect(tr.point[2]).toBeLessThan(FS_TRAIN_GALLERY.z0);
+    }
+  });
+  it('a galeria é separada do estande por vidro que não deixa passar bala', () => {
+    const through = fsTrace(FS_WEAPONS.sniper, [30, 1, -10], [0, 0, -1], FS_ARENA, []);
+    expect(through.kind).toBe('world');
+    expect(through.point[2]).toBeGreaterThan(-13.5);
+    expect(FS_ARENA.some((bx) => bx.mat === 'glass')).toBe(true);
+  });
+  it('atiram no ritmo da arma: fuzil em rajadas, pistola tiro a tiro, sniper devagar; ninguém atira sem parar', () => {
+    const run = (w: 'pistol' | 'ak' | 'sniper', secs = 20) => {
+      const st = fsNewRange();
       let n = 0;
-      for (let i = 0; i < secs * 60; i++) if (fsShooterStep(st, w, 1 / 60, dist, sees)) n++;
+      for (let i = 0; i < secs * 60; i++) if (fsRangeStep(st, w, 1 / 60, rand)) n++;
       return n;
     };
-    expect(run('ak', 20, false)).toBe(0);
-    expect(run('ak', 60, true)).toBe(0); // fora do alcance
-    expect(run('pistol', 30, true)).toBe(0);
-    expect(run('ak', 20, true)).toBeGreaterThan(run('pistol', 20, true));
-    expect(run('sniper', 20, true)).toBeLessThan(run('pistol', 20, true));
-    expect(run('sniper', 70, true)).toBeGreaterThan(0); // a sniper alcança longe
-    expect(FS_SHOOTER.sniper.range).toBeGreaterThan(FS_SHOOTER.ak.range);
-    expect(FS_SHOOTER.ak.range).toBeGreaterThan(FS_SHOOTER.pistol.range);
+    const ak = run('ak');
+    const pistol = run('pistol');
+    const sniper = run('sniper');
+    expect(ak).toBeGreaterThan(pistol);
+    expect(sniper).toBeLessThan(pistol);
+    expect(sniper).toBeGreaterThan(2);
+    // pausas entre rajadas: nunca o máximo da cadência o tempo todo
+    expect(ak).toBeLessThan(20 * (600 / 60));
   });
   it('o alcance do som: pistola menor, fuzil maior, sniper maior ainda', () => {
     expect(FS_HEAR_RANGE.pistol).toBeLessThan(FS_HEAR_RANGE.ak);
     expect(FS_HEAR_RANGE.ak).toBeLessThan(FS_HEAR_RANGE.sniper);
-    expect(FS_BOTS.filter((b) => b.kind === 'shoot').map((b) => b.weapon)).toEqual(['pistol', 'ak', 'sniper']);
+  });
+});
+
+describe('Mapa de Treino', () => {
+  const inside = (x: number, z: number, a: (typeof FS_TRAIN_AREAS)[number]) => x > a.x0 && x < a.x1 && z > a.z0 && z < a.z1;
+  const solid = (x: number, z: number) => FS_ARENA.some((bx) => bx.max[1] > 1 && x > bx.min[0] - 0.3 && x < bx.max[0] + 0.3 && z > bx.min[2] - 0.3 && z < bx.max[2] + 0.3);
+  it('tem as sete áreas e o nascimento está na avenida, livre', () => {
+    expect(FS_TRAIN_AREAS.map((a) => a.id).sort()).toEqual(['avenue', 'move', 'nades', 'range', 'targets', 'walkers', 'walls']);
+    expect(inside(FS_SPAWN.x, FS_SPAWN.z, FS_TRAIN_AREAS.find((a) => a.id === 'avenue')!)).toBe(true);
+    expect(solid(FS_SPAWN.x, FS_SPAWN.z)).toBe(false);
+    expect(FS_ARENA_HALF).toEqual([45, 27]);
+  });
+  it('de qualquer ponto de nascimento dá para chegar a cada sala pela porta (andando em linha reta e pelas portas)', () => {
+    // da avenida até o centro de cada sala, passando pela porta (x = -30, 0 ou 30)
+    const m0 = (x: number, z: number) => {
+      const m = fsNewMover(x, z);
+      return m;
+    };
+    const targets: [number, number, number][] = [[-30, -18, -30], [0, -18, 0], [30, -11, 30], [-30, 18, -30], [0, 12, 0], [30, 11, 30]];
+    for (const [dx, tz, door] of targets) {
+      const m = m0(door, 0);
+      // anda até a sala em linha reta pela porta
+      for (let i = 0; i < 120 * 6 && Math.abs(m.z - tz) > 0.4; i++) {
+        fsStepMover(m, { fwd: 1, strafe: 0, jump: false, yaw: tz < 0 ? 0 : 180, speedMul: 1 }, 1 / 120, FS_ARENA);
+      }
+      expect(Math.abs(m.z - tz), `sala ${dx}`).toBeLessThan(1);
+    }
+  });
+  it('os alvos e bots estão cada um dentro da sua sala e fora das paredes', () => {
+    const all = [...FS_TARGETS, ...FS_BOTS];
+    for (const t of all) {
+      expect(FS_TRAIN_AREAS.some((a) => inside(t.x, t.z, a)), t.id).toBe(true);
+      expect(solid(t.x, t.z), t.id).toBe(false);
+    }
+    expect(FS_TARGETS.length).toBeGreaterThanOrEqual(15);
+  });
+  it('cada barreira de material tem o poder de penetração certo e um alvo atrás dela', () => {
+    const through = (x: number, wid: 'ak' | 'sniper') => fsTrace(FS_WEAPONS[wid], [x, 1.0, 10.5], [0, 0, 1], FS_ARENA, [{ id: 'a', pos: [x, 0, 17.5], alive: true, armor: 0, helmet: false }]);
+    // parede maciça: nada passa; madeira fina: passa
+    expect(through(34, 'sniper').kind).toBe('world');
+    expect(through(19, 'ak').kind).toBe('player');
+    expect(through(19, 'ak').damage!.hp).toBeLessThan(FS_WEAPONS.ak.damage * 1.0);
+  });
+  it('as placas existem e as das salas estão sobre as portas', () => {
+    for (const door of [-30, 0, 30]) {
+      expect(FS_MOVE_SIGNS.some((sg) => sg.x === door && Math.abs(sg.z) > 8 && sg.big)).toBe(true);
+    }
+  });
+  it('o túnel baixo só passa agachado e os pulos altos não sobem', () => {
+    const run = (crouch: boolean) => {
+      const m = fsNewMover(-34.5, 18.5);
+      m.crouchK = crouch ? 1 : 0;
+      for (let i = 0; i < 120 * 3; i++) fsStepMover(m, { fwd: 1, strafe: 0, jump: false, yaw: 90, speedMul: 1, crouch }, 1 / 120, FS_ARENA);
+      return m;
+    };
+    expect(run(true).x).toBeLessThan(-40);
+    expect(run(false).x).toBeGreaterThan(-36.5);
   });
 });
 

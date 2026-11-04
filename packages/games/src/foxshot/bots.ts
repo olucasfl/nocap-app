@@ -1,9 +1,10 @@
+import { FS_DM_STYLE } from './dm';
 import type { FsTargetSpec } from './map';
-import type { FsWeaponId } from './weapons';
+import { FS_WEAPONS, type FsWeaponId } from './weapons';
 
 export type FsBotKind = 'walk' | 'shift' | 'crouch' | 'jump' | 'turn' | 'shoot';
 
-/** Bot de treino: anda de um ponto a outro (ou pula parado, ou gira), só para ver as animações e treinar a mira. */
+/** Bot de treino: anda de um ponto a outro (ou pula parado, ou gira), só para ver as animações e treinar a mira. Os de tiro olham para (x1, z1) e atiram para lá. */
 export interface FsBotSpec extends FsTargetSpec {
   kind: FsBotKind;
   /** Ponto final do trajeto (anda de x,z até aqui e volta). */
@@ -13,49 +14,53 @@ export interface FsBotSpec extends FsTargetSpec {
   weapon?: FsWeaponId;
 }
 
-/** Faixa de bots no canto noroeste da arena: uma raia por movimento, cada uma com uma placa. */
+/**
+ * Os bots do mapa de treino. Os da sala "Bots andando" percorrem uma raia cada (andando, devagar, agachado, pulando, girando).
+ * Os do estande de tiro são "de tiro" (`shoot`): ficam parados em cabines de frente para o paredão e atiram só para a frente,
+ * em rajadas, com a arma de cada cabine. Eles nunca miram em quem joga.
+ */
 export const FS_BOTS: readonly FsBotSpec[] = [
-  { id: 'b1', label: 'andando', kind: 'walk', x: -18, z: -11, x1: -8, z1: -11, armor: 0, helmet: false },
-  { id: 'b2', label: 'shift (devagar)', kind: 'shift', x: -18, z: -12.8, x1: -8, z1: -12.8, armor: 0, helmet: false },
-  { id: 'b3', label: 'agachado', kind: 'crouch', x: -18, z: -14.6, x1: -10, z1: -14.6, armor: 0, helmet: false },
-  { id: 'b4', label: 'pulando', kind: 'jump', x: -13, z: -16.4, x1: -13, z1: -16.4, armor: 0, helmet: false },
-  { id: 'b5', label: 'girando', kind: 'turn', x: -13, z: -18.2, x1: -13, z1: -18.2, armor: 0, helmet: false },
-  // atiradores no canto nordeste, longe do nascimento: um com cada arma (atiram em você e dão dano)
-  { id: 's1', label: 'atirador pistola', kind: 'shoot', weapon: 'pistol', x: 17, z: -19, x1: 17, z1: -19, armor: 0, helmet: false },
-  { id: 's2', label: 'atirador fuzil', kind: 'shoot', weapon: 'ak', x: 13.2, z: -19.2, x1: 13.2, z1: -19.2, armor: 0, helmet: false },
-  { id: 's3', label: 'atirador sniper', kind: 'shoot', weapon: 'sniper', x: 9.4, z: -19.2, x1: 9.4, z1: -19.2, armor: 0, helmet: false },
+  { id: 'b1', label: 'andando', kind: 'walk', x: -12, z: -12.4, x1: 12, z1: -12.4, armor: 0, helmet: false },
+  { id: 'b2', label: 'shift (devagar)', kind: 'shift', x: -12, z: -15.2, x1: 12, z1: -15.2, armor: 0, helmet: false },
+  { id: 'b3', label: 'agachado', kind: 'crouch', x: -12, z: -18.3, x1: 10, z1: -18.3, armor: 0, helmet: false },
+  { id: 'b4', label: 'pulando', kind: 'jump', x: -9, z: -21.4, x1: -9, z1: -21.4, armor: 0, helmet: false },
+  { id: 'b5', label: 'girando', kind: 'turn', x: -9, z: -24.5, x1: -9, z1: -24.5, armor: 0, helmet: false },
+  // estande de tiro: uma cabine por arma, todas de frente para o paredão (norte)
+  ...(
+    [
+      ['s1', 'pistol', 19],
+      ['s2', 'usp', 23],
+      ['s3', 'smg', 27],
+      ['s4', 'm4', 31],
+      ['s5', 'ak', 35],
+      ['s6', 'shotgun', 39],
+      ['s7', 'sniper', 43],
+    ] as const
+  ).map(([id, weapon, x]): FsBotSpec => ({ id, label: `atirador ${weapon}`, kind: 'shoot', weapon, x, z: -15.2, x1: x, z1: -25, armor: 0, helmet: false })),
 ];
 
-/**
- * Comportamento dos atiradores: alcance de combate (m), tempo entre tiros (s), rajada (tiros seguidos e pausa) e erro de mira
- * (graus a 10 m: cresce com a distância). O fuzil atira em rajadas curtas, a pistola um tiro de cada vez, a sniper devagar e forte.
- */
-export const FS_SHOOTER: Record<'pistol' | 'ak' | 'sniper', { range: number; interval: number; burst: number; pause: number; aimErr: number; firstDelay: number }> = {
-  pistol: { range: 26, interval: 0.5, burst: 1, pause: 0.25, aimErr: 1.6, firstDelay: 0.7 },
-  ak: { range: 42, interval: 0.11, burst: 5, pause: 0.9, aimErr: 2.2, firstDelay: 0.9 },
-  sniper: { range: 80, interval: 1.9, burst: 1, pause: 0.4, aimErr: 0.9, firstDelay: 1.3 },
-};
-
-export interface FsShooterState {
+/** Calibração do estande: o paredão fica a ~10 m, então todos atiram de verdade, em rajadas de cada arma. */
+export interface FsRangeState {
   cool: number;
   burstLeft: number;
 }
-export const fsNewShooter = (): FsShooterState => ({ cool: 0.6, burstLeft: 0 });
+export const fsNewRange = (): FsRangeState => ({ cool: 0.8, burstLeft: 0 });
 
-/** Um passo do atirador: devolve se atira agora. Só atira se enxerga você e está no alcance. */
-export function fsShooterStep(st: FsShooterState, weapon: 'pistol' | 'ak' | 'sniper', dt: number, dist: number, sees: boolean): boolean {
-  const c = FS_SHOOTER[weapon];
-  if (!sees || dist > c.range) {
-    // perdeu você de vista: recomeça a mirar quando voltar a ver
-    st.cool = Math.max(st.cool, c.firstDelay);
-    st.burstLeft = 0;
-    return false;
-  }
+/**
+ * Um passo do atirador do estande: devolve se atira agora. O tempo entre tiros é o da arma (rpm e ferrolho); a rajada e a pausa
+ * seguem o estilo de cada arma (fuzil em rajadas curtas, pistola tiro a tiro, escopeta e sniper devagar). Não olha para ninguém.
+ * `rand` devolve 0 a 1.
+ */
+export function fsRangeStep(st: FsRangeState, weapon: FsWeaponId, dt: number, rand: () => number): boolean {
+  if (weapon === 'knife') return false;
+  const w = FS_WEAPONS[weapon];
+  const style = FS_DM_STYLE[weapon];
   st.cool -= dt;
   if (st.cool > 0) return false;
-  if (st.burstLeft <= 0) st.burstLeft = c.burst;
+  if (st.burstLeft <= 0) st.burstLeft = Math.round(style.burst[0] + rand() * (style.burst[1] - style.burst[0]));
   st.burstLeft--;
-  st.cool = st.burstLeft > 0 ? c.interval : c.interval + c.pause;
+  const interval = 60 / w.rpm + w.boltS;
+  st.cool = st.burstLeft > 0 ? interval : interval + 0.6 + rand() * 1.4 + style.pause[1];
   return true;
 }
 
@@ -81,7 +86,7 @@ export interface FsBotState {
 
 export const fsNewBot = (s: FsBotSpec): FsBotState => ({
   x: s.x, y: 0, z: s.z, vy: 0,
-  h: s.kind === 'walk' || s.kind === 'shift' || s.kind === 'crouch' ? Math.atan2(s.z1 - s.z, s.x1 - s.x) : Math.PI / 2,
+  h: s.kind === 'walk' || s.kind === 'shift' || s.kind === 'crouch' || s.kind === 'shoot' ? Math.atan2(s.z1 - s.z, s.x1 - s.x) : Math.PI / 2,
   crouch: 0, out: true, jumpIn: 0.8, anim: 'idle', animSpeed: 1,
 });
 

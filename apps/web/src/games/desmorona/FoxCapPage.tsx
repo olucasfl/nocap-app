@@ -18,6 +18,7 @@ import { Page } from '@/components/Page';
 import { RoomBanner } from '@/components/RoomBanner';
 import { RoomConflictDialog } from '@/components/RoomConflictDialog';
 import { useRoomEntry } from '@/lib/my-room';
+import { CounterFoxCard } from '../foxshot/CounterFoxCard';
 import { BolaPicker } from '../bola/BolaPicker';
 import type { BolaSetup } from '../bola/BolaPlay';
 import { DesmoronaPicker } from './DesmoronaPicker';
@@ -136,7 +137,8 @@ export function FoxCapPage() {
         />
         {tab === 'offline' ? (
           <>
-            <div className="gh-modes">
+            <div className="gh-modes two">
+              <CounterFoxCard />
               <HubModeCard
                 tone="red"
                 art={<AtravessaArt />}
@@ -183,12 +185,6 @@ export function FoxCapPage() {
                 helpTestId="help-bola"
               />
             </div>
-            <Link to="/fox-cap/counter-fox" className="btn" data-sfx="start" data-testid="foxcap-counterfox">
-              Counter Fox (mata-mata contra bots)
-            </Link>
-            <Link to="/fox-cap/fox-shot-teste" className="btn ghost" data-sfx="start" data-testid="foxcap-foxshot">
-              Counter Fox: arena de teste
-            </Link>
             <HubNote>
               O Atravessa! guarda recorde e ranking. O Desmorona!, o Fut Fox e o Ping Fox! são só
               diversão: sem ranking nem histórico.

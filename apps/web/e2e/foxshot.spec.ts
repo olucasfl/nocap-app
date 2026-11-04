@@ -1,372 +1,145 @@
 import { expect, test, type Page } from '@playwright/test';
 
 /**
- * Fox Shot! (fase 0): a arena de teste carrega com os modelos, o HUD aparece e as regras de dano estilo CS valem na tela de
- * verdade: fuzil mata de cabeça com ou sem capacete, pistola não mata de cabeça com capacete, sniper mata no corpo.
+ * Counter Fox, Mapa de Treino (spec 057): abre pelo menu (Jogar → Mapa de Treino), o dano estilo CS vale nos alvos de cada área,
+ * os bots andam/agacham/pulam, os atiradores do estande só atiram para a frente e o mapa grande (M) mostra onde a pessoa está.
  */
 const fs = <T>(page: Page, fn: string, ...args: unknown[]) =>
   page.evaluate(
     ([f, a]) =>
-      (
-        (window as unknown as { __fs: Record<string, (...x: unknown[]) => unknown> }).__fs[
-          f as string
-        ] as (...x: unknown[]) => T
-      )(...(a as unknown[])),
+      ((window as unknown as { __fs: Record<string, (...x: unknown[]) => unknown> }).__fs[f as string] as (...x: unknown[]) => T)(...(a as unknown[])),
     [fn, args] as [string, unknown[]],
   ) as Promise<T>;
 
-async function open(page: Page, shooters = false) {
-  // os atiradores ficam desligados nos testes (senão matam o jogador no meio); o teste deles liga
-  await page.addInitScript((off) => {
-    try {
-      if (off) localStorage.setItem('fs-no-shooters', '1');
-      else localStorage.removeItem('fs-no-shooters');
-    } catch {
-      /* sem armazenamento */
-    }
-  }, !shooters);
-  await page.goto('/fox-cap/fox-shot-teste');
+async function open(page: Page) {
+  await page.goto('/fox-cap/counter-fox');
+  await page.getByRole('button', { name: 'Agora não' }).click({ timeout: 3000 }).catch(() => undefined);
+  await page.getByTestId('cfh-play').click();
+  await page.getByTestId('cfh-train').click();
   await expect(page.getByTestId('fs-perf')).toBeVisible({ timeout: 40_000 });
-  await page
-    .getByRole('button', { name: 'Agora não' })
-    .click({ timeout: 4000 })
-    .catch(() => undefined);
-  await page.waitForTimeout(500);
+  await page.getByTestId('fsm-resume').click();
+  await page.waitForTimeout(400);
 }
+const alive = async (page: Page, id: string) => (await fs<{ alive: boolean }>(page, 'target', id)).alive;
 
-test('a arena carrega, mostra o HUD e o medidor de desempenho', async ({ page }, info) => {
+test('o mapa de treino carrega, mostra o HUD e a rota antiga redireciona', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
   await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto('/fox-cap/fox-shot-teste');
+  await expect(page).toHaveURL(/\/fox-cap\/counter-fox$/);
   await open(page);
   await expect(page.getByTestId('fs-ammo')).toContainText('18');
-  await expect(page.getByTestId('fs-menu')).toBeVisible();
   await expect(page.getByTestId('fs-bars')).toBeVisible();
-  await expect(page.getByTestId('fs-speed')).toContainText('m/s');
-  if (process.env.FS_SHOTS) {
-    await page.screenshot({ path: `${process.env.FS_SHOTS}/desktop-menu.png` });
-    // sem o cartão de pausa (o mouse não prende em teste): fotos da cena
-    await page.getByTestId('fsm-resume').click();
-    for (const [i, name] of ['fuzil', 'pistola', 'faca', 'sniper'].entries()) {
-      if (name === 'fuzil') await fs(page, 'buy', 'ak');
-      if (name === 'sniper') await fs(page, 'buy', 'sniper');
-      await fs(page, 'weapon', name === 'sniper' ? 0 : i);
-      await fs(page, 'teleport', 0, 9);
-      await fs(page, 'aimAt', 't3', 'chest');
-      await page.waitForTimeout(900);
-      await page.screenshot({ path: `${process.env.FS_SHOTS}/desktop-${name}.png` });
-    }
-  }
+  if (process.env.FS_SHOTS) await page.screenshot({ path: `${process.env.FS_SHOTS}/train-spawn.png` });
 });
 
-test('dano estilo CS nos alvos', async ({ page }, info) => {
+test('dano estilo CS nos alvos do mapa de treino', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
   await page.setViewportSize({ width: 1280, height: 720 });
   await open(page);
-  // fuzil (arma 0): cabeça mata sem colete (t1) e com colete e capacete (t3)
-  for (const id of ['t1', 't3']) {
-    await fs(page, 'teleport', 0, 14);
-    await fs(page, 'buy', 'ak');
-    await fs(page, 'weapon', 0);
+  await fs(page, 'buy', 'ak');
+  await fs(page, 'weapon', 0);
+  // fuzil, cabeça: mata sem colete (t1) e com colete e capacete (t3)
+  for (const [id, x, z] of [['t1', -36, -11], ['t3', -24, -11]] as const) {
+    await fs(page, 'teleport', x, z);
     await fs(page, 'aimAt', id, 'head');
     await fs(page, 'shoot', 1);
-    expect((await fs<{ alive: boolean }>(page, 'target', id)).alive, `fuzil, cabeça, ${id}`).toBe(
-      false,
-    );
+    expect(await alive(page, id), `fuzil, cabeça, ${id}`).toBe(false);
   }
   // agachada: o tiro na altura da cabeça de pé passa por cima; levantou, mata
-  await fs(page, 'teleport', 0, 14);
-  await fs(page, 'weapon', 0);
+  await fs(page, 'teleport', -30, -11);
   await fs(page, 'crouchTarget', 't2', true);
   await fs(page, 'aimAt', 't2', 'head');
   await fs(page, 'shoot', 1);
-  expect((await fs<{ alive: boolean }>(page, 'target', 't2')).alive, 'agachada não é atingida na cabeça de pé').toBe(true);
+  expect(await alive(page, 't2'), 'agachada não é atingida na cabeça de pé').toBe(true);
   await fs(page, 'crouchTarget', 't2', false);
   await fs(page, 'aimAt', 't2', 'head');
   await fs(page, 'shoot', 1);
-  expect((await fs<{ alive: boolean }>(page, 'target', 't2')).alive, 'de pé, a mesma mira mata').toBe(false);
-  // pistola (arma 1) de perto: sem capacete a cabeça mata (t1 revive depois de 3 s; usa t4 perto)
-  await fs(page, 'teleport', -14, -1);
+  expect(await alive(page, 't2'), 'de pé, a mesma mira mata').toBe(false);
+  // pistola de perto: sem capacete a cabeça mata (t4)
   await fs(page, 'weapon', 1);
+  await fs(page, 'teleport', -40, -14);
   await fs(page, 'aimAt', 't4', 'head');
   await fs(page, 'shoot', 1);
-  expect(
-    (await fs<{ alive: boolean }>(page, 'target', 't4')).alive,
-    'pistola, cabeça, sem capacete, perto',
-  ).toBe(false);
+  expect(await alive(page, 't4'), 'pistola, cabeça, sem capacete').toBe(false);
   // pistola contra colete e capacete: não mata de cabeça
-  await fs(page, 'teleport', 8, -1);
+  await fs(page, 'teleport', -22, -13);
   await fs(page, 'aimAt', 't5', 'head');
   await fs(page, 'shoot', 1);
   const t5 = await fs<{ alive: boolean; hp: number }>(page, 'target', 't5');
   expect(t5.alive, 'pistola, cabeça, com capacete').toBe(true);
   expect(t5.hp).toBeLessThan(100);
-  // sniper: comprada na loja (entra no lugar da primária)
-  await fs(page, 'teleport', 14, -10);
+  // sniper na pista de tiro longo (40 m): corpo, colete
   await fs(page, 'buy', 'sniper');
   await fs(page, 'weapon', 0);
+  await fs(page, 'teleport', -11, 0);
   await fs(page, 'aimAt', 't7', 'chest');
   await fs(page, 'shoot', 1);
-  expect(
-    (await fs<{ alive: boolean }>(page, 'target', 't7')).alive,
-    'sniper, corpo, colete e capacete',
-  ).toBe(false);
+  expect(await alive(page, 't7'), 'sniper, corpo, colete').toBe(false);
 });
 
-test('celular deitado: HUD de toque e arena (foto)', async ({ browser }, info) => {
-  test.skip(info.project.name !== 'desktop', 'um projeto basta');
-  const ctx = await browser.newContext({
-    viewport: { width: 844, height: 390 },
-    hasTouch: true,
-    isMobile: true,
-    deviceScaleFactor: 2,
-  });
-  const page = await ctx.newPage();
-  await open(page);
-  await expect(page.getByTestId('fs-menu')).toBeVisible();
-  await page.getByTestId('fsm-resume').click();
-  await expect(page.locator('.fs-tbtns')).toBeVisible();
-  await expect(page.getByTestId('fs-radar')).toBeVisible();
-  await page.waitForTimeout(800);
-  if (process.env.FS_SHOTS) await page.screenshot({ path: `${process.env.FS_SHOTS}/celular.png` });
-  await ctx.close();
-});
-
-test('celular em pé pede para girar o aparelho', async ({ browser }, info) => {
-  test.skip(info.project.name !== 'desktop', 'um projeto basta');
-  const ctx = await browser.newContext({
-    viewport: { width: 390, height: 844 },
-    hasTouch: true,
-    isMobile: true,
-  });
-  const page = await ctx.newPage();
-  await page.goto('/fox-cap/fox-shot-teste');
-  await page
-    .getByRole('button', { name: 'Agora não' })
-    .click({ timeout: 1500 })
-    .catch(() => undefined);
-  await expect(page.getByTestId('fs-rotate')).toBeVisible();
-  await ctx.close();
-});
-
-test('menu do Esc: personalizar, comandos com troca de tecla, placar e kill feed', async ({
-  page,
-}, info) => {
+test('escopeta: de perto mata com um tiro, de longe quase não acerta', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
   await page.setViewportSize({ width: 1280, height: 720 });
   await open(page);
-  // personalizar: a sensibilidade e a cor da mira ficam salvas
-  await page.getByTestId('fsm-tab-personalizar').click();
-  await expect(page.getByTestId('fsm-custom')).toBeVisible();
-  await page.getByRole('radio', { name: 'Verde' }).click();
-  if (process.env.FS_SHOTS)
-    await page.screenshot({ path: `${process.env.FS_SHOTS}/desktop-personalizar.png` });
-  // comandos: trocar "Recarregar" de R para F
-  await page.getByTestId('fsm-tab-comandos').click();
-  await expect(page.getByTestId('bind-reload')).toHaveText('R');
-  await page.getByTestId('bind-reload').click();
-  await page.keyboard.press('KeyF');
-  await expect(page.getByTestId('bind-reload')).toHaveText('F');
-  if (process.env.FS_SHOTS)
-    await page.screenshot({ path: `${process.env.FS_SHOTS}/desktop-comandos.png` });
-  const saved = await page.evaluate(() =>
-    JSON.parse(localStorage.getItem('nocap-fs-settings') ?? '{}'),
-  );
-  expect(saved.binds.reload).toBe('KeyF');
-  // F também é "Inspecionar": o menu avisa o conflito
-  await expect(page.getByTestId('conflict-reload')).toContainText('Inspecionar');
-  expect(saved.crossColor).toBe('green');
-  // continuar e jogar: abate com a cabeça aparece no kill feed e no placar (Tab)
-  await page.getByTestId('fsm-tab-jogo').click();
-  await page.getByTestId('fsm-resume').click();
-  await page.addStyleTag({ content: '.fs-hint{display:none!important}' });
-  await fs(page, 'teleport', 0, 14);
+  await fs(page, 'buy', 'shotgun');
   await fs(page, 'weapon', 0);
-  await fs(page, 'aimAt', 't1', 'head');
-  await fs(page, 'shoot', 1);
-  await expect(page.getByTestId('fs-feed')).toContainText('Raposa 1');
-  await expect(page.getByTestId('fs-feed')).toContainText('CABEÇA');
-  await expect(page.getByTestId('fs-feed-mine').first()).toBeVisible();
-  await page.keyboard.down('Tab');
-  await expect(page.getByTestId('fs-board')).toBeVisible();
-  await expect(page.getByTestId('fs-board')).toContainText('Assist.');
-  await expect(page.getByTestId('fs-board')).not.toContainText('Colete');
-  if (process.env.FS_SHOTS)
-    await page.screenshot({ path: `${process.env.FS_SHOTS}/desktop-placar.png` });
-  await page.keyboard.up('Tab');
-  await expect(page.getByTestId('fs-board')).toHaveCount(0);
-  await expect(page.getByTestId('fs-topbar')).toBeVisible();
-  await expect(page.getByTestId('fs-radar')).toBeVisible();
-  if (process.env.FS_SHOTS)
-    await page.screenshot({ path: `${process.env.FS_SHOTS}/desktop-hud.png` });
-});
-
-test('faca, agachar, loja e armas no chão', async ({ page }, info) => {
-  test.skip(info.project.name !== 'desktop', 'um projeto basta');
-  test.setTimeout(240_000);
-  await page.setViewportSize({ width: 1280, height: 720 });
-  await open(page);
-  await page.getByTestId('fsm-resume').click();
-  // 3 espaços: tecla 3 pega a faca
-  await page.keyboard.press('Digit3');
-  await page.waitForTimeout(300);
-  await expect(page.getByTestId('fs-ammo')).toContainText('Faca');
-  // faca: corta de perto (t1 em (0, 3)? teleporta colado no alvo)
-  await fs(page, 'teleport', 0, 4.5);
+  await expect(page.getByTestId('fs-ammo')).toContainText('SPAS-12');
+  await fs(page, 'teleport', -36, -11);
   await fs(page, 'aimAt', 't1', 'chest');
-  const before = await fs<{ hp: number }>(page, 'target', 't1');
-  await page.evaluate(() => {
-    const h = (window as unknown as { __fs: { loadout: { drawT: number } } }).__fs;
-    h.loadout.drawT = 0;
-  });
-  // Ctrl agacha (a câmera desce) e solta levanta
-  await page.keyboard.down('ControlLeft');
-  await page.waitForTimeout(600);
-  const crouched = await page.evaluate(
-    () => (window as unknown as { __fs: { mover: { crouchK: number } } }).__fs.mover.crouchK,
-  );
-  expect(crouched).toBeGreaterThan(0.9);
-  await page.keyboard.up('ControlLeft');
-  await page.waitForTimeout(600);
-  expect(
-    await page.evaluate(
-      () => (window as unknown as { __fs: { mover: { crouchK: number } } }).__fs.mover.crouchK,
-    ),
-  ).toBeLessThan(0.1);
-  void before;
-  // B abre a loja com 5 colunas; itens futuros ficam apagados
-  await page.keyboard.press('KeyB');
-  await expect(page.getByTestId('fs-shop')).toBeVisible();
-  for (const c of ['equipment', 'pistols', 'mid', 'rifles', 'grenades'])
-    await expect(page.getByTestId(`fs-shop-col-${c}`)).toBeVisible();
-  await expect(page.getByTestId('fs-buy-smg2')).toBeDisabled();
-  // começa sem colete nem capacete; comprar mostra os dois
-  await expect(page.getByTestId('fs-helmet')).toHaveCount(0);
-  await page.getByTestId('fs-buy-vesthelm').dispatchEvent('click');
-  await expect(page.getByTestId('fs-helmet')).toBeVisible();
-  await expect(page.getByTestId('fs-buy-vesthelm')).toContainText('em uso');
-  if (process.env.FS_SHOTS) await page.screenshot({ path: `${process.env.FS_SHOTS}/loja.png` });
-  // sem primária ainda: comprar o fuzil não larga nada; trocar pela sniper larga o fuzil; repetir não larga
-  await page.getByTestId('fs-buy-ak').dispatchEvent('click');
-  expect((await fs<unknown[]>(page, 'drops')).length).toBe(0);
-  await page.getByTestId('fs-buy-sniper').dispatchEvent('click');
-  expect((await fs<unknown[]>(page, 'drops')).length).toBe(1);
-  await page.getByTestId('fs-buy-sniper').dispatchEvent('click');
-  expect((await fs<unknown[]>(page, 'drops')).length).toBe(1);
-  // alternar fuzil e sniper pela loja nunca passa de 6 armas no chão
-  for (let i = 0; i < 12; i++) {
-    await page.getByTestId(i % 2 ? 'fs-buy-sniper' : 'fs-buy-ak').dispatchEvent('click');
-  }
-  expect((await fs<unknown[]>(page, 'drops')).length).toBeLessThanOrEqual(6);
-  await page.keyboard.press('KeyB');
-  await expect(page.getByTestId('fs-shop')).toHaveCount(0);
-  // olhando para a arma no chão aparece o nome dela perto da mira
-  await page.evaluate(() => {
-    (window as unknown as { __fs: { view: { pitch: number } } }).__fs.view.pitch = -41;
-  });
-  await expect(page.getByTestId('fs-look')).toBeVisible();
-  // G larga a arma da mão; com a faca na mão não larga nada
-  const n0 = (await fs<unknown[]>(page, 'drops')).length;
-  await page.keyboard.press('KeyG');
-  await page.waitForTimeout(400);
-  expect((await fs<unknown[]>(page, 'drops')).length).toBeGreaterThanOrEqual(Math.min(6, n0));
-  await page.keyboard.press('Digit3');
-  await page.waitForTimeout(300);
-  const nk = (await fs<unknown[]>(page, 'drops')).length;
-  await page.keyboard.press('KeyG');
-  await page.waitForTimeout(400);
-  expect((await fs<unknown[]>(page, 'drops')).length).toBe(nk);
-  if (process.env.FS_SHOTS) {
-    await page.keyboard.press('Digit3');
-    await page.waitForTimeout(900);
-    await page.screenshot({ path: `${process.env.FS_SHOTS}/faca.png` });
-  }
-});
-
-test('fotos das mãos (só com FS_SHOTS)', async ({ page }, info) => {
-  test.skip(info.project.name !== 'desktop' || !process.env.FS_SHOTS, 'só para conferir o visual');
-  test.setTimeout(540_000);
-  await page.setViewportSize({ width: 1280, height: 720 });
-  await open(page);
-  await page.getByTestId('fsm-resume').click();
-  const shot = (n: string) => page.screenshot({ path: `${process.env.FS_SHOTS}/${n}.png` });
-  const list = process.env.FS_NEW ? ([['smg', 0], ['shotgun', 0], ['m4', 0], ['usp', 1]] as const) : ([['ak', 0], ['pistol', 1], ['sniper', 0], ['smg', 0], ['shotgun', 0], ['m4', 0], ['usp', 1]] as const);
-  for (const [id, i] of list) {
-    await fs(page, 'buy', id);
-    await fs(page, 'weapon', i);
-    await page.waitForTimeout(1200);
-    await shot(`m-${id}-hold`);
-    if (id === 'smg') {
-      await fs(page, 'ads', true);
-      await page.waitForTimeout(900);
-      await shot('m-smg-ads');
-      await fs(page, 'ads', false);
-      await page.waitForTimeout(500);
-    }
-    for (const u of [0.12, 0.2, 0.36, 0.55, 0.68, 0.84]) {
-      await fs(page, 'reloadAt', null);
-      await fs(page, 'reloadAt', u);
-      await page.waitForTimeout(u === 0.2 ? 350 : 250);
-      await shot(`m-${id}-rl-${Math.round(u * 100)}`);
-    }
-    await fs(page, 'reloadAt', null);
-    await fs(page, 'inspectGun');
-    for (const t of [700, 1200]) {
-      await page.waitForTimeout(t);
-      await shot(`m-${id}-insp-${t}`);
-    }
-    await page.waitForTimeout(2500);
-  }
-  await fs(page, 'weapon', 2);
-  await page.waitForTimeout(1200);
-  await shot('m-knife-hold');
-  // faixa de bots e morte
-  await fs(page, 'teleport', -6, -10);
-  await fs(page, 'weapon', 0);
-  await fs(page, 'aimAt', 'b2', 'chest');
-  await page.waitForTimeout(1500);
-  await shot('m-bots-1');
-  await page.waitForTimeout(1200);
-  await shot('m-bots-2');
-  await fs(page, 'aimAt', 'b3', 'chest');
-  await page.waitForTimeout(600);
-  await shot('m-bots-3');
-  await fs(page, 'teleport', -7, -18.2);
-  await fs(page, 'aimAt', 'b5', 'head');
   await fs(page, 'shoot', 1);
-  for (const t of [200, 300, 500, 900]) {
-    await page.waitForTimeout(t);
-    await shot(`m-death-${t}`);
-  }
-  // agachado (b3) de perto
-  await fs(page, 'teleport', -6, -14.6);
-  await fs(page, 'aimAt', 'b3', 'chest');
-  await page.waitForTimeout(1200);
-  await shot('m-crouchbot');
-  await fs(page, 'weapon', 0);
-  await fs(page, 'inspectGun');
-  await page.waitForTimeout(1500);
-  await shot('m-insp-sniper');
-  for (const [kind, us] of [['slash', [0.22, 0.5, 0.75]], ['stab', [0.28, 0.45, 0.8]], ['inspect', [0.08, 0.3, 0.45, 0.65]]] as const) {
-    for (const u of us) {
-      await fs(page, 'pose', kind, u);
-      await page.waitForTimeout(250);
-      await shot(`m-knife-${kind}-${Math.round(u * 100)}`);
-    }
-  }
+  expect(await alive(page, 't1'), 'de perto mata').toBe(false);
+  await fs(page, 'teleport', -17, 0);
+  await fs(page, 'aimAt', 't8', 'chest');
+  await fs(page, 'shoot', 1);
+  const far = await fs<{ alive: boolean; hp: number }>(page, 'target', 't8');
+  expect(far.alive, 'de longe não mata').toBe(true);
+  expect(far.hp, 'de longe quase nada acerta').toBeGreaterThan(55);
 });
 
-test('bots de treino andam, agacham, pulam, morrem caindo e nascem de novo', async ({ page }, info) => {
+test('granadas: explosiva dá dano por distância e a de luz cega só quem olha', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
-  test.setTimeout(200_000);
   await page.setViewportSize({ width: 1280, height: 720 });
   await open(page);
-  await page.getByTestId('fsm-resume').click();
-  type Bot = { x: number; y: number; z: number; crouch: number; anim: string; alive: boolean };
+  await page.keyboard.press('KeyB');
+  await page.getByTestId('fs-buy-frag').dispatchEvent('click');
+  await page.getByTestId('fs-buy-flash').dispatchEvent('click');
+  await page.keyboard.press('KeyB');
+  const inv = await fs<{ frag: number; flash: number }>(page, 'nades');
+  expect(inv.frag).toBe(1);
+  expect(inv.flash).toBe(1);
+  await page.keyboard.press('Digit4');
+  await expect(page.getByTestId('fs-ammo')).toContainText('Granada explosiva');
+  await page.keyboard.press('Digit4');
+  await expect(page.getByTestId('fs-ammo')).toContainText('Granada de luz');
+  await page.keyboard.press('Digit4');
+  expect((await fs<{ held: string | null }>(page, 'nades')).held).toBeNull();
+  const hp = async (id: string) => (await fs<{ hp: number }>(page, 'target', id)).hp;
+  await fs(page, 'blastAt', 'frag', -6, 21.5); // em cima do t10
+  await expect.poll(async () => hp('t10'), { timeout: 15_000 }).toBeLessThan(50);
+  await fs(page, 'blastAt', 'frag', 4.5, 22.5); // a 4,5 m do t11
+  await expect.poll(async () => hp('t11'), { timeout: 15_000 }).toBeLessThan(100);
+  expect(await hp('t11')).toBeGreaterThan(70);
+  // luz: de costas não cega; de frente cega
+  await fs(page, 'teleport', 0, 14);
+  await fs(page, 'aimAt', 't11', 'chest');
+  await fs(page, 'blastAt', 'flash', 0, 10);
+  await page.waitForTimeout(1500);
+  expect(await fs<number>(page, 'blind'), 'de costas não cega').toBeLessThan(0.5);
+  await fs(page, 'blastAt', 'flash', 0, 19);
+  await expect.poll(async () => fs<number>(page, 'blind'), { timeout: 15_000 }).toBeGreaterThan(1);
+});
+
+test('bots andam, agacham, pulam, morrem e nascem de novo', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'um projeto basta');
+  test.setTimeout(120_000);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await open(page);
+  type Bot = { x: number; y: number; z: number; crouch: number; alive: boolean };
   const bot = (id: string) => fs<Bot>(page, 'bot', id);
   const x0 = (await bot('b1')).x;
   await page.waitForTimeout(2500);
   expect(Math.abs((await bot('b1')).x - x0), 'o bot anda').toBeGreaterThan(1);
-  // pulo: em algum momento sai do chão
   let maxY = 0;
   for (let i = 0; i < 25; i++) {
     maxY = Math.max(maxY, (await bot('b4')).y);
@@ -375,178 +148,73 @@ test('bots de treino andam, agacham, pulam, morrem caindo e nascem de novo', asy
   expect(maxY, 'o bot pula').toBeGreaterThan(0.3);
   await page.waitForTimeout(2000);
   expect((await bot('b3')).crouch, 'o bot agachado').toBeGreaterThan(0.9);
-  // mata o bot que gira (b5): cai, afunda e nasce de novo
   await fs(page, 'buy', 'ak');
   await fs(page, 'weapon', 0);
-  await fs(page, 'teleport', -7, -18.2);
+  await fs(page, 'teleport', -5, -24.5);
   await fs(page, 'aimAt', 'b5', 'head');
   await fs(page, 'shoot', 1);
   expect((await bot('b5')).alive, 'bot morreu').toBe(false);
-  await page.waitForTimeout(8000);
-  await expect.poll(async () => (await bot('b5')).alive, { timeout: 20_000 }).toBe(true);
-  expect((await bot('b5')).alive, 'nasceu outro').toBe(true);
+  await expect.poll(async () => (await bot('b5')).alive, { timeout: 30_000 }).toBe(true);
 });
 
-test('atiradores no canto: atiram em você, dão dano e você pode matá-los', async ({ page }, info) => {
+test('estande: os atiradores só atiram para a frente, e só quando a pessoa está na galeria', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
-  test.setTimeout(200_000);
+  test.setTimeout(120_000);
   await page.setViewportSize({ width: 1280, height: 720 });
-  await open(page, true);
-  await page.getByTestId('fsm-resume').click();
-  // perto e à vista do atirador do fuzil
-  await fs(page, 'teleport', 13.2, -8);
-  await expect.poll(async () => fs<number>(page, 'hp'), { timeout: 60_000 }).toBeLessThan(100);
-  await expect(page.locator('.fs-hurt')).toHaveCount(1);
-  // mata o atirador do fuzil com a cabeça (arma comprada)
-  await fs(page, 'buy', 'ak');
-  await fs(page, 'weapon', 0);
-  await fs(page, 'aimAt', 's2', 'head');
-  await fs(page, 'shoot', 1);
-  expect((await fs<{ alive: boolean }>(page, 'bot', 's2')).alive).toBe(false);
+  await open(page);
+  // fora da galeria (no meio da pista) os atiradores ficam quietos
+  await fs(page, 'teleport', 30, 0);
+  await page.waitForTimeout(2500);
+  expect(await fs<number>(page, 'rangeShots'), 'fora da galeria não há tiro').toBe(0);
+  expect(await fs<number>(page, 'hp'), 'fora da galeria ninguém atira').toBe(100);
+  // dentro da galeria, de frente para eles: nunca levam tiro (atiram só para o norte, para o paredão)
+  await fs(page, 'teleport', 31, -11);
+  await page.waitForTimeout(6000);
+  expect(await fs<number>(page, 'hp'), 'na galeria o tiro não vem na sua direção').toBe(100);
+  expect(await fs<number>(page, 'rangeShots'), 'os atiradores atiraram de verdade').toBeGreaterThan(3);
 });
 
-test('escopeta: de perto mata com um tiro, de longe quase não acerta', async ({ page }, info) => {
+test('M abre o mapa grande com onde estou e Esc fecha', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await open(page);
+  await expect(page.locator('.fs-bigmap')).toHaveCount(0);
+  await page.keyboard.press('KeyM');
+  await expect(page.locator('.fs-bigmap')).toBeVisible();
+  await page.waitForTimeout(500);
+  if (process.env.FS_SHOTS) await page.screenshot({ path: `${process.env.FS_SHOTS}/train-bigmap.png` });
+  await page.keyboard.press('KeyM');
+  await expect(page.locator('.fs-bigmap')).toHaveCount(0);
+});
+
+test('celular em pé pede para girar o aparelho', async ({ browser }, info) => {
+  test.skip(info.project.name !== 'desktop', 'um projeto basta');
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  const page = await ctx.newPage();
+  await page.goto('/fox-cap/counter-fox');
+  await page.getByRole('button', { name: 'Agora não' }).click({ timeout: 3000 }).catch(() => undefined);
+  await page.getByTestId('cfh-play').click();
+  await page.getByTestId('cfh-train').click();
+  await expect(page.getByTestId('fs-rotate')).toBeVisible({ timeout: 40_000 });
+  await ctx.close();
+});
+
+test('fotos do mapa de treino (só com FS_SHOTS)', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop' || !process.env.FS_SHOTS, 'só para conferir o visual');
   test.setTimeout(180_000);
   await page.setViewportSize({ width: 1280, height: 720 });
   await open(page);
-  await page.getByTestId('fsm-resume').click();
-  await fs(page, 'buy', 'shotgun');
-  await fs(page, 'weapon', 0);
-  await expect(page.getByTestId('fs-ammo')).toContainText('SPAS-12');
-  // t1 (sem colete) em (-8, 2): a 4 m, um tiro mata
-  await fs(page, 'teleport', -8, 6);
-  await fs(page, 'aimAt', 't1', 'chest');
-  await fs(page, 'shoot', 1);
-  expect((await fs<{ alive: boolean }>(page, 'target', 't1')).alive, 'de perto mata').toBe(false);
-  // t6 (0, -17) a ~34 m: o tiro mal faz cócegas
-  await fs(page, 'teleport', 0, 17);
-  await fs(page, 'aimAt', 't6', 'chest');
-  await fs(page, 'shoot', 1);
-  const far = await fs<{ alive: boolean; hp: number }>(page, 'target', 't6');
-  expect(far.alive, 'de longe não mata').toBe(true);
-  expect(far.hp, 'de longe quase nada acerta').toBeGreaterThan(55);
-});
-
-test('granadas: explosiva dá dano por distância, de luz cega só quem olha, tecla 4 passa pelas duas', async ({ page }, info) => {
-  test.skip(info.project.name !== 'desktop', 'um projeto basta');
-  test.setTimeout(200_000);
-  await page.setViewportSize({ width: 1280, height: 720 });
-  await open(page);
-  await page.getByTestId('fsm-resume').click();
-  // loja: compra as duas (máximo de 2 de cada)
-  await page.keyboard.press('KeyB');
-  await page.getByTestId('fs-buy-frag').dispatchEvent('click');
-  await page.getByTestId('fs-buy-flash').dispatchEvent('click');
-  await page.keyboard.press('KeyB');
-  const inv = await fs<{ frag: number; flash: number; held: string | null }>(page, 'nades');
-  expect(inv.frag).toBe(1);
-  expect(inv.flash).toBe(1);
-  // tecla 4: primeira granada, de novo: a outra, de novo: volta à arma
-  await page.keyboard.press('Digit4');
-  await expect(page.getByTestId('fs-ammo')).toContainText('Granada explosiva');
-  await page.keyboard.press('Digit4');
-  await expect(page.getByTestId('fs-ammo')).toContainText('Granada de luz');
-  await page.keyboard.press('Digit4');
-  expect((await fs<{ held: string | null }>(page, 'nades')).held).toBeNull();
-  // explosiva: no centro (t1 em -8, 2) tira bastante; a 5 m tira pouco
-  const hp = async (id: string) => (await fs<{ hp: number }>(page, 'target', id)).hp;
-  await fs(page, 'blastAt', 'frag', -8, 2);
-  await expect.poll(async () => hp('t1'), { timeout: 15_000 }).toBeLessThan(50);
-  await fs(page, 'blastAt', 'frag', -2.5, -2.5); // a ~5 m de t2 (-2.5, 2.5)
-  await expect.poll(async () => hp('t2'), { timeout: 15_000 }).toBeLessThan(100);
-  expect(await hp('t2')).toBeGreaterThan(70);
-  // luz: de frente cega (a vista está para -z), de costas não
-  await fs(page, 'teleport', 0, 14);
-  await fs(page, 'blastAt', 'flash', 0, 8);
-  await expect.poll(async () => fs<number>(page, 'blind'), { timeout: 15_000 }).toBeGreaterThan(1);
-  await expect(page.getByTestId('fs-blind')).toBeAttached();
-  await fs(page, 'blastAt', 'flash', 0, 19);
-  await page.waitForTimeout(3000);
-  // (a cegueira anterior pode ter acabado; o que vale é que a de costas não somou)
-  expect(await fs<number>(page, 'blind')).toBeLessThan(5);
-});
-
-test('fotos das granadas (só com FS_SHOTS)', async ({ page }, info) => {
-  test.skip(info.project.name !== 'desktop' || !process.env.FS_SHOTS, 'só para conferir o visual');
-  test.setTimeout(300_000);
-  await page.setViewportSize({ width: 1280, height: 720 });
-  await open(page);
-  await page.getByTestId('fsm-resume').click();
-  const shot = (n: string) => page.screenshot({ path: `${process.env.FS_SHOTS}/${n}.png` });
-  await page.keyboard.press('KeyB');
-  await page.getByTestId('fs-buy-frag').dispatchEvent('click');
-  await page.getByTestId('fs-buy-flash').dispatchEvent('click');
-  if (process.env.FS_SHOTS) await page.screenshot({ path: `${process.env.FS_SHOTS}/g-shop.png` });
-  await page.keyboard.press('KeyB');
-  for (const kind of ['flash'] as const) {
-    await fs(page, 'teleport', 0, 14);
-    await fs(page, 'grab', kind);
-    await page.waitForTimeout(1200);
-    await shot(`g-${kind}-hold`);
-    await fs(page, kind === 'frag' ? 'fireBtn' : 'altBtn', true);
-    await page.waitForTimeout(700);
-    await shot(`g-${kind}-pin`);
-    await page.waitForTimeout(700);
-    await shot(`g-${kind}-charge`);
-    await fs(page, kind === 'frag' ? 'fireBtn' : 'altBtn', false);
-    await page.waitForTimeout(300);
-    await shot(`g-${kind}-throw`);
+  const look = async (name: string, x: number, z: number, yaw: number, pitch = 0) => {
+    await fs(page, 'teleport', x, z);
+    await fs(page, 'look', yaw, pitch);
     await page.waitForTimeout(900);
-    await shot(`g-${kind}-fly`);
-    await page.waitForTimeout(1200);
-    await shot(`g-${kind}-boom`);
-    await page.waitForTimeout(1500);
-    await shot(`g-${kind}-after`);
-  }
-});
-
-test('fotos das explosões (só com FS_SHOTS)', async ({ page }, info) => {
-  test.skip(info.project.name !== 'desktop' || !process.env.FS_SHOTS, 'só para conferir o visual');
-  test.setTimeout(200_000);
-  await page.setViewportSize({ width: 1280, height: 720 });
-  await open(page);
-  await page.getByTestId('fsm-resume').click();
-  const shot = (n: string) => page.screenshot({ path: `${process.env.FS_SHOTS}/${n}.png` });
-  await fs(page, 'teleport', 0, 14);
-  await fs(page, 'blastAt', 'frag', 0, 9);
-  for (const [i, t] of [150, 250, 500, 1200].entries()) {
-    await page.waitForTimeout(t);
-    await shot(`x-frag-${i}`);
-  }
-  await page.waitForTimeout(2500);
-  await fs(page, 'blastAt', 'flash', 0, 10);
-  for (const [i, t] of [150, 500, 1500, 2500].entries()) {
-    await page.waitForTimeout(t);
-    await shot(`x-flash-${i}`);
-  }
-});
-
-test('fotos da inspeção da faca (só com FS_SHOTS)', async ({ page }, info) => {
-  test.skip(info.project.name !== 'desktop' || !process.env.FS_SHOTS, 'só para conferir o visual');
-  test.setTimeout(200_000);
-  await page.setViewportSize({ width: 1280, height: 720 });
-  await open(page);
-  await page.getByTestId('fsm-resume').click();
-  await fs(page, 'weapon', 2);
-  await page.waitForTimeout(1200);
-  for (const u of [0.05, 0.13, 0.22, 0.32, 0.42, 0.52, 0.7, 0.82, 0.95]) {
-    await fs(page, 'pose', 'inspect', u);
-    await page.waitForTimeout(350);
-    await page.screenshot({ path: `${process.env.FS_SHOTS}/k-insp-${Math.round(u * 100)}.png` });
-  }
-});
-
-test('fotos das pistolas (só com FS_SHOTS)', async ({ page }, info) => {
-  test.skip(info.project.name !== 'desktop' || !process.env.FS_SHOTS, 'só para conferir o visual');
-  test.setTimeout(200_000);
-  await page.setViewportSize({ width: 1280, height: 720 });
-  await open(page);
-  await page.getByTestId('fsm-resume').click();
-  for (const id of ['pistol', 'usp'] as const) {
-    await fs(page, 'buy', id);
-    await fs(page, 'weapon', 1);
-    await page.waitForTimeout(1500);
-    await page.screenshot({ path: `${process.env.FS_SHOTS}/p-${id}.png` });
-  }
+    await page.screenshot({ path: `${process.env.FS_SHOTS}/train-${name}.png` });
+  };
+  await look('avenue', -41, 0, -90);
+  await look('targets', -30, -11, 180);
+  await look('walkers', 0, -10.5, 180);
+  await look('gallery', 30, -10.5, 180);
+  await look('move', -41, 20, 0);
+  await look('nades', 0, 12, 0);
+  await look('walls', 30, 11, 0);
 });

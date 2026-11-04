@@ -392,6 +392,14 @@ export const FS_DUST_DECALS: readonly FsDustDecal[] = (() => {
   return out;
 })();
 
+/** Nomes das áreas no mapa grande (M): um ponto de chão livre em cada uma. */
+export const FS_DUST_LABELS: readonly { x: number; z: number; text: string }[] = (
+  [
+    [47, 13, 'Bomba A'], [11, 16, 'Bomba B'], [27, 14, 'Base CT'], [16, 57, 'Base TR'], [27, 40, 'Meio'], [11, 40, 'Túneis'],
+    [21, 30, 'Túnel baixo'], [51, 26, 'Long A'], [37, 45, 'Pátio'], [39, 23, 'Passarela'], [38, 12, 'Rampa CT'], [18, 14, 'Portas B'],
+  ] as [number, number, string][]
+).map(([c, r, text]) => ({ x: fsDustCellX(c), z: fsDustCellZ(r), text }));
+
 /** Meio-tamanho do mapa em x e z (para o mapa pequeno e a luz). */
 export const FS_DUST_HALF: readonly [number, number] = [(FS_DUST_COLS * FS_CELL) / 2, (FS_DUST_ROWS * FS_CELL) / 2];
 

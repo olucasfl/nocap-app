@@ -24,6 +24,7 @@ export const FS_ACTIONS = [
   { id: 'grenadeFrag', label: 'Pegar a granada explosiva' },
   { id: 'grenadeFlash', label: 'Pegar a granada de luz' },
   { id: 'scoreboard', label: 'Placar (segurar)' },
+  { id: 'map', label: 'Mapa grande (abre e fecha)' },
 ] as const;
 export type FsAction = (typeof FS_ACTIONS)[number]['id'];
 
@@ -32,7 +33,7 @@ export const FS_CATS: { id: string; label: string; ids: FsAction[] }[] = [
   { id: 'move', label: 'Movimento', ids: ['forward', 'back', 'left', 'right', 'jump', 'crouch', 'walk'] },
   { id: 'weapons', label: 'Armas', ids: ['fire', 'ads', 'reload', 'inspect', 'slot1', 'slot2', 'slot3', 'next', 'drop', 'pickup', 'buy'] },
   { id: 'grenades', label: 'Granadas', ids: ['grenade', 'grenadeFrag', 'grenadeFlash'] },
-  { id: 'general', label: 'Geral', ids: ['scoreboard'] },
+  { id: 'general', label: 'Geral', ids: ['scoreboard', 'map'] },
 ];
 
 export const FS_DEFAULT_BINDS: Record<FsAction, string> = {
@@ -58,6 +59,7 @@ export const FS_DEFAULT_BINDS: Record<FsAction, string> = {
   grenadeFrag: '',
   grenadeFlash: '',
   scoreboard: 'Tab',
+  map: 'KeyM',
 };
 
 export type CrosshairColor = 'white' | 'green' | 'yellow' | 'cyan' | 'pink';

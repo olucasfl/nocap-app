@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { FS_ARENA, FS_TARGETS, type FsGrenadeId, type FsWeaponId } from '@nocap/games';
 import { HeartIcon, SkullIcon, VestIcon, WeaponIcon } from './fs-icons';
-import { bindLabel, CROSS_COLORS, useFsSettings } from './fs-settings';
+import { bindLabel, CROSS_COLORS, fsSettings, useFsSettings } from './fs-settings';
 
 export interface FsPlayerRow {
   id: string;
@@ -40,6 +40,8 @@ export interface MinimapData {
   targets: { x: number; z: number; alive: boolean; armor: number }[];
   /** Paredes e caixas do mapa (padrão: a arena de teste). */
   boxes?: readonly { min: readonly [number, number, number]; max: readonly [number, number, number] }[];
+  /** Nomes das áreas, para o mapa grande. */
+  labels?: readonly { x: number; z: number; text: string }[];
 }
 
 export const clock = (s: number) =>
@@ -348,7 +350,7 @@ export function FsCrosshair({ spreadPx }: { spreadPx: number }) {
 }
 
 /** Placar (Tab): todos os jogadores com abates, mortes, % de cabeça e dano, como o do CS. */
-export function FsScoreboard({ players, timeLeft, title = 'Mata-mata · Arena de teste' }: { players: FsPlayerRow[]; timeLeft: number; title?: string }) {
+export function FsScoreboard({ players, timeLeft, title = 'Treino · Mapa de Treino' }: { players: FsPlayerRow[]; timeLeft: number; title?: string }) {
   const binds = useFsSettings((st) => st.binds);
   const withPts = players.some((p) => p.points !== undefined);
   const rows = [...players].sort((a, b) => (b.points ?? 0) - (a.points ?? 0) || b.kills - a.kills || a.deaths - b.deaths);
@@ -411,3 +413,107 @@ export function FsScoreboard({ players, timeLeft, title = 'Mata-mata · Arena de
 }
 
 export const targetsInfo = FS_TARGETS;
+
+/**
+ * Mapa grande (tecla M): o mapa todo visto de cima, com o norte para cima, os nomes das áreas e uma seta onde você está.
+ * Não mostra ninguém além de você (no mata-mata os inimigos não aparecem).
+ */
+export function FsBigMap({ get, title }: { get: () => MinimapData; title: string }) {
+  const cv = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const c = cv.current!;
+    const g = c.getContext('2d')!;
+    const draw = () => {
+      const d = get();
+      const boxes = d.boxes ?? [];
+      let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9;
+      for (const b of boxes) {
+        x0 = Math.min(x0, b.min[0]);
+        x1 = Math.max(x1, b.max[0]);
+        z0 = Math.min(z0, b.min[2]);
+        z1 = Math.max(z1, b.max[2]);
+      }
+      if (!boxes.length) return;
+      const W = c.clientWidth;
+      const H = c.clientHeight;
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      if (c.width !== Math.round(W * dpr) || c.height !== Math.round(H * dpr)) {
+        c.width = Math.round(W * dpr);
+        c.height = Math.round(H * dpr);
+      }
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      g.clearRect(0, 0, W, H);
+      const pad = 18;
+      const k = Math.min((W - pad * 2) / (x1 - x0), (H - pad * 2) / (z1 - z0));
+      const ox = (W - (x1 - x0) * k) / 2 - x0 * k;
+      const oz = (H - (z1 - z0) * k) / 2 - z0 * k;
+      g.fillStyle = 'rgba(12,18,40,.96)';
+      g.fillRect(ox + x0 * k, oz + z0 * k, (x1 - x0) * k, (z1 - z0) * k);
+      // pisos elevados e vidro primeiro, depois caixotes e as paredes por cima
+      const layer = (b: (typeof boxes)[number]) => (b.max[1] <= 1.1 && b.min[1] <= 0.01 && b.max[0] - b.min[0] > 2.5 && b.max[2] - b.min[2] > 2.5 ? 0 : b.max[1] > 2.6 ? 2 : 1);
+      for (const pass of [0, 1, 2]) {
+        for (const b of boxes) {
+          if (layer(b) !== pass) continue;
+          g.fillStyle = pass === 0 ? 'rgba(120,160,200,.35)' : pass === 1 ? 'rgba(190,130,70,.85)' : 'rgba(205,213,230,.88)';
+          g.fillRect(ox + b.min[0] * k, oz + b.min[2] * k, Math.max(1, (b.max[0] - b.min[0]) * k), Math.max(1, (b.max[2] - b.min[2]) * k));
+        }
+      }
+      g.font = '700 13px Rajdhani, system-ui, sans-serif';
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      for (const l of d.labels ?? []) {
+        const tx = ox + l.x * k;
+        const tz = oz + l.z * k;
+        g.lineWidth = 4;
+        g.strokeStyle = 'rgba(5,8,20,.95)';
+        g.strokeText(l.text, tx, tz);
+        g.fillStyle = '#ffd27a';
+        g.fillText(l.text, tx, tz);
+      }
+      // você: seta apontando para onde olha (yaw 0 = norte, positivo vira para a esquerda)
+      const px = ox + d.x * k;
+      const pz = oz + d.z * k;
+      const pulse = 1 + 0.25 * Math.sin(performance.now() / 260);
+      g.beginPath();
+      g.arc(px, pz, 11 * pulse, 0, Math.PI * 2);
+      g.fillStyle = 'rgba(125,255,154,.25)';
+      g.fill();
+      g.save();
+      g.translate(px, pz);
+      g.rotate((-d.yaw * Math.PI) / 180);
+      g.beginPath();
+      g.moveTo(0, -11);
+      g.lineTo(7, 8);
+      g.lineTo(0, 4);
+      g.lineTo(-7, 8);
+      g.closePath();
+      g.fillStyle = '#7dff9a';
+      g.strokeStyle = '#06210f';
+      g.lineWidth = 2;
+      g.fill();
+      g.stroke();
+      g.restore();
+    };
+    draw();
+    const id = window.setInterval(draw, 50);
+    window.addEventListener('resize', draw);
+    return () => {
+      window.clearInterval(id);
+      window.removeEventListener('resize', draw);
+    };
+  }, [get]);
+  return (
+    <div className="fs-bigmap" role="dialog" aria-label="Mapa" data-testid="fs-bigmap">
+      <header>
+        <b>{title}</b>
+        <span className="mono">Você: seta verde · {bindLabelOf('map')} fecha</span>
+      </header>
+      <canvas ref={cv} />
+    </div>
+  );
+}
+
+const fsSettingsBinds = () => fsSettings().binds;
+function bindLabelOf(action: 'map'): string {
+  return bindLabel(fsSettingsBinds()[action]);
+}
