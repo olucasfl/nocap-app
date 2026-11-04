@@ -210,9 +210,10 @@ export const fsAudio = {
     tone('sine', 180, 90, 0.08, 0.3);
   },
   step() {
-    // passo: pancada surda do pé (grave) + o atrito da sola, num volume que dá para ouvir por cima dos tiros
-    burst({ type: 'lowpass', freq: jit(900, 0.15), q: 0.9, dur: 0.07, peak: 0.2, important: false });
-    burst({ type: 'bandpass', freq: jit(2200, 0.2), q: 1.2, dur: 0.03, peak: 0.07, delay: 0.005, important: false });
+    // passo no chão: pancada surda e curta do calcanhar (grave) + um raspar leve da sola, sem agudo metálico (nada de "lata")
+    burst({ type: 'lowpass', freq: jit(380, 0.2), q: 0.5, dur: 0.07, peak: 0.1, important: false });
+    tone('sine', jit(95, 0.15), 52, 0.08, 0.08, 0);
+    burst({ type: 'lowpass', freq: jit(1500, 0.2), q: 0.4, dur: 0.05, peak: 0.025, delay: 0.012, important: false });
   },
   jump() {
     burst({ type: 'lowpass', freq: 500, dur: 0.06, peak: 0.1 });
