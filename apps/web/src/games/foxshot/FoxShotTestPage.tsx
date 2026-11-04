@@ -5,6 +5,7 @@ import {
   FS_ARENA,
   FS_SPAWN,
   FS_BOTS,
+  FS_BOT_SPEED,
   FS_TARGETS,
   fsBotStep,
   fsNewBot,
@@ -299,6 +300,7 @@ export function FoxShotTestPage() {
     let chargePlayed = false;
     let stepT = 0;
     let acc = 0;
+    const botStepT: Record<string, number> = {};
     let jumpBuf = 0;
     let slowT = 0;
     let fastT = 0;
@@ -714,6 +716,14 @@ export function FoxShotTestPage() {
           if (!targets.get(b.id)!.alive) continue;
           fsBotStep(bs, b, dt);
           scene.setBot(b.id, bs.x, bs.y, bs.z, bs.h, bs.anim, bs.animSpeed);
+          // passos do bot que anda normalmente: som 3D (quem anda no shift ou agachado não faz barulho)
+          if (b.kind === 'walk' && bs.anim === 'run' && bs.y <= 0) {
+            botStepT[b.id] = (botStepT[b.id] ?? 0) - dt * (FS_BOT_SPEED.walk / 3.4);
+            if (botStepT[b.id]! <= 0) {
+              botStepT[b.id] = 0.5;
+              fsAudio.stepAt(bs.x, 0, bs.z, mover.x, mover.z);
+            }
+          }
         }
         for (const t of ALL_TARGETS) {
           const s = targets.get(t.id)!;
@@ -743,6 +753,7 @@ export function FoxShotTestPage() {
         view.pitch + view.rPitch,
         THREE.MathUtils.lerp(scene.fovNow ?? baseFov, fov, Math.min(1, dt * 12)),
       );
+      fsAudio.listener(mover.x, mover.y + fsEyeHeight(mover), mover.z, fsDir(view.yaw + view.rYaw, view.pitch + view.rPitch));
       scene.update(isPaused ? 0 : dt, { speed, adsTarget, airborne: !mover.onGround });
       scene.render();
 

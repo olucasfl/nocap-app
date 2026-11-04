@@ -34,6 +34,11 @@ function ready(kit: NonNullable<ReturnType<typeof audioKit>>, important: boolean
   return important || voices < MAX_VOICES;
 }
 
+/** Saída alternativa enquanto um som posicional é gerado (passos de longe: vão por um panner 3D, com volume pela distância). */
+let override: { node: AudioNode; scale: number } | null = null;
+const outFor = (kit: NonNullable<ReturnType<typeof audioKit>>): AudioNode => override?.node ?? busFor(kit);
+const gainOf = (v: number) => v * (override?.scale ?? 1);
+
 let bus: { ctx: AudioContext; node: AudioNode } | null = null;
 let noiseBuf: { ctx: AudioContext; buf: AudioBuffer } | null = null;
 
@@ -101,9 +106,9 @@ function burst(opts: {
   f.Q.value = opts.q ?? 0.7;
   const g = ctx.createGain();
   g.gain.setValueAtTime(0.0001, t);
-  g.gain.exponentialRampToValueAtTime(opts.peak, t + 0.002);
+  g.gain.exponentialRampToValueAtTime(Math.max(0.0002, gainOf(opts.peak)), t + 0.002);
   g.gain.exponentialRampToValueAtTime(0.0001, t + 0.002 + opts.dur);
-  src.connect(f).connect(g).connect(busFor(kit));
+  src.connect(f).connect(g).connect(outFor(kit));
   track(src, f, g);
   src.start(t, Math.random() * 0.5);
   src.stop(t + opts.dur + 0.05);
@@ -120,9 +125,9 @@ function tone(type: OscillatorType, f0: number, f1: number, dur: number, peak: n
   o.frequency.setValueAtTime(f0, t);
   if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur);
   g.gain.setValueAtTime(0.0001, t);
-  g.gain.exponentialRampToValueAtTime(peak, t + 0.003);
+  g.gain.exponentialRampToValueAtTime(Math.max(0.0002, gainOf(peak)), t + 0.003);
   g.gain.exponentialRampToValueAtTime(0.0001, t + 0.003 + dur);
-  o.connect(g).connect(busFor(kit));
+  o.connect(g).connect(outFor(kit));
   track(o, g);
   o.start(t);
   o.stop(t + dur + 0.05);
@@ -214,6 +219,65 @@ export const fsAudio = {
     burst({ type: 'lowpass', freq: jit(380, 0.2), q: 0.5, dur: 0.07, peak: 0.1, important: false });
     tone('sine', jit(95, 0.15), 52, 0.08, 0.08, 0);
     burst({ type: 'lowpass', freq: jit(1500, 0.2), q: 0.4, dur: 0.05, peak: 0.025, delay: 0.012, important: false });
+  },
+  /** Onde está o ouvinte (a câmera) e para onde olha: usado para o som dos passos dos outros vir da direção certa. */
+  listener(x: number, y: number, z: number, fwd: [number, number, number]) {
+    const kit = audioKit();
+    if (!kit) return;
+    const l = kit.ctx.listener;
+    try {
+      if (l.positionX) {
+        l.positionX.value = x;
+        l.positionY.value = y;
+        l.positionZ.value = z;
+        l.forwardX.value = fwd[0];
+        l.forwardY.value = fwd[1];
+        l.forwardZ.value = fwd[2];
+        l.upX.value = 0;
+        l.upY.value = 1;
+        l.upZ.value = 0;
+      } else {
+        l.setPosition(x, y, z);
+        l.setOrientation(fwd[0], fwd[1], fwd[2], 0, 1, 0);
+      }
+    } catch {
+      /* sem áudio posicional neste navegador */
+    }
+  },
+  /**
+   * Passo de outro jogador em (x, y, z): vem da direção dele (som 3D), mais alto de perto e mais baixo de longe; passa de
+   * ~18 m não se escuta. Quem anda devagar (Shift) ou agachado não chama isto (fica em silêncio).
+   */
+  stepAt(x: number, y: number, z: number, listenerX: number, listenerZ: number) {
+    const kit = audioKit();
+    if (!kit || kit.muted()) return;
+    const d = Math.hypot(x - listenerX, z - listenerZ);
+    if (d > 18) return;
+    const fade = d > 12 ? Math.max(0, (18 - d) / 6) : 1;
+    const p = kit.ctx.createPanner();
+    p.panningModel = 'HRTF';
+    p.distanceModel = 'inverse';
+    p.refDistance = 1.5;
+    p.rolloffFactor = 1.6;
+    p.maxDistance = 40;
+    try {
+      if (p.positionX) {
+        p.positionX.value = x;
+        p.positionY.value = y + 0.1;
+        p.positionZ.value = z;
+      } else p.setPosition(x, y + 0.1, z);
+    } catch {
+      /* sem posição: toca no centro */
+    }
+    p.connect(busFor(kit));
+    // o passo dos outros é mais forte que o seu (que fica na orelha), para dar para ouvir de longe
+    override = { node: p, scale: 3.2 * fade };
+    try {
+      fsAudio.step();
+    } finally {
+      override = null;
+    }
+    window.setTimeout(() => p.disconnect(), 400);
   },
   jump() {
     burst({ type: 'lowpass', freq: 500, dur: 0.06, peak: 0.1 });
