@@ -280,13 +280,14 @@ const RECIPES: Record<string, Recipe> = {
   },
   jump: { len: 0.12, variants: 1, make: (s) => s.burst({ type: 'lowpass', freq: 500, dur: 0.06, peak: 0.1 }) },
   hurt: {
-    // levar tiro: pancada no corpo (grave) + estalo curto
-    len: 0.25,
+    // levar dano: sempre dá para ouvir. Pancada grave no corpo + estalo médio + um "ai" curto descendo (voz da raposa)
+    len: 0.3,
     variants: 1,
     make: (s) => {
-      s.tone('sine', 140, 55, 0.14, 0.5);
-      s.burst({ type: 'bandpass', freq: 1200, q: 1, dur: 0.05, peak: 0.3 });
-      s.burst({ type: 'lowpass', freq: 500, dur: 0.15, peak: 0.2, delay: 0.02 });
+      s.tone('sine', 210, 70, 0.13, 0.85);
+      s.burst({ type: 'bandpass', freq: 2000, q: 1.2, dur: 0.05, peak: 0.55 });
+      s.tone('triangle', 520, 290, 0.16, 0.4, 0.015);
+      s.burst({ type: 'lowpass', freq: 700, dur: 0.14, peak: 0.3, delay: 0.015 });
     },
   },
 };

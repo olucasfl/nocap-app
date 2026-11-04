@@ -58,3 +58,15 @@ export function fsIsBackstab(facing: [number, number], target: [number, number],
 
 /** Esse tiro mata alguém com `hp` de vida? */
 export const fsKills = (d: FsDamage, hp = FS_HP) => d.hp >= hp;
+
+/**
+ * Levar um tiro desacelera por um instante (como no CS): quanto mais dano, mais devagar e mais tempo, mas sem travar.
+ * `mul` é o multiplicador de velocidade no momento do tiro; ele volta a 1 em `dur` segundos, em linha reta.
+ */
+export function fsFlinch(hp: number): { mul: number; dur: number } {
+  const d = Math.max(0, hp);
+  return { mul: Math.max(0.62, 0.86 - d / 160), dur: Math.min(0.7, 0.3 + d / 150) };
+}
+
+/** Multiplicador de velocidade `elapsed` segundos depois do tiro. */
+export const fsFlinchAt = (f: { mul: number; dur: number }, elapsed: number) => (elapsed >= f.dur ? 1 : f.mul + (1 - f.mul) * Math.max(0, elapsed / f.dur));

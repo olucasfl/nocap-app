@@ -18,6 +18,8 @@ import {
   fsNewShooter,
   fsShooterStep,
   fsDamage,
+  fsFlinch,
+  fsFlinchAt,
   FS_TARGETS,
   fsBotStep,
   fsNewBot,
@@ -395,6 +397,9 @@ export function FoxShotTestPage() {
     let heavyAt = -1e9;
     /** Tremor da câmera ao levar tiro (graus); decai sozinho. */
     let shake = 0;
+    /** Tiro recebido desacelera um instante (como no CS). */
+    let flinch = { mul: 1, dur: 0 };
+    let flinchAt = -1e9;
     /** Dano recebido na última 1,2 s (para saber quando é "muito dano"). */
     let recent: { t: number; d: number }[] = [];
     const pushFeedDeath = (killer: string, weapon: FsWeaponId | FsGrenadeId, head: boolean) => {
@@ -429,6 +434,10 @@ export function FoxShotTestPage() {
     function hurtPlayer(hp: number, armorLoss: number, head: boolean, killer: string, icon: FsWeaponId | FsGrenadeId) {
       if (clock < deadUntil) return;
       me.hp -= hp;
+      if (hp > 0) {
+        flinch = fsFlinch(hp);
+        flinchAt = clock;
+      }
       me.armor = Math.max(0, me.armor - armorLoss);
       hurtKey++;
       hurtAt = performance.now();
@@ -890,7 +899,7 @@ export function FoxShotTestPage() {
         if (inp.grenadeFlash) handle(loadout.selectGrenade('flash'));
 
         const speed0 = speed;
-        const mul = loadout.weapon.moveMul * (adsOn ? 0.65 : 1);
+        const mul = loadout.weapon.moveMul * (adsOn ? 0.65 : 1) * fsFlinchAt(flinch, clock - flinchAt);
         acc += dt;
         // o clique de pular vale por 0,15 s: apertar um pouco antes de pousar já pula no pouso (bunny hop sem segurar a tecla)
         if (inp.jump) jumpBuf = 0.15;

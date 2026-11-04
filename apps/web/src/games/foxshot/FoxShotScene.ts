@@ -3,7 +3,35 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { FsHands, KNIFE_BACKSTAB, KNIFE_HOLD, KNIFE_INSPECT, KNIFE_SLASH, KNIFE_SLASH_B, KNIFE_STAB, makeKnife, sampleKnife, type KnifeKey } from './FsHands';
-import { FS_ARENA, FS_BOTS, FS_MOVE_SIGNS, FS_TARGETS, type FsBox, type FsGrenadeId, type FsWeaponId } from '@nocap/games';
+import {
+  FS_ARENA,
+  FS_BOTS,
+  FS_DUST_BOXES,
+  FS_DUST_HALF,
+  FS_DUST_ZONES,
+  FS_MOVE_SIGNS,
+  FS_TARGETS,
+  fsDustRectWorld,
+  type FsBotSpec,
+  type FsBox,
+  type FsGrenadeId,
+  type FsTargetSpec,
+  type FsWeaponId,
+} from '@nocap/games';
+
+/** O mundo que a cena monta: a arena de teste (alvos, bots de treino, placas) ou o mapa Duna (com os bots do mata-mata). */
+export interface FsWorld {
+  style: 'test' | 'dust';
+  boxes: readonly FsBox[];
+  targets: readonly FsTargetSpec[];
+  bots: readonly FsBotSpec[];
+  /** Bots do mata-mata: nascem em (x, z) e não mostram nome. */
+  dm: readonly { id: string; x: number; z: number }[];
+  /** Meio-tamanho do mapa (x, z). */
+  half: readonly [number, number];
+}
+export const FS_WORLD_TEST: FsWorld = { style: 'test', boxes: FS_ARENA, targets: FS_TARGETS, bots: FS_BOTS, dm: [], half: [20, 20] };
+export const fsWorldDust = (dm: FsWorld['dm']): FsWorld => ({ style: 'dust', boxes: FS_DUST_BOXES, targets: [], bots: [], dm, half: FS_DUST_HALF });
 
 export type Quality = 'low' | 'mid' | 'high';
 
@@ -162,6 +190,18 @@ function materials(): Record<FsBox['mat'] | 'ground', THREE.MeshStandardMaterial
     g.lineWidth = 3;
     g.strokeRect(0, 0, TEX, TEX);
   });
+  const brick = canvasTex((g) => {
+    g.fillStyle = '#7a4a36';
+    g.fillRect(0, 0, TEX, TEX);
+    for (let r = 0; r < 8; r++) {
+      for (let c = -1; c < 4; c++) {
+        const x = c * 64 + (r % 2 ? 32 : 0);
+        g.fillStyle = (r * 7 + c * 3) % 3 === 0 ? '#8a5640' : (r + c) % 2 ? '#6e4230' : '#7e4e39';
+        g.fillRect(x + 2, r * 32 + 2, 60, 28);
+      }
+    }
+    noise(g, 45);
+  });
   const mk = (map: THREE.Texture, rough: number, metalness = 0) =>
     new THREE.MeshStandardMaterial({ map, roughness: rough, metalness });
   return {
@@ -170,6 +210,7 @@ function materials(): Record<FsBox['mat'] | 'ground', THREE.MeshStandardMaterial
     wood: mk(wood, 0.8),
     metal: mk(metal, 0.5, 0.5),
     floorpad: mk(ground, 0.95),
+    brick: mk(brick, 0.9),
     ground: mk(ground, 0.95),
   };
 }
@@ -325,7 +366,7 @@ export class FoxShotScene {
   private view = { fov: 75 };
   usingRef = { ak: false, pistol: false, sniper: false, knife: false, smg: false, shotgun: false, m4: false, usp: false } as Record<FsWeaponId, boolean>;
 
-  constructor(canvas: HTMLCanvasElement) {
+  constructor(canvas: HTMLCanvasElement, private world: FsWorld = FS_WORLD_TEST) {
     this.renderer = new THREE.WebGLRenderer({
       canvas,
       antialias: true,
@@ -380,6 +421,7 @@ export class FoxShotScene {
     this.sun.shadow.bias = -0.0004;
     this.sun.shadow.normalBias = 0.04;
     this.scene.add(this.sun);
+    this.scene.add(this.sun.target);
     this.scene.add(this.cam);
 
     this.vmScene.add(new THREE.HemisphereLight(0xe6efff, 0x6a5a48, 1.35));
@@ -417,12 +459,15 @@ export class FoxShotScene {
 
   private buildArena() {
     const mats = materials();
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), mats.ground);
+    const dust = this.world.style === 'dust';
+    const gsize = dust ? Math.max(...this.world.half) * 2 + 60 : 80;
+    const rep = (gsize / 80) * 14;
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(gsize, gsize), mats.ground);
     ground.rotation.x = -Math.PI / 2;
-    (ground.material as THREE.MeshStandardMaterial).map!.repeat.set(14, 14);
+    (ground.material as THREE.MeshStandardMaterial).map!.repeat.set(rep, rep);
     ground.receiveShadow = true;
     this.scene.add(ground);
-    for (const b of FS_ARENA) {
+    for (const b of this.world.boxes) {
       const sx = b.max[0] - b.min[0],
         sy = b.max[1] - b.min[1],
         sz = b.max[2] - b.min[2];
@@ -439,7 +484,48 @@ export class FoxShotScene {
       this.scene.add(m);
     }
     for (const m of Object.values(mats)) if (m.map) m.map.repeat.set(1, 1);
-    (mats.ground.map as THREE.Texture).repeat.set(14, 14);
+    (mats.ground.map as THREE.Texture).repeat.set(rep, rep);
+    if (dust) this.buildDustDecor();
+  }
+
+  /** Marcas no chão do Duna: A laranja e B azul nos pátios, a cor de cada equipe nas bases (só decoração, sem colisão). */
+  private buildDustDecor() {
+    const paint = (id: string, color: string, letter: string, inset: number) => {
+      const z = FS_DUST_ZONES.find((q) => q.id === id)!;
+      const r = fsDustRectWorld(z);
+      const w = r.x1 - r.x0 - inset * 2;
+      const d = r.z1 - r.z0 - inset * 2;
+      const tex = canvasTex((g) => {
+        g.clearRect(0, 0, TEX, TEX);
+        g.fillStyle = color;
+        g.globalAlpha = 0.33;
+        g.fillRect(0, 0, TEX, TEX);
+        g.globalAlpha = 0.85;
+        g.strokeStyle = color;
+        g.lineWidth = 10;
+        g.strokeRect(5, 5, TEX - 10, TEX - 10);
+        if (letter) {
+          g.fillStyle = color;
+          g.font = '900 150px system-ui, sans-serif';
+          g.textAlign = 'center';
+          g.textBaseline = 'middle';
+          g.fillText(letter, TEX / 2, TEX / 2 + 8);
+        }
+      });
+      tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+      const m = new THREE.Mesh(
+        new THREE.PlaneGeometry(w, d),
+        new THREE.MeshStandardMaterial({ map: tex, transparent: true, roughness: 1, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }),
+      );
+      m.rotation.x = -Math.PI / 2;
+      m.position.set((r.x0 + r.x1) / 2, 0.012, (r.z0 + r.z1) / 2);
+      m.receiveShadow = true;
+      this.scene.add(m);
+    };
+    paint('A', '#ff7d26', 'A', 2);
+    paint('B', '#2f7bff', 'B', 2);
+    paint('CT', '#4aa3ff', 'CT', 2.2);
+    paint('TR', '#ff9a3a', 'TR', 2.6);
   }
 
   /** Carrega raposa e armas. Tenta primeiro os modelos de referência (se existirem) e cai nos modelos do jogo. */
@@ -577,24 +663,28 @@ export class FoxShotScene {
       this.scene.add(root);
       this.foxes.set(id, { root, mixer, actions, label, hitT: 0, anim: 'idle', vel: new THREE.Vector3(), fall: 0, dead: false, home: new THREE.Vector3(x, 0, z), turn: null, yaw0: yaw });
     };
-    for (const spec of FS_TARGETS) {
+    for (const spec of this.world.targets) {
       // olham para a posição de nascimento do jogador (0, 14)
       makeFox(spec.id, spec.x, spec.z, Math.atan2(-(14 - spec.z), 0 - spec.x), spec.label, spec.armor > 0 ? '#2f5bff' : '#c4571a');
     }
-    for (const spec of FS_BOTS) {
+    for (const d of this.world.dm) {
+      makeFox(d.id, d.x, d.z, 0, '', '#1f7a3a');
+      this.foxes.get(d.id)!.label.visible = false;
+    }
+    for (const spec of this.world.bots) {
       makeFox(spec.id, spec.x, spec.z, 0, spec.label, '#1f7a3a');
       // o nome do movimento fica na placa da raia, não em cima do bot
       this.foxes.get(spec.id)!.label.visible = false;
     }
     // placas da área de teste de movimento
-    for (const sg of FS_MOVE_SIGNS) {
+    for (const sg of this.world.style === 'test' ? FS_MOVE_SIGNS : []) {
       const sign = labelSprite(sg.text, '#1b1535');
       sign.position.set(sg.x, sg.y, sg.z);
       sign.scale.set(sg.text.length > 20 ? 5.2 : 2.4, sg.text.length > 20 ? 0.9 : 0.6, 1);
       this.scene.add(sign);
     }
     // placas da faixa de bots
-    for (const spec of FS_BOTS) {
+    for (const spec of this.world.bots) {
       if (spec.kind === 'shoot') continue;
       const sign = labelSprite(spec.label, '#1b1535');
       sign.position.set(-19.2, 1.5, spec.z);
@@ -640,6 +730,12 @@ export class FoxShotScene {
   hideViewmodel = false;
   setView(x: number, y: number, z: number, yawDeg: number, pitchDeg: number, fov: number, rollDeg = 0) {
     this.cam.position.set(x, y, z);
+    if (this.world.style === 'dust') {
+      // a sombra cobre só o que está perto de quem joga: o sol acompanha a câmera
+      this.sun.target.position.set(x, 0, z);
+      this.sun.position.set(x - 18, 30, z + 14);
+      this.sun.target.updateMatrixWorld();
+    }
     this.cam.rotation.set((pitchDeg * Math.PI) / 180, (yawDeg * Math.PI) / 180, (rollDeg * Math.PI) / 180, 'YXZ');
     if (Math.abs(fov - this.view.fov) > 0.01) {
       this.view.fov = fov;
@@ -1359,7 +1455,7 @@ export class FoxShotScene {
     for (const a of Object.values(f.actions)) a.stop();
     f.actions.idle?.reset().setEffectiveWeight(1).play();
     f.anim = 'idle';
-    f.label.visible = !FS_BOTS.some((b) => b.id === id);
+    f.label.visible = !this.world.bots.some((b) => b.id === id) && !this.world.dm.some((b) => b.id === id);
   }
 
   // ---- efeitos

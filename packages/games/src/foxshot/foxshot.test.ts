@@ -857,6 +857,7 @@ import {
   FS_DUST_BOXES, FS_DUST_COLS, FS_DUST_GRID, FS_DUST_HOTSPOTS, FS_DUST_SPAWNS, FS_DUST_ZONES, FS_DUST_ROWS,
   fsDustCol, fsDustPath, fsDustRow, fsDustWalkable, fsDustZoneAt, fsDustCellX, fsDustCellZ, fsPickSpawn, fsDustLineWalkable,
   fsDmNew, fsDmStep, fsDmFlash, type FsDmFoe, type FsDmAction,
+  fsFlinch, fsFlinchAt,
   FS_MATCH_BOTS, fsMatchConfig, fsMatchResult, fsMatchScore, FS_MATCH_MINUTES,
 } from './index';
 
@@ -1073,5 +1074,20 @@ describe('Bots do mata-mata', () => {
     const b = fsDmNew('b', x, z, 0, 'shotgun', rng);
     const acts = run(b, [{ id: 'p', x: fx, y: 0, z: fz, crouch: 0, noisy: false }], 1.5);
     expect(acts.some((a) => a.type === 'fire')).toBe(false);
+  });
+});
+
+describe('Tiro recebido desacelera', () => {
+  it('mais dano, mais lento, mas nunca abaixo de 62% da velocidade', () => {
+    expect(fsFlinch(10).mul).toBeGreaterThan(fsFlinch(40).mul);
+    expect(fsFlinch(500).mul).toBeCloseTo(0.62, 5);
+    expect(fsFlinch(0).mul).toBeLessThan(0.9);
+  });
+  it('volta à velocidade cheia no fim da duração', () => {
+    const f = fsFlinch(30);
+    expect(fsFlinchAt(f, 0)).toBeCloseTo(f.mul, 5);
+    expect(fsFlinchAt(f, f.dur / 2)).toBeGreaterThan(f.mul);
+    expect(fsFlinchAt(f, f.dur)).toBe(1);
+    expect(f.dur).toBeLessThanOrEqual(0.7);
   });
 });
