@@ -15,10 +15,17 @@ const phone = (): boolean => {
 /** Vozes tocando ao mesmo tempo: passando do limite, sons de pouca importância (passos) são descartados para não embolar nem estourar. */
 let voices = 0;
 const MAX_VOICES = 28;
-function track(node: AudioScheduledSourceNode) {
+function track(node: AudioScheduledSourceNode, ...chain: AudioNode[]) {
   voices++;
   node.addEventListener('ended', () => {
     voices = Math.max(0, voices - 1);
+    // solta os nós usados (senão sobram milhares ligados e o som vai ficando abafado e falhando)
+    try {
+      node.disconnect();
+      for (const n of chain) n.disconnect();
+    } catch {
+      /* já solto */
+    }
   });
 }
 function ready(kit: NonNullable<ReturnType<typeof audioKit>>, important: boolean): boolean {
@@ -34,11 +41,11 @@ function busFor(kit: NonNullable<ReturnType<typeof audioKit>>): AudioNode {
   if (!bus || bus.ctx !== kit.ctx) {
     const small = phone();
     const comp = kit.ctx.createDynamicsCompressor();
-    comp.threshold.value = small ? -22 : -12;
-    comp.knee.value = 20;
-    comp.ratio.value = small ? 10 : 6;
-    comp.attack.value = 0.002;
-    comp.release.value = 0.15;
+    comp.threshold.value = small ? -16 : -4;
+    comp.knee.value = 24;
+    comp.ratio.value = small ? 6 : 3;
+    comp.attack.value = 0.006;
+    comp.release.value = 0.25;
     if (small) {
       const hp = kit.ctx.createBiquadFilter();
       hp.type = 'highpass';
@@ -97,7 +104,7 @@ function burst(opts: {
   g.gain.exponentialRampToValueAtTime(opts.peak, t + 0.002);
   g.gain.exponentialRampToValueAtTime(0.0001, t + 0.002 + opts.dur);
   src.connect(f).connect(g).connect(busFor(kit));
-  track(src);
+  track(src, f, g);
   src.start(t, Math.random() * 0.5);
   src.stop(t + opts.dur + 0.05);
 }
@@ -116,7 +123,7 @@ function tone(type: OscillatorType, f0: number, f1: number, dur: number, peak: n
   g.gain.exponentialRampToValueAtTime(peak, t + 0.003);
   g.gain.exponentialRampToValueAtTime(0.0001, t + 0.003 + dur);
   o.connect(g).connect(busFor(kit));
-  track(o);
+  track(o, g);
   o.start(t);
   o.stop(t + dur + 0.05);
 }
@@ -149,10 +156,10 @@ export const fsAudio = {
   },
   dry() {
     // gatilho puxado sem bala: o "clique" do cão batendo no vazio, bem audível (estalo agudo + pancada metálica + eco curto)
-    burst({ type: 'highpass', freq: 1500, dur: 0.022, peak: 0.9 });
-    burst({ type: 'bandpass', freq: 650, q: 3, dur: 0.06, peak: 0.8, delay: 0.004 });
-    tone('triangle', 2300, 1500, 0.05, 0.22, 0.003);
-    burst({ type: 'highpass', freq: 1800, dur: 0.012, peak: 0.35, delay: 0.07 });
+    burst({ type: 'highpass', freq: 1500, dur: 0.022, peak: 0.5 });
+    burst({ type: 'bandpass', freq: 650, q: 3, dur: 0.06, peak: 0.45, delay: 0.004 });
+    tone('triangle', 2300, 1500, 0.05, 0.12, 0.003);
+    burst({ type: 'highpass', freq: 1800, dur: 0.012, peak: 0.2, delay: 0.07 });
   },
   /** Acabou a munição: dois cliques descendo, depois do último tiro. */
   empty() {
@@ -204,8 +211,8 @@ export const fsAudio = {
   },
   step() {
     // passo: pancada surda do pé (grave) + o atrito da sola, num volume que dá para ouvir por cima dos tiros
-    burst({ type: 'lowpass', freq: jit(900, 0.15), q: 0.9, dur: 0.07, peak: 0.55, important: false });
-    burst({ type: 'bandpass', freq: jit(2200, 0.2), q: 1.2, dur: 0.03, peak: 0.16, delay: 0.005, important: false });
+    burst({ type: 'lowpass', freq: jit(900, 0.15), q: 0.9, dur: 0.07, peak: 0.2, important: false });
+    burst({ type: 'bandpass', freq: jit(2200, 0.2), q: 1.2, dur: 0.03, peak: 0.07, delay: 0.005, important: false });
   },
   jump() {
     burst({ type: 'lowpass', freq: 500, dur: 0.06, peak: 0.1 });
