@@ -553,7 +553,8 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
     const frame = (now: number) => {
       if (dead) return;
       raf = requestAnimationFrame(frame);
-      const dt = Math.min(0.05, (now - last) / 1000);
+      const dtReal = Math.min(0.25, (now - last) / 1000);
+      const dt = Math.min(0.05, dtReal);
       last = now;
       fps += (1 / Math.max(dt, 1e-3) - fps) * 0.05;
       const st = fsSettings();
@@ -612,7 +613,8 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           }
         }
         if (inp.jump) jumpBuf = 0.15;
-        acc += dt;
+        // o relógio da simulação segue o tempo real (o servidor não espera): numa tela lenta roda vários passos por quadro
+        acc += dtReal;
         let reloadOnce = inp.reload;
         let inspectOnce = inp.inspect;
         while (acc >= TICK) {
