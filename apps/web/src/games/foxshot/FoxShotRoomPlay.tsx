@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import {
   FS_DUST_SOLIDS,
+  FS_TEAMS_ACTIVE,
+  FsIntel,
   FS_DUST_MARKS,
   FS_GRENADES,
   FS_WEAPONS,
@@ -35,7 +37,7 @@ import { FsControls } from './fs-controls';
 import { bindLabel, fsSettings, useFsSettings } from './fs-settings';
 import { FsMenu } from './FsMenu';
 import { FsShop } from './FsShop';
-import { FsBigMap, FsAmmo, FsCrosshair, FsKillFeed, FsMinimap, FsScoreboard, FsTopBar, FsVitals, type FeedItem, type FsPlayerRow, type MinimapData } from './FsHud';
+import { FsBigMap, FsAmmo, FsCrosshair, FsKillFeed, FsMinimap, FsScoreboard, FsTopBar, FsVitals, type FeedItem, type FsIntelDot, type FsPlayerRow, type MinimapData } from './FsHud';
 import { FoxShotRoomFinal } from './FoxShotRoomFinal';
 import './foxshot.css';
 import './counterfox-hub.css';
@@ -318,6 +320,9 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
     let last = performance.now();
     let forced: { fwd: number; strafe: number } | null = null;
     const killFrom = new Map<string, [number, number]>();
+    const intel = new FsIntel();
+    let intelT = 0;
+    let intelDots: FsIntelDot[] = [];
 
     const showMarker = (kind: 'body' | 'head' | 'kill' | 'armor', text: string) => setMarker({ key: ++markerKey, kind, text });
     const pushFeed = (it: Omit<FeedItem, 'key'>) => {
@@ -410,7 +415,8 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       for (const [key, rm] of remotes) {
         const idx = Number(key.slice(1));
         const who = rosterNow()[idx];
-        const ally = !!who && who.id !== meId && myBit !== undefined && rm.teamBit === myBit;
+        // hoje é todos contra todos: sem aliados (nome em cima da cabeça e silhueta por trás da parede só quando houver times)
+        const ally = FS_TEAMS_ACTIVE && !!who && who.id !== meId && myBit !== undefined && rm.teamBit === myBit;
         if (rm.ally !== ally || (ally && rm.allyName !== who?.name)) {
           rm.ally = ally;
           rm.allyName = who?.name;
@@ -446,6 +452,8 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       const pz = mover.z;
       if (e.k === 'shot') {
         if (e.by === meId) return;
+        // escutei o tiro de alguém (ao alcance do som da arma): aparece no radar e vai atualizando enquanto atira
+        if (isPlayerNow() && e.by !== meId) intel.hearShot(e.by, e.from[0], e.from[2], e.w, mover.x, mover.z, performance.now() / 1000, rows.get(e.by)?.yaw ?? 0);
         const o = new THREE.Vector3(e.from[0], e.from[1], e.from[2]);
         scene.tracer(o, new THREE.Vector3(e.to[0], e.to[1], e.to[2]), e.w);
         scene.puff(o, 0xffd27a, 0.25, 0.1);
@@ -907,7 +915,34 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         }
       }
 
-      mini.current = { x: mover.x, z: mover.z, yaw: view.yaw, targets: [], boxes: ARENA, labels: world.labels, marks: FS_DUST_MARKS };
+      // radar como o do CS: inimigos vistos ou escutados (e os aliados, quando houver times)
+      intelT += dt;
+      if (intelT > 0.06) {
+        intelT = 0;
+        const nowS = performance.now() / 1000;
+        if (player && alive) {
+          const mineRow = rows.get(meId);
+          const myTeam = ((mineRow?.flags ?? 0) & 128) !== 0 ? 1 : 0;
+          const others = rosterNow().flatMap((r, idx) => {
+            if (r.id === meId) return [];
+            const row = rows.get(r.id);
+            const rm = remotes.get(`s${idx}`);
+            if (!row || !rm) return [];
+            const b = rm.buf;
+            const a1 = b[b.length - 1];
+            const a0 = b[Math.max(0, b.length - 4)];
+            const sp = a1 && a0 && a1.t > a0.t ? Math.hypot(a1.x - a0.x, a1.z - a0.z) / ((a1.t - a0.t) / 1000) : 0;
+            return [{ id: r.id, x: row.x, y: row.y, z: row.z, yaw: row.yaw, alive: (row.flags & 1) !== 0, team: ((row.flags & 128) !== 0 ? 1 : 0) as 0 | 1, loud: sp > 3.0 && row.crouch < 0.5 }];
+          });
+          intel.step(nowS, { x: mover.x, y: mover.y, z: mover.z, yaw: view.yaw, eye: mover.y + fsEyeHeight(mover), team: myTeam as 0 | 1 }, others, ARENA);
+          intelDots = intel.view(nowS).map((m) => ({ x: m.x, z: m.z, yaw: m.yaw, kind: m.kind, alpha: m.alpha, live: m.live }));
+          if (FS_TEAMS_ACTIVE) for (const o of others) if (o.team === myTeam && o.alive) intelDots.push({ x: o.x, z: o.z, yaw: o.yaw, kind: 'ally', alpha: 1, live: true, name: nameOf(o.id) });
+        } else {
+          intel.clear();
+          intelDots = [];
+        }
+      }
+      mini.current = { x: mover.x, z: mover.z, yaw: view.yaw, targets: [], boxes: ARENA, labels: world.labels, marks: FS_DUST_MARKS, intel: intelDots };
       if (player) setBoardState(inp.board && !isPaused);
 
       hudT += dt;

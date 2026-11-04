@@ -50,6 +50,98 @@ export interface MinimapData {
   labels?: readonly { x: number; z: number; text: string }[];
   /** As bombas A e B e as bases terrorista e contra-terrorista (só no Duna), nos dois mapas. */
   marks?: readonly FsMapMark[];
+  /** O radar como o do CS: aliados sempre (azul) e inimigos vistos ou escutados (vermelho, sumindo devagar). */
+  intel?: readonly FsIntelDot[];
+}
+
+export interface FsIntelDot {
+  x: number;
+  z: number;
+  yaw: number;
+  kind: 'ally' | 'seen' | 'shot' | 'step';
+  alpha: number;
+  live: boolean;
+  name?: string;
+}
+
+/**
+ * Pontos do radar: aliado = azul com a direção para onde olha; inimigo visto = vermelho cheio com anel branco; tiro escutado =
+ * vermelho com ondas se espalhando enquanto atira; passos escutados = vermelho menor com anel tracejado. Fica no último lugar e some devagar.
+ */
+function drawIntel(g: CanvasRenderingContext2D, dots: readonly FsIntelDot[], at: (x: number, z: number) => [number, number], big: boolean, rot = 0) {
+  const R = big ? 8 : 4.6;
+  const t = performance.now() / 1000;
+  for (const d of dots) {
+    const [x, z] = at(d.x, d.z);
+    g.save();
+    g.globalAlpha = Math.max(0, Math.min(1, d.alpha));
+    g.translate(x, z);
+    if (d.kind === 'ally') {
+      g.save();
+      g.rotate(-(d.yaw * Math.PI) / 180);
+      g.beginPath();
+      g.moveTo(0, -R * 1.9);
+      g.lineTo(R * 0.95, R * 0.3);
+      g.lineTo(-R * 0.95, R * 0.3);
+      g.closePath();
+      g.fillStyle = '#4da3ff';
+      g.fill();
+      g.restore();
+      g.beginPath();
+      g.arc(0, 0, R, 0, Math.PI * 2);
+      g.fillStyle = '#2f7bff';
+      g.fill();
+      g.lineWidth = big ? 2.4 : 1.5;
+      g.strokeStyle = '#ffffff';
+      g.stroke();
+      if (big && d.name) {
+        g.rotate(rot);
+        g.font = '700 13px Rajdhani, system-ui, sans-serif';
+        g.textAlign = 'center';
+        g.textBaseline = 'middle';
+        g.lineWidth = 4;
+        g.lineJoin = 'round';
+        g.strokeStyle = 'rgba(5,8,20,.95)';
+        g.strokeText(d.name, 0, -R - 9);
+        g.fillStyle = '#9cc4ff';
+        g.fillText(d.name, 0, -R - 9);
+      }
+    } else {
+      if (d.kind === 'shot') {
+        // ondas de som enquanto o tiro continua chegando
+        for (const k of d.live ? [0, 0.5] : [0]) {
+          const p = (t * 1.6 + k) % 1;
+          g.beginPath();
+          g.arc(0, 0, R + p * R * 3, 0, Math.PI * 2);
+          g.lineWidth = big ? 2.4 : 1.4;
+          g.strokeStyle = `rgba(255,70,70,${(1 - p) * 0.9})`;
+          g.stroke();
+        }
+      }
+      if (d.kind === 'seen') {
+        g.save();
+        g.rotate(-(d.yaw * Math.PI) / 180);
+        g.beginPath();
+        g.moveTo(0, -R * 1.9);
+        g.lineTo(R * 0.95, R * 0.3);
+        g.lineTo(-R * 0.95, R * 0.3);
+        g.closePath();
+        g.fillStyle = '#ff3b3b';
+        g.fill();
+        g.restore();
+      }
+      g.beginPath();
+      g.arc(0, 0, d.kind === 'step' ? R * 0.8 : R, 0, Math.PI * 2);
+      g.fillStyle = '#ff3030';
+      g.fill();
+      g.lineWidth = big ? 2.4 : 1.5;
+      g.strokeStyle = d.kind === 'step' ? 'rgba(255,255,255,.7)' : '#ffffff';
+      if (d.kind === 'step') g.setLineDash([3, 2]);
+      g.stroke();
+      g.setLineDash([]);
+    }
+    g.restore();
+  }
 }
 
 export interface FsMapMark {
@@ -256,6 +348,7 @@ export function FsMinimap({ get }: { get: () => MinimapData }) {
       g.textBaseline = 'middle';
       if (d.marks) drawMarks(g, d.marks, (x, z) => [x * k, z * k], k, false, -yaw, 'area');
       if (d.marks) drawMarks(g, d.marks, (x, z) => [x * k, z * k], k, false, -yaw, 'text');
+      if (d.intel) drawIntel(g, d.intel, (x, z) => [x * k, z * k], false, -yaw);
       for (const t of d.targets) {
         if (!t.alive) continue;
         g.beginPath();
@@ -567,6 +660,7 @@ export function FsBigMap({ get, title }: { get: () => MinimapData; title: string
         g.fillText(l.text, tx, tz);
       }
       if (d.marks) drawMarks(g, d.marks, at, k, true, 0, 'text');
+      if (d.intel) drawIntel(g, d.intel, at, true, 0);
       // você: seta apontando para onde olha (yaw 0 = norte, positivo vira para a esquerda)
       const px = ox + d.x * k;
       const pz = oz + d.z * k;

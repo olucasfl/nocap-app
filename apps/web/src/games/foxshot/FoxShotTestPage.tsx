@@ -3,6 +3,8 @@ import { Link } from '@tanstack/react-router';
 import * as THREE from 'three';
 import {
   FS_DUST_MARKS,
+  FS_TEAMS_ACTIVE,
+  FsIntel,
   FS_DUST_SOLIDS,
   FS_SPAWN,
   fsAssister,
@@ -76,6 +78,7 @@ import {
   FsTopBar,
   FsVitals,
   type FeedItem,
+  type FsIntelDot,
   type FsSlotInfo,
   type FsPlayerRow,
   type MinimapData,
@@ -421,6 +424,10 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
 
     const botSt = new Map(world.bots.map((b) => [b.id, fsNewBot(b)]));
     const brains = new Map<string, FsDmBrain>();
+    // radar como o do CS: inimigos vistos ou escutados; hoje todos são inimigos (os aliados só quando houver times)
+    const intel = new FsIntel();
+    let intelT = 0;
+    let intelDots: FsIntelDot[] = [];
     const dmgLog = new Map<string, FsDamageEntry[]>();
     const logDamage = (victim: string, attacker: string) => {
       const l = dmgLog.get(victim) ?? [];
@@ -834,6 +841,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       }
       scene.puff(o, 0xffd27a, 0.25, 0.1);
       fsAudio.shotAt(a.weapon, b.mover.x, 1, b.mover.z, mover.x, mover.z);
+      if (match && clock >= deadUntil) intel.hearShot(b.id, b.mover.x, b.mover.z, a.weapon, mover.x, mover.z, performance.now() / 1000, b.yaw);
       for (const [vid, d] of pool) {
         curMods = { wall: d.wall, noscope: false, blind: false };
         dealDamage(vid, b.id, d.hp, d.armorLoss, d.head, a.weapon, b.mover.x, b.mover.z);
@@ -1486,10 +1494,32 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         }
       }
 
+      if (match) {
+        intelT += dt;
+        if (intelT > 0.06) {
+          intelT = 0;
+          const nowS = performance.now() / 1000;
+          if (!playerDead) {
+            const others = dmSpecs.flatMap((d, i) => {
+              const b = brains.get(d.id);
+              const st = targets.get(d.id);
+              if (!b || !st) return [];
+              return [{ id: d.id, x: b.mover.x, y: b.mover.y, z: b.mover.z, yaw: b.yaw, alive: st.alive, team: (i % 2 === 0 ? 1 : 0) as 0 | 1, loud: b.speed > 3.4 && b.mover.crouchK < 0.5 }];
+            });
+            intel.step(nowS, { x: mover.x, y: mover.y, z: mover.z, yaw: view.yaw, eye: mover.y + fsEyeHeight(mover), team: 0 }, others, ARENA);
+            intelDots = intel.view(nowS).map((m) => ({ x: m.x, z: m.z, yaw: m.yaw, kind: m.kind, alpha: m.alpha, live: m.live }));
+            if (FS_TEAMS_ACTIVE) for (const o of others) if (o.team === 0 && o.alive) intelDots.push({ x: o.x, z: o.z, yaw: o.yaw, kind: 'ally', alpha: 1, live: true, name: nameOf(o.id) });
+          } else {
+            intel.clear();
+            intelDots = [];
+          }
+        }
+      }
       mini.current = {
         x: mover.x,
         z: mover.z,
         yaw: view.yaw,
+        intel: match ? intelDots : undefined,
         boxes: ARENA,
         labels: world.labels,
         marks: world.style === 'dust' ? FS_DUST_MARKS : undefined,
@@ -1578,7 +1608,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         dmSpecs.forEach((d, i) => {
           scene.setTeam(d.id, i % 2 === 0 ? 't' : 'ct');
           // os do seu time (azul) aparecem com o nome e por trás das paredes
-          if (i % 2 === 1) scene.setAlly(d.id, true, d.label);
+          if (FS_TEAMS_ACTIVE && i % 2 === 1) scene.setAlly(d.id, true, d.label);
         });
         setStatus('ready');
         last = performance.now();

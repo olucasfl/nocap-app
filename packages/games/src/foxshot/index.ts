@@ -13,3 +13,4 @@ export * from './dust';
 export * from './match';
 export * from './dm';
 export * from './netsim';
+export * from './intel';

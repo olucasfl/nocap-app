@@ -963,7 +963,7 @@ import {
   FS_DUST_BOXES, FS_DUST_COLS, FS_DUST_GRID, FS_DUST_HOTSPOTS, FS_DUST_SPAWNS, FS_DUST_ZONES, FS_DUST_ROWS,
   fsDustLevel, fsDustCol, fsDustPath, fsDustRow, fsDustWalkable, fsDustZoneAt, fsDustCellX, fsDustCellZ, fsPickSpawn, fsDustLineWalkable,
   fsDmNew, fsDmStep, fsDmFlash, type FsDmFoe, type FsDmAction,
-  fsFlinch, fsFlinchAt, fsDustDecor, FS_DUST_MARKS, FsNetSim, fsNetParseInput, type FsNetCmd, type FsNetInput,
+  fsFlinch, fsFlinchAt, fsDustDecor, FS_DUST_MARKS, FsNetSim, fsNetParseInput, type FsNetCmd, type FsNetInput, type FsIntelPlayer,
   FS_MATCH_BOTS, fsMatchConfig, fsMatchResult, fsMatchScore, FS_MATCH_MINUTES,
 } from './index';
 
@@ -1551,5 +1551,76 @@ describe('Renascer recarrega as armas (granadas não voltam)', () => {
     for (let i = 0; i < 60 * 6; i++) sim.step();
     expect(B.alive).toBe(true);
     expect(B.loadout.slot.ammo).toBe(B.loadout.weapon.mag);
+  });
+});
+
+describe('Radar estilo CS (aliados sempre; inimigos vistos ou escutados, sumindo devagar)', () => {
+  const wall: FsBox[] = [{ min: [-5, 0, -11], max: [5, 4, -10], pen: 0, mat: 'wall' }];
+  const me = { x: 0, y: 0, z: 0, yaw: 0, eye: 1.6, team: 0 as const };
+  const foe = (o: Partial<FsIntelPlayer> = {}): FsIntelPlayer => ({ id: 'e', x: 0, y: 0, z: -20, yaw: 0, alive: true, team: 1, loud: false, ...o });
+  it('vê o inimigo na frente, sem parede: o ponto fica vivo e atualiza', async () => {
+    const m = await import('./index');
+    const r = new m.FsIntel();
+    r.step(1, me, [foe()], []);
+    const v = r.view(1.1);
+    expect(v).toHaveLength(1);
+    expect(v[0]).toMatchObject({ id: 'e', kind: 'seen', live: true, alpha: 1 });
+    r.step(1.5, me, [foe({ x: 3 })], []);
+    expect(r.view(1.5)[0]!.x).toBe(3);
+  });
+  it('parede no meio: não vê; atrás de mim também não vê', async () => {
+    const m = await import('./index');
+    const r = new m.FsIntel();
+    r.step(1, me, [foe()], wall);
+    expect(r.view(1)).toHaveLength(0);
+    r.step(2, me, [foe({ z: 20 })], []);
+    expect(r.view(2)).toHaveLength(0);
+  });
+  it('um aliado que vê o inimigo mostra ele para mim (visão dividida)', async () => {
+    const m = await import('./index');
+    const r = new m.FsIntel();
+    const ally = foe({ id: 'a', team: 0, x: 0, z: -35 });
+    r.step(1, { ...me, yaw: 180 }, [ally, foe({ z: -45 })], [], true);
+    expect(r.view(1).map((x) => x.id)).toEqual(['e']);
+  });
+  it('tiro escutado: aparece onde o inimigo está, atualiza enquanto atira, para e some devagar', async () => {
+    const m = await import('./index');
+    const r = new m.FsIntel();
+    r.hearShot('e', 10, -30, 'ak', 0, 0, 5);
+    expect(r.view(5.1)[0]).toMatchObject({ kind: 'shot', live: true });
+    r.hearShot('e', 12, -31, 'ak', 0, 0, 5.4);
+    expect(r.view(5.45)[0]!.x).toBe(12);
+    // parou: o ponto fica no último lugar e vai perdendo força
+    const a1 = r.view(6.5)[0]!;
+    const a2 = r.view(8.5)[0]!;
+    expect(a1.live).toBe(false);
+    expect(a2.x).toBe(12);
+    expect(a2.alpha).toBeLessThan(a1.alpha);
+    expect(r.view(5.4 + m.FS_INTEL_FADE.shot + 0.1)).toHaveLength(0);
+  });
+  it('tiro longe demais para a arma não se escuta (pistola silenciada: pouco); passos fortes perto aparecem, agachado não', async () => {
+    const m = await import('./index');
+    const r = new m.FsIntel();
+    r.hearShot('e', 0, -40, 'usp', 0, 0, 1);
+    expect(r.view(1)).toHaveLength(0);
+    r.step(2, { ...me, yaw: 180 }, [foe({ z: -10, loud: true })], wall);
+    expect(r.view(2)[0]).toMatchObject({ kind: 'step' });
+    const q = new m.FsIntel();
+    q.step(2, { ...me, yaw: 180 }, [foe({ z: -10, loud: false })], wall);
+    expect(q.view(2)).toHaveLength(0);
+  });
+  it('inimigo morto some do radar e aliado nunca vira ponto vermelho', async () => {
+    const m = await import('./index');
+    const r = new m.FsIntel();
+    r.step(1, me, [foe()], []);
+    r.step(1.2, me, [foe({ alive: false })], []);
+    expect(r.view(1.2)).toHaveLength(0);
+    r.step(2, me, [foe({ id: 'a', team: 0 })], [], true);
+    expect(r.view(2)).toHaveLength(0);
+    // hoje (todos contra todos, sem times) até o da mesma cor é inimigo
+    const ffa = new m.FsIntel();
+    ffa.step(2, me, [foe({ id: 'a', team: 0 })], []);
+    expect(ffa.view(2)[0]).toMatchObject({ id: 'a', kind: 'seen' });
+    expect(m.FS_TEAMS_ACTIVE).toBe(false);
   });
 });
