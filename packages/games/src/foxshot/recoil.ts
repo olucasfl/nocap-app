@@ -42,6 +42,8 @@ export interface FsShot {
   /** Desvio aleatório da bala dentro do cone (graus): o mesmo no cliente e no servidor. */
   devYaw: number;
   devPitch: number;
+  /** Escopeta: o desvio de cada projétil (o primeiro repete devYaw/devPitch). */
+  pellets?: { devYaw: number; devPitch: number }[];
 }
 
 /**
@@ -60,6 +62,17 @@ export function fsFire(w: FsWeapon, g: FsGunState, m: FsMoveState, playerId: str
   const r = Math.sqrt(rnd()) * cone;
   const a = rnd() * Math.PI * 2;
   const out: FsShot = { kickPitch: pat[0], kickYaw: pat[1], devYaw: Math.cos(a) * r, devPitch: Math.sin(a) * r };
+  if (w.pellets && w.pellets > 1) {
+    // cada projétil cai num ponto sorteado do cone da escopeta (somado ao desvio de movimento): de longe quase todos erram
+    const pcone = (w.pelletSpread ?? 0) + cone;
+    out.pellets = Array.from({ length: w.pellets }, () => {
+      const rr = Math.sqrt(rnd()) * pcone;
+      const aa = rnd() * Math.PI * 2;
+      return { devYaw: Math.cos(aa) * rr, devPitch: Math.sin(aa) * rr };
+    });
+    out.devYaw = out.pellets[0]!.devYaw;
+    out.devPitch = out.pellets[0]!.devPitch;
+  }
   g.shot++;
   g.fired++;
   g.since = 0;

@@ -211,3 +211,12 @@ Rede: tiro é leve (10 jogadores a 20 a 30 estados por segundo, algumas dezenas 
 - Movimento (`movement.ts`): atrito de chão (desliza ao soltar, `stopSpeed`), aceleração por velocidade na direção desejada (contra-strafe freia rápido), aceleração aérea com teto baixo (`airCap`) que permite strafe e bunny hop (segurar pulo = pulo automático no pouso, sem perder velocidade), pulo de ~0,95 m e Ctrl no ar sobe os pés (~+0,35 m): sobe em degraus de até ~1,25 m. Valores proporcionais aos do CS (sv_accelerate 5,5, sv_friction 4, sv_airaccelerate 12). Área de teste no leste da arena (degraus 0,35 / 0,7 / 1,0 / 1,25 / 1,6) e velocímetro na telemetria.
 - Bots de treino (`bots.ts`): faixa no noroeste com 5 raias (andando, shift, agachado, pulando, girando); morrem caindo, escorregam, afundam e nascem de novo.
 - Assistências (`assist.ts`): só ganha quem deu dano logo antes de quem matou e há no máximo 10 s; quem bateu antes de outra pessoa não conta. Placar com coluna Assist. (sem coluna de colete) e kill feed com "matador + assistente", destacado em vermelho quando é meu. No arena de teste só existe um jogador dando dano, então o número fica em 0 até o online.
+
+## 18. Armas novas e nomes (implementado na fase 0)
+
+Nomes (decisão do Lucas, 04/11/2026: diferentes do padrão, mas dentro da ideia da arma): Ruivo (fuzil, antes "Fuzil"), Cinzento (fuzil leve M4), Mosquito (submetralhadora MP5), Trovão (escopeta), Coruja (sniper), Faísca (pistola), Sussurro (pistola silenciada USP-S), Garra (faca).
+- Submetralhadora: 24 de dano, 850 rpm, 30 balas, recuo curto.
+- Escopeta: 8 cartuchos, 9 projéteis de 17 por tiro em um cone de 4,2 graus, bombeia entre tiros (0,85 s), dano cai rápido com a distância (x0,35 a cada 50 m); som grave e largo, ouve-se a 48 m.
+- Fuzil leve (M4): 31 de dano, 700 rpm, 25 balas, recuo regular e puxando para a direita.
+- Pistola silenciada (USP-S): 28 de dano (a Faísca dá 34), 12 balas, dispersão ~5x menor, som de "pft", ouve-se só a 12 m.
+- Modelos (`tools/art/*_from_ref.py`): MP5, escopeta, M4 e USP-S enviados pelo Lucas, em `public/models/foxshot/ref/`. Licenças a confirmar.

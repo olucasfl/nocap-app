@@ -471,21 +471,22 @@ export function FoxShotTestPage() {
 
     const fire = (
       id: FsWeaponId,
-      shot: { kickPitch: number; kickYaw: number; devYaw: number; devPitch: number },
+      shot: { kickPitch: number; kickYaw: number; devYaw: number; devPitch: number; pellets?: { devYaw: number; devPitch: number }[] },
     ) => {
       const w = FS_WEAPONS[id];
       const eye: [number, number, number] = [mover.x, mover.y + fsEyeHeight(mover), mover.z];
-      const dir = fsDir(
-        view.yaw + view.rYaw + shot.devYaw,
-        view.pitch + view.rPitch + shot.devPitch,
-      );
-      const tr = fsTrace(w, eye, dir, FS_ARENA, bodies());
       const from = scene.muzzleWorld();
-      const to = new THREE.Vector3(tr.point[0], tr.point[1], tr.point[2]);
-      scene.tracer(from, to, id);
-      scene.fireFx(id === 'sniper' ? 2.4 : id === 'pistol' ? 0.5 : 1);
+      // escopeta: cada projétil é um raio (com o desvio dele); as outras armas, um só
+      const rays = shot.pellets ?? [{ devYaw: shot.devYaw, devPitch: shot.devPitch }];
+      for (const ray of rays) {
+        const dir = fsDir(view.yaw + view.rYaw + ray.devYaw, view.pitch + view.rPitch + ray.devPitch);
+        const tr = fsTrace(w, eye, dir, FS_ARENA, bodies());
+        const to = new THREE.Vector3(tr.point[0], tr.point[1], tr.point[2]);
+        scene.tracer(from, to, id);
+        applyHit(id, tr, to);
+      }
+      scene.fireFx(({ sniper: 2.4, shotgun: 3.2, pistol: 0.5, usp: 0.28, smg: 0.8, m4: 0.95, ak: 1, knife: 0 } as Record<FsWeaponId, number>)[id]);
       fsAudio.shot(id);
-      applyHit(id, tr, to);
       view.rPitch += shot.kickPitch;
       view.rYaw += shot.kickYaw;
     };

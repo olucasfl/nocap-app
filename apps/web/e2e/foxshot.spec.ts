@@ -209,7 +209,7 @@ test('faca, agachar, loja e armas no chão', async ({ page }, info) => {
   // 3 espaços: tecla 3 pega a faca
   await page.keyboard.press('Digit3');
   await page.waitForTimeout(300);
-  await expect(page.getByTestId('fs-ammo')).toContainText('Faca');
+  await expect(page.getByTestId('fs-ammo')).toContainText('Garra');
   // faca: corta de perto (t1 em (0, 3)? teleporta colado no alvo)
   await fs(page, 'teleport', 0, 4.5);
   await fs(page, 'aimAt', 't1', 'chest');
@@ -238,7 +238,7 @@ test('faca, agachar, loja e armas no chão', async ({ page }, info) => {
   await expect(page.getByTestId('fs-shop')).toBeVisible();
   for (const c of ['equipment', 'pistols', 'mid', 'rifles', 'grenades'])
     await expect(page.getByTestId(`fs-shop-col-${c}`)).toBeVisible();
-  await expect(page.getByTestId('fs-buy-smg1')).toBeDisabled();
+  await expect(page.getByTestId('fs-buy-smg2')).toBeDisabled();
   // começa sem colete nem capacete; comprar mostra os dois
   await expect(page.getByTestId('fs-helmet')).toHaveCount(0);
   await page.getByTestId('fs-buy-vesthelm').dispatchEvent('click');
@@ -289,7 +289,8 @@ test('fotos das mãos (só com FS_SHOTS)', async ({ page }, info) => {
   await open(page);
   await page.getByTestId('fsm-resume').click();
   const shot = (n: string) => page.screenshot({ path: `${process.env.FS_SHOTS}/${n}.png` });
-  for (const [id, i] of [['ak', 0], ['pistol', 1], ['sniper', 0]] as const) {
+  const list = process.env.FS_NEW ? ([['smg', 0], ['shotgun', 0], ['m4', 0], ['usp', 1]] as const) : ([['ak', 0], ['pistol', 1], ['sniper', 0], ['smg', 0], ['shotgun', 0], ['m4', 0], ['usp', 1]] as const);
+  for (const [id, i] of list) {
     await fs(page, 'buy', id);
     await fs(page, 'weapon', i);
     await page.waitForTimeout(1200);
@@ -395,4 +396,27 @@ test('atiradores no canto: atiram em você, dão dano e você pode matá-los', a
   await fs(page, 'aimAt', 's2', 'head');
   await fs(page, 'shoot', 1);
   expect((await fs<{ alive: boolean }>(page, 'bot', 's2')).alive).toBe(false);
+});
+
+test('escopeta: de perto mata com um tiro, de longe quase não acerta', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'um projeto basta');
+  test.setTimeout(180_000);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await open(page);
+  await page.getByTestId('fsm-resume').click();
+  await fs(page, 'buy', 'shotgun');
+  await fs(page, 'weapon', 0);
+  await expect(page.getByTestId('fs-ammo')).toContainText('Trovão');
+  // t1 (sem colete) em (-8, 2): a 4 m, um tiro mata
+  await fs(page, 'teleport', -8, 6);
+  await fs(page, 'aimAt', 't1', 'chest');
+  await fs(page, 'shoot', 1);
+  expect((await fs<{ alive: boolean }>(page, 'target', 't1')).alive, 'de perto mata').toBe(false);
+  // t6 (0, -17) a ~34 m: o tiro mal faz cócegas
+  await fs(page, 'teleport', 0, 17);
+  await fs(page, 'aimAt', 't6', 'chest');
+  await fs(page, 'shoot', 1);
+  const far = await fs<{ alive: boolean; hp: number }>(page, 'target', 't6');
+  expect(far.alive, 'de longe não mata').toBe(true);
+  expect(far.hp, 'de longe quase nada acerta').toBeGreaterThan(55);
 });

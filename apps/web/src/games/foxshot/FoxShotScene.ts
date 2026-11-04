@@ -45,6 +45,10 @@ const VM: Record<FsWeaponId, VmCfg> = {
     bolt: ['Bolt'],
     slide: [],
   },
+  smg: { scale: 0.74, hip: [0.16, -0.17, -0.38], ads: [0.0, -0.13, -0.3], mag: ['Magazine'], bolt: [], slide: [] },
+  shotgun: { scale: 0.8, hip: [0.17, -0.17, -0.38], ads: [0.0, -0.13, -0.3], mag: [], bolt: ['Pump'], slide: [] },
+  m4: { scale: 0.85, hip: [0.16, -0.18, -0.37], ads: [0.0, -0.135, -0.3], mag: ['Magazine'], bolt: ['Bolt'], slide: [] },
+  usp: { scale: 1.1, hip: [0.12, -0.09, -0.34], ads: [0.0, -0.065, -0.28], mag: [], bolt: [], slide: ['Slide'] },
   // a faca e as mãos são desenhadas em FsHands, já no espaço da câmera
   knife: { scale: 1, hip: [0, 0, 0], ads: [0, 0, 0], mag: [], bolt: [], slide: [], rotY: 0 },
 };
@@ -308,7 +312,7 @@ export class FoxShotScene {
   /** Onde as mãos seguram cada arma (no espaço do modelo da arma). */
   private grips = new Map<FsWeaponId, { r: THREE.Vector3; l: THREE.Vector3 }>();
   private view = { fov: 75 };
-  usingRef = { ak: false, pistol: false, sniper: false, knife: false } as Record<FsWeaponId, boolean>;
+  usingRef = { ak: false, pistol: false, sniper: false, knife: false, smg: false, shotgun: false, m4: false, usp: false } as Record<FsWeaponId, boolean>;
 
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({
@@ -447,8 +451,13 @@ export class FoxShotScene {
       tryLoad(['ref/ak.glb', 'rifle.glb']),
       tryLoad(['ref/pistol.glb', 'pistol.glb']),
       tryLoad(['ref/sniper.glb', 'sniper.glb']),
+      // as armas novas (modelos do Lucas); se algum não abrir, usa o modelo parecido que já existe
+      tryLoad(['ref/smg.glb', 'ref/ak.glb', 'rifle.glb']),
+      tryLoad(['ref/shotgun.glb', 'ref/sniper.glb', 'sniper.glb']),
+      tryLoad(['ref/m4.glb', 'ref/ak.glb', 'rifle.glb']),
+      tryLoad(['ref/usp.glb', 'ref/pistol.glb', 'pistol.glb']),
     ]);
-    const ids: FsWeaponId[] = ['ak', 'pistol', 'sniper'];
+    const ids: FsWeaponId[] = ['ak', 'pistol', 'sniper', 'smg', 'shotgun', 'm4', 'usp'];
     ws.forEach((w, i) => {
       const id = ids[i]!;
       this.usingRef[id] = w.name.startsWith('ref/');
@@ -483,6 +492,10 @@ export class FoxShotScene {
         ak: [0.34, 0.3, 0.62, 0.5],
         pistol: [0.3, 0.5, 0.4, 0.32],
         sniper: [0.3, 0.3, 0.55, 0.4],
+        smg: [0.42, 0.28, 0.2, 0.2],
+        shotgun: [0.34, 0.32, 0.62, 0.48],
+        m4: [0.34, 0.3, 0.64, 0.5],
+        usp: [0.52, 0.42, 0.62, 0.26],
       };
       const q = f[id]!;
       this.grips.set(id, {
@@ -660,7 +673,7 @@ export class FoxShotScene {
     this.kickVel += 2.2 * power;
     this.kickRotVel += 7 * power;
     this.flashT = 0.045;
-    if (this.cur === 'sniper') this.boltK = -0.3;
+    if (this.cur === 'sniper' || this.cur === 'shotgun') this.boltK = -0.3;
   }
   /** Corte (botão de atirar) ou estocada (botão de mirar) com a faca. */
   knifeSwing(kind: 'slash' | 'stab' | 'backstab') {
@@ -850,7 +863,7 @@ export class FoxShotScene {
       }
     }
     this.boltPhase = phase;
-    if (bolt) bolt.position.x = -phase * (this.cur === 'sniper' ? 0.1 : 0.05);
+    if (bolt) bolt.position.x = -phase * (this.cur === 'sniper' ? 0.1 : this.cur === 'shotgun' ? 0.13 : 0.05);
     // risco do corte: aparece junto com o golpe e some em 0,16 s
     if (this.arcT > 0) {
       this.arcT += dt;
@@ -867,7 +880,7 @@ export class FoxShotScene {
       this.flashT -= dt;
       const m = this.muzzle.get(this.cur) ?? new THREE.Vector3(0.5, 0, 0);
       const s =
-        (this.cur === 'sniper' ? 0.5 : this.cur === 'pistol' ? 0.12 : 0.32) *
+        ({ sniper: 0.5, pistol: 0.12, shotgun: 0.6, smg: 0.22, usp: 0.03, m4: 0.3, ak: 0.32, knife: 0 } as Record<FsWeaponId, number>)[this.cur] *
         (0.75 + Math.random() * 0.5);
       this.flash.scale.setScalar(s);
       const g = this.weapons.get(this.cur)!;
@@ -919,6 +932,34 @@ export class FoxShotScene {
     bolt: THREE.Object3D | null,
   ) {
     const r = this.reloadK;
+    if (r >= 0 && !mag) {
+      // sem carregador separado (escopeta e a USP-S): a mão da frente vai ao ponto de carga, enfia os cartuchos (vai e volta várias
+      // vezes na escopeta) e no fim bombeia (escopeta) ou volta ao apoio
+      const E2 = FoxShotScene.smooth;
+      const F = h.l.clone();
+      const port = h.r.clone().add(new THREE.Vector3(0.05, -0.11, -0.02));
+      const dn = new THREE.Vector3(0, -0.05, 0.02);
+      let C = F.clone();
+      const cn = bolt ?? this.node(this.cfg().slide);
+      if (cn) {
+        cn.getWorldPosition(h.m);
+        C = this.vm.worldToLocal(h.m.clone());
+      }
+      const loops = this.cur === 'shotgun' ? 4 : 1;
+      const keys: [number, THREE.Vector3][] = [[0, F], [0.12, port]];
+      for (let i = 0; i < loops; i++) {
+        const t0 = 0.12 + (0.62 * (i + 0.5)) / loops;
+        keys.push([t0, port.clone().add(dn)], [Math.min(0.74, t0 + 0.62 / (loops * 2)), port]);
+      }
+      keys.push([0.8, C], [0.9, C], [1, F]);
+      keys.sort((a2, b2) => a2[0] - b2[0]);
+      let k = 0;
+      while (k < keys.length - 2 && r > keys[k + 1]![0]) k++;
+      const [ta, va] = keys[k]!;
+      const [tb, vb] = keys[k + 1]!;
+      h.l.lerpVectors(va, vb, E2((r - ta) / Math.max(1e-6, tb - ta)));
+      return;
+    }
     if (r < 0 || !mag) {
       if (this.heldMag) this.heldMag.visible = false;
       if (this.fallMag && this.fallMag.t > 0.6) this.fallMag.o.visible = false;
@@ -999,7 +1040,7 @@ export class FoxShotScene {
     } else if (this.heldMag) this.heldMag.visible = false;
 
     // mão de trás: na sniper puxa o ferrolho no fim da recarga
-    if (bolt && this.cur === 'sniper' && this.boltPhase > 0) {
+    if (bolt && (this.cur === 'sniper' || this.cur === 'shotgun') && this.boltPhase > 0) {
       bolt.getWorldPosition(h.m);
       this.vm.worldToLocal(h.m);
       h.r.lerp(h.m, Math.min(1, this.boltPhase * 3));
@@ -1157,6 +1198,10 @@ export class FoxShotScene {
       ak: { th: 0.014, tail: 4.5, min: 0.09, speed: 380, color: 0xffc866 },
       sniper: { th: 0.036, tail: 16, min: 0.2, speed: 300, color: 0xffa83a },
       knife: { th: 0.007, tail: 1, min: 0.05, speed: 380, color: 0xffffff },
+      smg: { th: 0.011, tail: 3.5, min: 0.08, speed: 380, color: 0xffcf80 },
+      shotgun: { th: 0.008, tail: 2.2, min: 0.07, speed: 340, color: 0xffd9a0 },
+      m4: { th: 0.013, tail: 4.2, min: 0.09, speed: 380, color: 0xffc866 },
+      usp: { th: 0.005, tail: 1.4, min: 0.06, speed: 400, color: 0xdde6ff },
     }[weapon];
     let tr = this.tracers.find((t) => t.t >= t.dur);
     if (!tr) {

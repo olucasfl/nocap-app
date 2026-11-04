@@ -391,7 +391,7 @@ describe('três armas: primária, secundária e faca', () => {
 
   it('item "em breve" não compra e o colete vira armadura', () => {
     const l = new FsLoadout();
-    expect(fsBuy(l, 'smg1')).toMatchObject({ ok: false, reason: 'soon' });
+    expect(fsBuy(l, 'smg2')).toMatchObject({ ok: false, reason: 'soon' });
     expect(fsBuy(l, 'vesthelm').armor).toEqual({ points: 100, helmet: true });
     expect(fsBuy(l, 'xxx')).toMatchObject({ ok: false, reason: 'unknown' });
   });
@@ -408,7 +408,7 @@ describe('três armas: primária, secundária e faca', () => {
   it('a loja tem 5 colunas e só itens reais podem ser comprados', () => {
     expect(FS_SHOP).toHaveLength(5);
     const real = FS_SHOP.flatMap((c) => c.items).filter((i) => !i.soon);
-    expect(real.map((i) => i.id).sort()).toEqual(['ak', 'pistol', 'sniper', 'vest', 'vesthelm']);
+    expect(real.map((i) => i.id).sort()).toEqual(['ak', 'm4', 'pistol', 'shotgun', 'smg', 'sniper', 'usp', 'vest', 'vesthelm']);
   });
 });
 
@@ -588,6 +588,75 @@ describe('contra-strafe: tiro reto quando o boneco para', () => {
     }
     expect(best).toBeLessThan(0.9);
     expect(at(best)).toBeCloseTo(w.spread.stand, 5);
+  });
+});
+
+describe('armas novas', () => {
+  const W = FS_WEAPONS;
+  it('submetralhadora: menos dano e mais cadência que o fuzil', () => {
+    expect(W.smg.damage).toBeLessThan(W.ak.damage);
+    expect(W.smg.rpm).toBeGreaterThan(W.ak.rpm);
+    expect(W.smg.auto).toBe(true);
+  });
+  it('fuzil leve: dano, carregador e recuo diferentes do outro fuzil', () => {
+    expect(W.m4.damage).not.toBe(W.ak.damage);
+    expect(W.m4.mag).not.toBe(W.ak.mag);
+    expect(W.m4.recoil[3]).not.toEqual(W.ak.recoil[3]);
+    expect(W.m4.rpm).not.toBe(W.ak.rpm);
+  });
+  it('pistola silenciada: menos bala, bem mais precisa e com menos dano (mas não muito menos)', () => {
+    expect(W.usp.mag).toBeLessThan(W.pistol.mag);
+    expect(W.usp.spread.stand).toBeLessThan(W.pistol.spread.stand / 3);
+    expect(W.usp.spread.move).toBeLessThan(W.pistol.spread.move);
+    expect(W.usp.damage).toBeLessThan(W.pistol.damage);
+    expect(W.usp.damage).toBeGreaterThan(W.pistol.damage * 0.7);
+    expect(W.usp.slot).toBe('secondary');
+  });
+  it('escopeta: 8 cartuchos, 9 projéteis por tiro, tiro único com bombeio', () => {
+    expect(W.shotgun.mag).toBe(8);
+    expect(W.shotgun.pellets).toBe(9);
+    expect(W.shotgun.auto).toBe(false);
+    expect(W.shotgun.boltS).toBeGreaterThan(0.5);
+    const g = fsNewGunState();
+    const shot = fsFire(W.shotgun, g, { moving: false, airborne: false, ads: false }, 'p');
+    expect(shot.pellets).toHaveLength(9);
+    expect(new Set(shot.pellets!.map((p) => p.devYaw.toFixed(4))).size).toBeGreaterThan(5); // espalhados
+  });
+  it('escopeta: de perto o tiro mata (vários projéteis acertam), de longe quase nada acerta e o dano cai', () => {
+    const hits = (dist: number) => {
+      let total = 0;
+      const body: FsBody = { id: 'b', pos: [0, 0, -dist], alive: true, armor: 0, helmet: false };
+      for (let n = 0; n < 60; n++) {
+        const g = fsNewGunState();
+        const shot = fsFire(W.shotgun, g, { moving: false, airborne: false, ads: false }, 'p' + n);
+        for (const p of shot.pellets!) {
+          const t = fsTrace(W.shotgun, [0, 1.0, 0], fsDir(p.devYaw, p.devPitch), [], [body]);
+          if (t.kind === 'player') total += t.damage!.hp;
+        }
+      }
+      return total / 60;
+    };
+    const near = hits(4);
+    const mid = hits(15);
+    const far = hits(35);
+    expect(near).toBeGreaterThanOrEqual(100); // mata de perto
+    expect(mid).toBeLessThan(near * 0.7);
+    expect(far).toBeLessThan(mid * 0.5);
+    expect(far).toBeLessThan(40);
+  });
+  it('alcance do som: a silenciada quase não se ouve, a escopeta se ouve longe', () => {
+    expect(FS_HEAR_RANGE.usp).toBeLessThan(FS_HEAR_RANGE.pistol);
+    expect(FS_HEAR_RANGE.shotgun).toBeGreaterThan(FS_HEAR_RANGE.smg);
+  });
+  it('as armas novas cabem nos espaços certos', () => {
+    expect(W.smg.slot).toBe('primary');
+    expect(W.shotgun.slot).toBe('primary');
+    expect(W.m4.slot).toBe('primary');
+    const l = new FsLoadout(null, 'pistol');
+    expect(fsBuy(l, 'usp').dropped?.id).toBe('pistol');
+    expect(l.slots[1]?.id).toBe('usp');
+    expect(fsBuy(l, 'shotgun').ok).toBe(true);
+    expect(l.slots[0]?.id).toBe('shotgun');
   });
 });
 

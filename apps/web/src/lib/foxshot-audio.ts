@@ -107,6 +107,51 @@ const RECIPES: Record<string, Recipe> = {
       s.burst({ type: 'lowpass', freq: 520, dur: 0.7, peak: 0.16, delay: 0.06 });
     },
   },
+  // submetralhadora: estalo curto e seco, mais agudo e mais leve que o do fuzil
+  'shot-smg': {
+    len: 0.3,
+    variants: 3,
+    make: (s) => {
+      s.burst({ type: 'bandpass', freq: jit(2300), q: 0.8, dur: 0.07, peak: 0.36 });
+      s.burst({ type: 'highpass', freq: 5000, dur: 0.015, peak: 0.2 });
+      s.tone('sine', jit(165), 70, 0.08, 0.38);
+      s.burst({ type: 'lowpass', freq: 800, dur: 0.12, peak: 0.07, delay: 0.02 });
+    },
+  },
+  // escopeta: estrondo grave e largo, com estalo agudo na frente e um eco longo
+  'shot-shotgun': {
+    len: 1.3,
+    variants: 2,
+    make: (s) => {
+      s.tone('sine', 72, 24, 0.55, 0.95);
+      s.tone('sine', jit(150), 48, 0.2, 0.6);
+      s.burst({ type: 'bandpass', freq: jit(700), q: 0.5, dur: 0.28, peak: 0.85 });
+      s.burst({ type: 'highpass', freq: 3500, dur: 0.05, peak: 0.5 });
+      s.burst({ type: 'lowpass', freq: 380, dur: 0.9, peak: 0.22, delay: 0.05 });
+      s.burst({ type: 'bandpass', freq: 500, q: 0.6, dur: 0.4, peak: 0.1, delay: 0.14 });
+    },
+  },
+  // fuzil leve: estalo mais agudo e seco que o do outro fuzil
+  'shot-m4': {
+    len: 0.4,
+    variants: 3,
+    make: (s) => {
+      s.burst({ type: 'bandpass', freq: jit(2700), q: 0.8, dur: 0.09, peak: 0.46 });
+      s.burst({ type: 'highpass', freq: 5500, dur: 0.02, peak: 0.28 });
+      s.tone('sine', jit(150), 52, 0.11, 0.52);
+      s.burst({ type: 'lowpass', freq: 700, dur: 0.18, peak: 0.1, delay: 0.03 });
+    },
+  },
+  // pistola silenciada de precisão: só um "pft" abafado e o clique do ferrolho; quase nada de estampido
+  'shot-usp': {
+    len: 0.18,
+    variants: 2,
+    make: (s) => {
+      s.burst({ type: 'lowpass', freq: jit(850), q: 0.5, dur: 0.05, peak: 0.15 });
+      s.tone('sine', jit(115), 68, 0.05, 0.1);
+      s.burst({ type: 'bandpass', freq: jit(3200), q: 3, dur: 0.008, peak: 0.05, delay: 0.035 });
+    },
+  },
   'shot-knife': {
     len: 0.2,
     variants: 2,
@@ -351,7 +396,7 @@ export const fsAudio = {
     if (kit) build(kit);
   },
   /** Tiro de cada arma. */
-  shot(id: 'ak' | 'pistol' | 'sniper' | 'knife') {
+  shot(id: FsWeaponId) {
     play(`shot-${id}`);
   },
   /** Gatilho puxado sem bala. */
@@ -418,7 +463,7 @@ export const fsAudio = {
       /* sem posição: toca no centro */
     }
     air.connect(p).connect(busFor(kit));
-    const loud = id === 'sniper' ? 1.1 : id === 'ak' ? 0.9 : 0.6;
+    const loud = ({ sniper: 1.1, ak: 0.9, m4: 0.85, smg: 0.75, shotgun: 1.25, pistol: 0.6, usp: 0.28, knife: 0 } as Record<FsWeaponId, number>)[id];
     play(`shot-${id}`, { gain: loud * fade * 1.4, dest: air });
     window.setTimeout(() => {
       air.disconnect();
