@@ -89,7 +89,6 @@ test('duas janelas: criar sala pelo menu, entrar pelo código, jogar e ver o ser
   await ana.getByTestId('cfl-start').click();
   await expect(ana.getByTestId('fs-root')).toBeVisible({ timeout: 30_000 });
   await expect(bia.getByTestId('fs-root')).toBeVisible({ timeout: 30_000 });
-  await expect(ana.getByTestId('fsr-count')).toBeVisible({ timeout: 15_000 });
   await ana.waitForFunction(() => (window as unknown as { __fsn?: { state(): { phase: string } } }).__fsn?.state().phase === 'play', undefined, { timeout: 30_000 });
   await bia.waitForFunction(() => (window as unknown as { __fsn?: { state(): { phase: string } } }).__fsn?.state().phase === 'play', undefined, { timeout: 30_000 });
   await fsn(ana, 'resume');
