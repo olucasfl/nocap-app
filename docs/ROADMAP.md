@@ -117,6 +117,13 @@ Ainda sem prioridade definida contra as salas do Ecooo. Cada item tem a sua spec
 - [x] **Etapa 16 da spec 040: Cintilas, fontes e conquistas ampliadas** (22/10/2026): moeda `sparks` (saldo derivado das fontes; Fragmentos migrados 1:1 e removidos), 159 conquistas em 16 famílias com recompensa em Cintilas (32 esperam conteúdo das etapas seguintes), fontes do álbum, capturas raras, marcos que repetem e Estrela dos Proibidos, aviso de ganho, página de Conquistas com filtros e busca, e o teste de balanço (T 540, F 589, R25 16). Conta na seção 11 da spec 040
 - [ ] Etapas 15 e 17 a 21 da spec 040 (Cofre dos Proibidos, Cintilas e conquistas, árvore grande, habilidades, sorte e exploração, QA da v2)
 
+## Etapa 9: Counter Fox (spec 056 e 057), 03 a 04/11/2026
+
+- [x] Arena de teste: tiro, recuo, dano estilo CS, loja, granadas, faca, 8 armas.
+- [x] Mapa Duna (inspirado na Dust 2), partida de mata-mata com 1 a 9 bots, 100 pontos por abate e 50 por assistência, tempo de 2 a 10 min, tela de preparar e de resultado.
+- [ ] Jogar e ajustar: dificuldade dos bots, equilíbrio das armas, visual do mapa, desempenho no celular.
+- [ ] Online (servidor recalcula tudo), bomba de verdade e ranking: fora da spec 057.
+
 ## Etapa 6: produção
 
 - [ ] Cloudflare Pages (web), Fly.io (api + Colyseus), Upstash (Redis), domínio, monitoramento

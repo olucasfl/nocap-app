@@ -1,6 +1,6 @@
 # 057: Counter Fox, partida mata-mata e primeiro mapa (Duna)
 
-Status: em andamento (04/11/2026). Continua a spec 056 (fase 0: arena de teste).
+Status: em andamento (04/11/2026): mapa, bots, pontos, preparar partida e resultado prontos e testados (93 testes de lógica + e2e); falta jogar e ajustar. Continua a spec 056 (fase 0: arena de teste).
 
 ## 1. O que é
 
@@ -10,7 +10,7 @@ Uma partida de **mata-mata** (deathmatch) do Counter Fox contra bots, no primeir
 - **Duração** à escolha: 2, 3, 5, 7 ou 10 minutos.
 - **Bots** à escolha: 1 a 9 (com você são no máximo 10 jogadores).
 - **Pontos**: abate = **100**, assistência = **50**. Vence quem tiver mais pontos quando o tempo acaba; empate no topo = empate (todos empatados vencem).
-- Quem morre renasce depois de 3 s num ponto de nascimento longe dos inimigos (sem colete; a arma inicial é a pistola, a loja continua com dinheiro infinito; bots escolhem uma arma ao nascer).
+- Quem morre renasce depois de 3 s num ponto de nascimento longe dos inimigos (sem colete; você mantém as armas que comprou, a loja continua com dinheiro infinito; bots escolhem uma arma ao nascer).
 - Salas personalizadas/partidas com bots **nunca** entram em ranking (regra 2 do RULES.md).
 
 ## 2. O mapa Duna (28 x 34 células de 2 m = 56 x 68 m)
@@ -43,7 +43,7 @@ Cada bot é um jogador completo: anda pelo mapa (A* na grade, caminhos suavizado
 - **Combate**: para ou anda de lado (strafe), mira com erro que cresce com a distância e a velocidade, atira em rajadas conforme a arma, recarrega, mira na cabeça às vezes. Escopeta só avança até ~12 m; sniper segura ângulo.
 - **Granadas**: 0 a 1 de cada tipo ao nascer; jogam quando o alvo está entre 9 e 26 m.
 - Sem trapaça: o bot só mira em quem enxerga (ou em onde ouviu/viu por último).
-- Quatro dificuldades **não** fazem parte desta spec (uma só, "normal"); fica como evolução.
+- Níveis de dificuldade **não** fazem parte desta spec (uma só, "normal"); fica como evolução.
 
 ## 5. Partida (lógica pura em `packages/games`)
 

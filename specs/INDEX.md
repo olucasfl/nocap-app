@@ -58,6 +58,6 @@
 | 054 | [Telas de fim de partida do Atravessa! e do Desmorona!](054-telas-de-fim-atravessa-desmorona.md) | 9 | em andamento (28/10/2026): telas feitas e testadas offline; falta ver a da sala com 2 navegadores |
 | 055 | [Ping Fox! (pingue-pongue 1x1 das raposas)](055-ping-fox.md) | 9 | em andamento (01/11/2026): motor, treino offline e sala online prontos; falta jogar com amigos |
 | 056 | [Counter Fox (tiro das raposas)](056-fox-shot.md) | 10 | em andamento (03/11/2026): fase 0 (arena de teste: visual, tiro, recuo, dano) pronta; falta jogar e medir no celular |
-| 057 | [Counter Fox: partida mata-mata e mapa Duna](057-counter-fox-partida-e-mapa.md) | 10 | em andamento (04/11/2026): spec e mapa em dados |
+| 057 | [Counter Fox: partida mata-mata e mapa Duna](057-counter-fox-partida-e-mapa.md) | 10 | em andamento (04/11/2026): mapa, bots, pontos e telas prontos; falta jogar e ajustar |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.
