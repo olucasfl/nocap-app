@@ -59,6 +59,6 @@
 | 055 | [Ping Fox! (pingue-pongue 1x1 das raposas)](055-ping-fox.md) | 9 | em andamento (01/11/2026): motor, treino offline e sala online prontos; falta jogar com amigos |
 | 056 | [Counter Fox (tiro das raposas)](056-fox-shot.md) | 10 | em andamento (03/11/2026): fase 0 (arena de teste: visual, tiro, recuo, dano) pronta; falta jogar e medir no celular |
 | 057 | [Counter Fox: partida mata-mata e mapa Duna](057-counter-fox-partida-e-mapa.md) | 10 | em andamento (04/11/2026): mapa, bots, pontos, telas, online, treino, espectar e conta prontos; falta jogar e ajustar |
-| 058 | [Pendências: online do Counter Fox, salvar dados universal e chat estilo CS](058-pendencias-online-e-salvar-dados.md) | 10 | rascunho (04/11/2026): só levantamento, nada feito ainda |
+| 058 | [Pendências: online do Counter Fox, salvar dados universal, chat estilo CS e "Outros jogos"](058-pendencias-online-e-salvar-dados.md) | 10 | rascunho (04/11/2026): só levantamento, nada feito ainda |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.

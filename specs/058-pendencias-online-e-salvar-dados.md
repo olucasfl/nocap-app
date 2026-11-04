@@ -94,7 +94,26 @@ Pedido do Lucas (04/11/2026), com 3 imagens de referência: onde ele quer o chat
 4. Reposicionar para o canto de baixo à esquerda em cada jogo, sem cobrir a vida/colete, o mapa pequeno nem os botões de toque no celular.
 5. Testes: unidade (tempo de vida, ordem, Esc em camadas) e e2e (T abre só o chat; Esc fecha só o chat; mensagem da outra janela aparece e some; Convidar fecha com Esc e volta ao menu anterior).
 
-## 4. Outras pendências lembradas
+## 4. Sala de amigos do Counter Fox: botão "Outros jogos"
+
+Pedido do Lucas (04/11/2026).
+
+**Hoje:** numa sala de amigos do Fox Cap!, o líder escolhe qualquer jogo (Counter Fox, Fut Fox, Ping Fox!, Atravessa!, Desmorona!) no "Jogo da sala". Mas quando o jogo escolhido é o **Counter Fox**, a sala passa a mostrar o lobby próprio do Counter Fox (abas Sala, Jogadores, Modo, Convidar, Chat) e **não há mais como trocar de jogo**.
+
+**Como deve ficar:**
+1. No lobby do Counter Fox, uma opção **"Outros jogos"** (visível para todos, clicável só pelo líder, como o resto das regras).
+2. Ao clicar, abre a lista dos outros jogos do Fox Cap! (Fut Fox, Ping Fox!, Atravessa!, Desmorona!), com o nome, a descrição curta e a quantidade de pessoas que cabe (a mesma informação do `GamePicker` de hoje).
+3. Ao escolher um jogo (por exemplo, Fut Fox), a sala **muda o menu para o do Fut Fox** (troca de motor, mantém as pessoas, o líder e o chat, como o `pickgame` já faz), e a tela passa a ser a do lobby daquele jogo.
+4. Nos lobbies dos outros jogos o **Counter Fox continua na lista** do "Jogo da sala", para voltar quando quiser (já é assim).
+5. Só dá para trocar no lobby (não no meio da partida). Se a sala tem mais gente do que o jogo escolhido aceita, mostrar o aviso que o servidor já devolve. **Voltar ao Counter Fox** com alguém **sem conta** na sala continua recusado (o Counter Fox só tem conta): mostrar o motivo.
+6. Texto em português, sem emoji, visual do lobby do Counter Fox (fontes e cores `--cfx-*`).
+
+**Plano de trabalho proposto:**
+1. No `CounterFoxLobby`, nova aba ou botão "Outros jogos" (lista dos `FOX_GAMES` menos `foxshot`), que manda `pickgame`.
+2. Conferir no servidor (`FoxRoom.pickGame`) que a troca a partir do Counter Fox funciona (capacidade, convidados, lobby) e que a tela de Fox Cap! volta ao lobby certo (`Room.tsx` decide pelo `snapshot.game`).
+3. Teste e2e com duas janelas: criar sala do Counter Fox, trocar para o Fut Fox, ver o menu mudar nas duas janelas e voltar ao Counter Fox.
+
+## 5. Outras pendências lembradas
 
 - Atualizar a spec 057, `ARCHITECTURE.md` e `docs/ROADMAP.md` com as últimas mudanças do Counter Fox (radar estilo CS, ícones do kill feed, times só em cor, aliados desligados, menus).
 - Conferir na tela o que só foi testado em código: raposas azuis, Bomba B no jogo, ícones do kill feed, aliado com nome e silhueta (desligado hoje), mapa grande no online e menu das salas.
