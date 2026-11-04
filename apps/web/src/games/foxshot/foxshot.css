@@ -1125,3 +1125,52 @@
     transition: none;
   }
 }
+
+/* mata-mata: jogadores em fila do maior para o menor, pontos embaixo de cada um (estilo CS2) */
+.fsh-rank {
+  display: flex;
+  gap: 4px;
+  margin: 0;
+  padding: 4px 6px 3px;
+  list-style: none;
+  border: 3px solid var(--fsh-ink);
+  border-radius: 12px;
+  background: var(--fsh-panel);
+}
+.fsh-rank li {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-width: 34px;
+}
+.fsh-rk-av {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 36px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-radius: 8px;
+  background: #ff7d26;
+  color: #1b1535;
+  font: 900 12px var(--font-display, system-ui);
+}
+.fsh-rank li.vest .fsh-rk-av {
+  border-color: #7fa6ff;
+}
+.fsh-rank li.you .fsh-rk-av {
+  border-color: #7dff9a;
+  background: #3cbf6b;
+}
+.fsh-rank li.dead {
+  opacity: 0.45;
+  filter: grayscale(0.7);
+}
+.fsh-rk-pts {
+  font: 900 12px/1 var(--font-display, system-ui);
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+}
+.fsh-rank li.you .fsh-rk-pts {
+  color: #7dff9a;
+}

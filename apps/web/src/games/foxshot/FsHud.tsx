@@ -59,6 +59,28 @@ export function FsTopBar({
   deaths: number;
   points?: number;
 }) {
+  // mata-mata: todos em fila, do que tem mais pontos para o que tem menos, cada um com a pontuação embaixo (como o CS2)
+  if (players.some((p) => p.points !== undefined)) {
+    const ranked = [...players].sort((a, b) => (b.points ?? 0) - (a.points ?? 0) || b.kills - a.kills || a.deaths - b.deaths);
+    return (
+      <div className="fsh-top" data-testid="fs-topbar">
+        <ul className="fsh-rank" aria-label="Pontuação dos jogadores" data-testid="fs-rank">
+          {ranked.map((p) => (
+            <li key={p.id} className={`${p.alive ? '' : 'dead'}${p.you ? ' you' : ''}${p.armor > 0 ? ' vest' : ''}`} data-testid={`fs-rank-${p.id}`}>
+              <span className="fsh-rk-av">
+                {p.you ? 'EU' : p.name.replace(/\D/g, '') || p.name.slice(0, 2)}
+                {!p.alive && <SkullIcon className="fsh-skull" />}
+              </span>
+              <b className="fsh-rk-pts">{p.points ?? 0}</b>
+            </li>
+          ))}
+        </ul>
+        <div className="fsh-time" data-testid="fs-time">
+          {clock(Math.max(0, timeLeft))}
+        </div>
+      </div>
+    );
+  }
   const slots = Array.from({ length: 10 }, (_, i) => players[i] ?? null);
   return (
     <div className="fsh-top" data-testid="fs-topbar">
@@ -86,11 +108,6 @@ export function FsTopBar({
       <div className="fsh-time" data-testid="fs-time">
         {clock(Math.max(0, timeLeft))}
       </div>
-      {points !== undefined && (
-        <div className="fsh-pts mono" data-testid="fs-points">
-          {points} pts
-        </div>
-      )}
     </div>
   );
 }

@@ -159,7 +159,7 @@ Etapa 1, passos 1 a 3 concluídos (lógica, API e UI da Cor). Próximo: PWA (pas
 
 Tiro em primeira pessoa das raposas, em `packages/games/src/foxshot` (lógica pura) e `apps/web/src/games/foxshot` (cena Three.js, HUD, controles). Rotas: `/fox-cap/fox-shot-teste` (arena de teste com alvos e bots de treino) e `/fox-cap/counter-fox` (partida de mata-mata no mapa **Duna**).
 - **Mapa** (`dust.ts`): desenho em texto de 28 x 34 células de 2 m de onde saem as caixas de colisão, as zonas (base CT/TR, bombas A e B, meio, túneis, Long A), os pontos de nascimento e a navegação (A* na grade). Inspirado na estrutura da Dust 2; nenhum arquivo do mapa original entra no repositório.
-- **Partida** (`match.ts`): 2, 3, 5, 7 ou 10 min; 1 a 9 bots; abate 100 pontos, assistência 50; resultado com desempate. Sem ranking.
+- **Partida** (`match.ts`): 2, 3, 5, 7 ou 10 min; 1 a 9 bots; abate 10 pontos, assistência 5; resultado com desempate. Sem ranking.
 - **Bots** (`dm.ts`): cérebro puro (percepção por visão e som, combate, armas, granadas) que usa o mesmo movimento e a mesma dispersão do jogador; a página (`FoxShotTestPage.tsx`) aplica o dano (`dealDamage`: vida, colete, abate, assistência, placar).
 - O servidor ainda não participa (tudo local, fase 0).
 

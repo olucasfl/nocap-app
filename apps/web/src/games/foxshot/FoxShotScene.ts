@@ -330,6 +330,10 @@ export class FoxShotScene {
   private kickRot = 0;
   private kickRotVel = 0;
   private adsK = 0;
+  /** Quanto a mira está fechada (0 a 1): a página liga a luneta junto com isso, sem esperar o HUD. */
+  get adsAmount() {
+    return this.adsK;
+  }
   private drawK = 1;
   private reloadK = -1;
   private boltK = -1;

@@ -4,7 +4,7 @@ export const FS_MATCH_MINUTES = [2, 3, 5, 7, 10] as const;
 export type FsMatchMinutes = (typeof FS_MATCH_MINUTES)[number];
 /** Bots por partida: com você são no máximo 10 jogadores. */
 export const FS_MATCH_BOTS = { min: 1, max: 9, default: 5 } as const;
-export const FS_POINTS = { kill: 100, assist: 50 } as const;
+export const FS_POINTS = { kill: 10, assist: 5 } as const;
 /** Tempo morto antes de renascer (s). */
 export const FS_RESPAWN_S = 3;
 

@@ -55,7 +55,7 @@ test('os bots andam pelo mapa, lutam e o placar mostra pontos', async ({ page },
   await expect.poll(async () => (await dm(page)).dm.reduce((s, d) => s + d.kills + d.deaths, 0), { timeout: 90_000, intervals: [2000] }).toBeGreaterThan(0);
 });
 
-test('abate vale 100 pontos e o fim do tempo mostra a tabela com o vencedor', async ({ page }, info) => {
+test('abate vale 10 pontos e o fim do tempo mostra a tabela com o vencedor', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 1280, height: 720 });
@@ -71,7 +71,7 @@ test('abate vale 100 pontos e o fim do tempo mostra a tabela com o vencedor', as
     await page.waitForTimeout(250);
   }
   await expect.poll(async () => (await fs<{ kills: number }>(page, 'stats')).kills, { timeout: 15_000 }).toBeGreaterThanOrEqual(1);
-  await expect(page.getByTestId('fs-points')).toContainText(/\d+ pts/);
+  await expect(page.getByTestId('fs-rank-me')).toContainText('10');
   await fs(page, 'skip', 500);
   await expect(page.getByTestId('fs-end')).toBeVisible({ timeout: 10_000 });
   await expect(page.getByTestId('fs-end-row-me')).toBeVisible();

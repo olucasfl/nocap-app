@@ -976,8 +976,8 @@ describe('Duna: mapa', () => {
 });
 
 describe('Partida: pontos e resultado', () => {
-  it('abate vale 100 e assistência 50', () => {
-    expect(fsMatchScore({ kills: 3, assists: 2 })).toBe(400);
+  it('abate vale 10 e assistência 5', () => {
+    expect(fsMatchScore({ kills: 3, assists: 2 })).toBe(40);
     expect(fsMatchScore({ kills: 0, assists: 0 })).toBe(0);
   });
 
@@ -991,9 +991,9 @@ describe('Partida: pontos e resultado', () => {
 
   it('quem tem mais pontos vence; desempate por abates e depois menos mortes', () => {
     const rows = fsMatchResult([
-      { id: 'a', name: 'A', kills: 2, assists: 0, deaths: 1 }, // 200
-      { id: 'b', name: 'B', kills: 1, assists: 2, deaths: 5 }, // 200, menos abates
-      { id: 'c', name: 'C', kills: 0, assists: 1, deaths: 0 }, // 50
+      { id: 'a', name: 'A', kills: 2, assists: 0, deaths: 1 }, // 20
+      { id: 'b', name: 'B', kills: 1, assists: 2, deaths: 5 }, // 20, menos abates
+      { id: 'c', name: 'C', kills: 0, assists: 1, deaths: 0 }, // 5
     ]);
     expect(rows.map((r) => r.id)).toEqual(['a', 'b', 'c']);
     expect(rows[0]!.winner).toBe(true);

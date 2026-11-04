@@ -200,6 +200,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
   const shopRef = useRef(false);
   const blindEl = useRef<HTMLDivElement>(null);
   const hitEl = useRef<HTMLDivElement>(null);
+  const scopeEl = useRef<HTMLDivElement>(null);
   const shopClosedAt = useRef(0);
   const buyRef = useRef<(item: FsShopItem) => void>(() => undefined);
   const setShop = useCallback((v: boolean) => {
@@ -485,6 +486,9 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     const hitMarks: { x: number; z: number; at: number }[] = [];
     /** Só para os testes automáticos: mantém os arcos de dano visíveis (o teste tira a foto com calma). */
     let hitHold = false;
+    let scopeOn = false;
+    let scopeBlur = 0;
+    let scopeBlurApplied = -1;
     /** Dano recebido na última 1,2 s (para saber quando é "muito dano"). */
     let recent: { t: number; d: number }[] = [];
     const pushFeedDeath = (killer: string, weapon: FsWeaponId | FsGrenadeId, head: boolean) => {
@@ -1150,6 +1154,8 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
 
       if (!isPaused) {
         clock += dt;
+        // a luz (cegueira) não passa enquanto está morto: continua depois de renascer
+        if (playerDead) blindUntil += dt;
         adsOn = inp.ads && !loadout.reloading && !loadout.weapon.melee;
         const adsScale = Math.min(1, (w.adsFov || 62) / baseFov) * st.adsSens;
         const look = controls.takeLook(adsOn ? adsScale : 1);
@@ -1376,6 +1382,22 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         const left = isPaused ? 0 : blindUntil - clock;
         const o = left <= 0 ? 0 : left > blindTotal * 0.45 ? 1 : left / (blindTotal * 0.45);
         blindEl.current.style.opacity = String(Math.max(0, Math.min(1, o)));
+      }
+      // luneta da sniper: liga junto com a mira fechando (sem esperar o HUD, que só atualiza a cada 100 ms) e o borrão anda suave
+      if (scopeEl.current) {
+        const on = loadout.weapon.adsFov > 0 && !loadout.reloading && !isPaused && scene.adsAmount > 0.93 && adsOn;
+        const el = scopeEl.current;
+        if (on !== scopeOn) {
+          scopeOn = on;
+          el.style.opacity = on ? '1' : '0';
+        }
+        const tb = Math.min(1, fsSpreadDeg(loadout.weapon, { moving: speed > 0.8, speed, airborne: !mover.onGround, ads: true }, loadout.slot.gun) / 6) * 2.4;
+        scopeBlur += (tb - scopeBlur) * Math.min(1, dt * 8);
+        const bq = Math.round(scopeBlur * 4) / 4;
+        if (bq !== scopeBlurApplied) {
+          scopeBlurApplied = bq;
+          for (const c of Array.from(el.children) as HTMLElement[]) c.style.filter = bq > 0 ? `blur(${bq}px)` : '';
+        }
       }
       // arcos vermelhos em volta da mira: apontam de onde veio cada tiro e somem em ~1,6 s
       {
@@ -1686,14 +1708,11 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
 
       {hud && status === 'ready' && (
         <>
-          {hud.scoped ? (
-            <div className="fs-scope" aria-hidden="true">
-              <i style={{ filter: `blur(${(hud.blur * 2.4).toFixed(1)}px)` }} />
-              <b style={{ filter: `blur(${(hud.blur * 2.4).toFixed(1)}px)` }} />
-            </div>
-          ) : (
-            <FsCrosshair spreadPx={hud.spreadPx} />
-          )}
+          <div className="fs-scope" ref={scopeEl} aria-hidden="true" style={{ opacity: 0 }}>
+            <i />
+            <b />
+          </div>
+          {!hud.scoped && <FsCrosshair spreadPx={hud.spreadPx} />}
           {hud.look && !hud.scoped && (
             <div className="fs-look" data-testid="fs-look" aria-hidden="true">
               <b>{hud.look.name}</b>
@@ -1716,7 +1735,6 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
             timeLeft={hud.timeLeft}
             kills={hud.me.kills}
             deaths={hud.me.deaths}
-            points={match ? fsMatchScore(hud.me) : undefined}
           />
           {settings.showMinimap && <FsMinimap get={getMini} />}
           <div className="fsh-rcol">
@@ -1733,9 +1751,9 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
           )}
           <FsKillFeed items={feed} />
           </div>
-          {hud.hurtAge < 0.45 && !hud.dead && <div key={`h${hud.hurtKey}`} className="fs-hurt" aria-hidden="true" />}
-          {hud.heavyAge < 1.7 && !hud.dead && <div key={`v${hud.heavyKey}`} className="fs-hurt heavy" aria-hidden="true" />}
-          {hud.dead && !paused && (
+          {hud.hurtAge < 0.45 && !hud.dead && !result && <div key={`h${hud.hurtKey}`} className="fs-hurt" aria-hidden="true" />}
+          {hud.heavyAge < 1.7 && !hud.dead && !result && <div key={`v${hud.heavyKey}`} className="fs-hurt heavy" aria-hidden="true" />}
+          {hud.dead && !paused && !result && (
             <div className="fs-deadscreen" role="status" data-testid="fs-dead">
               <b>Você morreu</b>
               <span className="mono" data-testid="fs-respawn">

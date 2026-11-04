@@ -9,7 +9,7 @@ Uma partida de **mata-mata** (deathmatch) do Counter Fox contra bots, no primeir
 
 - **Duração** à escolha: 2, 3, 5, 7 ou 10 minutos.
 - **Bots** à escolha: 1 a 9 (com você são no máximo 10 jogadores).
-- **Pontos**: abate = **100**, assistência = **50**. Vence quem tiver mais pontos quando o tempo acaba; empate no topo = empate (todos empatados vencem).
+- **Pontos**: abate = **10**, assistência = **5**. Vence quem tiver mais pontos quando o tempo acaba; empate no topo = empate (todos empatados vencem).
 - Quem morre renasce depois de 3 s num ponto de nascimento longe dos inimigos (sem colete; você mantém as armas que comprou, a loja continua com dinheiro infinito; bots escolhem uma arma ao nascer).
 - Salas personalizadas/partidas com bots **nunca** entram em ranking (regra 2 do RULES.md).
 
