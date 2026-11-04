@@ -113,7 +113,20 @@ Pedido do Lucas (04/11/2026).
 2. Conferir no servidor (`FoxRoom.pickGame`) que a troca a partir do Counter Fox funciona (capacidade, convidados, lobby) e que a tela de Fox Cap! volta ao lobby certo (`Room.tsx` decide pelo `snapshot.game`).
 3. Teste e2e com duas janelas: criar sala do Counter Fox, trocar para o Fut Fox, ver o menu mudar nas duas janelas e voltar ao Counter Fox.
 
-## 5. Outras pendências lembradas
+## 5. Mapa do menu do Counter Fox: ícones sobrepostos
+
+Pedido do Lucas (04/11/2026), com captura do menu principal.
+
+**Problema:** no desenho do mapa Duna do menu principal, as marcações (Bomba A, Bomba B, Base Contra-Terrorista, Base Terrorista) ficam **uma em cima da outra**: o nome da Base Contra-Terrorista passa por cima do círculo da Bomba A e do B, e o texto da Base Terrorista cobre o chão. O tamanho dos textos e dos círculos é fixo (em pixels) e não acompanha o tamanho do mapa na tela.
+
+**Como deve ficar:**
+1. As marcações **se adaptam ao tamanho do mapa** (letras, círculos e traços crescem e diminuem junto), em qualquer tela (computador, tablet, celular deitado).
+2. **Nunca uma em cima da outra**: posição calculada com folga, empurrando o texto para o lado livre ou usando a sigla curta (A, B, CT, T) quando não couber; o nome completo só quando houver espaço.
+3. Legenda fora do mapa (ou embaixo) com o nome completo de cada marcação e a cor, para o nome nunca precisar cobrir o desenho.
+4. O mesmo cuidado no **mapa pequeno** e no **mapa grande (M)** do jogo, que usam as mesmas marcações (`FS_DUST_MARKS`).
+5. Teste: captura do menu em 3 tamanhos de tela (grande, médio e celular deitado) e conferir que não há texto sobreposto.
+
+## 6. Outras pendências lembradas
 
 - Atualizar a spec 057, `ARCHITECTURE.md` e `docs/ROADMAP.md` com as últimas mudanças do Counter Fox (radar estilo CS, ícones do kill feed, times só em cor, aliados desligados, menus).
 - Conferir na tela o que só foi testado em código: raposas azuis, Bomba B no jogo, ícones do kill feed, aliado com nome e silhueta (desligado hoje), mapa grande no online e menu das salas.
