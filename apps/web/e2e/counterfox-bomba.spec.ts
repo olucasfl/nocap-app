@@ -19,6 +19,8 @@ async function start(page: Page, side: 'tr' | 'ct', rounds = 2) {
   await page.getByTestId('cfx-mode-bomb').click();
   await page.getByTestId(`cfx-side-${side}`).click();
   await page.getByTestId('cfx-rounds-4').click();
+  await page.getByTestId('cfx-allies-4').click();
+  await page.getByTestId('cfx-foes-5').click();
   void rounds;
   await page.getByTestId('cfx-start').click();
   await expect(page.getByTestId('fb-hud')).toBeVisible({ timeout: 90_000 });

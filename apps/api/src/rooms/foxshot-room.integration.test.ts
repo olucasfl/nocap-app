@@ -203,7 +203,7 @@ describe('Counter Fox online, modo Bomba', () => {
     await until(() => ana.snap?.members.length === 2 && bia.snap?.members.length === 2);
     ana.room.send('pickgame', { game: 'foxshot' });
     await until(() => ana.snap?.game === 'foxshot');
-    ana.room.send('configure', { kind: 'bomb', winRounds: 4, roundSec: 60, bots: 2 });
+    ana.room.send('configure', { kind: 'bomb', winRounds: 4, roundSec: 60, botsCt: 1, botsTr: 1 });
     await until(() => (ana.snap as unknown as { foxshot?: { kind?: string } }).foxshot?.kind === 'bomb');
     // cada um escolhe o time: ana TR (1), bia CT (0); bia não troca o time de outra pessoa
     ana.room.send('fsteam', { id: 'ana', team: 1 });

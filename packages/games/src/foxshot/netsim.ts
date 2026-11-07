@@ -115,6 +115,8 @@ export interface FsNetOptions {
   bots: number;
   /** Modo Bomba (spec 059): rounds, bomba e economia no lugar do mata-mata. */
   bomb?: Partial<FsBombConfig>;
+  /** Modo Bomba: quantos bots em cada time, [contra-terrorista, terrorista] (a sala só põe bot se o líder pedir). */
+  botTeams?: [number, number];
   rng?: () => number;
   boxes?: readonly FsBox[];
 }
@@ -197,6 +199,7 @@ export class FsNetSim {
     this.rng = opts.rng ?? Math.random;
     const humans = opts.humans.slice(0, 10);
     const botCount = Math.max(0, Math.min(this.cfg.bots, 10 - humans.length));
+    const botTeams = opts.botTeams;
     const placed: { x: number; z: number }[] = [];
     for (const h of humans) this.addPlayer(h.id, h.name, false, placed, 0, this.bm ? h.team : undefined);
     // os bots seguem a mesma alternância depois das pessoas (no modo Bomba, completam o time que tem menos gente)
@@ -205,7 +208,8 @@ export class FsNetSim {
     for (let i = 0; i < botCount; i++) {
       let team = ((humans.length + i) % 2) as 0 | 1;
       if (this.bm) {
-        team = count[0] <= count[1] ? 0 : 1;
+        if (botTeams) team = i < botTeams[0] ? 0 : 1;
+        else team = count[0] <= count[1] ? 0 : 1;
         count[team]++;
       }
       this.addPlayer(`b${i + 1}`, `Bot ${i + 1}`, true, placed, team);

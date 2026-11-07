@@ -16,7 +16,7 @@ export interface FsMatchConfig {
   /** Seu lado no modo Bomba. */
   side?: 'tr' | 'ct';
   /** Opções do modo Bomba (rounds para vencer, tempos); o resto vem do padrão. */
-  bomb?: { winRounds?: number; roundSec?: number; buySec?: number };
+  bomb?: { winRounds?: number; roundSec?: number; buySec?: number; /** Bots aliados e inimigos (você escolhe; 0 a 4 e 0 a 5). */ allies?: number; foes?: number };
 }
 
 /** Ajusta o que veio da tela (ou de um save antigo) para valores que existem. */

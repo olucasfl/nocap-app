@@ -28,6 +28,9 @@ export interface FoxShotSettings {
   bots: number;
   /** 'dm' mata-mata; 'bomb' modo Bomba (spec 059). */
   kind: 'dm' | 'bomb';
+  /** Modo Bomba: bots por time (só entram se o líder pedir). */
+  botsCt: number;
+  botsTr: number;
   winRounds: number;
   roundSec: number;
 }
@@ -54,7 +57,12 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
   constructor(opts: EngineOptions) {
     super({ ...opts, maxPlayers: FOXSHOT_ROOM_MAX });
     this.mode = 'mata';
-    this.settings = { rounds: 1, minutes: 5, bots: 0, kind: 'dm', winRounds: 8, roundSec: 115 } as unknown as AnySettings;
+    this.settings = { rounds: 1, minutes: 5, bots: 0, kind: 'dm', botsCt: 0, botsTr: 0, winRounds: 8, roundSec: 115 } as unknown as AnySettings;
+  }
+
+  /** Bots da partida: no modo Bomba são os dois times somados; no mata-mata, o número escolhido. */
+  private botTotal(): number {
+    return this.cfg.kind === 'bomb' ? this.cfg.botsCt + this.cfg.botsTr : this.cfg.bots;
   }
 
   private get cfg(): FoxShotSettings {
@@ -70,6 +78,12 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
       m.bots >= 0 &&
       m.bots <= FS_MATCH_BOTS.max &&
       (m.kind === 'dm' || m.kind === 'bomb') &&
+      Number.isInteger(m.botsCt) &&
+      m.botsCt >= 0 &&
+      m.botsCt <= 5 &&
+      Number.isInteger(m.botsTr) &&
+      m.botsTr >= 0 &&
+      m.botsTr <= 5 &&
       Number.isInteger(m.winRounds) &&
       m.winRounds >= 2 &&
       m.winRounds <= 13 &&
@@ -127,7 +141,7 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
     this.requirePhase('lobby');
     const humans = [...this.members.values()].filter((m) => m.connected);
     if (humans.length < 1) throw new RoomError('Falta gente na sala');
-    if (humans.length + this.cfg.bots < 2) throw new RoomError('Coloque ao menos 1 bot ou chame um amigo');
+    if (humans.length + this.botTotal() < 2) throw new RoomError('Coloque ao menos 1 bot ou chame um amigo');
     if (humans.some((m) => m.id !== this.hostId && !m.ready && !this.committed.has(m.id))) throw new RoomError('Falta gente marcar "pronto"');
     this.committed.clear();
     this.rematchVotes.clear();
@@ -159,7 +173,8 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
     this.sim = new FsNetSim({
       minutes: cfg.minutes,
       humans: humans.map((m) => ({ id: m.id, name: m.username, team: bomb ? teamOf(m.id) : undefined })),
-      bots: Math.min(this.cfg.bots, 10 - humans.length),
+      bots: Math.min(this.botTotal(), 10 - humans.length),
+      botTeams: bomb ? [this.cfg.botsCt, this.cfg.botsTr] : undefined,
       bomb: bomb ? { winRounds: this.cfg.winRounds, roundSec: this.cfg.roundSec } : undefined,
     });
     this.startAt = this.now() + FOXSHOT_COUNTDOWN_MS;
@@ -254,6 +269,8 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
       foxshot: {
         minutes: this.cfg.minutes,
         bots: this.cfg.bots,
+        botsCt: this.cfg.botsCt,
+        botsTr: this.cfg.botsTr,
         kind: this.cfg.kind,
         winRounds: this.cfg.winRounds,
         roundSec: this.cfg.roundSec,

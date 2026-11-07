@@ -39,12 +39,13 @@ test('duas janelas: modo Bomba com times TR e CT, compra com dinheiro e HUD da b
   await bia.getByTestId('cfh-join').click();
   await expect(bia.getByTestId('cfl')).toBeVisible({ timeout: 30_000 });
 
-  // Ana escolhe Bomba, 4 rounds e 2 bots
+  // Ana escolhe Bomba, 4 rounds e 1 bot de cada lado
   await ana.getByTestId('cfl-tab-modo').click();
   await ana.getByTestId('cfl-mode-bomb').click();
   await expect(ana.getByTestId('cfl-rounds-4')).toBeVisible();
   await ana.getByTestId('cfl-rounds-4').click();
-  await ana.getByTestId('cfl-bots-2').click();
+  await ana.getByTestId('cfl-botsct-1').click();
+  await ana.getByTestId('cfl-botstr-1').click();
   // times: Ana TR, Bia CT
   await ana.getByTestId('cfl-tab-jogadores').click();
   await expect(ana.getByTestId('cfl-team-Bia-ct')).toBeVisible({ timeout: 10_000 });

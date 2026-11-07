@@ -370,9 +370,9 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     // ---- modo Bomba (spec 059): times, rounds e dinheiro; o resto do mata-mata (bots, tiro, placar) é reaproveitado
     const bombMode = match?.mode === 'bomb';
     const mySide0: FsSide = match?.side ?? 'ct';
-    const nFoes = Math.ceil(dmNames.length / 2);
-    const nAllies = dmNames.length - nFoes;
-    const bm = bombMode ? new FsBombMatch(match!.bomb) : null;
+    const nFoes = match?.bomb?.foes ?? Math.ceil(dmNames.length / 2);
+    const nAllies = match?.bomb?.allies ?? dmNames.length - nFoes;
+    const bm = bombMode ? new FsBombMatch({ winRounds: match!.bomb?.winRounds, roundSec: match!.bomb?.roundSec, buySec: match!.bomb?.buySec }) : null;
     if (bm) {
       bm.addPlayer('me', mySide0);
       dmNames.forEach((_, i) => bm.addPlayer(`d${i + 1}`, i < nAllies ? mySide0 : fsOtherSide(mySide0)));

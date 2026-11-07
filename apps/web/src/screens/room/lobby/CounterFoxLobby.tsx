@@ -30,7 +30,7 @@ const FUR = ['#3f82ff', '#ff8a3d'];
 /** O que falta para começar o mata-mata (uma linha). */
 function hint(s: RoomSnapshot): { text: string; ok: boolean } {
   const humans = s.members.filter((m) => m.connected);
-  const bots = s.foxshot?.bots ?? 0;
+  const bots = s.foxshot?.kind === 'bomb' ? (s.foxshot.botsCt ?? 0) + (s.foxshot.botsTr ?? 0) : (s.foxshot?.bots ?? 0);
   if (humans.length + bots < 2) return { text: 'Coloque ao menos 1 bot ou chame um amigo', ok: false };
   const waiting = humans.filter((m) => !m.isHost && !m.ready && !m.committed).length;
   if (waiting > 0) return { text: `Falta${waiting > 1 ? 'm' : ''} ${waiting} marcar "pronto"`, ok: false };
@@ -153,8 +153,10 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
   const leader = snapshot.hostId === me;
   const mine = snapshot.members.find((m) => m.id === me);
   const minutes = snapshot.foxshot?.minutes ?? 5;
-  const bots = snapshot.foxshot?.bots ?? 0;
   const bomb = snapshot.foxshot?.kind === 'bomb';
+  const botsCt = snapshot.foxshot?.botsCt ?? 0;
+  const botsTr = snapshot.foxshot?.botsTr ?? 0;
+  const bots = bomb ? botsCt + botsTr : (snapshot.foxshot?.bots ?? 0);
   const winRounds = snapshot.foxshot?.winRounds ?? 8;
   const roundSec = snapshot.foxshot?.roundSec ?? 115;
   const teams = snapshot.foxshot?.teams ?? {};
@@ -326,6 +328,27 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
                   </div>
                 </>
               )}
+              {bomb ? (
+                <>
+                  <h4>Bots contra-terroristas (só entram se você quiser)</h4>
+                  <div className="cfh-pills" role="radiogroup" aria-label="Bots contra-terroristas">
+                    {[0, 1, 2, 3, 4, 5].map((n) => (
+                      <button key={n} type="button" role="radio" aria-checked={botsCt === n} disabled={!leader || n + botsTr + humans > 10} className={`cfh-pill${botsCt === n ? ' on' : ''}`} onClick={() => sendRoom('configure', { botsCt: n })} data-testid={`cfl-botsct-${n}`}>
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                  <h4>Bots terroristas</h4>
+                  <div className="cfh-pills" role="radiogroup" aria-label="Bots terroristas">
+                    {[0, 1, 2, 3, 4, 5].map((n) => (
+                      <button key={n} type="button" role="radio" aria-checked={botsTr === n} disabled={!leader || n + botsCt + humans > 10} className={`cfh-pill${botsTr === n ? ' on' : ''}`} onClick={() => sendRoom('configure', { botsTr: n })} data-testid={`cfl-botstr-${n}`}>
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
               <h4>Bots para completar ({humans} pessoas na sala)</h4>
               <div className="cfh-pills" role="radiogroup" aria-label="Bots">
                 {Array.from({ length: FS_MATCH_BOTS.max + 1 }, (_, i) => i).map((n) => (
@@ -334,6 +357,8 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
                   </button>
                 ))}
               </div>
+                </>
+              )}
               {!leader && <p className="cfl-note">Só o líder muda as regras.</p>}
             </div>
           )}

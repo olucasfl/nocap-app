@@ -324,7 +324,7 @@ function CounterFoxInner() {
                 <button type="button" role="radio" aria-checked={cfg.mode !== 'bomb'} className={`cfh-pill${cfg.mode !== 'bomb' ? ' on' : ''}`} onClick={() => setCfg({ ...cfg, mode: 'dm' })} data-testid="cfx-mode-dm">
                   Mata-mata
                 </button>
-                <button type="button" role="radio" aria-checked={cfg.mode === 'bomb'} className={`cfh-pill${cfg.mode === 'bomb' ? ' on' : ''}`} onClick={() => setCfg({ ...cfg, mode: 'bomb', bots: 9 })} data-testid="cfx-mode-bomb">
+                <button type="button" role="radio" aria-checked={cfg.mode === 'bomb'} className={`cfh-pill${cfg.mode === 'bomb' ? ' on' : ''}`} onClick={() => setCfg({ ...cfg, mode: 'bomb', bots: (cfg.bomb?.allies ?? 4) + (cfg.bomb?.foes ?? 5) })} data-testid="cfx-mode-bomb">
                   Bomba
                 </button>
               </div>
@@ -373,6 +373,27 @@ function CounterFoxInner() {
                   </div>
                 </>
               )}
+              {cfg.mode === 'bomb' ? (
+                <>
+                  <div className="cfh-grp">Bots aliados (no seu time)</div>
+                  <div className="cfh-pills" role="radiogroup" aria-label="Bots aliados">
+                    {[0, 1, 2, 3, 4].map((n) => (
+                      <button key={n} type="button" role="radio" aria-checked={(cfg.bomb?.allies ?? 4) === n} className={`cfh-pill${(cfg.bomb?.allies ?? 4) === n ? ' on' : ''}`} onClick={() => setCfg({ ...cfg, bots: n + (cfg.bomb?.foes ?? 5), bomb: { ...cfg.bomb, allies: n } })} data-testid={`cfx-allies-${n}`}>
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="cfh-grp">Bots inimigos</div>
+                  <div className="cfh-pills" role="radiogroup" aria-label="Bots inimigos">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <button key={n} type="button" role="radio" aria-checked={(cfg.bomb?.foes ?? 5) === n} className={`cfh-pill${(cfg.bomb?.foes ?? 5) === n ? ' on' : ''}`} onClick={() => setCfg({ ...cfg, bots: (cfg.bomb?.allies ?? 4) + n, bomb: { ...cfg.bomb, foes: n } })} data-testid={`cfx-foes-${n}`}>
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
               <div className="cfh-grp">Bots · {cfg.bots + 1} jogadores com você</div>
               <div className="cfh-pills" role="radiogroup" aria-label="Quantidade de bots">
                 {Array.from({ length: FS_MATCH_BOTS.max - FS_MATCH_BOTS.min + 1 }, (_, i) => i + FS_MATCH_BOTS.min).map((n) => (
@@ -381,6 +402,8 @@ function CounterFoxInner() {
                   </button>
                 ))}
               </div>
+                </>
+              )}
               <div className="cfh-row">
                 <Btn variant="main" onClick={start} testId="cfx-start">
                   Entrar
