@@ -85,3 +85,7 @@ Respondidas pelo Lucas em 07/11/2026:
 - Próximas (antigo texto): fase 2 (modelo 3D da C4, plantar e desarmar na tela, HUD, zona de compra na base), fase 3 (partida offline com bots por lado), depois online e menus.
 
 - **Bots só se o jogador quiser (07/11):** offline há "Bots aliados" (0 a 4) e "Bots inimigos" (1 a 5); online o líder escolhe "Bots contra-terroristas" e "Bots terroristas" (0 a 5 cada; padrão 0: só entram pessoas). Sem escolha nada é completado sozinho.
+- **Alicate de desarme (07/11):** item "Alicate de desarme" (US$ 400) na loja do modo Bomba, só para contra-terrorista, uma vez por round de compra; desarma em 5 s em vez de 10. A loja mostra o dinheiro e apaga o que não dá para pagar.
+- **Quem morre assiste aos aliados (07/11):** offline e online a câmera segue um aliado vivo por trás, e as setas (ou A e D) trocam.
+- **Controles de toque no online (07/11):** joystick, ATIRAR, MIRAR, PULAR, RECARGA, LOJA, TROCAR e BOMBA, com aviso de "gire o aparelho".
+- **Equilíbrio (07/11, simulação bots 5x5, 6 partidas até 4 rounds):** 23 rounds jogados; a bomba foi plantada em 10 (explodiu em 7, desarmada em 3), 6 terminaram por eliminação e 7 por tempo (TR sem plantar). Dinheiro médio por jogador no começo dos rounds: cerca de US$ 1.800. Parece justo entre os lados; ajustar depois jogando de verdade.

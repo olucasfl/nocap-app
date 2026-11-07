@@ -185,9 +185,9 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
         <header className="cfl-head">
           <CounterFoxLogo compact />
           <div className="cfl-chips">
-            <span className="cfl-chip">Mata-mata</span>
+            <span className="cfl-chip">{bomb ? 'Bomba' : 'Mata-mata'}</span>
             <span className="cfl-chip">Duna</span>
-            <span className="cfl-chip">{minutes} min</span>
+            <span className="cfl-chip">{bomb ? `até ${winRounds} rounds` : `${minutes} min`}</span>
             <span className="cfl-chip">{humans + Math.min(bots, 10 - humans)}/10</span>
           </div>
           <div className="cfl-code" data-testid="cfl-code">
