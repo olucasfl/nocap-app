@@ -94,3 +94,29 @@ test('modo Bomba: ao morrer aparece "Você morreu", depois some e você assiste 
   await expect(page.getByTestId('fs-dead')).toHaveCount(0);
   await expect(page.getByTestId('fs-specbar')).toContainText('Assistindo Bot');
 });
+
+test('modo Bomba: terrorista planta na Bomba A segurando E, solta e pega a C4, e vê a animação', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'um projeto basta');
+  test.setTimeout(300_000);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await start(page, 'tr');
+  await fs<void>(page, 'bombSkip');
+  await expect.poll(async () => (await bomb(page))?.phase, { timeout: 60_000 }).toBe('live');
+  await fs<void>(page, 'bombGiveMe');
+  expect((await bomb(page))!.carrier).toBe('me');
+  // solta a C4 e pega de novo: some das mãos, aparece no chão e volta
+  expect(await fs<boolean>(page, 'bombDrop')).toBe(true);
+  await expect.poll(async () => (await fs<{ carrier: string | null; dropped: boolean }>(page, 'bombState')).dropped).toBe(true);
+  await fs<void>(page, 'bombGiveMe');
+  expect((await fs<{ carrier: string | null }>(page, 'bombState')).carrier).toBe('me');
+  // vai ao selo da Bomba A (altura do chão ali: 0,9 m) e segura E
+  await fs<void>(page, 'teleport', 19, -20.5, 0.95);
+  await fs<void>(page, 'look', 0, 20);
+  await fs<void>(page, 'useBtn', true);
+  await expect.poll(async () => (await fs<{ planting: number }>(page, 'bombState')).planting, { timeout: 60_000 }).toBeGreaterThan(0.3);
+  await fs<void>(page, 'bombPlantAlmost');
+  await expect.poll(async () => (await bomb(page))?.phase, { timeout: 90_000 }).toBe('planted');
+  await fs<void>(page, 'useBtn', false);
+  await expect(page.getByTestId('fb-banner')).toContainText('plantada');
+});
+});

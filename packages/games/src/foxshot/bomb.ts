@@ -82,6 +82,8 @@ export type FsRoundReason = 'elim' | 'bomb' | 'defuse' | 'time';
 export type FsBombEvent =
   | { k: 'roundStart'; round: number; carrier: string | null }
   | { k: 'live' }
+  | { k: 'dropped' }
+  | { k: 'picked'; by: string }
   | { k: 'plantStart'; by: string }
   | { k: 'planted'; by: string; site: string }
   | { k: 'defuseStart'; by: string }
@@ -111,6 +113,8 @@ export class FsBombMatch {
   readonly lossStreak: Record<FsSide, number> = { tr: 0, ct: 0 };
   readonly players = new Map<string, FsBombPlayer>();
   carrier: string | null = null;
+  /** A bomba está no chão, largada (por quem a levava, que morreu ou apertou largar): qualquer terrorista pega. */
+  dropped = false;
   site: string | null = null;
   planter: string | null = null;
   plantProgress = 0;
@@ -119,6 +123,13 @@ export class FsBombMatch {
   lastRound: { winner: FsSide; reason: FsRoundReason } | null = null;
   private plantBy: string | null = null;
   private defuseBy: string | null = null;
+  /** Quem está plantando / desarmando agora (para mostrar a animação a todos). */
+  get planting(): string | null {
+    return this.phase === 'live' && this.plantProgress > 0 ? this.plantBy : null;
+  }
+  get defusing(): string | null {
+    return this.phase === 'planted' && this.defuseProgress > 0 ? this.defuseBy : null;
+  }
   private plantedAny = false;
   private halfDone = false;
   private events: FsBombEvent[] = [];
@@ -182,6 +193,7 @@ export class FsBombMatch {
     }
     const trs = this.alive('tr');
     // a bomba continua com quem a tinha, senão é sorteada entre os TR vivos (determinístico: o primeiro)
+    this.dropped = false;
     this.carrier = this.carrier && trs.some((p) => p.id === this.carrier) ? this.carrier : (trs[0]?.id ?? null);
     this.events.push({ k: 'roundStart', round: this.round, carrier: this.carrier });
   }
@@ -206,16 +218,36 @@ export class FsBombMatch {
     const v = this.players.get(victim);
     if (!v || !v.alive || (this.phase !== 'live' && this.phase !== 'planted')) return;
     v.alive = false;
-    if (this.carrier === victim) this.carrier = null; // a bomba cai (quem pega vira o portador)
+    if (this.carrier === victim) {
+      // a bomba cai onde ele morreu (quem passar e pegar vira o portador)
+      this.carrier = null;
+      this.dropped = true;
+      this.events.push({ k: 'dropped' });
+    }
     const k = killer ? this.players.get(killer) : undefined;
     if (k && k.side !== v.side) this.pay(k, FS_KILL_MONEY[weapon] ?? FS_KILL_MONEY.default);
     this.checkElimination();
   }
 
-  /** Um TR pegou a bomba do chão. */
-  pickBomb(id: string) {
+  /** Um TR pegou a bomba do chão (andou até ela ou apertou E perto). */
+  pickBomb(id: string): boolean {
     const p = this.players.get(id);
-    if (p && p.alive && p.side === 'tr' && !this.carrier && !this.plantedAny) this.carrier = id;
+    if (!p || !p.alive || p.side !== 'tr' || this.carrier || this.plantedAny || this.phase === 'end' || this.phase === 'over') return false;
+    this.carrier = id;
+    this.dropped = false;
+    this.events.push({ k: 'picked', by: id });
+    return true;
+  }
+
+  /** O portador larga a bomba aos pés (tecla de largar). Devolve se largou. */
+  dropBomb(id: string): boolean {
+    if (id !== this.carrier || (this.phase !== 'live' && this.phase !== 'buy')) return false;
+    this.carrier = null;
+    this.dropped = true;
+    this.plantProgress = 0;
+    this.plantBy = null;
+    this.events.push({ k: 'dropped' });
+    return true;
   }
 
   /** Plantar: chamado todo passo; `on` = segurando a tecla; `inSite` = dentro de A ou B (`site` = nome). */

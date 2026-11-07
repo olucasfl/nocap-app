@@ -558,6 +558,98 @@ export const fsAudio = {
       p.disconnect();
     }, 2600);
   },
+  /**
+   * Bip da C4 plantada: sai da própria bomba (som 3D), mais baixo e abafado com a distância e some além de 55 m.
+   * `urgency` de 0 a 1 sobe o tom conforme o tempo acaba.
+   */
+  bombBeep(x: number, y: number, z: number, listenerX: number, listenerZ: number, urgency: number) {
+    const kit = audioKit();
+    if (!kit || kit.muted()) return;
+    if (kit.ctx.state === 'suspended') void kit.ctx.resume().catch(() => undefined);
+    const range = 55;
+    const d = Math.hypot(x - listenerX, z - listenerZ);
+    if (d > range) return;
+    const k = d / range;
+    const t = kit.ctx.currentTime;
+    const o = kit.ctx.createOscillator();
+    o.type = 'square';
+    o.frequency.value = 1750 + 650 * Math.min(1, Math.max(0, urgency));
+    const g = kit.ctx.createGain();
+    const vol = 0.2 * (1 - k * 0.85);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+    const air = kit.ctx.createBiquadFilter();
+    air.type = 'lowpass';
+    air.frequency.value = 9000 - 7500 * k;
+    const p = kit.ctx.createPanner();
+    p.panningModel = 'equalpower';
+    p.distanceModel = 'linear';
+    p.refDistance = 2;
+    p.maxDistance = range;
+    p.rolloffFactor = 0;
+    try {
+      if (p.positionX) {
+        p.positionX.value = x;
+        p.positionY.value = y;
+        p.positionZ.value = z;
+      } else p.setPosition(x, y, z);
+    } catch {
+      /* sem posição */
+    }
+    o.connect(g).connect(air).connect(p).connect(busFor(kit));
+    o.start(t);
+    o.stop(t + 0.11);
+    o.addEventListener('ended', () => {
+      try {
+        o.disconnect();
+        g.disconnect();
+        air.disconnect();
+        p.disconnect();
+      } catch {
+        /* já solto */
+      }
+    });
+  },
+  /** Alarme que todos ouvem quando a bomba é plantada (dois tons descendo, sem direção). */
+  bombPlanted() {
+    const kit = audioKit();
+    if (!kit || kit.muted()) return;
+    if (kit.ctx.state === 'suspended') void kit.ctx.resume().catch(() => undefined);
+    const t = kit.ctx.currentTime;
+    [0, 0.34, 0.68].forEach((dt, i) => {
+      const o = kit.ctx.createOscillator();
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(i === 2 ? 520 : 880, t + dt);
+      o.frequency.exponentialRampToValueAtTime(i === 2 ? 380 : 620, t + dt + 0.28);
+      const g = kit.ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t + dt);
+      g.gain.exponentialRampToValueAtTime(0.16, t + dt + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dt + 0.3);
+      o.connect(g).connect(busFor(kit));
+      o.start(t + dt);
+      o.stop(t + dt + 0.32);
+    });
+  },
+  /** Desarmou: três notas subindo, aliviadas. */
+  bombDefused() {
+    const kit = audioKit();
+    if (!kit || kit.muted()) return;
+    if (kit.ctx.state === 'suspended') void kit.ctx.resume().catch(() => undefined);
+    const t = kit.ctx.currentTime;
+    [523, 659, 784].forEach((f, i) => {
+      const o = kit.ctx.createOscillator();
+      o.type = 'triangle';
+      o.frequency.value = f;
+      const g = kit.ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t + i * 0.12);
+      g.gain.exponentialRampToValueAtTime(0.18, t + i * 0.12 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.12 + 0.3);
+      o.connect(g).connect(busFor(kit));
+      o.start(t + i * 0.12);
+      o.stop(t + i * 0.12 + 0.32);
+    });
+  },
   /** Granada de luz: zumbido nos ouvidos e tudo abafado, que vai passando aos poucos (`seconds`). */
   deafen(seconds: number) {
     const kit = audioKit();

@@ -149,4 +149,29 @@ describe('modo Bomba', () => {
     m.step(m.cfg.roundSec + 0.1);
     expect(m.players.get('c1')!.money).toBe(16000);
   });
+
+  it('o portador larga a bomba e outro terrorista pega; morrer também larga a bomba', () => {
+    const m = mk();
+    live(m);
+    const first = m.carrier!;
+    const other = first === 't1' ? 't2' : 't1';
+    expect(m.dropBomb('c1')).toBe(false); // só quem leva larga
+    expect(m.dropBomb(first)).toBe(true);
+    expect(m.carrier).toBeNull();
+    expect(m.dropped).toBe(true);
+    expect(m.pickBomb('c1')).toBe(false); // CT não pega
+    expect(m.pickBomb(other)).toBe(true);
+    expect(m.carrier).toBe(other);
+    expect(m.dropped).toBe(false);
+    // quem leva morre: a bomba cai e fica no chão até alguém pegar
+    m.kill('c1', other, 'ak');
+    expect(m.carrier).toBeNull();
+    expect(m.dropped).toBe(true);
+    expect(m.pickBomb(other)).toBe(false); // morto não pega
+    expect(m.pickBomb(first)).toBe(true);
+    // plantar com a bomba pega do chão
+    m.plant(first, true, 'A', 3.3);
+    expect(m.phase).toBe('planted');
+    expect(m.pickBomb(first)).toBe(false); // depois de plantada não se pega mais
+  });
 });

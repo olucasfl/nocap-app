@@ -432,6 +432,7 @@ interface FoxView {
   yaw0: number;
   /** Aliado (mesmo time): silhueta que aparece por trás das paredes e o nome em cima da cabeça. */
   ghost?: THREE.Object3D[];
+  ghostMat?: THREE.MeshBasicMaterial;
   tag?: THREE.Sprite;
   tagText?: string;
 }
@@ -803,6 +804,13 @@ export class FoxShotScene {
       this.nadeHand[kind] = hand;
     }
 
+    // C4 do modo Bomba (modelo do Lucas; sem o arquivo usa uma caixa)
+    try {
+      this.c4Tpl = (await loader.loadAsync(base + 'c4.glb')).scene;
+    } catch {
+      this.c4Tpl = null;
+    }
+
     // raposas-alvo e bots de treino
     const makeFox = (id: string, x: number, z: number, yaw: number, text: string, color: string) => {
       const root = new THREE.Group();
@@ -872,12 +880,13 @@ export class FoxShotScene {
    * Raposa do mesmo time que você (como o CS): o nome fica em cima da cabeça e o corpo aparece em azul por trás das paredes
    * (só onde está escondido). Vale só para aliados: os outros continuam escondidos pelo mapa.
    */
-  setAlly(id: string, ally: boolean, name = '') {
+  setAlly(id: string, ally: boolean, name = '', team: 'ct' | 't' = 'ct') {
     const f = this.foxes.get(id);
     if (!f) return;
     if (ally && !f.ghost) {
       const mat = new THREE.MeshBasicMaterial({ color: 0x4da3ff, transparent: true, opacity: 0.5, depthTest: true, depthFunc: THREE.GreaterDepth, depthWrite: false });
       f.ghost = [];
+      f.ghostMat = mat;
       const skins: THREE.SkinnedMesh[] = [];
       f.root.traverse((o) => {
         if ((o as THREE.SkinnedMesh).isSkinnedMesh) skins.push(o as THREE.SkinnedMesh);
@@ -896,16 +905,18 @@ export class FoxShotScene {
       }
     }
     f.ghost?.forEach((g) => (g.visible = ally));
+    f.ghostMat?.color.set(team === 't' ? 0xff9a3c : 0x4da3ff);
     if (ally) {
-      if (!f.tag || f.tagText !== name) {
+      const tagKey = `${name}|${team}`;
+      if (!f.tag || f.tagText !== tagKey) {
         if (f.tag) f.root.remove(f.tag);
-        const tag = labelSprite(name, '#1f5fe0');
+        const tag = labelSprite(name, team === 't' ? '#d9660a' : '#1f5fe0');
         tag.position.set(0, 1.95, 0);
         tag.scale.set(1.6, 0.4, 1);
         tag.renderOrder = 12;
         f.root.add(tag);
         f.tag = tag;
-        f.tagText = name;
+        f.tagText = tagKey;
       }
       f.tag.visible = true;
     } else if (f.tag) f.tag.visible = false;
@@ -1197,44 +1208,159 @@ export class FoxShotScene {
     if (!landed) o.rotation.x += 0.2;
     else o.rotation.x = 0;
   }
-  // ---- bomba C4 do modo Bomba (spec 059): caixa escura com fios, visor e uma luz vermelha que pisca mais rápido perto do fim
-  private bombObj: THREE.Group | null = null;
-  private bombLed: THREE.Mesh | null = null;
-  /** Mostra (ou esconde) a bomba plantada. `left` = segundos para explodir (a luz pisca mais depressa). */
-  setBomb(x: number, y: number, z: number, visible: boolean, left = 40, now = 0) {
-    if (!this.bombObj) {
+  // ---- bomba C4 do modo Bomba (spec 059): modelo do Lucas (c4.glb) com luz que pisca, teclado (ativando), alicate (desarmando) e luz vermelha
+  private c4Tpl: THREE.Object3D | null = null;
+  private bombRig: {
+    g: THREE.Group;
+    model: THREE.Object3D;
+    led: THREE.Mesh;
+    ring: THREE.Mesh;
+    keys: THREE.Mesh[];
+    keypad: THREE.Group;
+    pliers: THREE.Group;
+    blades: THREE.Mesh[];
+    wires: THREE.Mesh[];
+    light: THREE.PointLight;
+  } | null = null;
+  private bombDropObj: THREE.Group | null = null;
+  private c4Model(): THREE.Object3D {
+    if (this.c4Tpl) return this.c4Tpl.clone(true);
+    // sem o arquivo: uma caixa com tijolos de C4
+    const g = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.12, 0.5), new THREE.MeshStandardMaterial({ color: 0x4a4d3a, roughness: 0.7 }));
+    body.position.y = 0.06;
+    g.add(body);
+    return g;
+  }
+  private buildBombRig() {
+    const g = new THREE.Group();
+    const model = this.c4Model();
+    model.traverse((o) => {
+      (o as THREE.Mesh).frustumCulled = false;
+    });
+    g.add(model);
+    const led = new THREE.Mesh(new THREE.SphereGeometry(0.028, 10, 8), new THREE.MeshBasicMaterial({ color: 0xff2020 }));
+    led.position.set(0.05, 0.215, -0.18);
+    g.add(led);
+    const ring = new THREE.Mesh(new THREE.RingGeometry(0.42, 0.5, 40), new THREE.MeshBasicMaterial({ color: 0xff7a2a, transparent: true, opacity: 0.8, side: THREE.DoubleSide, depthWrite: false }));
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = 0.01;
+    g.add(ring);
+    const keypad = new THREE.Group();
+    keypad.position.set(0, 0.62, 0);
+    const keys: THREE.Mesh[] = [];
+    for (let k = 0; k < 12; k++) {
+      const cell = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.012), new THREE.MeshBasicMaterial({ color: 0x1b2a1b }));
+      cell.position.set(((k % 3) - 1) * 0.08, (1 - Math.floor(k / 3)) * 0.075 - 0.04, 0);
+      keypad.add(cell);
+      keys.push(cell);
+    }
+    const panel = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.38, 0.01), new THREE.MeshBasicMaterial({ color: 0x0b0d14, transparent: true, opacity: 0.8 }));
+    panel.position.z = -0.012;
+    keypad.add(panel);
+    g.add(keypad);
+    const wires: THREE.Mesh[] = [];
+    for (const [dx, c] of [[-0.05, 0xdd2222], [0.05, 0x2266dd]] as const) {
+      const w = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.3, 6), new THREE.MeshBasicMaterial({ color: c }));
+      w.rotation.x = Math.PI / 2;
+      w.position.set(dx, 0.235, 0.05);
+      g.add(w);
+      wires.push(w);
+    }
+    const pliers = new THREE.Group();
+    pliers.position.set(0, 0.3, 0.05);
+    const blades: THREE.Mesh[] = [];
+    for (const s of [-1, 1]) {
+      const b = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.012, 0.2), new THREE.MeshStandardMaterial({ color: 0xd8dde6, metalness: 0.8, roughness: 0.3 }));
+      b.position.set(s * 0.012, 0, -0.06);
+      b.rotation.y = s * 0.2;
+      pliers.add(b);
+      blades.push(b);
+    }
+    const grip = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.03, 0.12), new THREE.MeshStandardMaterial({ color: 0xd22a2a, roughness: 0.6 }));
+    grip.position.set(0, 0, -0.2);
+    pliers.add(grip);
+    g.add(pliers);
+    const light = new THREE.PointLight(0xff2a1a, 0, 7, 2);
+    light.position.set(0, 0.35, 0);
+    g.add(light);
+    g.visible = false;
+    this.scene.add(g);
+    this.bombRig = { g, model, led, ring, keys, keypad, pliers, blades, wires, light };
+  }
+  /**
+   * A C4 no chão. `mode`: 'planting' (sendo ativada: sobe do chão, anel e teclado), 'armed' (ativa: luz pisca mais rápido perto do fim e
+   * um brilho vermelho que todo mundo vê) e 'defusing' (alicate corta os fios e a luz vira verde). `progress` vai de 0 a 1.
+   */
+  setBomb(x: number, y: number, z: number, mode: 'off' | 'planting' | 'armed' | 'defusing', info: { left?: number; now?: number; progress?: number; yaw?: number } = {}) {
+    if (mode === 'off') {
+      if (this.bombRig) this.bombRig.g.visible = false;
+      return;
+    }
+    if (!this.bombRig) this.buildBombRig();
+    const r = this.bombRig!;
+    const now = info.now ?? 0;
+    const p = Math.max(0, Math.min(1, info.progress ?? 0));
+    const left = info.left ?? 40;
+    r.g.visible = true;
+    r.g.position.set(x, y, z);
+    if (info.yaw !== undefined) r.g.rotation.y = info.yaw;
+    const ledMat = r.led.material as THREE.MeshBasicMaterial;
+    r.ring.visible = mode === 'planting';
+    r.keypad.visible = mode === 'planting';
+    r.pliers.visible = mode === 'defusing';
+    r.model.position.y = mode === 'planting' ? -0.14 * (1 - p) : 0;
+    r.wires[0]!.visible = !(mode === 'defusing' && p > 0.45);
+    r.wires[1]!.visible = !(mode === 'defusing' && p > 0.9);
+    if (mode === 'planting') {
+      // ativando: teclado acende um número por vez, anel se abre e a luz pisca rápido
+      r.keys.forEach((k, i) => (k.material as THREE.MeshBasicMaterial).color.setHex(i < Math.floor(p * 12) ? 0x66ff66 : i === Math.floor(p * 12) ? 0xffe066 : 0x1b2a1b));
+      const pulse = (now * 1.6) % 1;
+      r.ring.scale.setScalar(0.6 + pulse * 0.9);
+      (r.ring.material as THREE.MeshBasicMaterial).opacity = (1 - pulse) * 0.8;
+      ledMat.color.setHex(Math.sin(now * 20 * Math.PI) > 0 ? 0xff9a2a : 0x301800);
+      r.light.intensity = 0.6;
+      r.light.color.setHex(0xff9a2a);
+    } else if (mode === 'defusing') {
+      // desarmando: o alicate chega, corta o fio vermelho e depois o azul; a luz vai do vermelho ao verde
+      const wireX = p < 0.45 ? -0.05 : 0.05;
+      const close = Math.abs(Math.sin(now * 9)) * 0.22;
+      r.pliers.position.set(wireX, 0.3 - 0.05 * Math.min(1, p * 6), 0.05 + (1 - Math.min(1, p * 4)) * 0.1);
+      r.blades.forEach((b, i) => (b.rotation.y = (i === 0 ? -1 : 1) * (0.2 - close)));
+      ledMat.color.setRGB(1 - p, p, 0.1);
+      r.light.intensity = 0.7;
+      r.light.color.setRGB(1 - p, p * 0.9 + 0.1, 0.1);
+    } else {
+      const rate = left > 10 ? 1.2 : left > 5 ? 3 : 8;
+      const on = Math.sin(now * rate * Math.PI * 2) > 0;
+      ledMat.color.setHex(on ? 0xff2020 : 0x300000);
+      // brilho vermelho que pulsa junto: todo mundo vê que a bomba está ativa
+      r.light.color.setHex(0xff2a1a);
+      r.light.intensity = on ? 2.2 : 0.2;
+    }
+  }
+  /** A C4 largada no chão (antes de ser plantada): quieta, com a luz piscando devagar. */
+  setBombDrop(x: number, y: number, z: number, visible: boolean, now = 0) {
+    if (!this.bombDropObj) {
       const g = new THREE.Group();
-      const body = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.14, 0.26), new THREE.MeshStandardMaterial({ color: 0x4a4d3a, roughness: 0.7 }));
-      body.position.y = 0.07;
-      g.add(body);
-      for (let i = 0; i < 3; i++) {
-        const brick = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.2), new THREE.MeshStandardMaterial({ color: 0xcfc9a6, roughness: 0.9 }));
-        brick.position.set(-0.13 + i * 0.13, 0.19, 0);
-        g.add(brick);
-      }
-      const screen = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.02, 0.07), new THREE.MeshBasicMaterial({ color: 0x66ff66 }));
-      screen.position.set(0.11, 0.151, 0.06);
-      g.add(screen);
-      const led = new THREE.Mesh(new THREE.SphereGeometry(0.03, 10, 8), new THREE.MeshBasicMaterial({ color: 0xff2020 }));
-      led.position.set(-0.14, 0.16, -0.07);
+      const m = this.c4Model();
+      m.traverse((o) => {
+        (o as THREE.Mesh).frustumCulled = false;
+      });
+      g.add(m);
+      const led = new THREE.Mesh(new THREE.SphereGeometry(0.028, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffb02a }));
+      led.name = 'led';
+      led.position.set(0.05, 0.215, -0.18);
       g.add(led);
-      for (const [dx, c] of [[-0.05, 0xd22], [0.03, 0x2a2], [0.11, 0x22d]] as const) {
-        const wire = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.2, 5), new THREE.MeshBasicMaterial({ color: c }));
-        wire.rotation.z = Math.PI / 2;
-        wire.position.set(dx, 0.255, 0.02);
-        g.add(wire);
-      }
-      this.bombObj = g;
-      this.bombLed = led;
       g.visible = false;
       this.scene.add(g);
+      this.bombDropObj = g;
     }
-    this.bombObj.visible = visible;
+    const g = this.bombDropObj;
+    g.visible = visible;
     if (!visible) return;
-    this.bombObj.position.set(x, y, z);
-    // pisca: de 1 vez por segundo a 8 vezes por segundo nos últimos segundos
-    const rate = left > 10 ? 1.2 : left > 5 ? 3 : 8;
-    (this.bombLed!.material as THREE.MeshBasicMaterial).color.setHex(Math.sin(now * rate * Math.PI * 2) > 0 ? 0xff2020 : 0x300000);
+    g.position.set(x, y, z);
+    ((g.getObjectByName('led') as THREE.Mesh).material as THREE.MeshBasicMaterial).color.setHex(Math.sin(now * 3.2 * Math.PI) > 0 ? 0xffb02a : 0x402800);
   }
   private dropFloat = new Map<number, boolean>();
   removeDrop(h: number) {

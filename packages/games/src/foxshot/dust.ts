@@ -434,6 +434,19 @@ export const FS_DUST_MARKS: readonly FsDustMark[] = (
   return { id, short, name, kind, x: fsDustCellX(fc), z: fsDustCellZ(fr), x0: w.x0, z0: w.z0, x1: w.x1, z1: w.z1 };
 });
 
+/**
+ * A bomba (A ou B) em que o ponto está, ou null. Generoso de propósito: vale o retângulo da zona com 2 m de folga ou um raio
+ * de 7 m em volta do selo no chão, para quem planta sobre o desenho nunca ficar "fora" por centímetros.
+ */
+export function fsSiteAt(x: number, z: number): 'A' | 'B' | null {
+  for (const m of FS_DUST_MARKS) {
+    if (m.kind !== 'site') continue;
+    const rect = x >= m.x0 - 2 && x <= m.x1 + 2 && z >= m.z0 - 2 && z <= m.z1 + 2;
+    if (rect || Math.hypot(x - m.x, z - m.z) <= 7) return m.id as 'A' | 'B';
+  }
+  return null;
+}
+
 /** Meio-tamanho do mapa em x e z (para o mapa pequeno e a luz). */
 export const FS_DUST_HALF: readonly [number, number] = [(FS_DUST_COLS * FS_CELL) / 2, (FS_DUST_ROWS * FS_CELL) / 2];
 

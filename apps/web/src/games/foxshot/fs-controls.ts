@@ -290,8 +290,9 @@ export class FsControls {
   private mm = (e: MouseEvent) => {
     this.syncBtn(e);
     if (!this.locked || !this.enabled) return;
-    // alguns navegadores soltam um salto absurdo de vez em quando (o "flick"): descarta o que nenhuma mão faz em 1 evento
-    if (Math.abs(e.movementX) > 400 || Math.abs(e.movementY) > 400) return;
+    // Alguns navegadores soltam um salto absurdo (milhares de px) de vez em quando; isso se descarta.
+    // Um giro rápido de verdade passa de 400 px por evento (mouse de DPI alto), então só se limita, nunca se descarta.
+    if (Math.abs(e.movementX) > 3000 || Math.abs(e.movementY) > 3000) return;
     this.dx += e.movementX;
     this.dy += e.movementY;
   };

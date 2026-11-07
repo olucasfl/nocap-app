@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FsNetSim, FS_NET_HZ } from './netsim';
+import { FS_DUST_MARKS, fsSiteAt } from './dust';
 
 describe('modo Bomba na simulação do servidor', () => {
   it('começa na compra, vira round e os bots jogam rounds até alguém vencer', () => {
@@ -55,5 +56,28 @@ describe('modo Bomba na simulação do servidor', () => {
     sim.step();
     expect(bm.players.get('ct1')!.money).toBe(400); // não compra duas vezes
     expect(sim.selfState('ct1')?.bomb?.kit).toBe(true);
+  });
+
+  it('fogo amigo existe mas é fraco: cabeça não mata na hora e não rende dinheiro', () => {
+    const sim = new FsNetSim({ minutes: 5, humans: [], bots: 4, bomb: { winRounds: 5, roundSec: 60, buySec: 5 }, botTeams: [2, 2] });
+    const bm = sim.bm!;
+    for (let i = 0; i < FS_NET_HZ * 6; i++) sim.step();
+    expect(bm.phase).toBe('live');
+    const ids = [...bm.players.values()];
+    const a = ids[0]!;
+    const mate = ids.find((p) => p.id !== a.id && p.side === a.side)!;
+    const foe = ids.find((p) => p.side !== a.side)!;
+    const moneyBefore = a.money;
+    sim.damage(mate.id, a.id, 250, 0, true, 'sniper', false);
+    expect(sim.players.get(mate.id)!.alive).toBe(true);
+    expect(sim.players.get(mate.id)!.hp).toBeGreaterThan(60);
+    sim.damage(foe.id, a.id, 250, 0, true, 'sniper', false);
+    expect(sim.players.get(foe.id)!.alive).toBe(false);
+    expect(a.money).toBeGreaterThanOrEqual(moneyBefore);
+  });
+  it('a bomba é detectada em volta do selo de A e de B', () => {
+    expect(fsSiteAt(FS_DUST_MARKS.find((m) => m.id === 'A')!.x, FS_DUST_MARKS.find((m) => m.id === 'A')!.z)).toBe('A');
+    expect(fsSiteAt(FS_DUST_MARKS.find((m) => m.id === 'B')!.x + 3, FS_DUST_MARKS.find((m) => m.id === 'B')!.z)).toBe('B');
+    expect(fsSiteAt(0, -200)).toBeNull();
   });
 });

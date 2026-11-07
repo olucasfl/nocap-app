@@ -89,3 +89,14 @@ Respondidas pelo Lucas em 07/11/2026:
 - **Quem morre assiste aos aliados (07/11):** offline e online a câmera segue um aliado vivo por trás, e as setas (ou A e D) trocam.
 - **Controles de toque no online (07/11):** joystick, ATIRAR, MIRAR, PULAR, RECARGA, LOJA, TROCAR e BOMBA, com aviso de "gire o aparelho".
 - **Equilíbrio (07/11, simulação bots 5x5, 6 partidas até 4 rounds):** 23 rounds jogados; a bomba foi plantada em 10 (explodiu em 7, desarmada em 3), 6 terminaram por eliminação e 7 por tempo (TR sem plantar). Dinheiro médio por jogador no começo dos rounds: cerca de US$ 1.800. Parece justo entre os lados; ajustar depois jogando de verdade.
+
+## Progresso: C4 de verdade, soltar/pegar, animações, som por proximidade e times
+
+- Arte da C4: `Simple_C4-_Bomb.usdz` convertida sem Blender por `tools/art/usdz_to_glb.py` para `apps/web/public/models/foxshot/c4.glb` (303 KB). Cena: `setBomb(x,y,z,'off'|'planting'|'armed'|'defusing',{...})` com teclado que se preenche, anel, LED e fios que somem no alicate; `setBombDrop` mostra a C4 caída.
+- Soltar e pegar: G com a faca na mão larga a C4 (online: G larga se for o portador); o portador que morre a derruba onde caiu; terrorista passa por cima (após 1 s) ou segura E até 2,4 m. Bots terroristas vão buscar a C4 caída.
+- Animações para todos: plantando (sobe do chão) e desarmando (alicate) aparecem para quem estiver olhando; aviso "A bomba foi plantada na bomba A/B" e alarme para todos.
+- Som: bipe 3D que sai da C4 (alcance 55 m, abafa com a distância, acelera perto do fim); alarme global ao plantar; acorde ao desarmar.
+- Plantio na Bomba A: detecção unificada em `fsSiteAt` (retângulo + 2 m ou 7 m do selo); "parado" agora é velocidade < 2,2 m/s; dicas na tela ("vá a um pátio A ou B", "segure E", "fique parado").
+- Times: TR sempre raposa laranja e CT azul (também depois da troca de lados, que antes só valia no motor), aliados com nome e silhueta por trás das paredes na cor do time, fora do minimapa de inimigos (aliados aparecem como aliados).
+- Fogo amigo: existe, mas com 25 % do dano e a cabeça não mata de uma vez (nem o sniper); matar aliado não rende dinheiro nem abate.
+- Mouse: o giro rápido não é mais descartado (antes qualquer evento acima de 400 px sumia); só picos acima de 3000 px.

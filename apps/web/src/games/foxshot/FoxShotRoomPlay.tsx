@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import {
   FS_DUST_SOLIDS,
   FS_TEAMS_ACTIVE,
+  fsSiteAt,
   FsIntel,
   FS_DUST_MARKS,
   FS_GRENADES,
@@ -347,6 +348,10 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
     let bPhasePrev = -1;
     let bombBanner: { text: string; until: number } | null = null;
     let bombHint: { text: string; until: number } | null = null;
+    let beepIn = 0;
+    let dropPrev = 0;
+    let carrierPrev = -1;
+    let plantActPrev = 0;
     const sayHint = (text: string, ms = 2500) => {
       bombHint = { text, until: clock + ms / 1000 };
     };
@@ -357,7 +362,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
     const bombFrozen = () => !!bf && (bf[0] === 0 || bf[0] === 3 || bf[0] === 4);
     let lastFrameAt = 0;
     let timeLeft = info.minutes * 60;
-    const remotes = new Map<string, { buf: Snap[]; alive: boolean; shown: boolean; weapon: number; team?: 'ct' | 't'; teamBit?: 0 | 1; ally?: boolean; allyName?: string }>();
+    const remotes = new Map<string, { buf: Snap[]; alive: boolean; shown: boolean; weapon: number; team?: 'ct' | 't'; teamBit?: 0 | 1; ally?: boolean; allyName?: string; allyTeam?: "ct" | "t" }>();
     for (const id of SLOTS) remotes.set(id, { buf: [], alive: true, shown: false, weapon: 0 });
     const rows = new Map<string, Row>();
     const nades = new Map<number, number>();
@@ -450,8 +455,12 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
             const why = ['', 'time eliminado', 'a bomba explodiu', 'a bomba foi desarmada', 'acabou o tempo'][bf[10]!] ?? '';
             const gain = fr.s?.bomb?.gain ?? 0;
             bombBanner = { text: `${bf[9] === 1 ? 'Terroristas' : 'Contra-terroristas'} vencem · ${why}${gain ? ` · +US$ ${gain}` : ''}`, until: clock + 5 };
-          } else if (ph === 2) bombBanner = { text: 'Bomba plantada', until: clock + 2.5 };
-          else if (ph === 0) sayHint('Compre na base (B). A bomba é dos terroristas: pátios A e B', 4500);
+          } else if (ph === 2) {
+            bombBanner = { text: `A bomba foi plantada na bomba ${bf[7] === 1 ? 'A' : bf[7] === 2 ? 'B' : ''}`.trim(), until: clock + 3.5 };
+            fsAudio.bombPlanted();
+            beepIn = 0;
+          }
+          if (ph === 0) sayHint('Compre na base (B). A bomba é dos terroristas: pátios A e B', 4500);
           bPhasePrev = ph;
         }
         if (ph !== 0 && shopRef.current) setShop(false);
@@ -502,11 +511,12 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         const idx = Number(key.slice(1));
         const who = rosterNow()[idx];
         // hoje é todos contra todos: sem aliados (nome em cima da cabeça e silhueta por trás da parede só quando houver times)
-        const ally = FS_TEAMS_ACTIVE && !!who && who.id !== meId && myBit !== undefined && rm.teamBit === myBit;
-        if (rm.ally !== ally || (ally && rm.allyName !== who?.name)) {
+        const ally = (FS_TEAMS_ACTIVE || !!bf) && !!who && who.id !== meId && myBit !== undefined && rm.teamBit === myBit;
+        if (rm.ally !== ally || (ally && (rm.allyName !== who?.name || rm.allyTeam !== rm.team))) {
           rm.ally = ally;
           rm.allyName = who?.name;
-          scene.setAlly(key, ally, who?.name ?? '');
+          rm.allyTeam = rm.team;
+          scene.setAlly(key, ally, who?.name ?? '', rm.team === 't' ? 't' : 'ct');
         }
       }
       // granadas no ar
@@ -827,6 +837,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
             cmdQueue.push({ t: 'cycle', d: 1 });
             handle(loadout.cycleAll(1));
           }
+          if (inp.drop && bf && bf[8] === rosterNow().findIndex((r) => r.id === meId) && bf[8]! >= 0) cmdQueue.push({ t: 'dropbomb' });
           if (inp.grenade) {
             cmdQueue.push({ t: 'nade', k: 'next' });
             handle(loadout.selectGrenade('next'));
@@ -1011,9 +1022,49 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       );
       if (player) fsAudio.listener(mover.x, mover.y + fsEyeHeight(mover), mover.z, fsDir(view.yaw + view.rYaw, view.pitch + view.rPitch));
       scene.update(isPaused ? 0 : dt, { speed: Math.hypot(mover.vx, mover.vz), adsTarget: adsOn ? 1 : 0, airborne: !mover.onGround });
-      // modo Bomba: a C4 plantada no chão (a luz pisca mais depressa perto do fim)
-      if (bf && bf[0] === 2) scene.setBomb(bf[5]! / 100, fsDustFloorY(bf[5]! / 100, bf[6]! / 100), bf[6]! / 100, true, bf[1]! / 10, clock);
-      else scene.setBomb(0, 0, 0, false);
+      // modo Bomba: C4 na cena. Plantando e desarmando aparecem para todos; plantada pisca e apita (o som sai dela)
+      if (bf) {
+        const myI = rosterNow().findIndex((r) => r.id === meId);
+        const bx = bf[5]! / 100;
+        const bz = bf[6]! / 100;
+        const act = bf[16] ?? 0;
+        if (bf[0] === 2) {
+          scene.setBomb(bx, fsDustFloorY(bx, bz), bz, act === 2 ? 'defusing' : 'armed', { left: bf[1]! / 10, now: clock, progress: (bf[15] ?? 0) / 100 });
+          beepIn -= dt;
+          if (beepIn <= 0) {
+            const left = bf[1]! / 10;
+            beepIn = left > 20 ? 1 : left > 10 ? 0.6 : left > 5 ? 0.35 : 0.16;
+            fsAudio.bombBeep(bx, fsDustFloorY(bx, bz) + 0.2, bz, mover.x, mover.z, 1 - Math.min(1, left / 40));
+          }
+        } else if (bf[0] === 1 && act === 1) {
+          const actor = rows.get(rosterNow()[bf[14] ?? -1]?.id ?? '');
+          const yr = actor ? (actor.yaw * Math.PI) / 180 : 0;
+          const px = bx - Math.sin(yr) * 0.7;
+          const pz = bz - Math.cos(yr) * 0.7;
+          scene.setBomb(px, fsDustFloorY(px, pz), pz, 'planting', { progress: (bf[15] ?? 0) / 100, now: clock, yaw: yr });
+          if (plantActPrev !== 1 && bf[14] !== myI && bombSelf?.side === 'ct') sayHint('Terrorista plantando a bomba!', 2000);
+        } else scene.setBomb(0, 0, 0, 'off');
+        plantActPrev = bf[0] === 1 ? act : 0;
+        const dropped = bf[11] === 1 && bf[0] !== 2 && bf[0] !== 3;
+        scene.setBombDrop(bf[12]! / 100, fsDustFloorY(bf[12]! / 100, bf[13]! / 100), bf[13]! / 100, dropped, clock);
+        if ((dropped ? 1 : 0) !== dropPrev) {
+          dropPrev = dropped ? 1 : 0;
+          if (dropped && bf[0] !== 0) sayHint(bombSelf?.side === 'tr' ? 'A bomba caiu no chão: ande até ela ou segure E' : 'A bomba caiu', 2500);
+        }
+        const carrier = bf[8] ?? -1;
+        if (carrier !== carrierPrev) {
+          if (carrier === myI && myI >= 0 && carrierPrev !== -1) sayHint('Você pegou a bomba', 2000);
+          carrierPrev = carrier;
+        }
+        // dicas de quem leva a C4
+        if (carrier === myI && myI >= 0 && bf[0] === 1 && act !== 1) {
+          const site = fsSiteAt(mover.x, mover.z);
+          if (!site) sayHint('Você tem a bomba: vá a um pátio A ou B', 400);
+          else if (!inp.use) sayHint('Segure E para plantar a bomba', 400);
+          else sayHint('Fique parado para plantar', 400);
+        }
+        if (dropped && bombSelf?.side === 'tr' && Math.hypot(mover.x - bf[12]! / 100, mover.z - bf[13]! / 100) < 6) sayHint('Pegue a bomba: ande até ela ou segure E', 400);
+      } else scene.setBomb(0, 0, 0, 'off');
       scene.render();
 
       if (st.quality === 'auto' && !isPaused) {
@@ -1053,9 +1104,9 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
             const sp = a1 && a0 && a1.t > a0.t ? Math.hypot(a1.x - a0.x, a1.z - a0.z) / ((a1.t - a0.t) / 1000) : 0;
             return [{ id: r.id, x: row.x, y: row.y, z: row.z, yaw: row.yaw, alive: (row.flags & 1) !== 0, team: ((row.flags & 128) !== 0 ? 1 : 0) as 0 | 1, loud: sp > 3.0 && row.crouch < 0.5 }];
           });
-          intel.step(nowS, { x: mover.x, y: mover.y, z: mover.z, yaw: view.yaw, eye: mover.y + fsEyeHeight(mover), team: myTeam as 0 | 1 }, others, ARENA);
+          intel.step(nowS, { x: mover.x, y: mover.y, z: mover.z, yaw: view.yaw, eye: mover.y + fsEyeHeight(mover), team: myTeam as 0 | 1 }, others, ARENA, FS_TEAMS_ACTIVE || !!bf);
           intelDots = intel.view(nowS).map((m) => ({ x: m.x, z: m.z, yaw: m.yaw, kind: m.kind, alpha: m.alpha, live: m.live }));
-          if (FS_TEAMS_ACTIVE) for (const o of others) if (o.team === myTeam && o.alive) intelDots.push({ x: o.x, z: o.z, yaw: o.yaw, kind: 'ally', alpha: 1, live: true, name: nameOf(o.id) });
+          if (FS_TEAMS_ACTIVE || bf) for (const o of others) if (o.team === myTeam && o.alive) intelDots.push({ x: o.x, z: o.z, yaw: o.yaw, kind: 'ally', alpha: 1, live: true, name: nameOf(o.id) });
         } else {
           intel.clear();
           intelDots = [];

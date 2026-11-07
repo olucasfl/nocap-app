@@ -4,6 +4,8 @@ import * as THREE from 'three';
 import {
   FS_DUST_MARKS,
   FS_TEAMS_ACTIVE,
+  FS_FRIENDLY_FIRE,
+  fsSiteAt,
   FsIntel,
   FS_DUST_SOLIDS,
   FS_SPAWN,
@@ -499,7 +501,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         return { id: t.id, pos: posOf(t.id), alive: s.alive, armor: s.armor, helmet: t.helmet, crouch: b ? b.crouch : s.crouch, facing: fl };
       });
     /** Alvos dos SEUS tiros: no modo Bomba os aliados não contam (sem fogo amigo). */
-    const bodies = (): FsBody[] => (bm ? bodiesAll().filter((b) => sideOf(b.id) !== sideOf('me')) : bodiesAll());
+    const bodies = (): FsBody[] => bodiesAll();
 
     const showMarker = (kind: Marker['kind'], text: string) =>
       setMarker({ key: ++markerKey, kind, text });
@@ -769,8 +771,15 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     };
     /** Mata-mata: um bot (ou você) leva dano de `attacker`. Cuida de vida, colete, abate, assistência, pontos e do aviso na tela. */
     function dealDamage(victim: string, attacker: string, hp: number, armorLoss: number, head: boolean, icon: FsWeaponId | FsGrenadeId, fx: number, fz: number): 'kill' | 'hit' | null {
-      // modo Bomba: sem fogo amigo e sem dano na fase de compra ou depois do fim do round
-      if (bm && ((attacker !== victim && sideOf(attacker) === sideOf(victim)) || (bm.phase !== 'live' && bm.phase !== 'planted'))) return null;
+      // modo Bomba: sem dano na fase de compra ou depois do fim do round
+      if (bm && bm.phase !== 'live' && bm.phase !== 'planted') return null;
+      // fogo amigo: um quarto do dano e a cabeça não mata na hora (igual ao servidor)
+      const friendly = !!bm && attacker !== victim && sideOf(attacker) === sideOf(victim);
+      if (friendly) {
+        hp = Math.min(hp, 100) * FS_FRIENDLY_FIRE;
+        armorLoss *= FS_FRIENDLY_FIRE;
+        head = false;
+      }
       if (victim === 'me') {
         hurtPlayer(hp, armorLoss, head, nameOf(attacker), icon, attacker, { x: fx, z: fz });
         return me.hp <= 0 ? 'kill' : 'hit';
@@ -798,7 +807,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       const self = attacker === victim;
       const as = self ? null : fsAssister(dmgLog.get(victim) ?? [], attacker, clock);
       dmgLog.delete(victim);
-      if (!self) {
+      if (!self && !friendly) {
         if (attacker === 'me') {
           stats.kills++;
           if (head) stats.hs++;
@@ -824,7 +833,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         showMarker('kill', head ? 'CABEÇA' : 'ABATE');
       }
       pushKill(nameOf(attacker), icon, nameOf(victim), head, { you: attacker === 'me', assist: as ? nameOf(as) : undefined, youAssist: as === 'me' });
-      bm?.kill(attacker === victim ? null : attacker, victim, icon as FsWeaponId);
+      bm?.kill(attacker === victim || friendly ? null : attacker, victim, icon as FsWeaponId);
       return 'kill';
     }
     /** Põe um bot do mata-mata em campo (cérebro, arma, colete). `x, z, yaw` vêm do ponto de nascimento. */
@@ -909,6 +918,12 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     let useHeld = false;
     let bombPos: { x: number; y: number; z: number } | null = null;
     let plantPos: { x: number; y: number; z: number } | null = null;
+    /** C4 no chão (largada ou caída de quem morreu): quem for terrorista a pega passando por cima ou apertando E. */
+    let dropAt: { x: number; y: number; z: number } | null = null;
+    let dropReadyAt = 0;
+    let lastCarrier: string | null = null;
+    let beepIn = 0;
+    const moverOf = (id: string | null) => (id === 'me' || !id ? { x: mover.x, y: mover.y, z: mover.z } : (brains.get(id)?.mover ?? mover));
     let planSite: 'A' | 'B' = 'A';
     let endT = 0;
     let resetGear = true;
@@ -993,11 +1008,15 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       resetGear = false;
       bombPos = null;
       plantPos = null;
+      dropAt = null;
+      lastCarrier = null;
+      scene.setBombDrop(0, 0, 0, false);
       planSite = Math.random() < 0.5 ? 'A' : 'B';
-      scene.setBomb(0, 0, 0, false);
+      scene.setBomb(0, 0, 0, 'off');
       bombBanner = null;
       say(meSide === 'tr' ? 'Compre na base (B) e depois vá aos pátios A ou B' : 'Compre na base (B) e defenda os pátios A e B', 4500);
     };
+    const meSide0 = () => sideOf('me');
     const handleBombEvent = (e: FsBombEvent) => {
       switch (e.k) {
         case 'live':
@@ -1006,24 +1025,44 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
           fsAudio.draw();
           break;
         case 'plantStart':
-          if (e.by === 'me') say('Plantando… fique parado', 1500);
+          if (e.by === 'me') say('Plantando… segure E', 1500);
+          else if (meSide0() === 'ct') say('Terrorista plantando a bomba!', 2000);
+          break;
+        case 'dropped': {
+          const at = moverOf(lastCarrier);
+          dropAt = { x: at.x, y: fsDustFloorY(at.x, at.z), z: at.z };
+          dropReadyAt = clock + 1;
+          if (lastCarrier === 'me') say('Você largou a bomba', 2000);
+          else say(meSide0() === 'tr' ? 'A bomba caiu no chão: pegue com E' : 'A bomba caiu', 2500);
+          break;
+        }
+        case 'picked':
+          dropAt = null;
+          scene.setBombDrop(0, 0, 0, false);
+          lastCarrier = e.by;
+          if (e.by === 'me') {
+            say('Você pegou a bomba', 2000);
+            fsAudio.draw();
+          }
           break;
         case 'planted': {
           const at = plantPos ?? { x: mover.x, y: mover.y, z: mover.z };
           bombPos = { x: at.x, y: fsDustFloorY(at.x, at.z), z: at.z };
-          bombBanner = { text: 'Bomba plantada', until: clock + 2.5 };
-          fsAudio.hit('kill');
+          bombBanner = { text: `A bomba foi plantada na bomba ${e.site}`, until: clock + 3.5 };
+          fsAudio.bombPlanted();
+          beepIn = 0;
           break;
         }
         case 'defused':
-          scene.setBomb(0, 0, 0, false);
+          scene.setBomb(0, 0, 0, 'off');
+          fsAudio.bombDefused();
           break;
         case 'exploded':
           if (bombPos) {
             scene.explosion('frag', bombPos.x, bombPos.y, bombPos.z);
             fsAudio.nadeAt('boom-frag', bombPos.x, bombPos.y, bombPos.z, mover.x, mover.z);
           }
-          scene.setBomb(0, 0, 0, false);
+          scene.setBomb(0, 0, 0, 'off');
           break;
         case 'roundEnd': {
           const why = e.reason === 'bomb' ? 'a bomba explodiu' : e.reason === 'defuse' ? 'a bomba foi desarmada' : e.reason === 'time' ? 'acabou o tempo' : 'time eliminado';
@@ -1036,6 +1075,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         }
         case 'half':
           resetGear = true;
+          applyTeams();
           bombBanner = { text: 'Troca de lados', until: clock + 3 };
           break;
         case 'over':
@@ -1052,16 +1092,29 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       if (!bm) return;
       const meSide = sideOf('me')!;
       const meAlive = clock >= deadUntil;
-      // a bomba passa para outro terrorista se quem a levava morreu
-      if (!bm.carrier && bm.phase === 'live' && !bm.planter) {
-        const next = [...bm.players.values()].find((p) => p.side === 'tr' && p.alive);
-        if (next) bm.pickBomb(next.id);
+      if (bm.carrier) lastCarrier = bm.carrier;
+      // C4 no chão: terrorista vivo pega passando por cima (depois de 1 s) ou apertando E perto
+      if (dropAt && !bm.carrier && (bm.phase === 'live' || bm.phase === 'buy') && clock >= dropReadyAt) {
+        const near = (x: number, z: number, r: number) => Math.hypot(x - dropAt!.x, z - dropAt!.z) < r;
+        if (meAlive && meSide === 'tr' && (near(mover.x, mover.z, 1.1) || (useHeld && near(mover.x, mover.z, 2.4)))) bm.pickBomb('me');
+        else {
+          for (const d of dmSpecs) {
+            const b = brains.get(d.id);
+            if (b && targets.get(d.id)!.alive && sideOf(d.id) === 'tr' && near(b.mover.x, b.mover.z, 1.1) && bm.pickBomb(d.id)) break;
+          }
+        }
+        if (meAlive && meSide === 'tr' && dropAt && near(mover.x, mover.z, 6)) say('Pegue a bomba: ande até ela ou segure E', 400);
       }
-      const still = Math.hypot(mover.vx, mover.vz) < 1.5;
+      const still = Math.hypot(mover.vx, mover.vz) < 2.2;
       if (meAlive && meSide === 'tr' && bm.carrier === 'me') {
-        const site = inSiteAt(mover.x, mover.z);
+        const site = fsSiteAt(mover.x, mover.z);
         if (useHeld && site && still) plantPos = { x: mover.x, y: mover.y, z: mover.z };
         bm.plant('me', useHeld && still, site, dt);
+        if (bm.phase === 'live' && !bm.planting) {
+          if (!site) say('Você tem a bomba: vá a um pátio A ou B', 400);
+          else if (!useHeld) say('Segure E para plantar a bomba', 400);
+          else if (!still) say('Fique parado para plantar', 400);
+        }
       } else if (meAlive && meSide === 'ct' && bm.phase === 'planted' && bombPos) {
         const near = Math.hypot(mover.x - bombPos.x, mover.z - bombPos.z) < 2.4;
         bm.defuse('me', useHeld && near && still, near, dt);
@@ -1076,10 +1129,10 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         const side = sideOf(d.id)!;
         const idx = Number(d.id.slice(1));
         if (side === 'tr') {
-          const goal = bm.phase === 'planted' && bombPos ? bombPos : siteMark(planSite);
+          const goal = bm.phase === 'planted' && bombPos ? bombPos : dropAt && !bm.carrier ? dropAt : siteMark(planSite);
           b.objective = [goal.x, goal.z];
           if (bm.carrier === d.id) {
-            const site = inSiteAt(b.mover.x, b.mover.z);
+            const site = fsSiteAt(b.mover.x, b.mover.z);
             if (site && !b.target) plantPos = { x: b.mover.x, y: b.mover.y, z: b.mover.z };
             bm.plant(d.id, !!site && !b.target, site, dt);
           }
@@ -1092,7 +1145,28 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
           }
         }
       }
-      if (bm.phase === 'planted' && bombPos) scene.setBomb(bombPos.x, bombPos.y, bombPos.z, true, bm.time, clock);
+      // C4 na cena: plantando e desarmando aparecem para todos; plantada pisca e apita (som sai dela)
+      const planter = bm.planting;
+      const defuserId = bm.defusing;
+      if (bm.phase === 'planted' && bombPos) {
+        const by = defuserId ? moverOf(defuserId) : null;
+        scene.setBomb(bombPos.x, bombPos.y, bombPos.z, defuserId ? 'defusing' : 'armed', { left: bm.time, now: clock, progress: bm.defuseProgress / (bm.players.get(defuserId ?? '')?.kit ? bm.cfg.defuseKitSec : bm.cfg.defuseSec) });
+        beepIn -= dt;
+        if (beepIn <= 0) {
+          const left = bm.time;
+          beepIn = left > 20 ? 1 : left > 10 ? 0.6 : left > 5 ? 0.35 : 0.16;
+          fsAudio.bombBeep(bombPos.x, bombPos.y + 0.2, bombPos.z, mover.x, mover.z, 1 - Math.min(1, left / 40));
+        }
+        void by;
+      } else if (planter && bm.phase === 'live') {
+        const at = moverOf(planter);
+        const yaw = planter === 'me' ? view.yaw : (brains.get(planter)?.yaw ?? 0);
+        const r = (yaw * Math.PI) / 180;
+        const bx = at.x - Math.sin(r) * 0.7;
+        const bz = at.z - Math.cos(r) * 0.7;
+        scene.setBomb(bx, fsDustFloorY(bx, bz), bz, 'planting', { progress: bm.plantProgress / bm.cfg.plantSec, now: clock, yaw: r });
+      } else scene.setBomb(0, 0, 0, 'off');
+      scene.setBombDrop(dropAt?.x ?? 0, dropAt?.y ?? 0, dropAt?.z ?? 0, !!dropAt && !bm.carrier && bm.phase !== 'planted', clock);
       bm.step(dt);
       for (const e of bm.drain()) handleBombEvent(e);
       if (bm.phase === 'end') {
@@ -1534,7 +1608,9 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
           else setShop(true);
         }
         const shopOpen = shopRef.current;
-        if (inp.drop) {
+        if (inp.drop && bm && bm.carrier === 'me' && loadout.weapon.melee) {
+          bm.dropBomb('me');
+        } else if (inp.drop) {
           const d = loadout.drop();
           if (d) {
             throwWeapon(d.id, d.ammo);
@@ -1847,11 +1923,11 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
               const b = brains.get(d.id);
               const st = targets.get(d.id);
               if (!b || !st) return [];
-              return [{ id: d.id, x: b.mover.x, y: b.mover.y, z: b.mover.z, yaw: b.yaw, alive: st.alive, team: (i % 2 === 0 ? 1 : 0) as 0 | 1, loud: b.speed > 3.4 && b.mover.crouchK < 0.5 }];
+              return [{ id: d.id, x: b.mover.x, y: b.mover.y, z: b.mover.z, yaw: b.yaw, alive: st.alive, team: (bm ? (sideOf(d.id) === sideOf('me') ? 0 : 1) : i % 2 === 0 ? 1 : 0) as 0 | 1, loud: b.speed > 3.4 && b.mover.crouchK < 0.5 }];
             });
-            intel.step(nowS, { x: mover.x, y: mover.y, z: mover.z, yaw: view.yaw, eye: mover.y + fsEyeHeight(mover), team: 0 }, others, ARENA);
+            intel.step(nowS, { x: mover.x, y: mover.y, z: mover.z, yaw: view.yaw, eye: mover.y + fsEyeHeight(mover), team: 0 }, others, ARENA, FS_TEAMS_ACTIVE || !!bm);
             intelDots = intel.view(nowS).map((m) => ({ x: m.x, z: m.z, yaw: m.yaw, kind: m.kind, alpha: m.alpha, live: m.live }));
-            if (FS_TEAMS_ACTIVE) for (const o of others) if (o.team === 0 && o.alive) intelDots.push({ x: o.x, z: o.z, yaw: o.yaw, kind: 'ally', alpha: 1, live: true, name: nameOf(o.id) });
+            if (FS_TEAMS_ACTIVE || bm) for (const o of others) if (o.team === 0 && o.alive) intelDots.push({ x: o.x, z: o.z, yaw: o.yaw, kind: 'ally', alpha: 1, live: true, name: nameOf(o.id) });
           } else {
             intel.clear();
             intelDots = [];
@@ -1944,6 +2020,19 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       }
     };
 
+    /** Cores dos times e aliados (nome e silhueta por trás das paredes). No modo Bomba segue o lado de cada um (TR laranja, CT azul). */
+    function applyTeams() {
+      dmSpecs.forEach((d, i) => {
+        if (bm) {
+          const side = sideOf(d.id)!;
+          scene.setTeam(d.id, side === 'tr' ? 't' : 'ct');
+          scene.setAlly(d.id, side === sideOf('me'), d.label, side === 'tr' ? 't' : 'ct');
+          return;
+        }
+        scene.setTeam(d.id, i % 2 === 0 ? 't' : 'ct');
+        if (FS_TEAMS_ACTIVE && i % 2 === 1) scene.setAlly(d.id, true, d.label);
+      });
+    }
     scene
       .load()
       .then(() => {
@@ -1951,11 +2040,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         // a arma inicial é a pistola: o modelo na mão tem de ser o dela (antes aparecia o fuzil)
         scene.selectWeapon(loadout.weapon.id, true);
         // times (só a cor): você é contra-terrorista (azul), o 1º bot terrorista (laranja), o 2º azul...
-        dmSpecs.forEach((d, i) => {
-          scene.setTeam(d.id, i % 2 === 0 ? 't' : 'ct');
-          // os do seu time (azul) aparecem com o nome e por trás das paredes
-          if (FS_TEAMS_ACTIVE && i % 2 === 1) scene.setAlly(d.id, true, d.label);
-        });
+        applyTeams();
         setStatus('ready');
         last = performance.now();
         raf = requestAnimationFrame(frame);
@@ -2047,6 +2132,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         grab: (k: FsGrenadeId | 'next') => handle(loadout.selectGrenade(k)),
         throwNow: (k: FsGrenadeId, power = 0.6) => throwNade(k, power),
         altBtn: (on: boolean) => controls.setTouch('ads', on),
+        useBtn: (on: boolean) => controls.setTouch('use', on),
         blind: () => Math.max(0, blindUntil - clock),
         fireBtn: (on: boolean) => controls.setTouch('fire', on),
         blastAt: (kind: FsGrenadeId, x: number, z: number) => {
@@ -2072,6 +2158,17 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
           if (bm) bm.time = 0.01;
           endT = Math.min(endT, 0.01);
         },
+        bombGiveMe: () => {
+          if (!bm) return;
+          if (bm.carrier && bm.carrier !== 'me') bm.dropBomb(bm.carrier);
+          dropAt = null;
+          bm.pickBomb('me');
+        },
+        bombPlantAlmost: () => {
+          if (bm && bm.planting) bm.plantProgress = bm.cfg.plantSec - 0.05;
+        },
+        bombDrop: () => !!bm?.dropBomb('me'),
+        bombState: () => ({ carrier: bm?.carrier ?? null, dropped: !!bm?.dropped, drop: dropAt, phase: bm?.phase ?? null, planting: bm?.plantProgress ?? 0, dbg: { x: mover.x, z: mover.z, site: fsSiteAt(mover.x, mover.z), use: useHeld, speed: Math.hypot(mover.vx, mover.vz), dead: clock < deadUntil } }),
         bombKillMe: () => {
           if (!bm) return;
           bm.kill(null, 'me', 'ak');
