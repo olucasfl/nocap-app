@@ -41,9 +41,18 @@ test('modo Bomba: compra só na base e com dinheiro finito, depois o round come�
   await expect(page.getByTestId('fs-shop')).toBeVisible({ timeout: 20_000 });
   await fs<void>(page, 'bombSkip');
   await expect.poll(async () => (await bomb(page))?.phase, { timeout: 60_000 }).toBe('live');
-  // com o round rolando a loja não abre
+  // liberado o round, a loja segue aberta na base por 15 s; depois disso não abre mais
+  await expect(page.getByTestId('fs-shop')).toBeVisible({ timeout: 20_000 });
   await page.keyboard.press('KeyB');
   await expect(page.getByTestId('fs-shop')).toHaveCount(0);
+  await page.keyboard.press('KeyB');
+  await expect(page.getByTestId('fs-shop')).toBeVisible({ timeout: 20_000 });
+  await page.keyboard.press('KeyB');
+  await fs<void>(page, 'bombLate');
+  await page.keyboard.press('KeyB');
+  await expect(page.getByTestId('fs-shop')).toHaveCount(0);
+  // a tela escura da compra já foi embora
+  await expect(page.getByTestId('fb-dim')).toHaveCSS('opacity', '0');
 });
 
 test('modo Bomba: eliminar o time inimigo vence o round e paga mais que perder', async ({ page }, info) => {
@@ -118,5 +127,4 @@ test('modo Bomba: terrorista planta na Bomba A segurando E, solta e pega a C4, e
   await expect.poll(async () => (await bomb(page))?.phase, { timeout: 90_000 }).toBe('planted');
   await fs<void>(page, 'useBtn', false);
   await expect(page.getByTestId('fb-banner')).toContainText('plantada');
-});
 });

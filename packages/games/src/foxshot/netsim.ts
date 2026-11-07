@@ -453,7 +453,7 @@ export class FsNetSim {
       if (this.bm) {
         // só na base, na fase de compra, com dinheiro
         const bp = this.bm.players.get(p.id);
-        if (!item || !bp || this.bm.phase !== 'buy' || !this.inBase(p) || item.price > bp.money) return;
+        if (!item || !bp || !this.bm.buyOpen || !this.inBase(p) || item.price > bp.money) return;
       }
       if (c.id === 'kit') {
         // alicate: só contra-terrorista e uma vez; cobra só se deu
@@ -934,7 +934,7 @@ export class FsNetSim {
               gain: this.lastGain[id] ?? 0,
               side: bp?.side ?? 'ct',
               kit: !!bp?.kit,
-              win: this.bm!.cfg.winRounds,
+              win: this.bm!.cfg.winRounds, buy: this.bm!.buyOpen,
             };
           })()
         : undefined,

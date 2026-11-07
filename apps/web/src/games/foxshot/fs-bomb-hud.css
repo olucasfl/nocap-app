@@ -23,3 +23,5 @@
 @media (prefers-reduced-motion: reduce) { .fb-clock.urgent, .fb-banner { animation: none; } }
 @media (max-width: 760px), (max-height: 460px) { .fb-sub { display: none; } .fb-money { bottom: 56px; font-size: 20px; } .fb-top { top: 6px; } .fb-score { padding: 3px 10px; font-size: 16px; min-width: 56px; } .fb-score b { font-size: 22px; } .fb-clock { font-size: 22px; min-width: 76px; } }
 .fb-end { position: absolute; top: 14%; left: 50%; transform: translateX(-50%); z-index: 30; padding: 10px 22px; background: rgba(8, 10, 20, 0.92); border: 2px solid #ffd27a; border-radius: 10px; color: #fff; font: 700 clamp(18px, 4vw, 30px) Rajdhani, system-ui, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; text-align: center; }
+
+.fb-dim { position: absolute; inset: 0; background: rgba(3, 5, 12, 0.62); pointer-events: none; transition: opacity 0.35s linear; }

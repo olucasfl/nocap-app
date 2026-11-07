@@ -100,3 +100,9 @@ Respondidas pelo Lucas em 07/11/2026:
 - Times: TR sempre raposa laranja e CT azul (também depois da troca de lados, que antes só valia no motor), aliados com nome e silhueta por trás das paredes na cor do time, fora do minimapa de inimigos (aliados aparecem como aliados).
 - Fogo amigo: existe, mas com 25 % do dano e a cabeça não mata de uma vez (nem o sniper); matar aliado não rende dinheiro nem abate.
 - Mouse: o giro rápido não é mais descartado (antes qualquer evento acima de 400 px sumia); só picos acima de 3000 px.
+
+## Progresso: compra com tela escura e carência, minimapa com amigos
+
+- Fase de compra: tela escurecida (`fb-dim`, só opacity) que clareia nos últimos 4 s e some quando o round é liberado.
+- Carência: a loja continua aberta por `FS_BUY_GRACE` = 15 s depois de liberar o round (`bm.buyOpen`; servidor, offline e online usam a mesma regra). Compra e abertura da loja só na base; ao sair da base a loja fecha.
+- Minimapa: amigos vivos aparecem sempre (também depois de morrer), no offline e no online.

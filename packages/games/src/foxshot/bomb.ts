@@ -5,6 +5,8 @@
  */
 import type { FsWeaponId } from './weapons';
 
+/** Segundos a mais de compra (na base) depois de liberar o round. */
+export const FS_BUY_GRACE = 15;
 export type FsSide = 'tr' | 'ct';
 export const fsOtherSide = (s: FsSide): FsSide => (s === 'tr' ? 'ct' : 'tr');
 
@@ -198,10 +200,15 @@ export class FsBombMatch {
     this.events.push({ k: 'roundStart', round: this.round, carrier: this.carrier });
   }
 
-  /** Compra só na base e só na fase de compra. Devolve se deu. */
+  /** A loja continua aberta (só na base) por FS_BUY_GRACE s depois que o round é liberado para jogar. */
+  get buyOpen(): boolean {
+    return this.phase === 'buy' || (this.phase === 'live' && this.cfg.roundSec - this.time <= FS_BUY_GRACE);
+  }
+
+  /** Compra só na base e só enquanto a loja está aberta. Devolve se deu. */
   buy(id: string, price: number, inBase: boolean): boolean {
     const p = this.players.get(id);
-    if (!p || !p.alive || this.phase !== 'buy' || !inBase || price > p.money || price < 0) return false;
+    if (!p || !p.alive || !this.buyOpen || !inBase || price > p.money || price < 0) return false;
     p.money -= price;
     return true;
   }

@@ -38,6 +38,8 @@ export function FsBombHud({ b }: { b: BombHud }) {
   const urgent = b.phase === 'planted' && b.time <= 10;
   return (
     <div className="fb" data-testid="fb-hud" data-phase={b.phase}>
+      {/* compra: tela escura que vai sumindo nos últimos 4 s e some de vez quando libera (só opacity) */}
+      <div className="fb-dim" data-testid="fb-dim" style={{ opacity: b.phase === 'buy' ? Math.min(1, Math.max(0, b.time / 4)) : 0 }} />
       <div className="fb-top">
         <span className="fb-score tr" data-testid="fb-tr">TR <b>{b.tr}</b></span>
         <span className={`fb-clock${urgent ? ' urgent' : ''}${b.phase === 'planted' ? ' planted' : ''}`} data-testid="fb-clock">

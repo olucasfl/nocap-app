@@ -1020,8 +1020,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     const handleBombEvent = (e: FsBombEvent) => {
       switch (e.k) {
         case 'live':
-          setShopState(false);
-          shopRef.current = false;
+          // a loja continua aberta (na base) pela carência de 15 s; fecha sozinha quando acabar ou ao sair da base
           fsAudio.draw();
           break;
         case 'plantStart':
@@ -1177,7 +1176,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
           beginRound();
         }
       }
-      if (bm.phase !== 'buy' && shopRef.current) {
+      if ((!bm.buyOpen || !inBaseAt(mover.x, mover.z, bm.players.get('me')!.side)) && shopRef.current) {
         setShopState(false);
         shopRef.current = false;
       }
@@ -1507,7 +1506,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     buyRef.current = (item) => {
       if (bm) {
         const meP = bm.players.get('me')!;
-        if (bm.phase !== 'buy' || !inBaseAt(mover.x, mover.z, meP.side)) return say('Só dá para comprar na base, no tempo de compra');
+        if (!bm.buyOpen || !inBaseAt(mover.x, mover.z, meP.side)) return say('Só dá para comprar na base, no tempo de compra');
         if (item.price > meP.money) return say('Dinheiro insuficiente');
         if (item.kit) {
           if (meP.side !== 'ct') return say('O alicate é só dos contra-terroristas');
@@ -1603,7 +1602,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         if (inp.buy) {
           if (!bm) setShop(!shopRef.current);
           else if (shopRef.current) setShop(false);
-          else if (bm.phase !== 'buy') say('A loja só abre no tempo de compra, na base');
+          else if (!bm.buyOpen) say('A loja só abre no tempo de compra, na base');
           else if (!inBaseAt(mover.x, mover.z, bm.players.get('me')!.side)) say('Volte para a base para comprar');
           else setShop(true);
         }
@@ -1918,19 +1917,21 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         if (intelT > 0.06) {
           intelT = 0;
           const nowS = performance.now() / 1000;
+          const others = dmSpecs.flatMap((d, i) => {
+            const b = brains.get(d.id);
+            const st = targets.get(d.id);
+            if (!b || !st) return [];
+            return [{ id: d.id, x: b.mover.x, y: b.mover.y, z: b.mover.z, yaw: b.yaw, alive: st.alive, team: (bm ? (sideOf(d.id) === sideOf('me') ? 0 : 1) : i % 2 === 0 ? 1 : 0) as 0 | 1, loud: b.speed > 3.4 && b.mover.crouchK < 0.5 }];
+          });
           if (!playerDead) {
-            const others = dmSpecs.flatMap((d, i) => {
-              const b = brains.get(d.id);
-              const st = targets.get(d.id);
-              if (!b || !st) return [];
-              return [{ id: d.id, x: b.mover.x, y: b.mover.y, z: b.mover.z, yaw: b.yaw, alive: st.alive, team: (bm ? (sideOf(d.id) === sideOf('me') ? 0 : 1) : i % 2 === 0 ? 1 : 0) as 0 | 1, loud: b.speed > 3.4 && b.mover.crouchK < 0.5 }];
-            });
             intel.step(nowS, { x: mover.x, y: mover.y, z: mover.z, yaw: view.yaw, eye: mover.y + fsEyeHeight(mover), team: 0 }, others, ARENA, FS_TEAMS_ACTIVE || !!bm);
             intelDots = intel.view(nowS).map((m) => ({ x: m.x, z: m.z, yaw: m.yaw, kind: m.kind, alpha: m.alpha, live: m.live }));
             if (FS_TEAMS_ACTIVE || bm) for (const o of others) if (o.team === 0 && o.alive) intelDots.push({ x: o.x, z: o.z, yaw: o.yaw, kind: 'ally', alpha: 1, live: true, name: nameOf(o.id) });
           } else {
             intel.clear();
+            // morto: os amigos continuam no minimapa
             intelDots = [];
+            if (FS_TEAMS_ACTIVE || bm) for (const o of others) if (o.team === 0 && o.alive) intelDots.push({ x: o.x, z: o.z, yaw: o.yaw, kind: 'ally', alpha: 1, live: true, name: nameOf(o.id) });
           }
         }
       }
@@ -2166,6 +2167,9 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         },
         bombPlantAlmost: () => {
           if (bm && bm.planting) bm.plantProgress = bm.cfg.plantSec - 0.05;
+        },
+        bombLate: () => {
+          if (bm && bm.phase === 'live') bm.time = bm.cfg.roundSec - 16;
         },
         bombDrop: () => !!bm?.dropBomb('me'),
         bombState: () => ({ carrier: bm?.carrier ?? null, dropped: !!bm?.dropped, drop: dropAt, phase: bm?.phase ?? null, planting: bm?.plantProgress ?? 0, dbg: { x: mover.x, z: mover.z, site: fsSiteAt(mover.x, mover.z), use: useHeld, speed: Math.hypot(mover.vx, mover.vz), dead: clock < deadUntil } }),

@@ -22,6 +22,18 @@ describe('modo Bomba', () => {
     expect(fsBombConfig({ winRounds: 99, buySec: 1, roundSec: 999 })).toMatchObject({ winRounds: 13, buySec: 5, roundSec: 180 });
   });
 
+  it('a loja fica aberta 15 s depois de liberar o round, e só na base', () => {
+    const m = mk();
+    m.step(m.cfg.buySec + 0.1);
+    expect(m.phase).toBe('live');
+    expect(m.buyOpen).toBe(true);
+    expect(m.buy('t1', 200, true)).toBe(true);
+    expect(m.buy('t1', 100, false)).toBe(false);
+    m.step(16);
+    expect(m.buyOpen).toBe(false);
+    expect(m.buy('t1', 100, true)).toBe(false);
+  });
+
   it('só compra na base e na fase de compra, com dinheiro finito', () => {
     const m = mk();
     expect(m.buy('t1', 200, false)).toBe(false);
@@ -30,6 +42,7 @@ describe('modo Bomba', () => {
     expect(m.players.get('t1')!.money).toBe(600);
     live(m);
     expect(m.phase).toBe('live');
+    m.step(16);
     expect(m.buy('t1', 100, true)).toBe(false);
   });
 

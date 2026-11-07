@@ -72,7 +72,7 @@ interface SelfState {
   hp: number; armor: number; helmet: boolean; alive: boolean; respawnIn: number;
   cur: number; held: FsGrenadeId | null; ammo: number; reloading: boolean; slots: number[]; nades: Record<FsGrenadeId, number>;
   /** Modo Bomba: dinheiro, progresso de plantar/desarmar, ganho do último round, seu lado e rounds para vencer. */
-  bomb?: { money: number; plant: number; defuse: number; gain: number; side: 'tr' | 'ct'; win: number; kit?: boolean };
+  bomb?: { money: number; plant: number; defuse: number; gain: number; side: 'tr' | 'ct'; win: number; kit?: boolean; buy?: boolean };
 }
 interface Frame {
   f: { k: number; left: number; p: number[][]; g: number[][]; b?: number[] };
@@ -463,7 +463,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           if (ph === 0) sayHint('Compre na base (B). A bomba é dos terroristas: pátios A e B', 4500);
           bPhasePrev = ph;
         }
-        if (ph !== 0 && shopRef.current) setShop(false);
+        if (!bombSelf?.buy && ph !== 0 && shopRef.current) setShop(false);
       }
       timeLeft = fr.f.left / 60;
       for (const raw of fr.f.p) {
@@ -721,7 +721,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
     };
     buyRef.current = (item) => {
       if (bf) {
-        if (bf[0] !== 0 || !inBaseNow()) return sayHint('Só dá para comprar na base, no tempo de compra');
+        if (!bombSelf?.buy || !inBaseNow()) return sayHint('Só dá para comprar na base, no tempo de compra');
         if (item.price > (bombSelf?.money ?? 0)) return sayHint('Dinheiro insuficiente');
         if (item.kit) {
           if (bombSelf?.side !== 'ct') return sayHint('O alicate é só dos contra-terroristas');
@@ -826,7 +826,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         if (inp.buy) {
           if (!bf) setShop(!shopRef.current);
           else if (shopRef.current) setShop(false);
-          else if (bf[0] !== 0) sayHint('A loja só abre no tempo de compra, na base');
+          else if (!bombSelf?.buy) sayHint('A loja só abre no tempo de compra, na base');
           else if (!inBaseNow()) sayHint('Volte para a base para comprar');
           else setShop(true);
         }
@@ -1090,7 +1090,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       if (intelT > 0.06) {
         intelT = 0;
         const nowS = performance.now() / 1000;
-        if (player && alive) {
+        {
           const mineRow = rows.get(meId);
           const myTeam = ((mineRow?.flags ?? 0) & 128) !== 0 ? 1 : 0;
           const others = rosterNow().flatMap((r, idx) => {
@@ -1104,12 +1104,15 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
             const sp = a1 && a0 && a1.t > a0.t ? Math.hypot(a1.x - a0.x, a1.z - a0.z) / ((a1.t - a0.t) / 1000) : 0;
             return [{ id: r.id, x: row.x, y: row.y, z: row.z, yaw: row.yaw, alive: (row.flags & 1) !== 0, team: ((row.flags & 128) !== 0 ? 1 : 0) as 0 | 1, loud: sp > 3.0 && row.crouch < 0.5 }];
           });
-          intel.step(nowS, { x: mover.x, y: mover.y, z: mover.z, yaw: view.yaw, eye: mover.y + fsEyeHeight(mover), team: myTeam as 0 | 1 }, others, ARENA, FS_TEAMS_ACTIVE || !!bf);
-          intelDots = intel.view(nowS).map((m) => ({ x: m.x, z: m.z, yaw: m.yaw, kind: m.kind, alpha: m.alpha, live: m.live }));
-          if (FS_TEAMS_ACTIVE || bf) for (const o of others) if (o.team === myTeam && o.alive) intelDots.push({ x: o.x, z: o.z, yaw: o.yaw, kind: 'ally', alpha: 1, live: true, name: nameOf(o.id) });
-        } else {
-          intel.clear();
-          intelDots = [];
+          if (player && alive) {
+            intel.step(nowS, { x: mover.x, y: mover.y, z: mover.z, yaw: view.yaw, eye: mover.y + fsEyeHeight(mover), team: myTeam as 0 | 1 }, others, ARENA, FS_TEAMS_ACTIVE || !!bf);
+            intelDots = intel.view(nowS).map((m) => ({ x: m.x, z: m.z, yaw: m.yaw, kind: m.kind, alpha: m.alpha, live: m.live }));
+          } else {
+            intel.clear();
+            intelDots = [];
+          }
+          // os amigos aparecem sempre no minimapa, inclusive depois de morrer
+          if (player && (FS_TEAMS_ACTIVE || bf)) for (const o of others) if (o.team === myTeam && o.alive) intelDots.push({ x: o.x, z: o.z, yaw: o.yaw, kind: 'ally', alpha: 1, live: true, name: nameOf(o.id) });
         }
       }
       mini.current = { x: mover.x, z: mover.z, yaw: view.yaw, targets: [], boxes: ARENA, labels: world.labels, marks: FS_DUST_MARKS, intel: intelDots };
