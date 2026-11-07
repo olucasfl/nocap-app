@@ -175,7 +175,49 @@ Pedido do Lucas (04/11/2026).
 9. **Comandos**: o botão de mirar continua o mesmo (Mouse 2 por padrão, remapeável); só muda o comportamento quando a arma na mão é a sniper. Texto da ajuda dos Comandos explica isso.
 10. Testes: lógica (ciclo 0, 1, 2, 0; trocar de arma fecha; campo de visão por nível) e e2e (clicar três vezes e conferir a luneta e o campo de visão em cada passo).
 
-## 9. Outras pendências lembradas
+## 9. Espectar do Ping Fox mostra as raquetes paradas
+
+Pedido do Lucas (07/11/2026).
+
+**O que aconteceu:** sala com 3 pessoas (o Lucas e 2 amigos). Os dois amigos jogavam e o Lucas espectava. Para quem espectava, **as raquetes ficavam paradas e só a bola se mexia**, mesmo com os outros dois jogando normalmente.
+
+**O que fazer:**
+1. Descobrir a causa: provavelmente o espectador recebe a bola no quadro do servidor mas não recebe (ou não aplica) as posições das raquetes, ou o Ping Fox usa a conexão direta (WebRTC) entre os dois jogadores e o espectador só recebe parte do estado. Reproduzir com 3 abas (2 jogando, 1 espectando) antes de mexer.
+2. O espectador tem que ver **exatamente o que os jogadores veem**: raquetes, bola, placar, pontos, pausa e fim de partida, com a mesma suavização.
+3. Entrar espectando **no meio** da partida também tem que funcionar (estado completo ao entrar, não só as mudanças).
+4. Conferir o mesmo caminho do espectar no **Fut Fox** e no **Desmorona**, que usam a mesma ideia, para não ter o mesmo defeito escondido.
+5. Teste e2e com 3 contextos de navegador (2 jogam, 1 especta que confere que as raquetes do espectador se movem; teste de lógica do que o espectador recebe.
+
+## 10. Tela própria de cada jogo do Fox Cap! (jogar offline, amigos, opções)
+
+Pedido do Lucas (07/11/2026). Hoje só o Counter Fox tem tela própria (spec 057: cores, símbolo, abas, jogar com amigos ou offline, opções, sair). Os outros modos entram direto no jogo.
+
+**Objetivo:** todos os modos do Fox Cap! ganham uma experiência **personalizada e profissional**, no mesmo padrão do Counter Fox, cada um com a sua cara.
+
+### 10.1 Tela do jogo (hub) para cada modo
+1. Ao tocar em **Jogar** num jogo, abre a **tela do jogo** (não o jogo direto), com:
+   - cores, símbolo e fundo próprios do modo (tema por jogo, tokens `--<jogo>-*`, como o `--cfx-*`);
+   - opções: **Jogar com amigos**, **Jogar offline**, **Configurações**, **Sair** (volta para a lista do Fox Cap!);
+   - mesma estrutura de abas, só trocando o conteúdo e o visual.
+2. **Jogar offline** abre as escolhas do modo (dificuldade, bots, regras, mapa/arena quando existir) e só depois entra na partida.
+3. **Configurações** do modo: controles (com remapear e "Tirar"), som, desempenho, e o que fizer sentido para aquele jogo; salvas na conta (ver seção 2).
+4. Respeitar `prefers-reduced-motion` e animar só `transform`/`opacity` (regras do projeto). Decisão do Lucas: as regras de visual do Counter Fox (RULES.md, terceira exceção) passam a valer para a tela de cada jogo; **atualizar o RULES.md com o OK dele** antes de implementar.
+
+### 10.2 Sala de amigos com o tema do jogo escolhido
+1. Na sala de amigos, ao **selecionar um jogo**, a sala inteira **troca para o tema daquele jogo**; ao trocar para outro jogo, o tema troca de novo (como já é para o Counter Fox).
+2. As **abas da sala são iguais às do Counter Fox** em todos os jogos: **Convidar, Configurar, Chat** e as demais que o Counter Fox tiver (inclui o chat estilo CS da seção 3 e o botão "Outros jogos" da seção 4).
+3. Um componente de sala único, com o tema e o conteúdo da aba "Configurar" injetados por jogo (sem copiar código por jogo).
+
+### 10.3 Padrão para os jogos e o que o Counter Fox ainda não tem
+- Criar um **contrato de tela de jogo** (nome, tema, símbolo, modos, opções, regras) que todo jogo implementa, para o próximo jogo já nascer com tela própria.
+- Levar para todos os jogos o que existir em um modo e faltar nos outros, e o contrário: o que os outros modos têm e o Counter Fox não (a levantar jogo a jogo: por exemplo ranking/recordes pessoais, tutorial ou "como jogar" curto, histórico de partidas, revanche rápida, estatísticas, aviso de conexão, reconexão após queda, créditos). Antes de implementar, listar na spec o que cada jogo ganha.
+- Ordem sugerida: desenhar o contrato e o componente de sala com o Ping Fox (já tem espectar a corrigir) e depois repetir para os demais, um por vez, cada um com revisão.
+
+### 10.4 Qualidade
+- Cada jogo sai **revisado e sem bugs**: teste e2e do fluxo (Jogar, hub, offline, amigos, configurações, sair), teste da troca de tema na sala, conferência visual em desktop e celular, e checagem de acessibilidade (foco por teclado, contraste, leitor de tela).
+- Entregar um jogo por vez, cada um com sua spec filha e o status aqui.
+
+## 11. Outras pendências lembradas
 
 - Atualizar a spec 057, `ARCHITECTURE.md` e `docs/ROADMAP.md` com as últimas mudanças do Counter Fox (radar estilo CS, ícones do kill feed, times só em cor, aliados desligados, menus).
 - Conferir na tela o que só foi testado em código: raposas azuis, Bomba B no jogo, ícones do kill feed, aliado com nome e silhueta (desligado hoje), mapa grande no online e menu das salas.
