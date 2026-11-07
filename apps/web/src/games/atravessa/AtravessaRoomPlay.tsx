@@ -592,7 +592,7 @@ function RoundPlay({ snapshot }: { snapshot: RoomSnapshot }) {
           }}
           onClose={() => setMenu(false)}
           onExit={() => {
-            void leaveRoom().then(() => navigate({ to: '/fox-cap' }));
+            void leaveRoom().then(() => navigate({ to: '/fox-cap', search: { jogo: 'atravessa' } }));
           }}
           endMatch={{
             label: checkpointMode ? 'Encerrar a corrida' : 'Encerrar a rodada',

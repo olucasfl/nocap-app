@@ -170,7 +170,7 @@ const atravessaRoute = createRoute({
     search.treino === 1 || search.treino === '1' ? { treino: 1 } : {},
   // a tela antiga do jogo não existe mais: tudo começa no Fox Cap! (só a partida offline vem direto, com ?treino=1)
   beforeLoad: ({ search }) => {
-    if (!search.treino) throw redirect({ to: '/fox-cap' });
+    if (!search.treino) throw redirect({ to: '/fox-cap', search: { jogo: 'atravessa' } });
   },
   component: lazyRouteComponent(() => import('@/games/atravessa/AtravessaPage'), 'AtravessaPage'),
 });
@@ -178,8 +178,12 @@ const atravessaRoute = createRoute({
 const foxCapRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/fox-cap',
-  validateSearch: (search: Record<string, unknown>): { aba?: 'amigos' } =>
-    search.aba === 'amigos' ? { aba: 'amigos' } : {},
+  // `jogo` abre a tela própria daquele jogo (o "hub"); `tela=amigos` já abre o "Jogar com amigos" dele
+  validateSearch: (search: Record<string, unknown>): { aba?: 'amigos'; jogo?: 'atravessa' | 'bola' | 'pingpong' | 'desmorona'; tela?: 'amigos' } => ({
+    ...(search.aba === 'amigos' ? { aba: 'amigos' as const } : {}),
+    ...(search.jogo === 'atravessa' || search.jogo === 'bola' || search.jogo === 'pingpong' || search.jogo === 'desmorona' ? { jogo: search.jogo } : {}),
+    ...(search.tela === 'amigos' ? { tela: 'amigos' as const } : {}),
+  }),
   component: lazyRouteComponent(() => import('@/games/desmorona/FoxCapPage'), 'FoxCapPage'),
 });
 

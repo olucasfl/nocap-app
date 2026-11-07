@@ -106,7 +106,7 @@ export function AtravessaRoomFinalPage({ snapshot }: { snapshot: RoomSnapshot })
         })),
         onVote: (again) => sendRoom('vote', { again }),
         onLeave: () => {
-          void leaveRoom().then(() => navigate({ to: '/fox-cap' }));
+          void leaveRoom().then(() => navigate({ to: '/fox-cap', search: { jogo: 'atravessa' } }));
         },
         onClose: () => closeRoom(),
       }}

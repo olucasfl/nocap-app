@@ -38,7 +38,7 @@ export function PingRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       <PingPlay
         online={online}
         onExit={() => {
-          void leaveRoom().then(() => navigate({ to: '/fox-cap' }));
+          void leaveRoom().then(() => navigate({ to: '/fox-cap', search: { jogo: 'pingpong' } }));
         }}
       />
     </div>

@@ -211,14 +211,10 @@ function RoomPageInner({ code, game = 'color' }: { code?: string; game?: RoomGam
     // o Counter Fox volta para o menu dele (só sai do Counter Fox quem clica em "Sair do Counter Fox")
     if (lastGame === 'foxshot') void navigate({ to: '/fox-cap/counter-fox' });
     // os jogos do Fox Cap! (Fut Fox, Desmorona!, Atravessa!) voltam para a tela do Fox Cap!
-    else if (
-      lastGame === 'desmorona' ||
-      lastGame === 'bola' ||
-      lastGame === 'pingpong' ||
-      lastGame === 'foxcap' ||
-      lastGame === 'atravessa'
-    )
-      void navigate({ to: '/fox-cap' });
+    else if (lastGame === 'desmorona' || lastGame === 'bola' || lastGame === 'pingpong' || lastGame === 'atravessa')
+      // cada jogo volta para a tela própria dele (só sai do jogo quem clica em "Sair do ..." nessa tela)
+      void navigate({ to: '/fox-cap', search: { jogo: lastGame } });
+    else if (lastGame === 'foxcap') void navigate({ to: '/fox-cap' });
     else void navigate({ to: GAME_PAGE[lastGame], search: { aba: 'friends' } });
   }, [snapshot, lastGame, message, status, navigate]);
   // Dentro da sala o endereço é sempre o link dela (/sala/ABCD), para copiar do navegador e mandar.

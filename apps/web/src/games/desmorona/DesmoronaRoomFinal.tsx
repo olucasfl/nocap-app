@@ -39,7 +39,7 @@ export function DesmoronaRoomFinal({ snapshot }: { snapshot: RoomSnapshot }) {
 
   const mine = snapshot.members.find((m) => m.id === me);
   const leave = () => {
-    void leaveRoom().then(() => navigate({ to: '/fox-cap' }));
+    void leaveRoom().then(() => navigate({ to: '/fox-cap', search: { jogo: 'desmorona' } }));
   };
   return (
     <DesmoronaFinal

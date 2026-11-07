@@ -152,9 +152,9 @@ export function AtravessaGame() {
           setPhase('final');
         }}
         // vindo do Fox Cap!: sair da partida volta para lá
-        onQuit={() => void navigate({ to: '/fox-cap' })}
+        onQuit={() => void navigate({ to: '/fox-cap', search: { jogo: 'atravessa' } })}
         onRestart={() => void begin()}
-        onOfflineInvite={() => void navigate({ to: '/fox-cap', search: { aba: 'amigos' } })}
+        onOfflineInvite={() => void navigate({ to: '/fox-cap', search: { jogo: 'atravessa', tela: 'amigos' } })}
       />
     );
   }
@@ -177,7 +177,7 @@ export function AtravessaGame() {
           steps={steps}
           busy={busy}
           onAgain={() => void begin()}
-          onMenu={() => void navigate({ to: '/fox-cap' })}
+          onMenu={() => void navigate({ to: '/fox-cap', search: { jogo: 'atravessa' } })}
         />
       )}
     </Page>

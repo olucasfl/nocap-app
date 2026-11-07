@@ -109,7 +109,7 @@ export function BolaRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   if (!b) return null;
   const isHost = snapshot.hostId === b.me;
   const onExit = () => {
-    void leaveRoom().then(() => navigate({ to: '/fox-cap' }));
+    void leaveRoom().then(() => navigate({ to: '/fox-cap', search: { jogo: 'bola' } }));
   };
 
   if (!link || fail) {

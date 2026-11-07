@@ -8,7 +8,8 @@
   --gl-ui: 'Rajdhani', 'Segoe UI', system-ui, sans-serif;
   position: fixed;
   inset: 0;
-  z-index: 60;
+  /* abaixo dos seletores de partida (z 50 a 70) e do "Como jogar" (80), que abrem por cima */
+  z-index: 40;
   overflow: hidden;
   background: #070a14;
   color: var(--gl-ink);

@@ -66,7 +66,7 @@ export function PingRoomFinal({ snapshot }: { snapshot: RoomSnapshot }) {
           })),
           onVote: (again) => sendRoom('vote', { again }),
           onLeave: () => {
-            void leaveRoom().then(() => navigate({ to: '/fox-cap' }));
+            void leaveRoom().then(() => navigate({ to: '/fox-cap', search: { jogo: 'pingpong' } }));
           },
           onClose: () => closeRoom(),
         },

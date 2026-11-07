@@ -37,15 +37,18 @@ export function GameLanding({
   onHelp,
   onExit,
   room,
+  start = 'main',
 }: {
   game: LandingGame;
   onOffline: () => void;
   onHelp: () => void;
   onExit: () => void;
   room: LandingRoom;
+  /** Tela em que abre: 'friends' quando se volta de uma partida offline para convidar. */
+  start?: 'main' | 'friends';
 }) {
   const t = GAME_LANDING[game];
-  const [screen, setScreen] = useState<Screen>('main');
+  const [screen, setScreen] = useState<Screen>(start);
   const [code, setCode] = useState('');
 
   useEffect(() => {

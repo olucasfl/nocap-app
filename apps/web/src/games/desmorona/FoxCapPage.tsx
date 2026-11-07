@@ -43,7 +43,7 @@ type Flow = 'bola-pick' | 'bola-play' | 'dsm-pick' | 'dsm-play' | 'png-pick' | '
  */
 export function FoxCapPage() {
   const navigate = useNavigate();
-  const wanted = useSearch({ strict: false }) as { aba?: string };
+  const wanted = useSearch({ strict: false }) as { aba?: string; jogo?: LandingGame; tela?: string };
   const [tab, setTab] = useState<'offline' | 'amigos'>(
     wanted.aba === 'amigos' ? 'amigos' : 'offline',
   );
@@ -53,14 +53,17 @@ export function FoxCapPage() {
   const [bots, setBots] = useState(5);
   const [pingLevel, setPingLevel] = useState<PpBotName>('medio');
   const [round, setRound] = useState(0);
-  /** Tela própria do jogo aberta (Jogar abre a tela do jogo, não a partida). */
-  const [hub, setHub] = useState<LandingGame | null>(null);
+  /** Tela própria do jogo aberta (Jogar abre a tela do jogo, não a partida). Vem do endereço, para voltar sempre para ela. */
+  const hub: LandingGame | null = wanted.jogo ?? null;
+  const openHub = (g: LandingGame) => void navigate({ to: '/fox-cap', search: { jogo: g } });
+  const closeHub = () => void navigate({ to: '/fox-cap', search: {} });
   const [code, setCode] = useState('');
   const entry = useRoomEntry({ resume: true });
   /** "Convidar" numa partida offline: sai dela e abre "Com amigos", onde se cria a sala. */
   const goFriends = () => {
     setFlow(null);
-    setTab('amigos');
+    if (hub) void navigate({ to: '/fox-cap', search: { jogo: hub, tela: 'amigos' } });
+    else setTab('amigos');
   };
   // o Atravessa! baixa em segundo plano: ao clicar em Jogar a partida abre na hora, sem tela de carregamento
   useEffect(() => {
@@ -125,7 +128,7 @@ export function FoxCapPage() {
       void navigate({ to: '/atravessa', search: { treino: 1 } });
       return;
     }
-    setHub(null);
+    // a tela do jogo continua no endereço: sair da partida volta para ela
     if (g === 'bola') setFlow('bola-pick');
     else if (g === 'pingpong') setFlow('png-pick');
     else if (g === 'desmorona') setFlow('dsm-pick');
@@ -133,12 +136,13 @@ export function FoxCapPage() {
 
   return (
     <Page>
-      {hub && (
+      {hub && !flow && (
         <GameLanding
           game={hub}
           onOffline={offline}
           onHelp={() => setHelp(hub)}
-          onExit={() => setHub(null)}
+          onExit={closeHub}
+          start={wanted.tela === 'amigos' ? 'friends' : 'main'}
           room={{
             busy: entry.busy,
             error: entry.error,
@@ -193,7 +197,7 @@ export function FoxCapPage() {
                 desc="Pule, desvie e atravesse tudo. Vale a distância."
                 tags={['Offline', 'Ranking']}
                 // o jogo começa direto; sair da partida volta aqui
-                onPlay={() => setHub('atravessa')}
+                onPlay={() => openHub('atravessa')}
                 onHelp={() => setHelp('atravessa')}
                 testId="foxcap-atravessa"
                 helpTestId="help-atravessa"
@@ -204,7 +208,7 @@ export function FoxCapPage() {
                 name="Fut Fox Treino"
                 desc="Futebol de raposas contra bots. Escolha o formato."
                 tags={['2 a 4 times', 'Offline']}
-                onPlay={() => setHub('bola')}
+                onPlay={() => openHub('bola')}
                 onHelp={() => setHelp('bola')}
                 testId="foxcap-bola"
                 helpTestId="help-bola"
@@ -215,7 +219,7 @@ export function FoxCapPage() {
                 name="Ping Fox! Treino"
                 desc="Pingue-pongue 1 contra 1 contra um bot. A raquete bate de verdade: força, lob e efeito."
                 tags={['1x1', 'Offline']}
-                onPlay={() => setHub('pingpong')}
+                onPlay={() => openHub('pingpong')}
                 onHelp={() => setHelp('pingpong')}
                 testId="foxcap-pingpong"
                 helpTestId="help-pingpong"
@@ -226,7 +230,7 @@ export function FoxCapPage() {
                 name="Desmorona! Treino"
                 desc="O chão some debaixo dos pés. Contra raposas do jogo."
                 tags={['1 a 7 bots', 'Offline']}
-                onPlay={() => setHub('desmorona')}
+                onPlay={() => openHub('desmorona')}
                 onHelp={() => setHelp('desmorona')}
                 testId="foxcap-desmorona"
                 helpTestId="help-desmorona"
