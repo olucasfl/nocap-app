@@ -22,7 +22,7 @@ import type { FsBox } from './map';
 export const FS_NET_HZ = 60;
 export const FS_NET_DT = 1 / FS_NET_HZ;
 /** Quanto o servidor volta no tempo para acertar um tiro (compensação de atraso), no máximo, em passos (250 ms). */
-export const FS_NET_REWIND_MAX = 15;
+export const FS_NET_REWIND_MAX = 30;
 /** Fila de entradas por jogador: acima disso as mais velhas se perdem (a pessoa está muito atrasada). */
 const QUEUE_MAX = 12;
 

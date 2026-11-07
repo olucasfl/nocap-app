@@ -900,7 +900,7 @@ export class FoxShotRoom extends ColorRoom {
     const engine = this.engine as FoxShotRoomEngine;
     if (engine.currentPhase !== 'play' || !engine.sim) return;
     const now = Date.now();
-    if (now - (fsSentAt.get(this) ?? 0) < 48) return;
+    if (now - (fsSentAt.get(this) ?? 0) < 33) return;
     fsSentAt.set(this, now);
     const ev = engine.drainEvents();
     for (const client of this.clients) {
