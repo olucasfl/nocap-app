@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { FS_SHOP, type FsShopItem, type FsWeaponId } from '@nocap/games';
-import { HeartIcon, VestIcon, WeaponIcon } from './fs-icons';
+import { HeartIcon, KitIcon, VestIcon, WeaponIcon } from './fs-icons';
 import { bindLabel, useFsSettings } from './fs-settings';
 
 /** Cor de cada seção (faixa do título e brilho do que você já tem). */
@@ -32,7 +32,13 @@ export function FsShop({
   armor,
   helmet,
   nades = [],
+  money = null,
+  kit = 'na',
 }: {
+  /** Dinheiro (modo Bomba); sem valor = infinito. */
+  money?: number | null;
+  /** Alicate de desarme: 'ok' dá para comprar, 'owned' já tem, 'na' não vale aqui. */
+  kit?: 'ok' | 'owned' | 'na';
   onBuy: (item: FsShopItem) => void;
   onClose: () => void;
   /** Ids dos itens que a pessoa já tem em uso. */
@@ -98,7 +104,7 @@ export function FsShop({
       )}
       <header className="fss-head">
         <b>Loja</b>
-        <span className="fss-money mono">$ ∞</span>
+        <span className="fss-money mono" data-testid="fs-shop-money">{money === null ? '$ ∞' : `$ ${money}`}</span>
         <span className="mono fss-key">
           {col === null ? 'Aperte 1 a 5 para escolher a seção' : 'Aperte o número do item'} · {bindLabel(buyKey)} fecha
         </span>
@@ -117,13 +123,16 @@ export function FsShop({
               {c.label}
             </h4>
             <ul>
-              {c.items.map((it, ii) => {
-                const own = owned.includes(it.id);
+              {c.items.map((raw, ii) => {
+                // o alicate só existe no modo Bomba e só para contra-terrorista
+                const it = raw.kit ? { ...raw, soon: kit === 'na' } : raw;
+                const own = owned.includes(it.id) || (it.kit === true && kit === 'owned');
+                const poor = money !== null && !it.soon && !own && it.price > money;
                 return (
                   <li key={it.id}>
                     <button
                       type="button"
-                      className={`fss-item${it.soon ? ' soon' : ''}${own ? ' own' : ''}${flash === it.id ? ' bought' : ''}`}
+                      className={`fss-item${it.soon ? ' soon' : ''}${poor ? ' poor' : ''}${own ? ' own' : ''}${flash === it.id ? ' bought' : ''}`}
                       disabled={it.soon}
                       onClick={() => buy(it)}
                       data-testid={`fs-buy-${it.id}`}
@@ -132,6 +141,8 @@ export function FsShop({
                       <span className="fss-art" aria-hidden="true">
                         {it.weapon || it.grenade ? (
                           <WeaponIcon id={(it.weapon ?? it.grenade)!} className="fss-ico" />
+                        ) : it.kit ? (
+                          <KitIcon className="fss-ico vest" />
                         ) : it.armor ? (
                           <VestIcon className="fss-ico vest" />
                         ) : (

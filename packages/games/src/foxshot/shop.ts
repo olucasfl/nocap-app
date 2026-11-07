@@ -11,6 +11,8 @@ export interface FsShopItem {
   weapon?: FsWeaponId;
   /** Colete (e capacete, se `helmet`). */
   armor?: { points: number; helmet: boolean };
+  /** Alicate de desarme (modo Bomba): só contra-terrorista; desarma em 5 s em vez de 10. */
+  kit?: boolean;
   /** Granada que o item dá. */
   grenade?: FsGrenadeId;
   soon?: boolean;
@@ -36,7 +38,7 @@ export const FS_SHOP: FsShopCategory[] = [
     items: [
       { id: 'vest', name: 'Colete', price: 650, kind: 'armor', armor: { points: 100, helmet: false } },
       { id: 'vesthelm', name: 'Colete e capacete', price: 1000, kind: 'armor', armor: { points: 100, helmet: true } },
-      { id: 'kit', name: 'Kit de desarme', price: 400, kind: 'armor', soon: true },
+      { id: 'kit', name: 'Alicate de desarme', price: 400, kind: 'armor', kit: true, soon: true, note: 'Só no modo Bomba, para contra-terrorista: desarma a bomba em 5 s em vez de 10.' },
     ],
   },
   {
@@ -89,12 +91,14 @@ export interface FsBuyResult {
   /** A arma que estava no espaço e cai no chão. */
   dropped?: { id: FsWeaponId; ammo: number };
   armor?: { points: number; helmet: boolean };
+  kit?: boolean;
 }
 
 /** Compra um item. Neste modo o dinheiro é infinito: nada é cobrado. Armas novas vão para a mão e a antiga cai. */
 export function fsBuy(loadout: FsLoadout, itemId: string): FsBuyResult {
   const item = fsShopItem(itemId);
   if (!item) return { ok: false, reason: 'unknown' };
+  if (item.kit) return { ok: true, kit: true };
   if (item.soon) return { ok: false, reason: 'soon' };
   if (item.armor) return { ok: true, armor: item.armor };
   if (item.grenade) return loadout.addGrenade(item.grenade) ? { ok: true } : { ok: false, reason: 'owned' };

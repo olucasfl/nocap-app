@@ -76,6 +76,16 @@ export function VestIcon({ className }: { className?: string }) {
   );
 }
 
+/** Alicate de desarme (modo Bomba). */
+export function KitIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true" focusable="false">
+      <path d="M4 20 11 11 9 6l3-3 3 3-2 3 3 3 5 3-3 3-4-2-3 2-5 2Z" fill="currentColor" />
+      <circle cx="17.5" cy="6.5" r="2" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function SkullIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden="true" focusable="false">

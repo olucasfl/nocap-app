@@ -439,6 +439,11 @@ export class FsNetSim {
         const bp = this.bm.players.get(p.id);
         if (!item || !bp || this.bm.phase !== 'buy' || !this.inBase(p) || item.price > bp.money) return;
       }
+      if (c.id === 'kit') {
+        // alicate: só contra-terrorista e uma vez; cobra só se deu
+        if (this.bm && item && this.bm.giveKit(p.id)) this.bm.buy(p.id, item.price, true);
+        return;
+      }
       const r = fsBuy(lo, c.id);
       if (r.ok && this.bm && item) this.bm.buy(p.id, item.price, true);
       if (r.ok && r.armor) {
@@ -879,6 +884,7 @@ export class FsNetSim {
               defuse: this.bm!.phase === 'planted' && this.bm!.defuseProgress > 0 && bp?.side === 'ct' ? this.bm!.defuseProgress / defTime : 0,
               gain: this.lastGain[id] ?? 0,
               side: bp?.side ?? 'ct',
+              kit: !!bp?.kit,
               win: this.bm!.cfg.winRounds,
             };
           })()

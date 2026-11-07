@@ -1117,6 +1117,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         hint: bombHint && bombHint.until > clock ? bombHint.text : null,
         alliesAlive,
         foesAlive,
+        kit: me0.kit,
       };
     };
     if (bm) {
@@ -1419,6 +1420,13 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         const meP = bm.players.get('me')!;
         if (bm.phase !== 'buy' || !inBaseAt(mover.x, mover.z, meP.side)) return say('Só dá para comprar na base, no tempo de compra');
         if (item.price > meP.money) return say('Dinheiro insuficiente');
+        if (item.kit) {
+          if (meP.side !== 'ct') return say('O alicate é só dos contra-terroristas');
+          if (!bm.giveKit('me')) return say('Você já tem o alicate');
+          bm.buy('me', item.price, true);
+          fsAudio.draw();
+          return;
+        }
       }
       const r = fsBuy(loadout, item.id);
       if (!r.ok) return;
@@ -2185,6 +2193,8 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
           />
           {shop && !paused && (
             <FsShop
+              money={hud.bomb ? hud.bomb.money : null}
+              kit={hud.bomb ? (hud.bomb.mySide === 'ct' ? (hud.bomb.kit ? 'owned' : 'ok') : 'na') : 'na'}
               onBuy={(i) => buyRef.current(i)}
               onClose={() => setShop(false)}
               equipped={hud.slots}

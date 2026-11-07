@@ -1254,3 +1254,5 @@
 .fsm-color { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 0; font: 700 13px var(--font-display, system-ui); }
 .fsm-color input[type='color'] { width: 64px; height: 34px; padding: 0; border: 3px solid var(--fsh-ink, #1b1535); border-radius: 9px; background: #fff; cursor: pointer; }
 .cfh-optbody .fsm-color { color: var(--cfx-ink); }
+.fss-item.poor { opacity: 0.55; }
+.fss-item.poor .fss-price { color: #ff7a6a; }

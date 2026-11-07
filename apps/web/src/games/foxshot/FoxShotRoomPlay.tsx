@@ -71,7 +71,7 @@ interface SelfState {
   hp: number; armor: number; helmet: boolean; alive: boolean; respawnIn: number;
   cur: number; held: FsGrenadeId | null; ammo: number; reloading: boolean; slots: number[]; nades: Record<FsGrenadeId, number>;
   /** Modo Bomba: dinheiro, progresso de plantar/desarmar, ganho do último round, seu lado e rounds para vencer. */
-  bomb?: { money: number; plant: number; defuse: number; gain: number; side: 'tr' | 'ct'; win: number };
+  bomb?: { money: number; plant: number; defuse: number; gain: number; side: 'tr' | 'ct'; win: number; kit?: boolean };
 }
 interface Frame {
   f: { k: number; left: number; p: number[][]; g: number[][]; b?: number[] };
@@ -675,6 +675,15 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       if (bf) {
         if (bf[0] !== 0 || !inBaseNow()) return sayHint('Só dá para comprar na base, no tempo de compra');
         if (item.price > (bombSelf?.money ?? 0)) return sayHint('Dinheiro insuficiente');
+        if (item.kit) {
+          if (bombSelf?.side !== 'ct') return sayHint('O alicate é só dos contra-terroristas');
+          if (bombSelf.kit) return sayHint('Você já tem o alicate');
+          bombSelf.kit = true;
+          bombSelf.money -= item.price;
+          cmdQueue.push({ t: 'buy', id: item.id });
+          fsAudio.draw();
+          return;
+        }
       }
       const r = fsBuy(loadout, item.id);
       if (!r.ok) return;
@@ -1041,7 +1050,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
               round: bf![2]!, winRounds: bombSelf!.win, tr: bf![3]!, ct: bf![4]!, mySide: bombSelf!.side, phase, time: bf![1]! / 10,
               money: Math.max(0, bombSelf!.money), plant: bombSelf!.plant, defuse: bombSelf!.defuse, site: bf![7] === 1 ? 'A' : bf![7] === 2 ? 'B' : null,
               carrier: bf![8] === meIdx && meIdx >= 0, banner: bombBanner && bombBanner.until > clock ? bombBanner.text : null,
-              hint: bombHint && bombHint.until > clock ? bombHint.text : null, alliesAlive: allyAlive, foesAlive: foeAlive,
+              hint: bombHint && bombHint.until > clock ? bombHint.text : null, alliesAlive: allyAlive, foesAlive: foeAlive, kit: !!bombSelf!.kit,
             };
           })() : null,
           ammo: loadout.held ? loadout.grenades[loadout.held] : loadout.slot.ammo,
@@ -1202,6 +1211,8 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           )}
           {shop && !paused && (
             <FsShop
+              money={h.bomb ? h.bomb.money : null}
+              kit={h.bomb ? (h.bomb.mySide === 'ct' ? (h.bomb.kit ? 'owned' : 'ok') : 'na') : 'na'}
               onBuy={(i) => buyRef.current(i)}
               onClose={() => setShop(false)}
               equipped={h.slots}

@@ -38,4 +38,22 @@ describe('modo Bomba na simulação do servidor', () => {
     expect(sim.players.get('u2')!.bot).toBe(false);
     expect(bm.players.has('u2')).toBe(true);
   });
+
+  it('alicate de desarme: só contra-terrorista na base e na compra, cobra US$ 400 e desarma em 5 s', () => {
+    const sim = new FsNetSim({ minutes: 5, humans: [{ id: 'ct1', name: 'Ana', team: 0 }, { id: 'tr1', name: 'Bia', team: 1 }], bots: 0, bomb: { winRounds: 3, roundSec: 60, buySec: 5 } });
+    const bm = sim.bm!;
+    const buy = (id: string, seq: number) => sim.pushInput(id, { seq, fwd: 0, strafe: 0, jump: false, crouch: false, walk: false, yaw: 0, pitch: 0, trigger: false, alt: false, reload: false, inspect: false, viewTick: 0, cmds: [{ t: 'buy', id: 'kit' }] });
+    buy('ct1', 1);
+    buy('tr1', 1);
+    sim.step();
+    sim.step();
+    expect(bm.players.get('ct1')!.kit).toBe(true);
+    expect(bm.players.get('ct1')!.money).toBe(400);
+    expect(bm.players.get('tr1')!.kit).toBe(false);
+    expect(bm.players.get('tr1')!.money).toBe(800);
+    buy('ct1', 2);
+    sim.step();
+    expect(bm.players.get('ct1')!.money).toBe(400); // não compra duas vezes
+    expect(sim.selfState('ct1')?.bomb?.kit).toBe(true);
+  });
 });

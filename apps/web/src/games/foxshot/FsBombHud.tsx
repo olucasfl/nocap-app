@@ -22,6 +22,8 @@ export interface BombHud {
   hint: string | null;
   alliesAlive: number;
   foesAlive: number;
+  /** Tem o alicate de desarme (desarma em metade do tempo). */
+  kit: boolean;
 }
 
 const mmss = (t: number) => {
