@@ -6,18 +6,20 @@ import { chatColor } from '@/components/GameChat';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { MIN_SEARCH, fetchFriends, searchUsers } from '@/lib/friends';
 import { useAuth } from '@/lib/auth';
+import { GamePicker } from './GamePicker';
 import { closeRoom, inviteFriend, leaveRoom, sendRoom, useMeId, useRoom, type RoomSnapshot } from '@/lib/rooms';
 import { CounterFoxLogo } from '@/games/foxshot/CounterFoxLogo';
 import { CounterFoxBackdrop } from '@/games/foxshot/CounterFoxBackdrop';
 import '@/games/foxshot/counterfox-hub.css';
 
-type Tab = 'sala' | 'jogadores' | 'modo' | 'convidar' | 'chat';
+type Tab = 'sala' | 'jogadores' | 'modo' | 'convidar' | 'chat' | 'jogos';
 const TABS: [Tab, string][] = [
   ['sala', 'Sala'],
   ['jogadores', 'Jogadores'],
   ['modo', 'Modo'],
   ['convidar', 'Convidar'],
   ['chat', 'Chat'],
+  ['jogos', 'Outros jogos'],
 ];
 
 const FONTS = 'https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Saira+Stencil+One&display=swap';
@@ -280,6 +282,12 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
           )}
 
           {tab === 'convidar' && <Invite snapshot={snapshot} />}
+
+          {tab === 'jogos' && (
+            <div className="cfl-pane" data-testid="cfl-games">
+              <GamePicker snapshot={snapshot} me={me} />
+            </div>
+          )}
 
           {tab === 'chat' && (
             <div className="cfl-pane cfl-chat" data-testid="cfl-chat">
