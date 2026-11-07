@@ -11,6 +11,13 @@ function mk(cfg = {}) {
 const live = (m: FsBombMatch) => m.step(m.cfg.buySec + 0.01);
 
 describe('modo Bomba', () => {
+  it('opções com undefined ou NaN usam o padrão (regressão: o round acabava na hora)', () => {
+    const c = fsBombConfig({ winRounds: undefined, roundSec: undefined, buySec: NaN });
+    expect(c.roundSec).toBe(115);
+    expect(c.buySec).toBe(15);
+    expect(c.winRounds).toBe(8);
+  });
+
   it('opções ficam dentro da faixa', () => {
     expect(fsBombConfig({ winRounds: 99, buySec: 1, roundSec: 999 })).toMatchObject({ winRounds: 13, buySec: 5, roundSec: 180 });
   });

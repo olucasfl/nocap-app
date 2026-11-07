@@ -57,7 +57,9 @@ export const FS_BOMB_LIMITS = {
 
 /** Limita as opções à faixa permitida (a sala e o menu usam isto). */
 export function fsBombConfig(patch: Partial<FsBombConfig> = {}): FsBombConfig {
-  const c = { ...FS_BOMB_DEFAULTS, ...patch };
+  // chaves com `undefined` não apagam o padrão (um menu que não mexeu em algo manda a chave vazia)
+  const clean = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined && !(typeof v === 'number' && !Number.isFinite(v))));
+  const c = { ...FS_BOMB_DEFAULTS, ...clean } as FsBombConfig;
   const clamp = (v: number, [a, b]: readonly [number, number]) => Math.max(a, Math.min(b, Math.round(v)));
   c.winRounds = clamp(c.winRounds, FS_BOMB_LIMITS.winRounds);
   c.buySec = clamp(c.buySec, FS_BOMB_LIMITS.buySec);
