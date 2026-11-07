@@ -86,7 +86,7 @@ test('duas janelas jogam pela sala: as duas telas andam iguais e as batidas dos 
   await nick(B, 'Bia');
   await B.waitForURL(/\/sala\//);
 
-  await A.getByRole('tab', { name: /Regras/i }).click();
+  await A.getByRole('tab', { name: /Outros jogos/i }).click();
   await A.getByTestId('pick-pingpong').click();
   await B.getByRole('button', { name: /ESTOU PRONTO/i }).click();
   await A.getByRole('button', { name: /COMEÇAR/i }).click();
@@ -133,7 +133,7 @@ test('sozinho com um bot do outro lado: o líder põe o bot no lobby e a partida
   await page.getByTestId('foxcap-friends').click();
   await nick(page, 'Ana');
   await page.waitForURL(/\/sala\//);
-  await page.getByRole('tab', { name: /Regras/i }).click();
+  await page.getByRole('tab', { name: /Outros jogos/i }).click();
   await page.getByTestId('pick-pingpong').click();
   // dois times, uma vaga cada: o lado vazio ganha um bot
   await page.getByRole('tab', { name: /Jogadores/i }).click();
@@ -230,7 +230,7 @@ test('o líder encerra a partida pelo menu e as duas telas vão para o fim', asy
   await B.getByRole('button', { name: 'Entrar', exact: true }).click();
   await nick(B, 'Bia');
   await B.waitForURL(/\/sala\//);
-  await A.getByRole('tab', { name: /Regras/i }).click();
+  await A.getByRole('tab', { name: /Outros jogos/i }).click();
   await A.getByTestId('pick-pingpong').click();
   await B.getByRole('button', { name: /ESTOU PRONTO/i }).click();
   await A.getByRole('button', { name: /COMEÇAR/i }).click();

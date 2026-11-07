@@ -331,7 +331,7 @@ test('duas janelas com atraso de rede: a bola e a raquete do adversário andam l
   await B.getByRole('button', { name: 'Entrar', exact: true }).click();
   await nick(B, 'Bia');
   await B.waitForURL(/\/sala\//);
-  await A.getByRole('tab', { name: /Regras/i }).click();
+  await A.getByRole('tab', { name: /Outros jogos/i }).click();
   await A.getByTestId('pick-pingpong').click();
   await B.getByRole('button', { name: /ESTOU PRONTO/i }).click();
   await A.getByRole('button', { name: /COMEÇAR/i }).click();

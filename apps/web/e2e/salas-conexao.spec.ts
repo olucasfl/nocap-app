@@ -66,7 +66,7 @@ test('a conexão cai no meio e volta sozinha, para quem caiu e para os outros', 
   }
   // e a Ana continua vendo a Bia, e a sala segue funcionando (a Bia marca pronto e a Ana vê)
   await expect(A.getByText('Bia').first()).toBeVisible();
-  await A.getByRole('tab', { name: /Regras/i }).click();
+  await A.getByRole('tab', { name: /Outros jogos/i }).click();
   await A.getByTestId('pick-pingpong').click();
   await B.getByRole('button', { name: /ESTOU PRONTO/i }).click();
   await expect(A.getByRole('button', { name: /COMEÇAR/i })).toBeEnabled({ timeout: 10_000 });

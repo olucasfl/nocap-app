@@ -15,7 +15,7 @@ describe('preferências na conta', () => {
   });
 
   it('aplica o que veio da conta e ignora valor de tipo errado', () => {
-    applyPrefs({ fs: { sens: 0.3, fov: 'x' as never, binds: { fire: 'KeyX' } } });
+    applyPrefs({ fs: { sens: 0.3, fov: 'x' as never, binds: { fire: 'KeyX' } as never } });
     const s = useFsSettings.getState();
     expect(s.sens).toBe(0.3);
     expect(s.fov).toBe(FS_DEFAULTS.fov);

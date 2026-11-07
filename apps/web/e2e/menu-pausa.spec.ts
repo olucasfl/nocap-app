@@ -49,7 +49,7 @@ for (const game of GAMES) {
     await nick(B, 'Bia');
     await B.waitForURL(/\/sala\//);
 
-    await A.getByRole('tab', { name: /Regras/i }).click();
+    await A.getByRole('tab', { name: /Outros jogos/i }).click();
     await A.getByTestId(`pick-${game}`).click();
     if (game === 'atravessa' || game === 'desmorona') {
       // nesses dois cada raposa precisa de uma cor para ficar pronta

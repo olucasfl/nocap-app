@@ -9,7 +9,7 @@ import { GamePicker } from './GamePicker';
 import { MIN_PLAYERS, rulesSummary } from './rules';
 import './lobby.css';
 
-export type LobbyTab = 'members' | 'rules' | 'invite' | 'chat';
+export type LobbyTab = 'members' | 'rules' | 'invite' | 'chat' | 'games';
 
 /** A aba aberta de cada sala: na sala do Fox Cap! trocar de jogo troca a tela do lobby, e a aba tem que ficar onde estava. */
 const tabMemo = new Map<string, LobbyTab>();
@@ -69,9 +69,10 @@ export function LobbyShell({
       label: 'Jogadores',
       count: `${snapshot.members.length}/${snapshot.maxPlayers}`,
     },
-    { id: 'rules', label: 'Regras' },
+    { id: 'rules', label: snapshot.flex ? 'Configurar' : 'Regras' },
     { id: 'invite', label: 'Convidar' },
     { id: 'chat', label: 'Chat' },
+    ...(snapshot.flex ? [{ id: 'games' as LobbyTab, label: 'Outros jogos' }] : []),
   ];
 
   const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -144,8 +145,7 @@ export function LobbyShell({
             aria-labelledby={`${uid}-tab-rules`}
             className={`lb3-pane pane-rules${tab === 'rules' ? ' on' : ''}`}
           >
-            <h2 className="lb3-h">Regras</h2>
-            {snapshot.flex && <GamePicker snapshot={snapshot} me={me} />}
+            <h2 className="lb3-h">{snapshot.flex ? 'Configurar' : 'Regras'}</h2>
             {rules}
           </div>
           <div
@@ -157,6 +157,17 @@ export function LobbyShell({
             <h2 className="lb3-h">Convidar</h2>
             {invite}
           </div>
+          {snapshot.flex && (
+            <div
+              id={`${uid}-panel-games`}
+              role="tabpanel"
+              aria-labelledby={`${uid}-tab-games`}
+              className={`lb3-pane pane-games${tab === 'games' ? ' on' : ''}`}
+            >
+              <h2 className="lb3-h">Outros jogos</h2>
+              <GamePicker snapshot={snapshot} me={me} />
+            </div>
+          )}
           <div
             id={`${uid}-panel-chat`}
             role="tabpanel"
