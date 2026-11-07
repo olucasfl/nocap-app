@@ -48,7 +48,6 @@ test('modo Bomba: eliminar o time inimigo vence o round e paga mais que perder',
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
   test.setTimeout(240_000);
   await page.setViewportSize({ width: 1280, height: 720 });
-  page.on('pageerror', (e) => console.log('PAGEERROR', e.message, (e.stack ?? '').split('\n').slice(0, 4).join(' | ')));
   await start(page, 'ct');
   await fs<void>(page, 'bombSkip');
   await expect.poll(async () => (await bomb(page))?.phase, { timeout: 60_000 }).toBe('live');
@@ -58,10 +57,8 @@ test('modo Bomba: eliminar o time inimigo vence o round e paga mais que perder',
   expect(b.score.ct).toBe(1);
   expect(b.money).toBeGreaterThanOrEqual(800 + 3250);
   await expect(page.getByTestId('fb-banner')).toContainText('Contra-terroristas vencem');
-  for (let i = 0; i < 6; i++) {
-    console.log('STATE', JSON.stringify(await bomb(page)), await page.evaluate(() => document.querySelector('.fb-banner')?.textContent ?? 'nobanner'));
-    await page.waitForTimeout(3000);
-  }
+  // o relógio do navegador sem GPU é lento: pula a espera de 5 s entre os rounds
+  await fs<void>(page, 'bombSkip');
   // o próximo round começa sozinho, na compra, e quem não morreu fica com o equipamento
   await expect.poll(async () => (await bomb(page))?.round, { timeout: 60_000 }).toBe(2);
 });
