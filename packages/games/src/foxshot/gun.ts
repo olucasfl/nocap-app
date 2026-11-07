@@ -134,7 +134,7 @@ export class FsLoadout {
     this.triggerWas = false;
     this.held = to;
     if (to) {
-      this.drawT = 0.5;
+      this.drawT = 0.02;
       return [{ type: 'grenadeDraw', grenade: to }];
     }
     this.drawT = this.weapon.draw;
@@ -234,7 +234,7 @@ export class FsLoadout {
           if (this.grenades[g] > 0) return ev;
           const other = (['frag', 'flash'] as FsGrenadeId[]).find((k) => this.grenades[k] > 0);
           this.held = other ?? null;
-          this.drawT = other ? 0.5 : this.weapon.draw;
+          this.drawT = other ? 0.02 : this.weapon.draw;
           ev.push(other ? { type: 'grenadeDraw', grenade: other } : { type: 'draw', weapon: this.weapon });
         }
         this.triggerWas = input.trigger;
