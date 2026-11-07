@@ -366,7 +366,7 @@ const live: Record<LiveType, Set<(m: unknown) => void>> = {
   fss: new Set(),
 };
 /** Só no desenvolvimento e nos testes de tela: injeta uma mensagem como se tivesse vindo da sala. */
-if (import.meta.env.DEV)
+if (import.meta.env.DEV && typeof window !== 'undefined')
   (window as unknown as { __emitLive?: (t: LiveType, m: unknown) => void }).__emitLive = (t, m) =>
     live[t].forEach((fn) => fn(m));
 export function subscribeRoom(type: LiveType, fn: (m: unknown) => void): () => void {
