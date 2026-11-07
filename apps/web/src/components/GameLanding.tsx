@@ -92,11 +92,11 @@ export function GameLanding({
   };
 
   return createPortal(
-    <main className="gl" data-testid={`gl-${game}`} data-game={game} data-screen={screen} style={{ ['--gl-a' as string]: t.a, ['--gl-b' as string]: t.b }}>
+    <main className="gx" data-testid={`gl-${game}`} data-game={game} data-screen={screen} style={{ ['--gl-a' as string]: t.a, ['--gl-b' as string]: t.b }}>
       <Backdrop game={game} />
-      <div className="gl-wrap">
-        <div className="gl-left">
-          <header className="gl-logo">
+      <div className="gx-wrap">
+        <div className="gx-left">
+          <header className="gx-logo">
             <Emblem game={game} />
             <h1>
               <span>{t.line1}</span>
@@ -106,47 +106,47 @@ export function GameLanding({
           </header>
 
           {screen === 'main' && (
-            <nav className="gl-menu" aria-label={`Menu do ${t.name}`} data-testid="gl-main">
-              <button type="button" className="gl-btn main" onClick={onOffline} data-sfx="start" data-testid="gl-offline">
+            <nav className="gx-menu" aria-label={`Menu do ${t.name}`} data-testid="gl-main">
+              <button type="button" className="gx-btn main" onClick={onOffline} data-sfx="start" data-testid="gl-offline">
                 <b>Jogar offline</b>
                 <span>contra bots, no seu aparelho</span>
               </button>
-              <button type="button" className="gl-btn" onClick={() => setScreen('friends')} data-sfx="start" data-testid="gl-friends">
+              <button type="button" className="gx-btn" onClick={() => setScreen('friends')} data-sfx="start" data-testid="gl-friends">
                 <b>Jogar com amigos</b>
                 <span>criar sala ou entrar com código</span>
               </button>
-              <button type="button" className="gl-btn" onClick={onHelp} data-sfx="select" data-testid="gl-help">
+              <button type="button" className="gx-btn" onClick={onHelp} data-sfx="select" data-testid="gl-help">
                 <b>Como jogar</b>
                 <span>regras e controles</span>
               </button>
-              <button type="button" className="gl-btn" onClick={() => setScreen('settings')} data-sfx="select" data-testid="gl-settings-btn">
+              <button type="button" className="gx-btn" onClick={() => setScreen('settings')} data-sfx="select" data-testid="gl-settings-btn">
                 <b>Configurações</b>
                 <span>som do jogo</span>
               </button>
-              <div className="gl-gap" />
-              <button type="button" className="gl-btn danger" onClick={onExit} data-sfx="back" data-testid="gl-exit">
+              <div className="gx-gap" />
+              <button type="button" className="gx-btn danger" onClick={onExit} data-sfx="back" data-testid="gl-exit">
                 <b>Sair do {t.name}</b>
               </button>
             </nav>
           )}
 
           {screen === 'friends' && (
-            <section className="gl-panel" data-testid="gl-friends-panel">
-              <button type="button" className="gl-back" onClick={back} data-sfx="back" data-testid="gl-back">
+            <section className="gx-panel" data-testid="gl-friends-panel">
+              <button type="button" className="gx-back" onClick={back} data-sfx="back" data-testid="gl-back">
                 ‹ Voltar
               </button>
               <h2>Com amigos</h2>
               <p className="lead">Todo mundo na mesma sala, jogando {t.name}.</p>
               {room.error && (
-                <p className="gl-err" role="alert" data-testid="gl-error">
+                <p className="gx-err" role="alert" data-testid="gl-error">
                   {room.error}
                 </p>
               )}
-              <button type="button" className="gl-card" disabled={room.busy} onClick={room.create} data-sfx="start" data-testid="foxcap-friends">
+              <button type="button" className="gx-card" disabled={room.busy} onClick={room.create} data-sfx="start" data-testid="foxcap-friends">
                 <b>{room.busy ? 'Criando...' : 'Criar sala'}</b>
                 <span>Você é o líder: convida a galera e começa. Dá para trocar de jogo lá dentro.</span>
               </button>
-              <form className="gl-card join" onSubmit={submit} noValidate>
+              <form className="gx-card join" onSubmit={submit} noValidate>
                 <b>Entrar com código</b>
                 <input
                   value={code}
@@ -162,7 +162,7 @@ export function GameLanding({
                   aria-label="Código da sala"
                   data-testid="gl-code"
                 />
-                <button type="submit" className="gl-enter" disabled={room.busy || code.trim().length < 4} data-sfx="start" data-testid="gl-join">
+                <button type="submit" className="gx-enter" disabled={room.busy || code.trim().length < 4} data-sfx="start" data-testid="gl-join">
                   {room.busy ? 'Entrando...' : 'Entrar'}
                 </button>
               </form>
@@ -170,12 +170,12 @@ export function GameLanding({
           )}
 
           {screen === 'settings' && (
-            <section className="gl-panel" data-testid="gl-settings">
-              <button type="button" className="gl-back" onClick={back} data-sfx="back" data-testid="gl-back">
+            <section className="gx-panel" data-testid="gl-settings">
+              <button type="button" className="gx-back" onClick={back} data-sfx="back" data-testid="gl-back">
                 ‹ Voltar
               </button>
               <h2>Configurações</h2>
-              <div className="gl-row">
+              <div className="gx-row">
                 <span>Som do jogo</span>
                 <MuteButton />
               </div>
@@ -183,7 +183,7 @@ export function GameLanding({
             </section>
           )}
         </div>
-        <aside className="gl-right">
+        <aside className="gx-right">
           <Showcase game={game} />
         </aside>
       </div>

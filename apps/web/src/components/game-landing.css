@@ -1,6 +1,6 @@
 /* Tela própria de cada jogo do Fox Cap! (spec 058): mesmo desenho do menu do Counter Fox, com cenário e símbolo de cada jogo.
    Só transform e opacity animam; sem barras de rolagem (a coluna esquerda rola só em telas muito baixas). */
-.gl {
+.gx {
   --gl-ink: #f4efe6;
   --gl-muted: #a9b0c4;
   --gl-line: rgba(255, 255, 255, 0.16);
@@ -14,7 +14,7 @@
   color: var(--gl-ink);
   font-family: var(--gl-ui);
 }
-.gl-wrap {
+.gx-wrap {
   position: relative;
   z-index: 2;
   height: 100%;
@@ -23,7 +23,7 @@
   gap: clamp(16px, 4vw, 64px);
   padding: max(20px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(28px, env(safe-area-inset-left));
 }
-.gl-left {
+.gx-left {
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -35,21 +35,21 @@
   overflow-x: hidden;
   scrollbar-width: none;
 }
-.gl-left::-webkit-scrollbar { display: none; }
-.gl-right { display: grid; align-content: center; justify-items: stretch; min-width: 0; min-height: 0; }
+.gx-left::-webkit-scrollbar { display: none; }
+.gx-right { display: grid; align-content: center; justify-items: stretch; min-width: 0; min-height: 0; }
 
 /* logo: símbolo + nome em duas linhas */
-.gl-logo { display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 16px; animation: gl-in 0.5s ease-out both; }
-.gl-emblem { width: clamp(64px, 9vw, 110px); height: auto; filter: drop-shadow(0 6px 0 rgba(0, 0, 0, 0.4)); grid-row: span 2; }
-.gl-logo h1 { margin: 0; display: grid; font: 400 clamp(34px, 5.2vw, 66px) / 0.95 var(--gl-title); text-shadow: 0 4px 0 rgba(0, 0, 0, 0.45); }
-.gl-logo h1 span { color: var(--gl-ink); }
-.gl-logo h1 b { font-weight: 400; background: linear-gradient(180deg, #fff3d6, var(--gl-a)); -webkit-background-clip: text; background-clip: text; color: transparent; font-size: 0.82em; }
-.gl-logo p { margin: 6px 0 0; font-size: clamp(11px, 1.3vw, 14px); font-weight: 700; letter-spacing: 0.28em; color: var(--gl-a); }
+.gx-logo { display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 16px; animation: gl-in 0.5s ease-out both; }
+.gx-emblem { width: clamp(64px, 9vw, 110px); height: auto; filter: drop-shadow(0 6px 0 rgba(0, 0, 0, 0.4)); grid-row: span 2; }
+.gx-logo h1 { margin: 0; display: grid; font: 400 clamp(28px, 4.2vw, 56px) / 0.95 var(--gl-title); text-shadow: 0 4px 0 rgba(0, 0, 0, 0.45); }
+.gx-logo h1 span { color: var(--gl-ink); }
+.gx-logo h1 b { font-weight: 400; background: linear-gradient(180deg, #fff3d6, var(--gl-a)); -webkit-background-clip: text; background-clip: text; color: transparent; font-size: 0.82em; }
+.gx-logo p { margin: 6px 0 0; font-size: clamp(11px, 1.3vw, 14px); font-weight: 700; letter-spacing: 0.28em; color: var(--gl-a); }
 
 /* botões inclinados com barra de cor, como no Counter Fox */
-.gl-menu { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
-.gl-gap { height: 8px; }
-.gl-btn {
+.gx-menu { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.gx-gap { height: 8px; }
+.gx-btn {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -66,18 +66,18 @@
   animation: gl-in 0.45s ease-out both;
   transition: transform 0.12s ease-out;
 }
-.gl-btn:nth-child(2) { animation-delay: 60ms; }
-.gl-btn:nth-child(3) { animation-delay: 120ms; }
-.gl-btn:nth-child(4) { animation-delay: 180ms; }
-.gl-btn b { font-size: clamp(20px, 2.2vw, 26px); font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; white-space: nowrap; }
-.gl-btn span { font-size: clamp(12px, 1.3vw, 14px); color: var(--gl-muted); letter-spacing: 0.06em; text-align: right; }
-.gl-btn:hover, .gl-btn:focus-visible { transform: translateX(8px); outline: 0; background: linear-gradient(90deg, rgba(255, 255, 255, 0.14), rgba(10, 16, 34, 0.6)); }
-.gl-btn.main { background: linear-gradient(90deg, var(--gl-a), color-mix(in srgb, var(--gl-a) 55%, #0b0d1c)); color: #0b0d1c; border-left-color: #fff; }
-.gl-btn.main span { color: rgba(11, 13, 28, 0.75); }
-.gl-btn.danger { border-left-color: #ff3b3b; background: linear-gradient(90deg, rgba(70, 12, 20, 0.85), rgba(40, 10, 20, 0.5)); color: #ffb3b3; }
+.gx-btn:nth-child(2) { animation-delay: 60ms; }
+.gx-btn:nth-child(3) { animation-delay: 120ms; }
+.gx-btn:nth-child(4) { animation-delay: 180ms; }
+.gx-btn b { font-size: clamp(20px, 2.2vw, 26px); font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; white-space: nowrap; }
+.gx-btn span { font-size: clamp(12px, 1.3vw, 14px); color: var(--gl-muted); letter-spacing: 0.06em; text-align: right; }
+.gx-btn:hover, .gx-btn:focus-visible { transform: translateX(8px); outline: 0; background: linear-gradient(90deg, rgba(255, 255, 255, 0.14), rgba(10, 16, 34, 0.6)); }
+.gx-btn.main { background: linear-gradient(90deg, var(--gl-a), color-mix(in srgb, var(--gl-a) 55%, #0b0d1c)); color: #0b0d1c; border-left-color: #fff; }
+.gx-btn.main span { color: rgba(11, 13, 28, 0.75); }
+.gx-btn.danger { border-left-color: #ff3b3b; background: linear-gradient(90deg, rgba(70, 12, 20, 0.85), rgba(40, 10, 20, 0.5)); color: #ffb3b3; }
 
 /* painéis (com amigos, configurações) */
-.gl-panel {
+.gx-panel {
   background: rgba(9, 14, 30, 0.82);
   border: 1px solid var(--gl-line);
   clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 22px 100%, 0 calc(100% - 22px));
@@ -87,28 +87,28 @@
   display: grid;
   gap: 12px;
 }
-.gl-panel h2 { margin: 0; font: 400 clamp(26px, 3vw, 38px) / 1 var(--gl-title); letter-spacing: 0.04em; }
-.gl-panel .lead { margin: 0; color: var(--gl-muted); font-size: 15px; }
-.gl-back { justify-self: start; background: none; border: 0; color: var(--gl-muted); font: 700 13px var(--gl-ui); letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; padding: 4px 0; }
-.gl-back:hover { color: var(--gl-ink); }
-.gl-card { display: grid; gap: 6px; text-align: left; padding: 14px 18px; border: 1px solid var(--gl-line); background: rgba(255, 255, 255, 0.05); color: var(--gl-ink); font: inherit; cursor: pointer; clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%); }
-.gl-card b { font-size: 19px; letter-spacing: 0.14em; text-transform: uppercase; }
-.gl-card span { color: var(--gl-muted); font-size: 14px; }
-.gl-card:not(.join):hover:not(:disabled) { border-color: var(--gl-a); }
-.gl-card.join { cursor: default; border-color: color-mix(in srgb, var(--gl-a) 55%, transparent); background: rgba(255, 255, 255, 0.07); }
-.gl-card input { width: 100%; box-sizing: border-box; padding: 12px; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--gl-line); color: var(--gl-ink); font: 700 26px var(--gl-title); letter-spacing: 0.5em; text-align: center; text-transform: uppercase; }
-.gl-card input::placeholder { color: rgba(255, 255, 255, 0.28); letter-spacing: 0.4em; }
-.gl-card input:focus { outline: 2px solid var(--gl-a); }
-.gl-enter { padding: 12px 18px; border: 0; border-left: 5px solid var(--gl-a); background: linear-gradient(90deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04)); color: var(--gl-ink); font: 700 18px var(--gl-ui); letter-spacing: 0.22em; text-transform: uppercase; cursor: pointer; text-align: left; }
-.gl-enter:disabled, .gl-card:disabled { opacity: 0.5; cursor: default; }
-.gl-err { margin: 0; color: #ff9d9d; background: rgba(255, 60, 60, 0.12); border-left: 3px solid #ff3b3b; padding: 8px 12px; font-size: 14px; }
-.gl-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border: 1px solid var(--gl-line); font-size: 18px; letter-spacing: 0.08em; }
+.gx-panel h2 { margin: 0; font: 400 clamp(26px, 3vw, 38px) / 1 var(--gl-title); letter-spacing: 0.04em; }
+.gx-panel .lead { margin: 0; color: var(--gl-muted); font-size: 15px; }
+.gx-back { justify-self: start; background: none; border: 0; color: var(--gl-muted); font: 700 13px var(--gl-ui); letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; padding: 4px 0; }
+.gx-back:hover { color: var(--gl-ink); }
+.gx-card { display: grid; gap: 6px; text-align: left; padding: 14px 18px; border: 1px solid var(--gl-line); background: rgba(255, 255, 255, 0.05); color: var(--gl-ink); font: inherit; cursor: pointer; clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%); }
+.gx-card b { font-size: 19px; letter-spacing: 0.14em; text-transform: uppercase; }
+.gx-card span { color: var(--gl-muted); font-size: 14px; }
+.gx-card:not(.join):hover:not(:disabled) { border-color: var(--gl-a); }
+.gx-card.join { cursor: default; border-color: color-mix(in srgb, var(--gl-a) 55%, transparent); background: rgba(255, 255, 255, 0.07); }
+.gx-card input { width: 100%; box-sizing: border-box; padding: 12px; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--gl-line); color: var(--gl-ink); font: 700 26px var(--gl-title); letter-spacing: 0.5em; text-align: center; text-transform: uppercase; }
+.gx-card input::placeholder { color: rgba(255, 255, 255, 0.28); letter-spacing: 0.4em; }
+.gx-card input:focus { outline: 2px solid var(--gl-a); }
+.gx-enter { padding: 12px 18px; border: 0; border-left: 5px solid var(--gl-a); background: linear-gradient(90deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04)); color: var(--gl-ink); font: 700 18px var(--gl-ui); letter-spacing: 0.22em; text-transform: uppercase; cursor: pointer; text-align: left; }
+.gx-enter:disabled, .gx-card:disabled { opacity: 0.5; cursor: default; }
+.gx-err { margin: 0; color: #ff9d9d; background: rgba(255, 60, 60, 0.12); border-left: 3px solid #ff3b3b; padding: 8px 12px; font-size: 14px; }
+.gx-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border: 1px solid var(--gl-line); font-size: 18px; letter-spacing: 0.08em; }
 
 /* quadro do jogo à direita */
-.gl-show { width: 100%; max-width: 520px; margin-left: auto; animation: gl-pop 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s both; }
-.gl-art { display: block; width: 100%; height: auto; border: 1px solid var(--gl-line); background: #000; clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 22px 100%, 0 calc(100% - 22px)); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); }
-.gl-show-t { margin: 14px 0 4px; font-size: 14px; font-weight: 700; letter-spacing: 0.2em; color: var(--gl-a); text-transform: uppercase; }
-.gl-show-d { margin: 0; color: var(--gl-muted); font-size: 15px; line-height: 1.35; }
+.gx-show { width: 100%; max-width: 520px; margin-left: auto; animation: gl-pop 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s both; }
+.gx-art { display: block; width: 100%; height: auto; border: 1px solid var(--gl-line); background: #000; clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 22px 100%, 0 calc(100% - 22px)); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); }
+.gx-show-t { margin: 14px 0 4px; font-size: 14px; font-weight: 700; letter-spacing: 0.2em; color: var(--gl-a); text-transform: uppercase; }
+.gx-show-d { margin: 0; color: var(--gl-muted); font-size: 15px; line-height: 1.35; }
 
 @keyframes gl-in { from { opacity: 0; transform: translateY(12px); } }
 @keyframes gl-pop { from { opacity: 0; transform: translateY(18px) scale(0.98); } }
@@ -170,22 +170,22 @@
 
 /* telas médias e celulares */
 @media (max-width: 900px) {
-  .gl-wrap { grid-template-columns: minmax(0, 1fr); }
-  .gl-right { display: none; }
-  .gl-logo { grid-template-columns: auto 1fr; }
+  .gx-wrap { grid-template-columns: minmax(0, 1fr); }
+  .gx-right { display: none; }
+  .gx-logo { grid-template-columns: auto 1fr; }
 }
 @media (max-height: 520px) {
-  .gl-wrap { padding-top: 10px; padding-bottom: 10px; }
-  .gl-left { gap: 10px; }
-  .gl-emblem { width: 52px; }
-  .gl-btn { padding: 9px 22px 9px 18px; }
-  .gl-btn b { font-size: 18px; }
-  .gl-panel { padding: 14px 16px; gap: 8px; }
+  .gx-wrap { padding-top: 10px; padding-bottom: 10px; }
+  .gx-left { gap: 10px; }
+  .gx-emblem { width: 52px; }
+  .gx-btn { padding: 9px 22px 9px 18px; }
+  .gx-btn b { font-size: 18px; }
+  .gx-panel { padding: 14px 16px; gap: 8px; }
 }
-@media (max-width: 420px) { .gl-btn span { display: none; } .gl-btn b { letter-spacing: 0.1em; } }
+@media (max-width: 420px) { .gx-btn span { display: none; } .gx-btn b { letter-spacing: 0.1em; } }
 @media (prefers-reduced-motion: reduce) {
-  .glb *, .gl-logo, .gl-btn, .gl-panel, .gl-show { animation: none !important; }
-  .gl-btn { transition: none; }
+  .glb *, .gx-logo, .gx-btn, .gx-panel, .gx-show { animation: none !important; }
+  .gx-btn { transition: none; }
 }
 
 /* Fox Cap! sem jogo escolhido: céu estrelado e lua */

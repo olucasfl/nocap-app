@@ -1256,3 +1256,7 @@
 .cfh-optbody .fsm-color { color: var(--cfx-ink); }
 .fss-item.poor { opacity: 0.55; }
 .fss-item.poor .fss-price { color: #ff7a6a; }
+/* morto no modo Bomba: depois do "Você morreu" a tela volta ao normal e uma barra mostra quem você assiste */
+.fs-specbar { position: absolute; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 9; display: grid; gap: 2px; justify-items: center; padding: 8px 22px; background: rgba(8, 10, 20, 0.78); border-bottom: 3px solid #ffb347; color: #fff; pointer-events: none; text-align: center; }
+.fs-specbar b { font: 800 22px var(--font-display, system-ui); letter-spacing: 0.1em; text-transform: uppercase; }
+.fs-specbar span { font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.85; }

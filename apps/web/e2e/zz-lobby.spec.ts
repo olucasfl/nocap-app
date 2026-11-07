@@ -1,0 +1,20 @@
+import { expect, test } from '@playwright/test';
+import { loginAs } from './account';
+test.skip(!process.env.E2E_ROOMS, 'precisa do servidor de salas');
+test('lobbies tematicos', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop');
+  test.setTimeout(200000);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await loginAs(page, 'Lucas');
+  await page.goto('/fox-cap');
+  await page.getByRole('button', { name: 'Agora não' }).click({ timeout: 8000 }).catch(() => undefined);
+  await page.getByTestId('foxcap-pingpong').click();
+  await page.getByTestId('gl-friends').click();
+  await page.getByTestId('foxcap-friends').click();
+  await expect(page.getByTestId('themed-lobby')).toBeVisible({ timeout: 60000 });
+  await page.waitForTimeout(2500);
+  await page.screenshot({ path: '/tmp/claude-0/-home-user-nocap-app/599484f6-d22b-5257-a81d-39f0e3e6d941/scratchpad/lob-ping.png' });
+  await page.getByRole('tab', { name: /Outros jogos/i }).click();
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: '/tmp/claude-0/-home-user-nocap-app/599484f6-d22b-5257-a81d-39f0e3e6d941/scratchpad/lob-ping-outros.png' });
+});

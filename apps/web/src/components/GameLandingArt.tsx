@@ -42,11 +42,11 @@ export function Emblem({ game }: { game: ThemeGame }) {
     // raquete e bola
     pingpong: (
       <>
-        <circle cx="46" cy="42" r="30" fill="#4a8dff" />
-        <circle cx="46" cy="42" r="22" fill="#16347a" />
-        <path d="M60 62 84 88" stroke="#ffd27a" strokeWidth="11" strokeLinecap="round" />
-        <circle cx="82" cy="22" r="9" fill="#fff" />
-        <path d="M30 34q10-12 24-6" stroke="#fff8" strokeWidth="4" fill="none" strokeLinecap="round" />
+        <path d="M58 60 80 90" stroke="#d9a066" strokeWidth="13" strokeLinecap="round" />
+        <circle cx="44" cy="42" r="32" fill="#8f1f2b" />
+        <circle cx="44" cy="42" r="26" fill="#ff5a4d" />
+        <path d="M26 34q10-14 26-8" stroke="#fff7" strokeWidth="4" fill="none" strokeLinecap="round" />
+        <circle cx="82" cy="20" r="9" fill="#fff" />
       </>
     ),
     // chão de ladrilhos que racha e cai
@@ -61,7 +61,7 @@ export function Emblem({ game }: { game: ThemeGame }) {
     ),
   };
   return (
-    <svg className="gl-emblem" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+    <svg className="gx-emblem" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
       {body[game]}
     </svg>
   );
@@ -160,7 +160,7 @@ export function Backdrop({ game }: { game: ThemeGame }) {
 export function Showcase({ game }: { game: LandingGame }) {
   const art: Record<LandingGame, ReactNode> = {
     atravessa: (
-      <svg viewBox="0 0 400 300" className="gl-art" aria-hidden="true">
+      <svg viewBox="0 0 400 300" className="gx-art" aria-hidden="true">
         <rect width="400" height="300" fill="#2d2a38" />
         <rect y="0" width="400" height="60" fill="#3f8f4a" />
         <rect y="60" width="400" height="80" fill="#34343e" />
@@ -177,7 +177,7 @@ export function Showcase({ game }: { game: LandingGame }) {
       </svg>
     ),
     bola: (
-      <svg viewBox="0 0 400 300" className="gl-art" aria-hidden="true">
+      <svg viewBox="0 0 400 300" className="gx-art" aria-hidden="true">
         <rect width="400" height="300" fill="#1c7a4a" />
         {[0, 1, 2, 3, 4, 5].map((i) => (
           <rect key={i} x={i * 70 - 10} y="0" width="35" height="300" fill="#1f8a53" />
@@ -193,7 +193,7 @@ export function Showcase({ game }: { game: LandingGame }) {
       </svg>
     ),
     pingpong: (
-      <svg viewBox="0 0 400 300" className="gl-art" aria-hidden="true">
+      <svg viewBox="0 0 400 300" className="gx-art" aria-hidden="true">
         <rect width="400" height="300" fill="#10244f" />
         <path d="M60 80h280l40 150H20Z" fill="#1d5fd0" />
         <path d="M60 80h280l40 150H20Z" fill="none" stroke="#fff" strokeWidth="4" />
@@ -206,7 +206,7 @@ export function Showcase({ game }: { game: LandingGame }) {
       </svg>
     ),
     desmorona: (
-      <svg viewBox="0 0 400 300" className="gl-art" aria-hidden="true">
+      <svg viewBox="0 0 400 300" className="gx-art" aria-hidden="true">
         <rect width="400" height="300" fill="#1a0a10" />
         {Array.from({ length: 5 }, (_, r) => Array.from({ length: 7 }, (_, c) => {
           const gone = (r * 7 + c) % 6 === 2;
@@ -229,10 +229,10 @@ export function Showcase({ game }: { game: LandingGame }) {
     desmorona: ['Desmorona! · O chão some', 'A cada passo o chão racha e cai. Vence o último de pé: de 1 a 7 bots ou com amigos.'],
   };
   return (
-    <div className="gl-show" data-testid="gl-show">
+    <div className="gx-show" data-testid="gl-show">
       {art[game]}
-      <p className="gl-show-t">{text[game][0]}</p>
-      <p className="gl-show-d">{text[game][1]}</p>
+      <p className="gx-show-t">{text[game][0]}</p>
+      <p className="gx-show-d">{text[game][1]}</p>
     </div>
   );
 }

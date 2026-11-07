@@ -79,7 +79,7 @@ interface Frame {
   e: FsNetEvent[];
 }
 interface RoomHud {
-  hp: number; armor: number; helmet: boolean; hurtKey: number; heavyKey: number; hurtAge: number; heavyAge: number; dead: boolean; respawnIn: number;
+  hp: number; armor: number; helmet: boolean; hurtKey: number; heavyKey: number; hurtAge: number; heavyAge: number; dead: boolean; respawnIn: number; deadAge: number;
   ammo: number; mag: number; weapon: string; weaponId: FsWeaponId; heldNade: FsGrenadeId | null;
   nades: { id: FsGrenadeId; name: string; count: number; key: string }[];
   speed: number; slots: { id: FsWeaponId | null; name: string; key: number }[]; current: number; reloading: boolean; scoped: boolean; spreadPx: number;
@@ -1078,7 +1078,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         setHud({
           hp: self?.hp ?? 100, armor: self?.armor ?? 0, helmet: self?.helmet ?? false, hurtKey, heavyKey,
           hurtAge: (performance.now() - hurtAt) / 1000, heavyAge: (performance.now() - heavyAt) / 1000,
-          dead: !alive, respawnIn: bf ? 0 : self?.respawnIn ?? 0, follow: bf && !alive && followId ? nameOf(followId) : null,
+          dead: !alive, respawnIn: bf ? 0 : self?.respawnIn ?? 0, deadAge: !alive && deadSince >= 0 ? Math.max(0, clock - deadSince) : 0, follow: bf && !alive && followId ? nameOf(followId) : null,
           bomb: bf && bombSelf ? ((): BombHud => {
             const phase = (['buy', 'live', 'planted', 'end', 'over'] as const)[bf![0]!] ?? 'live';
             const allyAlive = players.filter((q) => q.team === (bombSelf!.side === 'tr' ? 't' : 'ct') && q.alive).length;
@@ -1227,10 +1227,16 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           </div>
           {(h.hurtAge) < 0.45 && !h.dead && !spectating && <div key={`h${h.hurtKey}`} className="fs-hurt" aria-hidden="true" />}
           {(h.heavyAge) < 1.7 && !h.dead && !spectating && <div key={`v${h.heavyKey}`} className="fs-hurt heavy" aria-hidden="true" />}
-          {h.dead && !paused && !spectating && (
+          {h.dead && !paused && !spectating && (!h.bomb || h.deadAge < 2.5) && (
             <div className="fs-deadscreen" role="status" data-testid="fs-dead">
               <b>Você morreu</b>
-              <span className="mono" data-testid="fs-respawn">{h.bomb ? `Espere o próximo round${h.follow ? ` · assistindo ${h.follow} (← → trocam)` : ''}` : `Renascendo em ${h.respawnIn.toFixed(1)}`}</span>
+              <span className="mono" data-testid="fs-respawn">{h.bomb ? 'Você vai assistir a um aliado até o fim do round' : `Renascendo em ${h.respawnIn.toFixed(1)}`}</span>
+            </div>
+          )}
+          {h.dead && h.bomb && h.deadAge >= 2.5 && !paused && !spectating && (
+            <div className="fs-specbar" role="status" data-testid="fs-specbar">
+              <b>Assistindo {h.follow ?? 'ninguém'}</b>
+              <span className="mono">← → trocam de aliado · espere o próximo round</span>
             </div>
           )}
           {!spectating && <FsVitals hp={h.hp} armor={h.armor} helmet={h.helmet} />}

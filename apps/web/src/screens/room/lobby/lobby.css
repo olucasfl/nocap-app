@@ -1746,7 +1746,7 @@
   box-sizing: border-box;
 }
 .gll-head { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
-.gll-head .gl-emblem { width: clamp(44px, 6vw, 64px); }
+.gll-head .gx-emblem { width: clamp(44px, 6vw, 64px); }
 .gll-head h1 { margin: 0; display: grid; font: 400 clamp(22px, 3vw, 34px) / 0.95 'Saira Stencil One', 'Rajdhani', 'Arial Black', sans-serif; text-shadow: 0 3px 0 rgba(0, 0, 0, 0.45); }
 .gll-head h1 b { font-weight: 400; background: linear-gradient(180deg, #fff3d6, var(--gl-a)); -webkit-background-clip: text; background-clip: text; color: transparent; font-size: 0.85em; }
 .gll .lb3 { max-width: none; margin: 0; padding: 0 0 8px; }
@@ -1766,4 +1766,4 @@
 .gll h2, .gll h3 { font-family: 'Rajdhani', sans-serif; letter-spacing: 0.14em; }
 .gll .bola-lobby-team, .gll .bola-lobby-teams section { border-radius: 0; box-shadow: none; }
 .gll input, .gll select { background: rgba(0, 0, 0, 0.4); color: #f4efe6; border-color: rgba(255, 255, 255, 0.25); border-radius: 0; }
-@media (max-height: 520px) { .gll-head { margin-bottom: 4px; } .gll-head .gl-emblem { width: 36px; } }
+@media (max-height: 520px) { .gll-head { margin-bottom: 4px; } .gll-head .gx-emblem { width: 36px; } }

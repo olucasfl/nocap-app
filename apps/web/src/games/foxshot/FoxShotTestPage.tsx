@@ -154,6 +154,9 @@ interface Hud {
   hurtAge: number;
   heavyAge: number;
   dead: boolean;
+  /** Segundos desde que você morreu e quem você assiste (modo Bomba). */
+  deadAge: number;
+  follow: string | null;
   respawnIn: number;
   slots: FsSlotInfo[];
   current: number;
@@ -1911,6 +1914,8 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
           hurtAge: (performance.now() - hurtAt) / 1000,
           heavyAge: (performance.now() - heavyAt) / 1000,
           dead: clock < deadUntil,
+          deadAge: clock < deadUntil ? Math.max(0, clock - deadSince) : 0,
+          follow: bm && clock < deadUntil && followDm ? nameOf(followDm) : null,
           respawnIn: Math.max(0, deadUntil - clock),
           armor: me.armor,
           helmet: me.helmet,
@@ -2207,12 +2212,18 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
           </div>
           {hud.hurtAge < 0.45 && !hud.dead && !result && <div key={`h${hud.hurtKey}`} className="fs-hurt" aria-hidden="true" />}
           {hud.heavyAge < 1.7 && !hud.dead && !result && <div key={`v${hud.heavyKey}`} className="fs-hurt heavy" aria-hidden="true" />}
-          {hud.dead && !paused && !result && (
+          {hud.dead && !paused && !result && (!hud.bomb || hud.deadAge < 2.5) && (
             <div className="fs-deadscreen" role="status" data-testid="fs-dead">
               <b>Você morreu</b>
               <span className="mono" data-testid="fs-respawn">
-                {hud.bomb ? 'Espere o próximo round' : `Renascendo em ${hud.respawnIn.toFixed(1)}`}
+                {hud.bomb ? 'Você vai assistir a um aliado até o fim do round' : `Renascendo em ${hud.respawnIn.toFixed(1)}`}
               </span>
+            </div>
+          )}
+          {hud.dead && hud.bomb && hud.deadAge >= 2.5 && !paused && !result && (
+            <div className="fs-specbar" role="status" data-testid="fs-specbar">
+              <b>Assistindo {hud.follow ?? 'ninguém'}</b>
+              <span className="mono">← → trocam de aliado · espere o próximo round</span>
             </div>
           )}
           <FsVitals hp={hud.hp} armor={hud.armor} helmet={hud.helmet} />
