@@ -157,6 +157,8 @@ Etapa 1, passos 1 a 3 concluídos (lógica, API e UI da Cor). Próximo: PWA (pas
 
 ## 12c. Counter Fox (specs 056 e 057)
 
+Atualização (spec 058, 07/11/2026): `FsIntel` (radar visto/ouvido, `intel.ts`), times só em cor (`FS_TEAMS_ACTIVE=false`), troca de arma instantânea, sniper com zoom por clique (nível calculado no cliente e enviado como `alt`), partida abre jogando (`resume()` ao montar, com "Clique na tela" se o mouse não prender). Os outros jogos do Fox Cap! têm tela própria em `components/GameLanding.tsx` e a sala (`LobbyShell`) toma as cores do jogo escolhido.
+
 Tiro em primeira pessoa das raposas, em `packages/games/src/foxshot` (lógica pura) e `apps/web/src/games/foxshot` (cena Three.js, HUD, controles). Rotas: `/fox-cap/fox-shot-teste` (arena de teste com alvos e bots de treino) e `/fox-cap/counter-fox` (partida de mata-mata no mapa **Duna**).
 - **Mapa** (`dust.ts`): lista de retângulos de chão (57 x 68 células de 1 m, níveis de 0,3 m) de onde saem as caixas de colisão, as zonas (base CT/TR, bombas A e B, meio, túneis, Long A), os pontos de nascimento, a navegação (A* na grade, com degraus) e os enfeites (fachadas, postes, prédios do horizonte). Segue a estrutura da Dust 2; nenhum arquivo do mapa original entra no repositório. Modelos de terceiros em `apps/web/public/models/foxshot/map/` (`docs/CREDITS-3D.md`, convertidos por `tools/art/map_props.py`).
 - **Partida** (`match.ts`): 2, 3, 5, 7 ou 10 min; 1 a 9 bots; abate 10 pontos, assistência 5; resultado com desempate. Sem ranking.
