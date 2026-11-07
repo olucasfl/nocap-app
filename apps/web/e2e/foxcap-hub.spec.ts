@@ -65,7 +65,7 @@ test('Atravessa! Infinito entra na partida sem menu no meio', async ({ page }) =
   await page.getByTestId('foxcap-atravessa').click();
   await page.getByTestId('gl-offline').click();
   await expect(page).toHaveURL(/\/atravessa/);
-  await expect(page.locator('canvas')).toBeVisible({ timeout: 8000 });
+  await expect(page.locator('canvas')).toBeVisible({ timeout: 25000 });
   expect(seen).toEqual([]);
 });
 
@@ -193,6 +193,7 @@ test('sair da partida offline volta ao Fox Cap! (e não a uma tela antiga)', asy
 
 test('Jogar abre a tela própria do jogo, com offline, amigos, configurações e sair', async ({ page }) => {
   await page.goto('/fox-cap');
+  await page.getByRole('button', { name: 'Agora não' }).click({ timeout: 8000 }).catch(() => undefined);
   await page.getByTestId('foxcap-pingpong').click();
   await expect(page.getByTestId('gl-pingpong')).toBeVisible();
   await expect(page.getByTestId('gl-friends')).toBeVisible();

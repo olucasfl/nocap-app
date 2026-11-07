@@ -120,9 +120,13 @@ export function FoxCapPage() {
   };
   const offline = () => {
     const g = hub;
+    // Atravessa! é outra rota: a tela do jogo fica até a página trocar (sem mostrar o Fox Cap! no meio)
+    if (g === 'atravessa') {
+      void navigate({ to: '/atravessa', search: { treino: 1 } });
+      return;
+    }
     setHub(null);
-    if (g === 'atravessa') void navigate({ to: '/atravessa', search: { treino: 1 } });
-    else if (g === 'bola') setFlow('bola-pick');
+    if (g === 'bola') setFlow('bola-pick');
     else if (g === 'pingpong') setFlow('png-pick');
     else if (g === 'desmorona') setFlow('dsm-pick');
   };
