@@ -175,7 +175,7 @@ export function LobbyShell({
             className={`lb3-pane pane-chat${tab === 'chat' ? ' on' : ''}`}
           >
             <h2 className="lb3-h">Chat</h2>
-            {tab === 'chat' && (
+            {(tab === 'chat' || (typeof matchMedia === 'function' && matchMedia('(min-width: 1024px)').matches)) && (
               <ChatPanel snapshot={snapshot} colorOf={(id) => chatColor(snapshot, id)} />
             )}
           </div>
