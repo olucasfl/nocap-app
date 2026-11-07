@@ -115,6 +115,23 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
   const inviteRef = useRef(false);
   inviteRef.current = inviteOpen;
   const root = useRef<HTMLDivElement>(null);
+  const stickEl = useRef<HTMLDivElement>(null);
+  const touchUi = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+  const [portrait, setPortrait] = useState(false);
+  const press = useCallback(
+    (name: 'fire' | 'ads' | 'jump' | 'reload' | 'cycle' | 'use' | 'buy', down: boolean) => ctl.current?.setTouch(name, down),
+    [],
+  );
+  useEffect(() => {
+    const onResize = () => setPortrait(touchUi && window.innerHeight > window.innerWidth);
+    onResize();
+    window.addEventListener('resize', onResize);
+    window.addEventListener('orientationchange', onResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('orientationchange', onResize);
+    };
+  }, [touchUi]);
   const canvas = useRef<HTMLCanvasElement>(null);
   const blindEl = useRef<HTMLDivElement>(null);
   const scopeEl = useRef<HTMLDivElement>(null);
@@ -191,7 +208,23 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
     controls.enabled = false;
     controls.attach(
       el,
-      () => undefined,
+      (s) => {
+        // marca do joystick de toque
+        const d = stickEl.current;
+        if (!d) return;
+        if (!s) {
+          d.style.opacity = '0';
+          return;
+        }
+        d.style.opacity = '1';
+        d.style.transform = `translate(${s.ox - 56}px, ${s.oy - 56}px)`;
+        const k = d.firstElementChild as HTMLElement | null;
+        if (k) {
+          const dx = Math.max(-40, Math.min(40, s.x - s.ox));
+          const dy = Math.max(-40, Math.min(40, s.y - s.oy));
+          k.style.transform = `translate(${dx}px, ${dy}px)`;
+        }
+      },
       (locked) => {
         if (!locked && !pausedRef.current && !shopRef.current && !bigMapRef.current) setPaused(true);
         if (locked) {
@@ -1244,10 +1277,53 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
               Clique na tela para prender o mouse
             </div>
           )}
+          {touchUi && !paused && !portrait && !spectating && (
+            <>
+              <button type="button" className="fs-menubtn" onClick={() => setPaused(true)} data-testid="fs-menubtn">
+                Menu
+              </button>
+              <div className="fs-stick" ref={stickEl} aria-hidden="true">
+                <i />
+              </div>
+              <div className="fs-tbtns">
+                <button type="button" className="fs-tb fire" onPointerDown={() => press('fire', true)} onPointerUp={() => press('fire', false)} onPointerCancel={() => press('fire', false)} aria-label="Atirar">
+                  ATIRAR
+                </button>
+                {h.bomb && (
+                  <button type="button" className="fs-tb" data-testid="fs-tb-use" onPointerDown={() => press('use', true)} onPointerUp={() => press('use', false)} onPointerCancel={() => press('use', false)} aria-label="Plantar ou desarmar">
+                    BOMBA
+                  </button>
+                )}
+                <button type="button" className="fs-tb ads" onPointerDown={() => press('ads', true)} onPointerUp={() => press('ads', false)} onPointerCancel={() => press('ads', false)} aria-label="Mirar">
+                  MIRAR
+                </button>
+                <button type="button" className="fs-tb" onPointerDown={() => press('jump', true)} aria-label="Pular">
+                  PULAR
+                </button>
+                <button type="button" className="fs-tb" onPointerDown={() => press('reload', true)} aria-label="Recarregar">
+                  RECARGA
+                </button>
+                <button type="button" className="fs-tb" onPointerDown={() => press('buy', true)} aria-label="Loja">
+                  LOJA
+                </button>
+                <button type="button" className="fs-tb" onPointerDown={() => press('cycle', true)} aria-label="Trocar de arma">
+                  TROCAR
+                </button>
+              </div>
+            </>
+          )}
+          {portrait && (
+            <div className="fs-rotate" role="alert" data-testid="fs-rotate">
+              <div className="fs-card">
+                <h2>Gire o aparelho</h2>
+                <p className="mono">O Counter Fox só joga com o celular deitado.</p>
+              </div>
+            </div>
+          )}
           {inviteOpen && <InviteDialog onClose={() => setInviteOpen(false)} />}
           <GameChat enabled onClosed={(wasLocked) => wasLocked && ctl.current?.requestLock()} />
           {paused && (
-            <FsMenu touch={false} onResume={() => resumeRef.current()} onEnd={() => void leaveRoom()} endLabel="Sair da sala" endConfirm={false} exitTo={null}>
+            <FsMenu touch={touchUi} onResume={() => resumeRef.current()} onEnd={() => void leaveRoom()} endLabel="Sair da sala" endConfirm={false} exitTo={null}>
               <button type="button" className="fsm-item" onClick={() => setInviteOpen(true)} data-sfx="start" data-testid="fsr-invite">
                 Convidar amigos
               </button>

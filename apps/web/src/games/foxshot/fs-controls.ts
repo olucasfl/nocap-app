@@ -141,7 +141,11 @@ export class FsControls {
     if (document.pointerLockElement) document.exitPointerLock();
   }
 
-  setTouch(name: keyof FsControls['touchBtn'] | 'cycle', down: boolean) {
+  setTouch(name: keyof FsControls['touchBtn'] | 'cycle' | 'buy', down: boolean) {
+    if (name === 'buy') {
+      if (down) this.once.buy = true;
+      return;
+    }
     if (name === 'cycle') {
       if (down) this.cycleQueued = true;
       return;
