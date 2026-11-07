@@ -73,7 +73,7 @@ test('Fut Fox: partida offline e volta para a tela do jogo', async ({ page }) =>
   await page.getByTestId('bola-start').click();
   await expect(page.getByTestId('bola-play')).toBeVisible({ timeout: 60_000 });
   await page.waitForTimeout(3000);
-  await exitFromMenu(page, 'bola-menu', 'bola-menu-btn');
+  await exitFromMenu(page, 'bola-menu', 'bola-gear');
   await backToHubThenList(page, 'bola');
 });
 
