@@ -84,6 +84,8 @@ interface RoomHud {
   nades: { id: FsGrenadeId; name: string; count: number; key: string }[];
   speed: number; slots: { id: FsWeaponId | null; name: string; key: number }[]; current: number; reloading: boolean; scoped: boolean; spreadPx: number;
   spec: string | null;
+  /** Modo Bomba: quem você assiste depois de morrer. */
+  follow: string | null;
   bomb: BombHud | null;
   fps: number; timeLeft: number; players: FsPlayerRow[]; points: number; tris: number; calls: number; level: Quality; dpr: number; pos: number[]; k: number;
 }
@@ -198,15 +200,17 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         }
       },
     );
+    /** Modo Bomba: quem morreu assiste aos aliados vivos até o fim do round. */
+    const isAllyRow = (id: string) => ((rows.get(id)?.flags ?? 0) & 128 ? 'tr' : 'ct') === bombSelf?.side;
     const cycleFollow = (d: 1 | -1) => {
-      const live = rosterNow().filter((r) => r.id !== meId && remotes.get(slotOf(r.id) ?? '')?.alive);
+      const live = rosterNow().filter((r) => r.id !== meId && remotes.get(slotOf(r.id) ?? '')?.alive && (!bf || isAllyRow(r.id)));
       if (!live.length) return;
       const at = live.findIndex((r) => r.id === followId);
       followId = live[(at + d + live.length) % live.length]!.id;
     };
     const onKey = (e: KeyboardEvent) => {
       if (document.querySelector('[data-testid="invite-dialog"]')) return;
-      if (!isPlayerNow() && !e.repeat) {
+      if ((!isPlayerNow() || (!!bf && !!self && !self.alive)) && !e.repeat) {
         if (e.code === 'ArrowRight' || e.code === 'KeyD') cycleFollow(1);
         else if (e.code === 'ArrowLeft' || e.code === 'KeyA') cycleFollow(-1);
         else if (e.code === 'KeyM' && !pausedRef.current) setMap(!bigMapRef.current);
@@ -927,9 +931,10 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       if (!isPaused) shake *= Math.exp(-6 * dt);
       const sk = shake > 0.02 ? shake : 0;
       const e = deathK * deathK * (3 - 2 * deathK);
-      if (!player) {
-        // espectando: câmera atrás da raposa que se segue (Esquerda e Direita trocam)
-        const alivePeers = rosterNow().filter((r) => r.id !== meId && remotes.get(slotOf(r.id) ?? '')?.alive);
+      const allyLive = !!bf && !alive && rosterNow().some((r) => r.id !== meId && remotes.get(slotOf(r.id) ?? '')?.alive && isAllyRow(r.id));
+      if (!player || allyLive) {
+        // espectando (ou morto no modo Bomba): câmera atrás da raposa que se segue (Esquerda e Direita trocam)
+        const alivePeers = rosterNow().filter((r) => r.id !== meId && remotes.get(slotOf(r.id) ?? '')?.alive && (!bf || isAllyRow(r.id)));
         const cur = followId ? remotes.get(slotOf(followId) ?? '') : undefined;
         if (!cur || !cur.alive || !cur.shown) {
           const best = alivePeers.map((r) => ({ id: r.id, pts: fsMatchScore({ kills: rows.get(r.id)?.kills ?? 0, assists: rows.get(r.id)?.assists ?? 0 }) })).sort((a, b) => b.pts - a.pts)[0];
@@ -1040,7 +1045,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         setHud({
           hp: self?.hp ?? 100, armor: self?.armor ?? 0, helmet: self?.helmet ?? false, hurtKey, heavyKey,
           hurtAge: (performance.now() - hurtAt) / 1000, heavyAge: (performance.now() - heavyAt) / 1000,
-          dead: !alive, respawnIn: bf ? 0 : self?.respawnIn ?? 0,
+          dead: !alive, respawnIn: bf ? 0 : self?.respawnIn ?? 0, follow: bf && !alive && followId ? nameOf(followId) : null,
           bomb: bf && bombSelf ? ((): BombHud => {
             const phase = (['buy', 'live', 'planted', 'end', 'over'] as const)[bf![0]!] ?? 'live';
             const allyAlive = players.filter((q) => q.team === (bombSelf!.side === 'tr' ? 't' : 'ct') && q.alive).length;
@@ -1192,7 +1197,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           {h.dead && !paused && !spectating && (
             <div className="fs-deadscreen" role="status" data-testid="fs-dead">
               <b>Você morreu</b>
-              <span className="mono" data-testid="fs-respawn">{h.bomb ? 'Espere o próximo round' : `Renascendo em ${h.respawnIn.toFixed(1)}`}</span>
+              <span className="mono" data-testid="fs-respawn">{h.bomb ? `Espere o próximo round${h.follow ? ` · assistindo ${h.follow} (← → trocam)` : ''}` : `Renascendo em ${h.respawnIn.toFixed(1)}`}</span>
             </div>
           )}
           {!spectating && <FsVitals hp={h.hp} armor={h.armor} helmet={h.helmet} />}

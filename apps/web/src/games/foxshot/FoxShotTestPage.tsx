@@ -243,6 +243,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     }
   }, []);
   const endMatchRef = useRef<() => void>(() => undefined);
+  const cycleDmRef = useRef<((d: 1 | -1) => void) | null>(null);
   const mini = useRef<MinimapData>({ x: 0, z: 0, yaw: 0, targets: [] });
   const getMini = useCallback(() => mini.current, []);
   const settings = useFsSettings();
@@ -309,6 +310,9 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
 
     // Esc com o menu aberto volta ao jogo (com o mouse preso, o navegador já consome o Esc e solta o mouse)
     const onKey = (e: KeyboardEvent) => {
+      // modo Bomba: morto, as setas trocam o aliado que você assiste
+      if (cycleDmRef.current && !e.repeat && (e.code === 'ArrowRight' || e.code === 'KeyD')) cycleDmRef.current(1);
+      if (cycleDmRef.current && !e.repeat && (e.code === 'ArrowLeft' || e.code === 'KeyA')) cycleDmRef.current(-1);
       if (e.code === 'Escape' && bigMapRef.current) {
         e.preventDefault();
         setMap(false);
@@ -908,6 +912,14 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     let bombBanner: { text: string; until: number } | null = null;
     let bombHint: { text: string; until: number } | null = null;
     let wasOver = false;
+    let followDm: string | null = null;
+    const camDm = { x: 0, y: 0, z: 0, yaw: 0, ok: false };
+    const cycleDm = (d: 1 | -1) => {
+      const live = dmSpecs.filter((q) => targets.get(q.id)!.alive && sideOf(q.id) === sideOf('me'));
+      if (!live.length) return;
+      const at = live.findIndex((q) => q.id === followDm);
+      followDm = live[(at + d + live.length) % live.length]!.id;
+    };
     const botGear = new Map<string, { weapon: FsDmWeapon; armor: number; helmet: boolean }>();
     const siteMark = (id: string) => FS_DUST_MARKS.find((m) => m.kind === 'site' && m.id === id)!;
     const inSiteAt = (x: number, z: number): string | null => {
@@ -1768,6 +1780,29 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       if (!isPaused) shake *= Math.exp(-6 * dt);
       const sk = shake > 0.02 ? shake : 0;
       const e = deathK * deathK * (3 - 2 * deathK);
+      // modo Bomba: morto, a câmera segue um aliado vivo (por trás dele) até o fim do round
+      const allyLive = bm && playerDead && deathK >= 1 ? dmSpecs.filter((d) => targets.get(d.id)!.alive && sideOf(d.id) === sideOf('me')) : [];
+      if (bm) cycleDmRef.current = playerDead && allyLive.length ? cycleDm : null;
+      if (allyLive.length) {
+        if (!followDm || !allyLive.some((d) => d.id === followDm)) followDm = allyLive[0]!.id;
+        const fb = brains.get(followDm!)!;
+        const dd = fsDir(fb.yaw, 0);
+        const tx = fb.mover.x - dd[0] * 3.2;
+        const ty = fb.mover.y + 2.1;
+        const tz = fb.mover.z - dd[2] * 3.2;
+        const kk = camDm.ok ? Math.min(1, dt * 9) : 1;
+        camDm.x += (tx - camDm.x) * kk;
+        camDm.y += (ty - camDm.y) * kk;
+        camDm.z += (tz - camDm.z) * kk;
+        let dy = fb.yaw - camDm.yaw;
+        if (dy > 180) dy -= 360;
+        if (dy < -180) dy += 360;
+        camDm.yaw += camDm.ok ? dy * kk : dy;
+        camDm.ok = true;
+        scene.setView(camDm.x, camDm.y, camDm.z, camDm.yaw, -9, baseFov, 0);
+        scene.hideViewmodel = true;
+      } else {
+        camDm.ok = false;
       scene.setView(
         prev.x + (mover.x - prev.x) * alpha,
         prev.y + (mover.y - prev.y) * alpha + fsEyeHeight(mover) - e * (fsEyeHeight(mover) - 0.22),
@@ -1777,6 +1812,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         THREE.MathUtils.lerp(scene.fovNow ?? baseFov, fov, Math.min(1, dt * 12)),
         (sk ? Math.sin(clock * 97) * sk * 0.6 : 0) + e * 24,
       );
+      }
       fsAudio.listener(mover.x, mover.y + fsEyeHeight(mover), mover.z, fsDir(view.yaw + view.rYaw, view.pitch + view.rPitch));
       scene.update(isPaused ? 0 : dt, { speed, adsTarget, airborne: !mover.onGround });
       scene.render();
