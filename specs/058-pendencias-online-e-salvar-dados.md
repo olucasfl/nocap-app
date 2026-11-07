@@ -224,7 +224,8 @@ Pedido do Lucas (07/11/2026). Hoje só o Counter Fox tem tela própria (spec 057
 **Online, fase 1 (servidor):** quadro do servidor de ~48 ms para ~33 ms (30 por segundo) e janela da compensação de atraso de 15 para 30 ticks (500 ms), para o tiro com ping alto ainda pegar. Falta medir com o painel de depuração e decidir o WebRTC com dados (fase 2).
 
 Feito e na `develop`: troca de arma instantânea (7); sniper com 2 zooms por clique (8); partida abre sem o menu do Esc (6); espectar do Ping Fox com as duas raquetes (9); aba "Outros jogos" e nomes do mapa do menu sem sobreposição (4, 5); chat dos jogos estilo CS no canto inferior esquerdo com avisos do sistema, e Esc fecha só o Convidar (3, parcial: falta painel escuro); tela própria `GameLanding` (tema por jogo, Jogar offline, amigos, Como jogar, Configurações com som, Sair) para Atravessa!, Fut Fox, Ping Fox! e Desmorona! (10.1; RULES.md atualizado).
-Falta: tema da sala de amigos trocar por jogo e abas iguais (10.2), contrato de tela e extras por jogo (10.3), online do Counter Fox (1), salvar dados na conta (2, aguarda decisão da opção A).
+Atualização final (07/11): salas com tema por jogo e abas Configurar, Outros jogos, Chat, Convidar (10.2, feito); contrato de tela = `GAME_LANDING` + `GameLanding` (10.3); extras: Como jogar, revanche e reconexão já existem nos jogos, recorde só no Atravessa!; painel escuro do chat (3, feito); conferido na tela: partida abre jogando, minimapa, mapa grande com marcas, nomes do mapa do menu, tela do jogo.
+Ainda aberto: medir o online com ping real e decidir o WebRTC; conferir na tela raposas azuis no jogo, kill feed e mapa grande online; aplicar a migration `0010_user_prefs`; teste `aperta/sim.test.ts` que estoura o tempo.
 
 ## 11. Outras pendências lembradas
 
