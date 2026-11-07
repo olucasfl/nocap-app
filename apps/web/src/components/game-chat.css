@@ -349,3 +349,34 @@
 .gc-panel:not(.dock) {
   bottom: max(120px, calc(env(safe-area-inset-bottom) + 112px));
 }
+
+/* chat aberto durante a partida: fundo escuro, como no CS (spec 058) */
+.gc-panel:not(.dock) {
+  background: rgba(8, 10, 20, 0.88);
+  color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  box-shadow: none;
+}
+.gc-panel:not(.dock) .gc-title h2 {
+  color: #fff;
+}
+.gc-panel:not(.dock) .gc-x {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+.gc-panel:not(.dock) .ch-list,
+.gc-panel:not(.dock) .ch-msg,
+.gc-panel:not(.dock) .ch-meta {
+  background: transparent;
+  color: #fff;
+}
+.gc-panel:not(.dock) .ch-input {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+.gc-panel:not(.dock) .ch-sys {
+  color: #b9c2d8;
+}
