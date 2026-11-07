@@ -744,3 +744,9 @@
 .cfh .cfx-table.cfh-table tr.you td:first-child { box-shadow: inset 2px 2px 0 rgba(125, 255, 154, 0.7), inset 0 -2px 0 rgba(125, 255, 154, 0.7); }
 .cfh .cfx-table.cfh-table tr.you td:last-child { box-shadow: inset -2px 2px 0 rgba(125, 255, 154, 0.7), inset 0 -2px 0 rgba(125, 255, 154, 0.7); }
 .cfh .cfh-fin-title + .cfl-note, .cfh .cfl-note { font-size: clamp(16px, 1.6vw, 20px); }
+/* botões de modo: o escolhido acende, o outro fica apagado (spec 058/059) */
+.cfl-mode { opacity: 0.62; border-color: var(--cfx-line); background: rgba(255, 255, 255, 0.04); cursor: pointer; transition: transform 0.12s ease-out; }
+.cfl-mode:not(:disabled):hover { opacity: 1; transform: translateX(4px); }
+.cfl-mode.on { opacity: 1; border-color: var(--cfx-ember); background: linear-gradient(90deg, rgba(255, 106, 43, 0.3), rgba(255, 106, 43, 0.06)); box-shadow: inset 5px 0 0 var(--cfx-ember); }
+.cfl-mode .cfl-sel { font-style: normal; font-size: 14px; letter-spacing: 0.2em; color: var(--cfx-amber); }
+.cfl-mode:disabled { cursor: default; }

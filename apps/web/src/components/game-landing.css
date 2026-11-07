@@ -36,7 +36,7 @@
   scrollbar-width: none;
 }
 .gl-left::-webkit-scrollbar { display: none; }
-.gl-right { display: grid; align-content: center; justify-items: end; min-width: 0; min-height: 0; }
+.gl-right { display: grid; align-content: center; justify-items: stretch; min-width: 0; min-height: 0; }
 
 /* logo: símbolo + nome em duas linhas */
 .gl-logo { display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 16px; animation: gl-in 0.5s ease-out both; }
@@ -105,7 +105,7 @@
 .gl-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border: 1px solid var(--gl-line); font-size: 18px; letter-spacing: 0.08em; }
 
 /* quadro do jogo à direita */
-.gl-show { width: min(100%, 520px); animation: gl-pop 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s both; }
+.gl-show { width: 100%; max-width: 520px; margin-left: auto; animation: gl-pop 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s both; }
 .gl-art { display: block; width: 100%; height: auto; border: 1px solid var(--gl-line); background: #000; clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 22px 100%, 0 calc(100% - 22px)); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); }
 .gl-show-t { margin: 14px 0 4px; font-size: 14px; font-weight: 700; letter-spacing: 0.2em; color: var(--gl-a); text-transform: uppercase; }
 .gl-show-d { margin: 0; color: var(--gl-muted); font-size: 15px; line-height: 1.35; }
@@ -187,3 +187,8 @@
   .glb *, .gl-logo, .gl-btn, .gl-panel, .gl-show { animation: none !important; }
   .gl-btn { transition: none; }
 }
+
+/* Fox Cap! sem jogo escolhido: céu estrelado e lua */
+.glb-fc { background: linear-gradient(180deg, #0b1030 0%, #2a1a4a 55%, #6a2a4a 100%); }
+.glb-fc .glb-stars { position: absolute; inset: 0; background-image: radial-gradient(1.5px 1.5px at 10% 20%, #fff, transparent), radial-gradient(1.5px 1.5px at 30% 60%, #fff9, transparent), radial-gradient(2px 2px at 55% 15%, #fff, transparent), radial-gradient(1.5px 1.5px at 75% 40%, #fff9, transparent), radial-gradient(2px 2px at 90% 70%, #fff, transparent), radial-gradient(1.5px 1.5px at 20% 85%, #fff8, transparent); animation: glb-pulse 5s ease-in-out infinite alternate; }
+.glb-fc .glb-moon { position: absolute; right: 9%; top: 9%; width: min(18vw, 200px); aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff1c2, #ffb066 70%); box-shadow: 0 0 80px #ffb06655; }

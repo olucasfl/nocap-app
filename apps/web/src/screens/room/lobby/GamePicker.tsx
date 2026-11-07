@@ -41,16 +41,29 @@ export const FOX_GAMES = [
 export function GamePicker({ snapshot, me }: { snapshot: RoomSnapshot; me: string | undefined }) {
   const leader = snapshot.hostId === me;
   const none = snapshot.game === 'foxcap';
+  const current = FOX_GAMES.find((g) => g.id === snapshot.game);
   return (
     <section className="lb-games" aria-label="Jogo da sala" data-testid="game-picker">
-      <h3 className="lb-games-h mono">Jogo da sala</h3>
+      {current ? (
+        <>
+          <h3 className="lb-games-h mono">Jogo selecionado</h3>
+          <div className="lb-game is-on lb-game-now" data-testid="game-current">
+            <b>{current.name}</b>
+            <small>{current.note}</small>
+            <span className="mono">{current.cap} pessoas</span>
+          </div>
+          <h3 className="lb-games-h mono">Outros jogos</h3>
+        </>
+      ) : (
+        <h3 className="lb-games-h mono">Jogos</h3>
+      )}
       {none && (
         <p className="mono lb-games-lead">
           {leader ? 'Escolha o jogo para começar.' : 'O líder ainda vai escolher o jogo.'}
         </p>
       )}
       <div className="lb-games-grid" role="radiogroup" aria-label="Jogo">
-        {FOX_GAMES.map((g) => {
+        {FOX_GAMES.filter((g) => g.id !== snapshot.game).map((g) => {
           const on = snapshot.game === g.id;
           return (
             <button

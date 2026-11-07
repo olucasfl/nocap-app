@@ -117,7 +117,7 @@ describe('Counter Fox online com servidor de verdade', () => {
     await until(() => ana.errors.length > 1);
     bia.room.send('configure', { bots: 1 });
     await until(() => bia.errors.length > 0);
-    ana.room.send('configure', { minutes: 2, bots: 2 });
+    ana.room.send('configure', { kind: 'dm', minutes: 2, bots: 2 });
     await until(() => ana.snap?.settings?.minutes === 2 && ana.snap?.settings?.bots === 2);
 
     // só começa com todo mundo pronto
@@ -158,7 +158,7 @@ describe('Counter Fox online com servidor de verdade', () => {
     await until(() => ana.snap?.members.length === 2);
     ana.room.send('pickgame', { game: 'foxshot' });
     await until(() => ana.snap?.game === 'foxshot');
-    ana.room.send('configure', { minutes: 2, bots: 0 });
+    ana.room.send('configure', { kind: 'dm', minutes: 2, bots: 0 });
     bia.room.send('ready', { ready: true });
     await until(() => (ana.snap as unknown as { members: { ready: boolean }[] }).members.some((m) => m.ready));
     ana.room.send('start');
@@ -173,7 +173,7 @@ describe('Counter Fox online com servidor de verdade', () => {
     await until(() => ana.snap?.members.length === 1);
     ana.room.send('pickgame', { game: 'foxshot' });
     await until(() => ana.snap?.game === 'foxshot');
-    ana.room.send('configure', { minutes: 2, bots: 3 });
+    ana.room.send('configure', { kind: 'dm', minutes: 2, bots: 3 });
     await until(() => ana.snap?.settings?.bots === 3);
     ana.room.send('start');
     await until(() => ana.snap?.phase === 'play', 9000);

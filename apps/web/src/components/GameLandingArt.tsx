@@ -2,10 +2,25 @@ import type { ReactNode } from 'react';
 
 /** Jogos com tela própria no Fox Cap! (spec 058, seção 10). */
 export type LandingGame = 'atravessa' | 'bola' | 'pingpong' | 'desmorona';
+/** O Fox Cap! sem jogo escolhido (sala nova) também tem tema. */
+export type ThemeGame = LandingGame | 'foxcap';
 
 /** Emblema (símbolo) de cada jogo: desenhado só para ele, não uma letra. */
-export function Emblem({ game }: { game: LandingGame }) {
-  const body: Record<LandingGame, ReactNode> = {
+export function Emblem({ game }: { game: ThemeGame }) {
+  const body: Record<ThemeGame, ReactNode> = {
+    // raposa de boné: o símbolo do Fox Cap!
+    foxcap: (
+      <>
+        <circle cx="50" cy="50" r="44" fill="#ffb347" />
+        <path d="M22 30 28 8 44 24ZM78 30 72 8 56 24Z" fill="#ff7a2e" />
+        <ellipse cx="50" cy="58" rx="28" ry="24" fill="#ff8a3d" />
+        <path d="M30 52q20 28 40 0q-6 26-20 26T30 52Z" fill="#fff3d6" />
+        <path d="M26 40q24-26 48 0Z" fill="#3f82ff" />
+        <path d="M70 40h14" stroke="#3f82ff" strokeWidth="7" strokeLinecap="round" />
+        <circle cx="40" cy="54" r="4" fill="#0b0d1c" />
+        <circle cx="60" cy="54" r="4" fill="#0b0d1c" />
+      </>
+    ),
     // raposa atravessando: faixa de pedestre e setas
     atravessa: (
       <>
@@ -53,7 +68,20 @@ export function Emblem({ game }: { game: LandingGame }) {
 }
 
 /** Fundo temático de cada jogo (só transform e opacity se mexem). */
-export function Backdrop({ game }: { game: LandingGame }) {
+export function Backdrop({ game }: { game: ThemeGame }) {
+  if (game === 'foxcap') {
+    return (
+      <div className="glb glb-fc" aria-hidden="true">
+        <div className="glb-stars" />
+        <div className="glb-moon" />
+        <svg className="glb-hills" viewBox="0 0 1200 300" preserveAspectRatio="none" style={{ bottom: 0, height: '38%' }}>
+          <path d="M0 220 Q200 120 420 200 T820 170 T1200 210 V300 H0Z" fill="#2a1630" />
+          <path d="M0 262 Q260 190 520 250 T1000 240 T1200 262 V300 H0Z" fill="#120b1c" />
+        </svg>
+        <div className="glb-vig" />
+      </div>
+    );
+  }
   if (game === 'atravessa') {
     return (
       <div className="glb glb-atr" aria-hidden="true">

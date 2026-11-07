@@ -29,6 +29,7 @@ const FUR = ['#3f82ff', '#ff8a3d'];
 
 /** O que falta para começar o mata-mata (uma linha). */
 function hint(s: RoomSnapshot): { text: string; ok: boolean } {
+  if ((s.foxshot?.kind ?? 'none') === 'none') return { text: 'Escolha o modo de jogo na aba Modo', ok: false };
   const humans = s.members.filter((m) => m.connected);
   const bots = s.foxshot?.kind === 'bomb' ? (s.foxshot.botsCt ?? 0) + (s.foxshot.botsTr ?? 0) : (s.foxshot?.bots ?? 0);
   if (humans.length + bots < 2) return { text: 'Coloque ao menos 1 bot ou chame um amigo', ok: false };
@@ -153,7 +154,8 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
   const leader = snapshot.hostId === me;
   const mine = snapshot.members.find((m) => m.id === me);
   const minutes = snapshot.foxshot?.minutes ?? 5;
-  const bomb = snapshot.foxshot?.kind === 'bomb';
+  const kind = snapshot.foxshot?.kind ?? 'none';
+  const bomb = kind === 'bomb';
   const botsCt = snapshot.foxshot?.botsCt ?? 0;
   const botsTr = snapshot.foxshot?.botsTr ?? 0;
   const bots = bomb ? botsCt + botsTr : (snapshot.foxshot?.bots ?? 0);
@@ -185,9 +187,9 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
         <header className="cfl-head">
           <CounterFoxLogo compact />
           <div className="cfl-chips">
-            <span className="cfl-chip">{bomb ? 'Bomba' : 'Mata-mata'}</span>
+            <span className="cfl-chip">{kind === 'none' ? 'Sem modo' : bomb ? 'Bomba' : 'Mata-mata'}</span>
             <span className="cfl-chip">Duna</span>
-            <span className="cfl-chip">{bomb ? `até ${winRounds} rounds` : `${minutes} min`}</span>
+            {kind !== 'none' && <span className="cfl-chip">{bomb ? `até ${winRounds} rounds` : `${minutes} min`}</span>}
             <span className="cfl-chip">{humans + Math.min(bots, 10 - humans)}/10</span>
           </div>
           <div className="cfl-code" data-testid="cfl-code">
@@ -219,7 +221,7 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
               <p className="cfl-note">Passe este código (ou o link, na aba Convidar) para os amigos entrarem.</p>
               <dl className="cfl-facts">
                 <div><dt>Jogo</dt><dd>Counter Fox</dd></div>
-                <div><dt>Modo</dt><dd>{bomb ? 'Bomba' : 'Mata-mata'}</dd></div>
+                <div><dt>Modo</dt><dd>{kind === 'none' ? 'Escolha um' : bomb ? 'Bomba' : 'Mata-mata'}</dd></div>
                 <div><dt>Mapa</dt><dd>Duna</dd></div>
                 {bomb ? (
                   <>
@@ -289,15 +291,17 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
 
           {tab === 'modo' && (
             <div className="cfl-pane" data-testid="cfl-mode">
-              <button type="button" className={`cfl-mode${!bomb ? ' on' : ''}`} aria-pressed={!bomb} disabled={!leader} onClick={() => sendRoom('configure', { kind: 'dm' })} data-testid="cfl-mode-dm">
-                <b>Mata-mata</b>
+              <button type="button" className={`cfl-mode${kind === 'dm' ? ' on' : ''}`} aria-pressed={kind === 'dm'} disabled={!leader} onClick={() => sendRoom('configure', { kind: 'dm' })} data-testid="cfl-mode-dm">
+                <b>Mata-mata{kind === 'dm' && <em className="cfl-sel"> · selecionado</em>}</b>
                 <span>Todos contra todos no Duna. Abate vale {FS_POINTS.kill} pontos, assistência {FS_POINTS.assist}. Vence quem tiver mais pontos no fim.</span>
               </button>
               <button type="button" className={`cfl-mode${bomb ? ' on' : ''}`} aria-pressed={bomb} disabled={!leader} onClick={() => sendRoom('configure', { kind: 'bomb' })} data-testid="cfl-mode-bomb">
-                <b>Bomba</b>
+                <b>Bomba{bomb && <em className="cfl-sel"> · selecionado</em>}</b>
                 <span>Rounds de TR contra CT: os terroristas plantam a bomba, os contra-terroristas impedem. Compra só na base, dinheiro finito. Escolha o time na aba Jogadores.</span>
               </button>
-              {bomb ? (
+              {kind === 'none' ? (
+                <p className="cfl-note" data-testid="cfl-mode-none">{leader ? 'Escolha um modo para ver as regras dele.' : 'O líder ainda vai escolher o modo.'}</p>
+              ) : bomb ? (
                 <>
                   <h4>Rounds para vencer</h4>
                   <div className="cfh-pills" role="radiogroup" aria-label="Rounds para vencer">

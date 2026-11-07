@@ -64,6 +64,7 @@ test('duas janelas: criar sala pelo menu, entrar pelo código, jogar e ver o ser
   await expect(ana.getByTestId('cfl-player-Bia')).toBeVisible({ timeout: 10_000 });
   await ana.screenshot({ path: `${process.env.FS_SHOTS ?? '/tmp'}/cfl-jogadores.png` });
   await ana.getByTestId('cfl-tab-modo').click();
+  await ana.getByTestId('cfl-mode-dm').click();
   await ana.getByTestId('cfl-min-2').click();
   await ana.getByTestId('cfl-bots-2').click();
   await expect(ana.getByTestId('cfl-bots-2')).toHaveAttribute('aria-checked', 'true');
@@ -154,6 +155,7 @@ test('uma pessoa com bot joga até o fim do tempo: tabela final e jogar de novo 
   await page.getByTestId('cfh-create').click();
   await expect(page.getByTestId('cfl')).toBeVisible({ timeout: 30_000 });
   await page.getByTestId('cfl-tab-modo').click();
+  await page.getByTestId('cfl-mode-dm').click();
   await page.getByTestId('cfl-min-2').click();
   await page.getByTestId('cfl-bots-3').click();
   await expect(page.getByTestId('cfl-bots-3')).toHaveAttribute('aria-checked', 'true');

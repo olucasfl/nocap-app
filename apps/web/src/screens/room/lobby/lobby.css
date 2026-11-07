@@ -1696,12 +1696,12 @@
 .lb3[data-game='desmorona'] {
   --lb-accent: var(--gl-a);
 }
-.lb3[data-game] .lb3-bar-code b,
-.lb3[data-game] .lb3-tabs [aria-selected='true'] {
+:is(.lb3[data-game='atravessa'], .lb3[data-game='bola'], .lb3[data-game='pingpong'], .lb3[data-game='desmorona']) .lb3-bar-code b,
+:is(.lb3[data-game='atravessa'], .lb3[data-game='bola'], .lb3[data-game='pingpong'], .lb3[data-game='desmorona']) .lb3-tabs [aria-selected='true'] {
   color: var(--gl-a, inherit);
   border-color: var(--gl-a, currentColor);
 }
-.lb3[data-game] .lb3-bar {
+:is(.lb3[data-game='atravessa'], .lb3[data-game='bola'], .lb3[data-game='pingpong'], .lb3[data-game='desmorona']) .lb3-bar {
   border-bottom: 4px solid var(--gl-a, transparent);
 }
 
@@ -1712,3 +1712,58 @@
 .lb3-tabs button:nth-child(n + 4) {
   border-top: 2.5px solid var(--ink);
 }
+
+/* ---------- sala temática (spec 058): tela cheia, cenário do jogo e o mesmo desenho do lobby do Counter Fox ---------- */
+.gll {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  overflow: hidden;
+  background: #070a14;
+  /* as peças da sala usam os tokens Pop Brutal: aqui eles viram o tema escuro e translúcido */
+  --paper: rgba(9, 14, 30, 0.86);
+  --ink: #f4efe6;
+  --white: rgba(255, 255, 255, 0.07);
+  --yellow: rgba(10, 16, 34, 0.78);
+  --on-accent: #f4efe6;
+  --border: 1px solid rgba(255, 255, 255, 0.18);
+  --shadow: none;
+  --font-display: 'Rajdhani', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'Rajdhani', 'Segoe UI', system-ui, sans-serif;
+  color: #f4efe6;
+  font-family: 'Rajdhani', 'Segoe UI', system-ui, sans-serif;
+}
+.gll-wrap {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: max(16px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+  box-sizing: border-box;
+}
+.gll-head { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+.gll-head .gl-emblem { width: clamp(44px, 6vw, 64px); }
+.gll-head h1 { margin: 0; display: grid; font: 400 clamp(22px, 3vw, 34px) / 0.95 'Saira Stencil One', 'Rajdhani', 'Arial Black', sans-serif; text-shadow: 0 3px 0 rgba(0, 0, 0, 0.45); }
+.gll-head h1 b { font-weight: 400; background: linear-gradient(180deg, #fff3d6, var(--gl-a)); -webkit-background-clip: text; background-clip: text; color: transparent; font-size: 0.85em; }
+.gll .lb3 { max-width: none; margin: 0; padding: 0 0 8px; }
+.gll .lb3-bar { background: rgba(10, 16, 34, 0.78); border: 1px solid rgba(255, 255, 255, 0.16); border-left: 5px solid var(--gl-a); border-radius: 0; clip-path: polygon(0 0, 100% 0, calc(100% - 16px) 100%, 0 100%); color: #f4efe6; }
+.gll .lb3-bar-code b { color: var(--gl-a); font-family: 'Saira Stencil One', 'Rajdhani', sans-serif; letter-spacing: 0.12em; }
+.gll .lb3-role { background: transparent; border-color: rgba(255, 255, 255, 0.3); color: #f4efe6; }
+.gll .lb3-tabs { background: transparent; border: 0; border-bottom: 1px solid rgba(255, 255, 255, 0.16); border-radius: 0; box-shadow: none; display: flex; flex-wrap: wrap; gap: 4px; }
+.gll .lb3-tabs button { flex: 1 1 auto; min-height: 44px; border: 0; background: transparent; color: #9aa6bf; font: 700 15px 'Rajdhani', sans-serif; letter-spacing: 0.18em; border-bottom: 3px solid transparent; }
+.gll .lb3-tabs button + button { border-top: 0; }
+.gll .lb3-tabs button[aria-selected='true'] { color: #f4efe6; border-bottom-color: var(--gl-a); background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.08)); }
+.gll .lb3-pane, .gll .lb-games, .gll .rm-choice { color: #f4efe6; }
+.gll .lb3-foot { background: transparent; border: 0; box-shadow: none; }
+.gll .btn { font-family: 'Rajdhani', sans-serif; letter-spacing: 0.16em; border-radius: 0; border: 0; border-left: 5px solid var(--gl-a); background: linear-gradient(90deg, var(--gl-a), color-mix(in srgb, var(--gl-a) 50%, #0b0d1c)); color: #0b0d1c; box-shadow: none; clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 100%, 0 100%); }
+.gll .btn[disabled] { opacity: 0.45; }
+.gll .lb-game { background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 0; color: #f4efe6; box-shadow: none; clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%); }
+.gll .lb-game.is-on { border-color: var(--gl-a); background: color-mix(in srgb, var(--gl-a) 22%, transparent); }
+.gll h2, .gll h3 { font-family: 'Rajdhani', sans-serif; letter-spacing: 0.14em; }
+.gll .bola-lobby-team, .gll .bola-lobby-teams section { border-radius: 0; box-shadow: none; }
+.gll input, .gll select { background: rgba(0, 0, 0, 0.4); color: #f4efe6; border-color: rgba(255, 255, 255, 0.25); border-radius: 0; }
+@media (max-height: 520px) { .gll-head { margin-bottom: 4px; } .gll-head .gl-emblem { width: 36px; } }

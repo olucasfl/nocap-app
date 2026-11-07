@@ -224,7 +224,7 @@ export interface FoxShotRoomState {
   minutes: number;
   bots: number;
   /** 'bomb' = modo Bomba (spec 059); times escolhidos no lobby (0 contra-terrorista, 1 terrorista). */
-  kind?: 'dm' | 'bomb';
+  kind?: 'none' | 'dm' | 'bomb';
   botsCt?: number;
   botsTr?: number;
   winRounds?: number;

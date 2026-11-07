@@ -1,4 +1,6 @@
-import { useId, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useEffect, useId, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import { Backdrop, Emblem, type ThemeGame } from '@/components/GameLandingArt';
 import type { RoomSnapshot } from '@/lib/rooms';
 import { useRoom } from '@/lib/rooms';
 import { bolaHint } from './bola-hint';
@@ -54,7 +56,7 @@ export function LobbyShell({
   footer: ReactNode;
 }) {
   const message = useRoom((s) => s.message);
-  const [tab, setTabState] = useState<LobbyTab>(() => tabMemo.get(snapshot.code) ?? 'members');
+  const [tabRaw, setTabState] = useState<LobbyTab>(() => tabMemo.get(snapshot.code) ?? 'members');
   const setTab = (t: LobbyTab) => {
     tabMemo.set(snapshot.code, t);
     setTabState(t);
@@ -62,6 +64,9 @@ export function LobbyShell({
   const uid = useId();
   const hint = startHint(snapshot);
   const theme = GAME_LANDING[snapshot.game as LandingGame];
+  const noGame = snapshot.flex && snapshot.game === 'foxcap';
+  // sem jogo não existe a aba Configurar: cai em Jogadores
+  const tab: LobbyTab = noGame && tabRaw === 'rules' ? 'members' : tabRaw;
   const meIsLeader = snapshot.hostId === me;
   const tabs: { id: LobbyTab; label: string; count?: string }[] = [
     {
@@ -69,10 +74,11 @@ export function LobbyShell({
       label: 'Jogadores',
       count: `${snapshot.members.length}/${snapshot.maxPlayers}`,
     },
-    { id: 'rules', label: snapshot.flex ? 'Configurar' : 'Regras' },
+    // sem jogo escolhido não há o que configurar: a aba é só a lista de jogos
+    ...(noGame ? [] : [{ id: 'rules' as LobbyTab, label: snapshot.flex ? 'Configurar' : 'Regras' }]),
     { id: 'invite', label: 'Convidar' },
     { id: 'chat', label: 'Chat' },
-    ...(snapshot.flex ? [{ id: 'games' as LobbyTab, label: 'Outros jogos' }] : []),
+    ...(snapshot.flex ? [{ id: 'games' as LobbyTab, label: noGame ? 'Jogos' : 'Outros jogos' }] : []),
   ];
 
   const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -89,7 +95,7 @@ export function LobbyShell({
     document.getElementById(`${uid}-tab-${next.id}`)?.focus();
   };
 
-  return (
+  const content = (
     <section
       className="screen rm lb3"
       data-tab={tab}
@@ -139,15 +145,17 @@ export function LobbyShell({
           {members(() => setTab('invite'))}
         </div>
         <div className="lb3-side">
-          <div
-            id={`${uid}-panel-rules`}
-            role="tabpanel"
-            aria-labelledby={`${uid}-tab-rules`}
-            className={`lb3-pane pane-rules${tab === 'rules' ? ' on' : ''}`}
-          >
-            <h2 className="lb3-h">{snapshot.flex ? 'Configurar' : 'Regras'}</h2>
-            {rules}
-          </div>
+          {!noGame && (
+            <div
+              id={`${uid}-panel-rules`}
+              role="tabpanel"
+              aria-labelledby={`${uid}-tab-rules`}
+              className={`lb3-pane pane-rules${tab === 'rules' ? ' on' : ''}`}
+            >
+              <h2 className="lb3-h">{snapshot.flex ? 'Configurar' : 'Regras'}</h2>
+              {rules}
+            </div>
+          )}
           <div
             id={`${uid}-panel-invite`}
             role="tabpanel"
@@ -164,7 +172,7 @@ export function LobbyShell({
               aria-labelledby={`${uid}-tab-games`}
               className={`lb3-pane pane-games${tab === 'games' ? ' on' : ''}`}
             >
-              <h2 className="lb3-h">Outros jogos</h2>
+              <h2 className="lb3-h">{noGame ? 'Escolha o jogo' : 'Outros jogos'}</h2>
               <GamePicker snapshot={snapshot} me={me} />
             </div>
           )}
@@ -190,5 +198,52 @@ export function LobbyShell({
 
       <div className="lb3-foot">{footer}</div>
     </section>
+  );
+  return createPortal(
+    <LobbyFrame game={(snapshot.game in GAME_LANDING ? snapshot.game : 'foxcap') as ThemeGame}>{content}</LobbyFrame>,
+    document.body,
+  );
+}
+
+const FC_THEME = { line1: 'FOX', line2: 'CAP!', a: '#ffb347', b: '#3a1f45' };
+const FONTS = 'https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Saira+Stencil+One&display=swap';
+
+/**
+ * Moldura temática da sala (spec 058): tela cheia com o cenário e o símbolo do jogo escolhido (ou do Fox Cap! sem jogo),
+ * no mesmo desenho do lobby do Counter Fox. A página de trás não rola; só esta moldura, e só se precisar.
+ */
+function LobbyFrame({ game, children }: { game: ThemeGame; children: ReactNode }) {
+  const t = game === 'foxcap' ? FC_THEME : GAME_LANDING[game];
+  useEffect(() => {
+    if (!document.querySelector('link[data-cfh-fonts]')) {
+      const l = document.createElement('link');
+      l.rel = 'stylesheet';
+      l.href = FONTS;
+      l.setAttribute('data-cfh-fonts', '1');
+      document.head.appendChild(l);
+    }
+    const html = document.documentElement;
+    const prev = [html.style.overflow, document.body.style.overflow];
+    html.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    return () => {
+      html.style.overflow = prev[0] ?? '';
+      document.body.style.overflow = prev[1] ?? '';
+    };
+  }, []);
+  return (
+    <div className="gll" data-game={game} data-testid="themed-lobby" style={{ ['--gl-a' as string]: t.a, ['--gl-b' as string]: t.b }}>
+      <Backdrop game={game} />
+      <div className="gll-wrap">
+        <header className="gll-head">
+          <Emblem game={game} />
+          <h1>
+            <span>{t.line1}</span>
+            <b>{t.line2}</b>
+          </h1>
+        </header>
+        {children}
+      </div>
+    </div>
   );
 }

@@ -27,7 +27,8 @@ export interface FoxShotSettings {
   /** Bots que completam a partida (0 a 9; no máximo 10 jogadores no total). */
   bots: number;
   /** 'dm' mata-mata; 'bomb' modo Bomba (spec 059). */
-  kind: 'dm' | 'bomb';
+  /** 'none' = o líder ainda não escolheu o modo (a sala só começa depois). */
+  kind: 'none' | 'dm' | 'bomb';
   /** Modo Bomba: bots por time (só entram se o líder pedir). */
   botsCt: number;
   botsTr: number;
@@ -57,7 +58,7 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
   constructor(opts: EngineOptions) {
     super({ ...opts, maxPlayers: FOXSHOT_ROOM_MAX });
     this.mode = 'mata';
-    this.settings = { rounds: 1, minutes: 5, bots: 0, kind: 'dm', botsCt: 0, botsTr: 0, winRounds: 8, roundSec: 115 } as unknown as AnySettings;
+    this.settings = { rounds: 1, minutes: 5, bots: 0, kind: 'none', botsCt: 0, botsTr: 0, winRounds: 8, roundSec: 115 } as unknown as AnySettings;
   }
 
   /** Bots da partida: no modo Bomba são os dois times somados; no mata-mata, o número escolhido. */
@@ -77,7 +78,7 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
       Number.isInteger(m.bots) &&
       m.bots >= 0 &&
       m.bots <= FS_MATCH_BOTS.max &&
-      (m.kind === 'dm' || m.kind === 'bomb') &&
+      (m.kind === 'none' || m.kind === 'dm' || m.kind === 'bomb') &&
       Number.isInteger(m.botsCt) &&
       m.botsCt >= 0 &&
       m.botsCt <= 5 &&
@@ -141,6 +142,7 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
     this.requirePhase('lobby');
     const humans = [...this.members.values()].filter((m) => m.connected);
     if (humans.length < 1) throw new RoomError('Falta gente na sala');
+    if (this.cfg.kind === 'none') throw new RoomError('Escolha o modo de jogo na aba Modo');
     if (humans.length + this.botTotal() < 2) throw new RoomError('Coloque ao menos 1 bot ou chame um amigo');
     if (humans.some((m) => m.id !== this.hostId && !m.ready && !this.committed.has(m.id))) throw new RoomError('Falta gente marcar "pronto"');
     this.committed.clear();
