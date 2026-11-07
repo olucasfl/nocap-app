@@ -197,7 +197,7 @@ test('Jogar abre a tela própria do jogo, com offline, amigos, configurações e
   await page.getByTestId('foxcap-pingpong').click();
   await expect(page.getByTestId('gl-pingpong')).toBeVisible();
   await expect(page.getByTestId('gl-friends')).toBeVisible();
-  await expect(page.getByTestId('gl-settings')).toBeVisible();
+  await expect(page.getByTestId('gl-settings-btn')).toBeVisible();
   await page.getByTestId('gl-exit').click();
   await expect(page.getByTestId('gl-pingpong')).toHaveCount(0);
   await page.getByTestId('foxcap-bola').click();

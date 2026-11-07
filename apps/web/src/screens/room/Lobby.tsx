@@ -19,12 +19,16 @@ export function Lobby({ snapshot }: { snapshot: RoomSnapshot }) {
   useEffect(() => {
     if (snapshot.game !== 'foxcap' || snapshot.hostId !== me) return;
     try {
-      if (sessionStorage.getItem('cfx-new-room') !== '1') return;
+      const want = sessionStorage.getItem('cfx-new-room');
+      if (!want) return;
       sessionStorage.removeItem('cfx-new-room');
+      // '1' vem do Counter Fox; os outros jogos guardam o próprio id
+      const game = want === '1' ? 'foxshot' : want;
+      if (!['foxshot', 'bola', 'pingpong', 'atravessa', 'desmorona'].includes(game)) return;
+      sendRoom('pickgame', { game });
     } catch {
-      return;
+      /* sem armazenamento: o líder escolhe o jogo na sala */
     }
-    sendRoom('pickgame', { game: 'foxshot' });
   }, [snapshot.game, snapshot.hostId, me]);
 
   if (snapshot.game === 'foxcap') return <FoxLobby snapshot={snapshot} me={me} />;

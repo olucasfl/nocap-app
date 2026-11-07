@@ -137,12 +137,23 @@ export function FoxCapPage() {
         <GameLanding
           game={hub}
           onOffline={offline}
-          onFriends={() => {
-            setHub(null);
-            setTab('amigos');
-          }}
           onHelp={() => setHelp(hub)}
           onExit={() => setHub(null)}
+          room={{
+            busy: entry.busy,
+            error: entry.error,
+            clearError: entry.clearError,
+            // a sala já nasce com o jogo desta tela escolhido
+            create: () => {
+              try {
+                sessionStorage.setItem('cfx-new-room', hub);
+              } catch {
+                /* sem armazenamento: o líder escolhe o jogo na sala */
+              }
+              void entry.create('foxcap');
+            },
+            join: (c) => void entry.join(c),
+          }}
         />
       )}
       <section className="screen gh">
