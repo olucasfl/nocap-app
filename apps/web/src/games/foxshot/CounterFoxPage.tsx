@@ -83,17 +83,22 @@ function MapCard() {
     g.lineJoin = 'round';
     // nomes que não se cobrem: cada um tenta a posição e depois sobe/desce até achar um espaço livre
     const taken: [number, number, number, number][] = [];
-    const place = (text: string, x: number, y: number, h: number): number => {
+    const place = (text: string, x: number, y: number, h: number): [number, number] => {
       const w = g.measureText(text).width + 8;
-      for (const d of [0, 20, -20, 40, -40, 60]) {
-        const yy = y + d;
-        const r: [number, number, number, number] = [x - w / 2, yy - h / 2, x + w / 2, yy + h / 2];
-        if (!taken.some((t) => r[0] < t[2] && r[2] > t[0] && r[1] < t[3] && r[3] > t[1])) {
-          taken.push(r);
-          return yy;
+      const half = g.canvas.width / 2;
+      for (const d of [0, 20, -20, 40, -40, 60, -60, 80, -80, 100]) {
+        for (const dx of [0, -70, 70, -140, 140, -210, 210]) {
+          const yy = y + d;
+          const xx = Math.max(w / 2 + 4, Math.min(g.canvas.width - w / 2 - 4, x + dx));
+          const r: [number, number, number, number] = [xx - w / 2, yy - h / 2, xx + w / 2, yy + h / 2];
+          if (!taken.some((t) => r[0] < t[2] && r[2] > t[0] && r[1] < t[3] && r[3] > t[1])) {
+            taken.push(r);
+            return [xx, yy];
+          }
         }
       }
-      return y;
+      void half;
+      return [x, y];
     };
     // as bolas das bombas entram primeiro (ocupam o espaço delas)
     for (const m of FS_DUST_MARKS) if (m.kind === 'site') taken.push([px(m.x) - 32, pz(m.z) - 32, px(m.x) + 32, pz(m.z) + 32]);
@@ -116,17 +121,17 @@ function MapCard() {
         g.fillText(m.short, x, z + 2);
         g.font = '800 17px Rajdhani, system-ui, sans-serif';
         g.lineWidth = 4;
-        const ly = place(m.name.toUpperCase(), x, z + 46, 20);
-        g.strokeText(m.name.toUpperCase(), x, ly);
-        g.fillText(m.name.toUpperCase(), x, ly);
+        const [lx, ly] = place(m.name.toUpperCase(), x, z + 46, 20);
+        g.strokeText(m.name.toUpperCase(), lx, ly);
+        g.fillText(m.name.toUpperCase(), lx, ly);
       } else {
         g.font = '800 17px Rajdhani, system-ui, sans-serif';
         g.lineWidth = 4;
         g.strokeStyle = 'rgba(5,8,20,.95)';
-        const ly = place(m.name.toUpperCase(), x, z, 20);
-        g.strokeText(m.name.toUpperCase(), x, ly);
+        const [lx, ly] = place(m.name.toUpperCase(), x, z, 20);
+        g.strokeText(m.name.toUpperCase(), lx, ly);
         g.fillStyle = m.id === 'CT' ? '#9cc4ff' : '#ffb98a';
-        g.fillText(m.name.toUpperCase(), x, ly);
+        g.fillText(m.name.toUpperCase(), lx, ly);
       }
     }
   }, []);

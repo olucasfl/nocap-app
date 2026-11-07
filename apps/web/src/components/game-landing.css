@@ -6,6 +6,7 @@
   overflow: auto;
   display: grid;
   place-items: center;
+  grid-template-columns: minmax(0, 1fr);
   padding: max(20px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom));
   background: linear-gradient(135deg, var(--gl-b), #0b0d1c 70%);
   color: #fff;
@@ -30,7 +31,7 @@
   position: relative;
   width: min(960px, 100%);
   display: grid;
-  grid-template-columns: 1fr minmax(280px, 380px);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 380px);
   gap: clamp(20px, 5vw, 56px);
   align-items: center;
 }
@@ -87,7 +88,10 @@
   background: rgba(255, 255, 255, 0.05);
 }
 .gl-set b { font-size: 20px; text-transform: uppercase; letter-spacing: 0.04em; }
-.gl-set span { flex: 1; font-size: 15px; opacity: 0.75; }
+.gl-set span { flex: 1 1 auto; font-size: 15px; opacity: 0.75; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gl-set { flex-wrap: nowrap; justify-content: space-between; }
+.gl-menu { min-width: 0; }
+.gl-set b { white-space: nowrap; }
 @keyframes gl-in { from { opacity: 0; transform: translateY(12px); } }
 @media (max-width: 720px) {
   .gl-wrap { grid-template-columns: 1fr; }
