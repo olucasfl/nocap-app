@@ -2,11 +2,14 @@ import { useId, useState, type KeyboardEvent, type ReactNode } from 'react';
 import type { RoomSnapshot } from '@/lib/rooms';
 import { useRoom } from '@/lib/rooms';
 import { bolaHint } from './bola-hint';
+import { ChatPanel } from '@/components/Chat';
+import { chatColor } from '@/components/GameChat';
+import { GAME_LANDING, type LandingGame } from '@/components/GameLanding';
 import { GamePicker } from './GamePicker';
 import { MIN_PLAYERS, rulesSummary } from './rules';
 import './lobby.css';
 
-export type LobbyTab = 'members' | 'rules' | 'invite';
+export type LobbyTab = 'members' | 'rules' | 'invite' | 'chat';
 
 /** A aba aberta de cada sala: na sala do Fox Cap! trocar de jogo troca a tela do lobby, e a aba tem que ficar onde estava. */
 const tabMemo = new Map<string, LobbyTab>();
@@ -58,6 +61,7 @@ export function LobbyShell({
   };
   const uid = useId();
   const hint = startHint(snapshot);
+  const theme = GAME_LANDING[snapshot.game as LandingGame];
   const meIsLeader = snapshot.hostId === me;
   const tabs: { id: LobbyTab; label: string; count?: string }[] = [
     {
@@ -67,6 +71,7 @@ export function LobbyShell({
     },
     { id: 'rules', label: 'Regras' },
     { id: 'invite', label: 'Convidar' },
+    { id: 'chat', label: 'Chat' },
   ];
 
   const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -84,7 +89,13 @@ export function LobbyShell({
   };
 
   return (
-    <section className="screen rm lb3" data-tab={tab}>
+    <section
+      className="screen rm lb3"
+      data-tab={tab}
+      data-game={snapshot.game}
+      // a sala toma as cores do jogo escolhido (e muda quando o líder troca de jogo)
+      style={theme ? ({ ['--gl-a' as string]: theme.a, ['--gl-b' as string]: theme.b } as React.CSSProperties) : undefined}
+    >
       <header className="lb3-bar">
         <div className="lb3-bar-code">
           <span className="mono">SALA</span>
@@ -145,6 +156,17 @@ export function LobbyShell({
           >
             <h2 className="lb3-h">Convidar</h2>
             {invite}
+          </div>
+          <div
+            id={`${uid}-panel-chat`}
+            role="tabpanel"
+            aria-labelledby={`${uid}-tab-chat`}
+            className={`lb3-pane pane-chat${tab === 'chat' ? ' on' : ''}`}
+          >
+            <h2 className="lb3-h">Chat</h2>
+            {tab === 'chat' && (
+              <ChatPanel snapshot={snapshot} colorOf={(id) => chatColor(snapshot, id)} />
+            )}
           </div>
         </div>
       </div>

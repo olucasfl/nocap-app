@@ -1688,3 +1688,19 @@
     bottom: calc(92px + env(safe-area-inset-bottom));
   }
 }
+
+/* a sala toma as cores do jogo escolhido (spec 058, 10.2) */
+.lb3[data-game='atravessa'],
+.lb3[data-game='bola'],
+.lb3[data-game='pingpong'],
+.lb3[data-game='desmorona'] {
+  --lb-accent: var(--gl-a);
+}
+.lb3[data-game] .lb3-bar-code b,
+.lb3[data-game] .lb3-tabs [aria-selected='true'] {
+  color: var(--gl-a, inherit);
+  border-color: var(--gl-a, currentColor);
+}
+.lb3[data-game] .lb3-bar {
+  border-bottom: 4px solid var(--gl-a, transparent);
+}
