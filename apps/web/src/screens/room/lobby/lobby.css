@@ -1767,3 +1767,5 @@
 .gll .bola-lobby-team, .gll .bola-lobby-teams section { border-radius: 0; box-shadow: none; }
 .gll input, .gll select { background: rgba(0, 0, 0, 0.4); color: #f4efe6; border-color: rgba(255, 255, 255, 0.25); border-radius: 0; }
 @media (max-height: 520px) { .gll-head { margin-bottom: 4px; } .gll-head .gx-emblem { width: 36px; } }
+.gll .lb3-why, .gll .lb3-foot .mono { color: #cdd6ee; }
+.gll .lb3-foot .btn[disabled] { opacity: 0.6; color: #dfe6f7; background: rgba(255, 255, 255, 0.12); border-left-color: rgba(255, 255, 255, 0.3); }
