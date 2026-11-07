@@ -253,6 +253,8 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       }
     };
     resumeRef.current = resume;
+    // a partida abre jogando (sem o menu do Esc); se o navegador negar prender o mouse, aparece "Clique na tela"
+    if (mePlayer && !touch) resume();
 
     const world = fsWorldDust(SLOTS.map((id) => ({ id, x: 0, z: 0 })));
     const scene = new FoxShotScene(cv, world);
@@ -306,6 +308,11 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
     let heavyAt = -1e9;
     let shake = 0;
     let adsHold = 0;
+    // sniper: clique alterna zoom 1, zoom 2 e fora (não é de segurar)
+    let zoomLvl = 0;
+    let adsPrev = false;
+    let aimHeld = false;
+    const zoomFov = (adsFov: number) => (zoomLvl >= 2 ? 11 : adsFov);
     let recent: { t: number; d: number }[] = [];
     let blindTotal = 0;
     let blindUntil = 0;
@@ -698,9 +705,15 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       if (!isPaused) clock += dt;
       if (live && haveSelf && !isPaused) {
         // o botão de mirar segurado não pode piscar: uma queda de 0,12 s no sinal não solta a mira
-        adsHold = inp.ads ? 0.12 : Math.max(0, adsHold - dt);
-        adsOn = alive && (inp.ads || adsHold > 0) && !loadout.reloading && !w.melee;
-        const adsScale = Math.min(1, (w.adsFov || 62) / st.fov) * st.adsSens;
+        const sn = w.adsFov > 0;
+        if (!sn || loadout.reloading || loadout.held) zoomLvl = 0;
+        if (!alive) zoomLvl = 0;
+        if (sn && !loadout.reloading && inp.ads && !adsPrev) zoomLvl = (zoomLvl + 1) % 3;
+        adsPrev = inp.ads;
+        aimHeld = sn ? zoomLvl > 0 : inp.ads;
+        adsHold = aimHeld ? 0.12 : Math.max(0, adsHold - dt);
+        adsOn = alive && (aimHeld || adsHold > 0) && !loadout.reloading && !w.melee;
+        const adsScale = Math.min(1, (zoomFov(w.adsFov) || 62) / st.fov) * st.adsSens;
         const look = controls.takeLook(adsOn ? adsScale : 1);
         view.yaw += look.yaw;
         view.pitch = Math.max(-88, Math.min(88, view.pitch + look.pitch));
@@ -748,7 +761,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           outbox.push({
             seq: p.seq, fwd: p.fwd, strafe: p.strafe, jump: p.jump, crouch: p.crouch, walk: p.walk,
             yaw: view.yaw + view.rYaw, pitch: view.pitch + view.rPitch,
-            trigger: alive && inp.trigger && !shopOpen, alt: alive && inp.ads && !shopOpen, reload: alive && reloadOnce, inspect: alive && inspectOnce,
+            trigger: alive && inp.trigger && !shopOpen, alt: alive && aimHeld && !shopOpen, reload: alive && reloadOnce, inspect: alive && inspectOnce,
             viewTick: Math.round(lastK + ((perfNow - lastFrameAt) / 1000) * 60 - (INTERP_MS / 1000) * 60),
             cmds,
           });
@@ -775,7 +788,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         if (alive) {
           const mv = { moving: speed > 0.8, speed, airborne: !mover.onGround, ads: adsOn, crouch: mover.crouchK > 0.5 };
           const wasInspecting = loadout.inspecting;
-          handle(loadout.update(dt, { trigger: inp.trigger && !shopOpen, reload: inp.reload, alt: inp.ads && !shopOpen, inspect: inp.inspect }, mv, meId));
+          handle(loadout.update(dt, { trigger: inp.trigger && !shopOpen, reload: inp.reload, alt: aimHeld && !shopOpen, inspect: inp.inspect }, mv, meId));
           if (wasInspecting && !loadout.inspecting) {
             scene.knifeInspect(false);
             scene.gunInspect(false);
@@ -823,7 +836,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       errOff.x *= Math.exp(-12 * dt); errOff.y *= Math.exp(-12 * dt); errOff.z *= Math.exp(-12 * dt);
       const alpha = isPaused || !live ? 1 : Math.min(1, acc / TICK);
       const scoped = adsOn && loadout.weapon.adsFov > 0;
-      const fov = st.fov + ((loadout.weapon.adsFov || 62) - st.fov) * (adsOn ? 1 : 0);
+      const fov = st.fov + ((zoomFov(loadout.weapon.adsFov) || 62) - st.fov) * (adsOn ? 1 : 0);
       if (blindEl.current) {
         const left = isPaused ? 0 : blindUntil - clock;
         const o = left <= 0 ? 0 : left > blindTotal * 0.45 ? 1 : left / (blindTotal * 0.45);

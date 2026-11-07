@@ -355,6 +355,8 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       }
     };
     resumeRef.current = resume;
+    // a partida abre jogando (sem o menu do Esc); se o navegador negar prender o mouse, aparece "Clique na tela"
+    if (!touch) resume();
 
     // ---- o mundo: a arena de teste ou o Duna com os bots do mata-mata
     const dmNames = Array.from({ length: match?.bots ?? 0 }, (_, i) => `Bot ${i + 1}`);
@@ -606,6 +608,11 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     let blindUntil = 0;
     let scopedNow = false;
     let adsHold = 0;
+    // sniper: clique alterna zoom 1, zoom 2 e fora (não é de segurar)
+    let zoomLvl = 0;
+    let adsPrev = false;
+    let aimHeld = false;
+    const zoomFov = (adsFov: number) => (zoomLvl >= 2 ? 11 : adsFov);
     const eyeNow = (): [number, number, number] => [mover.x, mover.y + fsEyeHeight(mover), mover.z];
     const throwNade = (kind: FsGrenadeId, power: number, style: 'far' | 'mid' | 'near' = 'far') => {
       const dir = fsDir(view.yaw + view.rYaw, view.pitch + view.rPitch);
@@ -1201,9 +1208,15 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         // a luz (cegueira) não passa enquanto está morto: continua depois de renascer
         if (playerDead) blindUntil += dt;
         // o botão de mirar segurado não pode piscar: uma queda de 0,12 s no sinal não solta a mira
-        adsHold = inp.ads ? 0.12 : Math.max(0, adsHold - dt);
-        adsOn = (inp.ads || adsHold > 0) && !loadout.reloading && !loadout.weapon.melee;
-        const adsScale = Math.min(1, (w.adsFov || 62) / baseFov) * st.adsSens;
+        const sn = w.adsFov > 0;
+        if (!sn || loadout.reloading || loadout.held) zoomLvl = 0;
+        if (playerDead) zoomLvl = 0;
+        if (sn && !loadout.reloading && inp.ads && !adsPrev) zoomLvl = (zoomLvl + 1) % 3;
+        adsPrev = inp.ads;
+        aimHeld = sn ? zoomLvl > 0 : inp.ads;
+        adsHold = aimHeld ? 0.12 : Math.max(0, adsHold - dt);
+        adsOn = (aimHeld || adsHold > 0) && !loadout.reloading && !loadout.weapon.melee;
+        const adsScale = Math.min(1, (zoomFov(w.adsFov) || 62) / baseFov) * st.adsSens;
         const look = controls.takeLook(adsOn ? adsScale : 1);
         view.yaw += look.yaw;
         view.pitch = Math.max(-88, Math.min(88, view.pitch + look.pitch));
@@ -1325,7 +1338,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
             {
               trigger: inp.trigger && !shopOpen,
               reload: inp.reload,
-              alt: inp.ads && !shopOpen,
+              alt: aimHeld && !shopOpen,
               inspect: inp.inspect,
             },
             mv,
@@ -1412,7 +1425,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       const scoped = adsOn && loadout.weapon.adsFov > 0;
       scopedNow = scoped;
       const adsTarget = adsOn ? 1 : 0;
-      const fov = baseFov + ((loadout.weapon.adsFov || 62) - baseFov) * (adsOn ? 1 : 0);
+      const fov = baseFov + ((zoomFov(loadout.weapon.adsFov) || 62) - baseFov) * (adsOn ? 1 : 0);
       // física em passos fixos de 1/120 s: interpola para a câmera andar liso em qualquer taxa de quadros
       const alpha = isPaused ? 1 : Math.min(1, acc / STEP);
       // granada de luz: tela branca cheia enquanto dura a primeira parte e depois some aos poucos
