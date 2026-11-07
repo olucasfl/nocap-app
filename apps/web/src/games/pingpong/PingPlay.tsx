@@ -688,6 +688,8 @@ export function PingPlay({
     const oppTarget = { x: 0, y: 1.3, z: 0 };
     const oppVel = { x: 0, y: 0, z: 0 };
     const oppSmooth = { x: 0, y: 1.3, z: 0 };
+    /** Quem assiste: alvo da raquete do jogador que ele vê como "meu" (ninguém a move localmente). */
+    const specTarget = { x: 0, y: 1.3, z: 0 };
     // a raquete do outro chega ~50 vezes por segundo: aqui ela segue o alvo com a velocidade que ele vinha tendo e um
     // suavizado curto (sem degraus a cada pacote e sem atraso grande)
     let oppAt = performance.now();
@@ -822,6 +824,12 @@ export function PingPlay({
             // com o canal direto aberto, a raquete vem dele (a da sala é mais velha e repetida)
             if (row[0] === oppIdx && performance.now() - peerPadAt > 600)
               setOppPad(row[1] ?? 0, row[2] ?? 1.3, row[3] ?? 0);
+            // quem assiste não joga: as DUAS raquetes vêm da sala (a do jogador 0 não tem dono local)
+            if (spectator && row[0] === myIdx) {
+              specTarget.x = row[1] ?? 0;
+              specTarget.y = row[2] ?? 1.3;
+              specTarget.z = row[3] ?? 0;
+            }
           }
         }),
       );
@@ -967,6 +975,10 @@ export function PingPlay({
           if (guard >= 6) acc = 0;
           alpha = acc * 60;
         }
+      }
+      if (spectator) {
+        const steps = Math.max(1, Math.min(20, Math.ceil(dt * 120)));
+        for (let i = 0; i < steps; i++) ppPadStepZ(match.pad(myIdx), specTarget.x, specTarget.y, specTarget.z, dt / steps);
       }
       scene.render(dt, phase === 'play' && !paused ? alpha : 1);
       // a barra do smash do adversário fica em cima da cabeça dele, com onde ele apertou
