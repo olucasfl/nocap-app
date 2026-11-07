@@ -1704,3 +1704,11 @@
 .lb3[data-game] .lb3-bar {
   border-bottom: 4px solid var(--gl-a, transparent);
 }
+
+/* com mais de 3 abas (Configurar, Chat, Outros jogos) elas passam para uma segunda linha, com as bordas certas */
+.lb3-tabs button:nth-child(3n + 1) {
+  border-left: 0;
+}
+.lb3-tabs button:nth-child(n + 4) {
+  border-top: 2.5px solid var(--ink);
+}

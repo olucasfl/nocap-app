@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { MuteButton } from '@/components/MuteButton';
 import './game-landing.css';
 
@@ -37,7 +38,8 @@ export function GameLanding({
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
   }, [onExit]);
-  return (
+  // no body: um ancestral com transform (a página) deslocaria e alargaria o "fixed" no celular
+  return createPortal(
     <main
       className="gl"
       data-testid={`gl-${game}`}
@@ -78,6 +80,7 @@ export function GameLanding({
           </button>
         </nav>
       </div>
-    </main>
+    </main>,
+    document.body,
   );
 }

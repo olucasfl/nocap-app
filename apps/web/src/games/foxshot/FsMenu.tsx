@@ -444,7 +444,8 @@ export function FsMenu({
               )}
               {children}
               <p className="fsm-hint mono">
-                Esc abre e fecha este menu. As suas configurações ficam salvas neste aparelho.
+                {touch ? 'Toque em Continuar jogando para voltar. ' : 'Esc abre e fecha este menu. '}
+                {'As suas configurações valem na sua conta (e neste aparelho).'}
               </p>
             </div>
           )}
