@@ -19,7 +19,7 @@ async function open(page: Page) {
   await page.getByTestId('cfh-play').click();
   await page.getByTestId('cfh-train').click();
   await expect(page.getByTestId('fs-ammo')).toBeVisible({ timeout: 40_000 });
-  await page.getByTestId('fsm-resume').click();
+  await page.getByTestId('fsm-resume').click({ timeout: 2500 }).catch(() => undefined); // a partida já abre jogando
   await page.waitForTimeout(400);
 }
 const alive = async (page: Page, id: string) => (await fs<{ alive: boolean }>(page, 'target', id)).alive;

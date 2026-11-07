@@ -13,7 +13,7 @@ test('menu da partida: encerrar volta ao menu do Counter Fox, treino tem voltar 
   await page.getByTestId('cfh-offline').click();
   await page.getByTestId('cfx-start').click();
   await expect(page.getByTestId('fs-ammo')).toBeVisible({ timeout: 90000 });
-  await page.getByTestId('fsm-resume').click();
+  await page.getByTestId('fsm-resume').click({ timeout: 2500 }).catch(() => undefined); // a partida já abre jogando
   await page.waitForTimeout(800);
   await page.keyboard.press('Escape');
   await page.getByTestId('fsm-end').click();
@@ -25,7 +25,7 @@ test('menu da partida: encerrar volta ao menu do Counter Fox, treino tem voltar 
   await page.getByTestId('cfh-play').click();
   await page.getByTestId('cfh-train').click();
   await expect(page.getByTestId('fs-ammo')).toBeVisible({ timeout: 90000 });
-  await page.getByTestId('fsm-resume').click();
+  await page.getByTestId('fsm-resume').click({ timeout: 2500 }).catch(() => undefined); // a partida já abre jogando
   await page.waitForTimeout(800);
   await page.keyboard.press('Escape');
   await page.getByTestId('fsm-back').click();

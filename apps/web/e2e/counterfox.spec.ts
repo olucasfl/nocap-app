@@ -19,7 +19,7 @@ async function start(page: Page, minutes: number, bots: number) {
   await page.getByTestId(`cfx-bots-${bots}`).click();
   await page.getByTestId('cfx-start').click();
   await expect(page.getByTestId('fs-ammo')).toBeVisible({ timeout: 40_000 });
-  await page.getByTestId('fsm-resume').click();
+  await page.getByTestId('fsm-resume').click({ timeout: 2500 }).catch(() => undefined); // a partida já abre jogando
 }
 
 type Dm = { id: string; alive: boolean; kills: number; assists: number; deaths: number; weapon: string; x: number; z: number };
