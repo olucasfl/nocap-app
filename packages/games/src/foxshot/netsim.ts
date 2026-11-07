@@ -14,7 +14,7 @@ import { fsClearLine, fsFlashEffect, fsFragDamage, fsGrenadeLaunch, fsGrenadeSte
 import { FsLoadout } from './gun';
 import { FS_RESPAWN_S, fsMatchConfig, fsMatchResult, fsMatchScore, type FsMatchConfig, type FsMatchRow } from './match';
 import { FS_MOVE, fsEyeHeight, fsNewMover, fsStepMover, type FsMover } from './movement';
-import { FS_SHOP, fsBuy, fsShopItem } from './shop';
+import { FS_SHOP, fsBuy, fsShopItem, fsShopPrice } from './shop';
 import { fsDir, fsTrace, type FsBody, type Vec3 } from './trace';
 import { FS_WEAPONS, type FsWeaponId } from './weapons';
 import type { FsBox } from './map';
@@ -453,15 +453,17 @@ export class FsNetSim {
       if (this.bm) {
         // só na base, na fase de compra, com dinheiro
         const bp = this.bm.players.get(p.id);
-        if (!item || !bp || !this.bm.buyOpen || !this.inBase(p) || item.price > bp.money) return;
+        if (!item || !bp || !this.bm.buyOpen || !this.inBase(p) || fsShopPrice(item, p.armor, p.helmet) > bp.money) return;
       }
       if (c.id === 'kit') {
         // alicate: só contra-terrorista e uma vez; cobra só se deu
         if (this.bm && item && this.bm.giveKit(p.id)) this.bm.buy(p.id, item.price, true);
         return;
       }
+      const cost = item ? fsShopPrice(item, p.armor, p.helmet) : 0;
+      if (this.bm && item?.id === 'vesthelm' && cost === 0) return; // já tem tudo: nada de recarga grátis
       const r = fsBuy(lo, c.id);
-      if (r.ok && this.bm && item) this.bm.buy(p.id, item.price, true);
+      if (r.ok && this.bm && item) this.bm.buy(p.id, cost, true);
       if (r.ok && r.armor) {
         p.armor = r.armor.points;
         p.helmet = p.helmet || r.armor.helmet;
@@ -640,7 +642,8 @@ export class FsNetSim {
 
   private bombFrozen(): boolean {
     const b = this.bm;
-    return !!b && (b.phase === 'buy' || b.phase === 'end' || b.phase === 'over');
+    // no fim do round todos andam livremente (só a compra e o fim da partida travam)
+    return !!b && (b.phase === 'buy' || b.phase === 'over');
   }
 
   private inBase(p: FsNetPlayer): boolean {

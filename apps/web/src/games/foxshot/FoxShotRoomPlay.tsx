@@ -10,6 +10,7 @@ import {
   FS_WEAPONS,
   FsLoadout,
   fsBuy,
+  fsShopPrice,
   fsDir,
   fsDmHeading,
   fsEyeHeight,
@@ -361,7 +362,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       const m = FS_DUST_MARKS.find((k) => k.kind === 'base' && k.id === (bombSelf?.side === 'tr' ? 'T' : 'CT'));
       return !!m && mover.x >= m.x0 - 1 && mover.x <= m.x1 + 1 && mover.z >= m.z0 - 1 && mover.z <= m.z1 + 1;
     };
-    const bombFrozen = () => !!bf && (bf[0] === 0 || bf[0] === 3 || bf[0] === 4);
+    const bombFrozen = () => !!bf && (bf[0] === 0 || bf[0] === 4);
     let lastFrameAt = 0;
     let timeLeft = info.minutes * 60;
     const remotes = new Map<string, { buf: Snap[]; alive: boolean; shown: boolean; weapon: number; team?: 'ct' | 't'; teamBit?: 0 | 1; ally?: boolean; allyName?: string; allyTeam?: "ct" | "t" }>();
@@ -724,7 +725,9 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
     buyRef.current = (item) => {
       if (bf) {
         if (!bombSelf?.buy || !inBaseNow()) return sayHint('Só dá para comprar na base, no tempo de compra');
-        if (item.price > (bombSelf?.money ?? 0)) return sayHint('Dinheiro insuficiente');
+        const cost = fsShopPrice(item, self?.armor ?? 0, self?.helmet ?? false);
+        if (item.id === 'vesthelm' && cost === 0) return sayHint('Você já tem colete e capacete');
+        if (cost > (bombSelf?.money ?? 0)) return sayHint('Dinheiro insuficiente');
         if (item.kit) {
           if (bombSelf?.side !== 'ct') return sayHint('O alicate é só dos contra-terroristas');
           if (bombSelf.kit) return sayHint('Você já tem o alicate');
@@ -737,7 +740,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       }
       const r = fsBuy(loadout, item.id);
       if (!r.ok) return;
-      if (bombSelf) bombSelf.money -= item.price;
+      if (bombSelf) bombSelf.money -= fsShopPrice(item, self?.armor ?? 0, self?.helmet ?? false);
       cmdQueue.push({ t: 'buy', id: item.id });
       if (!fsShopItem(item.id)?.grenade) afterEquip();
       fsAudio.draw();

@@ -85,6 +85,17 @@ export const FS_SHOP: FsShopCategory[] = [
 
 export const fsShopItem = (id: string): FsShopItem | undefined => FS_SHOP.flatMap((c) => c.items).find((i) => i.id === id);
 
+export const FS_VEST_PRICE = 650;
+export const FS_HELMET_PRICE = 350;
+/**
+ * Preço de verdade de um item para quem já tem parte do equipamento: no "colete e capacete" só se paga o que falta
+ * (quem tem o colete paga a diferença; quem tem o capacete paga só o colete).
+ */
+export function fsShopPrice(item: { id: string; price: number }, armor: number, helmet: boolean): number {
+  if (item.id !== 'vesthelm') return item.price;
+  return (armor > 0 ? 0 : FS_VEST_PRICE) + (helmet ? 0 : FS_HELMET_PRICE);
+}
+
 export interface FsBuyResult {
   ok: boolean;
   reason?: 'unknown' | 'soon' | 'owned';

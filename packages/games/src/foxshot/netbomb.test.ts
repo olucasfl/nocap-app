@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { FsNetSim, FS_NET_HZ } from './netsim';
 import { FS_DUST_MARKS, fsSiteAt } from './dust';
+import { fsShopPrice } from './shop';
 
 describe('modo Bomba na simulação do servidor', () => {
   it('começa na compra, vira round e os bots jogam rounds até alguém vencer', () => {
@@ -79,5 +80,13 @@ describe('modo Bomba na simulação do servidor', () => {
     expect(fsSiteAt(FS_DUST_MARKS.find((m) => m.id === 'A')!.x, FS_DUST_MARKS.find((m) => m.id === 'A')!.z)).toBe('A');
     expect(fsSiteAt(FS_DUST_MARKS.find((m) => m.id === 'B')!.x + 3, FS_DUST_MARKS.find((m) => m.id === 'B')!.z)).toBe('B');
     expect(fsSiteAt(0, -200)).toBeNull();
+  });
+  it('colete e capacete: quem já tem uma parte paga só a diferença', () => {
+    const it = { id: 'vesthelm', price: 1000 };
+    expect(fsShopPrice(it, 0, false)).toBe(1000);
+    expect(fsShopPrice(it, 100, false)).toBe(350);
+    expect(fsShopPrice(it, 0, true)).toBe(650);
+    expect(fsShopPrice(it, 100, true)).toBe(0);
+    expect(fsShopPrice({ id: 'vest', price: 650 }, 100, true)).toBe(650);
   });
 });

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FS_SHOP, type FsShopItem, type FsWeaponId } from '@nocap/games';
+import { FS_SHOP, fsShopPrice, type FsShopItem, type FsWeaponId } from '@nocap/games';
 import { HeartIcon, KitIcon, VestIcon, WeaponIcon } from './fs-icons';
 import { bindLabel, useFsSettings } from './fs-settings';
 
@@ -127,7 +127,8 @@ export function FsShop({
                 // o alicate só existe no modo Bomba e só para contra-terrorista
                 const it = raw.kit ? { ...raw, soon: kit === 'na' } : raw;
                 const own = owned.includes(it.id) || (it.kit === true && kit === 'owned');
-                const poor = money !== null && !it.soon && !own && it.price > money;
+                const price = fsShopPrice(it, armor, helmet);
+                const poor = money !== null && !it.soon && !own && price > money;
                 return (
                   <li key={it.id}>
                     <button
@@ -150,7 +151,7 @@ export function FsShop({
                         )}
                       </span>
                       <span className="fss-name">{it.name}</span>
-                      <em className="fss-price mono">{it.soon ? 'em breve' : own ? 'em uso' : `$${it.price}`}</em>
+                      <em className="fss-price mono">{it.soon ? 'em breve' : own ? 'em uso' : `$${price}`}</em>
                       {own && <span className="fss-tag">em uso</span>}
                     </button>
                   </li>

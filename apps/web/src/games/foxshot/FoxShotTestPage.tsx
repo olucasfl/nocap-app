@@ -49,6 +49,7 @@ import {
   FsLoadout,
   fsDir,
   fsBuy,
+  fsShopPrice,
   fsShopItem,
   fsEyeHeight,
   fsIsBackstab,
@@ -1220,7 +1221,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     let dmOff = false;
     const stepDm = (dt: number) => {
       const movers: { x: number; z: number }[] = [];
-      const botsFrozen = !!bm && (bm.phase === 'buy' || bm.phase === 'end' || bm.phase === 'over');
+      const botsFrozen = !!bm && (bm.phase === 'buy' || bm.phase === 'over');
       for (const d of dmSpecs) {
         if (!targets.get(d.id)!.alive || botsFrozen) continue;
         const b = brains.get(d.id)!;
@@ -1509,7 +1510,9 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       if (bm) {
         const meP = bm.players.get('me')!;
         if (!bm.buyOpen || !inBaseAt(mover.x, mover.z, meP.side)) return say('Só dá para comprar na base, no tempo de compra');
-        if (item.price > meP.money) return say('Dinheiro insuficiente');
+        const cost = fsShopPrice(item, me.armor, me.helmet);
+        if (item.id === 'vesthelm' && cost === 0) return say('Você já tem colete e capacete');
+        if (cost > meP.money) return say('Dinheiro insuficiente');
         if (item.kit) {
           if (meP.side !== 'ct') return say('O alicate é só dos contra-terroristas');
           if (!bm.giveKit('me')) return say('Você já tem o alicate');
@@ -1518,9 +1521,10 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
           return;
         }
       }
+      const cost = fsShopPrice(item, me.armor, me.helmet);
       const r = fsBuy(loadout, item.id);
       if (!r.ok) return;
-      bm?.buy('me', item.price, true);
+      bm?.buy('me', cost, true);
       if (r.armor) {
         me.armor = r.armor.points;
         // comprar só o colete não tira o capacete que já tem
@@ -1549,7 +1553,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       scene.hideViewmodel = deathK > 0.15;
       useHeld = inp.use && !playerDead;
       // modo Bomba: parado na base durante a compra e depois do fim do round, sem atirar
-      if (bm && (bm.phase === 'buy' || bm.phase === 'end' || bm.phase === 'over')) {
+      if (bm && (bm.phase === 'buy' || bm.phase === 'over')) {
         inp.fwd = inp.strafe = 0;
         inp.jump = false;
         inp.trigger = false;

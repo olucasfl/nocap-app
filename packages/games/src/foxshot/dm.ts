@@ -42,6 +42,34 @@ export const FS_DM_SKILL = {
   hearSteps: 12,
 };
 
+/** Nível do bot: muda reação, giro da mira, pontaria, visão, audição e a chance de tiro na cabeça. */
+export type FsBotLevel = 'rookie' | 'mid' | 'pro';
+export interface FsBotSkill {
+  fov: number;
+  sight: number;
+  react: [number, number];
+  turn: number;
+  err: number;
+  hearSteps: number;
+  /** Chance de mirar na cabeça numa rajada (o sniper soma +0,19). */
+  head: number;
+  /** 0 a 1: o quanto usa Shift (andar sem barulho) quando não está lutando. */
+  sneak: number;
+  /** 0 a 1: sabe jogar em equipe (segue o time, troca de bomba, espera cobertura antes de plantar/desarmar). */
+  sense: number;
+}
+export const FS_BOT_LEVELS: Record<FsBotLevel, FsBotSkill> = {
+  rookie: { fov: 105, sight: 45, react: [0.65, 1.05], turn: 170, err: 4.6, hearSteps: 7, head: 0.04, sneak: 0.1, sense: 0.15 },
+  mid: { fov: 125, sight: 58, react: [0.4, 0.65], turn: 270, err: 2.8, hearSteps: 10, head: 0.1, sneak: 0.5, sense: 0.55 },
+  pro: { fov: 140, sight: 70, react: [0.25, 0.45], turn: 380, err: 1.6, hearSteps: 12, head: 0.16, sneak: 0.85, sense: 0.95 },
+};
+export const FS_BOT_LEVEL_NAMES: Record<FsBotLevel, string> = { rookie: 'Novato', mid: 'Médio', pro: 'Craque' };
+/** Sorteia o nível de um bot (cerca de 30% novatos, 40% médios, 30% craques). */
+export function fsBotRollLevel(rng: () => number): FsBotLevel {
+  const r = rng();
+  return r < 0.3 ? 'rookie' : r < 0.7 ? 'mid' : 'pro';
+}
+
 export interface FsDmFoe {
   id: string;
   x: number;
@@ -90,6 +118,13 @@ export interface FsDmBrain {
   /** Mira na cabeça nesta rajada? */
   headAim: boolean;
   speed: number;
+  level: FsBotLevel;
+  skill: FsBotSkill;
+  /** Anda devagar e sem barulho (Shift) quando não está lutando. */
+  sneak?: boolean;
+  /** Parado no posto: agacha e vigia na direção de `lookAt`. */
+  holdCrouch?: boolean;
+  lookAt?: [number, number] | null;
 }
 
 export type FsDmAction =
@@ -114,7 +149,7 @@ export function fsDmPickWeapon(rng: () => number): FsDmWeapon {
   return 'ak';
 }
 
-export function fsDmNew(id: string, x: number, z: number, yaw: number, weapon: FsDmWeapon, rng: () => number, y = 0): FsDmBrain {
+export function fsDmNew(id: string, x: number, z: number, yaw: number, weapon: FsDmWeapon, rng: () => number, y = 0, level: FsBotLevel = 'pro'): FsDmBrain {
   const m = fsNewMover(x, z);
   m.y = y;
   return {
@@ -122,7 +157,7 @@ export function fsDmNew(id: string, x: number, z: number, yaw: number, weapon: F
     nades: { frag: rng() < 0.45 ? 1 : 0, flash: rng() < 0.45 ? 1 : 0 },
     nadeCool: 4 + rng() * 6, flashedUntil: 0, path: [], goal: null, stuckT: 0, lastX: x, lastZ: z,
     target: null, react: 0, lostT: 99, last: null, strafe: rng() < 0.5 ? 1 : -1, strafeT: 0.6, senseT: rng() * 0.12, acc: 0, fireAnimT: 0,
-    anim: 'idle', animSpeed: 1, headAim: false, speed: 0,
+    anim: 'idle', animSpeed: 1, headAim: false, speed: 0, level, skill: FS_BOT_LEVELS[level],
   };
 }
 
@@ -172,6 +207,7 @@ export function fsDmStep(b: FsDmBrain, ctx: FsDmCtx): FsDmAction[] {
   const st = FS_DM_STYLE[b.weapon];
   const m = b.mover;
   const blind = now < b.flashedUntil;
+  const sk = b.skill;
   fsGunTick(w, b.gun, dt);
   b.cool -= dt;
   b.fireAnimT -= dt;
@@ -195,18 +231,18 @@ export function fsDmStep(b: FsDmBrain, ctx: FsDmCtx): FsDmAction[] {
         const dx = f.x - m.x;
         const dz = f.z - m.z;
         const d = Math.hypot(dx, dz);
-        if (d > FS_DM_SKILL.sight) continue;
-        const inCone = Math.abs(angDiff(b.yaw, yawTo(dx, dz))) <= FS_DM_SKILL.fov / 2 || d < 3.5;
+        if (d > sk.sight) continue;
+        const inCone = Math.abs(angDiff(b.yaw, yawTo(dx, dz))) <= sk.fov / 2 || d < 3.5;
         if (inCone && d < bd && fsClearLine(boxes, eye, chestOf(f, false))) {
           best = f;
           bd = d;
         }
-        if (f.noisy && d < FS_DM_SKILL.hearSteps && (!heard || d < Math.hypot(heard.x - m.x, heard.z - m.z))) heard = f;
+        if (f.noisy && d < sk.hearSteps && (!heard || d < Math.hypot(heard.x - m.x, heard.z - m.z))) heard = f;
       }
     }
     if (best) {
-      if (b.target !== best.id || b.lostT > 0.4) b.react = between(rng, FS_DM_SKILL.react);
-      if (b.target !== best.id) b.headAim = rng() < (b.weapon === 'sniper' ? 0.35 : 0.16);
+      if (b.target !== best.id || b.lostT > 0.4) b.react = between(rng, sk.react);
+      if (b.target !== best.id) b.headAim = rng() < sk.head + (b.weapon === 'sniper' ? 0.19 : 0);
       b.target = best.id;
       b.lostT = 0;
       b.last = { x: best.x, z: best.z };
@@ -236,7 +272,7 @@ export function fsDmStep(b: FsDmBrain, ctx: FsDmCtx): FsDmAction[] {
     b.react -= dt;
     // gira a mira para o alvo (limitado pela velocidade de giro)
     const dy = angDiff(b.yaw, ay);
-    const maxTurn = FS_DM_SKILL.turn * dt;
+    const maxTurn = sk.turn * dt;
     b.yaw += Math.abs(dy) <= maxTurn ? dy : Math.sign(dy) * maxTurn;
     b.pitch += Math.max(-maxTurn, Math.min(maxTurn, ap - b.pitch));
     const onTarget = Math.abs(angDiff(b.yaw, ay)) < 3 + 12 / Math.max(dist, 2) && Math.abs(ap - b.pitch) < 4;
@@ -282,7 +318,7 @@ export function fsDmStep(b: FsDmBrain, ctx: FsDmCtx): FsDmAction[] {
     }
     // atira
     const shotgunRange = b.weapon === 'shotgun' && dist > 15;
-    if (b.react <= 0 && onTarget && b.reloadT <= 0 && b.cool <= 0 && !shotgunRange && dist < Math.min(FS_DM_SKILL.sight, w.rangeMod < 0.6 ? 25 : 70)) {
+    if (b.react <= 0 && onTarget && b.reloadT <= 0 && b.cool <= 0 && !shotgunRange && dist < Math.min(sk.sight, w.rangeMod < 0.6 ? 25 : 70)) {
       if (b.ammo <= 0) {
         b.reloadT = w.reload;
         out.push({ type: 'reload', weapon: b.weapon });
@@ -291,7 +327,7 @@ export function fsDmStep(b: FsDmBrain, ctx: FsDmCtx): FsDmAction[] {
         const speed = Math.hypot(m.vx, m.vz);
         const shot = fsFire(w, b.gun, { moving: speed > 1, airborne: !m.onGround, ads: false, speed, crouch: m.crouchK > 0.5 }, b.id);
         // erro do jogador virtual: cresce com a distância
-        const e = FS_DM_SKILL.err * (0.4 + dist / 25) * (b.weapon === 'sniper' ? 0.45 : 1);
+        const e = sk.err * (0.4 + dist / 25) * (b.weapon === 'sniper' ? 0.45 : 1);
         const ra = rng() * Math.PI * 2;
         const rr = Math.sqrt(rng()) * e;
         const base = [b.yaw + Math.cos(ra) * rr, b.pitch + Math.sin(ra) * rr] as const;
@@ -329,6 +365,15 @@ export function fsDmStep(b: FsDmBrain, ctx: FsDmCtx): FsDmAction[] {
     } else {
       b.goal = null;
       b.path = [];
+      // no posto: agacha se mandaram e vigia a direção do ângulo (gira devagar, como quem confere)
+      if (b.holdCrouch) crouch = true;
+      if (b.lookAt) {
+        const ly = yawTo(b.lookAt[0] - m.x, b.lookAt[1] - m.z);
+        const d = angDiff(b.yaw, ly);
+        const mt = 140 * dt;
+        b.yaw += Math.abs(d) <= mt ? d : Math.sign(d) * mt;
+        b.pitch *= 0.9;
+      }
     }
   } else if (!b.goal || b.path.length === 0) {
     // passeia: um ponto de interesse sorteado
@@ -393,7 +438,7 @@ export function fsDmStep(b: FsDmBrain, ctx: FsDmCtx): FsDmAction[] {
   const strafe = (wantX * rtX + wantZ * rtZ) * move;
   while (b.acc >= 1 / 60) {
     b.acc -= 1 / 60;
-    fsStepMover(m, { fwd, strafe, jump: false, yaw: b.yaw, speedMul: w.moveMul * 0.92, crouch }, 1 / 60, boxes);
+    fsStepMover(m, { fwd, strafe, jump: false, yaw: b.yaw, speedMul: w.moveMul * 0.92, crouch, walk: !!b.sneak && !foe }, 1 / 60, boxes);
   }
   b.speed = Math.hypot(m.vx, m.vz);
   b.anim = b.fireAnimT > 0 ? 'shoot' : b.speed > 1 ? (m.crouchK > 0.5 ? 'crouchwalk' : 'run') : 'idle';
