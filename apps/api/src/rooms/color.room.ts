@@ -884,6 +884,16 @@ export class FoxShotRoom extends ColorRoom {
       const id = (c.userData as AuthData | undefined)?.id;
       if (id) engine().receive(id, m);
     });
+    this.onMessage('fsteam', (c, m: { id?: string; team?: number }) => {
+      const by = (c.userData as AuthData | undefined)?.id;
+      if (!by) return;
+      try {
+        engine().setTeam(by, typeof m?.id === 'string' ? m.id : by, Number(m?.team));
+        this.publish();
+      } catch (e) {
+        c.send('error', e instanceof RoomError ? e.message : 'Não deu para trocar de time');
+      }
+    });
     this.onMessage('fsplay', (c) => {
       const id = (c.userData as AuthData | undefined)?.id;
       if (!id) return;

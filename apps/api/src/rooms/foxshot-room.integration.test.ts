@@ -195,3 +195,34 @@ describe('Counter Fox online com servidor de verdade', () => {
     expect(ana.errors.join('|')).not.toContain('Só dá para convidar no lobby');
   }, 40_000);
 });
+
+describe('Counter Fox online, modo Bomba', () => {
+  it('líder escolhe o modo Bomba, os times viram TR e CT, o quadro traz a bomba e o dinheiro e a compra fora da base é recusada', async () => {
+    const ana = watch(await new Client(url).create('foxcap', { token: 'ana' }));
+    const bia = watch(await new Client(url).joinById(ana.room.roomId, { token: 'bia' }));
+    await until(() => ana.snap?.members.length === 2 && bia.snap?.members.length === 2);
+    ana.room.send('pickgame', { game: 'foxshot' });
+    await until(() => ana.snap?.game === 'foxshot');
+    ana.room.send('configure', { kind: 'bomb', winRounds: 4, roundSec: 60, bots: 2 });
+    await until(() => (ana.snap as unknown as { foxshot?: { kind?: string } }).foxshot?.kind === 'bomb');
+    // cada um escolhe o time: ana TR (1), bia CT (0); bia não troca o time de outra pessoa
+    ana.room.send('fsteam', { id: 'ana', team: 1 });
+    bia.room.send('fsteam', { id: 'bia', team: 0 });
+    bia.room.send('fsteam', { id: 'ana', team: 0 });
+    await until(() => bia.errors.length > 0);
+    bia.room.send('ready', { ready: true });
+    await until(() => (bia.snap as unknown as { members: { id: string; ready: boolean }[] }).members.find((m) => m.id === 'bia')!.ready);
+    ana.room.send('start');
+    await until(() => ana.snap?.phase === 'play' && bia.snap?.phase === 'play', 9000);
+    await until(() => ana.frames.some((fr) => fr.f && (fr.f as unknown as { b?: number[] }).b), 5000);
+    const fr = [...ana.frames].reverse().find((x) => (x.f as unknown as { b?: number[] }).b)!;
+    const b = (fr.f as unknown as { b: number[] }).b;
+    expect(b[0]).toBe(0); // fase de compra
+    const self = fr.s as unknown as { bomb?: { money: number; side: string } } | null;
+    expect(self?.bomb?.money).toBe(800);
+    expect(self?.bomb?.side).toBe('tr');
+    const biaSelf = [...bia.frames].reverse().find((x) => x.s)!.s as unknown as { bomb?: { side: string } };
+    expect(biaSelf.bomb?.side).toBe('ct');
+  }, 40_000);
+});
+

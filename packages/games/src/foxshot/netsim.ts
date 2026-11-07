@@ -111,7 +111,7 @@ export interface FsNetPlayer {
 
 export interface FsNetOptions {
   minutes: number;
-  humans: { id: string; name: string }[];
+  humans: { id: string; name: string; /** Time escolhido na sala (0 contra-terrorista, 1 terrorista). */ team?: 0 | 1 }[];
   bots: number;
   /** Modo Bomba (spec 059): rounds, bomba e economia no lugar do mata-mata. */
   bomb?: Partial<FsBombConfig>;
@@ -198,9 +198,18 @@ export class FsNetSim {
     const humans = opts.humans.slice(0, 10);
     const botCount = Math.max(0, Math.min(this.cfg.bots, 10 - humans.length));
     const placed: { x: number; z: number }[] = [];
-    for (const h of humans) this.addPlayer(h.id, h.name, false, placed);
-    // os bots seguem a mesma alternância depois das pessoas
-    for (let i = 0; i < botCount; i++) this.addPlayer(`b${i + 1}`, `Bot ${i + 1}`, true, placed, ((humans.length + i) % 2) as 0 | 1);
+    for (const h of humans) this.addPlayer(h.id, h.name, false, placed, 0, this.bm ? h.team : undefined);
+    // os bots seguem a mesma alternância depois das pessoas (no modo Bomba, completam o time que tem menos gente)
+    const count: [number, number] = [0, 0];
+    for (const p of this.players.values()) count[p.team]++;
+    for (let i = 0; i < botCount; i++) {
+      let team = ((humans.length + i) % 2) as 0 | 1;
+      if (this.bm) {
+        team = count[0] <= count[1] ? 0 : 1;
+        count[team]++;
+      }
+      this.addPlayer(`b${i + 1}`, `Bot ${i + 1}`, true, placed, team);
+    }
     if (this.bm) {
       for (const p of this.players.values()) this.bm.addPlayer(p.id, this.sideOf(p));
       this.bm.startRound();
@@ -214,7 +223,7 @@ export class FsNetSim {
     return p.team === 1 ? 'tr' : 'ct';
   }
 
-  private addPlayer(id: string, name: string, bot: boolean, placed: { x: number; z: number }[], botTeam: 0 | 1 = 0) {
+  private addPlayer(id: string, name: string, bot: boolean, placed: { x: number; z: number }[], botTeam: 0 | 1 = 0, humanTeam?: 0 | 1) {
     const sp = fsPickSpawn(placed, this.rng, this.boxes);
     placed.push({ x: sp.x, z: sp.z });
     const mover = fsNewMover(sp.x, sp.z);
@@ -222,7 +231,7 @@ export class FsNetSim {
     const p: FsNetPlayer = {
       id, name, bot, mover, yaw: sp.yaw, pitch: 0, hp: 100, armor: 0, helmet: false, alive: true, respawnAt: 0,
       loadout: new FsLoadout(null, 'pistol'), kills: 0, assists: 0, deaths: 0, hs: 0, damage: 0, queue: [], last: null, lastSeq: 0,
-      hist: [], brain: null, dmgLog: [], flinch: { mul: 1, dur: 0 }, flinchAt: -1e9, firedAt: -1e9, heardAt: 0, team: bot ? botTeam : ((this.humansIn++ % 2) as 0 | 1), blindUntil: 0,
+      hist: [], brain: null, dmgLog: [], flinch: { mul: 1, dur: 0 }, flinchAt: -1e9, firedAt: -1e9, heardAt: 0, team: bot ? botTeam : humanTeam !== undefined ? humanTeam : ((this.humansIn++ % 2) as 0 | 1), blindUntil: 0,
     };
     if (bot) {
       p.brain = fsDmNew(id, sp.x, sp.z, sp.yaw, fsDmPickWeapon(this.rng), this.rng, sp.y);
@@ -280,7 +289,13 @@ export class FsNetSim {
     if (slot < 0) {
       if (this.roster.length >= 10) return false;
       const placed = [...this.players.values()].filter((q) => q.alive).map((q) => ({ x: q.mover.x, z: q.mover.z }));
-      this.addPlayer(id, name, false, placed);
+      let team: 0 | 1 | undefined;
+      if (this.bm) {
+        const n: [number, number] = [0, 0];
+        for (const q of this.players.values()) n[q.team]++;
+        team = n[0] <= n[1] ? 0 : 1;
+      }
+      this.addPlayer(id, name, false, placed, 0, team);
       return true;
     }
     // toma o lugar do bot de menos pontos (o índice no pacote continua o mesmo)

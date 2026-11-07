@@ -154,6 +154,12 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
   const mine = snapshot.members.find((m) => m.id === me);
   const minutes = snapshot.foxshot?.minutes ?? 5;
   const bots = snapshot.foxshot?.bots ?? 0;
+  const bomb = snapshot.foxshot?.kind === 'bomb';
+  const winRounds = snapshot.foxshot?.winRounds ?? 8;
+  const roundSec = snapshot.foxshot?.roundSec ?? 115;
+  const teams = snapshot.foxshot?.teams ?? {};
+  /** Time de uma pessoa no modo Bomba: o escolhido; sem escolha, alterna pela ordem de entrada. */
+  const teamOfMember = (id: string, i: number): 0 | 1 => teams[id] ?? ((i % 2) as 0 | 1);
   const humans = snapshot.members.length;
   const h = hint(snapshot);
   const err = useRoom((s) => s.message);
@@ -211,11 +217,18 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
               <p className="cfl-note">Passe este código (ou o link, na aba Convidar) para os amigos entrarem.</p>
               <dl className="cfl-facts">
                 <div><dt>Jogo</dt><dd>Counter Fox</dd></div>
-                <div><dt>Modo</dt><dd>Mata-mata</dd></div>
+                <div><dt>Modo</dt><dd>{bomb ? 'Bomba' : 'Mata-mata'}</dd></div>
                 <div><dt>Mapa</dt><dd>Duna</dd></div>
-                <div><dt>Tempo</dt><dd>{minutes} minutos</dd></div>
+                {bomb ? (
+                  <>
+                    <div><dt>Rounds</dt><dd>primeiro a {winRounds}</dd></div>
+                    <div><dt>Round</dt><dd>{Math.floor(roundSec / 60)}:{String(roundSec % 60).padStart(2, '0')}</dd></div>
+                  </>
+                ) : (
+                  <div><dt>Tempo</dt><dd>{minutes} minutos</dd></div>
+                )}
                 <div><dt>Bots</dt><dd>{bots}</dd></div>
-                <div><dt>Pontos</dt><dd>Abate {FS_POINTS.kill} · Assist. {FS_POINTS.assist}</dd></div>
+                {!bomb && <div><dt>Pontos</dt><dd>Abate {FS_POINTS.kill} · Assist. {FS_POINTS.assist}</dd></div>}
               </dl>
               <p className={`cfl-hint${h.ok ? ' ok' : ''}`} data-testid="cfl-hint">{h.text}</p>
             </div>
@@ -229,6 +242,23 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
                     <span className="cfl-av" aria-hidden="true">{m.username.slice(0, 1).toUpperCase()}</span>
                     <b>{m.username}{m.id === me ? ' (você)' : ''}</b>
                     <em className={m.isHost ? 'lead' : m.ready || m.committed ? 'ok' : ''}>{!m.connected ? 'Desconectado' : m.isHost ? 'Líder' : m.ready || m.committed ? 'Pronto' : 'Esperando'}</em>
+                    {bomb && (
+                      <span className="cfl-teams" role="group" aria-label={`Time de ${m.username}`}>
+                        {([0, 1] as const).map((t) => (
+                          <button
+                            key={t}
+                            type="button"
+                            className={`cfh-pill${teamOfMember(m.id, i) === t ? ' on' : ''}`}
+                            disabled={m.id !== me && !leader}
+                            aria-pressed={teamOfMember(m.id, i) === t}
+                            onClick={() => sendRoom('fsteam', { id: m.id, team: t })}
+                            data-testid={`cfl-team-${m.username}-${t === 1 ? 'tr' : 'ct'}`}
+                          >
+                            {t === 1 ? 'TR' : 'CT'}
+                          </button>
+                        ))}
+                      </span>
+                    )}
                     {leader && m.id !== me && (
                       <button type="button" className="cfl-x" onClick={() => sendRoom('kick', { id: m.id })} data-sfx="remove" aria-label={`Remover ${m.username}`}>
                         Remover
@@ -257,18 +287,45 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
 
           {tab === 'modo' && (
             <div className="cfl-pane" data-testid="cfl-mode">
-              <button type="button" className="cfl-mode on" aria-pressed="true" disabled>
+              <button type="button" className={`cfl-mode${!bomb ? ' on' : ''}`} aria-pressed={!bomb} disabled={!leader} onClick={() => sendRoom('configure', { kind: 'dm' })} data-testid="cfl-mode-dm">
                 <b>Mata-mata</b>
                 <span>Todos contra todos no Duna. Abate vale {FS_POINTS.kill} pontos, assistência {FS_POINTS.assist}. Vence quem tiver mais pontos no fim.</span>
               </button>
-              <h4>Duração</h4>
-              <div className="cfh-pills" role="radiogroup" aria-label="Duração">
-                {FS_MATCH_MINUTES.map((m) => (
-                  <button key={m} type="button" role="radio" aria-checked={minutes === m} disabled={!leader} className={`cfh-pill${minutes === m ? ' on' : ''}`} onClick={() => sendRoom('configure', { minutes: m })} data-testid={`cfl-min-${m}`}>
-                    {m} min
-                  </button>
-                ))}
-              </div>
+              <button type="button" className={`cfl-mode${bomb ? ' on' : ''}`} aria-pressed={bomb} disabled={!leader} onClick={() => sendRoom('configure', { kind: 'bomb' })} data-testid="cfl-mode-bomb">
+                <b>Bomba</b>
+                <span>Rounds de TR contra CT: os terroristas plantam a bomba, os contra-terroristas impedem. Compra só na base, dinheiro finito. Escolha o time na aba Jogadores.</span>
+              </button>
+              {bomb ? (
+                <>
+                  <h4>Rounds para vencer</h4>
+                  <div className="cfh-pills" role="radiogroup" aria-label="Rounds para vencer">
+                    {[4, 6, 8, 10, 13].map((n) => (
+                      <button key={n} type="button" role="radio" aria-checked={winRounds === n} disabled={!leader} className={`cfh-pill${winRounds === n ? ' on' : ''}`} onClick={() => sendRoom('configure', { winRounds: n })} data-testid={`cfl-rounds-${n}`}>
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                  <h4>Tempo do round</h4>
+                  <div className="cfh-pills" role="radiogroup" aria-label="Tempo do round">
+                    {[60, 90, 115, 150, 180].map((n) => (
+                      <button key={n} type="button" role="radio" aria-checked={roundSec === n} disabled={!leader} className={`cfh-pill${roundSec === n ? ' on' : ''}`} onClick={() => sendRoom('configure', { roundSec: n })} data-testid={`cfl-rsec-${n}`}>
+                        {Math.floor(n / 60)}:{String(n % 60).padStart(2, '0')}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h4>Duração</h4>
+                  <div className="cfh-pills" role="radiogroup" aria-label="Duração">
+                    {FS_MATCH_MINUTES.map((m) => (
+                      <button key={m} type="button" role="radio" aria-checked={minutes === m} disabled={!leader} className={`cfh-pill${minutes === m ? ' on' : ''}`} onClick={() => sendRoom('configure', { minutes: m })} data-testid={`cfl-min-${m}`}>
+                        {m} min
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
               <h4>Bots para completar ({humans} pessoas na sala)</h4>
               <div className="cfh-pills" role="radiogroup" aria-label="Bots">
                 {Array.from({ length: FS_MATCH_BOTS.max + 1 }, (_, i) => i).map((n) => (

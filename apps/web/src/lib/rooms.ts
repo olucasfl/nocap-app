@@ -223,6 +223,11 @@ export interface BolaRoomState {
 export interface FoxShotRoomState {
   minutes: number;
   bots: number;
+  /** 'bomb' = modo Bomba (spec 059); times escolhidos no lobby (0 contra-terrorista, 1 terrorista). */
+  kind?: 'dm' | 'bomb';
+  winRounds?: number;
+  roundSec?: number;
+  teams?: Record<string, 0 | 1>;
   startAt: number | null;
   roster: { id: string; name: string; bot: boolean }[] | null;
   hz: number;

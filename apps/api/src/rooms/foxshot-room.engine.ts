@@ -26,6 +26,10 @@ export interface FoxShotSettings {
   minutes: number;
   /** Bots que completam a partida (0 a 9; no máximo 10 jogadores no total). */
   bots: number;
+  /** 'dm' mata-mata; 'bomb' modo Bomba (spec 059). */
+  kind: 'dm' | 'bomb';
+  winRounds: number;
+  roundSec: number;
 }
 
 /**
@@ -44,11 +48,13 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
   private startAt = 0;
   private overAt = 0;
   private dirty = false;
+  /** Time escolhido na sala no modo Bomba (0 contra-terrorista, 1 terrorista); sem escolha o jogo equilibra. */
+  readonly teamPref = new Map<string, 0 | 1>();
 
   constructor(opts: EngineOptions) {
     super({ ...opts, maxPlayers: FOXSHOT_ROOM_MAX });
     this.mode = 'mata';
-    this.settings = { rounds: 1, minutes: 5, bots: 0 } as unknown as AnySettings;
+    this.settings = { rounds: 1, minutes: 5, bots: 0, kind: 'dm', winRounds: 8, roundSec: 115 } as unknown as AnySettings;
   }
 
   private get cfg(): FoxShotSettings {
@@ -62,7 +68,14 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
       (FS_MATCH_MINUTES as readonly number[]).includes(m.minutes) &&
       Number.isInteger(m.bots) &&
       m.bots >= 0 &&
-      m.bots <= FS_MATCH_BOTS.max
+      m.bots <= FS_MATCH_BOTS.max &&
+      (m.kind === 'dm' || m.kind === 'bomb') &&
+      Number.isInteger(m.winRounds) &&
+      m.winRounds >= 2 &&
+      m.winRounds <= 13 &&
+      Number.isInteger(m.roundSec) &&
+      m.roundSec >= 60 &&
+      m.roundSec <= 180
     );
   }
 
@@ -84,6 +97,16 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
     if (this.members.size >= FOXSHOT_ROOM_MAX) throw new RoomError('A sala está cheia');
     this.members.set(id, { id, username, connected: true, ready: false, joinedAt: this.now() });
     this.ensureHost();
+    this.dirty = true;
+  }
+
+  /** Troca de time no lobby do modo Bomba: cada um troca o seu; o líder troca o de qualquer um. */
+  setTeam(by: string, id: string, team: number): void {
+    if (this.phase !== 'lobby') throw new RoomError('Só dá para trocar de time no lobby');
+    if (by !== id) this.requireHost(by);
+    if (!this.members.has(id)) return;
+    if (team !== 0 && team !== 1) return;
+    this.teamPref.set(id, team);
     this.dirty = true;
   }
 
@@ -119,10 +142,25 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
     this.rounds[0] = {};
     const humans = [...this.members.values()].filter((m) => m.connected).sort((a, b) => a.joinedAt - b.joinedAt);
     const cfg = fsMatchConfig(this.cfg.minutes, 1);
+    const bomb = this.cfg.kind === 'bomb';
+    // sem escolha, equilibra: quem ainda não escolheu entra no time com menos gente
+    const count: [number, number] = [0, 0];
+    for (const m of humans) {
+      const t = this.teamPref.get(m.id);
+      if (t !== undefined) count[t]++;
+    }
+    const teamOf = (id: string): 0 | 1 => {
+      const t = this.teamPref.get(id);
+      if (t !== undefined) return t;
+      const pick = count[0] <= count[1] ? 0 : 1;
+      count[pick]++;
+      return pick;
+    };
     this.sim = new FsNetSim({
       minutes: cfg.minutes,
-      humans: humans.map((m) => ({ id: m.id, name: m.username })),
+      humans: humans.map((m) => ({ id: m.id, name: m.username, team: bomb ? teamOf(m.id) : undefined })),
       bots: Math.min(this.cfg.bots, 10 - humans.length),
+      bomb: bomb ? { winRounds: this.cfg.winRounds, roundSec: this.cfg.roundSec } : undefined,
     });
     this.startAt = this.now() + FOXSHOT_COUNTDOWN_MS;
     this.overAt = 0;
@@ -216,6 +254,10 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
       foxshot: {
         minutes: this.cfg.minutes,
         bots: this.cfg.bots,
+        kind: this.cfg.kind,
+        winRounds: this.cfg.winRounds,
+        roundSec: this.cfg.roundSec,
+        teams: Object.fromEntries(this.teamPref),
         startAt: this.phase === 'lobby' ? null : this.startAt,
         roster: s ? s.roster : null,
         hz: FS_NET_HZ,

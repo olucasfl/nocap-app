@@ -37,6 +37,8 @@ import { FsControls } from './fs-controls';
 import { bindLabel, fsSettings, useFsSettings } from './fs-settings';
 import { FsMenu } from './FsMenu';
 import { FsShop } from './FsShop';
+import { FsBombHud, type BombHud } from './FsBombHud';
+import { fsDustFloorY } from '@nocap/games';
 import { FsBigMap, FsTelemetry, FsAmmo, FsCrosshair, FsKillFeed, FsMinimap, FsScoreboard, FsTopBar, FsVitals, type FeedItem, type FsIntelDot, type FsPlayerRow, type MinimapData } from './FsHud';
 import { FoxShotRoomFinal } from './FoxShotRoomFinal';
 import './foxshot.css';
@@ -68,9 +70,11 @@ interface SelfState {
   x: number; y: number; z: number; vx: number; vy: number; vz: number; og: boolean; ck: number; seq: number; yaw: number; pitch: number;
   hp: number; armor: number; helmet: boolean; alive: boolean; respawnIn: number;
   cur: number; held: FsGrenadeId | null; ammo: number; reloading: boolean; slots: number[]; nades: Record<FsGrenadeId, number>;
+  /** Modo Bomba: dinheiro, progresso de plantar/desarmar, ganho do último round, seu lado e rounds para vencer. */
+  bomb?: { money: number; plant: number; defuse: number; gain: number; side: 'tr' | 'ct'; win: number };
 }
 interface Frame {
-  f: { k: number; left: number; p: number[][]; g: number[][] };
+  f: { k: number; left: number; p: number[][]; g: number[][]; b?: number[] };
   s: SelfState | null;
   e: FsNetEvent[];
 }
@@ -80,6 +84,7 @@ interface RoomHud {
   nades: { id: FsGrenadeId; name: string; count: number; key: string }[];
   speed: number; slots: { id: FsWeaponId | null; name: string; key: number }[]; current: number; reloading: boolean; scoped: boolean; spreadPx: number;
   spec: string | null;
+  bomb: BombHud | null;
   fps: number; timeLeft: number; players: FsPlayerRow[]; points: number; tris: number; calls: number; level: Quality; dpr: number; pos: number[]; k: number;
 }
 interface Snap {
@@ -298,6 +303,20 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
     let sendT = 0;
     let jumpBuf = 0;
     let lastK = 0;
+    // ---- modo Bomba: quadro da bomba (fase, tempo, round, placar...), o que só você recebe e os avisos
+    let bf: number[] | null = null;
+    let bombSelf: SelfState['bomb'] | null = null;
+    let bPhasePrev = -1;
+    let bombBanner: { text: string; until: number } | null = null;
+    let bombHint: { text: string; until: number } | null = null;
+    const sayHint = (text: string, ms = 2500) => {
+      bombHint = { text, until: clock + ms / 1000 };
+    };
+    const inBaseNow = () => {
+      const m = FS_DUST_MARKS.find((k) => k.kind === 'base' && k.id === (bombSelf?.side === 'tr' ? 'T' : 'CT'));
+      return !!m && mover.x >= m.x0 - 1 && mover.x <= m.x1 + 1 && mover.z >= m.z0 - 1 && mover.z <= m.z1 + 1;
+    };
+    const bombFrozen = () => !!bf && (bf[0] === 0 || bf[0] === 3 || bf[0] === 4);
     let lastFrameAt = 0;
     let timeLeft = info.minutes * 60;
     const remotes = new Map<string, { buf: Snap[]; alive: boolean; shown: boolean; weapon: number; team?: 'ct' | 't'; teamBit?: 0 | 1; ally?: boolean; allyName?: string }>();
@@ -385,6 +404,20 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
     const applyFrame = (fr: Frame, now: number) => {
       lastK = fr.f.k;
       lastFrameAt = now;
+      bf = fr.f.b ?? null;
+      if (bf) {
+        const ph = bf[0]!;
+        if (ph !== bPhasePrev) {
+          if (ph === 3) {
+            const why = ['', 'time eliminado', 'a bomba explodiu', 'a bomba foi desarmada', 'acabou o tempo'][bf[10]!] ?? '';
+            const gain = fr.s?.bomb?.gain ?? 0;
+            bombBanner = { text: `${bf[9] === 1 ? 'Terroristas' : 'Contra-terroristas'} vencem · ${why}${gain ? ` · +US$ ${gain}` : ''}`, until: clock + 5 };
+          } else if (ph === 2) bombBanner = { text: 'Bomba plantada', until: clock + 2.5 };
+          else if (ph === 0) sayHint('Compre na base (B). A bomba é dos terroristas: pátios A e B', 4500);
+          bPhasePrev = ph;
+        }
+        if (ph !== 0 && shopRef.current) setShop(false);
+      }
       timeLeft = fr.f.left / 60;
       for (const raw of fr.f.p) {
         const r = toRow(raw);
@@ -639,8 +672,13 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       handle(ev);
     };
     buyRef.current = (item) => {
+      if (bf) {
+        if (bf[0] !== 0 || !inBaseNow()) return sayHint('Só dá para comprar na base, no tempo de compra');
+        if (item.price > (bombSelf?.money ?? 0)) return sayHint('Dinheiro insuficiente');
+      }
       const r = fsBuy(loadout, item.id);
       if (!r.ok) return;
+      if (bombSelf) bombSelf.money -= item.price;
       cmdQueue.push({ t: 'buy', id: item.id });
       if (!fsShopItem(item.id)?.grenade) afterEquip();
       fsAudio.draw();
@@ -700,6 +738,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         pendingSelf = null;
         const wasDead = !!self && !self.alive;
         self = s;
+        bombSelf = s.bomb ?? null;
         reconcile(s);
         syncLoadout(s);
         if (!s.alive && deadSince < 0) deadSince = clock;
@@ -727,7 +766,13 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         view.yaw += look.yaw;
         view.pitch = Math.max(-88, Math.min(88, view.pitch + look.pitch));
         if (inp.map) setMap(!bigMapRef.current);
-        if (inp.buy) setShop(!shopRef.current);
+        if (inp.buy) {
+          if (!bf) setShop(!shopRef.current);
+          else if (shopRef.current) setShop(false);
+          else if (bf[0] !== 0) sayHint('A loja só abre no tempo de compra, na base');
+          else if (!inBaseNow()) sayHint('Volte para a base para comprar');
+          else setShop(true);
+        }
         const shopOpen = shopRef.current;
         if (alive) {
           if (inp.pick >= 0 && !shopOpen) switchTo(inp.pick);
@@ -757,7 +802,8 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           acc -= TICK;
           prev.x = mover.x; prev.y = mover.y; prev.z = mover.z;
           const mul = loadout.weapon.moveMul * (adsOn ? 0.65 : 1) * fsFlinchAt(flinch, clock - flinchAt);
-          const p: Pending = { seq: ++seq, fwd: alive ? inp.fwd : 0, strafe: alive ? inp.strafe : 0, jump: alive && jumpBuf > 0, yaw: view.yaw, mul, crouch: alive && inp.crouch, walk: alive && inp.walk };
+          const frozen = bombFrozen();
+          const p: Pending = { seq: ++seq, fwd: alive && !frozen ? inp.fwd : 0, strafe: alive && !frozen ? inp.strafe : 0, jump: alive && !frozen && jumpBuf > 0, yaw: view.yaw, mul, crouch: alive && inp.crouch, walk: alive && inp.walk };
           const wasGround = mover.onGround;
           if (alive) {
             stepPred(mover, p);
@@ -770,7 +816,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           outbox.push({
             seq: p.seq, fwd: p.fwd, strafe: p.strafe, jump: p.jump, crouch: p.crouch, walk: p.walk,
             yaw: view.yaw + view.rYaw, pitch: view.pitch + view.rPitch,
-            trigger: alive && inp.trigger && !shopOpen, alt: alive && aimHeld && !shopOpen, reload: alive && reloadOnce, inspect: alive && inspectOnce,
+            trigger: alive && inp.trigger && !shopOpen && !bombFrozen(), alt: alive && aimHeld && !shopOpen, reload: alive && reloadOnce, inspect: alive && inspectOnce, use: alive && inp.use,
             viewTick: Math.round(lastK + ((perfNow - lastFrameAt) / 1000) * 60 - (INTERP_MS / 1000) * 60),
             cmds,
           });
@@ -917,6 +963,9 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       );
       if (player) fsAudio.listener(mover.x, mover.y + fsEyeHeight(mover), mover.z, fsDir(view.yaw + view.rYaw, view.pitch + view.rPitch));
       scene.update(isPaused ? 0 : dt, { speed: Math.hypot(mover.vx, mover.vz), adsTarget: adsOn ? 1 : 0, airborne: !mover.onGround });
+      // modo Bomba: a C4 plantada no chão (a luz pisca mais depressa perto do fim)
+      if (bf && bf[0] === 2) scene.setBomb(bf[5]! / 100, fsDustFloorY(bf[5]! / 100, bf[6]! / 100), bf[6]! / 100, true, bf[1]! / 10, clock);
+      else scene.setBomb(0, 0, 0, false);
       scene.render();
 
       if (st.quality === 'auto' && !isPaused) {
@@ -982,7 +1031,19 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         setHud({
           hp: self?.hp ?? 100, armor: self?.armor ?? 0, helmet: self?.helmet ?? false, hurtKey, heavyKey,
           hurtAge: (performance.now() - hurtAt) / 1000, heavyAge: (performance.now() - heavyAt) / 1000,
-          dead: !alive, respawnIn: self?.respawnIn ?? 0,
+          dead: !alive, respawnIn: bf ? 0 : self?.respawnIn ?? 0,
+          bomb: bf && bombSelf ? ((): BombHud => {
+            const phase = (['buy', 'live', 'planted', 'end', 'over'] as const)[bf![0]!] ?? 'live';
+            const allyAlive = players.filter((q) => q.team === (bombSelf!.side === 'tr' ? 't' : 'ct') && q.alive).length;
+            const foeAlive = players.filter((q) => q.team !== (bombSelf!.side === 'tr' ? 't' : 'ct') && q.alive).length;
+            const meIdx = rosterNow().findIndex((r) => r.id === meId);
+            return {
+              round: bf![2]!, winRounds: bombSelf!.win, tr: bf![3]!, ct: bf![4]!, mySide: bombSelf!.side, phase, time: bf![1]! / 10,
+              money: Math.max(0, bombSelf!.money), plant: bombSelf!.plant, defuse: bombSelf!.defuse, site: bf![7] === 1 ? 'A' : bf![7] === 2 ? 'B' : null,
+              carrier: bf![8] === meIdx && meIdx >= 0, banner: bombBanner && bombBanner.until > clock ? bombBanner.text : null,
+              hint: bombHint && bombHint.until > clock ? bombHint.text : null, alliesAlive: allyAlive, foesAlive: foeAlive,
+            };
+          })() : null,
           ammo: loadout.held ? loadout.grenades[loadout.held] : loadout.slot.ammo,
           mag: loadout.held ? FS_GRENADES[loadout.held].max : loadout.weapon.mag,
           weapon: loadout.held ? FS_GRENADES[loadout.held].name : loadout.weapon.name,
@@ -1110,7 +1171,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
               <b>{marker.text}</b>
             </div>
           )}
-          <FsTopBar players={players} timeLeft={h.timeLeft} kills={0} deaths={0} />
+          {h.bomb ? <FsBombHud b={h.bomb} /> : <FsTopBar players={players} timeLeft={h.timeLeft} kills={0} deaths={0} />}
           {settings.showMinimap && <FsMinimap get={getMini} />}
           {bigMap && <FsBigMap get={getMini} title="Mapa · Duna" />}
           <div className="fsh-rcol">
@@ -1122,7 +1183,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           {h.dead && !paused && !spectating && (
             <div className="fs-deadscreen" role="status" data-testid="fs-dead">
               <b>Você morreu</b>
-              <span className="mono" data-testid="fs-respawn">Renascendo em {(h.respawnIn).toFixed(1)}</span>
+              <span className="mono" data-testid="fs-respawn">{h.bomb ? 'Espere o próximo round' : `Renascendo em ${h.respawnIn.toFixed(1)}`}</span>
             </div>
           )}
           {!spectating && <FsVitals hp={h.hp} armor={h.armor} helmet={h.helmet} />}
@@ -1155,7 +1216,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
               ]}
             />
           )}
-          {board && <FsScoreboard players={players} timeLeft={h.timeLeft} title={`Mata-mata · Duna · online`} />}
+          {board && <FsScoreboard players={players} timeLeft={h.timeLeft} title={h.bomb ? `Bomba · Duna · online · primeiro a ${h.bomb.winRounds}` : `Mata-mata · Duna · online`} />}
           {count !== null && (
             <div className="fsr-count" role="status" data-testid="fsr-count">
               <small>COMEÇA EM</small>
