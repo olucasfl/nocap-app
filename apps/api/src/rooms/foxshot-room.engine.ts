@@ -172,11 +172,16 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
       count[pick]++;
       return pick;
     };
+    const humanTeams = humans.map((m) => ({ id: m.id, name: m.username, team: bomb ? teamOf(m.id) : undefined }));
+    // cada time tem no máximo 5: os bots só completam o que sobra do lado de cada um
+    const humansIn: [number, number] = [0, 0];
+    for (const h of humanTeams) if (h.team !== undefined) humansIn[h.team]++;
+    const botTeams: [number, number] = [Math.max(0, Math.min(this.cfg.botsCt, 5 - humansIn[0])), Math.max(0, Math.min(this.cfg.botsTr, 5 - humansIn[1]))];
     this.sim = new FsNetSim({
       minutes: cfg.minutes,
-      humans: humans.map((m) => ({ id: m.id, name: m.username, team: bomb ? teamOf(m.id) : undefined })),
-      bots: Math.min(this.botTotal(), 10 - humans.length),
-      botTeams: bomb ? [this.cfg.botsCt, this.cfg.botsTr] : undefined,
+      humans: humanTeams,
+      bots: bomb ? botTeams[0] + botTeams[1] : Math.min(this.botTotal(), 10 - humans.length),
+      botTeams: bomb ? botTeams : undefined,
       bomb: bomb ? { winRounds: this.cfg.winRounds, roundSec: this.cfg.roundSec } : undefined,
     });
     this.startAt = this.now() + FOXSHOT_COUNTDOWN_MS;

@@ -163,7 +163,29 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
   const roundSec = snapshot.foxshot?.roundSec ?? 115;
   const teams = snapshot.foxshot?.teams ?? {};
   /** Time de uma pessoa no modo Bomba: o escolhido; sem escolha, alterna pela ordem de entrada. */
-  const teamOfMember = (id: string, i: number): 0 | 1 => teams[id] ?? ((i % 2) as 0 | 1);
+  // quem não escolheu time entra no que tem menos gente (igual à sala), então a conta bate com a partida
+  const teamMap = (() => {
+    const out = new Map<string, 0 | 1>();
+    const cnt: [number, number] = [0, 0];
+    for (const m of snapshot.members) {
+      const t = teams[m.id];
+      if (t !== undefined) {
+        out.set(m.id, t);
+        cnt[t]++;
+      }
+    }
+    for (const m of snapshot.members) {
+      if (out.has(m.id)) continue;
+      const t: 0 | 1 = cnt[0] <= cnt[1] ? 0 : 1;
+      out.set(m.id, t);
+      cnt[t]++;
+    }
+    return { out, cnt };
+  })();
+  const teamOfMember = (id: string, _i: number): 0 | 1 => teamMap.out.get(id) ?? 0;
+  /** Cada time tem no máximo 5: os bots só completam o que sobra do lado de cada um. */
+  const capCt = Math.max(0, 5 - teamMap.cnt[0]);
+  const capTr = Math.max(0, 5 - teamMap.cnt[1]);
   const humans = snapshot.members.length;
   const h = hint(snapshot);
   const err = useRoom((s) => s.message);
@@ -337,7 +359,7 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
                   <h4>Bots contra-terroristas (só entram se você quiser)</h4>
                   <div className="cfh-pills" role="radiogroup" aria-label="Bots contra-terroristas">
                     {[0, 1, 2, 3, 4, 5].map((n) => (
-                      <button key={n} type="button" role="radio" aria-checked={botsCt === n} disabled={!leader || n + botsTr + humans > 10} className={`cfh-pill${botsCt === n ? ' on' : ''}`} onClick={() => sendRoom('configure', { botsCt: n })} data-testid={`cfl-botsct-${n}`}>
+                      <button key={n} type="button" role="radio" aria-checked={botsCt === n} disabled={!leader || n > capCt} className={`cfh-pill${botsCt === n ? ' on' : ''}`} onClick={() => sendRoom('configure', { botsCt: n })} data-testid={`cfl-botsct-${n}`}>
                         {n}
                       </button>
                     ))}
@@ -345,7 +367,7 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
                   <h4>Bots terroristas</h4>
                   <div className="cfh-pills" role="radiogroup" aria-label="Bots terroristas">
                     {[0, 1, 2, 3, 4, 5].map((n) => (
-                      <button key={n} type="button" role="radio" aria-checked={botsTr === n} disabled={!leader || n + botsCt + humans > 10} className={`cfh-pill${botsTr === n ? ' on' : ''}`} onClick={() => sendRoom('configure', { botsTr: n })} data-testid={`cfl-botstr-${n}`}>
+                      <button key={n} type="button" role="radio" aria-checked={botsTr === n} disabled={!leader || n > capTr} className={`cfh-pill${botsTr === n ? ' on' : ''}`} onClick={() => sendRoom('configure', { botsTr: n })} data-testid={`cfl-botstr-${n}`}>
                         {n}
                       </button>
                     ))}

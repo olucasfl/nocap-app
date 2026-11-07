@@ -123,7 +123,7 @@ function Entry({
             ? '/tempo'
             : game === 'eco'
               ? '/eco'
-              : game === 'atravessa' || game === 'desmorona' || game === 'bola' || game === 'foxcap'
+              : game === 'atravessa' || game === 'desmorona' || game === 'bola' || game === 'pingpong' || game === 'foxshot' || game === 'foxcap'
                 ? '/fox-cap'
                 : '/cor'
         }

@@ -490,9 +490,9 @@ function attach(r: Room) {
 
   r.onMessage('snapshot', (s: RoomSnapshot) => {
     for (const m of s.members) if (m.guest) guestNames.add(m.username);
-    // sala do Fox Cap!: ao sair, a pessoa volta ao Fox Cap! (e não à página do jogo que estava no lobby)
+    // sala do Fox Cap!: ao sair, volta para a tela do jogo escolhido (e para a lista só se ainda não havia jogo)
     lastAlive = Date.now();
-    set({ snapshot: s, status: 'connected', lastGame: s.flex ? 'foxcap' : s.game });
+    set({ snapshot: s, status: 'connected', lastGame: s.game });
   });
   r.onMessage('pong', (m: { t0?: number; ts?: number }) => {
     lastAlive = Date.now();
