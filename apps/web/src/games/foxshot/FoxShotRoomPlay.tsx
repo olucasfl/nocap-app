@@ -36,6 +36,8 @@ import { InviteDialog } from '@/components/InviteDialog';
 import { FoxShotScene, fsWorldDust, type Quality } from './FoxShotScene';
 import { FsControls } from './fs-controls';
 import { bindLabel, fsSettings, useFsSettings } from './fs-settings';
+
+const bombKey = () => bindLabel(fsSettings().binds.bomb);
 import { FsMenu } from './FsMenu';
 import { FsShop } from './FsShop';
 import { FsBombHud, type BombHud } from './FsBombHud';
@@ -1049,7 +1051,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         scene.setBombDrop(bf[12]! / 100, fsDustFloorY(bf[12]! / 100, bf[13]! / 100), bf[13]! / 100, dropped, clock);
         if ((dropped ? 1 : 0) !== dropPrev) {
           dropPrev = dropped ? 1 : 0;
-          if (dropped && bf[0] !== 0) sayHint(bombSelf?.side === 'tr' ? 'A bomba caiu no chão: ande até ela ou segure E' : 'A bomba caiu', 2500);
+          if (dropped && bf[0] !== 0) sayHint(bombSelf?.side === 'tr' ? `A bomba caiu no chão: ande até ela ou segure ${bombKey()}` : 'A bomba caiu', 2500);
         }
         const carrier = bf[8] ?? -1;
         if (carrier !== carrierPrev) {
@@ -1060,10 +1062,10 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         if (carrier === myI && myI >= 0 && bf[0] === 1 && act !== 1) {
           const site = fsSiteAt(mover.x, mover.z);
           if (!site) sayHint('Você tem a bomba: vá a um pátio A ou B', 400);
-          else if (!inp.use) sayHint('Segure E para plantar a bomba', 400);
+          else if (!inp.use) sayHint(`Segure ${bombKey()} para plantar a bomba`, 400);
           else sayHint('Fique parado para plantar', 400);
         }
-        if (dropped && bombSelf?.side === 'tr' && Math.hypot(mover.x - bf[12]! / 100, mover.z - bf[13]! / 100) < 6) sayHint('Pegue a bomba: ande até ela ou segure E', 400);
+        if (dropped && bombSelf?.side === 'tr' && Math.hypot(mover.x - bf[12]! / 100, mover.z - bf[13]! / 100) < 6) sayHint(`Pegue a bomba: ande até ela ou segure ${bombKey()}`, 400);
       } else scene.setBomb(0, 0, 0, 'off');
       scene.render();
 

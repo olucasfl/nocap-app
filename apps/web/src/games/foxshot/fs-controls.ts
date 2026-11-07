@@ -218,7 +218,7 @@ export class FsControls {
       jump: on && jump,
       trigger: on && (this.held('fire') || this.touchBtn.fire),
       ads: on && (this.held('ads') || this.touchBtn.ads),
-      use: on && (this.held('pickup') || this.touchBtn.use),
+      use: on && (this.held('bomb') || this.touchBtn.use),
       reload: on && reload,
       pick: on ? pick : -1,
       cycle: on && cycle,

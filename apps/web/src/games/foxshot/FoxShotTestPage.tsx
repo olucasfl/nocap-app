@@ -69,6 +69,8 @@ import { FoxShotScene, FS_WORLD_TRAIN, fsWorldDust, type Quality } from './FoxSh
 import { FsMatchEnd } from './FsMatchEnd';
 import { FsControls } from './fs-controls';
 import { bindLabel, fsSettings, useFsSettings } from './fs-settings';
+
+const bombKey = () => bindLabel(fsSettings().binds.bomb);
 import { FsMenu } from './FsMenu';
 import { FsShop } from './FsShop';
 import {
@@ -1024,7 +1026,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
           fsAudio.draw();
           break;
         case 'plantStart':
-          if (e.by === 'me') say('Plantando… segure E', 1500);
+          if (e.by === 'me') say(`Plantando… segure ${bombKey()}`, 1500);
           else if (meSide0() === 'ct') say('Terrorista plantando a bomba!', 2000);
           break;
         case 'dropped': {
@@ -1102,7 +1104,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
             if (b && targets.get(d.id)!.alive && sideOf(d.id) === 'tr' && near(b.mover.x, b.mover.z, 1.1) && bm.pickBomb(d.id)) break;
           }
         }
-        if (meAlive && meSide === 'tr' && dropAt && near(mover.x, mover.z, 6)) say('Pegue a bomba: ande até ela ou segure E', 400);
+        if (meAlive && meSide === 'tr' && dropAt && near(mover.x, mover.z, 6)) say(`Pegue a bomba: ande até ela ou segure ${bombKey()}`, 400);
       }
       const still = Math.hypot(mover.vx, mover.vz) < 2.2;
       if (meAlive && meSide === 'tr' && bm.carrier === 'me') {
@@ -1111,13 +1113,13 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         bm.plant('me', useHeld && still, site, dt);
         if (bm.phase === 'live' && !bm.planting) {
           if (!site) say('Você tem a bomba: vá a um pátio A ou B', 400);
-          else if (!useHeld) say('Segure E para plantar a bomba', 400);
+          else if (!useHeld) say(`Segure ${bombKey()} para plantar a bomba`, 400);
           else if (!still) say('Fique parado para plantar', 400);
         }
       } else if (meAlive && meSide === 'ct' && bm.phase === 'planted' && bombPos) {
         const near = Math.hypot(mover.x - bombPos.x, mover.z - bombPos.z) < 2.4;
         bm.defuse('me', useHeld && near && still, near, dt);
-        if (near && !useHeld) say('Segure E para desarmar', 400);
+        if (near && !useHeld) say(`Segure ${bombKey()} para desarmar`, 400);
       }
       // bots: objetivo por lado, plantar e desarmar
       let defuser: string | null = null;

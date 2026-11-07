@@ -154,7 +154,9 @@ export function Commands({ touch }: { touch: boolean }) {
       <h4>{cat.label}</h4>
       <ul className="fsm-binds">
         {cat.ids.map((id) => FS_ACTIONS.find((x) => x.id === id)!).map((a) => {
-          const clash = FS_ACTIONS.filter((o) => o.id !== a.id && binds[a.id] !== '' && binds[o.id] === binds[a.id]);
+          // pegar do chão e a bomba dividem o E de propósito (uma serve para cada situação): não é conflito
+          const twin = (x: string, y: string) => (x === 'pickup' && y === 'bomb') || (x === 'bomb' && y === 'pickup');
+          const clash = FS_ACTIONS.filter((o) => o.id !== a.id && !twin(a.id, o.id) && binds[a.id] !== '' && binds[o.id] === binds[a.id]);
           return (
           <li key={a.id} className={clash.length ? 'conflict' : ''}>
             <span>
