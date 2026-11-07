@@ -7,13 +7,14 @@
  */
 import { fsAssister, type FsDamageEntry } from './assist';
 import { fsFlinch, fsFlinchAt, fsIsBackstab } from './damage';
-import { FS_DUST_SOLIDS, fsPickSpawn } from './dust';
+import { FS_DUST_MARKS, FS_DUST_SOLIDS, FS_DUST_SPAWNS, fsDustFloorY, fsPickSpawn, type FsSpawn } from './dust';
+import { FsBombMatch, fsOtherSide, type FsBombConfig, type FsSide } from './bomb';
 import { fsDmFlash, fsDmHear, fsDmHurt, fsDmNew, fsDmPickWeapon, fsDmStep, type FsDmBrain, type FsDmFoe } from './dm';
 import { fsClearLine, fsFlashEffect, fsFragDamage, fsGrenadeLaunch, fsGrenadeStep, FS_GRENADES, type FsGrenadeBody, type FsGrenadeId } from './grenades';
 import { FsLoadout } from './gun';
 import { FS_RESPAWN_S, fsMatchConfig, fsMatchResult, fsMatchScore, type FsMatchConfig, type FsMatchRow } from './match';
 import { FS_MOVE, fsEyeHeight, fsNewMover, fsStepMover, type FsMover } from './movement';
-import { fsBuy } from './shop';
+import { FS_SHOP, fsBuy, fsShopItem } from './shop';
 import { fsDir, fsTrace, type FsBody, type Vec3 } from './trace';
 import { FS_WEAPONS, type FsWeaponId } from './weapons';
 import type { FsBox } from './map';
@@ -44,6 +45,8 @@ export interface FsNetInput {
   alt: boolean;
   reload: boolean;
   inspect: boolean;
+  /** Segurar E: planta e desarma a bomba (modo Bomba). */
+  use?: boolean;
   /** Passo do servidor que o aparelho estava mostrando (para a compensação de atraso). */
   viewTick: number;
   cmds?: FsNetCmd[];
@@ -110,6 +113,8 @@ export interface FsNetOptions {
   minutes: number;
   humans: { id: string; name: string }[];
   bots: number;
+  /** Modo Bomba (spec 059): rounds, bomba e economia no lugar do mata-mata. */
+  bomb?: Partial<FsBombConfig>;
   rng?: () => number;
   boxes?: readonly FsBox[];
 }
@@ -150,6 +155,7 @@ export function fsNetParseInput(raw: unknown): FsNetInput | null {
     alt: !!o.alt,
     reload: !!o.reload,
     inspect: !!o.inspect,
+    use: !!o.use,
     viewTick: finite(o.viewTick) ? Math.floor(o.viewTick) : 0,
     cmds,
   };
@@ -170,11 +176,23 @@ export class FsNetSim {
   private humansIn = 0;
   private rng: () => number;
   over = false;
+  /** Modo Bomba: o placar de rounds, o dinheiro e a bomba (null no mata-mata). */
+  readonly bm: FsBombMatch | null;
+  private bombPos: { x: number; y: number; z: number } | null = null;
+  private plantPos: { x: number; y: number; z: number } | null = null;
+  private planSite: 'A' | 'B' = 'A';
+  private roundEndAt = 0;
+  private resetGear = true;
+  /** Como terminou o último round: 0 nenhum, 1 TR venceu, 2 CT venceu; e o motivo (1 eliminação, 2 bomba, 3 desarmou, 4 tempo). */
+  private lastWin = 0;
+  private lastReason = 0;
+  private lastGain: Record<string, number> = {};
 
   constructor(opts: FsNetOptions) {
     const base = fsMatchConfig(opts.minutes, 1);
     this.cfg = { minutes: base.minutes, bots: Math.max(0, Math.min(9, Math.round(Number.isFinite(opts.bots) ? opts.bots : 0))) };
-    this.endTick = this.cfg.minutes * 60 * FS_NET_HZ;
+    this.bm = opts.bomb ? new FsBombMatch(opts.bomb) : null;
+    this.endTick = this.bm ? Number.MAX_SAFE_INTEGER : this.cfg.minutes * 60 * FS_NET_HZ;
     this.boxes = opts.boxes ?? FS_DUST_SOLIDS;
     this.rng = opts.rng ?? Math.random;
     const humans = opts.humans.slice(0, 10);
@@ -183,6 +201,17 @@ export class FsNetSim {
     for (const h of humans) this.addPlayer(h.id, h.name, false, placed);
     // os bots seguem a mesma alternância depois das pessoas
     for (let i = 0; i < botCount; i++) this.addPlayer(`b${i + 1}`, `Bot ${i + 1}`, true, placed, ((humans.length + i) % 2) as 0 | 1);
+    if (this.bm) {
+      for (const p of this.players.values()) this.bm.addPlayer(p.id, this.sideOf(p));
+      this.bm.startRound();
+      this.bm.drain();
+      this.beginRound();
+    }
+  }
+
+  /** Lado no modo Bomba: time 1 é terrorista (laranja), time 0 contra-terrorista (azul). */
+  private sideOf(p: FsNetPlayer): FsSide {
+    return p.team === 1 ? 'tr' : 'ct';
   }
 
   private addPlayer(id: string, name: string, bot: boolean, placed: { x: number; z: number }[], botTeam: 0 | 1 = 0) {
@@ -201,6 +230,14 @@ export class FsNetSim {
     }
     this.players.set(id, p);
     this.roster.push({ id, name, bot });
+    // modo Bomba: quem chega com o round rolando só joga no próximo
+    if (this.bm && this.tick > 0) {
+      this.bm.addPlayer(id, this.sideOf(p));
+      const me = this.bm.players.get(id)!;
+      me.alive = false;
+      p.alive = false;
+      p.respawnAt = Number.MAX_SAFE_INTEGER;
+    }
   }
 
   private dressBot(p: FsNetPlayer) {
@@ -262,6 +299,19 @@ export class FsNetSim {
     p.loadout = new FsLoadout(null, 'pistol');
     p.dmgLog = [];
     p.heardAt = this.tick;
+    if (this.bm) {
+      // modo Bomba: a pessoa assume o time, o dinheiro e o estado do bot
+      const bp = this.bm.players.get(old.r.id);
+      this.bm.players.delete(old.r.id);
+      if (bp) {
+        bp.id = id;
+        this.bm.players.set(id, bp);
+      }
+      p.loadout = new FsLoadout(null, this.sideOf(p) === 'ct' ? 'usp' : 'pistol');
+      this.players.set(id, p);
+      this.roster[old.i] = { id, name, bot: false };
+      return true;
+    }
     p.team = (this.humansIn++ % 2) as 0 | 1;
     this.players.set(id, p);
     this.roster[old.i] = { id, name, bot: false };
@@ -303,16 +353,19 @@ export class FsNetSim {
     };
     for (const p of this.players.values()) {
       if (!p.alive) {
-        if (this.tick >= p.respawnAt) this.respawn(p);
+        if (!this.bm && this.tick >= p.respawnAt) this.respawn(p);
         continue;
       }
-      if (p.bot) this.stepBot(p, foesForBots(p.id));
+      if (p.bot) {
+        if (!this.bombFrozen()) this.stepBot(p, foesForBots(p.id).filter((f) => !this.bm || this.sideOf(this.players.get(f.id)!) !== this.sideOf(p)));
+      }
       else this.stepHuman(p);
       p.hist.push({ tick: this.tick, x: p.mover.x, y: p.mover.y, z: p.mover.z, crouch: p.mover.crouchK, yaw: p.yaw });
       if (p.hist.length > 40) p.hist.shift();
     }
     this.stepGrenades();
-    if (this.tick >= this.endTick) {
+    if (this.bm) this.stepBomb();
+    if (!this.over && this.tick >= this.endTick) {
       this.over = true;
       this.events.push({ k: 'over' });
     }
@@ -330,6 +383,8 @@ export class FsNetSim {
     for (const c of inp.cmds ?? []) this.runCmd(p, c);
     p.yaw = inp.yaw;
     p.pitch = inp.pitch;
+    // modo Bomba: parado na base na compra e no fim do round
+    if (this.bombFrozen()) return;
     const lo = p.loadout;
     const adsOn = inp.alt && !lo.reloading && !lo.weapon.melee;
     const mul = lo.weapon.moveMul * (adsOn ? 0.65 : 1) * fsFlinchAt(p.flinch, (this.tick - p.flinchAt) / FS_NET_HZ);
@@ -359,7 +414,14 @@ export class FsNetSim {
     else if (c.t === 'nade') lo.selectGrenade(c.k);
     else if (c.t === 'cycle') lo.cycleAll(c.d);
     else if (c.t === 'buy') {
+      const item = fsShopItem(c.id);
+      if (this.bm) {
+        // só na base, na fase de compra, com dinheiro
+        const bp = this.bm.players.get(p.id);
+        if (!item || !bp || this.bm.phase !== 'buy' || !this.inBase(p) || item.price > bp.money) return;
+      }
       const r = fsBuy(lo, c.id);
+      if (r.ok && this.bm && item) this.bm.buy(p.id, item.price, true);
       if (r.ok && r.armor) {
         p.armor = r.armor.points;
         p.helmet = p.helmet || r.armor.helmet;
@@ -387,8 +449,10 @@ export class FsNetSim {
   private bodiesAt(self: string, viewTick: number): FsBody[] {
     const t = clamp(viewTick, this.tick - FS_NET_REWIND_MAX, this.tick);
     const out: FsBody[] = [];
+    const shooter = this.players.get(self);
     for (const q of this.players.values()) {
       if (q.id === self) continue;
+      if (this.bm && shooter && this.sideOf(q) === this.sideOf(shooter)) continue; // sem fogo amigo
       let h: Hist | undefined;
       for (let i = q.hist.length - 1; i >= 0; i--) {
         if (q.hist[i]!.tick <= t) {
@@ -458,6 +522,8 @@ export class FsNetSim {
     const v = this.players.get(vic);
     const a = this.players.get(by);
     if (!v || !v.alive || this.over) return;
+    // modo Bomba: sem fogo amigo, e sem dano na compra nem depois do fim do round
+    if (this.bm && ((a && a !== v && this.sideOf(a) === this.sideOf(v)) || (this.bm.phase !== 'live' && this.bm.phase !== 'planted'))) return;
     v.dmgLog.push({ attacker: by, time: this.tick / FS_NET_HZ });
     if (v.dmgLog.length > 24) v.dmgLog.shift();
     const dealt = Math.min(v.hp, hp);
@@ -477,7 +543,7 @@ export class FsNetSim {
     v.hp = 0;
     v.alive = false;
     v.deaths++;
-    v.respawnAt = this.tick + Math.round(FS_RESPAWN_S * FS_NET_HZ);
+    v.respawnAt = this.bm ? Number.MAX_SAFE_INTEGER : this.tick + Math.round(FS_RESPAWN_S * FS_NET_HZ);
     const self = vic === by;
     const as = self ? null : fsAssister(v.dmgLog, by, this.tick / FS_NET_HZ);
     v.dmgLog = [];
@@ -490,6 +556,7 @@ export class FsNetSim {
     this.events.push({ k: 'kill', killer: by, victim: vic, w, head, assist: as, wall: !!mods?.wall, noscope: !!mods?.noscope, blind: !!a && a !== v && a.blindUntil > this.tick });
     // o que ele segurava some do mundo (as granadas no ar continuam)
     v.queue = [];
+    this.bm?.kill(self ? null : by, vic, w as FsWeaponId);
   }
 
   private respawn(p: FsNetPlayer) {
@@ -516,6 +583,167 @@ export class FsNetSim {
       this.dressBot(p);
     }
     this.events.push({ k: 'spawn', id: p.id, x: r2(sp.x), z: r2(sp.z) });
+  }
+
+
+  // ---------------------------------------------------------------- modo Bomba (spec 059)
+
+  private bombFrozen(): boolean {
+    const b = this.bm;
+    return !!b && (b.phase === 'buy' || b.phase === 'end' || b.phase === 'over');
+  }
+
+  private inBase(p: FsNetPlayer): boolean {
+    const m = FS_DUST_MARKS.find((k) => k.kind === 'base' && k.id === (this.sideOf(p) === 'tr' ? 'T' : 'CT'));
+    return !!m && p.mover.x >= m.x0 - 1 && p.mover.x <= m.x1 + 1 && p.mover.z >= m.z0 - 1 && p.mover.z <= m.z1 + 1;
+  }
+
+  private roundSpawns(): Map<string, FsSpawn> {
+    const pool: Record<FsSide, FsSpawn[]> = {
+      tr: FS_DUST_SPAWNS.filter((q) => q.zone === 'TR').sort(() => this.rng() - 0.5),
+      ct: FS_DUST_SPAWNS.filter((q) => q.zone === 'CT').sort(() => this.rng() - 0.5),
+    };
+    const out = new Map<string, FsSpawn>();
+    for (const p of this.players.values()) {
+      const l = pool[this.sideOf(p)];
+      out.set(p.id, l.length ? l.pop()! : FS_DUST_SPAWNS[0]!);
+    }
+    return out;
+  }
+
+  private priceOf(w: FsWeaponId): number {
+    return FS_SHOP.flatMap((c) => c.items).find((i) => i.weapon === w && !i.soon)?.price ?? 1e9;
+  }
+
+  /** Todo mundo nasce na base do seu time; quem sobreviveu mantém o equipamento, quem morreu volta à pistola. */
+  private beginRound() {
+    const bm = this.bm!;
+    const sp = this.roundSpawns();
+    const vestPrice = Math.min(...FS_SHOP.flatMap((c) => c.items).filter((i) => i.armor && !i.armor.helmet && !i.soon).map((i) => i.price));
+    for (const p of this.players.values()) {
+      const side = this.sideOf(p);
+      const keep = bm.survivors.has(p.id) && !this.resetGear;
+      const s = sp.get(p.id)!;
+      p.hp = 100;
+      p.alive = true;
+      p.respawnAt = 0;
+      p.mover = fsNewMover(s.x, s.z);
+      p.mover.y = s.y;
+      p.yaw = s.yaw;
+      p.pitch = 0;
+      p.flinchAt = -1e9;
+      p.hist = [];
+      p.last = null;
+      p.queue = [];
+      p.blindUntil = 0;
+      if (!keep) {
+        p.armor = 0;
+        p.helmet = false;
+        if (!p.bot) p.loadout.resetKit(side === 'ct' ? 'usp' : 'pistol');
+      }
+      if (p.bot) {
+        let weapon: Exclude<FsWeaponId, 'knife'> = keep && p.brain ? p.brain.weapon : side === 'ct' ? 'usp' : 'pistol';
+        const money = bm.players.get(p.id)!;
+        if ((weapon === 'pistol' || weapon === 'usp') && !keep) {
+          for (const w of [side === 'tr' ? 'ak' : 'm4', 'smg', 'shotgun'] as const) {
+            if (money.money >= this.priceOf(w) && bm.buy(p.id, this.priceOf(w), true)) {
+              weapon = w;
+              break;
+            }
+          }
+        }
+        if (!p.armor && money.money >= vestPrice && bm.buy(p.id, vestPrice, true)) p.armor = 100;
+        p.brain = fsDmNew(p.id, s.x, s.z, s.yaw, weapon, this.rng, s.y);
+        p.brain.nades = { frag: 0, flash: 0 };
+        p.mover = p.brain.mover;
+      } else if (!keep) {
+        p.loadout.refillAmmo();
+      }
+      this.events.push({ k: 'spawn', id: p.id, x: r2(s.x), z: r2(s.z) });
+    }
+    this.resetGear = false;
+    this.bombPos = null;
+    this.plantPos = null;
+    this.planSite = this.rng() < 0.5 ? 'A' : 'B';
+  }
+
+  private siteAt(x: number, z: number): string | null {
+    for (const m of FS_DUST_MARKS) if (m.kind === 'site' && x >= m.x0 && x <= m.x1 && z >= m.z0 && z <= m.z1) return m.id;
+    return null;
+  }
+
+  private stepBomb() {
+    const bm = this.bm!;
+    if (bm.phase === 'over') return;
+    // a bomba passa para outro terrorista se quem a levava morreu
+    if (!bm.carrier && bm.phase === 'live' && !bm.planter) {
+      const next = [...bm.players.values()].find((q) => q.side === 'tr' && q.alive);
+      if (next) bm.pickBomb(next.id);
+    }
+    let defuser: string | null = null;
+    for (const p of this.players.values()) {
+      if (!p.alive) continue;
+      const side = this.sideOf(p);
+      if (!p.bot) {
+        const still = Math.hypot(p.mover.vx, p.mover.vz) < 1.5;
+        const use = !!p.last?.use && still;
+        if (side === 'tr' && bm.carrier === p.id) {
+          const site = this.siteAt(p.mover.x, p.mover.z);
+          if (use && site) this.plantPos = { x: p.mover.x, y: p.mover.y, z: p.mover.z };
+          bm.plant(p.id, use, site, FS_NET_DT);
+        } else if (side === 'ct' && bm.phase === 'planted' && this.bombPos) {
+          const near = Math.hypot(p.mover.x - this.bombPos.x, p.mover.z - this.bombPos.z) < 2.4;
+          bm.defuse(p.id, use && near, near, FS_NET_DT);
+        }
+        continue;
+      }
+      const b = p.brain;
+      if (!b) continue;
+      const siteMark = (id: string) => FS_DUST_MARKS.find((m) => m.kind === 'site' && m.id === id)!;
+      if (side === 'tr') {
+        const goal = bm.phase === 'planted' && this.bombPos ? this.bombPos : siteMark(this.planSite);
+        b.objective = [goal.x, goal.z];
+        if (bm.carrier === p.id) {
+          const site = this.siteAt(b.mover.x, b.mover.z);
+          if (site && !b.target) this.plantPos = { x: b.mover.x, y: b.mover.y, z: b.mover.z };
+          bm.plant(p.id, !!site && !b.target, site, FS_NET_DT);
+        }
+      } else {
+        const idx = Number(p.id.replace(/\D/g, '')) || 0;
+        const goal = bm.phase === 'planted' && this.bombPos ? this.bombPos : siteMark(idx % 2 === 0 ? 'A' : 'B');
+        b.objective = [goal.x, goal.z];
+        if (bm.phase === 'planted' && this.bombPos && !defuser && !b.target && Math.hypot(b.mover.x - this.bombPos.x, b.mover.z - this.bombPos.z) < 2.2) {
+          defuser = p.id;
+          bm.defuse(p.id, true, true, FS_NET_DT);
+        }
+      }
+    }
+    bm.step(FS_NET_DT);
+    this.reactBomb();
+    if (bm.phase === 'end' && this.tick >= this.roundEndAt) {
+      bm.nextRound();
+      this.reactBomb();
+      this.beginRound();
+    }
+  }
+
+  private reactBomb() {
+    const bm = this.bm!;
+    for (const e of bm.drain()) {
+      if (e.k === 'planted') {
+        const at = this.plantPos ?? { x: 0, y: 0, z: 0 };
+        this.bombPos = { x: at.x, y: fsDustFloorY(at.x, at.z), z: at.z };
+      } else if (e.k === 'roundEnd') {
+        this.roundEndAt = this.tick + 5 * FS_NET_HZ;
+        this.lastWin = e.winner === 'tr' ? 1 : 2;
+        this.lastReason = e.reason === 'elim' ? 1 : e.reason === 'bomb' ? 2 : e.reason === 'defuse' ? 3 : 4;
+        this.lastGain = e.rewards;
+      } else if (e.k === 'half') this.resetGear = true;
+      else if (e.k === 'over') {
+        this.over = true;
+        this.events.push({ k: 'over' });
+      }
+    }
   }
 
   // ---------------------------------------------------------------- granadas
@@ -578,7 +806,7 @@ export class FsNetSim {
    * [índice, x·100, y·100, z·100, yaw·10, pitch·10, vida, colete, bandeiras, arma, agachado·100, último número de entrada, abates, assist., mortes]
    * Bandeiras: 1 vivo, 2 capacete, 4 bot, 8 atirou agora há pouco, 16 recarregando, 32 no chão, 64 andando, 128 terrorista (laranja; sem a bandeira é contra-terrorista, azul).
    */
-  frame(): { k: number; left: number; p: number[][]; g: number[][] } {
+  frame(): { k: number; left: number; p: number[][]; g: number[][]; b?: number[] } {
     const p: number[][] = [];
     this.roster.forEach((r, i) => {
       const q = this.players.get(r.id)!;
@@ -592,7 +820,21 @@ export class FsNetSim {
       ]);
     });
     const g = this.grenades.map((n) => [n.id, n.body.kind === 'frag' ? 0 : 1, Math.round(n.body.x * 100), Math.round(n.body.y * 100), Math.round(n.body.z * 100)]);
-    return { k: this.tick, left: Math.max(0, this.endTick - this.tick), p, g };
+    const bm = this.bm;
+    // modo Bomba: [fase (0 compra, 1 round, 2 bomba plantada, 3 fim do round, 4 fim), tempo·10, round, TR, CT, bomba x·100, bomba z·100, pátio (0 nenhum, 1 A, 2 B), portador (índice, -1), vencedor, motivo]
+    const b = bm
+      ? [
+          ({ buy: 0, live: 1, planted: 2, end: 3, over: 4 } as const)[bm.phase],
+          Math.round(Math.max(0, bm.phase === 'end' ? (this.roundEndAt - this.tick) / FS_NET_HZ : bm.time) * 10),
+          bm.round, bm.score.tr, bm.score.ct,
+          this.bombPos && bm.phase === 'planted' ? Math.round(this.bombPos.x * 100) : 0,
+          this.bombPos && bm.phase === 'planted' ? Math.round(this.bombPos.z * 100) : 0,
+          bm.site === 'A' ? 1 : bm.site === 'B' ? 2 : 0,
+          bm.carrier ? this.roster.findIndex((r) => r.id === bm.carrier) : -1,
+          this.lastWin, this.lastReason,
+        ]
+      : undefined;
+    return { k: this.tick, left: Math.max(0, this.endTick - this.tick), p, g, b };
   }
 
   /** O que só a própria pessoa precisa (para a previsão e para a tela): corpo exato, armas e granadas. */
@@ -608,6 +850,20 @@ export class FsNetSim {
       slots: lo.slots.map((s) => (s ? fsNetWeaponIndex(s.id) : -1)),
       nades: { ...lo.grenades },
       flinch: q.flinch, flinchAt: q.flinchAt / FS_NET_HZ * 1, tickNow: this.tick,
+      bomb: this.bm
+        ? (() => {
+            const bp = this.bm!.players.get(id);
+            const defTime = bp?.kit ? this.bm!.cfg.defuseKitSec : this.bm!.cfg.defuseSec;
+            return {
+              money: bp?.money ?? 0,
+              plant: this.bm!.carrier === id ? this.bm!.plantProgress / this.bm!.cfg.plantSec : 0,
+              defuse: this.bm!.phase === 'planted' && this.bm!.defuseProgress > 0 && bp?.side === 'ct' ? this.bm!.defuseProgress / defTime : 0,
+              gain: this.lastGain[id] ?? 0,
+              side: bp?.side ?? 'ct',
+              win: this.bm!.cfg.winRounds,
+            };
+          })()
+        : undefined,
     };
   }
 
