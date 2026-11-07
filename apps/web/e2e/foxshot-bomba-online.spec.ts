@@ -68,4 +68,12 @@ test('duas janelas: modo Bomba com times TR e CT, compra com dinheiro e HUD da b
   if (phase === 'buy') await expect(ana.getByTestId('fs-shop')).toBeVisible({ timeout: 20_000 });
   else await expect(ana.getByTestId('fs-shop')).toHaveCount(0);
   await ana.screenshot({ path: `${process.env.FS_SHOTS ?? '/tmp'}/bomba-online.png` });
+  // mapa grande no online: M abre com as marcas e M fecha
+  await ana.keyboard.press('Escape').catch(() => undefined);
+  await fsn(ana, 'resume');
+  await ana.keyboard.press('KeyM');
+  await expect(ana.getByTestId('fs-bigmap')).toBeVisible({ timeout: 15_000 });
+  await ana.screenshot({ path: `${process.env.FS_SHOTS ?? '/tmp'}/bomba-online-mapa.png` });
+  await ana.keyboard.press('KeyM');
+  await expect(ana.getByTestId('fs-bigmap')).toHaveCount(0);
 });
