@@ -79,4 +79,6 @@ Respondidas pelo Lucas em 07/11/2026:
 
 ## 10. Andamento
 - Fase 1 feita: `packages/games/src/foxshot/bomb.ts` (`FsBombMatch`: fases compra, round, bomba plantada, fim; plantar e desarmar com tempo; abates e vitórias pagam como no CS; bônus de derrota crescente; troca de lado na metade com dinheiro zerado; teto de dinheiro; fim ao chegar a N rounds) com 10 testes em `bomb.test.ts`.
-- Próximas: fase 2 (modelo 3D da C4, plantar e desarmar na tela, HUD, zona de compra na base), fase 3 (partida offline com bots por lado), depois online e menus.
+- Fases 2 e 3 feitas (offline): modo Bomba no menu offline (Modo, Seu lado, Rounds, Tempo); times por lado nas bases do Duna; compra só na base e na fase de compra, com dinheiro e preços da loja; bomba C4 (modelo simples no `FoxShotScene.setBomb`, pisca mais rápido perto do fim); plantar e desarmar segurando E (botão BOMBA no celular); bots por lado (TR leva a bomba ao pátio e planta, CT defende e desarma, compram conforme o dinheiro); HUD (`FsBombHud`); fim de round, troca de lado na metade, tela final com vitória/derrota. E2E `counterfox-bomba.spec.ts` (3 testes).
+- Limites atuais: quem morre vê só a câmera caída até o próximo round (ainda não espectar o aliado); sem kit de desarme à venda; online ainda não.
+- Próximas (antigo texto): fase 2 (modelo 3D da C4, plantar e desarmar na tela, HUD, zona de compra na base), fase 3 (partida offline com bots por lado), depois online e menus.
