@@ -1,6 +1,6 @@
 # 059: Counter Fox, modo Bomba (rounds, times, economia)
 
-Pedido do Lucas (07/11/2026): um modo novo do Counter Fox no estilo do modo padrão do CS e do Valorant, no mapa Duna: rounds com tempo, um time contra o outro, nascem na base, o time TR planta a bomba, o CT para, compra só na base, dinheiro finito, vitória e derrota rendem dinheiro diferente, tudo configurável. Status: **rascunho** (aguarda respostas da seção 9).
+Pedido do Lucas (07/11/2026): um modo novo do Counter Fox no estilo do modo padrão do CS e do Valorant, no mapa Duna: rounds com tempo, um time contra o outro, nascem na base, o time TR planta a bomba, o CT para, compra só na base, dinheiro finito, vitória e derrota rendem dinheiro diferente, tudo configurável. Status: **em andamento** (07/11/2026): decisões do Lucas na seção 9; fase 1 (motor puro) feita e testada.
 
 ## 1. Como funciona no CS e no Valorant (pesquisa)
 
@@ -71,4 +71,12 @@ Habilidades dos agentes do Valorant, modos extras (resgate, desarmamento), mais 
 Uma partida 5x5 (humanos e bots) no Duna, offline e online: compra só na base com dinheiro finito, TR planta e CT desarma, vencedor do round recebe mais, perdedor menos, troca de lado na metade, fim ao chegar ao número de rounds configurado.
 
 ## 9. Perguntas em aberto
-Registradas na conversa de 07/11/2026; respostas entram aqui.
+Respondidas pelo Lucas em 07/11/2026:
+- **Times offline:** o jogador escolhe o lado (TR ou CT) e joga 5x5 com bots nos dois times.
+- **Padrão:** primeiro a 8 rounds, round de 1:55 (tudo configurável; de 2 a 13 rounds).
+- **Economia:** igual à do CS (tabela da seção 1), editável.
+- **Ordem:** offline primeiro, online depois.
+
+## 10. Andamento
+- Fase 1 feita: `packages/games/src/foxshot/bomb.ts` (`FsBombMatch`: fases compra, round, bomba plantada, fim; plantar e desarmar com tempo; abates e vitórias pagam como no CS; bônus de derrota crescente; troca de lado na metade com dinheiro zerado; teto de dinheiro; fim ao chegar a N rounds) com 10 testes em `bomb.test.ts`.
+- Próximas: fase 2 (modelo 3D da C4, plantar e desarmar na tela, HUD, zona de compra na base), fase 3 (partida offline com bots por lado), depois online e menus.
