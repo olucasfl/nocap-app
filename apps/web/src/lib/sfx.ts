@@ -375,9 +375,28 @@ export function toggleMute() {
   sfx.clack();
 }
 
+/** Aplica o "mudo" vindo da conta (sem tocar som nem avisar de volta). */
+export function setMutedSilently(v: boolean) {
+  if (muted === v) return;
+  muted = v;
+  try {
+    localStorage.setItem(MUTE_KEY, v ? '1' : '0');
+  } catch {
+    /* storage indisponível: vale só nesta sessão */
+  }
+  if (master) master.gain.value = muted ? 0 : 0.9;
+  listeners.forEach((l) => l());
+}
+
 /** Mudo agora? (a vibração dos jogos também cala junto) */
 export function isMuted(): boolean {
   return muted;
+}
+
+/** Avisa quando o "mudo" muda (para sincronizar com a conta). */
+export function useMutedStore(cb: () => void): () => void {
+  listeners.add(cb);
+  return () => listeners.delete(cb);
 }
 
 export function useMuted(): boolean {

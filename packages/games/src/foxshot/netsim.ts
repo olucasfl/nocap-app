@@ -509,6 +509,7 @@ export class FsNetSim {
     p.queue = [];
     // renasce com os pentes cheios (granadas não voltam)
     if (!p.bot) p.loadout.refillAmmo();
+    p.blindUntil = 0;
     if (p.bot) {
       p.brain = fsDmNew(p.id, sp.x, sp.z, sp.yaw, fsDmPickWeapon(this.rng), this.rng, sp.y);
       p.mover = p.brain.mover;

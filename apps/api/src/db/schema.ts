@@ -261,3 +261,15 @@ export const apertaSaves = pgTable(
     check('aperta_saves_slot_check', sql`${t.slot} in (1, 2)`),
   ],
 );
+
+/**
+ * Preferências da conta (spec 058): as opções do Counter Fox que valem em qualquer aparelho (sensibilidade, mira,
+ * comandos, mapa pequeno) e o som. Desempenho e tela cheia ficam só no aparelho. Uma linha por conta; a última gravação vale.
+ */
+export const userPrefs = pgTable('user_prefs', {
+  userId: uuid('user_id')
+    .primaryKey()
+    .references(() => authUser.id, { onDelete: 'cascade' }),
+  data: jsonb('data').notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});

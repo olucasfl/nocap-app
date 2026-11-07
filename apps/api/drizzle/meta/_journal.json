@@ -71,6 +71,13 @@
       "when": 1792610254936,
       "tag": "0009_aperta",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794066418057,
+      "tag": "0010_user_prefs",
+      "breakpoints": true
     }
   ]
 }

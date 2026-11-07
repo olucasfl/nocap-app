@@ -13,6 +13,7 @@ import { RankingsModule } from './rankings/rankings.module';
 import { RoomsModule } from './rooms/rooms.module';
 import { WordsModule } from './words/words.module';
 import { WordsProgressModule } from './words-progress/words-progress.module';
+import { PrefsModule } from './prefs/prefs.module';
 
 // Um módulo por domínio entra aqui.
 @Module({
@@ -26,6 +27,7 @@ import { WordsProgressModule } from './words-progress/words-progress.module';
     RoomsModule,
     WordsModule,
     WordsProgressModule,
+    PrefsModule,
     ApertaModule,
   ],
   controllers: [HealthController, GamesController],

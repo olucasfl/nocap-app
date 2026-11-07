@@ -1,3 +1,4 @@
+import { startPrefsSync } from '@/lib/prefs-sync';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -21,6 +22,7 @@ installTheme();
 listenForInstall();
 void restoreSession();
 installGlobalSounds();
+startPrefsSync();
 // Sem rede a consulta falha logo (em vez de ficar esperando) e cada tela mostra o aviso próprio.
 const queryClient = new QueryClient({
   defaultOptions: {

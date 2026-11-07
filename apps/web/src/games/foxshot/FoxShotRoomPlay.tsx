@@ -535,6 +535,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
     /** Confere o próprio corpo com o do servidor e refaz as entradas que ele ainda não viu (previsão com correção). */
     const reconcile = (s: SelfState) => {
       const aliveNow = s.alive;
+      if (!aliveNow || (aliveNow && !wasAlive)) blindUntil = 0;
       if (!haveSelf || (aliveNow && !wasAlive) || !aliveNow) {
         mover.x = s.x; mover.y = s.y; mover.z = s.z;
         mover.vx = s.vx; mover.vy = s.vy; mover.vz = s.vz;

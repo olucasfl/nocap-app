@@ -1205,8 +1205,8 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
 
       if (!isPaused) {
         clock += dt;
-        // a luz (cegueira) não passa enquanto está morto: continua depois de renascer
-        if (playerDead) blindUntil += dt;
+        // a luz some ao morrer: renasce enxergando
+        if (playerDead) blindUntil = 0;
         // o botão de mirar segurado não pode piscar: uma queda de 0,12 s no sinal não solta a mira
         const sn = w.adsFov > 0;
         if (!sn || loadout.reloading || loadout.held) zoomLvl = 0;
