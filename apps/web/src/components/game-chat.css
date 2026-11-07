@@ -318,3 +318,34 @@
     width: min(340px, 50%);
   }
 }
+
+/* estilo CS (spec 058): no canto de baixo à esquerda, acima da vida; mensagens sem moldura, fundo translúcido */
+.gc:not(.dock) {
+  top: auto;
+  bottom: max(120px, calc(env(safe-area-inset-bottom) + 112px));
+  align-items: flex-end;
+}
+.gc:not(.dock) .gc-toasts {
+  max-width: min(70vw, 420px);
+  gap: 2px;
+}
+.gc:not(.dock) .gc-toast {
+  padding: 3px 10px;
+  border: 0;
+  border-radius: 4px;
+  background: rgba(8, 10, 20, 0.55);
+  color: #fff;
+  font-size: 14px;
+  text-shadow: 0 1px 2px #000;
+  box-shadow: none;
+}
+.gc:not(.dock) .gc-toast b {
+  color: #ffd27a;
+}
+.gc:not(.dock) .gc-toast em {
+  color: #b9c2d8;
+  font-style: normal;
+}
+.gc-panel:not(.dock) {
+  bottom: max(120px, calc(env(safe-area-inset-bottom) + 112px));
+}

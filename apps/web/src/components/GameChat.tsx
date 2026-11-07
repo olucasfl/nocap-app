@@ -6,7 +6,7 @@ import { at, useRoom, type ChatMessage, type RoomSnapshot } from '@/lib/rooms';
 import './game-chat.css';
 
 /** Quanto tempo uma mensagem nova fica à vista (ms) antes de sumir. */
-const SHOW_MS = 5000;
+const SHOW_MS = 7000;
 
 /** Balão de conversa com três pontinhos: o ícone do chat da partida. */
 export function IcChat({ size = 24 }: { size?: number }) {
@@ -81,8 +81,9 @@ function useChatToasts(open: boolean, byUnread = false): ChatMessage[] {
     }
     if (!last || last.id === lastId.current) return;
     lastId.current = last.id;
-    if (open || last.userId === 'system') return;
-    setShown((cur) => [...cur.slice(-2), last]);
+    // estilo CS: entrou, saiu e avisos do sistema também aparecem na lista
+    if (open) return;
+    setShown((cur) => [...cur.slice(-4), last]);
     const t = window.setTimeout(() => {
       setShown((cur) => cur.filter((m) => m.id !== last.id));
       timers.current.delete(last.id);
@@ -209,7 +210,7 @@ export function GameChat({
                   style={{ background: chatColor(snapshot, m.userId) ?? '#fff' }}
                   aria-hidden="true"
                 />
-                <b>{at(m.username)}</b> {m.text}
+                {m.userId === 'system' ? <em>{m.text}</em> : (<><b>{at(m.username)}</b> {m.text}</>)}
               </li>
             ))}
           </ul>
