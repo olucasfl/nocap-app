@@ -60,6 +60,8 @@ import {
   type FsBox,
   type FsWeaponId,
 } from '@nocap/games';
+import { FS_SHOP, fsDustFloorY, FsBombMatch, FS_DUST_SPAWNS, fsOtherSide, type FsDmWeapon, type FsSide, type FsSpawn, type FsBombEvent } from '@nocap/games';
+import { FsBombHud, type BombHud } from './FsBombHud';
 import { fsAudio } from '@/lib/foxshot-audio';
 import { FoxShotScene, FS_WORLD_TRAIN, fsWorldDust, type Quality } from './FoxShotScene';
 import { FsMatchEnd } from './FsMatchEnd';
@@ -165,6 +167,7 @@ interface Hud {
   spreadPx: number;
   fps: number;
   timeLeft: number;
+  bomb: BombHud | null;
   players: FsPlayerRow[];
   me: MyStats;
   tris: number;
@@ -195,6 +198,8 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
   const [marker, setMarker] = useState<Marker | null>(null);
   const [feed, setFeed] = useState<FeedItem[]>([]);
   const [result, setResult] = useState<FsMatchRow[] | null>(null);
+  /** Modo Bomba: quem venceu e o placar de rounds (para a tela final). */
+  const [bombEnd, setBombEnd] = useState<{ winner: 'tr' | 'ct'; tr: number; ct: number; mySide: 'tr' | 'ct' } | null>(null);
   const endedRef = useRef(false);
   const onAgainRef = useRef<() => void>(() => undefined);
   onAgainRef.current = () => onAgain?.();
@@ -362,11 +367,37 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     const dmNames = Array.from({ length: match?.bots ?? 0 }, (_, i) => `Bot ${i + 1}`);
     const dmSpecs: FsTargetSpec[] = [];
     const dmSpawnY = new Map<string, number>();
-    const firstSpawn = match ? fsPickSpawn([]) : null;
+    // ---- modo Bomba (spec 059): times, rounds e dinheiro; o resto do mata-mata (bots, tiro, placar) é reaproveitado
+    const bombMode = match?.mode === 'bomb';
+    const mySide0: FsSide = match?.side ?? 'ct';
+    const nFoes = Math.ceil(dmNames.length / 2);
+    const nAllies = dmNames.length - nFoes;
+    const bm = bombMode ? new FsBombMatch(match!.bomb) : null;
+    if (bm) {
+      bm.addPlayer('me', mySide0);
+      dmNames.forEach((_, i) => bm.addPlayer(`d${i + 1}`, i < nAllies ? mySide0 : fsOtherSide(mySide0)));
+    }
+    const sideOf = (id: string): FsSide | null => bm?.players.get(id)?.side ?? null;
+    /** Pontos de nascimento do round: cada um na base do seu time, sem repetir ponto. */
+    const roundSpawns = (): Map<string, FsSpawn> => {
+      const out = new Map<string, FsSpawn>();
+      if (!bm) return out;
+      const pool: Record<FsSide, FsSpawn[]> = {
+        tr: FS_DUST_SPAWNS.filter((p) => p.zone === 'TR').sort(() => Math.random() - 0.5),
+        ct: FS_DUST_SPAWNS.filter((p) => p.zone === 'CT').sort(() => Math.random() - 0.5),
+      };
+      for (const [id, p] of bm.players) {
+        const l = pool[p.side];
+        out.set(id, l.length ? l.pop()! : FS_DUST_SPAWNS[0]!);
+      }
+      return out;
+    };
+    const firstSpawns = roundSpawns();
+    const firstSpawn = match ? (bm ? firstSpawns.get('me')! : fsPickSpawn([])) : null;
     if (match) {
       const placed: { x: number; z: number }[] = [{ x: firstSpawn!.x, z: firstSpawn!.z }];
       dmNames.forEach((n, i) => {
-        const sp = fsPickSpawn(placed);
+        const sp = bm ? firstSpawns.get(`d${i + 1}`)! : fsPickSpawn(placed);
         placed.push({ x: sp.x, z: sp.z });
         dmSpecs.push({ id: `d${i + 1}`, label: n, x: sp.x, z: sp.z, armor: 0, helmet: false });
         dmSpawnY.set(`d${i + 1}`, sp.y);
@@ -376,7 +407,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     const ARENA = world.style === 'dust' ? FS_DUST_SOLIDS : world.boxes;
     const ALL_TARGETS: FsTargetSpec[] = [...world.targets, ...world.bots, ...dmSpecs];
     const isDm = (id: string) => dmSpecs.some((d) => d.id === id);
-    const MATCH_S = match ? match.minutes * 60 : MATCH_S_TEST;
+    const MATCH_S = bm ? 1e9 : match ? match.minutes * 60 : MATCH_S_TEST;
     const rnd = Math.random;
     const scene = new FoxShotScene(cv, world);
     const resize = () => scene.resize(el.clientWidth, el.clientHeight);
@@ -452,7 +483,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       const t = world.targets.find((x) => x.id === id)!;
       return [t.x, 0, t.z];
     };
-    const bodies = (): FsBody[] =>
+    const bodiesAll = (): FsBody[] =>
       ALL_TARGETS.map((t) => {
         const s = targets.get(t.id)!;
         const b = botSt.get(t.id);
@@ -460,6 +491,8 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         const fl = b ? ([Math.cos(b.h), Math.sin(b.h)] as [number, number]) : ((t as FsTargetSpec).facing ?? ([0, 1] as [number, number]));
         return { id: t.id, pos: posOf(t.id), alive: s.alive, armor: s.armor, helmet: t.helmet, crouch: b ? b.crouch : s.crouch, facing: fl };
       });
+    /** Alvos dos SEUS tiros: no modo Bomba os aliados não contam (sem fogo amigo). */
+    const bodies = (): FsBody[] => (bm ? bodiesAll().filter((b) => sideOf(b.id) !== sideOf('me')) : bodiesAll());
 
     const showMarker = (kind: Marker['kind'], text: string) =>
       setMarker({ key: ++markerKey, kind, text });
@@ -495,6 +528,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         }),
       ]);
       setResult(rows);
+      if (bm && bm.winner) setBombEnd({ winner: bm.winner, tr: bm.score.tr, ct: bm.score.ct, mySide: bm.players.get('me')!.side });
       setShopState(false);
       shopRef.current = false;
       controls.releaseLock();
@@ -585,8 +619,9 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       if (me.hp <= 0) {
         me.hp = 0;
         stats.deaths++;
-        deadUntil = clock + FS_RESPAWN_S;
+        deadUntil = bm ? clock + 1e9 : clock + FS_RESPAWN_S; // modo Bomba: só volta no próximo round
         deadSince = clock;
+        bm?.kill(by && by !== 'me' ? by : null, 'me', icon as FsWeaponId);
         if (match && by) {
           // quem matou ganha o abate; o último que bateu antes dele, a assistência
           const kb = by !== 'me' ? targets.get(by) : undefined;
@@ -727,6 +762,8 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     };
     /** Mata-mata: um bot (ou você) leva dano de `attacker`. Cuida de vida, colete, abate, assistência, pontos e do aviso na tela. */
     function dealDamage(victim: string, attacker: string, hp: number, armorLoss: number, head: boolean, icon: FsWeaponId | FsGrenadeId, fx: number, fz: number): 'kill' | 'hit' | null {
+      // modo Bomba: sem fogo amigo e sem dano na fase de compra ou depois do fim do round
+      if (bm && ((attacker !== victim && sideOf(attacker) === sideOf(victim)) || (bm.phase !== 'live' && bm.phase !== 'planted'))) return null;
       if (victim === 'me') {
         hurtPlayer(hp, armorLoss, head, nameOf(attacker), icon, attacker, { x: fx, z: fz });
         return me.hp <= 0 ? 'kill' : 'hit';
@@ -780,19 +817,24 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         showMarker('kill', head ? 'CABEÇA' : 'ABATE');
       }
       pushKill(nameOf(attacker), icon, nameOf(victim), head, { you: attacker === 'me', assist: as ? nameOf(as) : undefined, youAssist: as === 'me' });
+      bm?.kill(attacker === victim ? null : attacker, victim, icon as FsWeaponId);
       return 'kill';
     }
     /** Põe um bot do mata-mata em campo (cérebro, arma, colete). `x, z, yaw` vêm do ponto de nascimento. */
-    function initBot(id: string, x: number, z: number, yaw: number, y = 0) {
+    function initBot(id: string, x: number, z: number, yaw: number, y = 0, gear?: { weapon: FsDmWeapon; armor: number; helmet: boolean }) {
       const spec = dmSpecs.find((d) => d.id === id)!;
       const st = targets.get(id)!;
       st.alive = true;
       st.hp = 100;
       st.crouch = 0;
-      const vest = rnd() < 0.55;
-      st.armor = vest ? 100 : 0;
-      spec.helmet = vest && rnd() < 0.5;
-      brains.set(id, fsDmNew(id, x, z, yaw, fsDmPickWeapon(rnd), rnd, y));
+      const vest = gear ? gear.armor > 0 : rnd() < 0.55;
+      st.armor = gear ? gear.armor : vest ? 100 : 0;
+      spec.helmet = gear ? gear.helmet : vest && rnd() < 0.5;
+      brains.set(id, fsDmNew(id, x, z, yaw, gear ? gear.weapon : fsDmPickWeapon(rnd), rnd, y));
+      if (gear) {
+        const bb = brains.get(id)!;
+        bb.nades = { frag: 0, flash: 0 };
+      }
       const bs = fsNewBot({ ...spec, kind: 'turn', x, z, x1: x, z1: z });
       bs.h = fsDmHeading(yaw);
       botSt.set(id, bs);
@@ -811,22 +853,22 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       scene.reviveTarget(id);
       scene.setBot(id, sp.x, sp.y, sp.z, botSt.get(id)!.h, 'idle', 1);
     }
-    for (const d of dmSpecs) initBot(d.id, d.x, d.z, firstSpawn ? (Math.atan2(d.x, d.z) * 180) / Math.PI + 180 : 0, dmSpawnY.get(d.id) ?? 0);
+    if (!bm) for (const d of dmSpecs) initBot(d.id, d.x, d.z, firstSpawn ? (Math.atan2(d.x, d.z) * 180) / Math.PI + 180 : 0, dmSpawnY.get(d.id) ?? 0);
 
     // ---- os bots do mata-mata jogando
     const foesFor = (self: string): FsDmFoe[] => {
       const out: FsDmFoe[] = [];
-      if (self !== 'me' && clock >= deadUntil) {
+      if (self !== 'me' && clock >= deadUntil && (!bm || sideOf(self) !== sideOf('me'))) {
         out.push({ id: 'me', x: mover.x, y: mover.y, z: mover.z, crouch: mover.crouchK, noisy: mover.onGround && Math.hypot(mover.vx, mover.vz) > 3.4 && mover.crouchK < 0.5 });
       }
       for (const [id, b] of brains) {
-        if (id !== self && targets.get(id)!.alive) out.push({ id, x: b.mover.x, y: b.mover.y, z: b.mover.z, crouch: b.mover.crouchK, noisy: b.speed > 3.4 && b.mover.crouchK < 0.5 });
+        if (id !== self && targets.get(id)!.alive && !(bm && sideOf(id) === sideOf(self))) out.push({ id, x: b.mover.x, y: b.mover.y, z: b.mover.z, crouch: b.mover.crouchK, noisy: b.speed > 3.4 && b.mover.crouchK < 0.5 });
       }
       return out;
     };
     const bodiesFor = (self: string): FsBody[] => {
-      const out = bodies().filter((b) => b.id !== self);
-      out.push({ id: 'me', pos: [mover.x, mover.y, mover.z], alive: clock >= deadUntil, armor: me.armor, helmet: me.helmet, crouch: mover.crouchK });
+      const out = bodiesAll().filter((b) => b.id !== self && !(bm && sideOf(b.id) === sideOf(self)));
+      if (!bm || sideOf('me') !== sideOf(self)) out.push({ id: 'me', pos: [mover.x, mover.y, mover.z], alive: clock >= deadUntil, armor: me.armor, helmet: me.helmet, crouch: mover.crouchK });
       return out;
     };
     const dmFire = (b: FsDmBrain, a: Extract<FsDmAction, { type: 'fire' }>) => {
@@ -856,13 +898,240 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       }
       for (const [id, other] of brains) if (id !== b.id) fsDmHear(other, a.weapon, b.mover.x, b.mover.z);
     };
+    // ================= modo Bomba (spec 059): round, bomba, compra e bots por lado =================
+    let useHeld = false;
+    let bombPos: { x: number; y: number; z: number } | null = null;
+    let plantPos: { x: number; y: number; z: number } | null = null;
+    let planSite: 'A' | 'B' = 'A';
+    let endT = 0;
+    let resetGear = true;
+    let bombBanner: { text: string; until: number } | null = null;
+    let bombHint: { text: string; until: number } | null = null;
+    let wasOver = false;
+    const botGear = new Map<string, { weapon: FsDmWeapon; armor: number; helmet: boolean }>();
+    const siteMark = (id: string) => FS_DUST_MARKS.find((m) => m.kind === 'site' && m.id === id)!;
+    const inSiteAt = (x: number, z: number): string | null => {
+      for (const m of FS_DUST_MARKS) if (m.kind === 'site' && x >= m.x0 && x <= m.x1 && z >= m.z0 && z <= m.z1) return m.id;
+      return null;
+    };
+    const inBaseAt = (x: number, z: number, side: FsSide) => {
+      const m = FS_DUST_MARKS.find((k) => k.kind === 'base' && k.id === (side === 'tr' ? 'T' : 'CT'));
+      return !!m && x >= m.x0 - 1 && x <= m.x1 + 1 && z >= m.z0 - 1 && z <= m.z1 + 1;
+    };
+    const say = (text: string, ms = 2500) => {
+      bombHint = { text, until: clock + ms / 1000 };
+    };
+    const shopItems = FS_SHOP.flatMap((c) => c.items).filter((i) => !i.soon);
+    const priceOf = (w: FsWeaponId) => shopItems.find((i) => i.weapon === w)?.price ?? 1e9;
+    const vestPrice = Math.min(...shopItems.filter((i) => i.armor && !i.armor.helmet).map((i) => i.price));
+    /** Bot compra o que o dinheiro deixa (fuzil, depois SMG ou escopeta, depois colete). */
+    const botBuy = (id: string, gear: { weapon: FsDmWeapon; armor: number; helmet: boolean }) => {
+      const p = bm!.players.get(id)!;
+      const rifle: FsDmWeapon = p.side === 'tr' ? 'ak' : 'm4';
+      if (gear.weapon === 'pistol' || gear.weapon === 'usp') {
+        for (const w of [rifle, 'smg', 'shotgun'] as FsDmWeapon[]) {
+          if (p.money >= priceOf(w) && bm!.buy(id, priceOf(w), true)) {
+            gear.weapon = w;
+            break;
+          }
+        }
+      }
+      if (!gear.armor && p.money >= vestPrice && bm!.buy(id, vestPrice, true)) gear.armor = 100;
+    };
+    const beginRound = () => {
+      const sp = roundSpawns();
+      dmgLog.clear();
+      intel.clear();
+      const meSide = sideOf('me')!;
+      const keepMe = bm!.survivors.has('me') && !resetGear;
+      deadUntil = 0;
+      me.hp = 100;
+      if (!keepMe) {
+        me.armor = 0;
+        me.helmet = false;
+        loadout.resetKit(meSide === 'ct' ? 'usp' : 'pistol');
+        scene.endReload();
+        scene.selectWeapon(loadout.weapon.id);
+      }
+      const msp = sp.get('me')!;
+      view.yaw = msp.yaw;
+      view.pitch = view.rPitch = view.rYaw = 0;
+      mover.x = msp.x;
+      mover.z = msp.z;
+      mover.y = msp.y;
+      mover.vx = mover.vz = mover.vy = 0;
+      prev.x = mover.x;
+      prev.y = mover.y;
+      prev.z = mover.z;
+      blindUntil = 0;
+      for (const d of dmSpecs) {
+        const side = sideOf(d.id)!;
+        const keep = bm!.survivors.has(d.id) && !resetGear && botGear.has(d.id);
+        const gear = keep ? botGear.get(d.id)! : { weapon: (side === 'ct' ? 'usp' : 'pistol') as FsDmWeapon, armor: 0, helmet: false };
+        botBuy(d.id, gear);
+        botGear.set(d.id, gear);
+        const s = sp.get(d.id)!;
+        initBot(d.id, s.x, s.z, s.yaw, s.y, gear);
+        scene.reviveTarget(d.id);
+        scene.setBot(d.id, s.x, s.y, s.z, botSt.get(d.id)!.h, 'idle', 1);
+      }
+      resetGear = false;
+      bombPos = null;
+      plantPos = null;
+      planSite = Math.random() < 0.5 ? 'A' : 'B';
+      scene.setBomb(0, 0, 0, false);
+      bombBanner = null;
+      say(meSide === 'tr' ? 'Compre na base (B) e depois vá aos pátios A ou B' : 'Compre na base (B) e defenda os pátios A e B', 4500);
+    };
+    const handleBombEvent = (e: FsBombEvent) => {
+      switch (e.k) {
+        case 'live':
+          setShopState(false);
+          shopRef.current = false;
+          fsAudio.draw();
+          break;
+        case 'plantStart':
+          if (e.by === 'me') say('Plantando… fique parado', 1500);
+          break;
+        case 'planted': {
+          const at = plantPos ?? { x: mover.x, y: mover.y, z: mover.z };
+          bombPos = { x: at.x, y: fsDustFloorY(at.x, at.z), z: at.z };
+          bombBanner = { text: 'Bomba plantada', until: clock + 2.5 };
+          fsAudio.hit('kill');
+          break;
+        }
+        case 'defused':
+          scene.setBomb(0, 0, 0, false);
+          break;
+        case 'exploded':
+          if (bombPos) {
+            scene.explosion('frag', bombPos.x, bombPos.y, bombPos.z);
+            fsAudio.nadeAt('boom-frag', bombPos.x, bombPos.y, bombPos.z, mover.x, mover.z);
+          }
+          scene.setBomb(0, 0, 0, false);
+          break;
+        case 'roundEnd': {
+          const why = e.reason === 'bomb' ? 'a bomba explodiu' : e.reason === 'defuse' ? 'a bomba foi desarmada' : e.reason === 'time' ? 'acabou o tempo' : 'time eliminado';
+          const mine = e.rewards.me ?? 0;
+          bombBanner = { text: `${e.winner === 'tr' ? 'Terroristas' : 'Contra-terroristas'} vencem · ${why}${mine ? ` · +US$ ${mine}` : ''}`, until: clock + 5 };
+          endT = 5;
+          setShopState(false);
+          shopRef.current = false;
+          break;
+        }
+        case 'half':
+          resetGear = true;
+          bombBanner = { text: 'Troca de lados', until: clock + 3 };
+          break;
+        case 'over':
+          if (!wasOver) {
+            wasOver = true;
+            window.setTimeout(() => finishMatch(), 2500);
+          }
+          break;
+        default:
+          break;
+      }
+    };
+    const stepBomb = (dt: number) => {
+      if (!bm) return;
+      const meSide = sideOf('me')!;
+      const meAlive = clock >= deadUntil;
+      // a bomba passa para outro terrorista se quem a levava morreu
+      if (!bm.carrier && bm.phase === 'live' && !bm.planter) {
+        const next = [...bm.players.values()].find((p) => p.side === 'tr' && p.alive);
+        if (next) bm.pickBomb(next.id);
+      }
+      const still = Math.hypot(mover.vx, mover.vz) < 1.5;
+      if (meAlive && meSide === 'tr' && bm.carrier === 'me') {
+        const site = inSiteAt(mover.x, mover.z);
+        if (useHeld && site && still) plantPos = { x: mover.x, y: mover.y, z: mover.z };
+        bm.plant('me', useHeld && still, site, dt);
+      } else if (meAlive && meSide === 'ct' && bm.phase === 'planted' && bombPos) {
+        const near = Math.hypot(mover.x - bombPos.x, mover.z - bombPos.z) < 2.4;
+        bm.defuse('me', useHeld && near && still, near, dt);
+        if (near && !useHeld) say('Segure E para desarmar', 400);
+      }
+      // bots: objetivo por lado, plantar e desarmar
+      let defuser: string | null = null;
+      for (const d of dmSpecs) {
+        const st = targets.get(d.id)!;
+        const b = brains.get(d.id);
+        if (!st.alive || !b) continue;
+        const side = sideOf(d.id)!;
+        const idx = Number(d.id.slice(1));
+        if (side === 'tr') {
+          const goal = bm.phase === 'planted' && bombPos ? bombPos : siteMark(planSite);
+          b.objective = [goal.x, goal.z];
+          if (bm.carrier === d.id) {
+            const site = inSiteAt(b.mover.x, b.mover.z);
+            if (site && !b.target) plantPos = { x: b.mover.x, y: b.mover.y, z: b.mover.z };
+            bm.plant(d.id, !!site && !b.target, site, dt);
+          }
+        } else {
+          const goal = bm.phase === 'planted' && bombPos ? bombPos : siteMark(idx % 2 === 0 ? 'A' : 'B');
+          b.objective = [goal.x, goal.z];
+          if (bm.phase === 'planted' && bombPos && !defuser && !b.target && Math.hypot(b.mover.x - bombPos.x, b.mover.z - bombPos.z) < 2.2) {
+            defuser = d.id;
+            bm.defuse(d.id, true, true, dt);
+          }
+        }
+      }
+      if (bm.phase === 'planted' && bombPos) scene.setBomb(bombPos.x, bombPos.y, bombPos.z, true, bm.time, clock);
+      bm.step(dt);
+      for (const e of bm.drain()) handleBombEvent(e);
+      if (bm.phase === 'end') {
+        endT -= dt;
+        if (endT <= 0) {
+          bm.nextRound();
+          for (const e of bm.drain()) handleBombEvent(e);
+          beginRound();
+        }
+      }
+      if (bm.phase !== 'buy' && shopRef.current) {
+        setShopState(false);
+        shopRef.current = false;
+      }
+    };
+    const bombHudNow = (): BombHud | null => {
+      if (!bm) return null;
+      const me0 = bm.players.get('me')!;
+      const meSide = me0.side;
+      const alliesAlive = [...bm.players.values()].filter((p) => p.side === meSide && p.alive).length;
+      const foesAlive = [...bm.players.values()].filter((p) => p.side !== meSide && p.alive).length;
+      const defTime = me0.kit ? bm.cfg.defuseKitSec : bm.cfg.defuseSec;
+      return {
+        round: bm.round,
+        winRounds: bm.cfg.winRounds,
+        tr: bm.score.tr,
+        ct: bm.score.ct,
+        mySide: meSide,
+        phase: bm.phase,
+        time: bm.phase === 'end' || bm.phase === 'over' ? 0 : bm.time,
+        money: me0.money,
+        plant: bm.carrier === 'me' && bm.plantProgress > 0 ? bm.plantProgress / bm.cfg.plantSec : 0,
+        defuse: bm.phase === 'planted' && bm.defuseProgress > 0 && meSide === 'ct' ? bm.defuseProgress / defTime : 0,
+        site: bm.site,
+        carrier: bm.carrier === 'me',
+        banner: bombBanner && bombBanner.until > clock ? bombBanner.text : null,
+        hint: bombHint && bombHint.until > clock ? bombHint.text : null,
+        alliesAlive,
+        foesAlive,
+      };
+    };
+    if (bm) {
+      bm.startRound();
+      bm.drain();
+      beginRound();
+    }
     const dmStepT: Record<string, number> = {};
     /** Só para os testes automáticos: congela os bots (sem andar nem atirar). */
     let dmOff = false;
     const stepDm = (dt: number) => {
       const movers: { x: number; z: number }[] = [];
+      const botsFrozen = !!bm && (bm.phase === 'buy' || bm.phase === 'end' || bm.phase === 'over');
       for (const d of dmSpecs) {
-        if (!targets.get(d.id)!.alive) continue;
+        if (!targets.get(d.id)!.alive || botsFrozen) continue;
         const b = brains.get(d.id)!;
         const acts = fsDmStep(b, { now: clock, dt, rng: rnd, boxes: ARENA, foes: foesFor(d.id) });
         for (const a of acts) {
@@ -1146,8 +1415,14 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     };
     const afterEquip = () => scene.selectWeapon(loadout.weapon.id);
     buyRef.current = (item) => {
+      if (bm) {
+        const meP = bm.players.get('me')!;
+        if (bm.phase !== 'buy' || !inBaseAt(mover.x, mover.z, meP.side)) return say('Só dá para comprar na base, no tempo de compra');
+        if (item.price > meP.money) return say('Dinheiro insuficiente');
+      }
       const r = fsBuy(loadout, item.id);
       if (!r.ok) return;
+      bm?.buy('me', item.price, true);
       if (r.armor) {
         me.armor = r.armor.points;
         // comprar só o colete não tira o capacete que já tem
@@ -1174,6 +1449,13 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       // cai a câmera ao morrer (0 a 1 em 0,7 s)
       const deathK = playerDead ? Math.min(1, (clock - deadSince) / 0.7) : 0;
       scene.hideViewmodel = deathK > 0.15;
+      useHeld = inp.use && !playerDead;
+      // modo Bomba: parado na base durante a compra e depois do fim do round, sem atirar
+      if (bm && (bm.phase === 'buy' || bm.phase === 'end' || bm.phase === 'over')) {
+        inp.fwd = inp.strafe = 0;
+        inp.jump = false;
+        inp.trigger = false;
+      }
       if (playerDead) {
         inp.fwd = inp.strafe = 0;
         inp.jump = inp.trigger = inp.ads = inp.reload = inp.crouch = inp.walk = inp.inspect = inp.buy = inp.drop = inp.pickup = false;
@@ -1221,7 +1503,13 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         view.yaw += look.yaw;
         view.pitch = Math.max(-88, Math.min(88, view.pitch + look.pitch));
         if (inp.map) setMap(!bigMapRef.current);
-        if (inp.buy) setShop(!shopRef.current);
+        if (inp.buy) {
+          if (!bm) setShop(!shopRef.current);
+          else if (shopRef.current) setShop(false);
+          else if (bm.phase !== 'buy') say('A loja só abre no tempo de compra, na base');
+          else if (!inBaseAt(mover.x, mover.z, bm.players.get('me')!.side)) say('Volte para a base para comprar');
+          else setShop(true);
+        }
         const shopOpen = shopRef.current;
         if (inp.drop) {
           const d = loadout.drop();
@@ -1375,6 +1663,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         if (loadout.held) scene.nadeCharge(loadout.pinOut ? (loadout.throwStyle === 'far' ? 1 : loadout.throwStyle === 'mid' ? 0.6 : 0.1) : 0);
         stepNades(dt);
         if (match && !dmOff) stepDm(dt);
+        if (bm) stepBomb(dt);
         // bots andando, pulando e girando
         for (const b of world.bots) {
           const bs = botSt.get(b.id)!;
@@ -1402,7 +1691,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
           const s = targets.get(t.id)!;
           // o corpo fica no chão e some de repente 1 s antes de nascer outro
           if (!s.alive && clock >= s.reviveAt - 1) scene.hideTarget(t.id);
-          if (!s.alive && clock >= s.reviveAt) {
+          if (!s.alive && clock >= s.reviveAt && !bm) {
             s.alive = true;
             s.hp = 100;
             if (isDm(t.id)) {
@@ -1415,7 +1704,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
             scene.reviveTarget(t.id);
           }
         }
-        if (clock - matchStart >= MATCH_S) {
+        if (!bm && clock - matchStart >= MATCH_S) {
           if (match) finishMatch();
           else resetMatch();
         }
@@ -1598,6 +1887,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
           spreadPx: Math.min(60, fsSpreadDeg(loadout.weapon, mvs, loadout.slot.gun) * 4),
           fps: Math.round(fps),
           timeLeft: MATCH_S - (clock - matchStart),
+          bomb: bombHudNow(),
           players: players(),
           me: { ...stats },
           tris: sc.tris,
@@ -1734,6 +2024,26 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         },
         pose: (kind: 'slash' | 'stab' | 'inspect' | null, u?: number) => scene.debugKnife(kind, u),
         stats: () => ({ ...stats }),
+        bomb: () => (bm ? { phase: bm.phase, time: bm.time, round: bm.round, score: { ...bm.score }, money: bm.players.get('me')!.money, side: bm.players.get('me')!.side, carrier: bm.carrier, planter: bm.planter, site: bm.site, alive: [...bm.players.values()].filter((p) => p.alive).length, shop: shopRef.current } : null),
+        bombSkip: () => {
+          if (bm) bm.time = 0.01;
+        },
+        bombKillAll: (side: 'tr' | 'ct') => {
+          if (!bm) return;
+          for (const p of [...bm.players.values()]) {
+            if (p.side !== side || !p.alive) continue;
+            if (p.id === 'me') {
+              bm.kill(null, 'me', 'ak');
+              deadUntil = clock + 1e9;
+            } else {
+              const st = targets.get(p.id)!;
+              st.alive = false;
+              st.reviveAt = clock + 1e9;
+              scene.killTarget(p.id, mover.x, mover.z, 1);
+              bm.kill('me', p.id, 'ak');
+            }
+          }
+        },
         match: () => ({ ended: endedRef.current, clock, matchStart, dm: dmSpecs.map((d) => ({ id: d.id, ...targets.get(d.id)!, weapon: brains.get(d.id)?.weapon, x: brains.get(d.id)?.mover.x, z: brains.get(d.id)?.mover.z })) }),
         finish: () => finishMatch(),
         holdHit: (v: boolean) => {
@@ -1783,7 +2093,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
   const resumeRef = useRef<() => void>(() => undefined);
   const setBoardState = useCallback((v: boolean) => setBoard((b) => (b === v ? b : v)), []);
   const press = useCallback(
-    (name: 'fire' | 'ads' | 'jump' | 'reload' | 'cycle', down: boolean) =>
+    (name: 'fire' | 'ads' | 'jump' | 'reload' | 'cycle' | 'use', down: boolean) =>
       ctl.current?.setTouch(name, down),
     [],
   );
@@ -1827,12 +2137,13 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
               <b>{marker.text}</b>
             </div>
           )}
-          <FsTopBar
+          {hud.bomb && <FsBombHud b={hud.bomb} />}
+          {!hud.bomb && <FsTopBar
             players={hud.players}
             timeLeft={hud.timeLeft}
             kills={hud.me.kills}
             deaths={hud.me.deaths}
-          />
+          />}
           {settings.showMinimap && <FsMinimap get={getMini} />}
           {bigMap && !result && <FsBigMap get={getMini} title={match ? 'Mapa · Duna' : 'Mapa · Treino'} />}
           <div className="fsh-rcol">
@@ -1855,7 +2166,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
             <div className="fs-deadscreen" role="status" data-testid="fs-dead">
               <b>Você morreu</b>
               <span className="mono" data-testid="fs-respawn">
-                Renascendo em {hud.respawnIn.toFixed(1)}
+                {hud.bomb ? 'Espere o próximo round' : `Renascendo em ${hud.respawnIn.toFixed(1)}`}
               </span>
             </div>
           )}
@@ -1887,7 +2198,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
               ]}
             />
           )}
-          {board && !result && <FsScoreboard players={hud.players} timeLeft={hud.timeLeft} title={match ? `Mata-mata · Duna · ${match.minutes} min` : undefined} />}
+          {board && !result && <FsScoreboard players={hud.players} timeLeft={hud.timeLeft} title={match ? (match.mode === 'bomb' ? `Bomba · Duna · primeiro a ${match.bomb?.winRounds ?? 8}` : `Mata-mata · Duna · ${match.minutes} min`) : undefined} />}
           {needClick && !paused && (
             <div className="fs-hint mono" data-testid="fs-needclick">
               Clique na tela para prender o mouse
@@ -1917,6 +2228,19 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
                 >
                   ATIRAR
                 </button>
+                {match?.mode === 'bomb' && (
+                  <button
+                    type="button"
+                    className="fs-tb"
+                    data-testid="fs-tb-use"
+                    onPointerDown={() => press('use', true)}
+                    onPointerUp={() => press('use', false)}
+                    onPointerCancel={() => press('use', false)}
+                    aria-label="Plantar ou desarmar"
+                  >
+                    BOMBA
+                  </button>
+                )}
                 <button
                   type="button"
                   className="fs-tb ads"
@@ -1961,6 +2285,11 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
                 </button>
               </div>
             </>
+          )}
+          {result && match && bombEnd && (
+            <div className="fb-end" data-testid="fb-end">
+              {bombEnd.winner === bombEnd.mySide ? 'VITÓRIA' : 'DERROTA'} · {bombEnd.winner === 'tr' ? 'Terroristas' : 'Contra-terroristas'} vencem por {bombEnd.winner === 'tr' ? bombEnd.tr : bombEnd.ct} a {bombEnd.winner === 'tr' ? bombEnd.ct : bombEnd.tr}
+            </div>
           )}
           {result && match && (
             <FsMatchEnd rows={result} minutes={match.minutes} onAgain={() => onAgainRef.current()} onExit={() => onExit?.()} />

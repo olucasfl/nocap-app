@@ -1197,6 +1197,45 @@ export class FoxShotScene {
     if (!landed) o.rotation.x += 0.2;
     else o.rotation.x = 0;
   }
+  // ---- bomba C4 do modo Bomba (spec 059): caixa escura com fios, visor e uma luz vermelha que pisca mais rápido perto do fim
+  private bombObj: THREE.Group | null = null;
+  private bombLed: THREE.Mesh | null = null;
+  /** Mostra (ou esconde) a bomba plantada. `left` = segundos para explodir (a luz pisca mais depressa). */
+  setBomb(x: number, y: number, z: number, visible: boolean, left = 40, now = 0) {
+    if (!this.bombObj) {
+      const g = new THREE.Group();
+      const body = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.14, 0.26), new THREE.MeshStandardMaterial({ color: 0x4a4d3a, roughness: 0.7 }));
+      body.position.y = 0.07;
+      g.add(body);
+      for (let i = 0; i < 3; i++) {
+        const brick = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.2), new THREE.MeshStandardMaterial({ color: 0xcfc9a6, roughness: 0.9 }));
+        brick.position.set(-0.13 + i * 0.13, 0.19, 0);
+        g.add(brick);
+      }
+      const screen = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.02, 0.07), new THREE.MeshBasicMaterial({ color: 0x66ff66 }));
+      screen.position.set(0.11, 0.151, 0.06);
+      g.add(screen);
+      const led = new THREE.Mesh(new THREE.SphereGeometry(0.03, 10, 8), new THREE.MeshBasicMaterial({ color: 0xff2020 }));
+      led.position.set(-0.14, 0.16, -0.07);
+      g.add(led);
+      for (const [dx, c] of [[-0.05, 0xd22], [0.03, 0x2a2], [0.11, 0x22d]] as const) {
+        const wire = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.2, 5), new THREE.MeshBasicMaterial({ color: c }));
+        wire.rotation.z = Math.PI / 2;
+        wire.position.set(dx, 0.255, 0.02);
+        g.add(wire);
+      }
+      this.bombObj = g;
+      this.bombLed = led;
+      g.visible = false;
+      this.scene.add(g);
+    }
+    this.bombObj.visible = visible;
+    if (!visible) return;
+    this.bombObj.position.set(x, y, z);
+    // pisca: de 1 vez por segundo a 8 vezes por segundo nos últimos segundos
+    const rate = left > 10 ? 1.2 : left > 5 ? 3 : 8;
+    (this.bombLed!.material as THREE.MeshBasicMaterial).color.setHex(Math.sin(now * rate * Math.PI * 2) > 0 ? 0xff2020 : 0x300000);
+  }
   private dropFloat = new Map<number, boolean>();
   removeDrop(h: number) {
     const o = this.drops.get(h);

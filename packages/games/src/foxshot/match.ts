@@ -11,6 +11,12 @@ export const FS_RESPAWN_S = 3;
 export interface FsMatchConfig {
   minutes: FsMatchMinutes;
   bots: number;
+  /** 'bomb' = modo Bomba (spec 059): rounds, TR contra CT, economia. Ausente = mata-mata. */
+  mode?: 'dm' | 'bomb';
+  /** Seu lado no modo Bomba. */
+  side?: 'tr' | 'ct';
+  /** Opções do modo Bomba (rounds para vencer, tempos); o resto vem do padrão. */
+  bomb?: { winRounds?: number; roundSec?: number; buySec?: number };
 }
 
 /** Ajusta o que veio da tela (ou de um save antigo) para valores que existem. */

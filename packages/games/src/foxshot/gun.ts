@@ -55,6 +55,16 @@ export class FsLoadout {
     this.current = primary ? 0 : secondary ? 1 : 2;
   }
 
+  /** Novo round do modo Bomba para quem morreu: só a pistola (e a faca), sem granadas. */
+  resetKit(secondary: FsWeaponId) {
+    const mk = (id: FsWeaponId): Slot => ({ id, ammo: FS_WEAPONS[id].mag, gun: fsNewGunState() });
+    this.slots.splice(0, 3, null, mk(secondary), mk('knife'));
+    this.current = 1;
+    this.held = null;
+    this.grenades = { frag: 0, flash: 0 };
+    this.refillAmmo();
+  }
+
   /** Renasceu: os pentes de todas as armas voltam cheios (as granadas gastas não voltam: compra de novo na loja). */
   refillAmmo() {
     for (const sl of this.slots) {

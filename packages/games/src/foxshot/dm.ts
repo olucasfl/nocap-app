@@ -70,6 +70,8 @@ export interface FsDmBrain {
   flashedUntil: number;
   path: [number, number][];
   goal: [number, number] | null;
+  /** Modo Bomba: para onde o bot vai quando não há ninguém à vista (em vez de passear). */
+  objective?: [number, number] | null;
   stuckT: number;
   lastX: number;
   lastZ: number;
@@ -317,6 +319,17 @@ export function fsDmStep(b: FsDmBrain, ctx: FsDmCtx): FsDmAction[] {
       b.path = fsDustPath(m.x, m.z, b.last.x, b.last.z);
     }
     if (Math.hypot(b.last.x - m.x, b.last.z - m.z) < 2) b.last = null;
+  } else if (b.objective) {
+    // modo Bomba: vai ao objetivo e fica por lá
+    if (Math.hypot(b.objective[0] - m.x, b.objective[1] - m.z) > 1.8) {
+      if (!b.goal || b.goal[0] !== b.objective[0] || b.goal[1] !== b.objective[1] || b.path.length === 0) {
+        b.goal = [b.objective[0], b.objective[1]];
+        b.path = fsDustPath(m.x, m.z, b.objective[0], b.objective[1]);
+      }
+    } else {
+      b.goal = null;
+      b.path = [];
+    }
   } else if (!b.goal || b.path.length === 0) {
     // passeia: um ponto de interesse sorteado
     const spots = FS_DUST_HOTSPOTS.filter(([x, z]) => Math.hypot(x - m.x, z - m.z) > 8);

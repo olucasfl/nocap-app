@@ -32,8 +32,8 @@ export const CFX_NEW_ROOM = 'cfx-new-room';
 
 function saved(): FsMatchConfig {
   try {
-    const p = JSON.parse(localStorage.getItem(KEY) ?? '{}') as { minutes?: number; bots?: number };
-    return fsMatchConfig(p.minutes ?? 5, p.bots ?? FS_MATCH_BOTS.default);
+    const p = JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<FsMatchConfig>;
+    return { ...fsMatchConfig(p.minutes ?? 5, p.bots ?? FS_MATCH_BOTS.default), mode: p.mode === 'bomb' ? 'bomb' : 'dm', side: p.side === 'tr' ? 'tr' : 'ct', bomb: p.bomb };
   } catch {
     return fsMatchConfig(5, FS_MATCH_BOTS.default);
   }
@@ -318,22 +318,65 @@ function CounterFoxInner() {
               <button type="button" className="cfh-back" onClick={back} data-sfx="back" data-testid="cfh-back">
                 ‹ Voltar
               </button>
-              <h2>Offline · Mata-mata</h2>
-              <p className="lead">
-                Abate = {FS_POINTS.kill} pontos · assistência = {FS_POINTS.assist}. Quem tiver mais pontos no fim vence.
-              </p>
-              <div className="cfh-grp">Duração</div>
-              <div className="cfh-pills" role="radiogroup" aria-label="Duração da partida">
-                {FS_MATCH_MINUTES.map((m) => (
-                  <button key={m} type="button" role="radio" aria-checked={cfg.minutes === m} className={`cfh-pill${cfg.minutes === m ? ' on' : ''}`} onClick={() => setCfg(fsMatchConfig(m, cfg.bots))} data-testid={`cfx-min-${m}`}>
-                    {m} min
-                  </button>
-                ))}
+              <h2>Offline · {cfg.mode === 'bomb' ? 'Bomba' : 'Mata-mata'}</h2>
+              <div className="cfh-grp">Modo</div>
+              <div className="cfh-pills" role="radiogroup" aria-label="Modo de jogo">
+                <button type="button" role="radio" aria-checked={cfg.mode !== 'bomb'} className={`cfh-pill${cfg.mode !== 'bomb' ? ' on' : ''}`} onClick={() => setCfg({ ...cfg, mode: 'dm' })} data-testid="cfx-mode-dm">
+                  Mata-mata
+                </button>
+                <button type="button" role="radio" aria-checked={cfg.mode === 'bomb'} className={`cfh-pill${cfg.mode === 'bomb' ? ' on' : ''}`} onClick={() => setCfg({ ...cfg, mode: 'bomb', bots: 9 })} data-testid="cfx-mode-bomb">
+                  Bomba
+                </button>
               </div>
+              {cfg.mode === 'bomb' ? (
+                <>
+                  <p className="lead">
+                    Rounds: terroristas plantam a bomba, contra-terroristas impedem. Compra só na base, dinheiro finito: quem perde ganha menos.
+                  </p>
+                  <div className="cfh-grp">Seu lado</div>
+                  <div className="cfh-pills" role="radiogroup" aria-label="Seu lado">
+                    {(['ct', 'tr'] as const).map((sd) => (
+                      <button key={sd} type="button" role="radio" aria-checked={cfg.side === sd} className={`cfh-pill${cfg.side === sd ? ' on' : ''}`} onClick={() => setCfg({ ...cfg, side: sd })} data-testid={`cfx-side-${sd}`}>
+                        {sd === 'ct' ? 'Contra-terrorista' : 'Terrorista'}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="cfh-grp">Rounds para vencer</div>
+                  <div className="cfh-pills" role="radiogroup" aria-label="Rounds para vencer">
+                    {[4, 6, 8, 10, 13].map((n) => (
+                      <button key={n} type="button" role="radio" aria-checked={(cfg.bomb?.winRounds ?? 8) === n} className={`cfh-pill${(cfg.bomb?.winRounds ?? 8) === n ? ' on' : ''}`} onClick={() => setCfg({ ...cfg, bomb: { ...cfg.bomb, winRounds: n } })} data-testid={`cfx-rounds-${n}`}>
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="cfh-grp">Tempo do round</div>
+                  <div className="cfh-pills" role="radiogroup" aria-label="Tempo do round">
+                    {[60, 90, 115, 150, 180].map((n) => (
+                      <button key={n} type="button" role="radio" aria-checked={(cfg.bomb?.roundSec ?? 115) === n} className={`cfh-pill${(cfg.bomb?.roundSec ?? 115) === n ? ' on' : ''}`} onClick={() => setCfg({ ...cfg, bomb: { ...cfg.bomb, roundSec: n } })} data-testid={`cfx-rsec-${n}`}>
+                        {Math.floor(n / 60)}:{String(n % 60).padStart(2, '0')}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="lead">
+                    Abate = {FS_POINTS.kill} pontos · assistência = {FS_POINTS.assist}. Quem tiver mais pontos no fim vence.
+                  </p>
+                  <div className="cfh-grp">Duração</div>
+                  <div className="cfh-pills" role="radiogroup" aria-label="Duração da partida">
+                    {FS_MATCH_MINUTES.map((m) => (
+                      <button key={m} type="button" role="radio" aria-checked={cfg.minutes === m} className={`cfh-pill${cfg.minutes === m ? ' on' : ''}`} onClick={() => setCfg({ ...cfg, ...fsMatchConfig(m, cfg.bots) })} data-testid={`cfx-min-${m}`}>
+                        {m} min
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
               <div className="cfh-grp">Bots · {cfg.bots + 1} jogadores com você</div>
               <div className="cfh-pills" role="radiogroup" aria-label="Quantidade de bots">
                 {Array.from({ length: FS_MATCH_BOTS.max - FS_MATCH_BOTS.min + 1 }, (_, i) => i + FS_MATCH_BOTS.min).map((n) => (
-                  <button key={n} type="button" role="radio" aria-checked={cfg.bots === n} className={`cfh-pill${cfg.bots === n ? ' on' : ''}`} onClick={() => setCfg(fsMatchConfig(cfg.minutes, n))} data-testid={`cfx-bots-${n}`}>
+                  <button key={n} type="button" role="radio" aria-checked={cfg.bots === n} className={`cfh-pill${cfg.bots === n ? ' on' : ''}`} onClick={() => setCfg({ ...cfg, ...fsMatchConfig(cfg.minutes, n) })} data-testid={`cfx-bots-${n}`}>
                     {n}
                   </button>
                 ))}

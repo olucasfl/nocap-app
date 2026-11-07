@@ -11,6 +11,8 @@ export interface FsFrameInput {
   jump: boolean;
   trigger: boolean;
   ads: boolean;
+  /** Segurar a tecla de pegar (E): planta e desarma a bomba. */
+  use: boolean;
   reload: boolean;
   /** Arma escolhida por tecla (0 a 2) ou -1; `cycle` troca para a próxima (celular e roda do mouse). */
   pick: number;
@@ -40,7 +42,7 @@ export interface FsFrameInput {
 export class FsControls {
   private keys = new Set<string>();
   private mouse = { left: false, right: false, middle: false };
-  private touchBtn = { fire: false, ads: false, jump: false, reload: false };
+  private touchBtn = { fire: false, ads: false, jump: false, reload: false, use: false };
   private pickKey = -1;
   private cycleQueued = false;
   private reloadQueued = false;
@@ -212,6 +214,7 @@ export class FsControls {
       jump: on && jump,
       trigger: on && (this.held('fire') || this.touchBtn.fire),
       ads: on && (this.held('ads') || this.touchBtn.ads),
+      use: on && (this.held('pickup') || this.touchBtn.use),
       reload: on && reload,
       pick: on ? pick : -1,
       cycle: on && cycle,
@@ -232,7 +235,7 @@ export class FsControls {
   private reset = () => {
     this.keys.clear();
     this.mouse.left = this.mouse.right = this.mouse.middle = false;
-    this.touchBtn = { fire: false, ads: false, jump: false, reload: false };
+    this.touchBtn = { fire: false, ads: false, jump: false, reload: false, use: false };
     this.stick = null;
     this.look = null;
     this.onStick?.(null);

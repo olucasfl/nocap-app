@@ -1,0 +1,25 @@
+/* HUD do modo Bomba (spec 059); só transform/opacity animam */
+.fb { position: absolute; inset: 0; pointer-events: none; z-index: 6; font-family: Rajdhani, var(--font-display, system-ui), sans-serif; color: #fff; }
+.fb-top { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); display: flex; align-items: stretch; gap: 0; border-radius: 10px; overflow: hidden; box-shadow: 0 3px 0 rgba(0, 0, 0, 0.4); }
+.fb-score { min-width: 76px; padding: 6px 14px; font-weight: 700; font-size: 22px; letter-spacing: 0.06em; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.fb-score b { font-size: 30px; }
+.fb-score.tr { background: #c9601b; }
+.fb-score.ct { background: #2f66c9; }
+.fb-clock { min-width: 104px; padding: 4px 12px; background: rgba(8, 10, 20, 0.9); font-weight: 700; font-size: 30px; text-align: center; line-height: 1; display: flex; flex-direction: column; justify-content: center; }
+.fb-clock small { font-size: 11px; letter-spacing: 0.12em; color: #ffd27a; }
+.fb-clock.planted { color: #ff5a4d; }
+.fb-clock.urgent { animation: fb-pulse 0.5s ease-in-out infinite alternate; }
+@keyframes fb-pulse { to { transform: scale(1.08); } }
+.fb-sub { position: absolute; top: 62px; left: 50%; transform: translateX(-50%); font-size: 12px; opacity: 0.85; text-shadow: 0 1px 2px #000; white-space: nowrap; }
+.fb-money { position: absolute; left: 16px; bottom: 76px; font-size: 26px; font-weight: 700; color: #7dff8a; text-shadow: 0 2px 3px #000; }
+.fb-carry { position: absolute; top: 96px; left: 50%; transform: translateX(-50%); padding: 5px 12px; background: rgba(201, 96, 27, 0.85); border-radius: 8px; font-size: 13px; }
+.fb-bar { position: absolute; left: 50%; bottom: 28%; width: min(300px, 60vw); transform: translateX(-50%); height: 22px; background: rgba(0, 0, 0, 0.6); border: 2px solid #fff; border-radius: 6px; overflow: hidden; }
+.fb-bar span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 13px; font-weight: 700; letter-spacing: 0.1em; z-index: 1; text-shadow: 0 1px 2px #000; }
+.fb-bar i { position: absolute; inset: 0; background: #e7872d; transform-origin: left; }
+.fb-bar.defuse i { background: #4a8dff; }
+.fb-hint { position: absolute; bottom: 36%; left: 50%; transform: translateX(-50%); padding: 4px 12px; background: rgba(0, 0, 0, 0.6); border-radius: 6px; font-size: 13px; }
+.fb-banner { position: absolute; top: 28%; left: 50%; transform: translateX(-50%); padding: 12px 28px; background: rgba(8, 10, 20, 0.85); border: 2px solid #ffd27a; border-radius: 10px; font-size: clamp(22px, 5vw, 38px); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; text-align: center; animation: fb-in 0.3s ease-out; }
+@keyframes fb-in { from { opacity: 0; transform: translateX(-50%) scale(0.9); } }
+@media (prefers-reduced-motion: reduce) { .fb-clock.urgent, .fb-banner { animation: none; } }
+@media (max-width: 760px), (max-height: 460px) { .fb-sub { display: none; } .fb-money { bottom: 56px; font-size: 20px; } .fb-top { top: 6px; } .fb-score { padding: 3px 10px; font-size: 16px; min-width: 56px; } .fb-score b { font-size: 22px; } .fb-clock { font-size: 22px; min-width: 76px; } }
+.fb-end { position: absolute; top: 14%; left: 50%; transform: translateX(-50%); z-index: 30; padding: 10px 22px; background: rgba(8, 10, 20, 0.92); border: 2px solid #ffd27a; border-radius: 10px; color: #fff; font: 700 clamp(18px, 4vw, 30px) Rajdhani, system-ui, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; text-align: center; }
