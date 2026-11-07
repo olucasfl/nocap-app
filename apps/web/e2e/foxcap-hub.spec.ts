@@ -16,6 +16,7 @@ test('Jogar abre a escolha ali mesmo, sem mudar de endereço, e a partida começ
   page,
 }) => {
   await page.getByTestId('foxcap-bola').click();
+  await page.getByTestId('gl-offline').click();
   await expect(page).toHaveURL(/\/fox-cap$/);
   await page.getByTestId('bola-fmt-2x2').click();
   await page.getByTestId('bola-start').click();
@@ -25,6 +26,7 @@ test('Jogar abre a escolha ali mesmo, sem mudar de endereço, e a partida começ
 
 test('Desmorona! Treino também escolhe e joga ali mesmo', async ({ page }) => {
   await page.getByTestId('foxcap-desmorona').click();
+  await page.getByTestId('gl-offline').click();
   await expect(page).toHaveURL(/\/fox-cap$/);
   await page.getByTestId('dsm-start').click();
   await expect(page.getByTestId('dsm-play')).toBeVisible();
@@ -61,6 +63,7 @@ test('Atravessa! Infinito entra na partida sem menu no meio', async ({ page }) =
     }).observe(document.body, { childList: true, subtree: true, characterData: true });
   });
   await page.getByTestId('foxcap-atravessa').click();
+  await page.getByTestId('gl-offline').click();
   await expect(page).toHaveURL(/\/atravessa/);
   await expect(page.locator('canvas')).toBeVisible({ timeout: 8000 });
   expect(seen).toEqual([]);
@@ -70,6 +73,7 @@ test('Fut Fox: Sair da partida fica vermelho ao primeiro toque, pedindo confirma
   page,
 }) => {
   await page.getByTestId('foxcap-bola').click();
+  await page.getByTestId('gl-offline').click();
   await page.getByTestId('bola-fmt-2x2').click();
   await page.getByTestId('bola-start').click();
   await expect(page.getByTestId('bola-play')).toBeVisible();
@@ -84,6 +88,7 @@ test('Fut Fox 3 times: empate de dois no topo manda só eles para a prorrogaçã
   page,
 }) => {
   await page.getByTestId('foxcap-bola').click();
+  await page.getByTestId('gl-offline').click();
   await page.getByTestId('bola-fmt-1x1x1').click();
   await page.getByTestId('bola-start').click();
   await expect(page.getByTestId('bola-play')).toBeVisible();
@@ -112,6 +117,7 @@ test('Fut Fox 4 times: avisos e cartaz ficam abaixo do placar e do tempo, nunca 
   page,
 }) => {
   await page.getByTestId('foxcap-bola').click();
+  await page.getByTestId('gl-offline').click();
   await page.getByTestId('bola-fmt-1x1x1x1').click();
   await page.getByTestId('bola-start').click();
   await expect(page.getByTestId('bola-play')).toBeVisible();
@@ -137,6 +143,7 @@ test('Fut Fox 4 times: avisos e cartaz ficam abaixo do placar e do tempo, nunca 
 
 test('menu: Controles e Convidar abrem POR CIMA do menu, nunca atrás', async ({ page }) => {
   await page.getByTestId('foxcap-desmorona').click();
+  await page.getByTestId('gl-offline').click();
   await page.getByTestId('dsm-start').click();
   await expect(page.getByTestId('dsm-play')).toBeVisible();
   await page
@@ -173,6 +180,7 @@ test('as telas antigas dos jogos não existem mais: os endereços levam ao Fox C
 
 test('sair da partida offline volta ao Fox Cap! (e não a uma tela antiga)', async ({ page }) => {
   await page.getByTestId('foxcap-bola').click();
+  await page.getByTestId('gl-offline').click();
   await page.getByTestId('bola-fmt-2x2').click();
   await page.getByTestId('bola-start').click();
   await expect(page.getByTestId('bola-play')).toBeVisible();
@@ -181,4 +189,17 @@ test('sair da partida offline volta ao Fox Cap! (e não a uma tela antiga)', asy
   await page.getByTestId('bola-menu-exit').click();
   await expect(page).toHaveURL(/\/fox-cap$/);
   await expect(page.getByTestId('foxcap-bola')).toBeVisible();
+});
+
+test('Jogar abre a tela própria do jogo, com offline, amigos, configurações e sair', async ({ page }) => {
+  await page.goto('/fox-cap');
+  await page.getByTestId('foxcap-pingpong').click();
+  await expect(page.getByTestId('gl-pingpong')).toBeVisible();
+  await expect(page.getByTestId('gl-friends')).toBeVisible();
+  await expect(page.getByTestId('gl-settings')).toBeVisible();
+  await page.getByTestId('gl-exit').click();
+  await expect(page.getByTestId('gl-pingpong')).toHaveCount(0);
+  await page.getByTestId('foxcap-bola').click();
+  await page.getByTestId('gl-friends').click();
+  await expect(page.getByTestId('foxcap-friends')).toBeVisible();
 });

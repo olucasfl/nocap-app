@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { BackButton } from '@/components/BackButton';
 import { Field } from '@/components/Field';
 import { HubHero, HubModeCard, HubNote, HubTabs } from '@/components/GameHub';
+import { GameLanding, type LandingGame } from '@/components/GameLanding';
 import { HowToPlay, type HowGame } from '@/components/HowToPlay';
 import {
   AtravessaArt,
@@ -52,6 +53,8 @@ export function FoxCapPage() {
   const [bots, setBots] = useState(5);
   const [pingLevel, setPingLevel] = useState<PpBotName>('medio');
   const [round, setRound] = useState(0);
+  /** Tela própria do jogo aberta (Jogar abre a tela do jogo, não a partida). */
+  const [hub, setHub] = useState<LandingGame | null>(null);
   const [code, setCode] = useState('');
   const entry = useRoomEntry({ resume: true });
   /** "Convidar" numa partida offline: sai dela e abre "Com amigos", onde se cria a sala. */
@@ -115,9 +118,29 @@ export function FoxCapPage() {
     e.preventDefault();
     void entry.join(code);
   };
+  const offline = () => {
+    const g = hub;
+    setHub(null);
+    if (g === 'atravessa') void navigate({ to: '/atravessa', search: { treino: 1 } });
+    else if (g === 'bola') setFlow('bola-pick');
+    else if (g === 'pingpong') setFlow('png-pick');
+    else if (g === 'desmorona') setFlow('dsm-pick');
+  };
 
   return (
     <Page>
+      {hub && (
+        <GameLanding
+          game={hub}
+          onOffline={offline}
+          onFriends={() => {
+            setHub(null);
+            setTab('amigos');
+          }}
+          onHelp={() => setHelp(hub)}
+          onExit={() => setHub(null)}
+        />
+      )}
       <section className="screen gh">
         <BackButton to="/" label="Jogos" />
         <HubHero
@@ -155,7 +178,7 @@ export function FoxCapPage() {
                 desc="Pule, desvie e atravesse tudo. Vale a distância."
                 tags={['Offline', 'Ranking']}
                 // o jogo começa direto; sair da partida volta aqui
-                onPlay={() => void navigate({ to: '/atravessa', search: { treino: 1 } })}
+                onPlay={() => setHub('atravessa')}
                 onHelp={() => setHelp('atravessa')}
                 testId="foxcap-atravessa"
                 helpTestId="help-atravessa"
@@ -166,7 +189,7 @@ export function FoxCapPage() {
                 name="Fut Fox Treino"
                 desc="Futebol de raposas contra bots. Escolha o formato."
                 tags={['2 a 4 times', 'Offline']}
-                onPlay={() => setFlow('bola-pick')}
+                onPlay={() => setHub('bola')}
                 onHelp={() => setHelp('bola')}
                 testId="foxcap-bola"
                 helpTestId="help-bola"
@@ -177,7 +200,7 @@ export function FoxCapPage() {
                 name="Ping Fox! Treino"
                 desc="Pingue-pongue 1 contra 1 contra um bot. A raquete bate de verdade: força, lob e efeito."
                 tags={['1x1', 'Offline']}
-                onPlay={() => setFlow('png-pick')}
+                onPlay={() => setHub('pingpong')}
                 onHelp={() => setHelp('pingpong')}
                 testId="foxcap-pingpong"
                 helpTestId="help-pingpong"
@@ -188,7 +211,7 @@ export function FoxCapPage() {
                 name="Desmorona! Treino"
                 desc="O chão some debaixo dos pés. Contra raposas do jogo."
                 tags={['1 a 7 bots', 'Offline']}
-                onPlay={() => setFlow('dsm-pick')}
+                onPlay={() => setHub('desmorona')}
                 onHelp={() => setHelp('desmorona')}
                 testId="foxcap-desmorona"
                 helpTestId="help-desmorona"

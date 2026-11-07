@@ -48,6 +48,7 @@ test('Desmorona! sozinho: a tela de fim aparece com pódio, classificação e bo
     .click({ timeout: 2000 })
     .catch(() => undefined);
   await page.getByTestId('foxcap-desmorona').click();
+  await page.getByTestId('gl-offline').click();
   await page.getByRole('radio', { name: '3' }).click();
   await page.getByTestId('dsm-start').click();
   await expect(page.getByTestId('dsm-play')).toBeVisible();
@@ -67,6 +68,7 @@ test('Atravessa! sozinho: a tela de fim mostra linhas, tempo, ritmo e botões', 
     .click({ timeout: 2000 })
     .catch(() => undefined);
   await page.getByTestId('foxcap-atravessa').click();
+  await page.getByTestId('gl-offline').click();
   await expect(page.locator('canvas')).toBeVisible({ timeout: 10_000 });
   await page
     .getByTestId('game-tips-ok')

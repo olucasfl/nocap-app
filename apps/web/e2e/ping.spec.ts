@@ -13,6 +13,7 @@ test('treino: abre, saca, a bola cruza a rede e a raquete segue o mouse', async 
     .click({ timeout: 6000 })
     .catch(() => undefined);
   await page.getByTestId('foxcap-pingpong').click();
+  await page.getByTestId('gl-offline').click();
   await page.getByTestId('png-level-medio').click();
   await page.getByTestId('png-start').click();
   await expect(page.getByTestId('png-play')).toBeVisible();
@@ -189,6 +190,7 @@ test('uma pessoa que dá a passada certa (de baixo para cima, para a frente) dev
     .click({ timeout: 6000 })
     .catch(() => undefined);
   await page.getByTestId('foxcap-pingpong').click();
+  await page.getByTestId('gl-offline').click();
   await page.getByTestId('png-level-facil').click();
   await page.getByTestId('png-start').click();
   await expect(page.getByTestId('png-play')).toBeVisible();
@@ -217,6 +219,7 @@ for (const size of [
         .click({ timeout: 6000 })
         .catch(() => undefined);
       await page.getByTestId('foxcap-pingpong').click();
+      await page.getByTestId('gl-offline').click();
       await page.getByTestId('png-start').click();
       await expect(page.getByTestId('png-play')).toBeVisible();
       await page.waitForTimeout(2800);
@@ -291,6 +294,7 @@ test('tela de fim: aparece com o placar e os botões, em qualquer tamanho', asyn
     .click({ timeout: 6000 })
     .catch(() => undefined);
   await page.getByTestId('foxcap-pingpong').click();
+  await page.getByTestId('gl-offline').click();
   await page.getByTestId('png-level-dificil').click();
   await page.getByTestId('png-start').click();
   await expect(page.getByTestId('png-play')).toBeVisible();
@@ -332,6 +336,7 @@ test('bola mal pegada: câmera lenta, a barra do smash aparece e o aperto vira n
     .click({ timeout: 6000 })
     .catch(() => undefined);
   await page.getByTestId('foxcap-pingpong').click();
+  await page.getByTestId('gl-offline').click();
   await page.getByTestId('png-level-facil').click();
   await page.getByTestId('png-start').click();
   await expect(page.getByTestId('png-play')).toBeVisible();
@@ -377,6 +382,7 @@ test('mouse: o cursor fica preso no jogo e a raquete anda pelo movimento (não s
     .click({ timeout: 6000 })
     .catch(() => undefined);
   await page.getByTestId('foxcap-pingpong').click();
+  await page.getByTestId('gl-offline').click();
   await page.getByTestId('png-level-facil').click();
   await page.getByTestId('png-start').click();
   await expect(page.getByTestId('png-play')).toBeVisible();
@@ -419,6 +425,7 @@ test('saque com o mouse de verdade: o clique lança a bola e a raquete bate nela
     .click({ timeout: 6000 })
     .catch(() => undefined);
   await page.getByTestId('foxcap-pingpong').click();
+  await page.getByTestId('gl-offline').click();
   await page.getByTestId('png-level-facil').click();
   await page.getByTestId('png-start').click();
   await expect(page.getByTestId('png-play')).toBeVisible();
@@ -489,6 +496,7 @@ test('celular: toque (mesmo com tremidinha) lança a bola; arrastar leva a raque
     .click({ timeout: 6000 })
     .catch(() => undefined);
   await page.getByTestId('foxcap-pingpong').click();
+  await page.getByTestId('gl-offline').click();
   await page.getByTestId('png-level-facil').click();
   await page.getByTestId('png-start').click();
   await expect(page.getByTestId('png-play')).toBeVisible();
@@ -575,6 +583,7 @@ test('celular: sair do app no meio do toque e voltar não trava a raquete', asyn
     .click({ timeout: 6000 })
     .catch(() => undefined);
   await page.getByTestId('foxcap-pingpong').click();
+  await page.getByTestId('gl-offline').click();
   await page.getByTestId('png-level-facil').click();
   await page.getByTestId('png-start').click();
   await expect(page.getByTestId('png-play')).toBeVisible();
@@ -625,6 +634,7 @@ test('painel de rede e fps: desligado por padrão, liga e desliga no menu e lemb
     .click({ timeout: 6000 })
     .catch(() => undefined);
   await page.getByTestId('foxcap-pingpong').click();
+  await page.getByTestId('gl-offline').click();
   await page.getByTestId('png-level-facil').click();
   await page.getByTestId('png-start').click();
   await expect(page.getByTestId('png-play')).toBeVisible();
@@ -662,6 +672,7 @@ test('celular: dedo parado lança a bola sem soltar; depois arrasta para sacar q
     .click({ timeout: 6000 })
     .catch(() => undefined);
   await page.getByTestId('foxcap-pingpong').click();
+  await page.getByTestId('gl-offline').click();
   await page.getByTestId('png-level-facil').click();
   await page.getByTestId('png-start').click();
   await expect(page.getByTestId('png-play')).toBeVisible();

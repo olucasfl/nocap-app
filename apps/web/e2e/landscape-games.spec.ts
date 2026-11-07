@@ -43,6 +43,7 @@ for (const ph of PHONES) {
     test('Desmorona!: HUD, pular, menu e controles cabem e não se sobrepõem', async ({ page }) => {
       await open(page);
       await page.getByTestId('foxcap-desmorona').click();
+      await page.getByTestId('gl-offline').click();
       await page.getByTestId('dsm-start').click({ timeout: 5000 }).catch(() => undefined);
       await expect(page.getByTestId('dsm-play')).toBeVisible();
       await page.waitForTimeout(1500);
@@ -78,6 +79,7 @@ for (const ph of PHONES) {
     test('Atravessa!: HUD, menu e controles cabem', async ({ page }) => {
       await open(page);
       await page.getByTestId('foxcap-atravessa').click();
+      await page.getByTestId('gl-offline').click();
       await expect(page.locator('canvas')).toBeVisible({ timeout: 10_000 });
       await page.waitForTimeout(2500);
       await page.screenshot({ path: `test-results/land-atr-${ph.name}-tips.png` });

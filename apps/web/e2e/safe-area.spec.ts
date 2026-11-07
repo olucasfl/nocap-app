@@ -42,6 +42,7 @@ for (const ph of PHONES) {
         .click({ timeout: 1500 })
         .catch(() => undefined);
       await page.getByTestId('foxcap-atravessa').click();
+      await page.getByTestId('gl-offline').click();
       await expect(page.getByTestId('atr-menu-btn')).toBeVisible({ timeout: 10_000 });
       const score = (await page.locator('.at-score').boundingBox())!;
       const menu = (await page.getByTestId('atr-menu-btn').boundingBox())!;

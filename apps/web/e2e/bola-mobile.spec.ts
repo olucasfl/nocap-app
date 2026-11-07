@@ -43,6 +43,7 @@ for (const ph of phones) {
       .click({ timeout: 1500 })
       .catch(() => undefined);
     await page.getByTestId('foxcap-bola').click();
+    await page.getByTestId('gl-offline').click();
     await page.getByTestId('bola-fmt-2x2x2x2').click();
     await page.getByTestId('bola-start').click();
     await expect(page.getByTestId('bola-play')).toBeVisible();

@@ -18,6 +18,7 @@ test('raposa sobe a parede, anda no teto e cai; a câmera acompanha sem virar', 
     .click({ timeout: 2000 })
     .catch(() => undefined);
   await page.getByTestId('foxcap-bola').click();
+  await page.getByTestId('gl-offline').click();
   await page.getByTestId('bola-fmt-1x1').click();
   await page.getByTestId('bola-start').click();
   await page.getByTestId('bola-play').waitFor();

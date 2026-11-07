@@ -217,6 +217,11 @@ Pedido do Lucas (07/11/2026). Hoje só o Counter Fox tem tela própria (spec 057
 - Cada jogo sai **revisado e sem bugs**: teste e2e do fluxo (Jogar, hub, offline, amigos, configurações, sair), teste da troca de tema na sala, conferência visual em desktop e celular, e checagem de acessibilidade (foco por teclado, contraste, leitor de tela).
 - Entregar um jogo por vez, cada um com sua spec filha e o status aqui.
 
+## 12. Andamento (07/11/2026)
+
+Feito e na `develop`: troca de arma instantânea (7); sniper com 2 zooms por clique (8); partida abre sem o menu do Esc (6); espectar do Ping Fox com as duas raquetes (9); aba "Outros jogos" e nomes do mapa do menu sem sobreposição (4, 5); chat dos jogos estilo CS no canto inferior esquerdo com avisos do sistema, e Esc fecha só o Convidar (3, parcial: falta painel escuro); tela própria `GameLanding` (tema por jogo, Jogar offline, amigos, Como jogar, Configurações com som, Sair) para Atravessa!, Fut Fox, Ping Fox! e Desmorona! (10.1; RULES.md atualizado).
+Falta: tema da sala de amigos trocar por jogo e abas iguais (10.2), contrato de tela e extras por jogo (10.3), online do Counter Fox (1), salvar dados na conta (2, aguarda decisão da opção A).
+
 ## 11. Outras pendências lembradas
 
 - Atualizar a spec 057, `ARCHITECTURE.md` e `docs/ROADMAP.md` com as últimas mudanças do Counter Fox (radar estilo CS, ícones do kill feed, times só em cor, aliados desligados, menus).

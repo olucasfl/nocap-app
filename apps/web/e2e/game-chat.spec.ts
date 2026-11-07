@@ -26,6 +26,7 @@ for (const sz of SIZES) {
         .click({ timeout: 1200 })
         .catch(() => undefined);
       await page.getByTestId('foxcap-desmorona').click();
+      await page.getByTestId('gl-offline').click();
       await page.getByTestId('dsm-start').click();
       await expect(page.getByTestId('dsm-play')).toBeVisible();
       await page

@@ -19,6 +19,7 @@ for (const fmt of ['1x1', '2x2', '1x1x1', '2x2x2', '1x1x1x1', '2x2x2x2']) {
       .click({ timeout: 2000 })
       .catch(() => undefined);
     await page.getByTestId('foxcap-bola').click();
+    await page.getByTestId('gl-offline').click();
     await page.getByTestId(`bola-fmt-${fmt}`).click();
     await page.getByTestId('bola-start').click();
     await page.getByTestId('bola-play').waitFor();
