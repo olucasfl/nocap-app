@@ -1789,20 +1789,14 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       if (allyLive.length) {
         if (!followDm || !allyLive.some((d) => d.id === followDm)) followDm = allyLive[0]!.id;
         const fb = brains.get(followDm!)!;
-        const dd = fsDir(fb.yaw, 0);
-        const tx = fb.mover.x - dd[0] * 3.2;
-        const ty = fb.mover.y + 2.1;
-        const tz = fb.mover.z - dd[2] * 3.2;
-        const kk = camDm.ok ? Math.min(1, dt * 9) : 1;
-        camDm.x += (tx - camDm.x) * kk;
-        camDm.y += (ty - camDm.y) * kk;
-        camDm.z += (tz - camDm.z) * kk;
-        let dy = fb.yaw - camDm.yaw;
-        if (dy > 180) dy -= 360;
-        if (dy < -180) dy += 360;
-        camDm.yaw += camDm.ok ? dy * kk : dy;
+        // primeira pessoa: exatamente a visão do aliado (olhos, direção e inclinação dele)
+        camDm.x = fb.mover.x;
+        camDm.y = fb.mover.y + fsEyeHeight(fb.mover);
+        camDm.z = fb.mover.z;
+        camDm.yaw = fb.yaw;
         camDm.ok = true;
-        scene.setView(camDm.x, camDm.y, camDm.z, camDm.yaw, -9, baseFov, 0);
+        scene.hideTarget(followDm!);
+        scene.setView(camDm.x, camDm.y, camDm.z, camDm.yaw, brains.get(followDm!)!.pitch, baseFov, 0);
         scene.hideViewmodel = true;
       } else {
         camDm.ok = false;
@@ -2077,6 +2071,12 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         bombSkip: () => {
           if (bm) bm.time = 0.01;
           endT = Math.min(endT, 0.01);
+        },
+        bombKillMe: () => {
+          if (!bm) return;
+          bm.kill(null, 'me', 'ak');
+          deadUntil = clock + 1e9;
+          deadSince = clock;
         },
         bombKillAll: (side: 'tr' | 'ct') => {
           if (!bm) return;

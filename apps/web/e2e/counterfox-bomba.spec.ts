@@ -79,3 +79,18 @@ test('modo Bomba: terrorista leva a bomba, planta no pátio e a bomba explode', 
     await expect.poll(async () => (await bomb(page))?.phase, { timeout: 200_000, intervals: [2000] }).toMatch(/planted|end/);
   }
 });
+
+test('modo Bomba: ao morrer aparece "Você morreu", depois some e você assiste a um aliado em primeira pessoa', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'um projeto basta');
+  test.setTimeout(240_000);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await start(page, 'ct');
+  await fs<void>(page, 'bombSkip');
+  await expect.poll(async () => (await bomb(page))?.phase, { timeout: 60_000 }).toBe('live');
+  await fs<void>(page, 'bombKillMe');
+  await expect(page.getByTestId('fs-dead')).toBeVisible({ timeout: 20_000 });
+  // depois de uns segundos a tela escura some e entra a barra com o aliado que você assiste
+  await expect(page.getByTestId('fs-specbar')).toBeVisible({ timeout: 120_000 });
+  await expect(page.getByTestId('fs-dead')).toHaveCount(0);
+  await expect(page.getByTestId('fs-specbar')).toContainText('Assistindo Bot');
+});

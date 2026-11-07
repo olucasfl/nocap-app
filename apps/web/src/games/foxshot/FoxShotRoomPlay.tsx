@@ -91,7 +91,7 @@ interface RoomHud {
 }
 interface Snap {
   t: number;
-  x: number; y: number; z: number; yaw: number; crouch: number; flags: number;
+  x: number; y: number; z: number; yaw: number; pitch: number; crouch: number; flags: number;
 }
 interface Pending {
   seq: number; fwd: number; strafe: number; jump: boolean; yaw: number; mul: number; crouch: boolean; walk: boolean;
@@ -199,6 +199,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
     let wasPlayer = isPlayerNow();
     let followId: string | null = null;
     const cam = { x: 0, y: 0, z: 0, yaw: 0, ok: false };
+    let camPitch = 0;
     const touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
     let dead = false;
     let raf = 0;
@@ -431,7 +432,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           let dy = b.yaw - a.yaw;
           if (dy > 180) dy -= 360;
           if (dy < -180) dy += 360;
-          return { t, x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k, z: a.z + (b.z - a.z) * k, yaw: a.yaw + dy * k, crouch: a.crouch + (b.crouch - a.crouch) * k, flags: b.flags };
+          return { t, x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k, z: a.z + (b.z - a.z) * k, yaw: a.yaw + dy * k, pitch: a.pitch + (b.pitch - a.pitch) * k, crouch: a.crouch + (b.crouch - a.crouch) * k, flags: b.flags };
         }
       }
       return buf[buf.length - 1]!;
@@ -474,7 +475,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           continue;
         }
         const alive = (r.flags & 1) !== 0;
-        rm.buf.push({ t: now, x: r.x, y: r.y, z: r.z, yaw: r.yaw, crouch: r.crouch, flags: r.flags });
+        rm.buf.push({ t: now, x: r.x, y: r.y, z: r.z, yaw: r.yaw, pitch: r.pitch, crouch: r.crouch, flags: r.flags });
         if (rm.buf.length > 24) rm.buf.shift();
         rm.weapon = r.weapon;
         const team = (r.flags & 128) !== 0 ? 't' : 'ct';
@@ -922,7 +923,13 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
 
       // jogadores remotos: posição interpolada 100 ms atrás
       const rt = perfNow - INTERP_MS;
+      // assistindo em primeira pessoa: a raposa seguida some (a câmera está dentro da cabeça dela)
+      const followSlot = (!player || (!!bf && !alive)) && followId ? slotOf(followId) : null;
       for (const [id, rm] of remotes) {
+        if (id === followSlot) {
+          scene.hideTarget(id);
+          continue;
+        }
         if (!rm.shown || !rm.alive) continue;
         const p = sample(rm.buf, rt);
         if (!p) continue;
@@ -976,25 +983,19 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         const tr = followId ? remotes.get(slotOf(followId) ?? '') : undefined;
         const tp = tr ? sample(tr.buf, rt) : null;
         if (tp) {
-          const d = fsDir(tp.yaw, 0);
-          const tx = tp.x - d[0] * 3.2;
-          const ty = tp.y + 2.1;
-          const tz = tp.z - d[2] * 3.2;
-          const k = cam.ok ? Math.min(1, dt * 9) : 1;
-          cam.x += (tx - cam.x) * k;
-          cam.y += (ty - cam.y) * k;
-          cam.z += (tz - cam.z) * k;
-          let dy = tp.yaw - cam.yaw;
-          if (dy > 180) dy -= 360;
-          if (dy < -180) dy += 360;
-          cam.yaw += cam.ok ? dy * k : dy;
+          // primeira pessoa: exatamente a visão de quem está sendo seguido (olhos, direção e inclinação dele)
+          cam.x = tp.x;
+          cam.y = tp.y + fsEyeHeight({ ...mover, crouchK: tp.crouch });
+          cam.z = tp.z;
+          cam.yaw = tp.yaw;
+          camPitch = tp.pitch;
           cam.ok = true;
         }
         if (cam.ok) {
           mover.x = cam.x;
-          mover.y = cam.y - 1.6;
+          mover.y = cam.y - fsEyeHeight(mover);
           mover.z = cam.z;
-          scene.setView(cam.x, cam.y, cam.z, cam.yaw, -9, st.fov, 0);
+          scene.setView(cam.x, cam.y, cam.z, cam.yaw, camPitch, st.fov, 0);
           view.yaw = cam.yaw;
           fsAudio.listener(cam.x, cam.y, cam.z, fsDir(cam.yaw, 0));
         }
