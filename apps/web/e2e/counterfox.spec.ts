@@ -67,10 +67,10 @@ test('os bots andam pelo mapa, lutam e o placar mostra pontos', async ({ page },
   await page.setViewportSize({ width: 1280, height: 720 });
   await start(page, 5, 6);
   const a = await dm(page);
-  await page.waitForTimeout(6000);
-  const b = await dm(page);
-  const moved = b.dm.filter((d, i) => Math.hypot(d.x - a.dm[i]!.x, d.z - a.dm[i]!.z) > 2).length;
-  expect(moved).toBeGreaterThanOrEqual(3);
+  // o relógio do jogo anda devagar no navegador sem GPU: espera até os bots saírem do lugar
+  await expect
+    .poll(async () => (await dm(page)).dm.filter((d, i) => Math.hypot(d.x - a.dm[i]!.x, d.z - a.dm[i]!.z) > 2).length, { timeout: 60_000, intervals: [1500] })
+    .toBeGreaterThanOrEqual(3);
   if (process.env.FS_SHOTS) {
     await fs(page, 'teleport', 0, 20);
     await page.waitForTimeout(800);
