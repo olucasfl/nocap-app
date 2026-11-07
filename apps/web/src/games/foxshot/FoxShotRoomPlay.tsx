@@ -105,6 +105,8 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
   const mePlayer = (snapshot.foxshot?.roster ?? []).some((r) => r.id === snapshot.me && !r.bot);
   const [decided, setDecided] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const inviteRef = useRef(false);
+  inviteRef.current = inviteOpen;
   const root = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const blindEl = useRef<HTMLDivElement>(null);
@@ -207,6 +209,12 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           e.preventDefault();
           setBoard(true);
         }
+      }
+      // Esc fecha só a janela de Convidar e volta ao menu que estava aberto
+      if (e.code === 'Escape' && inviteRef.current) {
+        e.preventDefault();
+        setInviteOpen(false);
+        return;
       }
       if (e.code === 'Escape' && bigMapRef.current) {
         e.preventDefault();
