@@ -186,7 +186,7 @@ Pedido do Lucas (07/11/2026).
 2. O espectador tem que ver **exatamente o que os jogadores veem**: raquetes, bola, placar, pontos, pausa e fim de partida, com a mesma suavização.
 3. Entrar espectando **no meio** da partida também tem que funcionar (estado completo ao entrar, não só as mudanças).
 4. Conferir o mesmo caminho do espectar no **Fut Fox** e no **Desmorona**, que usam a mesma ideia, para não ter o mesmo defeito escondido.
-5. Teste e2e com 3 contextos de navegador (2 jogam, 1 especta que confere que as raquetes do espectador se movem; teste de lógica do que o espectador recebe.
+5. Teste e2e com 3 contextos de navegador (2 jogam, 1 espectando) que confere que as raquetes do espectador se movem; teste de lógica do que o espectador recebe.
 
 ## 10. Tela própria de cada jogo do Fox Cap! (jogar offline, amigos, opções)
 
