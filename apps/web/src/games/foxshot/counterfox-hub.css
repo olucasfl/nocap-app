@@ -136,8 +136,12 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  justify-content: safe center;
   gap: 22px;
   min-height: 0;
+  /* telas baixas (celular deitado, opções do modo Bomba): a coluna rola em vez de cortar o botão Entrar */
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 .cfh-right {
   display: grid;
