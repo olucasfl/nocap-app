@@ -2024,7 +2024,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         },
         pose: (kind: 'slash' | 'stab' | 'inspect' | null, u?: number) => scene.debugKnife(kind, u),
         stats: () => ({ ...stats }),
-        bomb: () => (bm ? { phase: bm.phase, time: bm.time, round: bm.round, score: { ...bm.score }, money: bm.players.get('me')!.money, side: bm.players.get('me')!.side, carrier: bm.carrier, planter: bm.planter, site: bm.site, alive: [...bm.players.values()].filter((p) => p.alive).length, shop: shopRef.current } : null),
+        bomb: () => (bm ? { phase: bm.phase, time: bm.time, round: bm.round, score: { ...bm.score }, money: bm.players.get('me')!.money, side: bm.players.get('me')!.side, carrier: bm.carrier, planter: bm.planter, site: bm.site, alive: [...bm.players.values()].filter((p) => p.alive).length, shop: shopRef.current, clock, endT, paused: pausedRef.current, ended: endedRef.current } : null),
         bombSkip: () => {
           if (bm) bm.time = 0.01;
         },
