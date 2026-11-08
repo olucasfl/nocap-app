@@ -135,6 +135,21 @@ export function fsStepMover(m: FsMover, inp: FsMoveInput, dt: number, allBoxes: 
 
   // integra em passos curtos (<= 8 cm) para nunca atravessar parede ou chão fino, e resolve cada eixo
   // pelo lado de onde o corpo veio (nunca pela velocidade, que pode ser zero: isso jogava o corpo para dentro/através da parede)
+  // nasceu ou foi empurrado para dentro de um bloco: sobe até achar espaço (nunca atravessa o chão para baixo)
+  const ck0 = m.crouchK;
+  m.crouchK = 1; // enterrado mesmo agachado (um teto baixo sobre quem está em pé não conta)
+  const embedded = near.some((b) => overlaps(m, b));
+  m.crouchK = ck0;
+  if (embedded) {
+    const y0 = m.y;
+    for (let up = 0.05; up <= 3; up += 0.05) {
+      m.y = y0 + up;
+      if (!near.some((b) => overlaps(m, b))) break;
+      if (up > 2.95) m.y = y0;
+    }
+    m.vy = Math.max(0, m.vy);
+  }
+  const wasGround = m.onGround;
   const sub = Math.max(1, Math.ceil((Math.hypot(m.vx, m.vz, m.vy) * dt) / 0.08));
   const h = dt / sub;
   let grounded = false;
@@ -204,5 +219,19 @@ export function fsStepMover(m: FsMover, inp: FsMoveInput, dt: number, allBoxes: 
       grounded = grounded || m.vy <= 0;
     }
     m.onGround = grounded;
+  }
+  // descendo degrau fino ou rampa de voxels: cola no chão (até 36 cm) em vez de "cair" a cada degrau
+  if (wasGround && !m.onGround && m.vy <= 0 && m.vy > -3) {
+    let best = -1e9;
+    for (const b of boxes) {
+      if (b.max[1] > m.y + 1e-4 || m.y - b.max[1] > FS_MOVE.stepUp + 0.01) continue;
+      const r = FS_MOVE.radius - 1e-3;
+      if (m.x + r > b.min[0] && m.x - r < b.max[0] && m.z + r > b.min[2] && m.z - r < b.max[2] && b.max[1] > best) best = b.max[1];
+    }
+    if (best > -1e8) {
+      m.y = best;
+      m.vy = 0;
+      m.onGround = true;
+    }
   }
 }

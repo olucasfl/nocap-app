@@ -507,6 +507,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       return bi >= 0 ? `Bot ${bi + 1}` : `Raposa ${world.targets.findIndex((t) => t.id === id) + 1}`;
     };
     const posOf = (id: string): [number, number, number] => {
+      if (id === 'me') return [mover.x, mover.y, mover.z];
       const br = brains.get(id);
       if (br) return [br.mover.x, br.mover.y, br.mover.z];
       const b = botSt.get(id);
@@ -566,11 +567,9 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     };
     suicideRef.current = () => {
       if (!match || clock < deadUntil) return;
+      if (bm && bm.phase !== 'live' && bm.phase !== 'planted') return;
       dropShield('me');
-      if (bm) {
-        if (bm.phase !== 'live' && bm.phase !== 'planted') return;
-        dealDamage('me', 'me', 1000, 0, false, 'knife', mover.x, mover.z, true);
-      } else dealDamage('me', 'me', 1000, 0, false, 'knife', mover.x, mover.z, true);
+      hurtPlayer(1000, 0, false, 'Você', 'knife');
     };
     endMatchRef.current = () => {
       resetMatch();
@@ -709,6 +708,13 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     let adsPrev = false;
     let aimHeld = false;
     const zoomFov = (adsFov: number) => (zoomLvl >= 2 ? 11 : adsFov);
+    // degraus finos do mapa (0,15 m) não podem fazer a câmera tremer: o olho suaviza só enquanto anda no chão
+    let smY = Number.NaN;
+    const smoothY = (raw: number, dt: number) => {
+      if (!Number.isFinite(smY) || !mover.onGround || Math.abs(raw - smY) > 0.7) smY = raw;
+      else smY += (raw - smY) * (1 - Math.exp(-dt * 18));
+      return smY;
+    };
     const eyeNow = (): [number, number, number] => [mover.x, mover.y + fsEyeHeight(mover), mover.z];
     const throwNade = (kind: FsGrenadeId, power: number, style: 'far' | 'mid' | 'near' = 'far') => {
       const dir = fsDir(view.yaw + view.rYaw, view.pitch + view.rPitch);
@@ -2017,7 +2023,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         camDm.ok = false;
       scene.setView(
         prev.x + (mover.x - prev.x) * alpha,
-        prev.y + (mover.y - prev.y) * alpha + fsEyeHeight(mover) - e * (fsEyeHeight(mover) - 0.22),
+        smoothY(prev.y + (mover.y - prev.y) * alpha, dt) + fsEyeHeight(mover) - e * (fsEyeHeight(mover) - 0.22),
         prev.z + (mover.z - prev.z) * alpha,
         view.yaw + view.rYaw + (sk ? Math.sin(clock * 83) * sk : 0),
         view.pitch + view.rPitch + (sk ? Math.cos(clock * 71) * sk : 0) + e * 18,

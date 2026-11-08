@@ -352,6 +352,13 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
     // ---- estado local (previsto) e o que veio do servidor
     const mover: FsMover = fsNewMover(0, 0);
     const prev = { x: 0, y: 0, z: 0 };
+    // degraus finos do mapa (0,15 m) não podem fazer a câmera tremer: o olho suaviza só enquanto anda no chão
+    let smY = Number.NaN;
+    const smoothY = (raw: number, dt: number) => {
+      if (!Number.isFinite(smY) || !mover.onGround || Math.abs(raw - smY) > 0.7) smY = raw;
+      else smY += (raw - smY) * (1 - Math.exp(-dt * 18));
+      return smY;
+    };
     const errOff = { x: 0, y: 0, z: 0 };
     const view = { yaw: 0, pitch: 0, rYaw: 0, rPitch: 0 };
     const loadout = new FsLoadout(null, 'pistol');
@@ -1114,7 +1121,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         }
       scene.setView(
         prev.x + (mover.x - prev.x) * alpha + errOff.x,
-        prev.y + (mover.y - prev.y) * alpha + errOff.y + fsEyeHeight(mover) - e * (fsEyeHeight(mover) - 0.22),
+        smoothY(prev.y + (mover.y - prev.y) * alpha, dt) + errOff.y + fsEyeHeight(mover) - e * (fsEyeHeight(mover) - 0.22),
         prev.z + (mover.z - prev.z) * alpha + errOff.z,
         view.yaw + view.rYaw + (sk ? Math.sin(clock * 83) * sk : 0),
         view.pitch + view.rPitch + (sk ? Math.cos(clock * 71) * sk : 0) + e * 18,

@@ -89,4 +89,15 @@ describe('mapa Cidade', () => {
     }
     expect(bad).toEqual([]);
   }, 120_000);
+
+  it('todo nascimento fica de pé no chão e continua lá (ninguém cai do mapa nem fica enterrado)', () => {
+    const bad: string[] = [];
+    for (const sp of map.spawns) {
+      const m = fsNewMover(sp.x, sp.z);
+      m.y = sp.y;
+      for (let t = 0; t < 60 * 8; t++) fsStepMover(m, { fwd: 0, strafe: 0, jump: false, yaw: 0, speedMul: 1, crouch: false }, 1 / 60, map.solids);
+      if (Math.abs(m.y - sp.y) > 0.4) bad.push(`${sp.zone} ${sp.x.toFixed(1)},${sp.z.toFixed(1)} y ${sp.y.toFixed(2)} -> ${m.y.toFixed(2)}`);
+    }
+    expect(bad).toEqual([]);
+  }, 120_000);
 });

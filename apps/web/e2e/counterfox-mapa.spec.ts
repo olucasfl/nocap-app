@@ -46,3 +46,30 @@ test('Cidade: modo Bomba como terrorista, a bomba e as bases existem', async ({ 
   await page.waitForTimeout(3000);
   await page.screenshot({ path: 'test-results/cidade-bomba.png' });
 });
+
+test('Cidade: ninguém cai do mapa na contagem e "Se matar" funciona sem tela branca', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'um projeto basta');
+  test.setTimeout(240_000);
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await start(page, 'dm');
+  await expect(page.getByTestId('fs-root')).toBeVisible({ timeout: 120_000 });
+  await expect.poll(async () => await fs<number>(page, 'hp'), { timeout: 120_000 }).toBe(100);
+  const y0 = (await fs<number[]>(page, 'pos', 'me'))[1]!;
+  await page.waitForTimeout(8000);
+  const y1 = (await fs<number[]>(page, 'pos', 'me'))[1]!;
+  expect(Math.abs(y1 - y0)).toBeLessThan(0.5);
+  for (const id of ['d1', 'd2', 'd3', 'd4']) {
+    const b = await fs<number[]>(page, 'pos', id);
+    expect(b[1]!).toBeGreaterThan(-0.5);
+  }
+  await page.screenshot({ path: 'test-results/cidade-queda.png' });
+  await page.keyboard.press('Escape');
+  await page.getByTestId('fsm-suicide').click();
+  await page.getByTestId('fsm-suicide').click();
+  await expect.poll(async () => await fs<number>(page, 'hp'), { timeout: 10_000 }).toBeLessThanOrEqual(0);
+  await page.waitForTimeout(1500);
+  await page.screenshot({ path: 'test-results/cidade-sematar.png' });
+  expect(errors).toEqual([]);
+});
