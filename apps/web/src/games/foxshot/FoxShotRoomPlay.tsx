@@ -717,7 +717,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       wasAlive = aliveNow;
     };
     const stepPred = (m: FsMover, p: Pending) => {
-      for (let i = 0; i < 2; i++) fsStepMover(m, { fwd: p.fwd, strafe: p.strafe, jump: p.jump && i === 0, yaw: p.yaw, speedMul: p.mul, crouch: p.crouch, walk: p.walk }, 1 / 120, ARENA);
+      for (let i = 0; i < 2; i++) fsStepMover(m, { fwd: p.fwd, strafe: p.strafe, jump: p.jump && i === 0, yaw: p.yaw, speedMul: p.mul, crouch: p.crouch, walk: p.walk }, 1 / 120, ARENA, [], map.ladders);
     };
 
     // ---- armas locais (para a animação, o som e o recuo); quem decide acerto e munição é o servidor

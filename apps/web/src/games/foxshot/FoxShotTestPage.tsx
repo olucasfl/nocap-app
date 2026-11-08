@@ -1845,6 +1845,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
             STEP,
             ARENA,
             solids,
+            match ? map.ladders : [],
           );
           if (wasGround && !mover.onGround && jumpBuf > 0) jumpBuf = 0;
           jumpBuf = Math.max(0, jumpBuf - STEP);

@@ -142,4 +142,31 @@ describe('modo PvP: mapa e partida', () => {
       expect(Math.abs(m.y - sp.y), `${sp.zone} ${sp.x},${sp.z}`).toBeLessThan(0.4);
     }
   }, 120_000);
+
+  it('escada de mão das duas torres: andar para o muro sobe e fica no topo, andar para o lado oposto desce, pular solta', () => {
+    expect(map.ladders.length).toBe(2);
+    for (const l of map.ladders) {
+      const cz = (l.min[2] + l.max[2]) / 2;
+      const mv = fsNewMover(l.dir[0] < 0 ? l.min[0] + 0.62 : l.max[0] - 0.62, cz);
+      mv.y = l.min[1] + 0.01;
+      const yaw = l.dir[0] < 0 ? 90 : 270; // a frente (-sen, -cos) aponta para o muro
+      const run = (secs: number, fwd: number, jump = false) => {
+        for (let t = 0; t < 60 * secs; t++) fsStepMover(mv, { fwd, strafe: 0, jump: jump && t === 0, yaw, speedMul: 1, crouch: false }, 1 / 60, map.solids, [], map.ladders);
+      };
+      run(0.6, 1);
+      expect(mv.y, 'subindo').toBeGreaterThan(l.min[1] + 1);
+      run(6, 1);
+      expect(mv.y, 'chegou no topo').toBeGreaterThan(l.max[1] - 0.1);
+      run(2, 0);
+      expect(mv.y, 'parado segura').toBeGreaterThan(l.max[1] - 0.1);
+      run(1, -1);
+      expect(mv.y, 'descendo').toBeLessThan(l.max[1] - 1.5);
+      run(8, -1);
+      expect(mv.y, 'chegou embaixo').toBeLessThan(l.min[1] + 0.1);
+      run(6, 1);
+      run(0.1, 0, true); // pula da escada: sai para longe do muro
+      run(1.5, 0);
+      expect(Math.abs(mv.x - (l.dir[0] < 0 ? l.min[0] : l.max[0]))).toBeGreaterThan(0.5);
+    }
+  });
 });

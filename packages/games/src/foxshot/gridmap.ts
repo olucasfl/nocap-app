@@ -5,6 +5,7 @@ declare function atob(s: string): string;
  * colisão, a navegação dos bots (A* com fila de prioridade), os pontos de nascimento e as marcas das bases e das bombas.
  */
 import { fsBoxesInRect, type FsBox } from './map';
+import type { FsLadder } from './movement';
 import { fsClearLine } from './grenades';
 import type { FsDustMark, FsSpawn } from './spawn';
 
@@ -22,6 +23,8 @@ export interface FsGridMapData {
    * j = coluna (x), k = altura). Sem isso as caixas saem da grade (paredes e degraus por célula).
    */
   boxes?: string;
+  /** Escadas de mão: [x0, y0, z0, x1, y1, z1, dirX, dirZ] (a zona de subir e o lado do muro). */
+  ladders?: readonly (readonly number[])[];
   /** lado dos voxels das caixas (m); padrão = cell */
   bcell?: number;
   tspawns: readonly (readonly [number, number, number])[];
@@ -56,6 +59,8 @@ export interface FsMapApi {
   /** Para desenhar o mapa pequeno: colunas, linhas, canto e se a célula é parede (`wall`) ou chão com altura (m). */
   grid: { cols: number; rows: number; x0: number; z0: number; cell: number; wall(c: number, r: number): boolean; height(c: number, r: number): number };
   /** Como a cena desenha: com o cenário próprio da Duna (caixas, decoração) ou com um modelo 3D. */
+  /** Escadas de mão (zonas de subir); a maioria dos mapas não tem. */
+  ladders: readonly FsLadder[];
   visual: { kind: 'glb'; url: string };
   /** Planta texturizada vista de cima (PNG, mesmo retângulo da grade), para o radar e o mapa grande; sem ela a planta sai da grade. */
   planImage?: string;
@@ -417,5 +422,6 @@ export function createGridMap(opts: { id: string; name: string; data: FsGridMapD
     grid: { cols, rows, x0, z0, cell, wall: (c, r) => !walkable(c, r), height },
     visual: { kind: 'glb', url: opts.glb },
     planImage: opts.plan,
+    ladders: (d.ladders ?? []).map((l) => ({ min: [l[0]!, l[1]!, l[2]!], max: [l[3]!, l[4]!, l[5]!], dir: [l[6]!, l[7]!] }) as FsLadder),
   };
 }

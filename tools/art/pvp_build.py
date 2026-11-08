@@ -25,7 +25,7 @@ SCALE = np.array([SXZ, SY, SXZ])
 S = SXZ
 BC = 0.06         # voxel de colisão (m), cúbico: 1 bloco = 10 voxels na horizontal (13,3 na vertical, erro máximo de 3 cm)
 CELL = 0.12       # célula da grade de navegação (m): 2 voxels
-YMAX = 6.0        # altura máxima simulada (m); acima disso ninguém chega
+YMAX = 12.0       # altura máxima simulada (m): as torres têm uns 11 m
 HEAD = 12         # células livres para o corpo na grade de navegação (1,44 m)
 
 obj_path, tex_dir = sys.argv[1], sys.argv[2]
@@ -84,8 +84,10 @@ SPAN = np.array([n in ('Stair', 'StairWhite') for n in OBJ_NAMES])
 A = V[allf[:, 0]]; B = V[allf[:, 1]]; C = V[allf[:, 2]]
 print('triângulos', len(A))
 cross_col = []; cross_y = []; cross_obj = []
+LADDER_ID = OBJ_NAMES.index('Ladder') if 'Ladder' in OBJ_NAMES else -1
 EPSJ = 1.7e-4  # desloca os centros das colunas um tiquinho: nada de empate exato na borda de dois triângulos
 for t in range(len(A)):
+    if obj_of[t] == LADDER_ID: continue   # escada de mão: não é sólida, o jogo a trata como zona de subir
     P0, P1, P2 = A[t], B[t], C[t]
     x0, x1 = min(P0[0], P1[0], P2[0]), max(P0[0], P1[0], P2[0])
     z0, z1 = min(P0[2], P1[2], P2[2]), max(P0[2], P1[2], P2[2])
@@ -124,14 +126,6 @@ for s0, e0 in zip(starts, ends):
         k0 = int(math.ceil(ys[q] / BC - 0.5)); k1 = int(math.floor(ys[q + 1] / BC - 0.5))
         if k1 >= k0: solid[i, j, max(0, k0):min(ny, k1 + 1)] = True
 print('colunas de objeto com número ímpar de cruzamentos (preenchidas do mais baixo ao mais alto):', odd, 'de', len(starts))
-# torres do meio dos muros: por dentro são ocas (janela no alto e escada de mão), e quem entrava pela janela caía lá dentro e ficava preso,
-# porque o jogo ainda não tem escada de mão. A colisão trata a torre como bloco maciço (o desenho continua igual).
-FILLS = [(-200, 200, -5400, -5200, 200, 1200), (-200, 200, 5200, 5400, 200, 1200)]  # (x0, x1, z0, z1, y0, y1) em unidades do OBJ
-for fx0, fx1, fz0, fz1, fy0, fy1 in FILLS:
-    j0 = max(0, int(math.floor((fx0 * S - X0) / BC + 0.5))); j1 = min(nx, int(math.ceil((fx1 * S - X0) / BC - 0.5)))
-    i0 = max(0, int(math.floor((fz0 * S - Z0) / BC + 0.5))); i1 = min(nz, int(math.ceil((fz1 * S - Z0) / BC - 0.5)))
-    k0 = int(math.floor(fy0 * SY / BC + 0.5)); k1 = min(ny, int(math.ceil(fy1 * SY / BC - 0.5)))
-    solid[i0:i1, j0:j1, k0:k1] = True
 print('voxels sólidos', int(solid.sum()))
 
 # ------------------------------------------------------------------ onde se fica em pé (grade de 25 cm)
@@ -276,6 +270,24 @@ def rect(side):
     # a base inteira: de parede a parede em x e do fundo até o muro divisor em z (a marca no mapa fica centralizada nela)
     if side == 0: return [round(X0 + 0.5, 2), round(Z0, 2), round(X1 - 0.5, 2), round(-BASE_Z, 2)]
     return [round(X0 + 0.5, 2), round(BASE_Z, 2), round(X1 - 0.5, 2), round(Z1, 2)]
+# escadas de mão (as duas torres): zona de subir na frente do plano da escada, do lado oposto ao muro em que ela está presa
+ladders = []
+if 'Ladder' in OBJ_NAMES:
+    lid = OBJ_NAMES.index('Ladder')
+    LA = A[obj_of == lid]; LB = B[obj_of == lid]; LC = C[obj_of == lid]
+    pts = np.concatenate([LA, LB, LC]); cen = (LA + LB + LC).reshape(-1, 3, 3).mean(1) if False else (LA + LB + LC) / 3
+    for sgn in (-1, 1):
+        m_ = np.sign(cen[:, 0]) == sgn
+        if not m_.any(): continue
+        P_ = np.concatenate([LA[m_], LB[m_], LC[m_]])
+        wall_x = P_[:, 0].min() if sgn < 0 else P_[:, 0].max()   # a escada está colada no muro do lado de fora do centro
+        z0_, z1_ = P_[:, 2].min() - 0.1, P_[:, 2].max() + 0.1
+        y0_, y1_ = P_[:, 1].min(), P_[:, 1].max()
+        depth = 0.8
+        xa, xb = (wall_x - 0.05, wall_x + depth) if sgn < 0 else (wall_x - depth, wall_x + 0.05)
+        ladders.append([round(xa, 3), round(y0_, 3), round(z0_, 3), round(xb, 3), round(y1_, 3), round(z1_, 3), sgn, 0])
+print('escadas de mão', ladders)
+
 def rl(flat):
     out = []; i = 0
     while i < len(flat):
@@ -287,7 +299,7 @@ data = {
     'cols': cols, 'rows': rows, 'x0': round(X0, 5), 'z0': round(Z0, 5), 'cell': CELL, 'step': CELL, 'bcell': BC,
     'rle': rl(level.reshape(-1).tolist()), 'boxes': boxes_b64,
     'tspawns': [[round(x, 2), round(z, 2), a] for x, z, a in sideA], 'ctspawns': [[round(x, 2), round(z, 2), a] for x, z, a in sideB],
-    'sites': [], 'buys': [rect(0), rect(1)], 'hmin': 0,
+    'ladders': ladders, 'sites': [], 'buys': [rect(0), rect(1)], 'hmin': 0,
 }
 out_ts = os.path.join(root, 'packages/games/src/foxshot/pvp.data.ts')
 open(out_ts, 'w').write('/* Gerado por tools/art/pvp_build.py: colisão e grade do mapa do modo PvP (não editar à mão). */\nexport const FS_PVP_DATA: Record<string, unknown> = ' + json.dumps(data) + ';\n')

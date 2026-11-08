@@ -11,7 +11,19 @@ export interface FsMover {
   onGround: boolean;
   /** Agachando: 0 de pé, 1 agachado (muda de forma suave). */
   crouchK: number;
+  /** Escada de mão: depois de pular dela, espera este tempo (s) antes de grudar de novo. */
+  ladderCool?: number;
 }
+
+/** Zona de subir (escada de mão): quem anda para o lado `dir` (o muro) sobe, para o lado oposto desce. */
+export interface FsLadder {
+  min: [number, number, number];
+  max: [number, number, number];
+  /** Para onde fica o muro onde a escada está presa (plano xz, unitário). */
+  dir: [number, number];
+}
+/** Velocidade de subida e descida na escada de mão (m/s). */
+export const FS_LADDER_SPEED = 2.4;
 
 /**
  * Movimento no desenho do Counter-Strike (motor Source), em metros: atrito no chão (desliza ao soltar), aceleração por
@@ -54,7 +66,29 @@ const overlaps = (m: FsMover, b: FsBox, r = FS_MOVE.radius) =>
   m.x + r > b.min[0] + 1e-4 && m.x - r < b.max[0] - 1e-4 && m.z + r > b.min[2] + 1e-4 && m.z - r < b.max[2] - 1e-4 && m.y + fsBodyHeight(m) > b.min[1] + 1e-4 && m.y < b.max[1] - 1e-4;
 
 /** Um passo de movimento (use dt fixo, ex. 1/120): pulo, atrito, aceleração (chão ou ar), gravidade e colisão com as caixas. */
-export function fsStepMover(m: FsMover, inp: FsMoveInput, dt: number, allBoxes: readonly FsBox[], extra: readonly FsBox[] = []): void {
+const ladderAt = (m: FsMover, ladders: readonly FsLadder[]) =>
+  ladders.find((l) => m.x > l.min[0] && m.x < l.max[0] && m.z > l.min[2] && m.z < l.max[2] && m.y + 0.9 > l.min[1] && m.y < l.max[1]);
+/** Raio do corpo enquanto sobe: encosta no muro e passa ao lado dos degraus e vigas que ficam perto da escada. */
+const LADDER_RADIUS = 0.12;
+
+export function fsStepMover(m: FsMover, inp: FsMoveInput, dt: number, allBoxes: readonly FsBox[], extra: readonly FsBox[] = [], ladders: readonly FsLadder[] = []): void {
+  const lad = ladders.length && !(m.ladderCool && m.ladderCool > 0) && !inp.jump ? ladderAt(m, ladders) : undefined;
+  if (!lad) return stepInner(m, inp, dt, allBoxes, extra, ladders);
+  // grudado na escada: o corpo vai até o muro (ao lado dos degraus) e usa um raio menor
+  const rail = lad.dir[0] !== 0 ? (lad.dir[0] < 0 ? lad.min[0] + 0.05 + 0.2 : lad.max[0] - 0.05 - 0.2) : lad.dir[1] < 0 ? lad.min[2] + 0.05 + 0.2 : lad.max[2] - 0.05 - 0.2;
+  const axis = lad.dir[0] !== 0 ? 'x' : 'z';
+  const diff = rail - m[axis];
+  m[axis] += Math.abs(diff) <= 2.5 * dt ? diff : Math.sign(diff) * 2.5 * dt;
+  const r0 = FS_MOVE.radius;
+  FS_MOVE.radius = LADDER_RADIUS;
+  try {
+    stepInner(m, inp, dt, allBoxes, extra, ladders);
+  } finally {
+    FS_MOVE.radius = r0;
+  }
+}
+
+function stepInner(m: FsMover, inp: FsMoveInput, dt: number, allBoxes: readonly FsBox[], extra: readonly FsBox[], ladders: readonly FsLadder[]): void {
   // mapas grandes: só as caixas perto do corpo (mais as de fora, como os outros jogadores)
   const near = fsBoxesInRect(allBoxes, m.x - 2, m.z - 2, m.x + 2, m.z + 2);
   const boxes: readonly FsBox[] = extra.length ? [...near, ...extra] : near;
@@ -92,6 +126,29 @@ export function fsStepMover(m: FsMover, inp: FsMoveInput, dt: number, allBoxes: 
   const slow = m.crouchK > 0.5 ? FS_MOVE.crouchMul : inp.walk ? FS_MOVE.walkMul : 1;
   const maxV = FS_MOVE.run * inp.speedMul * slow;
   const wishSpeed = maxV * wl;
+
+  // escada de mão: dentro da zona, andar para o muro sobe, andar para o lado oposto desce, parado ou de lado segura; pular solta
+  let ladderVy: number | null = null;
+  if (m.ladderCool && m.ladderCool > 0) m.ladderCool = Math.max(0, m.ladderCool - dt);
+  else if (ladders.length) {
+    const lad = ladderAt(m, ladders);
+    if (lad) {
+      if (inp.jump) {
+        // solta da escada: pula para longe do muro
+        m.ladderCool = 0.35;
+        m.vy = 4;
+        m.vx = -lad.dir[0] * 2.6;
+        m.vz = -lad.dir[1] * 2.6;
+        m.onGround = false;
+      } else {
+        const t = wl > 0.1 ? dirX * lad.dir[0] + dirZ * lad.dir[1] : 0;
+        ladderVy = t > 0.35 ? FS_LADDER_SPEED : t < -0.35 ? -FS_LADDER_SPEED : 0;
+        // no topo da escada para de subir (dá para pular dali)
+        if (ladderVy > 0 && m.y >= lad.max[1] - 0.02) ladderVy = 0;
+        m.onGround = false;
+      }
+    }
+  }
 
   // pulo: sai do chão antes do atrito (segurar o pulo no pouso mantém a velocidade: bunny hop)
   if (m.onGround && inp.jump) {
@@ -131,7 +188,12 @@ export function fsStepMover(m: FsMover, inp: FsMoveInput, dt: number, allBoxes: 
     m.vx *= FS_MOVE.maxSpeed / hs;
     m.vz *= FS_MOVE.maxSpeed / hs;
   }
-  m.vy -= FS_MOVE.gravity * dt;
+  if (ladderVy === null) m.vy -= FS_MOVE.gravity * dt;
+  else {
+    m.vy = ladderVy;
+    m.vx = 0;
+    m.vz = 0;
+  }
 
   // integra em passos curtos (<= 8 cm) para nunca atravessar parede ou chão fino, e resolve cada eixo
   // pelo lado de onde o corpo veio (nunca pela velocidade, que pode ser zero: isso jogava o corpo para dentro/através da parede)

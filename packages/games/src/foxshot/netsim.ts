@@ -450,7 +450,7 @@ export class FsNetSim {
     const mul = lo.weapon.moveMul * (adsOn ? 0.65 : 1) * fsFlinchAt(p.flinch, (this.tick - p.flinchAt) / FS_NET_HZ);
     // o passo de 1/60 s se divide em dois de 1/120 s, igual ao aparelho
     for (let i = 0; i < 2; i++) {
-      fsStepMover(p.mover, { fwd: inp.fwd, strafe: inp.strafe, jump: inp.jump && i === 0, yaw: inp.yaw, speedMul: mul, crouch: inp.crouch, walk: inp.walk }, 1 / 120, this.boxes);
+      fsStepMover(p.mover, { fwd: inp.fwd, strafe: inp.strafe, jump: inp.jump && i === 0, yaw: inp.yaw, speedMul: mul, crouch: inp.crouch, walk: inp.walk }, 1 / 120, this.boxes, [], this.map.ladders);
     }
     const speed = Math.hypot(p.mover.vx, p.mover.vz);
     const evs = lo.update(FS_NET_DT, { trigger: inp.trigger, reload: inp.reload, alt: inp.alt, inspect: inp.inspect }, { moving: speed > 0.8, airborne: !p.mover.onGround, ads: adsOn, speed, crouch: p.mover.crouchK > 0.5 }, p.id);

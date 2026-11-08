@@ -21,6 +21,7 @@ Status: em andamento (08/11/2026). Pedido do Lucas: 1x1, 2x2, 2x1 etc., dois tim
 - Bases centralizadas: dois fileiras de 6 nascimentos em x = 0, e a área da base vai de parede a parede até o muro divisor.
 - Planta texturizada (`pvp-plan.png`, gerada por `tools/art/render_plan.mjs`) no radar, no mapa grande e no cartão do menu.
 - Compra a qualquer hora do round, só na base.
+- Escadas de mão das duas torres (`FsLadder`, `fsStepMover(..., ladders)`): dentro da zona, andar para o muro sobe (2,4 m/s), andar para o lado oposto desce, parado segura, pular solta para longe do muro. Enquanto sobe o corpo encosta no muro e usa raio de 0,12 m (a vala ao lado da viga é mais estreita que o corpo). Bots não sobem.
 
 ## Feito
 Motor (`bomb.ts`, `bombbots.ts`, `netsim.ts`, `maps.ts`, `gridmap.ts`), sala (`foxshot-room.engine.ts`: `pvp`, faixas 1–30 pontos e 30–300 s), lobby (aba Modo), menu offline, HUD (sem bomba, `US$ ∞`), abertura e tela final, testes (`pvp.test.ts`, sala) e e2e offline.
