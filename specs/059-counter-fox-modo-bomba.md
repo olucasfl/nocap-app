@@ -120,3 +120,5 @@ Pedido do Lucas: o online do Counter Fox tinha lag; fazer como o Fut Fox/Ping Fo
 ## Progresso: times na aba Sala
 
 No modo Bomba a aba **Sala** do lobby do Counter Fox mostra os dois times com 5 vagas cada (pessoas, bots e vagas livres), quem está **espectando**, e cada pessoa escolhe o time clicando numa vaga (ou **Espectar**; quem espectar não entra na partida). O líder põe ou tira bots de cada time ali (− e +). A escolha de time saiu da aba Jogadores (fica só o rótulo TR/CT/Espectando) e os bots saíram da aba Modo no modo Bomba. A sala recusa o 6º do mesmo time (pessoas + bots ≤ 5).
+
+No mata-mata os bots também saíram da aba Modo: ficam na aba **Sala**, num quadro "Jogadores" com as vagas (pessoas, bots e vagas livres até 10) e a escolha de 0 a 9 bots para o líder.

@@ -268,6 +268,49 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
                 <div><dt>Bots</dt><dd>{bots}</dd></div>
                 {!bomb && <div><dt>Pontos</dt><dd>Abate {FS_POINTS.kill} · Assist. {FS_POINTS.assist}</dd></div>}
               </dl>
+              {kind === 'dm' && (
+                <div className="cfl-board dm" data-testid="cfl-dmboard">
+                  <section className="cfl-team dm">
+                    <h4>
+                      <span>Jogadores</span>
+                      <b>{humans + bots}/10</b>
+                    </h4>
+                    <ul>
+                      {snapshot.members.map((m) => (
+                        <li key={m.id} className={`p${m.id === me ? ' me' : ''}`}>
+                          <i aria-hidden="true">{m.username.slice(0, 1).toUpperCase()}</i>
+                          <b>{m.username}{m.id === me ? ' (você)' : ''}</b>
+                          <em>{m.isHost ? 'Líder' : ''}</em>
+                        </li>
+                      ))}
+                      {Array.from({ length: Math.max(0, Math.min(bots, 10 - humans)) }, (_, i) => (
+                        <li key={`b${i}`} className="bot">
+                          <i aria-hidden="true">B</i>
+                          <b>Bot {i + 1}</b>
+                          <em>Computador</em>
+                        </li>
+                      ))}
+                      {Array.from({ length: Math.max(0, 10 - humans - bots) }, (_, i) => (
+                        <li key={`f${i}`} className="free"><span>Vaga</span></li>
+                      ))}
+                    </ul>
+                    {leader ? (
+                      <div className="cfl-botctl" role="radiogroup" aria-label="Bots" data-testid="cfl-dmbots">
+                        <span>Bots</span>
+                        <div className="cfh-pills">
+                          {Array.from({ length: FS_MATCH_BOTS.max + 1 }, (_, i) => i).map((n) => (
+                            <button key={n} type="button" role="radio" aria-checked={bots === n} disabled={n > maxBots} className={`cfh-pill${bots === n ? ' on' : ''}`} onClick={() => sendRoom('configure', { bots: n })} data-testid={`cfl-bots-${n}`}>
+                              {n}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="cfl-note">Só o líder escolhe os bots.</p>
+                    )}
+                  </section>
+                </div>
+              )}
               {bomb && (
                 <div className="cfl-board" data-testid="cfl-board">
                   {([1, 0] as const).map((t) => {
@@ -426,18 +469,6 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
                       </button>
                     ))}
                   </div>
-                </>
-              )}
-              {!bomb && (
-                <>
-              <h4>Bots para completar ({humans} pessoas na sala)</h4>
-              <div className="cfh-pills" role="radiogroup" aria-label="Bots">
-                {Array.from({ length: FS_MATCH_BOTS.max + 1 }, (_, i) => i).map((n) => (
-                  <button key={n} type="button" role="radio" aria-checked={bots === n} disabled={!leader || n > maxBots} className={`cfh-pill${bots === n ? ' on' : ''}`} onClick={() => sendRoom('configure', { bots: n })} data-testid={`cfl-bots-${n}`}>
-                    {n}
-                  </button>
-                ))}
-              </div>
                 </>
               )}
               {!leader && <p className="cfl-note">Só o líder muda as regras.</p>}

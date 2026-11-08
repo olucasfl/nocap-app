@@ -40,6 +40,7 @@ test('convidado chega no meio da partida, espectando ou jogando', async ({ brows
   await ana.getByTestId('cfl-tab-modo').click();
   await ana.getByTestId('cfl-mode-dm').click();
   await ana.getByTestId('cfl-min-10').click();
+  await ana.getByTestId('cfl-tab-sala').click();
   await ana.getByTestId('cfl-bots-3').click();
   // a aba Convidar tem o mesmo que as outras salas
   await ana.getByTestId('cfl-tab-convidar').click();
