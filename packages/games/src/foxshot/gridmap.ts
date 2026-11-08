@@ -57,6 +57,8 @@ export interface FsMapApi {
   grid: { cols: number; rows: number; x0: number; z0: number; cell: number; wall(c: number, r: number): boolean; height(c: number, r: number): number };
   /** Como a cena desenha: com o cenário próprio da Duna (caixas, decoração) ou com um modelo 3D. */
   visual: { kind: 'glb'; url: string };
+  /** Planta texturizada vista de cima (PNG, mesmo retângulo da grade), para o radar e o mapa grande; sem ela a planta sai da grade. */
+  planImage?: string;
 }
 
 const WALL = 255;
@@ -101,7 +103,7 @@ class Heap {
   }
 }
 
-export function createGridMap(opts: { id: string; name: string; data: FsGridMapData; glb: string; names?: { A: string; B: string } }): FsMapApi {
+export function createGridMap(opts: { id: string; name: string; data: FsGridMapData; glb: string; plan?: string; names?: { A: string; B: string } }): FsMapApi {
   const d = opts.data;
   const { cols, rows, x0, z0, cell, step } = d;
   const N = cols * rows;
@@ -414,5 +416,6 @@ export function createGridMap(opts: { id: string; name: string; data: FsGridMapD
     lineWalkable,
     grid: { cols, rows, x0, z0, cell, wall: (c, r) => !walkable(c, r), height },
     visual: { kind: 'glb', url: opts.glb },
+    planImage: opts.plan,
   };
 }

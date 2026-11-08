@@ -506,7 +506,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
             fsAudio.bombPlanted();
             beepIn = 0;
           }
-          if (ph === 0) sayHint(snapRef.current.foxshot?.pvp ? 'Compre qualquer arma (B): dinheiro infinito. Depois elimine o outro time' : 'Compre na base (B). A bomba é dos terroristas: pátios A e B', 4500);
+          if (ph === 0) sayHint(snapRef.current.foxshot?.pvp ? 'Compre quando quiser (B), só na base: dinheiro infinito. Elimine o outro time' : 'Compre na base (B). A bomba é dos terroristas: pátios A e B', 4500);
           bPhasePrev = ph;
         }
         if (!bombSelf?.buy && ph !== 0 && shopRef.current) setShop(false);

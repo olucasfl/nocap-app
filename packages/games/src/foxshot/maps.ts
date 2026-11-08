@@ -18,7 +18,7 @@ export function fsMapDuna(): FsMapApi {
 let pvp: FsMapApi | null = null;
 /** A arena de blocos do modo PvP (mapa de terceiros, ver docs/CREDITS-3D.md): sem bombas, só as duas pontas de nascimento. */
 export function fsMapPvp(): FsMapApi {
-  return (pvp ??= createGridMap({ id: 'pvp', name: 'Arena de Blocos', data: FS_PVP_DATA as unknown as FsGridMapData, glb: 'pvp/pvp.glb' }));
+  return (pvp ??= createGridMap({ id: 'pvp', name: 'Arena de Blocos', data: FS_PVP_DATA as unknown as FsGridMapData, glb: 'pvp/pvp.glb', plan: 'pvp/pvp-plan.png' }));
 }
 
 export const FS_MAP_IDS: readonly FsMapId[] = ['duna', 'pvp'];

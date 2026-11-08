@@ -65,6 +65,16 @@ export function fsMapPlan(map: FsMapApi): FsPlan {
     }
   }
   const plan: FsPlan = { canvas: cv, x0: gr.x0, z0: gr.z0, w, h };
+  // mapa com planta texturizada: troca o desenho da grade pela imagem (o radar redesenha a cada 66 ms, então pega sozinho quando chega)
+  if (map.planImage) {
+    const img = new Image();
+    img.onload = () => {
+      cv.width = img.naturalWidth;
+      cv.height = img.naturalHeight;
+      cv.getContext('2d')!.drawImage(img, 0, 0);
+    };
+    img.src = `${import.meta.env.BASE_URL ?? '/'}models/foxshot/${map.planImage}`.replace('//', '/');
+  }
   cache.set(map.id, plan);
   return plan;
 }

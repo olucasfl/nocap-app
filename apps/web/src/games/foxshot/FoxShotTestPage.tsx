@@ -1089,7 +1089,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       scene.setBombDrop(0, 0, 0, false);
       scene.setBomb(0, 0, 0, 'off');
       bombBanner = null;
-      say(match?.pvp ? 'Compre qualquer arma (B): dinheiro infinito. Depois elimine o outro time' : meSide === 'tr' ? 'Compre na base (B) e depois vá aos pátios A ou B' : 'Compre na base (B) e defenda os pátios A e B', 4500);
+      say(match?.pvp ? 'Compre quando quiser (B), só na base: dinheiro infinito. Elimine o outro time' : meSide === 'tr' ? 'Compre na base (B) e depois vá aos pátios A ou B' : 'Compre na base (B) e defenda os pátios A e B', 4500);
     };
     const meSide0 = () => sideOf('me');
     const handleBombEvent = (e: FsBombEvent) => {

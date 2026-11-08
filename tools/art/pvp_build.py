@@ -17,28 +17,47 @@ import base64, json, math, os, struct, sys
 import numpy as np
 from PIL import Image
 
-S = 0.006         # unidade do OBJ -> metros (1 bloco = 0,6 m: o mapa original em 1 m por bloco ficava enorme para o corpo do jogo; 0,6 ainda deixa o boneco entrar num vão de 1 bloco, e portas de 2 blocos (1,2 m) pedem agachar)
-BC = 0.12         # voxel de colisão (m): 1 bloco = 5 voxels, então as quinas ficam na grade
-CELL = 0.24       # célula da grade de navegação (m): 2 voxels
+S = 0.005         # unidade do OBJ -> metros (1 bloco do mapa = 200 unidades = 1 m: portas de 2 blocos têm 2 m e vãos de 1 bloco têm 1 m; o original, a 2,4 m por bloco, ficava enorme para o corpo do jogo)
+BC = 0.1          # voxel de colisão (m): 1 bloco = 10 voxels, então as quinas ficam na grade
+CELL = 0.2        # célula da grade de navegação (m): 2 voxels
 YMAX = 6.0        # altura máxima simulada (m); acima disso ninguém chega
-HEAD = 6          # células livres para o corpo na grade de navegação (1,4 m: portas baixas ficam só para quem agacha)
+HEAD = 7          # células livres para o corpo na grade de navegação (1,4 m)
 
 obj_path, tex_dir = sys.argv[1], sys.argv[2]
 root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # ------------------------------------------------------------------ OBJ
-V = []; VT = []; faces = {}
-cur = 'default'
+V = []; VT = []; faces = {}; face_obj = {}
+cur = 'default'; cur_obj = ''
 for line in open(obj_path):
     if line.startswith('v '): V.append(list(map(float, line.split()[1:4])))
     elif line.startswith('vt '): VT.append(list(map(float, line.split()[1:3])))
     elif line.startswith('usemtl'): cur = line.split()[1]
+    elif line.startswith('o '): cur_obj = line.split()[1]
     elif line.startswith('f '):
         t = [p.split('/') for p in line.split()[1:]]
         vi = [int(p[0]) - 1 for p in t]; ti = [int(p[1]) - 1 if len(p) > 1 and p[1] else 0 for p in t]
-        for k in range(1, len(vi) - 1): faces.setdefault(cur, []).append((vi[0], vi[k], vi[k + 1], ti[0], ti[k], ti[k + 1]))
+        for k in range(1, len(vi) - 1):
+            faces.setdefault(cur, []).append((vi[0], vi[k], vi[k + 1], ti[0], ti[k], ti[k + 1]))
+            face_obj.setdefault(cur, []).append(cur_obj)
 V = np.array(V) * S
 VT = np.array(VT) if VT else np.zeros((1, 2))
+# aberturas novas (pedido do Lucas): cada base tinha UMA saída (a barreira da base ia de uma ponta até quase a outra); abre a ponta
+# que estava fechada, com o mesmo tamanho (5 cubos de 2 blocos), tirando os cubos do muro nessa faixa. Unidades do OBJ.
+CARVES = [(2900, 4000, -5400, -5100), (-4000, -2900, 5000, 5400)]  # (x0, x1, z0, z1) do objeto Wall
+def carved(tri_verts_raw):
+    xs = tri_verts_raw[:, 0]; zs = tri_verts_raw[:, 2]
+    return any(xs.min() >= a - 1 and xs.max() <= b + 1 and zs.min() >= c - 1 and zs.max() <= d + 1 for a, b, c, d in CARVES)
+Vraw = V / S
+removed = 0
+for mname in list(faces):
+    keep_f = []; keep_o = []
+    for f, o in zip(faces[mname], face_obj[mname]):
+        if o in ('Wall', 'Stair') and carved(Vraw[list(f[:3])]):  # o muro e o remate que fica por cima dele
+            removed += 1; continue
+        keep_f.append(f); keep_o.append(o)
+    faces[mname] = keep_f; face_obj[mname] = keep_o
+print('triângulos do muro retirados para abrir as bases:', removed)
 print('modelo (m):', V.min(axis=0).round(2), V.max(axis=0).round(2))
 # a grade nasce na quina do mapa (as quinas dos blocos ficam exatamente nas bordas dos voxels)
 X0, Z0 = float(V[:, 0].min()), float(V[:, 2].min())
@@ -53,9 +72,13 @@ print('voxels finos (z, x, y):', nz, nx, ny)
 # não há empate nem erro de um voxel no topo dos blocos (a casca por normais errava 25 cm porque as faces vêm com orientação mista).
 solid = np.zeros((nz, nx, ny), bool)
 allf = np.array([f[:3] for fl in faces.values() for f in fl])
+OBJ_NAMES = sorted(set(o for ol in face_obj.values() for o in ol))
+obj_of = np.array([OBJ_NAMES.index(o) for ol in face_obj.values() for o in ol], dtype=np.int32)
+# objetos que são degraus (malha aberta por baixo): o sólido vai do ponto mais baixo ao mais alto de cada coluna
+SPAN = np.array([n in ('Stair', 'StairWhite') for n in OBJ_NAMES])
 A = V[allf[:, 0]]; B = V[allf[:, 1]]; C = V[allf[:, 2]]
 print('triângulos', len(A))
-cross_col = []; cross_y = []
+cross_col = []; cross_y = []; cross_obj = []
 EPSJ = 1.7e-4  # desloca os centros das colunas um tiquinho: nada de empate exato na borda de dois triângulos
 for t in range(len(A)):
     P0, P1, P2 = A[t], B[t], C[t]
@@ -75,22 +98,35 @@ for t in range(len(A)):
     ok = (w0 >= 0) & (w1 >= 0) & (w2 >= 0)
     if not ok.any(): continue
     y = w0[ok] * P0[1] + w1[ok] * P1[1] + w2[ok] * P2[1]
-    cross_col.append((ii[ok] * nx + jj[ok]).astype(np.int64)); cross_y.append(y)
-cc = np.concatenate(cross_col); cy = np.concatenate(cross_y)
-order = np.lexsort((cy, cc)); cc = cc[order]; cy = cy[order]
-print('cruzamentos', len(cc))
-starts = np.flatnonzero(np.r_[True, cc[1:] != cc[:-1]]); ends = np.r_[starts[1:], len(cc)]
+    cross_col.append((ii[ok] * nx + jj[ok]).astype(np.int64)); cross_y.append(y); cross_obj.append(np.full(len(y), obj_of[t], np.int32))
+cc = np.concatenate(cross_col); cy = np.concatenate(cross_y); co = np.concatenate(cross_obj)
+# um sólido por (objeto, coluna): cada objeto é resolvido sozinho, então blocos encostados ou sobrepostos não bagunçam a paridade do vizinho
+key = co.astype(np.int64) * (nz * nx) + cc
+order = np.lexsort((cy, key)); key = key[order]; cy = cy[order]; co = co[order]
+print('cruzamentos', len(key))
+starts = np.flatnonzero(np.r_[True, key[1:] != key[:-1]]); ends = np.r_[starts[1:], len(key)]
 odd = 0
-zc = (np.arange(ny) + 0.5) * BC
 for s0, e0 in zip(starts, ends):
     n = e0 - s0
-    if n % 2: odd += 1; n -= 1   # malha aberta nessa coluna: ignora o último cruzamento
-    col = int(cc[s0]); i, j = divmod(col, nx)
-    ys = cy[s0:s0 + n]
+    col = int(key[s0] % (nz * nx)); i, j = divmod(col, nx)
+    ys = cy[s0:e0]
+    if SPAN[int(co[s0])] or n % 2:
+        if n % 2 and not SPAN[int(co[s0])]: odd += 1
+        k0 = int(math.ceil(ys[0] / BC - 0.5)); k1 = int(math.floor(ys[-1] / BC - 0.5))
+        if k1 >= k0: solid[i, j, max(0, k0):min(ny, k1 + 1)] = True
+        continue
     for q in range(0, n, 2):
         k0 = int(math.ceil(ys[q] / BC - 0.5)); k1 = int(math.floor(ys[q + 1] / BC - 0.5))
         if k1 >= k0: solid[i, j, max(0, k0):min(ny, k1 + 1)] = True
-print('colunas com número ímpar de cruzamentos (malha aberta):', odd, 'de', len(starts))
+print('colunas de objeto com número ímpar de cruzamentos (preenchidas do mais baixo ao mais alto):', odd, 'de', len(starts))
+# torres do meio dos muros: por dentro são ocas (janela no alto e escada de mão), e quem entrava pela janela caía lá dentro e ficava preso,
+# porque o jogo ainda não tem escada de mão. A colisão trata a torre como bloco maciço (o desenho continua igual).
+FILLS = [(-200, 200, -5400, -5200, 200, 1200), (-200, 200, 5200, 5400, 200, 1200)]  # (x0, x1, z0, z1, y0, y1) em unidades do OBJ
+for fx0, fx1, fz0, fz1, fy0, fy1 in FILLS:
+    j0 = max(0, int(math.floor((fx0 * S - X0) / BC + 0.5))); j1 = min(nx, int(math.ceil((fx1 * S - X0) / BC - 0.5)))
+    i0 = max(0, int(math.floor((fz0 * S - Z0) / BC + 0.5))); i1 = min(nz, int(math.ceil((fz1 * S - Z0) / BC - 0.5)))
+    k0 = int(math.floor(fy0 * S / BC + 0.5)); k1 = min(ny, int(math.ceil(fy1 * S / BC - 0.5)))
+    solid[i0:i1, j0:j1, k0:k1] = True
 print('voxels sólidos', int(solid.sum()))
 
 # ------------------------------------------------------------------ onde se fica em pé (grade de 25 cm)
@@ -162,7 +198,8 @@ for _ in range(2):
     for ax in range(3):
         for sg in (-1, 1): nxt |= np.roll(fr, sg, axis=ax)
     fr = nxt
-shell = solid & fr
+# maciço: todo voxel sólido perto de onde se anda vira colisão (uma casca oca deixava buracos por dentro de muros e torres)
+shell = solid.copy()
 # só onde alguém chega (a área andável ampliada) e abaixo de 12 m
 near = has.copy()
 for _ in range(6):
@@ -210,24 +247,29 @@ cols, rows = cx, cz
 zs = Z0 + (np.arange(rows) + 0.5) * CELL
 xs = X0 + (np.arange(cols) + 0.5) * CELL
 walk_cols = np.argwhere(has)   # (i = linha z, j = coluna x)
-def pick(side, n=12):
-    zlim = (Z1 - Z0) * 0.18
-    cand = [(i, j) for i, j in walk_cols if (zs[i] < Z0 + zlim if side == 0 else zs[i] > Z1 - zlim)]
-    # os mais próximos da ponta, espalhados (mínimo 2,5 m entre eles)
-    cand.sort(key=lambda t: (zs[t[0]] - Z0) if side == 0 else (Z1 - zs[t[0]]))
+BASE_Z = 5400 * S   # o muro divisor de cada base fica em |z| ~ 27 m: a base é a faixa entre ele e a parede do fundo
+def pick(side):
+    """Dois fileiras de 6 nascimentos, centradas na base (x = 0), cada um no chão andável mais perto do ponto ideal."""
+    xs_ideal = [(i - 2.5) * 4.8 for i in range(6)]
     out = []
-    for (i, j) in cand[:20000]:
-        x, z = xs[j], zs[i]
-        if all(math.hypot(x - a, z - b) > 2.5 for a, b, _ in out):
-            out.append((x, z, 0 if side == 0 else 180))
-        if len(out) >= n: break
+    for row_off in (2.2, 5.2):
+        z_ideal = (Z0 + row_off) if side == 0 else (Z1 - row_off)
+        for xi in xs_ideal:
+            best = None
+            for (i, j) in walk_cols:
+                x, z = xs[j], zs[i]
+                d = math.hypot(x - xi, z - z_ideal)
+                if d < 2.0 and (best is None or d < best[0]) and all(math.hypot(x - a, z - b) > 2.0 for a, b, _ in out):
+                    best = (d, x, z)
+            if best: out.append((best[1], best[2], 0 if side == 0 else 180))
     return out
 sideA = pick(0); sideB = pick(1)
 print('nascimentos A', len(sideA), 'B', len(sideB))
 
-def rect(pts, m=3.0):
-    xs_ = [p[0] for p in pts]; zs_ = [p[1] for p in pts]
-    return [round(min(xs_) - m, 2), round(min(zs_) - m, 2), round(max(xs_) + m, 2), round(max(zs_) + m, 2)]
+def rect(side):
+    # a base inteira: de parede a parede em x e do fundo até o muro divisor em z (a marca no mapa fica centralizada nela)
+    if side == 0: return [round(X0 + 0.5, 2), round(Z0, 2), round(X1 - 0.5, 2), round(-BASE_Z, 2)]
+    return [round(X0 + 0.5, 2), round(BASE_Z, 2), round(X1 - 0.5, 2), round(Z1, 2)]
 def rl(flat):
     out = []; i = 0
     while i < len(flat):
@@ -239,7 +281,7 @@ data = {
     'cols': cols, 'rows': rows, 'x0': round(X0, 5), 'z0': round(Z0, 5), 'cell': CELL, 'step': CELL, 'bcell': BC,
     'rle': rl(level.reshape(-1).tolist()), 'boxes': boxes_b64,
     'tspawns': [[round(x, 2), round(z, 2), a] for x, z, a in sideA], 'ctspawns': [[round(x, 2), round(z, 2), a] for x, z, a in sideB],
-    'sites': [], 'buys': [rect(sideA), rect(sideB)], 'hmin': 0,
+    'sites': [], 'buys': [rect(0), rect(1)], 'hmin': 0,
 }
 out_ts = os.path.join(root, 'packages/games/src/foxshot/pvp.data.ts')
 open(out_ts, 'w').write('/* Gerado por tools/art/pvp_build.py: colisão e grade do mapa do modo PvP (não editar à mão). */\nexport const FS_PVP_DATA: Record<string, unknown> = ' + json.dumps(data) + ';\n')

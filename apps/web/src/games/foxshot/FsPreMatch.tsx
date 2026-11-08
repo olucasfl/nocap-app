@@ -34,7 +34,7 @@ export function FsPreMatch({
                   ? 'Impeça a plantação. Se a C4 for plantada, desarme segurando E antes que exploda.'
                   : 'Acompanhe os aliados até o fim do round.'}
           </span>
-          <span>{pvp ? `Primeiro a ${winRounds} pontos vence. Dinheiro infinito: compre qualquer arma na fase de compra.` : `Primeiro a ${winRounds} rounds vence. Compre na base durante a fase de compra.`}</span>
+          <span>{pvp ? `Primeiro a ${winRounds} pontos vence. Dinheiro infinito: compre qualquer arma (tecla B) quando quiser, mas só na sua base.` : `Primeiro a ${winRounds} rounds vence. Compre na base durante a fase de compra.`}</span>
         </div>
       )}
       {!bomb && (

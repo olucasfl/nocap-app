@@ -54,13 +54,23 @@ function MapCard({ mapId, mode }: { mapId: FsMapId; mode: 'dm' | 'bomb' | 'pvp' 
     g.clearRect(0, 0, cv.width, cv.height);
     // a altura vira cor (o mapa chega a uns 6 m)
     const unit = 1;
-    for (let r = 0; r < gr.rows; r++) {
+    for (let r = 0; r < gr.rows && !map.planImage; r++) {
       for (let c = 0; c < gr.cols; c++) {
         if (gr.wall(c, r)) continue;
         const v = Math.min(8, Math.round(gr.height(c, r) / unit));
         g.fillStyle = `rgb(${120 + v * 16},${150 + v * 10},${190 - v * 6})`;
         g.fillRect(c * S, r * S, Math.ceil(S), Math.ceil(S));
       }
+    }
+    // mapa com planta texturizada: a imagem entra por baixo de tudo o que já foi desenhado (bases, bombas e nomes)
+    if (map.planImage) {
+      const img = new Image();
+      img.onload = () => {
+        g.globalCompositeOperation = 'destination-over';
+        g.drawImage(img, 0, 0, cv.width, cv.height);
+        g.globalCompositeOperation = 'source-over';
+      };
+      img.src = `${import.meta.env.BASE_URL ?? '/'}models/foxshot/${map.planImage}`.replace('//', '/');
     }
     // as bases (áreas tingidas) e as bombas A e B com o nome
     const px = (x: number) => ((x - gr.x0) / gr.cell) * S;

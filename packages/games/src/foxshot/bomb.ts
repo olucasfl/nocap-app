@@ -240,7 +240,8 @@ export class FsBombMatch {
 
   /** A loja continua aberta (só na base) por FS_BUY_GRACE s depois que o round é liberado para jogar. */
   get buyOpen(): boolean {
-    if (this.cfg.pvp) return this.phase === 'buy';
+    // PvP: dá para comprar quando quiser (só na base e vivo); só trava no fim do round e da partida
+    if (this.cfg.pvp) return this.phase !== 'end' && this.phase !== 'over';
     return this.phase === 'buy' || (this.phase === 'live' && this.cfg.roundSec - this.time <= FS_BUY_GRACE);
   }
 

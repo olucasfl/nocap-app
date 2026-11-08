@@ -23,6 +23,16 @@ describe('modo PvP: regras', () => {
     expect(m.players.get('a')!.money).toBeGreaterThan(50_000);
     expect(m.buy('a', 5000, false)).toBe(false);
   });
+  it('compra a qualquer hora do round, mas só na base e só vivo', () => {
+    const m = mk();
+    m.step(m.cfg.buySec + 0.1);
+    expect(m.phase).toBe('live');
+    expect(m.buyOpen).toBe(true);
+    expect(m.buy('a', 900, true)).toBe(true);
+    expect(m.buy('a', 900, false)).toBe(false);
+    m.kill('c', 'a', 'ak');
+    expect(m.buy('a', 900, true)).toBe(false);
+  });
   it('o round acaba quando um time inteiro cai e o ponto vai para o outro', () => {
     const m = mk();
     m.step(m.cfg.buySec + 0.1);
@@ -74,7 +84,13 @@ describe('modo PvP: mapa e partida', () => {
     expect(map.marks.some((m) => m.kind === 'site')).toBe(false);
     for (const s of map.spawns) expect(map.walkable(map.col(s.x), map.row(s.z)), `${s.zone} ${s.x},${s.z}`).toBe(true);
     const mz = (l: typeof tr) => l.reduce((a, s) => a + s.z, 0) / l.length;
-    expect(Math.abs(mz(tr) - mz(ct))).toBeGreaterThan(60);
+    expect(Math.abs(mz(tr) - mz(ct))).toBeGreaterThan(50);
+  });
+  it('cada base tem duas saídas, uma de cada lado do muro', () => {
+    // as faixas abertas ficam a ~17,5 m do centro, a ~26,5 m do meio da arena
+    for (const [x, z] of [[17.5, -26.5], [-17.5, -26.5], [17.5, 26.5], [-17.5, 26.5]] as const) {
+      expect(map.walkable(map.col(x), map.row(z)), `saída em ${x},${z}`).toBe(true);
+    }
   });
   it('dá para andar de uma ponta à outra com a física do jogo', () => {
     const a = map.spawns.find((s) => s.zone === 'TR')!;
