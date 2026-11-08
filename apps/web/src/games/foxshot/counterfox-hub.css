@@ -760,3 +760,31 @@
 .cfl .lb-game span { color: #cfd8ee; opacity: 1; }
 .cfl .lb-game.is-on { background: color-mix(in srgb, var(--cfx-ember) 30%, rgba(8, 12, 26, 0.9)); border-color: var(--cfx-ember); color: #fff; }
 .cfl .lb-game:not(:disabled):not(.is-on):hover { transform: none; border-color: var(--cfx-amber); box-shadow: none; }
+
+/* ---- aba Sala no modo Bomba: os dois times com vagas, quem espectar e bots por time ---- */
+.cfl-board { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0 4px; }
+.cfl-team, .cfl-spec { background: rgba(8, 12, 26, 0.82); border: 1px solid rgba(255, 255, 255, 0.2); padding: 0 0 10px; clip-path: polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%); }
+.cfl-spec { grid-column: 1 / -1; }
+.cfl-board h4 { display: flex; justify-content: space-between; align-items: center; margin: 0 0 8px; padding: 7px 12px; font: 700 15px var(--cfx-ui); letter-spacing: 0.16em; text-transform: uppercase; }
+.cfl-board h4 b { font-size: 18px; }
+.cfl-team.tr h4 { background: #ff7d26; color: #1b0d00; }
+.cfl-team.ct h4 { background: #2f6bff; color: #fff; }
+.cfl-spec h4 { background: rgba(255, 255, 255, 0.14); color: #fff; }
+.cfl-board ul { list-style: none; margin: 0; padding: 0 10px; display: grid; gap: 5px; }
+.cfl-board li { display: flex; align-items: center; gap: 8px; min-height: 34px; padding: 3px 8px; background: rgba(255, 255, 255, 0.07); border-left: 4px solid rgba(255, 255, 255, 0.3); color: #fff; font-family: var(--cfx-ui); }
+.cfl-team.tr li { border-left-color: #ff7d26; }
+.cfl-team.ct li { border-left-color: #2f6bff; }
+.cfl-board li i { display: grid; place-items: center; width: 24px; height: 24px; font-style: normal; font-weight: 800; background: rgba(255, 255, 255, 0.16); }
+.cfl-board li b { font-weight: 700; letter-spacing: 0.06em; }
+.cfl-board li em { margin-left: auto; font-style: normal; font-size: 12px; color: #cfd8ee; }
+.cfl-board li.me { background: rgba(125, 255, 154, 0.18); }
+.cfl-board li.bot { opacity: 0.9; }
+.cfl-board li.free { background: transparent; border-left-style: dashed; color: #cfd8ee; }
+.cfl-board li.free button { width: 100%; text-align: left; background: transparent; border: 0; color: #fff; font: 700 14px var(--cfx-ui); letter-spacing: 0.1em; cursor: pointer; text-transform: uppercase; }
+.cfl-board li.free button:hover, .cfl-specbtn:hover { background: rgba(255, 255, 255, 0.12); }
+.cfl-botctl { display: flex; align-items: center; gap: 8px; margin: 8px 10px 0; color: #fff; font: 700 13px var(--cfx-ui); letter-spacing: 0.14em; text-transform: uppercase; }
+.cfl-botctl button, .cfl-specbtn { min-width: 34px; min-height: 34px; background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.4); color: #fff; font: 800 18px var(--cfx-ui); cursor: pointer; }
+.cfl-botctl button:disabled { opacity: 0.35; cursor: default; }
+.cfl-specbtn { margin: 8px 10px 0; padding: 0 16px; font-size: 14px; letter-spacing: 0.16em; text-transform: uppercase; }
+.cfl-teamtag { padding: 2px 10px; background: rgba(255, 255, 255, 0.14); color: #fff; font: 800 12px var(--cfx-ui); letter-spacing: 0.14em; }
+@media (max-width: 640px) { .cfl-board { grid-template-columns: 1fr; } }

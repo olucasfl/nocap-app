@@ -67,8 +67,8 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
   private startAt = 0;
   private overAt = 0;
   private dirty = false;
-  /** Time escolhido na sala no modo Bomba (0 contra-terrorista, 1 terrorista); sem escolha o jogo equilibra. */
-  readonly teamPref = new Map<string, 0 | 1>();
+  /** Time escolhido na sala no modo Bomba (0 contra-terrorista, 1 terrorista, 2 espectar); sem escolha o jogo equilibra. */
+  readonly teamPref = new Map<string, 0 | 1 | 2>();
 
   constructor(opts: EngineOptions) {
     super({ ...opts, maxPlayers: FOXSHOT_ROOM_MAX });
@@ -136,7 +136,13 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
     if (this.phase !== 'lobby') throw new RoomError('Só dá para trocar de time no lobby');
     if (by !== id) this.requireHost(by);
     if (!this.members.has(id)) return;
-    if (team !== 0 && team !== 1) return;
+    if (team !== 0 && team !== 1 && team !== 2) return;
+    // cada time tem no máximo 5 (pessoas e bots juntos); espectar não tem limite
+    if (team !== 2 && this.teamPref.get(id) !== team) {
+      const people = [...this.members.values()].filter((m) => m.id !== id && this.teamPref.get(m.id) === team).length;
+      const bots = team === 0 ? this.cfg.botsCt : this.cfg.botsTr;
+      if (people + bots >= 5) throw new RoomError('Esse time está cheio');
+    }
     this.teamPref.set(id, team);
     this.dirty = true;
   }
@@ -157,8 +163,8 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
   override start(id: string) {
     this.requireHost(id);
     this.requirePhase('lobby');
-    const humans = [...this.members.values()].filter((m) => m.connected);
-    if (humans.length < 1) throw new RoomError('Falta gente na sala');
+    const humans = [...this.members.values()].filter((m) => m.connected && !(this.cfg.kind === 'bomb' && this.teamPref.get(m.id) === 2));
+    if (humans.length < 1) throw new RoomError('Falta gente jogando: escolha um time');
     if (this.cfg.kind === 'none') throw new RoomError('Escolha o modo de jogo na aba Modo');
     if (humans.length + this.botTotal() < 2) throw new RoomError('Coloque ao menos 1 bot ou chame um amigo');
     if (humans.some((m) => m.id !== this.hostId && !m.ready && !this.committed.has(m.id))) throw new RoomError('Falta gente marcar "pronto"');
@@ -173,18 +179,19 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
   protected override beginRound() {
     this.roundIndex = 0;
     this.rounds[0] = {};
-    const humans = [...this.members.values()].filter((m) => m.connected).sort((a, b) => a.joinedAt - b.joinedAt);
-    const cfg = fsMatchConfig(this.cfg.minutes, 1);
     const bomb = this.cfg.kind === 'bomb';
+    // quem escolheu espectar no modo Bomba não entra na partida (assiste)
+    const humans = [...this.members.values()].filter((m) => m.connected && !(bomb && this.teamPref.get(m.id) === 2)).sort((a, b) => a.joinedAt - b.joinedAt);
+    const cfg = fsMatchConfig(this.cfg.minutes, 1);
     // sem escolha, equilibra: quem ainda não escolheu entra no time com menos gente
     const count: [number, number] = [0, 0];
     for (const m of humans) {
       const t = this.teamPref.get(m.id);
-      if (t !== undefined) count[t]++;
+      if (t === 0 || t === 1) count[t]++;
     }
     const teamOf = (id: string): 0 | 1 => {
       const t = this.teamPref.get(id);
-      if (t !== undefined) return t;
+      if (t === 0 || t === 1) return t;
       const pick = count[0] <= count[1] ? 0 : 1;
       count[pick]++;
       return pick;

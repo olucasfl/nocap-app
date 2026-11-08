@@ -166,13 +166,13 @@ export class FsHostSession {
 
   private onWorker(m: WorkerOut) {
     if (m.t === 'frames') {
-      const mine = m.texts[this.meId];
+      const mine = m.texts[this.meId] ?? m.texts['*'];
       if (mine && this.frameCbs.size > 0) {
         const f = JSON.parse(mine) as unknown;
         for (const cb of this.frameCbs) cb(f);
       }
       for (const p of this.peers.values()) {
-        const text = m.texts[p.id];
+        const text = m.texts[p.id] ?? m.texts['*'];
         const ch = p.game;
         // canal entupido (rede ruim): pula o quadro em vez de empilhar atraso
         if (text && ch?.readyState === 'open' && ch.bufferedAmount < 64_000) ch.send(text);

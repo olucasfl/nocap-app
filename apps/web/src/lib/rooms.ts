@@ -229,7 +229,8 @@ export interface FoxShotRoomState {
   botsTr?: number;
   winRounds?: number;
   roundSec?: number;
-  teams?: Record<string, 0 | 1>;
+  /** Time de cada pessoa no modo Bomba: 0 contra-terrorista, 1 terrorista, 2 espectando. */
+  teams?: Record<string, 0 | 1 | 2>;
   startAt: number | null;
   roster: { id: string; name: string; bot: boolean }[] | null;
   hz: number;

@@ -34,8 +34,9 @@ test('celular entra na partida Bomba online e vê os botões de toque', async ({
 
   await ana.getByTestId('cfl-tab-modo').click();
   await ana.getByTestId('cfl-mode-bomb').click();
-  await ana.getByTestId('cfl-botsct-1').click();
-  await ana.getByTestId('cfl-botstr-1').click();
+  await ana.getByTestId('cfl-tab-sala').click();
+  await ana.getByTestId('cfl-botup-ct').click();
+  await ana.getByTestId('cfl-botup-tr').click();
   await bia.screenshot({ path: `${process.env.FS_SHOTS ?? '/tmp'}/toque-lobby.png` });
   await bia.getByTestId('cfl-ready').tap();
   await expect(ana.getByTestId('cfl-start')).toBeEnabled({ timeout: 10_000 });

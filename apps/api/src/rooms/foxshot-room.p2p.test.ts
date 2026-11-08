@@ -94,4 +94,16 @@ describe('Counter Fox ponto a ponto', () => {
     s.room.start('lia');
     expect(snap(s.room).net).toBe('server');
   });
+
+  it('modo Bomba: espectar tira a pessoa da partida e o time cheio recusa mais gente', () => {
+    const s = mk(false);
+    s.room.configure('lia', { kind: 'bomb', botsTr: 4 } as never);
+    s.room.setTeam('lia', 'lia', 1);
+    expect(() => s.room.setTeam('bia', 'bia', 1)).toThrow('Esse time está cheio');
+    s.room.setTeam('bia', 'bia', 2);
+    s.room.setTeam('lia', 'lia', 1);
+    s.room.start('lia');
+    const roster = s.room.sim!.roster.filter((r) => !r.bot).map((r) => r.id);
+    expect(roster).toEqual(['lia']);
+  });
 });

@@ -31,8 +31,9 @@ const FUR = ['#3f82ff', '#ff8a3d'];
 /** O que falta para começar o mata-mata (uma linha). */
 function hint(s: RoomSnapshot): { text: string; ok: boolean } {
   if ((s.foxshot?.kind ?? 'none') === 'none') return { text: 'Escolha o modo de jogo na aba Modo', ok: false };
-  const humans = s.members.filter((m) => m.connected);
+  const humans = s.members.filter((m) => m.connected && !(s.foxshot?.kind === 'bomb' && s.foxshot.teams?.[m.id] === 2));
   const bots = s.foxshot?.kind === 'bomb' ? (s.foxshot.botsCt ?? 0) + (s.foxshot.botsTr ?? 0) : (s.foxshot?.bots ?? 0);
+  if (humans.length < 1) return { text: 'Escolha um time na aba Sala para jogar', ok: false };
   if (humans.length + bots < 2) return { text: 'Coloque ao menos 1 bot ou chame um amigo', ok: false };
   const waiting = humans.filter((m) => !m.isHost && !m.ready && !m.committed).length;
   if (waiting > 0) return { text: `Falta${waiting > 1 ? 'm' : ''} ${waiting} marcar "pronto"`, ok: false };
@@ -178,13 +179,13 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
     const cnt: [number, number] = [0, 0];
     for (const m of snapshot.members) {
       const t = teams[m.id];
-      if (t !== undefined) {
+      if (t === 0 || t === 1) {
         out.set(m.id, t);
         cnt[t]++;
       }
     }
     for (const m of snapshot.members) {
-      if (out.has(m.id)) continue;
+      if (out.has(m.id) || teams[m.id] === 2) continue;
       const t: 0 | 1 = cnt[0] <= cnt[1] ? 0 : 1;
       out.set(m.id, t);
       cnt[t]++;
@@ -195,7 +196,9 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
   /** Cada time tem no máximo 5: os bots só completam o que sobra do lado de cada um. */
   const capCt = Math.max(0, 5 - teamMap.cnt[0]);
   const capTr = Math.max(0, 5 - teamMap.cnt[1]);
-  const humans = snapshot.members.length;
+  /** Quem escolheu espectar no modo Bomba (assiste, não joga). */
+  const specs = snapshot.members.filter((m) => bomb && teams[m.id] === 2);
+  const humans = snapshot.members.length - specs.length;
   const h = hint(snapshot);
   const err = useRoom((s) => s.message);
 
@@ -265,6 +268,80 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
                 <div><dt>Bots</dt><dd>{bots}</dd></div>
                 {!bomb && <div><dt>Pontos</dt><dd>Abate {FS_POINTS.kill} · Assist. {FS_POINTS.assist}</dd></div>}
               </dl>
+              {bomb && (
+                <div className="cfl-board" data-testid="cfl-board">
+                  {([1, 0] as const).map((t) => {
+                    const key = t === 1 ? 'tr' : 'ct';
+                    const people = snapshot.members.filter((m) => teamMap.out.get(m.id) === t && teams[m.id] !== 2);
+                    const nBots = t === 1 ? botsTr : botsCt;
+                    const free = Math.max(0, 5 - people.length - nBots);
+                    const iAmHere = !!mine && people.some((m) => m.id === mine.id);
+                    return (
+                      <section key={key} className={`cfl-team ${key}`} data-testid={`cfl-team-${key}`}>
+                        <h4>
+                          <span>{t === 1 ? 'Terroristas' : 'Contra-terroristas'}</span>
+                          <b>{people.length + nBots}/5</b>
+                        </h4>
+                        <ul>
+                          {people.map((m) => (
+                            <li key={m.id} className={`p${m.id === me ? ' me' : ''}`} data-testid={`cfl-slot-${key}-${m.username}`}>
+                              <i aria-hidden="true">{m.username.slice(0, 1).toUpperCase()}</i>
+                              <b>{m.username}{m.id === me ? ' (você)' : ''}</b>
+                              <em>{m.isHost ? 'Líder' : ''}</em>
+                            </li>
+                          ))}
+                          {Array.from({ length: nBots }, (_, i) => (
+                            <li key={`b${i}`} className="bot">
+                              <i aria-hidden="true">B</i>
+                              <b>Bot</b>
+                              <em>Computador</em>
+                            </li>
+                          ))}
+                          {Array.from({ length: free }, (_, i) => (
+                            <li key={`f${i}`} className="free">
+                              {iAmHere || !mine ? (
+                                <span>Vaga</span>
+                              ) : (
+                                <button type="button" onClick={() => sendRoom('fsteam', { id: mine.id, team: t })} data-sfx="tab" data-testid={`cfl-join-${key}`}>
+                                  Vaga · entrar aqui
+                                </button>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                        {leader && (
+                          <div className="cfl-botctl" role="group" aria-label={`Bots ${t === 1 ? 'terroristas' : 'contra-terroristas'}`}>
+                            <span>Bots</span>
+                            <button type="button" disabled={nBots <= 0} onClick={() => sendRoom('configure', t === 1 ? { botsTr: nBots - 1 } : { botsCt: nBots - 1 })} aria-label="Tirar um bot" data-testid={`cfl-botdown-${key}`}>−</button>
+                            <b data-testid={`cfl-botn-${key}`}>{nBots}</b>
+                            <button type="button" disabled={free <= 0} onClick={() => sendRoom('configure', t === 1 ? { botsTr: nBots + 1 } : { botsCt: nBots + 1 })} aria-label="Pôr um bot" data-testid={`cfl-botup-${key}`}>+</button>
+                          </div>
+                        )}
+                      </section>
+                    );
+                  })}
+                  <section className="cfl-spec" data-testid="cfl-spec">
+                    <h4>
+                      <span>Espectando</span>
+                      <b>{specs.length}</b>
+                    </h4>
+                    <ul>
+                      {specs.map((m) => (
+                        <li key={m.id} className="p">
+                          <i aria-hidden="true">{m.username.slice(0, 1).toUpperCase()}</i>
+                          <b>{m.username}{m.id === me ? ' (você)' : ''}</b>
+                        </li>
+                      ))}
+                      {specs.length === 0 && <li className="free"><span>Ninguém</span></li>}
+                    </ul>
+                    {mine && teams[mine.id] !== 2 && (
+                      <button type="button" className="cfl-specbtn" onClick={() => sendRoom('fsteam', { id: mine.id, team: 2 })} data-sfx="tab" data-testid="cfl-join-spec">
+                        Espectar
+                      </button>
+                    )}
+                  </section>
+                </div>
+              )}
               <p className={`cfl-hint${h.ok ? ' ok' : ''}`} data-testid="cfl-hint">{h.text}</p>
             </div>
           )}
@@ -278,20 +355,8 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
                     <b>{m.username}{m.id === me ? ' (você)' : ''}</b>
                     <em className={m.isHost ? 'lead' : m.ready || m.committed ? 'ok' : ''}>{!m.connected ? 'Desconectado' : m.isHost ? 'Líder' : m.ready || m.committed ? 'Pronto' : 'Esperando'}</em>
                     {bomb && (
-                      <span className="cfl-teams" role="group" aria-label={`Time de ${m.username}`}>
-                        {([0, 1] as const).map((t) => (
-                          <button
-                            key={t}
-                            type="button"
-                            className={`cfh-pill${teamOfMember(m.id, i) === t ? ' on' : ''}`}
-                            disabled={m.id !== me && !leader}
-                            aria-pressed={teamOfMember(m.id, i) === t}
-                            onClick={() => sendRoom('fsteam', { id: m.id, team: t })}
-                            data-testid={`cfl-team-${m.username}-${t === 1 ? 'tr' : 'ct'}`}
-                          >
-                            {t === 1 ? 'TR' : 'CT'}
-                          </button>
-                        ))}
+                      <span className="cfl-teamtag" data-testid={`cfl-tag-${m.username}`}>
+                        {teams[m.id] === 2 ? 'Espectando' : teamOfMember(m.id, i) === 1 ? 'TR' : 'CT'}
                       </span>
                     )}
                     {leader && m.id !== me && (
@@ -328,7 +393,7 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
               </button>
               <button type="button" className={`cfl-mode${bomb ? ' on' : ''}`} aria-pressed={bomb} disabled={!leader} onClick={() => sendRoom('configure', { kind: 'bomb' })} data-testid="cfl-mode-bomb">
                 <b>Bomba{bomb && <em className="cfl-sel"> · selecionado</em>}</b>
-                <span>Rounds de TR contra CT: os terroristas plantam a bomba, os contra-terroristas impedem. Compra só na base, dinheiro finito. Escolha o time na aba Jogadores.</span>
+                <span>Rounds de TR contra CT: os terroristas plantam a bomba, os contra-terroristas impedem. Compra só na base, dinheiro finito. Os times e os bots ficam na aba Sala.</span>
               </button>
               {kind === 'none' ? (
                 <p className="cfl-note" data-testid="cfl-mode-none">{leader ? 'Escolha um modo para ver as regras dele.' : 'O líder ainda vai escolher o modo.'}</p>
@@ -363,26 +428,7 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
                   </div>
                 </>
               )}
-              {bomb ? (
-                <>
-                  <h4>Bots contra-terroristas (só entram se você quiser)</h4>
-                  <div className="cfh-pills" role="radiogroup" aria-label="Bots contra-terroristas">
-                    {[0, 1, 2, 3, 4, 5].map((n) => (
-                      <button key={n} type="button" role="radio" aria-checked={botsCt === n} disabled={!leader || n > capCt} className={`cfh-pill${botsCt === n ? ' on' : ''}`} onClick={() => sendRoom('configure', { botsCt: n })} data-testid={`cfl-botsct-${n}`}>
-                        {n}
-                      </button>
-                    ))}
-                  </div>
-                  <h4>Bots terroristas</h4>
-                  <div className="cfh-pills" role="radiogroup" aria-label="Bots terroristas">
-                    {[0, 1, 2, 3, 4, 5].map((n) => (
-                      <button key={n} type="button" role="radio" aria-checked={botsTr === n} disabled={!leader || n > capTr} className={`cfh-pill${botsTr === n ? ' on' : ''}`} onClick={() => sendRoom('configure', { botsTr: n })} data-testid={`cfl-botstr-${n}`}>
-                        {n}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              ) : (
+              {!bomb && (
                 <>
               <h4>Bots para completar ({humans} pessoas na sala)</h4>
               <div className="cfh-pills" role="radiogroup" aria-label="Bots">

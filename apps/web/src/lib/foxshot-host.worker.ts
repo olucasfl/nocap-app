@@ -75,6 +75,8 @@ function emit(s: FsNetSim, now: number) {
   const e = JSON.stringify(evBuf.map((x) => x.e));
   const texts: Record<string, string> = {};
   for (const r of s.roster) if (!r.bot) texts[r.id] = `{"f":${f},"s":${JSON.stringify(s.selfState(r.id))},"e":${e}}`;
+  // quem só assiste (espectador) recebe o mesmo quadro sem o corpo próprio
+  texts['*'] = `{"f":${f},"s":null,"e":${e}}`;
   post({ t: 'frames', texts });
 }
 

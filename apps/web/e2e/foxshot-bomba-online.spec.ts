@@ -44,13 +44,22 @@ test('duas janelas: modo Bomba com times TR e CT, compra com dinheiro e HUD da b
   await ana.getByTestId('cfl-mode-bomb').click();
   await expect(ana.getByTestId('cfl-rounds-4')).toBeVisible();
   await ana.getByTestId('cfl-rounds-4').click();
-  await ana.getByTestId('cfl-botsct-1').click();
-  await ana.getByTestId('cfl-botstr-1').click();
-  // times: Ana TR, Bia CT
-  await ana.getByTestId('cfl-tab-jogadores').click();
-  await expect(ana.getByTestId('cfl-team-Bia-ct')).toBeVisible({ timeout: 10_000 });
-  await ana.getByTestId('cfl-team-Ana-tr').click();
-  await ana.getByTestId('cfl-team-Bia-ct').click();
+  // times e bots ficam na aba Sala: Ana TR, Bia CT, 1 bot de cada lado
+  await ana.getByTestId('cfl-tab-sala').click();
+  await expect(ana.getByTestId('cfl-board')).toBeVisible({ timeout: 10_000 });
+  await ana.getByTestId('cfl-join-tr').first().click();
+  await expect(ana.getByTestId('cfl-slot-tr-Ana')).toBeVisible({ timeout: 10_000 });
+  await bia.getByTestId('cfl-tab-sala').click();
+  await bia.getByTestId('cfl-join-ct').first().click();
+  await expect(ana.getByTestId('cfl-slot-ct-Bia')).toBeVisible({ timeout: 10_000 });
+  await ana.getByTestId('cfl-botup-ct').click();
+  await ana.getByTestId('cfl-botup-tr').click();
+  await expect(ana.getByTestId('cfl-botn-ct')).toHaveText('1');
+  // quem quiser assistir escolhe Espectar (Bia testa e volta ao time)
+  await bia.getByTestId('cfl-join-spec').click();
+  await expect(ana.getByTestId('cfl-spec')).toContainText('Bia', { timeout: 10_000 });
+  await bia.getByTestId('cfl-join-ct').first().click();
+  await expect(ana.getByTestId('cfl-slot-ct-Bia')).toBeVisible({ timeout: 10_000 });
   await bia.getByTestId('cfl-ready').click();
   await expect(ana.getByTestId('cfl-start')).toBeEnabled({ timeout: 10_000 });
   await ana.getByTestId('cfl-start').click();
