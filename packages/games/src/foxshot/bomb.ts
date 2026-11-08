@@ -133,6 +133,9 @@ export class FsBombMatch {
   lastRound: { winner: FsSide; reason: FsRoundReason } | null = null;
   private plantBy: string | null = null;
   private defuseBy: string | null = null;
+  /** Relógio do desarme (s) e quando o desarmador atual foi visto por último: quem está desarmando não perde o progresso para outro. */
+  private defuseClock = 0;
+  private defuseSeen = 0;
   /** Quem está plantando / desarmando agora (para mostrar a animação a todos). */
   get planting(): string | null {
     return this.phase === 'live' && this.plantProgress > 0 ? this.plantBy : null;
@@ -303,6 +306,13 @@ export class FsBombMatch {
       }
       return;
     }
+    // outro contra-terrorista vivo já está desarmando: o segundo não consegue (e não zera o tempo do primeiro)
+    const cur = this.defuseBy;
+    if (cur && cur !== id && this.defuseProgress > 0) {
+      const o = this.players.get(cur);
+      if (o && o.alive && this.defuseClock - this.defuseSeen < 0.3) return;
+    }
+    this.defuseSeen = this.defuseClock;
     if (this.defuseBy !== id) {
       this.defuseBy = id;
       this.defuseProgress = 0;
@@ -318,6 +328,7 @@ export class FsBombMatch {
 
   /** Avança o relógio. Chame todo passo (ou quadro) com o tempo decorrido. */
   step(dt: number) {
+    this.defuseClock += dt;
     if (this.phase === 'end' || this.phase === 'over') return;
     this.time -= dt;
     if (this.time > 0) return;

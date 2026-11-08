@@ -197,4 +197,24 @@ describe('modo Bomba', () => {
     expect(fsBombBlastDamage(30)).toBe(0);
     expect(fsBombBlastDamage(80)).toBe(0);
   });
+
+  it('desarme: enquanto um contra-terrorista desarma, o outro não consegue e o tempo do primeiro não zera', () => {
+    const m = mk();
+    live(m);
+    m.plant(m.carrier!, true, 'A', 3.3);
+    expect(m.phase).toBe('planted');
+    m.defuse('c1', true, true, 0.1);
+    for (let i = 0; i < 20; i++) {
+      m.step(0.05);
+      m.defuse('c1', true, true, 0.05);
+      m.defuse('c2', true, true, 0.05);
+    }
+    expect(m.defusing).toBe('c1');
+    expect(m.defuseProgress).toBeGreaterThan(1);
+    // se o primeiro solta, o segundo assume do zero
+    m.defuse('c1', false, true, 0.05);
+    m.step(0.05);
+    m.defuse('c2', true, true, 0.05);
+    expect(m.defusing).toBe('c2');
+  });
 });
