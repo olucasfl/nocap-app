@@ -17,11 +17,11 @@ import base64, json, math, os, struct, sys
 import numpy as np
 from PIL import Image
 
-S = 0.005         # unidade do OBJ -> metros (1 bloco do mapa = 200 unidades = 1 m: portas de 2 blocos têm 2 m e vãos de 1 bloco têm 1 m; o original, a 2,4 m por bloco, ficava enorme para o corpo do jogo)
-BC = 0.1          # voxel de colisão (m): 1 bloco = 10 voxels, então as quinas ficam na grade
-CELL = 0.2        # célula da grade de navegação (m): 2 voxels
+S = 0.004         # unidade do OBJ -> metros (1 bloco do mapa = 200 unidades = 0,8 m: portas de 2 blocos têm 1,6 m e vãos de 1 bloco têm 0,8 m, ainda cabe o boneco; o original, a 2,4 m por bloco, ficava enorme)
+BC = 0.08         # voxel de colisão (m): 1 bloco = 10 voxels, então as quinas ficam na grade
+CELL = 0.16       # célula da grade de navegação (m): 2 voxels
 YMAX = 6.0        # altura máxima simulada (m); acima disso ninguém chega
-HEAD = 7          # células livres para o corpo na grade de navegação (1,4 m)
+HEAD = 9          # células livres para o corpo na grade de navegação (1,44 m)
 
 obj_path, tex_dir = sys.argv[1], sys.argv[2]
 root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -146,7 +146,8 @@ def shift_and(a, axis, lo, hi):
     return out
 body = shift_and(free, 2, 0, HEAD - 1)
 upper = shift_and(free, 2, 1, HEAD - 1)
-side = shift_and(shift_and(upper, 0, -1, 1), 1, -1, 1)
+SIDE = int(math.ceil(0.32 / CELL))   # folga dos lados: o raio do corpo é 0,3 m
+side = shift_and(shift_and(upper, 0, -SIDE, SIDE), 1, -SIDE, SIDE)
 below = np.zeros_like(sc); below[:, :, 1:] = sc[:, :, :-1]
 stand = body & side & below
 print('pontos de ficar em pé', int(stand.sum()))

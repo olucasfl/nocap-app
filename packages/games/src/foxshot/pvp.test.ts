@@ -84,11 +84,11 @@ describe('modo PvP: mapa e partida', () => {
     expect(map.marks.some((m) => m.kind === 'site')).toBe(false);
     for (const s of map.spawns) expect(map.walkable(map.col(s.x), map.row(s.z)), `${s.zone} ${s.x},${s.z}`).toBe(true);
     const mz = (l: typeof tr) => l.reduce((a, s) => a + s.z, 0) / l.length;
-    expect(Math.abs(mz(tr) - mz(ct))).toBeGreaterThan(50);
+    expect(Math.abs(mz(tr) - mz(ct))).toBeGreaterThan(40);
   });
   it('cada base tem duas saídas, uma de cada lado do muro', () => {
-    // as faixas abertas ficam a ~17,5 m do centro, a ~26,5 m do meio da arena
-    for (const [x, z] of [[17.5, -26.5], [-17.5, -26.5], [17.5, 26.5], [-17.5, 26.5]] as const) {
+    // as faixas abertas ficam a ~14 m do centro, a ~21 m do meio da arena
+    for (const [x, z] of [[14, -21.2], [-14, -21.2], [14, 21.2], [-14, 21.2]] as const) {
       expect(map.walkable(map.col(x), map.row(z)), `saída em ${x},${z}`).toBe(true);
     }
   });
