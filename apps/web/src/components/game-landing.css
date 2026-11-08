@@ -193,3 +193,31 @@
 .glb-fc { background: linear-gradient(180deg, #0b1030 0%, #2a1a4a 55%, #6a2a4a 100%); }
 .glb-fc .glb-stars { position: absolute; inset: 0; background-image: radial-gradient(1.5px 1.5px at 10% 20%, #fff, transparent), radial-gradient(1.5px 1.5px at 30% 60%, #fff9, transparent), radial-gradient(2px 2px at 55% 15%, #fff, transparent), radial-gradient(1.5px 1.5px at 75% 40%, #fff9, transparent), radial-gradient(2px 2px at 90% 70%, #fff, transparent), radial-gradient(1.5px 1.5px at 20% 85%, #fff8, transparent); animation: glb-pulse 5s ease-in-out infinite alternate; }
 .glb-fc .glb-moon { position: absolute; right: 9%; top: 9%; width: min(18vw, 200px); aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff1c2, #ffb066 70%); box-shadow: 0 0 80px #ffb06655; }
+
+/* configuração pré-partida offline: mesmo desenho da tela do jogo (a cor vem do jogo) */
+.gx-open .png-pick, .gx-open .dsm-pick { background: rgba(5, 8, 20, 0.72); backdrop-filter: blur(4px); z-index: 70; }
+.gx-open .png-pick-card, .gx-open .dsm-pick-card {
+  --pk: #ff9d2e;
+  border: 0;
+  border-left: 5px solid var(--pk);
+  border-radius: 0;
+  background: rgba(9, 14, 30, 0.94);
+  color: #eaf0ff;
+  box-shadow: none;
+  clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 22px 100%, 0 calc(100% - 22px));
+  font-family: Rajdhani, system-ui, sans-serif;
+  padding: 22px 24px 24px;
+}
+.gx-open .png-pick .png-pick-card { --pk: #4a8dff; }
+.gx-open .dsm-pick-card.bola-pick { --pk: #38d27a; }
+.gx-open .png-pick-card h2, .gx-open .dsm-pick-card h2 { font: 400 clamp(26px, 4vw, 38px) 'Saira Stencil One', Rajdhani, sans-serif; letter-spacing: 0.06em; color: var(--pk); }
+.gx-open .png-pick-card p, .gx-open .dsm-pick-card p { color: #9fb0d8; letter-spacing: 0.18em; opacity: 1; }
+.gx-open .png-level { border: 0; border-left: 5px solid var(--pk); border-radius: 0; background: rgba(255, 255, 255, 0.06); color: #eaf0ff; padding: 12px 16px; }
+.gx-open .png-level b { font: 700 20px Rajdhani, sans-serif; letter-spacing: 0.14em; }
+.gx-open .png-level span { font: 500 14px Rajdhani, sans-serif; color: #9fb0d8; }
+.gx-open .png-level.is-on { background: linear-gradient(90deg, var(--pk), color-mix(in srgb, var(--pk) 50%, #0b0d1c)); color: #0b0d1c; box-shadow: none; border-left-color: #fff; }
+.gx-open .png-level.is-on span { color: rgba(11, 13, 28, 0.78); }
+.gx-open .dsm-chip, .gx-open .bola-chips button { border: 0; border-bottom: 3px solid var(--pk); border-radius: 0; background: rgba(255, 255, 255, 0.07); color: #eaf0ff; font: 700 18px Rajdhani, sans-serif; box-shadow: none; }
+.gx-open .dsm-chip.is-on { background: var(--pk); color: #0b0d1c; }
+.gx-open .png-btn, .gx-open .dsm-btn { border: 0; border-radius: 0; border-left: 5px solid #fff; background: linear-gradient(90deg, var(--pk), color-mix(in srgb, var(--pk) 55%, #0b0d1c)); color: #0b0d1c; font: 700 18px Rajdhani, sans-serif; letter-spacing: 0.14em; box-shadow: none; }
+.gx-open .png-btn.is-ghost, .gx-open .dsm-btn.is-ghost { background: rgba(255, 255, 255, 0.08); color: #eaf0ff; border-left-color: var(--pk); }

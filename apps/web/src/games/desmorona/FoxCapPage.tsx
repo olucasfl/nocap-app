@@ -136,7 +136,7 @@ export function FoxCapPage() {
 
   return (
     <Page>
-      {hub && !flow && (
+      {hub && (!flow || flow.endsWith('-pick')) && (
         <GameLanding
           game={hub}
           onOffline={offline}

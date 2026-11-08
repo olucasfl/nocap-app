@@ -47,6 +47,9 @@ test('Atravessa!: lista > tela do jogo > partida > sair da partida volta para a 
 test('Ping Fox!: partida offline e volta para a tela do jogo', async ({ page }) => {
   await open(page, 'pingpong');
   await page.getByTestId('gl-offline').click();
+  // a configuração da partida abre por cima da tela do Ping Fox!, sem cair no hub do Fox Cap!
+  await expect(page.getByTestId('gl-pingpong')).toBeVisible();
+  await page.screenshot({ path: 'test-results/ping-nivel.png' });
   await page.getByTestId('png-level-medio').click();
   await page.getByTestId('png-start').click();
   await expect(page.getByTestId('png-play')).toBeVisible({ timeout: 60_000 });
@@ -58,6 +61,7 @@ test('Ping Fox!: partida offline e volta para a tela do jogo', async ({ page }) 
 test('Desmorona!: partida offline e volta para a tela do jogo', async ({ page }) => {
   await open(page, 'desmorona');
   await page.getByTestId('gl-offline').click();
+  await expect(page.getByTestId('gl-desmorona')).toBeVisible();
   await page.getByRole('radio', { name: '3' }).click();
   await page.getByTestId('dsm-start').click();
   await expect(page.getByTestId('dsm-play')).toBeVisible({ timeout: 60_000 });

@@ -60,6 +60,12 @@ export function GameLanding({
     document.head.appendChild(l);
   }, []);
 
+  // as telas de configuração da partida offline (níveis, formato, adversários) se vestem com o mesmo desenho
+  useEffect(() => {
+    document.body.classList.add('gx-open');
+    return () => document.body.classList.remove('gx-open');
+  }, []);
+
   // a página de trás não rola enquanto a tela do jogo está aberta
   useEffect(() => {
     const html = document.documentElement;
