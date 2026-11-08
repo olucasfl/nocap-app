@@ -1307,6 +1307,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           forced = fwd || strafe ? { fwd, strafe } : null;
         },
         fireBtn: (on: boolean) => controls.setTouch('fire', on),
+        adsBtn: (on: boolean) => controls.setTouch('ads', on),
         buy: (id: string) => buyRef.current({ id } as FsShopItem),
         aimAt: (id: string) => {
           const r = rows.get(id);
