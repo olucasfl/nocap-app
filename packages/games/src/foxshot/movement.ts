@@ -24,6 +24,8 @@ export interface FsLadder {
 }
 /** Velocidade de subida e descida na escada de mão (m/s). */
 export const FS_LADDER_SPEED = 2.4;
+/** Velocidade de andar de lado pendurado na escada (m/s). */
+export const FS_LADDER_SIDE = 2.0;
 
 /**
  * Movimento no desenho do Counter-Strike (motor Source), em metros: atrito no chão (desliza ao soltar), aceleração por
@@ -141,6 +143,8 @@ function stepInner(m: FsMover, inp: FsMoveInput, dt: number, allBoxes: readonly 
 
   // escada de mão: dentro da zona, andar para o muro sobe, andar para o lado oposto desce, parado ou de lado segura; pular solta
   let ladderVy: number | null = null;
+  let ladderVx = 0;
+  let ladderVz = 0;
   if (m.ladderCool && m.ladderCool > 0) m.ladderCool = Math.max(0, m.ladderCool - dt);
   else if (ladders.length) {
     const lad = ladderAt(m, ladders);
@@ -155,6 +159,10 @@ function stepInner(m: FsMover, inp: FsMoveInput, dt: number, allBoxes: readonly 
       } else {
         const t = wl > 0.1 ? dirX * lad.dir[0] + dirZ * lad.dir[1] : 0;
         ladderVy = t > 0.35 ? FS_LADDER_SPEED : t < -0.35 ? -FS_LADDER_SPEED : 0;
+        // de lado: anda ao longo da escada (sair da zona pela ponta solta o corpo, que cai)
+        const side = wl > 0.1 ? dirX * -lad.dir[1] + dirZ * lad.dir[0] : 0;
+        ladderVx = -lad.dir[1] * side * FS_LADDER_SIDE * wl;
+        ladderVz = lad.dir[0] * side * FS_LADDER_SIDE * wl;
         // no topo da escada para de subir (dá para pular dali)
         if (ladderVy > 0 && m.y >= lad.max[1] - 0.02) ladderVy = 0;
         m.onGround = false;
@@ -203,8 +211,8 @@ function stepInner(m: FsMover, inp: FsMoveInput, dt: number, allBoxes: readonly 
   if (ladderVy === null) m.vy -= FS_MOVE.gravity * dt;
   else {
     m.vy = ladderVy;
-    m.vx = 0;
-    m.vz = 0;
+    m.vx = ladderVx;
+    m.vz = ladderVz;
   }
 
   // integra em passos curtos (<= 8 cm) para nunca atravessar parede ou chão fino, e resolve cada eixo

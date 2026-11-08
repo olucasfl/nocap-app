@@ -159,6 +159,13 @@ describe('modo PvP: mapa e partida', () => {
       expect(mv.y, 'chegou no topo').toBeGreaterThan(l.max[1] - 0.1);
       run(2, 0);
       expect(mv.y, 'parado segura').toBeGreaterThan(l.max[1] - 0.1);
+      // de lado: anda ao longo da escada sem descer (nas pontas há viga: não dá para sair andando)
+      const z0 = mv.z;
+      for (let t = 0; t < 30; t++) fsStepMover(mv, { fwd: 0, strafe: 1, jump: false, yaw, speedMul: 1, crouch: false }, 1 / 60, map.solids, [], map.ladders);
+      expect(Math.abs(mv.z - z0), 'andou de lado').toBeGreaterThan(0.3);
+      expect(mv.y, 'de lado segura a altura').toBeGreaterThan(l.max[1] - 0.1);
+      mv.x = l.dir[0] < 0 ? l.min[0] + 0.62 : l.max[0] - 0.62; mv.z = cz; mv.y = l.max[1] - 0.02; mv.vx = mv.vz = mv.vy = 0;
+      run(0.3, 0);
       run(1, -1);
       expect(mv.y, 'descendo').toBeLessThan(l.max[1] - 1.5);
       run(8, -1);
