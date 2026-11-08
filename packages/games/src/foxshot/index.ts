@@ -15,3 +15,4 @@ export * from './dm';
 export * from './netsim';
 export * from './intel';
 export * from './bomb';
+export * from './bombbots';

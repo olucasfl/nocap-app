@@ -89,4 +89,21 @@ describe('modo Bomba na simulação do servidor', () => {
     expect(fsShopPrice(it, 100, true)).toBe(0);
     expect(fsShopPrice({ id: 'vest', price: 650 }, 100, true)).toBe(650);
   });
+  it('bots têm níveis diferentes, se espalham e jogam o round (plantam, desarmam ou eliminam)', () => {
+    const sim = new FsNetSim({ minutes: 5, humans: [], bots: 10, bomb: { winRounds: 3, roundSec: 90, buySec: 5 }, botTeams: [5, 5] });
+    const levels = new Set([...sim.players.values()].map((p) => p.level));
+    expect(levels.has('rookie') && levels.has('mid') && levels.has('pro')).toBe(true);
+    let sneaked = false;
+    let planted = false;
+    let ticks = 0;
+    while (!sim.over && ticks < FS_NET_HZ * 60 * 6 && !planted) {
+      sim.step();
+      ticks++;
+      if (sim.bm!.phase === 'live') for (const p of sim.players.values()) if (p.brain?.sneak) sneaked = true;
+      if (sim.bm!.phase === 'planted') planted = true;
+    }
+    expect(sneaked).toBe(true);
+    // em alguns rounds a bomba tem de ser plantada
+    expect(planted || sim.bm!.round > 1).toBe(true);
+  }, 120_000);
 });

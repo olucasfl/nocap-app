@@ -63,6 +63,11 @@ export const FS_BOT_LEVELS: Record<FsBotLevel, FsBotSkill> = {
   mid: { fov: 125, sight: 58, react: [0.4, 0.65], turn: 270, err: 2.8, hearSteps: 10, head: 0.1, sneak: 0.5, sense: 0.55 },
   pro: { fov: 140, sight: 70, react: [0.25, 0.45], turn: 380, err: 1.6, hearSteps: 12, head: 0.16, sneak: 0.85, sense: 0.95 },
 };
+/** Mistura garantida de níveis: com 3+ bots sempre há craque, médio e novato (a ordem do começo é sorteada). */
+const LEVEL_CYCLE: FsBotLevel[] = ['mid', 'pro', 'rookie', 'mid', 'rookie', 'pro', 'mid', 'rookie', 'pro', 'mid'];
+export function fsBotLevelAt(index: number, offset: number): FsBotLevel {
+  return LEVEL_CYCLE[(index + offset) % LEVEL_CYCLE.length]!;
+}
 export const FS_BOT_LEVEL_NAMES: Record<FsBotLevel, string> = { rookie: 'Novato', mid: 'Médio', pro: 'Craque' };
 /** Sorteia o nível de um bot (cerca de 30% novatos, 40% médios, 30% craques). */
 export function fsBotRollLevel(rng: () => number): FsBotLevel {

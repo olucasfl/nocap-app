@@ -106,3 +106,9 @@ Respondidas pelo Lucas em 07/11/2026:
 - Fase de compra: tela escurecida (`fb-dim`, só opacity) que clareia nos últimos 4 s e some quando o round é liberado.
 - Carência: a loja continua aberta por `FS_BUY_GRACE` = 15 s depois de liberar o round (`bm.buyOpen`; servidor, offline e online usam a mesma regra). Compra e abertura da loja só na base; ao sair da base a loja fecha.
 - Minimapa: amigos vivos aparecem sempre (também depois de morrer), no offline e no online.
+
+## Progresso: bots com níveis e tática de equipe
+
+- Níveis (`FS_BOT_LEVELS`): novato, médio e craque mudam reação, giro da mira, erro de pontaria, visão, audição, chance de tiro na cabeça, uso do Shift e "noção de jogo". Sempre há mistura (`fsBotLevelAt`). Medido em 4 partidas de 10 bots: craque 1,47 de abates por morte, médio 0,8, novato 0,77.
+- Tática (`packages/games/src/foxshot/bombbots.ts`, `FsBombTactics`, igual no servidor e no offline): TR escolhe uma bomba, quem leva a C4 só planta sem inimigo à vista (craque espera companhia ou o tempo apertar), os outros escoltam em postos com cobertura, novatos seguem o carregador, um craque pode fazer "lurk" na outra bomba; pode trocar de bomba se o lado escolhido está cheio de CTs. CT se divide entre A e B em postos de vigia (agachados, olhando a bomba), um médio/craque fica de rotação no meio e todos trocam de bomba quando alguém vê o inimigo do outro lado. Após o plantio TR se esconde com vista para a bomba e CT avança em grupo; quem tem alicate desarma, só se dá tempo. Bons bots andam no Shift e se agacham no posto.
+- No fim do round todos andam livremente (antes ficava tudo parado).

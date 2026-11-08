@@ -15,6 +15,11 @@ import {
   fsDmHear,
   fsDmHurt,
   fsDmNew,
+  fsBotLevelAt,
+  FsBombTactics,
+  type FsBotLevel,
+  type FsBotPerson,
+  type FsBotWorld,
   fsDmPickWeapon,
   fsDmStep,
   fsMatchResult,
@@ -389,6 +394,10 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       bm.addPlayer('me', mySide0);
       dmNames.forEach((_, i) => bm.addPlayer(`d${i + 1}`, i < nAllies ? mySide0 : fsOtherSide(mySide0)));
     }
+    /** Nível de cada bot: sempre uma mistura de novatos, médios e craques. */
+    const levelOffset = Math.floor(Math.random() * 10);
+    const botLevel = new Map<string, FsBotLevel>(dmNames.map((_, i) => [`d${i + 1}`, fsBotLevelAt(i, levelOffset)] as [string, FsBotLevel]));
+    const tactics = new FsBombTactics();
     const sideOf = (id: string): FsSide | null => bm?.players.get(id)?.side ?? null;
     /** Pontos de nascimento do round: cada um na base do seu time, sem repetir ponto. */
     const roundSpawns = (): Map<string, FsSpawn> => {
@@ -849,7 +858,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       const vest = gear ? gear.armor > 0 : rnd() < 0.55;
       st.armor = gear ? gear.armor : vest ? 100 : 0;
       spec.helmet = gear ? gear.helmet : vest && rnd() < 0.5;
-      brains.set(id, fsDmNew(id, x, z, yaw, gear ? gear.weapon : fsDmPickWeapon(rnd), rnd, y));
+      brains.set(id, fsDmNew(id, x, z, yaw, gear ? gear.weapon : fsDmPickWeapon(rnd), rnd, y, botLevel.get(id)));
       if (gear) {
         const bb = brains.get(id)!;
         bb.nades = { frag: 0, flash: 0 };
@@ -927,9 +936,9 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     let lastCarrier: string | null = null;
     let beepIn = 0;
     let swapKey = 0;
+    let tacticsRound = -1;
     let specWeapon: FsWeaponId | null = null;
     const moverOf = (id: string | null) => (id === 'me' || !id ? { x: mover.x, y: mover.y, z: mover.z } : (brains.get(id)?.mover ?? mover));
-    let planSite: 'A' | 'B' = 'A';
     let endT = 0;
     let resetGear = true;
     let bombBanner: { text: string; until: number } | null = null;
@@ -1016,7 +1025,6 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       dropAt = null;
       lastCarrier = null;
       scene.setBombDrop(0, 0, 0, false);
-      planSite = Math.random() < 0.5 ? 'A' : 'B';
       scene.setBomb(0, 0, 0, 'off');
       bombBanner = null;
       say(meSide === 'tr' ? 'Compre na base (B) e depois vá aos pátios A ou B' : 'Compre na base (B) e defenda os pátios A e B', 4500);
@@ -1125,29 +1133,46 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         bm.defuse('me', useHeld && near && still, near, dt);
         if (near && !useHeld) say(`Segure ${bombKey()} para desarmar`, 400);
       }
-      // bots: objetivo por lado, plantar e desarmar
-      let defuser: string | null = null;
+      // bots: a tática de equipe (níveis, postos, plantio e desarme na hora certa) manda; aqui só se obedece
+      const people: FsBotPerson[] = [
+        { id: 'me', side: sideOf('me')!, x: mover.x, z: mover.z, alive: meAlive, brain: null },
+        ...dmSpecs.map((d) => {
+          const b = brains.get(d.id);
+          return { id: d.id, side: sideOf(d.id)!, x: b?.mover.x ?? 0, z: b?.mover.z ?? 0, alive: !!b && targets.get(d.id)!.alive, brain: b ?? null };
+        }),
+      ];
+      const world: FsBotWorld = {
+        now: clock,
+        dt,
+        rng: rnd,
+        phase: bm.phase,
+        time: bm.time,
+        roundSec: bm.cfg.roundSec,
+        people,
+        carrier: bm.carrier,
+        dropPos: dropAt && !bm.carrier ? { x: dropAt.x, z: dropAt.z } : null,
+        plantPos: bombPos ? { x: bombPos.x, z: bombPos.z } : null,
+        defusing: bm.defusing,
+        defuseSec: (id) => (bm.players.get(id)?.kit ? bm.cfg.defuseKitSec : bm.cfg.defuseSec),
+        hasKit: (id) => !!bm.players.get(id)?.kit,
+      };
+      if (bm.phase === 'live' && tacticsRound !== bm.round) {
+        tacticsRound = bm.round;
+        tactics.newRound(world);
+      }
+      const orders = tactics.step(world);
       for (const d of dmSpecs) {
         const st = targets.get(d.id)!;
         const b = brains.get(d.id);
         if (!st.alive || !b) continue;
         const side = sideOf(d.id)!;
-        const idx = Number(d.id.slice(1));
-        if (side === 'tr') {
-          const goal = bm.phase === 'planted' && bombPos ? bombPos : dropAt && !bm.carrier ? dropAt : siteMark(planSite);
-          b.objective = [goal.x, goal.z];
-          if (bm.carrier === d.id) {
-            const site = fsSiteAt(b.mover.x, b.mover.z);
-            if (site && !b.target) plantPos = { x: b.mover.x, y: b.mover.y, z: b.mover.z };
-            bm.plant(d.id, !!site && !b.target, site, dt);
-          }
-        } else {
-          const goal = bm.phase === 'planted' && bombPos ? bombPos : siteMark(idx % 2 === 0 ? 'A' : 'B');
-          b.objective = [goal.x, goal.z];
-          if (bm.phase === 'planted' && bombPos && !defuser && !b.target && Math.hypot(b.mover.x - bombPos.x, b.mover.z - bombPos.z) < 2.2) {
-            defuser = d.id;
-            bm.defuse(d.id, true, true, dt);
-          }
+        if (side === 'tr' && bm.carrier === d.id) {
+          const site = fsSiteAt(b.mover.x, b.mover.z);
+          const go = orders.plant.has(d.id);
+          if (go && site) plantPos = { x: b.mover.x, y: b.mover.y, z: b.mover.z };
+          bm.plant(d.id, go && !!site, site, dt);
+        } else if (side === 'ct' && bm.phase === 'planted' && bombPos && orders.defuse.has(d.id)) {
+          bm.defuse(d.id, true, true, dt);
         }
       }
       // C4 na cena: plantando e desarmando aparecem para todos; plantada pisca e apita (som sai dela)

@@ -9,7 +9,8 @@ import { fsAssister, type FsDamageEntry } from './assist';
 import { fsFlinch, fsFlinchAt, fsIsBackstab } from './damage';
 import { FS_DUST_MARKS, FS_DUST_SOLIDS, FS_DUST_SPAWNS, fsDustFloorY, fsSiteAt, fsPickSpawn, type FsSpawn } from './dust';
 import { FsBombMatch, fsOtherSide, type FsBombConfig, type FsSide } from './bomb';
-import { fsDmFlash, fsDmHear, fsDmHurt, fsDmNew, fsDmPickWeapon, fsDmStep, type FsDmBrain, type FsDmFoe } from './dm';
+import { fsBotLevelAt, fsDmFlash, fsDmHear, fsDmHurt, fsDmNew, fsDmPickWeapon, fsDmStep, type FsBotLevel, type FsDmBrain, type FsDmFoe } from './dm';
+import { FsBombTactics } from './bombbots';
 import { fsClearLine, fsFlashEffect, fsFragDamage, fsGrenadeLaunch, fsGrenadeStep, FS_GRENADES, type FsGrenadeBody, type FsGrenadeId } from './grenades';
 import { FsLoadout } from './gun';
 import { FS_RESPAWN_S, fsMatchConfig, fsMatchResult, fsMatchScore, type FsMatchConfig, type FsMatchRow } from './match';
@@ -107,6 +108,8 @@ export interface FsNetPlayer {
   heardAt: number;
   /** Time (só a cor por enquanto, o mata-mata é de todos contra todos): 0 contra-terrorista (azul), 1 terrorista (laranja). */
   team: 0 | 1;
+  /** Nível do bot (novato, médio ou craque). */
+  level: FsBotLevel;
   /** Até que tick está cego (luz de granada): o abate sai com o ícone de cego no kill feed. */
   blindUntil: number;
 }
@@ -189,6 +192,10 @@ export class FsNetSim {
   private dropPos: { x: number; y: number; z: number } | null = null;
   private dropAllowedAt = 0;
   private planSite: 'A' | 'B' = 'A';
+  private botsMade = 0;
+  private levelOffset = 0;
+  private tactics = new FsBombTactics();
+  private tacticsRound = -1;
   private roundEndAt = 0;
   private resetGear = true;
   /** Como terminou o último round: 0 nenhum, 1 TR venceu, 2 CT venceu; e o motivo (1 eliminação, 2 bomba, 3 desarmou, 4 tempo). */
@@ -203,6 +210,7 @@ export class FsNetSim {
     this.endTick = this.bm ? Number.MAX_SAFE_INTEGER : this.cfg.minutes * 60 * FS_NET_HZ;
     this.boxes = opts.boxes ?? FS_DUST_SOLIDS;
     this.rng = opts.rng ?? Math.random;
+    this.levelOffset = Math.floor(this.rng() * 10);
     const humans = opts.humans.slice(0, 10);
     const botCount = Math.max(0, Math.min(this.cfg.bots, 10 - humans.length));
     const botTeams = opts.botTeams;
@@ -244,10 +252,10 @@ export class FsNetSim {
     const p: FsNetPlayer = {
       id, name, bot, mover, yaw: sp.yaw, pitch: 0, hp: 100, armor: 0, helmet: false, alive: true, respawnAt: 0,
       loadout: new FsLoadout(null, 'pistol'), kills: 0, assists: 0, deaths: 0, hs: 0, damage: 0, queue: [], last: null, lastSeq: 0,
-      hist: [], brain: null, dmgLog: [], flinch: { mul: 1, dur: 0 }, flinchAt: -1e9, firedAt: -1e9, heardAt: 0, team: bot ? botTeam : humanTeam !== undefined ? humanTeam : ((this.humansIn++ % 2) as 0 | 1), blindUntil: 0,
+      level: bot ? fsBotLevelAt(this.botsMade++, this.levelOffset) : 'pro', hist: [], brain: null, dmgLog: [], flinch: { mul: 1, dur: 0 }, flinchAt: -1e9, firedAt: -1e9, heardAt: 0, team: bot ? botTeam : humanTeam !== undefined ? humanTeam : ((this.humansIn++ % 2) as 0 | 1), blindUntil: 0,
     };
     if (bot) {
-      p.brain = fsDmNew(id, sp.x, sp.z, sp.yaw, fsDmPickWeapon(this.rng), this.rng, sp.y);
+      p.brain = fsDmNew(id, sp.x, sp.z, sp.yaw, fsDmPickWeapon(this.rng), this.rng, sp.y, p.level);
       this.dressBot(p);
     }
     this.players.set(id, p);
@@ -275,7 +283,7 @@ export class FsNetSim {
     p.bot = true;
     p.queue = [];
     const w = p.loadout.weapon.melee ? 'pistol' : (p.loadout.weapon.id as Exclude<FsWeaponId, 'knife'>);
-    p.brain = fsDmNew(id, p.mover.x, p.mover.z, p.yaw, w, this.rng, p.mover.y);
+    p.brain = fsDmNew(id, p.mover.x, p.mover.z, p.yaw, w, this.rng, p.mover.y, p.level);
     p.brain.mover = p.mover;
     const r = this.roster.find((q) => q.id === id);
     if (r) r.bot = true;
@@ -630,7 +638,7 @@ export class FsNetSim {
     if (!p.bot) p.loadout.refillAmmo();
     p.blindUntil = 0;
     if (p.bot) {
-      p.brain = fsDmNew(p.id, sp.x, sp.z, sp.yaw, fsDmPickWeapon(this.rng), this.rng, sp.y);
+      p.brain = fsDmNew(p.id, sp.x, sp.z, sp.yaw, fsDmPickWeapon(this.rng), this.rng, sp.y, p.level);
       p.mover = p.brain.mover;
       this.dressBot(p);
     }
@@ -706,7 +714,7 @@ export class FsNetSim {
           }
         }
         if (!p.armor && money.money >= vestPrice && bm.buy(p.id, vestPrice, true)) p.armor = 100;
-        p.brain = fsDmNew(p.id, s.x, s.z, s.yaw, weapon, this.rng, s.y);
+        p.brain = fsDmNew(p.id, s.x, s.z, s.yaw, weapon, this.rng, s.y, p.level);
         p.brain.nades = { frag: 0, flash: 0 };
         p.mover = p.brain.mover;
       } else if (!keep) {
@@ -742,7 +750,6 @@ export class FsNetSim {
         }
       }
     }
-    let defuser: string | null = null;
     for (const p of this.players.values()) {
       if (!p.alive) continue;
       const side = this.sideOf(p);
@@ -759,26 +766,24 @@ export class FsNetSim {
         }
         continue;
       }
+    }
+    // bots: a tática de equipe dá os objetivos; aqui só se obedece plantar e desarmar
+    if (bm.phase === 'live' && this.tacticsRound !== bm.round) {
+      this.tacticsRound = bm.round;
+      this.tactics.newRound(this.botWorld());
+    }
+    const orders = this.tactics.step(this.botWorld());
+    for (const p of this.players.values()) {
+      if (!p.alive || !p.bot || !p.brain) continue;
+      const side = this.sideOf(p);
       const b = p.brain;
-      if (!b) continue;
-      const siteMark = (id: string) => FS_DUST_MARKS.find((m) => m.kind === 'site' && m.id === id)!;
-      if (side === 'tr') {
-        const toDrop = bm.dropped && this.dropPos && bm.carrier !== p.id;
-        const goal = toDrop ? this.dropPos! : bm.phase === 'planted' && this.bombPos ? this.bombPos : siteMark(this.planSite);
-        b.objective = [goal.x, goal.z];
-        if (bm.carrier === p.id) {
-          const site = this.siteAt(b.mover.x, b.mover.z);
-          if (site && !b.target) this.plantPos = { x: b.mover.x, y: b.mover.y, z: b.mover.z };
-          bm.plant(p.id, !!site && !b.target, site, FS_NET_DT);
-        }
-      } else {
-        const idx = Number(p.id.replace(/\D/g, '')) || 0;
-        const goal = bm.phase === 'planted' && this.bombPos ? this.bombPos : siteMark(idx % 2 === 0 ? 'A' : 'B');
-        b.objective = [goal.x, goal.z];
-        if (bm.phase === 'planted' && this.bombPos && !defuser && !b.target && Math.hypot(b.mover.x - this.bombPos.x, b.mover.z - this.bombPos.z) < 2.2) {
-          defuser = p.id;
-          bm.defuse(p.id, true, true, FS_NET_DT);
-        }
+      if (side === 'tr' && bm.carrier === p.id) {
+        const site = this.siteAt(b.mover.x, b.mover.z);
+        const go = orders.plant.has(p.id);
+        if (go && site) this.plantPos = { x: b.mover.x, y: b.mover.y, z: b.mover.z };
+        bm.plant(p.id, go && !!site, site, FS_NET_DT);
+      } else if (side === 'ct' && bm.phase === 'planted' && this.bombPos && orders.defuse.has(p.id)) {
+        bm.defuse(p.id, true, true, FS_NET_DT);
       }
     }
     bm.step(FS_NET_DT);
@@ -788,6 +793,26 @@ export class FsNetSim {
       this.reactBomb();
       this.beginRound();
     }
+  }
+
+  /** Retrato do mundo para a tática dos bots (todos os jogadores, humanos e bots). */
+  private botWorld() {
+    const bm = this.bm!;
+    return {
+      now: this.tick / FS_NET_HZ,
+      dt: FS_NET_DT,
+      rng: this.rng,
+      phase: bm.phase,
+      time: bm.time,
+      roundSec: bm.cfg.roundSec,
+      people: [...this.players.values()].map((q) => ({ id: q.id, side: this.sideOf(q), x: q.mover.x, z: q.mover.z, alive: q.alive, brain: q.bot ? q.brain : null })),
+      carrier: bm.carrier,
+      dropPos: this.dropPos ? { x: this.dropPos.x, z: this.dropPos.z } : null,
+      plantPos: this.bombPos ? { x: this.bombPos.x, z: this.bombPos.z } : null,
+      defusing: bm.defusing,
+      defuseSec: (id: string) => (bm.players.get(id)?.kit ? bm.cfg.defuseKitSec : bm.cfg.defuseSec),
+      hasKit: (id: string) => !!bm.players.get(id)?.kit,
+    };
   }
 
   private reactBomb() {
