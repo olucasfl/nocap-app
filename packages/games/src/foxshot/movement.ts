@@ -72,8 +72,20 @@ const ladderAt = (m: FsMover, ladders: readonly FsLadder[]) =>
 const LADDER_RADIUS = 0.12;
 
 export function fsStepMover(m: FsMover, inp: FsMoveInput, dt: number, allBoxes: readonly FsBox[], extra: readonly FsBox[] = [], ladders: readonly FsLadder[] = []): void {
-  const lad = ladders.length && !(m.ladderCool && m.ladderCool > 0) && !inp.jump ? ladderAt(m, ladders) : undefined;
-  if (!lad) return stepInner(m, inp, dt, allBoxes, extra, ladders);
+  const zone = ladders.length ? ladderAt(m, ladders) : undefined;
+  const cooling = !!(m.ladderCool && m.ladderCool > 0);
+  const lad = zone && !cooling && !inp.jump ? zone : undefined;
+  if (!lad) {
+    // o pulo que solta da escada (e a pausa logo depois) usa o raio fino: com o raio normal o corpo, encostado no muro, ficava enterrado e era jogado para fora do mapa
+    if (!zone && !cooling) return stepInner(m, inp, dt, allBoxes, extra, ladders);
+    const r1 = FS_MOVE.radius;
+    FS_MOVE.radius = LADDER_RADIUS;
+    try {
+      return stepInner(m, inp, dt, allBoxes, extra, ladders);
+    } finally {
+      FS_MOVE.radius = r1;
+    }
+  }
   // grudado na escada: o corpo vai até o muro (ao lado dos degraus) e usa um raio menor
   const rail = lad.dir[0] !== 0 ? (lad.dir[0] < 0 ? lad.min[0] + 0.05 + 0.2 : lad.max[0] - 0.05 - 0.2) : lad.dir[1] < 0 ? lad.min[2] + 0.05 + 0.2 : lad.max[2] - 0.05 - 0.2;
   const axis = lad.dir[0] !== 0 ? 'x' : 'z';
@@ -134,11 +146,11 @@ function stepInner(m: FsMover, inp: FsMoveInput, dt: number, allBoxes: readonly 
     const lad = ladderAt(m, ladders);
     if (lad) {
       if (inp.jump) {
-        // solta da escada: pula para longe do muro
-        m.ladderCool = 0.35;
-        m.vy = 4;
-        m.vx = -lad.dir[0] * 2.6;
-        m.vz = -lad.dir[1] * 2.6;
+        // pula para cima e para o lado do muro: no topo isso sobe na plataforma e sai da escada; embaixo só encosta no muro e cai
+        m.ladderCool = 0.4;
+        m.vy = 5.2;
+        m.vx = lad.dir[0] * 2.2;
+        m.vz = lad.dir[1] * 2.2;
         m.onGround = false;
       } else {
         const t = wl > 0.1 ? dirX * lad.dir[0] + dirZ * lad.dir[1] : 0;

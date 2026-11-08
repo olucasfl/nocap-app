@@ -143,7 +143,7 @@ describe('modo PvP: mapa e partida', () => {
     }
   }, 120_000);
 
-  it('escada de mão das duas torres: andar para o muro sobe e fica no topo, andar para o lado oposto desce, pular solta', () => {
+  it('escada de mão das duas torres: andar para o muro sobe e fica no topo, andar para o lado oposto desce, pular no topo sai da escada', () => {
     expect(map.ladders.length).toBe(2);
     for (const l of map.ladders) {
       const cz = (l.min[2] + l.max[2]) / 2;
@@ -163,10 +163,19 @@ describe('modo PvP: mapa e partida', () => {
       expect(mv.y, 'descendo').toBeLessThan(l.max[1] - 1.5);
       run(8, -1);
       expect(mv.y, 'chegou embaixo').toBeLessThan(l.min[1] + 0.1);
+      run(0.1, 0, true); // pula no meio da escada (antes jogava o corpo para fora do mapa)
+      run(2, 0);
+      expect(Math.abs(mv.x), 'meio: não saiu do mapa').toBeLessThan(14);
+      expect(Math.abs(mv.z), 'meio: não saiu do mapa').toBeLessThan(22);
+      expect(mv.y, 'meio: não caiu do mapa').toBeGreaterThan(-0.1);
       run(6, 1);
-      run(0.1, 0, true); // pula da escada: sai para longe do muro
-      run(1.5, 0);
-      expect(Math.abs(mv.x - (l.dir[0] < 0 ? l.min[0] : l.max[0]))).toBeGreaterThan(0.5);
+      expect(mv.y, 'de novo no topo').toBeGreaterThan(l.max[1] - 0.1);
+      run(0.1, 0, true); // pula no topo: sobe na plataforma e sai da escada
+      run(2, 0);
+      expect(mv.y, 'em cima da torre').toBeGreaterThan(l.max[1] - 0.1);
+      expect(mv.onGround, 'de pé').toBe(true);
+      expect(Math.abs(mv.x - (l.dir[0] < 0 ? l.min[0] : l.max[0])), 'não saiu do mapa').toBeLessThan(3);
+      expect(map.ladders.some((q) => mv.x > q.min[0] && mv.x < q.max[0] && mv.z > q.min[2] && mv.z < q.max[2] && mv.y < q.max[1] - 0.2), 'fora da zona da escada').toBe(false);
     }
   });
 });
