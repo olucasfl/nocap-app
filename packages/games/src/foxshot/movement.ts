@@ -1,4 +1,4 @@
-import type { FsBox } from './map';
+import { fsBoxesInRect, type FsBox } from './map';
 
 /** Corpo de quem anda: pés em (x, y, z); cápsula aproximada por uma caixa de 0,6 × 1,3 m. */
 export interface FsMover {
@@ -54,7 +54,10 @@ const overlaps = (m: FsMover, b: FsBox, r = FS_MOVE.radius) =>
   m.x + r > b.min[0] && m.x - r < b.max[0] && m.z + r > b.min[2] && m.z - r < b.max[2] && m.y + fsBodyHeight(m) > b.min[1] && m.y < b.max[1];
 
 /** Um passo de movimento (use dt fixo, ex. 1/120): pulo, atrito, aceleração (chão ou ar), gravidade e colisão com as caixas. */
-export function fsStepMover(m: FsMover, inp: FsMoveInput, dt: number, boxes: readonly FsBox[]): void {
+export function fsStepMover(m: FsMover, inp: FsMoveInput, dt: number, allBoxes: readonly FsBox[], extra: readonly FsBox[] = []): void {
+  // mapas grandes: só as caixas perto do corpo (mais as de fora, como os outros jogadores)
+  const near = fsBoxesInRect(allBoxes, m.x - 2, m.z - 2, m.x + 2, m.z + 2);
+  const boxes: readonly FsBox[] = extra.length ? [...near, ...extra] : near;
   const yaw = (inp.yaw * Math.PI) / 180;
   // frente = (-sin, -cos); direita = (cos, -sin)
   const fx = -Math.sin(yaw), fz = -Math.cos(yaw);

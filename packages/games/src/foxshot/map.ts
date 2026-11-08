@@ -244,3 +244,60 @@ export const FS_TARGETS: readonly FsTargetSpec[] = [
   t('t16', 'parede', 34, 17.5, 0, false, N),
   t('t17', 'tábua', 39, 17.5, 0, false, N),
 ];
+
+// ---------------------------------------------------------------- busca rápida de caixas (mapas grandes)
+
+interface BoxIndex {
+  size: number;
+  cells: Map<number, FsBox[]>;
+}
+const indexCache = new WeakMap<readonly FsBox[], BoxIndex>();
+const BUCKET = 6;
+const bkey = (cx: number, cz: number) => cx * 4096 + cz;
+
+function indexOf(boxes: readonly FsBox[]): BoxIndex {
+  let ix = indexCache.get(boxes);
+  if (ix) return ix;
+  ix = { size: BUCKET, cells: new Map() };
+  for (const b of boxes) {
+    const x0 = Math.floor(b.min[0] / BUCKET), x1 = Math.floor(b.max[0] / BUCKET);
+    const z0 = Math.floor(b.min[2] / BUCKET), z1 = Math.floor(b.max[2] / BUCKET);
+    for (let cx = x0; cx <= x1; cx++) {
+      for (let cz = z0; cz <= z1; cz++) {
+        const k = bkey(cx, cz);
+        const l = ix.cells.get(k);
+        if (l) l.push(b);
+        else ix.cells.set(k, [b]);
+      }
+    }
+  }
+  indexCache.set(boxes, ix);
+  return ix;
+}
+
+/**
+ * As caixas que podem tocar o retângulo (x0, z0)-(x1, z1). Em listas pequenas devolve a própria lista; nas grandes (mapas gerados
+ * de modelo, milhares de caixas) usa um índice por quadrados de 6 m, guardado pela identidade da lista.
+ */
+export function fsBoxesInRect(boxes: readonly FsBox[], x0: number, z0: number, x1: number, z1: number): readonly FsBox[] {
+  if (boxes.length < 160) return boxes;
+  const ix = indexOf(boxes);
+  const cx0 = Math.floor(Math.min(x0, x1) / BUCKET), cx1 = Math.floor(Math.max(x0, x1) / BUCKET);
+  const cz0 = Math.floor(Math.min(z0, z1) / BUCKET), cz1 = Math.floor(Math.max(z0, z1) / BUCKET);
+  if (cx0 === cx1 && cz0 === cz1) return ix.cells.get(bkey(cx0, cz0)) ?? [];
+  const seen = new Set<FsBox>();
+  const out: FsBox[] = [];
+  for (let cx = cx0; cx <= cx1; cx++) {
+    for (let cz = cz0; cz <= cz1; cz++) {
+      const l = ix.cells.get(bkey(cx, cz));
+      if (!l) continue;
+      for (const b of l) {
+        if (!seen.has(b)) {
+          seen.add(b);
+          out.push(b);
+        }
+      }
+    }
+  }
+  return out;
+}

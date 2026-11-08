@@ -16,3 +16,5 @@ export * from './netsim';
 export * from './intel';
 export * from './bomb';
 export * from './bombbots';
+export * from './gridmap';
+export * from './maps';
