@@ -903,9 +903,9 @@ export class FoxShotRoom extends ColorRoom {
       const id = (c.userData as AuthData | undefined)?.id;
       if (id) engine().p2pReport(id, m?.ok);
     });
-    this.onMessage('fsres', (c, m: { rows?: unknown; over?: unknown }) => {
+    this.onMessage('fsres', (c, m: { rows?: unknown; over?: unknown; bomb?: unknown }) => {
       const id = (c.userData as AuthData | undefined)?.id;
-      if (id) engine().p2pStatus(id, m?.rows, m?.over === true);
+      if (id) engine().p2pStatus(id, m?.rows, m?.over === true, m?.bomb);
     });
     this.onMessage('rtc', (c, m: { to?: unknown; data?: unknown }) => {
       const from = (c.userData as AuthData | undefined)?.id;

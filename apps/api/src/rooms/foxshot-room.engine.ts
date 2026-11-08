@@ -62,6 +62,7 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
   private p2pHost = '';
   private p2pDeadline = 0;
   private readonly p2pOk = new Set<string>();
+  private p2pBomb: { tr: number; ct: number; winner: 'tr' | 'ct' | null; sides: Record<string, 'tr' | 'ct'> } | null = null;
   private p2pRows: { id: string; name: string; points: number; kills: number; assists: number; deaths: number; place: number }[] | null = null;
   private p2pOver = false;
   private p2pOverAt = 0;
@@ -217,6 +218,7 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
     // conexão direta: a contagem é um pouco maior para dar tempo de os aparelhos conectarem ao do líder
     this.p2pOk.clear();
     this.p2pRows = null;
+    this.p2pBomb = null;
     this.p2pOver = false;
     this.p2pOverAt = 0;
     this.p2pHost = this.hostId ?? '';
@@ -242,6 +244,7 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
     this.net = 'server';
     this.p2pOk.clear();
     this.p2pRows = null;
+    this.p2pBomb = null;
     this.p2pOver = false;
   }
 
@@ -291,7 +294,13 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
   }
 
   /** O líder manda o placar (de tempos em tempos e no fim): é o que vale se ele sair ou a partida acabar. */
-  p2pStatus(from: string, rows: unknown, over: boolean): void {
+  p2pStatus(from: string, rows: unknown, over: boolean, bomb?: unknown): void {
+    const b = bomb as { tr?: unknown; ct?: unknown; winner?: unknown; sides?: Record<string, unknown> } | null | undefined;
+    if (this.net === 'p2p' && from === this.p2pHost && b && typeof b === 'object' && typeof b.tr === 'number' && typeof b.ct === 'number') {
+      const sides: Record<string, 'tr' | 'ct'> = {};
+      for (const [k, v] of Object.entries(b.sides ?? {}).slice(0, 12)) if (v === 'tr' || v === 'ct') sides[k.slice(0, 40)] = v;
+      this.p2pBomb = { tr: Math.max(0, Math.min(99, Math.round(b.tr))), ct: Math.max(0, Math.min(99, Math.round(b.ct))), winner: b.winner === 'tr' || b.winner === 'ct' ? b.winner : null, sides };
+    }
     if (this.net !== 'p2p' || from !== this.p2pHost || !Array.isArray(rows)) return;
     const clean = rows.slice(0, 10).flatMap((r) => {
       const o = r as Record<string, unknown>;
@@ -418,6 +427,7 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
         p2pHost: this.net === 'server' ? null : this.p2pHost,
         setup: this.net === 'server' ? null : this.simOpts,
         over: this.net === 'p2p' ? this.p2pOver : (s?.over ?? false),
+        bomb: this.net === 'p2p' ? this.p2pBomb : (s?.bombResult() ?? null),
         score: this.p2pRows ? this.p2pRows : s ? s.results().map((r) => ({ id: r.id, name: r.name, points: r.points, kills: r.kills, assists: r.assists, deaths: r.deaths })) : null,
       },
     };

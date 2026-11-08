@@ -187,7 +187,7 @@ export class FsHostSession {
         if (text && ch?.readyState === 'open' && ch.bufferedAmount < 64_000) ch.send(text);
       }
     } else if (m.t === 'status') {
-      sendRoomQuiet('fsres', { rows: m.rows, over: m.over });
+      sendRoomQuiet('fsres', { rows: m.rows, over: m.over, bomb: m.bomb });
     }
   }
 
@@ -203,7 +203,7 @@ export class FsHostSession {
   }
 }
 
-type WorkerOut = { t: 'frames'; texts: Record<string, string> } | { t: 'status'; rows: FsRow[]; over: boolean };
+type WorkerOut = { t: 'frames'; texts: Record<string, string> } | { t: 'status'; rows: FsRow[]; over: boolean; bomb?: unknown };
 
 export interface FsPeerHandlers {
   onOpen: () => void;

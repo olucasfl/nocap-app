@@ -928,6 +928,15 @@ export class FsNetSim {
   }
 
   /** Pontos e abates de todo mundo, ordenados (placar e tela final). */
+  /** Placar de rounds e o lado de cada um (modo Bomba); `null` no mata-mata. */
+  bombResult(): { tr: number; ct: number; winner: FsSide | null; sides: Record<string, FsSide> } | null {
+    const bm = this.bm;
+    if (!bm) return null;
+    const sides: Record<string, FsSide> = {};
+    for (const [id, p] of bm.players) sides[id] = p.side;
+    return { tr: bm.score.tr, ct: bm.score.ct, winner: bm.winner ?? null, sides };
+  }
+
   results(): FsMatchRow[] {
     return fsMatchResult([...this.players.values()].map((p) => ({ id: p.id, name: p.name, kills: p.kills, assists: p.assists, deaths: p.deaths })));
   }

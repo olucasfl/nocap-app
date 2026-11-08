@@ -71,6 +71,7 @@ import { FsBombHud, type BombHud } from './FsBombHud';
 import { fsAudio } from '@/lib/foxshot-audio';
 import { FoxShotScene, FS_WORLD_TRAIN, fsWorldFor, type Quality } from './FoxShotScene';
 import { FsMatchEnd } from './FsMatchEnd';
+import { FsBombEnd } from './FsBombEnd';
 import { FsControls } from './fs-controls';
 import { bindLabel, fsSettings, useFsSettings } from './fs-settings';
 
@@ -211,7 +212,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
   const [feed, setFeed] = useState<FeedItem[]>([]);
   const [result, setResult] = useState<FsMatchRow[] | null>(null);
   /** Modo Bomba: quem venceu e o placar de rounds (para a tela final). */
-  const [bombEnd, setBombEnd] = useState<{ winner: 'tr' | 'ct'; tr: number; ct: number; mySide: 'tr' | 'ct' } | null>(null);
+  const [bombEnd, setBombEnd] = useState<{ winner: 'tr' | 'ct'; tr: number; ct: number; mySide: 'tr' | 'ct'; sides: Record<string, 'tr' | 'ct'> } | null>(null);
   const endedRef = useRef(false);
   const onAgainRef = useRef<() => void>(() => undefined);
   onAgainRef.current = () => onAgain?.();
@@ -554,7 +555,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         }),
       ]);
       setResult(rows);
-      if (bm && bm.winner) setBombEnd({ winner: bm.winner, tr: bm.score.tr, ct: bm.score.ct, mySide: bm.players.get('me')!.side });
+      if (bm && bm.winner) setBombEnd({ winner: bm.winner, tr: bm.score.tr, ct: bm.score.ct, mySide: bm.players.get('me')!.side, sides: Object.fromEntries([...bm.players].map(([k, v]) => [k, v.side])) });
       setShopState(false);
       shopRef.current = false;
       controls.releaseLock();
@@ -2548,11 +2549,20 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
             </>
           )}
           {result && match && bombEnd && (
-            <div className="fb-end" data-testid="fb-end">
-              {bombEnd.winner === bombEnd.mySide ? 'VITÓRIA' : 'DERROTA'} · {bombEnd.winner === 'tr' ? 'Terroristas' : 'Contra-terroristas'} vencem por {bombEnd.winner === 'tr' ? bombEnd.tr : bombEnd.ct} a {bombEnd.winner === 'tr' ? bombEnd.ct : bombEnd.tr}
-            </div>
+            <FsBombEnd
+              winner={bombEnd.winner}
+              tr={bombEnd.tr}
+              ct={bombEnd.ct}
+              mySide={bombEnd.mySide}
+              mapName={match?.map === 'cidade' ? 'Cidade' : 'Duna'}
+              rows={result.map((r) => ({ id: r.id, name: r.name, side: bombEnd.sides[r.id] ?? 'ct', kills: r.kills, assists: r.assists, deaths: r.deaths, points: r.points, me: r.id === 'me' }))}
+              exitLabel="Mudar a partida"
+              onExit={() => onExit?.()}
+              againLabel="Jogar de novo"
+              onAgain={() => onAgainRef.current()}
+            />
           )}
-          {result && match && (
+          {result && match && !bombEnd && (
             <FsMatchEnd rows={result} minutes={match.minutes} onAgain={() => onAgainRef.current()} onExit={() => onExit?.()} />
           )}
           {paused && !portrait && !result && (
