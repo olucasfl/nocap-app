@@ -610,7 +610,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         // o motivo de um tiro seu não ter dado dano (só o que o servidor sabe): alvo protegido ou parede na frente
         if (e.by === meId) {
           if (e.o === 1) showMarker('armor', 'PROTEGIDO');
-          else if (e.o === 2 && e.w === 'sniper') showMarker('armor', 'PAREDE');
+          else if ((e.o === 2 || e.o === 3) && e.w === 'sniper') showMarker('armor', `${e.o === 2 ? 'PAREDE' : 'ERROU'} · DESVIO ${((e.c ?? 0) / 10).toFixed(1)}° · ${Math.hypot(e.to[0] - e.from[0], e.to[2] - e.from[2]).toFixed(0)} m`);
           return;
         }
         // escutei o tiro de alguém (ao alcance do som da arma): aparece no radar e vai atualizando enquanto atira

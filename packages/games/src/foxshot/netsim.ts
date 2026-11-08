@@ -58,7 +58,7 @@ export interface FsNetInput {
 
 export type FsNetEvent =
   /** `o`: o que o tiro achou (0 corpo, 1 alvo protegido pelo nascimento, 2 parede ou chão, 3 nada): o atirador vê o motivo de não dar dano. */
-  | { k: 'shot'; by: string; from: Vec3; to: Vec3; w: FsWeaponId; o?: number }
+  | { k: 'shot'; by: string; from: Vec3; to: Vec3; w: FsWeaponId; o?: number; c?: number }
   | { k: 'hit'; by: string; vic: string; dmg: number; head: boolean; armor: boolean; kill: boolean }
   | { k: 'hurt'; vic: string; by: string; x: number; z: number; dmg: number; head: boolean }
   | { k: 'kill'; killer: string; victim: string; w: FsWeaponId | FsGrenadeId; head: boolean; assist: string | null; wall: boolean; noscope: boolean; blind: boolean }
@@ -460,7 +460,7 @@ export class FsNetSim {
     for (const e of evs) {
       if (e.type === 'fire') {
         const rays = e.shot.pellets ?? [{ devYaw: e.shot.devYaw, devPitch: e.shot.devPitch }];
-        this.fire(p, e.weapon.id, rays.map((r) => fsDir(inp!.yaw + r.devYaw, inp!.pitch + r.devPitch)), inp.viewTick, undefined, adsOn && e.weapon.adsFov > 0);
+        this.fire(p, e.weapon.id, rays.map((r) => fsDir(inp!.yaw + r.devYaw, inp!.pitch + r.devPitch)), inp.viewTick, undefined, adsOn && e.weapon.adsFov > 0, Math.hypot(rays[0]!.devYaw, rays[0]!.devPitch));
       } else if (e.type === 'melee') this.melee(p, e.kind, inp.viewTick);
       else if (e.type === 'throw') {
         const dir = fsDir(inp.yaw, inp.pitch);
@@ -556,7 +556,7 @@ export class FsNetSim {
     return out;
   }
 
-  private fire(p: FsNetPlayer, wid: FsWeaponId, rays: Vec3[], viewTick: number, originOverride?: Vec3, scoped = true) {
+  private fire(p: FsNetPlayer, wid: FsWeaponId, rays: Vec3[], viewTick: number, originOverride?: Vec3, scoped = true, dev?: number) {
     const w = FS_WEAPONS[wid];
     p.firedAt = this.tick;
     p.shieldUntil = 0;
@@ -568,7 +568,7 @@ export class FsNetSim {
     for (const dir of rays) {
       const tr = fsTrace(w, eye, dir, this.boxes, bodies);
       const shielded = tr.kind === 'player' && !!tr.targetId && (this.players.get(tr.targetId)?.shieldUntil ?? 0) > this.tick;
-      this.events.push({ k: 'shot', by: p.id, from: eye.map(r2) as Vec3, to: tr.point.map(r2) as Vec3, w: wid, o: shielded ? 1 : tr.kind === 'player' ? 0 : tr.kind === 'world' ? 2 : 3 });
+      this.events.push({ k: 'shot', by: p.id, from: eye.map(r2) as Vec3, to: tr.point.map(r2) as Vec3, w: wid, o: shielded ? 1 : tr.kind === 'player' ? 0 : tr.kind === 'world' ? 2 : 3, ...(dev === undefined ? {} : { c: Math.round(dev * 10) }) });
       if (tr.kind === 'player' && tr.targetId && tr.damage) {
         const c = pool.get(tr.targetId) ?? { hp: 0, armorLoss: 0, head: false, armorHit: false, wall: false };
         c.hp += tr.damage.hp;
