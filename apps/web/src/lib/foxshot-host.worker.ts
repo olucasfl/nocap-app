@@ -54,12 +54,12 @@ function loop() {
   if (s.tick < want - 30) startAt = now - s.tick * STEP_MS;
   if (stepped > 0 && now - lastStatus > 2000) {
     lastStatus = now;
-    post({ t: 'status', rows: s.results(), over: false });
+    post({ t: 'status', rows: s.results(), over: false, bomb: s.bombResult() });
   }
   if (s.over && !sentOver) {
     sentOver = true;
     emit(s, now);
-    post({ t: 'status', rows: s.results(), over: true });
+    post({ t: 'status', rows: s.results(), over: true, bomb: s.bombResult() });
     // o último quadro vai mais vezes (o canal não garante entrega)
     let i = 0;
     const again = setInterval(() => {

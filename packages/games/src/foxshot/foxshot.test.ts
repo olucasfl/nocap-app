@@ -1242,6 +1242,7 @@ describe('Simulação do servidor (mata-mata online)', () => {
   /** Dois humanos, sem bots, com um ao alcance e à vista do outro na Base TR. */
   const duel = () => {
     const sim = new FsNetSim({ minutes: 2, humans: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }, { id: 'c', name: 'C' }], bots: 1, rng: createRng('duel') });
+    sim.dropShields();
     for (const [id, x, z] of [['a', 9, 54], ['b', 9, 59], ['c', 10, 54]] as const) {
       const p = sim.players.get(id)!;
       p.mover.x = fsDustCellX(x);
@@ -1477,6 +1478,7 @@ describe('Kill feed: efeitos do abate (cego, sem mirar, varando parede, cabeça)
   const inp = (o: Partial<FsNetInput> = {}): FsNetInput => ({ seq: 1, fwd: 0, strafe: 0, jump: false, crouch: false, walk: false, yaw: 0, pitch: 0, trigger: false, alt: false, reload: false, inspect: false, viewTick: 0, cmds: [], ...o });
   it('o evento de abate traz wall, noscope e blind (falsos por padrão, verdadeiros quando é o caso)', () => {
     const sim = new FsNetSim({ minutes: 2, humans: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }], bots: 0, rng: createRng('kf') });
+    sim.dropShields();
     const A = sim.players.get('a')!;
     const B = sim.players.get('b')!;
     B.hp = 1;
@@ -1486,6 +1488,7 @@ describe('Kill feed: efeitos do abate (cego, sem mirar, varando parede, cabeça)
     expect(k).toMatchObject({ k: 'kill', killer: 'a', victim: 'b', head: true, wall: true, noscope: true, blind: true });
     // sem nada disso: tudo falso
     const sim2 = new FsNetSim({ minutes: 2, humans: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }], bots: 0, rng: createRng('kf2') });
+    sim2.dropShields();
     sim2.players.get('b')!.hp = 1;
     sim2.damage('b', 'a', 50, 0, false, 'ak', false);
     expect(sim2.drainEvents().find((e) => e.k === 'kill')).toMatchObject({ wall: false, noscope: false, blind: false });
@@ -1544,6 +1547,7 @@ describe('Renascer recarrega as armas (granadas não voltam)', () => {
   });
   it('na simulação do servidor quem morre e renasce volta com o pente cheio', () => {
     const sim = new FsNetSim({ minutes: 2, humans: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }], bots: 0, rng: createRng('renasce') });
+    sim.dropShields();
     const B = sim.players.get('b')!;
     B.loadout.slot.ammo = 2;
     B.hp = 1;

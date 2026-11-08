@@ -238,6 +238,8 @@ export interface FoxShotRoomState {
   hz: number;
   over: boolean;
   score: { id: string; name: string; points: number; kills: number; assists: number; deaths: number }[] | null;
+  /** Modo Bomba: rounds ganhos por lado e o lado de cada um. */
+  bomb?: { tr: number; ct: number; winner: 'tr' | 'ct' | null; sides: Record<string, 'tr' | 'ct'> } | null;
   /** Quem simula (spec 060): a sala (`server`), os aparelhos tentando ligar no do líder (`pending`) ou o do líder (`p2p`). */
   net?: 'server' | 'pending' | 'p2p';
   p2pHost?: string | null;

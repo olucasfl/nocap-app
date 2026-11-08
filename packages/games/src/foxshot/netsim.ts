@@ -105,6 +105,10 @@ export interface FsNetPlayer {
   flinchAt: number;
   /** Atirou há pouco (animação do corpo dos outros). */
   firedAt: number;
+  /** Invencibilidade do nascimento (mata-mata): até este tick; acaba ao andar ou atirar. */
+  shieldUntil: number;
+  shieldX: number;
+  shieldZ: number;
   /** Última vez que chegou entrada (para marcar quem saiu). */
   heardAt: number;
   /** Time (só a cor por enquanto, o mata-mata é de todos contra todos): 0 contra-terrorista (azul), 1 terrorista (laranja). */
@@ -261,13 +265,14 @@ export class FsNetSim {
     const p: FsNetPlayer = {
       id, name, bot, mover, yaw: sp.yaw, pitch: 0, hp: 100, armor: 0, helmet: false, alive: true, respawnAt: 0,
       loadout: new FsLoadout(null, 'pistol'), kills: 0, assists: 0, deaths: 0, hs: 0, damage: 0, queue: [], last: null, lastSeq: 0,
-      level: bot ? fsBotLevelAt(this.botsMade++, this.levelOffset) : 'pro', bombHeld: false, hist: [], brain: null, dmgLog: [], flinch: { mul: 1, dur: 0 }, flinchAt: -1e9, firedAt: -1e9, heardAt: 0, team: bot ? botTeam : humanTeam !== undefined ? humanTeam : ((this.humansIn++ % 2) as 0 | 1), blindUntil: 0,
+      level: bot ? fsBotLevelAt(this.botsMade++, this.levelOffset) : 'pro', bombHeld: false, hist: [], brain: null, dmgLog: [], flinch: { mul: 1, dur: 0 }, flinchAt: -1e9, firedAt: -1e9, shieldUntil: 0, shieldX: 0, shieldZ: 0, heardAt: 0, team: bot ? botTeam : humanTeam !== undefined ? humanTeam : ((this.humansIn++ % 2) as 0 | 1), blindUntil: 0,
     };
     if (bot) {
       p.brain = fsDmNew(id, sp.x, sp.z, sp.yaw, fsDmPickWeapon(this.rng), this.rng, sp.y, p.level, true);
       this.dressBot(p);
     }
     this.players.set(id, p);
+    this.giveShield(p);
     this.roster.push({ id, name, bot });
     // modo Bomba: quem chega com o round rolando só joga no próximo
     if (this.bm && this.tick > 0) {
@@ -405,6 +410,7 @@ export class FsNetSim {
         if (!this.bombFrozen()) this.stepBot(p, foesForBots(p.id).filter((f) => !this.bm || this.sideOf(this.players.get(f.id)!) !== this.sideOf(p)));
       }
       else this.stepHuman(p);
+      if (p.shieldUntil > this.tick && Math.hypot(p.mover.x - p.shieldX, p.mover.z - p.shieldZ) > 0.35) p.shieldUntil = 0;
       p.hist.push({ tick: this.tick, x: p.mover.x, y: p.mover.y, z: p.mover.z, crouch: p.mover.crouchK, yaw: p.yaw });
       if (p.hist.length > 40) p.hist.shift();
     }
@@ -536,6 +542,7 @@ export class FsNetSim {
   private fire(p: FsNetPlayer, wid: FsWeaponId, rays: Vec3[], viewTick: number, originOverride?: Vec3, scoped = true) {
     const w = FS_WEAPONS[wid];
     p.firedAt = this.tick;
+    p.shieldUntil = 0;
     const eye: Vec3 = originOverride ?? [p.mover.x, p.mover.y + fsEyeHeight(p.mover), p.mover.z];
     const bodies = this.bodiesAt(p.id, viewTick);
     const pool = new Map<string, { hp: number; armorLoss: number; head: boolean; armorHit: boolean; wall: boolean }>();
@@ -585,6 +592,7 @@ export class FsNetSim {
     const v = this.players.get(vic);
     const a = this.players.get(by);
     if (!v || !v.alive || this.over) return;
+    if (v.shieldUntil > this.tick) return;
     // modo Bomba: sem dano na compra nem depois do fim do round
     if (this.bm && this.bm.phase !== 'live' && this.bm.phase !== 'planted') return;
     // fogo amigo existe, mas muito mais fraco: um quarto do dano e a cabeça não mata na hora (nem o sniper)
@@ -634,6 +642,19 @@ export class FsNetSim {
     }
   }
 
+  /** Tira a proteção de todo mundo (usado pelos testes e ao abrir a partida sem espera). */
+  dropShields(): void {
+    for (const p of this.players.values()) p.shieldUntil = 0;
+  }
+
+  /** Mata-mata: quem nasce fica invencível até andar (ou 8 s parado); atirar também tira. */
+  private giveShield(p: FsNetPlayer) {
+    if (this.bm) return;
+    p.shieldUntil = this.tick + 8 * FS_NET_HZ;
+    p.shieldX = p.mover.x;
+    p.shieldZ = p.mover.z;
+  }
+
   private respawn(p: FsNetPlayer) {
     const foes = [...this.players.values()].filter((q) => q.alive && q.id !== p.id).map((q) => ({ x: q.mover.x, z: q.mover.z }));
     const sp = this.map.pickSpawn(foes, this.rng, this.boxes);
@@ -657,6 +678,7 @@ export class FsNetSim {
       p.mover = p.brain.mover;
       this.dressBot(p);
     }
+    this.giveShield(p);
     this.events.push({ k: 'spawn', id: p.id, x: r2(sp.x), z: r2(sp.z) });
   }
 
@@ -928,6 +950,15 @@ export class FsNetSim {
   }
 
   /** Pontos e abates de todo mundo, ordenados (placar e tela final). */
+  /** Placar de rounds e o lado de cada um (modo Bomba); `null` no mata-mata. */
+  bombResult(): { tr: number; ct: number; winner: FsSide | null; sides: Record<string, FsSide> } | null {
+    const bm = this.bm;
+    if (!bm) return null;
+    const sides: Record<string, FsSide> = {};
+    for (const [id, p] of bm.players) sides[id] = p.side;
+    return { tr: bm.score.tr, ct: bm.score.ct, winner: bm.winner ?? null, sides };
+  }
+
   results(): FsMatchRow[] {
     return fsMatchResult([...this.players.values()].map((p) => ({ id: p.id, name: p.name, kills: p.kills, assists: p.assists, deaths: p.deaths })));
   }
@@ -942,7 +973,7 @@ export class FsNetSim {
     this.roster.forEach((r, i) => {
       const q = this.players.get(r.id)!;
       const sp = Math.hypot(q.mover.vx, q.mover.vz);
-      const flags = (q.alive ? 1 : 0) | (q.helmet ? 2 : 0) | (q.bot ? 4 : 0) | (this.tick - q.firedAt < 12 ? 8 : 0) | (!q.bot && q.loadout.reloading ? 16 : 0) | (q.mover.onGround ? 32 : 0) | (sp > 0.8 ? 64 : 0) | ((this.bm ? this.sideOf(q) === 'tr' : q.team === 1) ? 128 : 0);
+      const flags = (q.alive ? 1 : 0) | (q.helmet ? 2 : 0) | (q.bot ? 4 : 0) | (this.tick - q.firedAt < 12 ? 8 : 0) | (!q.bot && q.loadout.reloading ? 16 : 0) | (q.mover.onGround ? 32 : 0) | (sp > 0.8 ? 64 : 0) | ((this.bm ? this.sideOf(q) === 'tr' : q.team === 1) ? 128 : 0) | (q.shieldUntil > this.tick ? 256 : 0);
       const wid = q.bot ? q.brain!.weapon : q.loadout.weapon.id;
       p.push([
         i, Math.round(q.mover.x * 100), Math.round(q.mover.y * 100), Math.round(q.mover.z * 100),
@@ -989,6 +1020,7 @@ export class FsNetSim {
     return {
       x: r2(q.mover.x), y: r2(q.mover.y), z: r2(q.mover.z), vx: r2(q.mover.vx), vy: r2(q.mover.vy), vz: r2(q.mover.vz),
       og: q.mover.onGround, ck: r2(q.mover.crouchK), seq: q.lastSeq, yaw: r2(q.yaw), pitch: r2(q.pitch), hp: Math.max(0, Math.round(q.hp)), armor: Math.round(q.armor), helmet: q.helmet, alive: q.alive,
+      shield: q.alive && q.shieldUntil > this.tick ? (q.shieldUntil - this.tick) / (8 * FS_NET_HZ) : 0,
       respawnIn: q.alive ? 0 : Math.max(0, (q.respawnAt - this.tick) / FS_NET_HZ),
       cur: lo.current, held: lo.held, ammo: lo.held ? lo.grenades[lo.held] : lo.slot.ammo, reloading: lo.reloading,
       slots: lo.slots.map((s) => (s ? fsNetWeaponIndex(s.id) : -1)),

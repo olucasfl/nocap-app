@@ -1,3 +1,4 @@
+declare function atob(s: string): string;
 /**
  * Mapas gerados de uma grade (spec 061): o mapa novo vem do modelo 3D (tools/art/map2_build.py), que gera uma grade de 0,5 m com o
  * nível do chão de cada célula (255 = parede) e as posições dos nascimentos e das bombas lidas do BSP. Daqui saem as caixas de
@@ -16,6 +17,13 @@ export interface FsGridMapData {
   step: number;
   /** Pares [valor, quantidade] da grade, linha a linha (255 = parede). */
   rle: readonly number[];
+  /**
+   * Caixas de colisão exatas (base64 de Uint16 em grupos de 6: i0, j0, k0, i1, j1, k1 em voxels, extremos inclusivos; i = linha (z),
+   * j = coluna (x), k = altura). Sem isso as caixas saem da grade (paredes e degraus por célula).
+   */
+  boxes?: string;
+  /** lado dos voxels das caixas (m); padrão = cell */
+  bcell?: number;
   tspawns: readonly (readonly [number, number, number])[];
   ctspawns: readonly (readonly [number, number, number])[];
   /** Caixas das bombas (x0, z0, x1, z1): a primeira é a A. */
@@ -114,6 +122,21 @@ export function createGridMap(opts: { id: string; name: string; data: FsGridMapD
 
   // ---- caixas: chão elevado e paredes (juntando células iguais)
   const solids: FsBox[] = [];
+  if (d.boxes) {
+    const bin = atob(d.boxes);
+    const u8 = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    const u16 = new Uint16Array(u8.buffer, 0, Math.floor(u8.length / 2));
+    const bc = d.bcell ?? cell;
+    for (let i = 0; i + 5 < u16.length; i += 6) {
+      solids.push({
+        min: [x0 + u16[i + 1]! * bc, u16[i + 2]! * bc, z0 + u16[i]! * bc],
+        max: [x0 + (u16[i + 4]! + 1) * bc, (u16[i + 5]! + 1) * bc, z0 + (u16[i + 3]! + 1) * bc],
+        pen: 0,
+        mat: 'wall',
+      });
+    }
+  }
   const merge = (pred: (c: number, r: number) => number | null, make: (key: number, c0: number, r0: number, c1: number, r1: number) => FsBox) => {
     const runs: { key: number; c0: number; c1: number; r0: number; r1: number }[] = [];
     const open = new Map<string, number>();
@@ -144,8 +167,8 @@ export function createGridMap(opts: { id: string; name: string; data: FsGridMapD
     for (const q of runs) solids.push(make(q.key, q.c0, q.r0, q.c1, q.r1));
   };
   const rect = (c0: number, r0: number, c1: number, r1: number) => ({ x0: x0 + c0 * cell, z0: z0 + r0 * cell, x1: x0 + (c1 + 1) * cell, z1: z0 + (r1 + 1) * cell });
-  // chão elevado
-  merge(
+  // chão elevado (só sem caixas exatas)
+  if (!d.boxes) merge(
     (c, r) => (level[idx(c, r)] !== WALL && level[idx(c, r)]! > 0 ? level[idx(c, r)]! : null),
     (lv, c0, r0, c1, r1) => {
       const w = rect(c0, r0, c1, r1);
@@ -162,7 +185,7 @@ export function createGridMap(opts: { id: string; name: string; data: FsGridMapD
       wallTop[idx(c, r)] = best < 0 ? 0 : best + Math.ceil(3.4 / step);
     }
   }
-  merge(
+  if (!d.boxes) merge(
     (c, r) => (wallTop[idx(c, r)]! > 0 ? wallTop[idx(c, r)]! : null),
     (top, c0, r0, c1, r1) => {
       const w = rect(c0, r0, c1, r1);
@@ -240,7 +263,7 @@ export function createGridMap(opts: { id: string; name: string; data: FsGridMapD
         near = Math.min(near, dd);
         if (dd < 45 && fsClearLine(boxes, [s.x, s.y + 1, s.z], [f.x, s.y + 1, f.z])) seen++;
       }
-      return { s, v: Math.min(near, 60) - seen * 25 };
+      return { s, v: Math.min(near, 60) - seen * 25 - (near < 15 ? 100 : 0) };
     });
     scored.sort((a, b) => b.v - a.v);
     const top = scored.slice(0, Math.min(3, scored.length));

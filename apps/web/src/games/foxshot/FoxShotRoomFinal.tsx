@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { sendRoom, leaveRoom, useMeId, type RoomSnapshot } from '@/lib/rooms';
 import { CounterFoxBackdrop } from './CounterFoxBackdrop';
 import { CounterFoxLogo } from './CounterFoxLogo';
+import { FsBombEnd } from './FsBombEnd';
 import './counterfox-hub.css';
 
 /** Resultado do mata-mata online: tabela com posição, pontos, abates, assistências e mortes; jogar de novo volta ao lobby da sala. */
@@ -23,6 +24,26 @@ export function FoxShotRoomFinal({ snapshot }: { snapshot: RoomSnapshot }) {
       /* sem trava para soltar */
     }
   }, []);
+  const bomb = snapshot.foxshot?.bomb;
+  if (snapshot.foxshot?.kind === 'bomb' && bomb) {
+    const mySide = bomb.sides[me ?? ''] ?? null;
+    return (
+      <FsBombEnd
+        winner={bomb.winner}
+        tr={bomb.tr}
+        ct={bomb.ct}
+        mySide={mySide}
+        mapName={snapshot.foxshot?.map === 'cidade' ? 'Cidade' : 'Duna'}
+        rows={rows.map((r) => ({ id: r.id, name: r.name, side: bomb.sides[r.id] ?? 'ct', kills: r.kills, assists: r.assists, deaths: r.deaths, points: r.points, me: r.id === me }))}
+        exitLabel="Sair da sala"
+        onExit={() => void leaveRoom()}
+        againLabel={voted ? 'Esperando os outros' : 'Jogar de novo'}
+        againNote={voted ? 'toque para desistir' : 'volta ao lobby da sala'}
+        againOn={!!voted}
+        onAgain={() => sendRoom('vote', { again: !voted })}
+      />
+    );
+  }
   return (
     <main className="cfh cfl" data-testid="fsr-final">
       <CounterFoxBackdrop />

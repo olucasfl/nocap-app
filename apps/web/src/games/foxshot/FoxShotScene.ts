@@ -974,7 +974,7 @@ export class FoxShotScene {
       if (!m.isMesh) return;
       m.geometry.computeVertexNormals();
       const old = m.material as THREE.MeshStandardMaterial;
-      m.material = new THREE.MeshLambertMaterial({ map: old.map ?? null, alphaTest: old.alphaTest || 0, side: THREE.DoubleSide });
+      m.material = new THREE.MeshLambertMaterial({ map: old.map ?? null, color: old.color ?? 0xffffff, alphaTest: old.alphaTest || 0, side: THREE.DoubleSide });
       m.castShadow = false;
       m.receiveShadow = false;
     });
@@ -2007,6 +2007,29 @@ export class FoxShotScene {
     }
     const cur = f.actions[f.anim];
     if (cur) cur.setEffectiveTimeScale(speed);
+  }
+  private shields = new Map<string, THREE.Mesh>();
+  /** Bolha de invencibilidade do nascimento (mata-mata): azul-clara que pulsa só em opacidade. */
+  setShield(id: string, on: boolean) {
+    const f = this.foxes.get(id);
+    let m = this.shields.get(id);
+    if (!on || !f || f.dead) {
+      if (m) m.visible = false;
+      return;
+    }
+    if (!m || m.parent !== f.root) {
+      m?.removeFromParent();
+      m = new THREE.Mesh(
+        new THREE.SphereGeometry(0.85, 20, 14),
+        new THREE.MeshBasicMaterial({ color: 0x6fd8ff, transparent: true, opacity: 0.25, depthWrite: false, blending: THREE.AdditiveBlending }),
+      );
+      m.position.y = 0.65;
+      m.renderOrder = 5;
+      f.root.add(m);
+      this.shields.set(id, m);
+    }
+    m.visible = true;
+    (m.material as THREE.MeshBasicMaterial).opacity = 0.2 + 0.12 * Math.sin(performance.now() / 160);
   }
   /** Empurrão ao morrer: a raposa escorrega para longe do tiro e perde velocidade. */
   knock(id: string, dx: number, dz: number, power: number) {

@@ -203,9 +203,7 @@ data = {
     'ctspawns': [[round(x, 2), round(z, 2), a] for (x, z, a) in CT],
     'sites': [s for _i, s in sites], 'buys': buys, 'hmin': round(hmin, 3),
 }
-out_ts = os.path.join(root, 'packages/games/src/foxshot/map2.data.ts')
-open(out_ts, 'w').write('/* Gerado por tools/art/map2_build.py: grade do mapa novo (não editar à mão). */\nexport const FS_MAP2_DATA = ' + json.dumps(data) + ' as const;\n')
-print('grade escrita', out_ts, len(rle) // 2, 'trechos')
+print('(grade antiga descartada: a colisão vem de map2_bsp.py)')
 
 # imagem de conferência
 img = np.zeros((rows, cols, 3), np.uint8) + 25
@@ -247,7 +245,8 @@ def accessor(arr, ctype, atype, target=None, minmax=False):
     if minmax: a['min'] = arr.min(axis=0).tolist(); a['max'] = arr.max(axis=0).tolist()
     accessors.append(a); return len(accessors) - 1
 
-off_y = hmin
+# a altura do chão mais baixo vem da colisão do BSP (map2_bsp.py), para o desenho e a colisão baterem
+off_y = float(open('/tmp/newmap/hmin.txt').read())
 for name, fl in faces.items():
     f = np.array(fl)
     tri_v = f[:, 0:3]; tri_t = f[:, 3:6]
@@ -264,6 +263,11 @@ for name, fl in faces.items():
             images.append({'bufferView': bv, 'mimeType': 'image/png'}); textures.append({'source': len(images) - 1, 'sampler': 0})
             img_idx[tp] = (len(textures) - 1, has_alpha)
     m = {'name': name, 'doubleSided': True, 'pbrMetallicRoughness': {'metallicFactor': 0.0, 'roughnessFactor': 0.9}}
+    if 'tex' not in mat or not os.path.exists(os.path.join(tex_dir, mat.get('tex', ''))):
+        # textura que faltava no arquivo (vinha de um WAD externo): tons de reboco e arenito em vez de branco
+        pal = [(0.80, 0.74, 0.62), (0.72, 0.65, 0.52), (0.85, 0.80, 0.68), (0.66, 0.58, 0.46), (0.76, 0.70, 0.60)]
+        c = pal[sum(map(ord, name)) % len(pal)]
+        m['pbrMetallicRoughness']['baseColorFactor'] = [c[0], c[1], c[2], 1.0]
     tp = os.path.join(tex_dir, mat.get('tex', ''))
     if tp in img_idx:
         ti, ha = img_idx[tp]

@@ -71,6 +71,8 @@ import { FsBombHud, type BombHud } from './FsBombHud';
 import { fsAudio } from '@/lib/foxshot-audio';
 import { FoxShotScene, FS_WORLD_TRAIN, fsWorldFor, type Quality } from './FoxShotScene';
 import { FsMatchEnd } from './FsMatchEnd';
+import { FsBombEnd } from './FsBombEnd';
+import { FsShield } from './FsShield';
 import { FsControls } from './fs-controls';
 import { bindLabel, fsSettings, useFsSettings } from './fs-settings';
 
@@ -167,6 +169,8 @@ interface Hud {
   deadAge: number;
   follow: string | null;
   respawnIn: number;
+  /** Invencibilidade do nascimento: fração que falta (0 = sem). */
+  shield?: number;
   slots: FsSlotInfo[];
   current: number;
   /** Velocidade no chão (m/s) e abertura da mira (para borrar a luneta andando). */
@@ -211,7 +215,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
   const [feed, setFeed] = useState<FeedItem[]>([]);
   const [result, setResult] = useState<FsMatchRow[] | null>(null);
   /** Modo Bomba: quem venceu e o placar de rounds (para a tela final). */
-  const [bombEnd, setBombEnd] = useState<{ winner: 'tr' | 'ct'; tr: number; ct: number; mySide: 'tr' | 'ct' } | null>(null);
+  const [bombEnd, setBombEnd] = useState<{ winner: 'tr' | 'ct'; tr: number; ct: number; mySide: 'tr' | 'ct'; sides: Record<string, 'tr' | 'ct'> } | null>(null);
   const endedRef = useRef(false);
   const onAgainRef = useRef<() => void>(() => undefined);
   onAgainRef.current = () => onAgain?.();
@@ -554,7 +558,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         }),
       ]);
       setResult(rows);
-      if (bm && bm.winner) setBombEnd({ winner: bm.winner, tr: bm.score.tr, ct: bm.score.ct, mySide: bm.players.get('me')!.side });
+      if (bm && bm.winner) setBombEnd({ winner: bm.winner, tr: bm.score.tr, ct: bm.score.ct, mySide: bm.players.get('me')!.side, sides: Object.fromEntries([...bm.players].map(([k, v]) => [k, v.side])) });
       setShopState(false);
       shopRef.current = false;
       controls.releaseLock();
@@ -570,6 +574,28 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     let rangeShots = 0;
     let deadUntil = 0;
     let deadSince = 0;
+    // invencibilidade de quem nasce no mata-mata: acaba ao andar, ao atirar ou em 8 s parado
+    const SHIELD_S = 8;
+    const shieldUntil = new Map<string, number>();
+    const shieldSpot = new Map<string, { x: number; z: number }>();
+    const giveShield = (id: string, x: number, z: number) => {
+      if (match && !bm) {
+        shieldUntil.set(id, clock + SHIELD_S);
+        shieldSpot.set(id, { x, z });
+      }
+    };
+    const hasShield = (id: string) => (shieldUntil.get(id) ?? 0) > clock;
+    const dropShield = (id: string) => {
+      shieldUntil.delete(id);
+    };
+    const shieldMoved = (id: string, x: number, z: number) => {
+      const sp = shieldSpot.get(id);
+      if (sp && hasShield(id) && Math.hypot(x - sp.x, z - sp.z) > 0.35) dropShield(id);
+    };
+    if (match && !bm) {
+      giveShield('me', firstSpawn!.x, firstSpawn!.z);
+      for (const d of dmSpecs) giveShield(d.id, d.x, d.z);
+    }
     let hurtKey = 0;
     let heavyKey = 0;
     let hurtAt = -1e9;
@@ -618,7 +644,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     };
     /** Você levou dano (tiro ou explosão): vida, colete, efeitos e morte. */
     function hurtPlayer(hp: number, armorLoss: number, head: boolean, killer: string, icon: FsWeaponId | FsGrenadeId, by?: string, src?: { x: number; z: number }) {
-      if (clock < deadUntil) return;
+      if (clock < deadUntil || hasShield('me')) return;
       // de onde veio o tiro (o arco vermelho em volta da mira aponta para lá)
       if (src) {
         hitMarks.push({ x: src.x, z: src.z, at: performance.now() });
@@ -788,6 +814,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     };
     /** Mata-mata: um bot (ou você) leva dano de `attacker`. Cuida de vida, colete, abate, assistência, pontos e do aviso na tela. */
     function dealDamage(victim: string, attacker: string, hp: number, armorLoss: number, head: boolean, icon: FsWeaponId | FsGrenadeId, fx: number, fz: number, force = false): 'kill' | 'hit' | null {
+      if (!force && hasShield(victim)) return null;
       // modo Bomba: sem dano na fase de compra ou depois do fim do round (o estouro da bomba passa por cima disso)
       if (bm && !force && bm.phase !== 'live' && bm.phase !== 'planted') return null;
       // fogo amigo: um quarto do dano e a cabeça não mata na hora (igual ao servidor)
@@ -883,6 +910,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     function spawnBot(id: string) {
       const sp = map.pickSpawn(aliveFoes(id), rnd);
       initBot(id, sp.x, sp.z, sp.yaw, sp.y);
+      giveShield(id, sp.x, sp.z);
       scene.reviveTarget(id);
       scene.setBot(id, sp.x, sp.y, sp.z, botSt.get(id)!.h, 'idle', 1);
     }
@@ -905,6 +933,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       return out;
     };
     const dmFire = (b: FsDmBrain, a: Extract<FsDmAction, { type: 'fire' }>) => {
+      dropShield(b.id);
       const w = FS_WEAPONS[a.weapon];
       const others = bodiesFor(b.id);
       const o = new THREE.Vector3(a.origin[0] + a.rays[0]![0] * 0.5, a.origin[1] + a.rays[0]![1] * 0.5, a.origin[2] + a.rays[0]![2] * 0.5);
@@ -1306,6 +1335,8 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         bs.z = b.mover.z;
         bs.h = fsDmHeading(b.yaw);
         bs.crouch = b.mover.crouchK;
+        shieldMoved(d.id, bs.x, bs.z);
+        scene.setShield(d.id, hasShield(d.id));
         const still = b.mover.crouchK > 0.5 && b.speed < 1;
         scene.setBot(d.id, bs.x, bs.y, bs.z, bs.h, still ? 'crouchwalk' : b.anim, still ? 0 : b.animSpeed);
         if (b.speed > 3.4 && b.mover.onGround && b.mover.crouchK < 0.5) {
@@ -1380,6 +1411,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       id: FsWeaponId,
       shot: { kickPitch: number; kickYaw: number; devYaw: number; devPitch: number; pellets?: { devYaw: number; devPitch: number }[] },
     ) => {
+      dropShield('me');
       const w = FS_WEAPONS[id];
       const eye: [number, number, number] = [mover.x, mover.y + fsEyeHeight(mover), mover.z];
       const from = scene.muzzleWorld();
@@ -1637,6 +1669,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
           view.yaw = sp.yaw;
           view.pitch = view.rPitch = view.rYaw = 0;
         }
+        giveShield('me', sp.x, sp.z);
         mover.x = sp.x;
         mover.z = sp.z;
         mover.y = 'y' in sp ? (sp as { y: number }).y : 0;
@@ -1647,6 +1680,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       }
       const w = loadout.weapon;
       let speed = Math.hypot(mover.vx, mover.vz);
+      shieldMoved('me', mover.x, mover.z);
       let adsOn = false;
 
       if (!isPaused) {
@@ -2082,6 +2116,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
           deadAge: clock < deadUntil ? Math.max(0, clock - deadSince) : 0,
           follow: bm && clock < deadUntil && followDm ? nameOf(followDm) : null,
           respawnIn: Math.max(0, deadUntil - clock),
+          shield: hasShield('me') && clock >= deadUntil ? Math.max(0, (shieldUntil.get('me') ?? 0) - clock) / SHIELD_S : 0,
           armor: me.armor,
           helmet: me.helmet,
           ammo: loadout.held ? loadout.grenades[loadout.held] : loadout.slot.ammo,
@@ -2392,6 +2427,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
             kills={hud.me.kills}
             deaths={hud.me.deaths}
           />}
+          {!!hud.shield && <FsShield frac={hud.shield} />}
           {settings.showMinimap && <FsMinimap get={getMini} />}
           {bigMap && !result && <FsBigMap get={getMini} title={match ? 'Mapa · Duna' : 'Mapa · Treino'} />}
           <div className="fsh-rcol">
@@ -2548,11 +2584,20 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
             </>
           )}
           {result && match && bombEnd && (
-            <div className="fb-end" data-testid="fb-end">
-              {bombEnd.winner === bombEnd.mySide ? 'VITÓRIA' : 'DERROTA'} · {bombEnd.winner === 'tr' ? 'Terroristas' : 'Contra-terroristas'} vencem por {bombEnd.winner === 'tr' ? bombEnd.tr : bombEnd.ct} a {bombEnd.winner === 'tr' ? bombEnd.ct : bombEnd.tr}
-            </div>
+            <FsBombEnd
+              winner={bombEnd.winner}
+              tr={bombEnd.tr}
+              ct={bombEnd.ct}
+              mySide={bombEnd.mySide}
+              mapName={match?.map === 'cidade' ? 'Cidade' : 'Duna'}
+              rows={result.map((r) => ({ id: r.id, name: r.name, side: bombEnd.sides[r.id] ?? 'ct', kills: r.kills, assists: r.assists, deaths: r.deaths, points: r.points, me: r.id === 'me' }))}
+              exitLabel="Mudar a partida"
+              onExit={() => onExit?.()}
+              againLabel="Jogar de novo"
+              onAgain={() => onAgainRef.current()}
+            />
           )}
-          {result && match && (
+          {result && match && !bombEnd && (
             <FsMatchEnd rows={result} minutes={match.minutes} onAgain={() => onAgainRef.current()} onExit={() => onExit?.()} />
           )}
           {paused && !portrait && !result && (

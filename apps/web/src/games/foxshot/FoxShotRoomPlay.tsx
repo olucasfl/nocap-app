@@ -46,6 +46,7 @@ import { FsBombHud, type BombHud } from './FsBombHud';
 import { fsMapById } from '@nocap/games';
 import { FsBigMap, FsTelemetry, FsAmmo, FsCrosshair, FsKillFeed, FsMinimap, FsScoreboard, FsTopBar, FsVitals, type FeedItem, type FsIntelDot, type FsPlayerRow, type MinimapData } from './FsHud';
 import { FoxShotRoomFinal } from './FoxShotRoomFinal';
+import { FsShield } from './FsShield';
 import './foxshot.css';
 import './counterfox-hub.css';
 
@@ -71,7 +72,7 @@ interface Row {
 }
 interface SelfState {
   x: number; y: number; z: number; vx: number; vy: number; vz: number; og: boolean; ck: number; seq: number; yaw: number; pitch: number;
-  hp: number; armor: number; helmet: boolean; alive: boolean; respawnIn: number;
+  hp: number; armor: number; helmet: boolean; alive: boolean; respawnIn: number; shield?: number;
   cur: number; held: FsGrenadeId | null; ammo: number; reloading: boolean; slots: number[]; nades: Record<FsGrenadeId, number>;
   /** Modo Bomba: dinheiro, progresso de plantar/desarmar, ganho do último round, seu lado e rounds para vencer. */
   bomb?: { money: number; plant: number; defuse: number; gain: number; side: 'tr' | 'ct'; win: number; kit?: boolean; buy?: boolean; held?: boolean; mates?: Record<number, number> };
@@ -82,7 +83,7 @@ interface Frame {
   e: FsNetEvent[];
 }
 interface RoomHud {
-  hp: number; armor: number; helmet: boolean; hurtKey: number; heavyKey: number; hurtAge: number; heavyAge: number; dead: boolean; respawnIn: number; deadAge: number;
+  hp: number; armor: number; helmet: boolean; hurtKey: number; heavyKey: number; hurtAge: number; heavyAge: number; dead: boolean; respawnIn: number; shield?: number; deadAge: number;
   ammo: number; mag: number; weapon: string; weaponId: FsWeaponId; heldNade: FsGrenadeId | null;
   nades: { id: FsGrenadeId; name: string; count: number; key: string }[];
   speed: number; slots: { id: FsWeaponId | null; name: string; key: number }[]; current: number; reloading: boolean; scoped: boolean; spreadPx: number;
@@ -1015,7 +1016,10 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           scene.hideTarget(id);
           continue;
         }
-        if (!rm.shown || !rm.alive) continue;
+        if (!rm.shown || !rm.alive) {
+          scene.setShield(id, false);
+          continue;
+        }
         const p = sample(rm.buf, rt);
         if (!p) continue;
         const moving = (p.flags & 64) !== 0;
@@ -1023,6 +1027,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         const crouching = p.crouch > 0.5;
         const anim = shooting ? 'shoot' : moving ? (crouching ? 'crouchwalk' : 'run') : crouching ? 'crouchwalk' : 'idle';
         scene.setBot(id, p.x, p.y, p.z, fsDmHeading(p.yaw), anim, moving ? 1 : crouching ? 0 : 1);
+        scene.setShield(id, (p.flags & 256) !== 0);
       }
 
       // câmera: interpola o passo de 1/60 e desliza o erro de previsão
@@ -1226,7 +1231,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         setHud({
           hp: self?.hp ?? 100, armor: self?.armor ?? 0, helmet: self?.helmet ?? false, hurtKey, heavyKey,
           hurtAge: (performance.now() - hurtAt) / 1000, heavyAge: (performance.now() - heavyAt) / 1000,
-          dead: !alive, respawnIn: bf ? 0 : self?.respawnIn ?? 0, deadAge: !alive && deadSince >= 0 ? Math.max(0, clock - deadSince) : 0, follow: bf && !alive && followId ? nameOf(followId) : null,
+          dead: !alive, respawnIn: bf ? 0 : self?.respawnIn ?? 0, shield: alive && !bf ? self?.shield ?? 0 : 0, deadAge: !alive && deadSince >= 0 ? Math.max(0, clock - deadSince) : 0, follow: bf && !alive && followId ? nameOf(followId) : null,
           bomb: bf && bombSelf ? ((): BombHud => {
             const phase = (['buy', 'live', 'planted', 'end', 'over'] as const)[bf![0]!] ?? 'live';
             const allyAlive = players.filter((q) => q.team === (bombSelf!.side === 'tr' ? 't' : 'ct') && q.alive).length;
@@ -1373,6 +1378,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
             {settings.showTelemetry && <FsTelemetry fps={h.fps} tris={h.tris} calls={h.calls} level={h.level} dpr={h.dpr} speed={h.speed} ref="" />}
             <FsKillFeed items={feed} />
           </div>
+          {!!h.shield && !spectating && <FsShield frac={h.shield} />}
           {(h.hurtAge) < 0.45 && !h.dead && !spectating && <div key={`h${h.hurtKey}`} className="fs-hurt" aria-hidden="true" />}
           {(h.heavyAge) < 1.7 && !h.dead && !spectating && <div key={`v${h.heavyKey}`} className="fs-hurt heavy" aria-hidden="true" />}
           {h.dead && !paused && !spectating && (!h.bomb || h.deadAge < 2.5) && (
