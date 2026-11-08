@@ -425,6 +425,8 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
     let zoomLvl = 0;
     let adsPrev = false;
     let aimHeld = false;
+    /** A mira do último tiro local (antes do recuo): vai na próxima entrada, porque o quadro do tiro pode não ter tido passo de entrada. */
+    let shotAim: { yaw: number; pitch: number } | null = null;
     const zoomFov = (adsFov: number) => (zoomLvl >= 2 ? 11 : adsFov);
     let recent: { t: number; d: number }[] = [];
     let blindTotal = 0;
@@ -766,6 +768,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       const eye: [number, number, number] = [mover.x, mover.y + fsEyeHeight(mover), mover.z];
       const from = scene.muzzleWorld();
       const bodies = bodiesNow(performance.now() - interpMs());
+      shotAim = { yaw: view.yaw + view.rYaw, pitch: view.pitch + view.rPitch };
       for (const ray of shot.pellets ?? [{ devYaw: shot.devYaw, devPitch: shot.devPitch }]) {
         const dir = fsDir(view.yaw + view.rYaw + ray.devYaw, view.pitch + view.rPitch + ray.devPitch);
         const tr = fsTrace(w, eye, dir, ARENA, bodies);
@@ -976,8 +979,10 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
             yaw: view.yaw + view.rYaw, pitch: view.pitch + view.rPitch,
             trigger: alive && inp.trigger && !shopOpen && !bombFrozen(), alt: alive && aimHeld && !shopOpen, reload: alive && reloadOnce, inspect: alive && inspectOnce, use: alive && inp.use,
             viewTick: Math.round(lastK + ((perfNow - lastFrameAt) / 1000) * 60 - (interpMs() / 1000) * 60),
+            ...(shotAim ? { shotYaw: shotAim.yaw, shotPitch: shotAim.pitch } : {}),
             cmds,
           });
+          shotAim = null;
           reloadOnce = false;
           inspectOnce = false;
           if (outbox.length > 8) outbox.shift();

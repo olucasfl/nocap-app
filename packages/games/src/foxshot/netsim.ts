@@ -53,6 +53,12 @@ export interface FsNetInput {
   use?: boolean;
   /** Passo do servidor que o aparelho estava mostrando (para a compensação de atraso). */
   viewTick: number;
+  /**
+   * Para onde a mira apontava no instante do tiro, antes do recuo. Quando o quadro do tiro não teve passo de entrada (telas de 120/144 Hz), a entrada
+   * seguinte já leva a mira levantada pelo recuo; sem isto o servidor atirava por cima do alvo (principalmente na sniper, 4 graus de coice).
+   */
+  shotYaw?: number;
+  shotPitch?: number;
   cmds?: FsNetCmd[];
 }
 
@@ -179,6 +185,7 @@ export function fsNetParseInput(raw: unknown): FsNetInput | null {
     inspect: !!o.inspect,
     use: !!o.use,
     viewTick: finite(o.viewTick) ? Math.floor(o.viewTick) : 0,
+    ...(finite(o.shotYaw) && finite(o.shotPitch) ? { shotYaw: ((o.shotYaw % 360) + 360) % 360, shotPitch: clamp(o.shotPitch, -88, 88) } : {}),
     cmds,
   };
 }
@@ -460,7 +467,17 @@ export class FsNetSim {
     for (const e of evs) {
       if (e.type === 'fire') {
         const rays = e.shot.pellets ?? [{ devYaw: e.shot.devYaw, devPitch: e.shot.devPitch }];
-        this.fire(p, e.weapon.id, rays.map((r) => fsDir(inp!.yaw + r.devYaw, inp!.pitch + r.devPitch)), inp.viewTick, undefined, adsOn && e.weapon.adsFov > 0, Math.hypot(rays[0]!.devYaw, rays[0]!.devPitch));
+        // a mira do instante do tiro (sem o recuo), se vier perto da da entrada (o coice é de poucos graus; mais que isso não vale)
+        let ay = inp.yaw;
+        let ap = inp.pitch;
+        if (inp.shotYaw !== undefined && inp.shotPitch !== undefined) {
+          const dy = ((inp.shotYaw - inp.yaw + 540) % 360) - 180;
+          if (Math.abs(dy) <= 15 && Math.abs(inp.shotPitch - inp.pitch) <= 15) {
+            ay = inp.yaw + dy;
+            ap = inp.shotPitch;
+          }
+        }
+        this.fire(p, e.weapon.id, rays.map((r) => fsDir(ay + r.devYaw, ap + r.devPitch)), inp.viewTick, undefined, adsOn && e.weapon.adsFov > 0, Math.hypot(rays[0]!.devYaw, rays[0]!.devPitch));
       } else if (e.type === 'melee') this.melee(p, e.kind, inp.viewTick);
       else if (e.type === 'throw') {
         const dir = fsDir(inp.yaw, inp.pitch);
