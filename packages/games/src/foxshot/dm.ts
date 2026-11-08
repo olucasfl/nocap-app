@@ -103,6 +103,8 @@ export interface FsDmBrain {
   flashedUntil: number;
   path: [number, number][];
   goal: [number, number] | null;
+  /** Espera (s) antes de pedir outro caminho ao mesmo objetivo (um caminho vazio não vira busca a cada passo). */
+  pathCool: number;
   /** Modo Bomba: para onde o bot vai quando não há ninguém à vista (em vez de passear). */
   objective?: [number, number] | null;
   stuckT: number;
@@ -166,7 +168,7 @@ export function fsDmNew(id: string, x: number, z: number, yaw: number, weapon: F
   return {
     id, mover: m, yaw, pitch: 0, weapon, ammo: FS_WEAPONS[weapon].mag, reloadT: 0, cool: 0.6, burstLeft: 0, gun: fsNewGunState(),
     nades: { frag: rng() < 0.45 ? 1 : 0, flash: rng() < 0.45 ? 1 : 0 },
-    nadeCool: 4 + rng() * 6, flashedUntil: 0, path: [], goal: null, stuckT: 0, lastX: x, lastZ: z,
+    nadeCool: 4 + rng() * 6, flashedUntil: 0, path: [], goal: null, pathCool: 0, stuckT: 0, lastX: x, lastZ: z,
     target: null, react: 0, lostT: 99, last: null, strafe: rng() < 0.5 ? 1 : -1, strafeT: 0.6, senseT: rng() * 0.12, acc: 0, fireAnimT: 0,
     anim: 'idle', animSpeed: 1, headAim: false, speed: 0, level, skill: FS_BOT_LEVELS[level], ambush,
   };
@@ -370,9 +372,12 @@ export function fsDmStep(b: FsDmBrain, ctx: FsDmCtx): FsDmAction[] {
   } else if (b.objective) {
     // modo Bomba: vai ao objetivo e fica por lá
     if (Math.hypot(b.objective[0] - m.x, b.objective[1] - m.z) > 1.8) {
-      if (!b.goal || b.goal[0] !== b.objective[0] || b.goal[1] !== b.objective[1] || b.path.length === 0) {
+      b.pathCool -= dt;
+      const newGoal = !b.goal || b.goal[0] !== b.objective[0] || b.goal[1] !== b.objective[1];
+      if (newGoal || (b.path.length === 0 && b.pathCool <= 0)) {
         b.goal = [b.objective[0], b.objective[1]];
         b.path = map.path(m.x, m.z, b.objective[0], b.objective[1]);
+        b.pathCool = 0.7;
       }
     } else {
       b.goal = null;

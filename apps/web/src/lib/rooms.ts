@@ -229,8 +229,10 @@ export interface FoxShotRoomState {
   botsTr?: number;
   winRounds?: number;
   roundSec?: number;
-  /** O mapa da sala (só a Duna). */
-  map?: 'duna';
+  /** O mapa da sala: a Duna, ou a arena de blocos no PvP. */
+  map?: 'duna' | 'pvp';
+  /** Modo PvP (variante do Bomba: sem bomba, dinheiro infinito, mapa próprio). */
+  pvp?: boolean;
   /** Time de cada pessoa no modo Bomba: 0 contra-terrorista, 1 terrorista, 2 espectando. */
   teams?: Record<string, 0 | 1 | 2>;
   startAt: number | null;

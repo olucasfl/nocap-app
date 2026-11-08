@@ -226,8 +226,9 @@ export function createGridMap(opts: { id: string; name: string; data: FsGridMapD
   const ctBuy = d.buys.find((b) => inRect([b[0] - 3, b[1] - 3, b[2] + 3, b[3] + 3], ctx, ctz) && b !== tBuy) ?? d.buys[1] ?? d.buys[0]!;
   const nm = opts.names ?? { A: 'Bomba A', B: 'Bomba B' };
   const marks: FsDustMark[] = [
-    mkMark('A', 'A', nm.A, 'site', d.sites[0]!, 0),
-    mkMark('B', 'B', nm.B, 'site', d.sites[1] ?? d.sites[0]!, 0),
+    ...(d.sites[0]
+      ? [mkMark('A', 'A', nm.A, 'site', d.sites[0], 0), mkMark('B', 'B', nm.B, 'site', d.sites[1] ?? d.sites[0], 0)]
+      : []),
     mkMark('CT', 'CT', 'Base Contra-Terrorista', 'base', ctBuy, 0),
     mkMark('T', 'TR', 'Base Terrorista', 'base', tBuy, 0),
   ];
@@ -335,8 +336,13 @@ export function createGridMap(opts: { id: string; name: string; data: FsGridMapD
     const g = new Map<number, number>([[idx(sc, sr), 0]]);
     const from = new Map<number, number>();
     const open = new Heap();
-    const hd = (c: number, r: number) => Math.hypot(c - gc, r - gr);
-    open.push(idx(sc, sr), hd(sc, sr));
+    // distância octil: é o custo exato em campo aberto, então o A* quase não sai da reta (a euclidiana abria um leque enorme)
+    const hd = (c: number, r: number) => {
+      const dx = Math.abs(c - gc);
+      const dy = Math.abs(r - gr);
+      return Math.max(dx, dy) + (Math.SQRT2 - 1) * Math.min(dx, dy);
+    };
+    open.push(idx(sc, sr), hd(sc, sr) * 1.002);
     const closed = new Set<number>();
     let found = false;
     while (open.size) {
@@ -360,7 +366,7 @@ export function createGridMap(opts: { id: string; name: string; data: FsGridMapD
         if (ng < (g.get(nk) ?? 1e9)) {
           g.set(nk, ng);
           from.set(nk, cur.k);
-          open.push(nk, ng + hd(nc, nr));
+          open.push(nk, ng + hd(nc, nr) * 1.002);
         }
       }
     }

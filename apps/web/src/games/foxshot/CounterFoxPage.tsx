@@ -31,7 +31,7 @@ export const CFX_NEW_ROOM = 'cfx-new-room';
 function saved(): FsMatchConfig {
   try {
     const p = JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<FsMatchConfig>;
-    return { ...fsMatchConfig(p.minutes ?? 5, p.bots ?? FS_MATCH_BOTS.default), mode: p.mode === 'bomb' ? 'bomb' : 'dm', side: p.side === 'tr' ? 'tr' : 'ct', bomb: p.bomb, map: 'duna' };
+    return { ...fsMatchConfig(p.minutes ?? 5, p.bots ?? FS_MATCH_BOTS.default), mode: p.mode === 'bomb' ? 'bomb' : 'dm', side: p.side === 'tr' ? 'tr' : 'ct', bomb: p.bomb, pvp: p.mode === 'bomb' && p.pvp === true, map: p.mode === 'bomb' && p.pvp === true ? 'pvp' : 'duna' };
   } catch {
     return fsMatchConfig(5, FS_MATCH_BOTS.default);
   }
@@ -40,7 +40,7 @@ function saved(): FsMatchConfig {
 type Screen = 'main' | 'play' | 'offline' | 'online' | 'options';
 
 /** Miniatura do mapa escolhido, feita do próprio desenho dele (cada altura de chão numa cor). */
-function MapCard({ mapId, mode }: { mapId: FsMapId; mode: 'dm' | 'bomb' }) {
+function MapCard({ mapId, mode }: { mapId: FsMapId; mode: 'dm' | 'bomb' | 'pvp' }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const cv = ref.current;
@@ -136,7 +136,7 @@ function MapCard({ mapId, mode }: { mapId: FsMapId; mode: 'dm' | 'bomb' }) {
   return (
     <div className="cfh-map" data-testid="cfh-map">
       <canvas ref={ref} aria-label={`Mapa ${FS_MAP_NAMES[mapId]} visto de cima`} />
-      <p>{FS_MAP_NAMES[mapId]} · {mode === 'bomb' ? 'Bomba' : 'Mata-mata'}</p>
+      <p>{FS_MAP_NAMES[mapId]} · {mode === 'pvp' ? 'PvP' : mode === 'bomb' ? 'Bomba' : 'Mata-mata'}</p>
       <span>
         {mapId === 'duna' ? 'Três rotas, dois pátios de bomba, túneis e portas.' : 'Ruas e prédios, duas bombas e as bases nas pontas.'} Abate vale {FS_POINTS.kill} pontos, assistência {FS_POINTS.assist}.
       </span>
@@ -316,21 +316,38 @@ function CounterFoxInner() {
               <button type="button" className="cfh-back" onClick={back} data-sfx="back" data-testid="cfh-back">
                 ‹ Voltar
               </button>
-              <h2>Offline · {cfg.mode === 'bomb' ? 'Bomba' : 'Mata-mata'}</h2>
+              <h2>Offline · {cfg.mode === 'bomb' ? (cfg.pvp ? 'PvP' : 'Bomba') : 'Mata-mata'}</h2>
               <div className="cfh-grp">Modo</div>
               <div className="cfh-pills" role="radiogroup" aria-label="Modo de jogo">
-                <button type="button" role="radio" aria-checked={cfg.mode !== 'bomb'} className={`cfh-pill${cfg.mode !== 'bomb' ? ' on' : ''}`} onClick={() => setCfg({ ...cfg, mode: 'dm' })} data-testid="cfx-mode-dm">
+                <button type="button" role="radio" aria-checked={cfg.mode !== 'bomb'} className={`cfh-pill${cfg.mode !== 'bomb' ? ' on' : ''}`} onClick={() => setCfg({ ...cfg, mode: 'dm', pvp: false, map: 'duna' })} data-testid="cfx-mode-dm">
                   Mata-mata
                 </button>
-                <button type="button" role="radio" aria-checked={cfg.mode === 'bomb'} className={`cfh-pill${cfg.mode === 'bomb' ? ' on' : ''}`} onClick={() => setCfg({ ...cfg, mode: 'bomb', bots: (cfg.bomb?.allies ?? 4) + (cfg.bomb?.foes ?? 5) })} data-testid="cfx-mode-bomb">
+                <button type="button" role="radio" aria-checked={cfg.mode === 'bomb' && !cfg.pvp} className={`cfh-pill${cfg.mode === 'bomb' && !cfg.pvp ? ' on' : ''}`} onClick={() => setCfg({ ...cfg, mode: 'bomb', pvp: false, map: 'duna', bots: 9, bomb: { winRounds: 8, roundSec: 115, allies: 4, foes: 5 } })} data-testid="cfx-mode-bomb">
                   Bomba
+                </button>
+                <button type="button" role="radio" aria-checked={!!cfg.pvp} className={`cfh-pill${cfg.pvp ? ' on' : ''}`} onClick={() => setCfg({ ...cfg, mode: 'bomb', pvp: true, map: 'pvp', bots: 3, bomb: { winRounds: 5, roundSec: 120, allies: 1, foes: 2 } })} data-testid="cfx-mode-pvp">
+                  PvP
                 </button>
               </div>
               {cfg.mode === 'bomb' ? (
                 <>
                   <p className="lead">
-                    Rounds: terroristas plantam a bomba, contra-terroristas impedem. Compra só na base, dinheiro finito: quem perde ganha menos.
+                    {cfg.pvp
+                      ? 'Dois times, sem bomba, na arena de blocos. Dinheiro infinito: compre qualquer arma na compra. Morreu, você assiste; o round acaba quando um time inteiro cai.'
+                      : 'Rounds: terroristas plantam a bomba, contra-terroristas impedem. Compra só na base, dinheiro finito: quem perde ganha menos.'}
                   </p>
+                  {cfg.pvp && (
+                    <>
+                      <div className="cfh-grp">Formato (você + bots contra bots)</div>
+                      <div className="cfh-pills" role="radiogroup" aria-label="Formato da partida">
+                        {([[1, 1], [2, 2], [2, 1], [3, 3], [5, 5]] as const).map(([a, b]) => (
+                          <button key={`${a}x${b}`} type="button" role="radio" aria-checked={(cfg.bomb?.allies ?? 1) + 1 === a && (cfg.bomb?.foes ?? 2) === b} className={`cfh-pill${(cfg.bomb?.allies ?? 1) + 1 === a && (cfg.bomb?.foes ?? 2) === b ? ' on' : ''}`} onClick={() => setCfg({ ...cfg, bots: a - 1 + b, bomb: { ...cfg.bomb, allies: a - 1, foes: b } })} data-testid={`cfx-fmt-${a}x${b}`}>
+                            {a}x{b}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
                   <div className="cfh-grp">Seu lado</div>
                   <div className="cfh-pills" role="radiogroup" aria-label="Seu lado">
                     {(['ct', 'tr'] as const).map((sd) => (
@@ -339,9 +356,9 @@ function CounterFoxInner() {
                       </button>
                     ))}
                   </div>
-                  <div className="cfh-grp">Rounds para vencer</div>
+                  <div className="cfh-grp">{cfg.pvp ? 'Pontos para vencer' : 'Rounds para vencer'}</div>
                   <div className="cfh-pills" role="radiogroup" aria-label="Rounds para vencer">
-                    {[4, 6, 8, 10, 13].map((n) => (
+                    {(cfg.pvp ? [1, 3, 5, 10, 15, 20, 30] : [4, 6, 8, 10, 13]).map((n) => (
                       <button key={n} type="button" role="radio" aria-checked={(cfg.bomb?.winRounds ?? 8) === n} className={`cfh-pill${(cfg.bomb?.winRounds ?? 8) === n ? ' on' : ''}`} onClick={() => setCfg({ ...cfg, bomb: { ...cfg.bomb, winRounds: n } })} data-testid={`cfx-rounds-${n}`}>
                         {n}
                       </button>
@@ -349,7 +366,7 @@ function CounterFoxInner() {
                   </div>
                   <div className="cfh-grp">Tempo do round</div>
                   <div className="cfh-pills" role="radiogroup" aria-label="Tempo do round">
-                    {[60, 90, 115, 150, 180].map((n) => (
+                    {(cfg.pvp ? [30, 60, 90, 120, 180, 300] : [60, 90, 115, 150, 180]).map((n) => (
                       <button key={n} type="button" role="radio" aria-checked={(cfg.bomb?.roundSec ?? 115) === n} className={`cfh-pill${(cfg.bomb?.roundSec ?? 115) === n ? ' on' : ''}`} onClick={() => setCfg({ ...cfg, bomb: { ...cfg.bomb, roundSec: n } })} data-testid={`cfx-rsec-${n}`}>
                         {Math.floor(n / 60)}:{String(n % 60).padStart(2, '0')}
                       </button>
@@ -450,7 +467,7 @@ function CounterFoxInner() {
           )}
           {screen === 'options' && <Options onBack={back} />}
         </div>
-        <div className="cfh-right">{screen !== 'options' && <MapCard mapId={(screen === 'offline' ? cfg.map : 'duna') ?? 'duna'} mode={cfg.mode === 'bomb' ? 'bomb' : 'dm'} />}</div>
+        <div className="cfh-right">{screen !== 'options' && <MapCard mapId={(screen === 'offline' ? cfg.map : 'duna') ?? 'duna'} mode={cfg.pvp ? 'pvp' : cfg.mode === 'bomb' ? 'bomb' : 'dm'} />}</div>
       </div>
       <div className="cfh-foot">COUNTER FOX · FOX CAP!</div>
       <NicknameDialog nick={entry.nick} />

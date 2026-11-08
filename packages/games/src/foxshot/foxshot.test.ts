@@ -1004,15 +1004,6 @@ describe('Partida: pontos e resultado', () => {
   });
 });
 
-describe('Bots do mata-mata', () => {
-  const rng = createRng('dm-test');
-  const run = (b: ReturnType<typeof fsDmNew>, foes: FsDmFoe[], secs: number) => {
-    const acts: FsDmAction[] = [];
-    for (let t = 0; t < secs; t += 0.016) acts.push(...fsDmStep(b, { now: t, dt: 0.016, rng, foes }));
-    return acts;
-  };
-
-});
 
 describe('Tiro recebido desacelera', () => {
   it('mais dano, mais lento, mas nunca abaixo de 62% da velocidade', () => {

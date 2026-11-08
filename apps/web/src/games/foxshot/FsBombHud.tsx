@@ -27,6 +27,8 @@ export interface BombHud {
   kit: boolean;
   /** Sobe a cada troca de lados (meio da partida): reinicia a animação. 0 = nunca trocou. */
   swapKey?: number;
+  /** Modo PvP: sem bomba e sem dinheiro (a loja é grátis). */
+  pvp?: boolean;
 }
 
 const mmss = (t: number) => {
@@ -55,7 +57,7 @@ export function FsBombHud({ b }: { b: BombHud }) {
         Round {b.round} · primeiro a {b.winRounds} · você é {b.mySide === 'tr' ? 'TERRORISTA' : 'CONTRA-TERRORISTA'} · vivos {b.alliesAlive} x {b.foesAlive}
       </div>
       {!!b.swapKey && <FsSideSwap key={b.swapKey} side={b.mySide} round={b.round} />}
-      <div className="fb-money" data-testid="fb-money">US$ {b.money}</div>
+      <div className="fb-money" data-testid="fb-money">{b.pvp ? 'US$ ∞' : `US$ ${b.money}`}</div>
       {b.carrier && b.phase !== 'planted' && <div className="fb-carry mono">VOCÊ TEM A BOMBA · segure {bindLabel(fsSettings().binds.bomb)} nos pátios A ou B</div>}
       {b.plant > 0 && (
         <div className="fb-bar" data-testid="fb-plant">

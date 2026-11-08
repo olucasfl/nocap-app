@@ -279,6 +279,36 @@ function indexOf(boxes: readonly FsBox[]): BoxIndex {
  * As caixas que podem tocar o retângulo (x0, z0)-(x1, z1). Em listas pequenas devolve a própria lista; nas grandes (mapas gerados
  * de modelo, milhares de caixas) usa um índice por quadrados de 6 m, guardado pela identidade da lista.
  */
+/**
+ * As caixas perto de um raio (uma linha de visão ou um tiro): anda pelo raio em passos curtos e junta só os baldes que ele toca (com
+ * uma folga de meio metro). Em mapas abertos e compridos isso é bem menos que o retângulo que cobre o raio inteiro.
+ */
+export function fsBoxesAlongRay(boxes: readonly FsBox[], ox: number, oz: number, dx: number, dz: number, len: number): readonly FsBox[] {
+  if (boxes.length < 160) return boxes;
+  const ix = indexOf(boxes);
+  const n = Math.max(1, Math.ceil(len / (BUCKET * 0.4)));
+  const l2 = Math.hypot(dx, dz) || 1;
+  const nx = dx / l2, nz = dz / l2;
+  const keys = new Set<number>();
+  const seen = new Set<FsBox>();
+  const out: FsBox[] = [];
+  for (let i = 0; i <= n; i++) {
+    const t = (len * i) / n;
+    const x = ox + dx * t, z = oz + dz * t;
+    for (const [ex, ez] of [[0.5, 0.5], [-0.5, -0.5], [0.5, -0.5], [-0.5, 0.5]] as const) {
+      const cx = Math.floor((x + ex) / BUCKET), cz = Math.floor((z + ez) / BUCKET);
+      const k = bkey(cx, cz);
+      if (keys.has(k)) continue;
+      keys.add(k);
+      const l = ix.cells.get(k);
+      if (!l) continue;
+      for (const b of l) if (!seen.has(b)) { seen.add(b); out.push(b); }
+    }
+  }
+  void nx; void nz;
+  return out;
+}
+
 export function fsBoxesInRect(boxes: readonly FsBox[], x0: number, z0: number, x1: number, z1: number): readonly FsBox[] {
   if (boxes.length < 160) return boxes;
   const ix = indexOf(boxes);

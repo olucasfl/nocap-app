@@ -166,6 +166,7 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
   const minutes = snapshot.foxshot?.minutes ?? 5;
   const kind = snapshot.foxshot?.kind ?? 'none';
   const bomb = kind === 'bomb';
+  const pvp = bomb && !!snapshot.foxshot?.pvp;
   const botsCt = snapshot.foxshot?.botsCt ?? 0;
   const botsTr = snapshot.foxshot?.botsTr ?? 0;
   const bots = bomb ? botsCt + botsTr : (snapshot.foxshot?.bots ?? 0);
@@ -222,9 +223,9 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
         <header className="cfl-head">
           <CounterFoxLogo compact />
           <div className="cfl-chips">
-            <span className="cfl-chip">{kind === 'none' ? 'Sem modo' : bomb ? 'Bomba' : 'Mata-mata'}</span>
+            <span className="cfl-chip">{kind === 'none' ? 'Sem modo' : pvp ? 'PvP' : bomb ? 'Bomba' : 'Mata-mata'}</span>
             <span className="cfl-chip">Duna</span>
-            {kind !== 'none' && <span className="cfl-chip">{bomb ? `até ${winRounds} rounds` : `${minutes} min`}</span>}
+            {kind !== 'none' && <span className="cfl-chip">{pvp ? `${winRounds} pontos` : bomb ? `até ${winRounds} rounds` : `${minutes} min`}</span>}
             <span className="cfl-chip">{humans + Math.min(bots, 10 - humans)}/10</span>
           </div>
           <div className="cfl-code" data-testid="cfl-code">
@@ -256,11 +257,11 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
               <p className="cfl-note">Passe este código (ou o link, na aba Convidar) para os amigos entrarem.</p>
               <dl className="cfl-facts">
                 <div><dt>Jogo</dt><dd>Counter Fox</dd></div>
-                <div><dt>Modo</dt><dd>{kind === 'none' ? 'Escolha um' : bomb ? 'Bomba' : 'Mata-mata'}</dd></div>
+                <div><dt>Modo</dt><dd>{kind === 'none' ? 'Escolha um' : pvp ? 'PvP' : bomb ? 'Bomba' : 'Mata-mata'}</dd></div>
                 <div><dt>Mapa</dt><dd>{FS_MAP_NAMES[mapId]}</dd></div>
                 {bomb ? (
                   <>
-                    <div><dt>Rounds</dt><dd>primeiro a {winRounds}</dd></div>
+                    <div><dt>{pvp ? 'Pontos' : 'Rounds'}</dt><dd>primeiro a {winRounds}</dd></div>
                     <div><dt>Round</dt><dd>{Math.floor(roundSec / 60)}:{String(roundSec % 60).padStart(2, '0')}</dd></div>
                   </>
                 ) : (
@@ -435,17 +436,21 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
                 <b>Mata-mata{kind === 'dm' && <em className="cfl-sel"> · selecionado</em>}</b>
                 <span>Todos contra todos no Duna. Abate vale {FS_POINTS.kill} pontos, assistência {FS_POINTS.assist}. Vence quem tiver mais pontos no fim.</span>
               </button>
-              <button type="button" className={`cfl-mode${bomb ? ' on' : ''}`} aria-pressed={bomb} disabled={!leader} onClick={() => sendRoom('configure', { kind: 'bomb' })} data-testid="cfl-mode-bomb">
-                <b>Bomba{bomb && <em className="cfl-sel"> · selecionado</em>}</b>
+              <button type="button" className={`cfl-mode${bomb && !pvp ? ' on' : ''}`} aria-pressed={bomb && !pvp} disabled={!leader} onClick={() => sendRoom('configure', { kind: 'bomb', pvp: false, map: 'duna', winRounds: 8, roundSec: 115 })} data-testid="cfl-mode-bomb">
+                <b>Bomba{bomb && !pvp && <em className="cfl-sel"> · selecionado</em>}</b>
                 <span>Rounds de TR contra CT: os terroristas plantam a bomba, os contra-terroristas impedem. Compra só na base, dinheiro finito. Os times e os bots ficam na aba Sala.</span>
+              </button>
+              <button type="button" className={`cfl-mode${pvp ? ' on' : ''}`} aria-pressed={pvp} disabled={!leader} onClick={() => sendRoom('configure', { kind: 'bomb', pvp: true, map: 'pvp', winRounds: 5, roundSec: 120 })} data-testid="cfl-mode-pvp">
+                <b>PvP{pvp && <em className="cfl-sel"> · selecionado</em>}</b>
+                <span>1x1, 2x2, 2x1 e mais, na arena de blocos: sem bomba, dinheiro infinito na compra. Morreu, assiste; o time que cair inteiro perde o ponto. Times, bots e quem só assiste ficam na aba Sala.</span>
               </button>
               {kind === 'none' ? (
                 <p className="cfl-note" data-testid="cfl-mode-none">{leader ? 'Escolha um modo para ver as regras dele.' : 'O líder ainda vai escolher o modo.'}</p>
               ) : bomb ? (
                 <>
-                  <h4>Rounds para vencer</h4>
+                  <h4>{pvp ? 'Pontos para vencer' : 'Rounds para vencer'}</h4>
                   <div className="cfh-pills" role="radiogroup" aria-label="Rounds para vencer">
-                    {[4, 6, 8, 10, 13].map((n) => (
+                    {(pvp ? [1, 3, 5, 10, 15, 20, 30] : [4, 6, 8, 10, 13]).map((n) => (
                       <button key={n} type="button" role="radio" aria-checked={winRounds === n} disabled={!leader} className={`cfh-pill${winRounds === n ? ' on' : ''}`} onClick={() => sendRoom('configure', { winRounds: n })} data-testid={`cfl-rounds-${n}`}>
                         {n}
                       </button>
@@ -453,7 +458,7 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
                   </div>
                   <h4>Tempo do round</h4>
                   <div className="cfh-pills" role="radiogroup" aria-label="Tempo do round">
-                    {[60, 90, 115, 150, 180].map((n) => (
+                    {(pvp ? [30, 60, 90, 120, 180, 300] : [60, 90, 115, 150, 180]).map((n) => (
                       <button key={n} type="button" role="radio" aria-checked={roundSec === n} disabled={!leader} className={`cfh-pill${roundSec === n ? ' on' : ''}`} onClick={() => sendRoom('configure', { roundSec: n })} data-testid={`cfl-rsec-${n}`}>
                         {Math.floor(n / 60)}:{String(n % 60).padStart(2, '0')}
                       </button>

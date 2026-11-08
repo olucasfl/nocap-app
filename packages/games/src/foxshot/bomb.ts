@@ -38,6 +38,10 @@ export interface FsBombConfig {
   plantLossMoney: number;
   plantMoney: number;
   defuseMoney: number;
+  /** Modo PvP: times que se enfrentam sem bomba, com dinheiro infinito; o round acaba quando um time inteiro cai. */
+  pvp: boolean;
+  /** Compra do 2º round em diante, no PvP (s): é a contagem que libera o tiro. */
+  freezeSec: number;
 }
 
 /** Valores do CS competitivo (spec 059 §1); o Lucas escolheu "igual ao CS", primeiro a 8, round de 1:55. */
@@ -57,6 +61,8 @@ export const FS_BOMB_DEFAULTS: FsBombConfig = {
   plantLossMoney: 800,
   plantMoney: 300,
   defuseMoney: 300,
+  pvp: false,
+  freezeSec: 3,
 };
 
 export const FS_BOMB_LIMITS = {
@@ -64,6 +70,14 @@ export const FS_BOMB_LIMITS = {
   buySec: [5, 30],
   roundSec: [60, 180],
 } as const;
+/** No PvP o líder escolhe quantos pontos vencem e o tempo do round numa faixa mais larga. */
+export const FS_PVP_LIMITS = {
+  winRounds: [1, 30],
+  buySec: [3, 30],
+  roundSec: [30, 300],
+} as const;
+/** Dinheiro do PvP: ilimitado (o valor só aparece na loja). */
+export const FS_PVP_MONEY = 99_999;
 
 /** Limita as opções à faixa permitida (a sala e o menu usam isto). */
 export function fsBombConfig(patch: Partial<FsBombConfig> = {}): FsBombConfig {
@@ -71,9 +85,16 @@ export function fsBombConfig(patch: Partial<FsBombConfig> = {}): FsBombConfig {
   const clean = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined && !(typeof v === 'number' && !Number.isFinite(v))));
   const c = { ...FS_BOMB_DEFAULTS, ...clean } as FsBombConfig;
   const clamp = (v: number, [a, b]: readonly [number, number]) => Math.max(a, Math.min(b, Math.round(v)));
-  c.winRounds = clamp(c.winRounds, FS_BOMB_LIMITS.winRounds);
-  c.buySec = clamp(c.buySec, FS_BOMB_LIMITS.buySec);
-  c.roundSec = clamp(c.roundSec, FS_BOMB_LIMITS.roundSec);
+  c.pvp = c.pvp === true;
+  const lim = c.pvp ? FS_PVP_LIMITS : FS_BOMB_LIMITS;
+  c.winRounds = clamp(c.winRounds, lim.winRounds);
+  c.buySec = clamp(c.buySec, lim.buySec);
+  c.roundSec = clamp(c.roundSec, lim.roundSec);
+  c.freezeSec = Math.max(1, Math.min(10, Math.round(c.freezeSec)));
+  if (c.pvp) {
+    c.startMoney = FS_PVP_MONEY;
+    c.maxMoney = FS_PVP_MONEY;
+  }
   return c;
 }
 
@@ -148,6 +169,8 @@ export class FsBombMatch {
   private events: FsBombEvent[] = [];
   /** Quem sobreviveu ao último round (mantém o equipamento). */
   survivors = new Set<string>();
+  /** PvP: desempate quando o tempo acaba com o mesmo número de vivos (vence quem tem mais vida somada). */
+  tiebreak: (() => FsSide) | null = null;
 
   constructor(cfg: Partial<FsBombConfig> = {}) {
     this.cfg = fsBombConfig(cfg);
@@ -192,7 +215,7 @@ export class FsBombMatch {
     if (this.phase === 'over') return;
     this.round++;
     this.phase = 'buy';
-    this.time = this.cfg.buySec;
+    this.time = this.cfg.pvp && this.round > 1 ? this.cfg.freezeSec : this.cfg.buySec;
     this.plantedAny = false;
     this.site = null;
     this.planter = null;
@@ -207,19 +230,23 @@ export class FsBombMatch {
     const trs = this.alive('tr');
     // a bomba continua com quem a tinha, senão é sorteada entre os TR vivos (determinístico: o primeiro)
     this.dropped = false;
-    this.carrier = this.carrier && trs.some((p) => p.id === this.carrier) ? this.carrier : (trs[0]?.id ?? null);
+    this.carrier = this.cfg.pvp ? null : this.carrier && trs.some((p) => p.id === this.carrier) ? this.carrier : (trs[0]?.id ?? null);
     this.events.push({ k: 'roundStart', round: this.round, carrier: this.carrier });
   }
 
   /** A loja continua aberta (só na base) por FS_BUY_GRACE s depois que o round é liberado para jogar. */
   get buyOpen(): boolean {
+    if (this.cfg.pvp) return this.phase === 'buy';
     return this.phase === 'buy' || (this.phase === 'live' && this.cfg.roundSec - this.time <= FS_BUY_GRACE);
   }
 
   /** Compra só na base e só enquanto a loja está aberta. Devolve se deu. */
   buy(id: string, price: number, inBase: boolean): boolean {
     const p = this.players.get(id);
-    if (!p || !p.alive || !this.buyOpen || !inBase || price > p.money || price < 0) return false;
+    if (!p || !p.alive || !this.buyOpen || !inBase || price < 0) return false;
+    // PvP: dinheiro infinito, comprar não gasta nada
+    if (this.cfg.pvp) return true;
+    if (price > p.money) return false;
     p.money -= price;
     return true;
   }
@@ -243,12 +270,13 @@ export class FsBombMatch {
       this.events.push({ k: 'dropped' });
     }
     const k = killer ? this.players.get(killer) : undefined;
-    if (k && k.side !== v.side) this.pay(k, FS_KILL_MONEY[weapon] ?? FS_KILL_MONEY.default);
+    if (k && k.side !== v.side && !this.cfg.pvp) this.pay(k, FS_KILL_MONEY[weapon] ?? FS_KILL_MONEY.default);
     this.checkElimination();
   }
 
   /** Um TR pegou a bomba do chão (andou até ela ou apertou E perto). */
   pickBomb(id: string): boolean {
+    if (this.cfg.pvp) return false;
     const p = this.players.get(id);
     if (!p || !p.alive || p.side !== 'tr' || this.carrier || this.plantedAny || this.phase === 'end' || this.phase === 'over') return false;
     this.carrier = id;
@@ -259,6 +287,7 @@ export class FsBombMatch {
 
   /** O portador larga a bomba aos pés (tecla de largar). Devolve se largou. */
   dropBomb(id: string): boolean {
+    if (this.cfg.pvp) return false;
     if (id !== this.carrier || (this.phase !== 'live' && this.phase !== 'buy')) return false;
     this.carrier = null;
     this.dropped = true;
@@ -270,6 +299,7 @@ export class FsBombMatch {
 
   /** Plantar: chamado todo passo; `on` = segurando a tecla; `inSite` = dentro de A ou B (`site` = nome). */
   plant(id: string, on: boolean, inSite: string | null, dt: number) {
+    if (this.cfg.pvp) return;
     if (this.phase !== 'live' || id !== this.carrier) return;
     const p = this.players.get(id);
     if (!p || !p.alive) return;
@@ -296,6 +326,7 @@ export class FsBombMatch {
 
   /** Desarmar: só CT vivo, com a bomba plantada, ao lado dela. */
   defuse(id: string, on: boolean, nearBomb: boolean, dt: number) {
+    if (this.cfg.pvp) return;
     if (this.phase !== 'planted') return;
     const p = this.players.get(id);
     if (!p || !p.alive || p.side !== 'ct') return;
@@ -337,7 +368,12 @@ export class FsBombMatch {
       this.time = this.cfg.roundSec;
       this.events.push({ k: 'live' });
     } else if (this.phase === 'live') {
-      this.endRound('ct', 'time');
+      if (this.cfg.pvp) {
+        // tempo esgotado: vence o time com mais vivos; empate, quem tem mais vida somada
+        const t = this.alive('tr').length;
+        const c = this.alive('ct').length;
+        this.endRound(t > c ? 'tr' : c > t ? 'ct' : (this.tiebreak?.() ?? 'ct'), 'time');
+      } else this.endRound('ct', 'time');
     } else if (this.phase === 'planted') {
       this.events.push({ k: 'exploded' });
       this.endRound('tr', 'bomb');
@@ -352,6 +388,11 @@ export class FsBombMatch {
 
   private checkElimination() {
     if (this.phase !== 'live' && this.phase !== 'planted') return;
+    if (this.cfg.pvp) {
+      if (this.alive('ct').length === 0 && this.teamSize('ct') > 0) this.endRound('tr', 'elim');
+      else if (this.alive('tr').length === 0 && this.teamSize('tr') > 0) this.endRound('ct', 'elim');
+      return;
+    }
     if (this.alive('ct').length === 0 && this.teamSize('ct') > 0) this.endRound('tr', 'elim');
     // TR todos mortos: com a bomba plantada o round continua (o CT precisa desarmar), senão o CT vence
     else if (this.alive('tr').length === 0 && this.teamSize('tr') > 0 && this.phase === 'live') this.endRound('ct', 'elim');
@@ -361,9 +402,9 @@ export class FsBombMatch {
     if (this.phase === 'end' || this.phase === 'over') return;
     const loser = fsOtherSide(winner);
     const rewards: Record<string, number> = {};
-    const winPay = reason === 'bomb' || reason === 'defuse' ? this.cfg.winBombMoney : this.cfg.winMoney;
+    const winPay = this.cfg.pvp ? 0 : reason === 'bomb' || reason === 'defuse' ? this.cfg.winBombMoney : this.cfg.winMoney;
     const streak = Math.min(this.lossStreak[loser], this.cfg.lossBonus.length - 1);
-    const lossPay = this.cfg.lossBonus[streak]!;
+    const lossPay = this.cfg.pvp ? 0 : this.cfg.lossBonus[streak]!;
     for (const p of this.players.values()) {
       const before = p.gained;
       if (p.side === winner) this.pay(p, winPay);
@@ -394,7 +435,7 @@ export class FsBombMatch {
     if (this.phase !== 'end') return;
     const played = this.score.tr + this.score.ct;
     const half = this.cfg.winRounds - 1;
-    if (!this.halfDone && played >= half) {
+    if (!this.cfg.pvp && !this.halfDone && played >= half) {
       this.halfDone = true;
       for (const p of this.players.values()) {
         p.side = fsOtherSide(p.side);

@@ -1261,7 +1261,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
               round: bf![2]!, winRounds: bombSelf!.win, tr: bf![3]!, ct: bf![4]!, mySide: bombSelf!.side, phase, time: bf![1]! / 10,
               money: Math.max(0, bombSelf!.money), plant: bombSelf!.plant, defuse: bombSelf!.defuse, site: bf![7] === 1 ? 'A' : bf![7] === 2 ? 'B' : null,
               swapKey, carrier: bf![8] === meIdx && meIdx >= 0, banner: bombBanner && bombBanner.until > clock ? bombBanner.text : null,
-              hint: bombHint && bombHint.until > clock ? bombHint.text : null, alliesAlive: allyAlive, foesAlive: foeAlive, kit: !!bombSelf!.kit,
+              hint: bombHint && bombHint.until > clock ? bombHint.text : null, alliesAlive: allyAlive, foesAlive: foeAlive, kit: !!bombSelf!.kit, pvp: !!snapRef.current.foxshot?.pvp,
             };
           })() : null,
           ammo: loadout.held ? loadout.grenades[loadout.held] : loadout.slot.ammo,
@@ -1429,7 +1429,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           )}
           {shop && !paused && (
             <FsShop
-              money={h.bomb ? h.bomb.money : null}
+              money={h.bomb && !h.bomb.pvp ? h.bomb.money : null}
               kit={h.bomb ? (h.bomb.mySide === 'ct' ? (h.bomb.kit ? 'owned' : 'ok') : 'na') : 'na'}
               onBuy={(i) => buyRef.current(i)}
               onClose={() => setShop(false)}

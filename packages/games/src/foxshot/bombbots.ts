@@ -122,7 +122,37 @@ export class FsBombTactics {
   private holdsPlanted: Hold[] = [];
   private holdsPlantedKey = '';
 
+  /** Mapa sem bombas (modo PvP): os bots só caçam o outro time, indo de ponto em ponto pelo lado do inimigo. */
+  private isPvp(w: FsBotWorld) {
+    return !w.map.marks.some((m) => m.kind === 'site');
+  }
+  private pvpUntil = new Map<string, number>();
+  private pvpStep(w: FsBotWorld) {
+    for (const p of w.people) {
+      const b = p.brain;
+      if (!p.alive || !b) continue;
+      b.lookAt = null;
+      b.holdCrouch = false;
+      b.sneak = false;
+      const obj = b.objective;
+      const until = this.pvpUntil.get(p.id) ?? 0;
+      if (obj && Math.hypot(obj[0] - p.x, obj[1] - p.z) > 3 && w.now < until) continue;
+      const foeBase = w.map.marks.find((m) => m.kind === 'base' && m.id === (p.side === 'tr' ? 'CT' : 'T'));
+      const spots = [...w.map.hotspots];
+      if (foeBase) spots.sort((a, c) => Math.hypot(a[0] - foeBase.x, a[1] - foeBase.z) - Math.hypot(c[0] - foeBase.x, c[1] - foeBase.z));
+      const pool = spots.slice(0, Math.max(3, Math.ceil(spots.length * 0.6)));
+      const g = pool[Math.floor(w.rng() * pool.length)];
+      if (g) b.objective = [g[0], g[1]];
+      this.pvpUntil.set(p.id, w.now + 7 + w.rng() * 10);
+    }
+  }
+
   newRound(w: FsBotWorld) {
+    if (this.isPvp(w)) {
+      this.pvpUntil.clear();
+      for (const p of w.people) if (p.brain) this.clear(p.brain);
+      return;
+    }
     this.roles.clear();
     this.arrivedAt.clear();
     this.planSwitched = false;
@@ -212,6 +242,10 @@ export class FsBombTactics {
       return orders;
     }
     if (w.phase === 'buy') return orders;
+    if (this.isPvp(w)) {
+      this.pvpStep(w);
+      return orders;
+    }
     this.think -= w.dt;
     const fast = this.think <= 0;
     if (fast) this.think = 0.25;

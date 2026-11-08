@@ -221,10 +221,18 @@ export class FsNetSim {
     this.cfg = { minutes: base.minutes, bots: Math.max(0, Math.min(9, Math.round(Number.isFinite(opts.bots) ? opts.bots : 0))) };
     this.bm = opts.bomb ? new FsBombMatch(opts.bomb) : null;
     this.endTick = this.bm ? Number.MAX_SAFE_INTEGER : this.cfg.minutes * 60 * FS_NET_HZ;
-    this.map = fsMapById(opts.map);
+    this.map = fsMapById(opts.map ?? (opts.bomb?.pvp ? 'pvp' : undefined));
     this.boxes = opts.boxes ?? this.map.solids;
     this.rng = opts.rng ?? Math.random;
     this.levelOffset = Math.floor(this.rng() * 10);
+    // PvP: o empate no tempo vai para o time com mais vida somada
+    if (this.bm?.cfg.pvp) {
+      this.bm.tiebreak = () => {
+        const hp: Record<FsSide, number> = { tr: 0, ct: 0 };
+        for (const q of this.players.values()) if (q.alive) hp[this.sideOf(q)] += q.hp;
+        return hp.tr > hp.ct ? 'tr' : 'ct';
+      };
+    }
     const humans = opts.humans.slice(0, 10);
     const botCount = Math.max(0, Math.min(this.cfg.bots, 10 - humans.length));
     const botTeams = opts.botTeams;

@@ -400,7 +400,18 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     const mySide0: FsSide = match?.side ?? 'ct';
     const nFoes = match?.bomb?.foes ?? Math.ceil(dmNames.length / 2);
     const nAllies = match?.bomb?.allies ?? dmNames.length - nFoes;
-    const bm = bombMode ? new FsBombMatch({ winRounds: match!.bomb?.winRounds, roundSec: match!.bomb?.roundSec, buySec: match!.bomb?.buySec }) : null;
+    const bm = bombMode ? new FsBombMatch({ winRounds: match!.bomb?.winRounds, roundSec: match!.bomb?.roundSec, buySec: match!.bomb?.buySec, pvp: match!.pvp }) : null;
+    // PvP: o empate no tempo vai para o time com mais vida somada
+    if (bm && match!.pvp) {
+      bm.tiebreak = () => {
+        const hp: Record<FsSide, number> = { tr: 0, ct: 0 };
+        for (const [id, p] of bm.players) {
+          if (!p.alive) continue;
+          hp[p.side] += id === 'me' ? me.hp : targets.get(id)?.hp ?? 0;
+        }
+        return hp.tr > hp.ct ? 'tr' : 'ct';
+      };
+    }
     if (bm) {
       bm.addPlayer('me', mySide0);
       dmNames.forEach((_, i) => bm.addPlayer(`d${i + 1}`, i < nAllies ? mySide0 : fsOtherSide(mySide0)));
@@ -1317,6 +1328,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         alliesAlive,
         foesAlive,
         kit: me0.kit,
+        pvp: !!match?.pvp,
       };
     };
     if (bm) {
@@ -2494,7 +2506,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
           />
           {shop && !paused && (
             <FsShop
-              money={hud.bomb ? hud.bomb.money : null}
+              money={hud.bomb && !hud.bomb.pvp ? hud.bomb.money : null}
               kit={hud.bomb ? (hud.bomb.mySide === 'ct' ? (hud.bomb.kit ? 'owned' : 'ok') : 'na') : 'na'}
               onBuy={(i) => buyRef.current(i)}
               onClose={() => setShop(false)}
