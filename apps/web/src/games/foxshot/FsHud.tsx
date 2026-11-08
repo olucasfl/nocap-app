@@ -339,6 +339,8 @@ export function FsMinimap({ get }: { get: () => MinimapData }) {
       g.translate(-d.x * k, -d.z * k);
       g.fillStyle = 'rgba(190,200,215,.55)';
       for (const b of d.boxes ?? FS_ARENA) {
+        // mapas grandes: só o que cabe no radar
+        if (b.max[0] < d.x - R - 2 || b.min[0] > d.x + R + 2 || b.max[2] < d.z - R - 2 || b.min[2] > d.z + R + 2) continue;
         g.fillRect(
           b.min[0] * k,
           b.min[2] * k,

@@ -13,6 +13,8 @@ export interface FsMatchConfig {
   bots: number;
   /** 'bomb' = modo Bomba (spec 059): rounds, TR contra CT, economia. Ausente = mata-mata. */
   mode?: 'dm' | 'bomb';
+  /** O mapa: `duna` (padrão) ou `cidade`. */
+  map?: 'duna' | 'cidade';
   /** Seu lado no modo Bomba. */
   side?: 'tr' | 'ct';
   /** Opções do modo Bomba (rounds para vencer, tempos); o resto vem do padrão. */

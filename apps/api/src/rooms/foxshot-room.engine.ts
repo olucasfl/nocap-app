@@ -36,6 +36,8 @@ export interface FoxShotSettings {
   botsTr: number;
   winRounds: number;
   roundSec: number;
+  /** Mapa: `duna` ou `cidade`. */
+  map: 'duna' | 'cidade';
 }
 
 /**
@@ -73,7 +75,7 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
   constructor(opts: EngineOptions) {
     super({ ...opts, maxPlayers: FOXSHOT_ROOM_MAX });
     this.mode = 'mata';
-    this.settings = { rounds: 1, minutes: 5, bots: 0, kind: 'none', botsCt: 0, botsTr: 0, winRounds: 8, roundSec: 115 } as unknown as AnySettings;
+    this.settings = { rounds: 1, minutes: 5, bots: 0, kind: 'none', botsCt: 0, botsTr: 0, winRounds: 8, roundSec: 115, map: 'duna' } as unknown as AnySettings;
   }
 
   /** Bots da partida: no modo Bomba são os dois times somados; no mata-mata, o número escolhido. */
@@ -105,7 +107,8 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
       m.winRounds <= 13 &&
       Number.isInteger(m.roundSec) &&
       m.roundSec >= 60 &&
-      m.roundSec <= 180
+      m.roundSec <= 180 &&
+      (m.map === 'duna' || m.map === 'cidade')
     );
   }
 
@@ -208,6 +211,7 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
       bots: bomb ? botTeams[0] + botTeams[1] : Math.min(this.botTotal(), 10 - humans.length),
       botTeams: bomb ? botTeams : undefined,
       bomb: bomb ? { winRounds: this.cfg.winRounds, roundSec: this.cfg.roundSec } : undefined,
+      map: this.cfg.map,
     };
     this.sim = new FsNetSim(this.simOpts);
     // conexão direta: a contagem é um pouco maior para dar tempo de os aparelhos conectarem ao do líder
@@ -405,6 +409,7 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
         kind: this.cfg.kind,
         winRounds: this.cfg.winRounds,
         roundSec: this.cfg.roundSec,
+        map: this.cfg.map,
         teams: Object.fromEntries(this.teamPref),
         startAt: this.phase === 'lobby' ? null : this.startAt,
         roster: s ? s.roster : null,

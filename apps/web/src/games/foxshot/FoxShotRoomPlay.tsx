@@ -1,12 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import {
-  FS_DUST_SOLIDS,
   FS_TEAMS_ACTIVE,
   fsClearLine,
-  fsSiteAt,
   FsIntel,
-  FS_DUST_MARKS,
   FS_GRENADES,
   FS_WEAPONS,
   FsLoadout,
@@ -38,7 +35,7 @@ import { GameChat } from '@/components/GameChat';
 import { PauseOverlay } from '@/components/PauseOverlay';
 import { useGameChat } from '@/lib/game-chat-state';
 import { InviteDialog } from '@/components/InviteDialog';
-import { FoxShotScene, fsWorldDust, type Quality } from './FoxShotScene';
+import { FoxShotScene, fsWorldFor, type Quality } from './FoxShotScene';
 import { FsControls } from './fs-controls';
 import { bindLabel, fsSettings, useFsSettings } from './fs-settings';
 
@@ -46,7 +43,7 @@ const bombKey = () => bindLabel(fsSettings().binds.bomb);
 import { FsMenu } from './FsMenu';
 import { FsShop } from './FsShop';
 import { FsBombHud, type BombHud } from './FsBombHud';
-import { fsDustFloorY } from '@nocap/games';
+import { fsMapById } from '@nocap/games';
 import { FsBigMap, FsTelemetry, FsAmmo, FsCrosshair, FsKillFeed, FsMinimap, FsScoreboard, FsTopBar, FsVitals, type FeedItem, type FsIntelDot, type FsPlayerRow, type MinimapData } from './FsHud';
 import { FoxShotRoomFinal } from './FoxShotRoomFinal';
 import './foxshot.css';
@@ -54,7 +51,6 @@ import './counterfox-hub.css';
 
 /** Passo da simulação (igual ao servidor) e atraso da interpolação dos outros jogadores. */
 const TICK = 1 / 60;
-const ARENA = FS_DUST_SOLIDS;
 
 interface Row {
   idx: number;
@@ -330,7 +326,10 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
     // a partida abre jogando (sem o menu do Esc); se o navegador negar prender o mouse, aparece "Clique na tela"
     if (mePlayer && !touch) resume();
 
-    const world = fsWorldDust(SLOTS.map((id) => ({ id, x: 0, z: 0 })));
+    // o mapa da sala (a Duna ou a Cidade)
+    const map = fsMapById(snapRef.current.foxshot?.map);
+    const ARENA = map.solids;
+    const world = fsWorldFor(map, SLOTS.map((id) => ({ id, x: 0, z: 0 })));
     const scene = new FoxShotScene(cv, world);
     const resize = () => scene.resize(el.clientWidth, el.clientHeight);
     resize();
@@ -383,7 +382,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       bombHint = { text, until: clock + ms / 1000 };
     };
     const inBaseNow = () => {
-      const m = FS_DUST_MARKS.find((k) => k.kind === 'base' && k.id === (bombSelf?.side === 'tr' ? 'T' : 'CT'));
+      const m = map.marks.find((k) => k.kind === 'base' && k.id === (bombSelf?.side === 'tr' ? 'T' : 'CT'));
       return !!m && mover.x >= m.x0 - 1 && mover.x <= m.x1 + 1 && mover.z >= m.z0 - 1 && mover.z <= m.z1 + 1;
     };
     const bombFrozen = () => !!bf && (bf[0] === 0 || bf[0] === 4);
@@ -1119,24 +1118,24 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         const bz = bf[6]! / 100;
         const act = bf[16] ?? 0;
         if (bf[0] === 2) {
-          scene.setBomb(bx, fsDustFloorY(bx, bz), bz, act === 2 ? 'defusing' : 'armed', { left: bf[1]! / 10, now: clock, progress: (bf[15] ?? 0) / 100 });
+          scene.setBomb(bx, map.floorY(bx, bz), bz, act === 2 ? 'defusing' : 'armed', { left: bf[1]! / 10, now: clock, progress: (bf[15] ?? 0) / 100 });
           beepIn -= dt;
           if (beepIn <= 0) {
             const left = bf[1]! / 10;
             beepIn = left > 20 ? 1 : left > 10 ? 0.6 : left > 5 ? 0.35 : 0.16;
-            fsAudio.bombBeep(bx, fsDustFloorY(bx, bz) + 0.2, bz, mover.x, mover.z, 1 - Math.min(1, left / 40));
+            fsAudio.bombBeep(bx, map.floorY(bx, bz) + 0.2, bz, mover.x, mover.z, 1 - Math.min(1, left / 40));
           }
         } else if (bf[0] === 1 && act === 1) {
           const actor = rows.get(rosterNow()[bf[14] ?? -1]?.id ?? '');
           const yr = actor ? (actor.yaw * Math.PI) / 180 : 0;
           const px = bx - Math.sin(yr) * 0.7;
           const pz = bz - Math.cos(yr) * 0.7;
-          scene.setBomb(px, fsDustFloorY(px, pz), pz, 'planting', { progress: (bf[15] ?? 0) / 100, now: clock, yaw: yr });
+          scene.setBomb(px, map.floorY(px, pz), pz, 'planting', { progress: (bf[15] ?? 0) / 100, now: clock, yaw: yr });
           if (plantActPrev !== 1 && bf[14] !== myI && bombSelf?.side === 'ct') sayHint('Terrorista plantando a bomba!', 2000);
         } else scene.setBomb(0, 0, 0, 'off');
         plantActPrev = bf[0] === 1 ? act : 0;
         const dropped = bf[11] === 1 && bf[0] !== 2 && bf[0] !== 3;
-        scene.setBombDrop(bf[12]! / 100, fsDustFloorY(bf[12]! / 100, bf[13]! / 100), bf[13]! / 100, dropped, clock);
+        scene.setBombDrop(bf[12]! / 100, map.floorY(bf[12]! / 100, bf[13]! / 100), bf[13]! / 100, dropped, clock);
         if ((dropped ? 1 : 0) !== dropPrev) {
           dropPrev = dropped ? 1 : 0;
           if (dropped && bf[0] !== 0) sayHint(bombSelf?.side === 'tr' ? `A bomba caiu no chão: ande até ela ou segure ${bombKey()}` : 'A bomba caiu', 2500);
@@ -1148,7 +1147,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         }
         // dicas de quem leva a C4
         if (carrier === myI && myI >= 0 && bf[0] === 1 && act !== 1) {
-          const site = fsSiteAt(mover.x, mover.z);
+          const site = map.siteAt(mover.x, mover.z);
           const zKey = bindLabel(fsSettings().binds.bombSlot);
           if (!bombHeld) sayHint(site ? `Aperte ${zKey} para pegar a bomba na mão` : `Você tem a bomba: vá a um pátio A ou B e aperte ${zKey}`, 400);
           else if (!site) sayHint('Vá a um pátio A ou B para plantar', 400);
@@ -1209,7 +1208,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           if (player && (FS_TEAMS_ACTIVE || bf)) for (const o of others) if (o.team === myTeam && o.alive) intelDots.push({ x: o.x, z: o.z, yaw: o.yaw, kind: 'ally', alpha: 1, live: true, name: nameOf(o.id) });
         }
       }
-      mini.current = { x: mover.x, z: mover.z, yaw: view.yaw, targets: [], boxes: ARENA, labels: world.labels, marks: FS_DUST_MARKS, intel: intelDots };
+      mini.current = { x: mover.x, z: mover.z, yaw: view.yaw, targets: [], boxes: ARENA, labels: world.labels, marks: map.marks, intel: intelDots };
       if (player) setBoardState(inp.board && !isPaused);
 
       hudT += dt;
