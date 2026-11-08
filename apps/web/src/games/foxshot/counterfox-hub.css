@@ -643,9 +643,9 @@
 .fsr-count {
   position: absolute;
   inset: 0;
-  z-index: 7;
+  z-index: 45;
   display: grid;
-  place-content: center;
+  place-content: stretch;
   justify-items: center;
   pointer-events: none;
   background: rgba(4, 8, 20, 0.55);
@@ -813,3 +813,17 @@
 .cfb-team .cfh-table td { padding: 8px 10px; font-size: clamp(15px, 1.8vw, 21px); }
 .cfb-team .cfh-table th { padding: 4px 10px; font-size: clamp(11px, 1.2vw, 14px); }
 @media (max-width: 760px) { .cfb-teams { grid-template-columns: 1fr; } }
+
+/* abertura da partida: cobre a cena inteira durante a contagem */
+.fsp-intro { position: absolute; inset: 0; display: grid; align-content: center; justify-items: center; gap: 10px; padding: 24px; text-align: center; color: #fff; background: radial-gradient(ellipse at 50% 30%, #1d2a52 0%, #090d1f 70%); }
+.fsp-intro.tr { background: radial-gradient(ellipse at 50% 30%, #5a2a10 0%, #0d0a14 70%); }
+.fsp-intro.ct { background: radial-gradient(ellipse at 50% 30%, #12356a 0%, #070b1a 70%); }
+.fsp-chip { font: 700 18px 'Rajdhani', sans-serif; letter-spacing: 0.3em; color: #ffb347; }
+.fsp-side { display: grid; gap: 6px; max-width: 640px; }
+.fsp-side b { font: 400 clamp(30px, 6vw, 56px) 'Saira Stencil One', 'Rajdhani', sans-serif; letter-spacing: 0.05em; }
+.fsp-intro.tr .fsp-side b { color: #ff9a3d; }
+.fsp-intro.ct .fsp-side b { color: #5db4ff; }
+.fsp-side span { font: 600 clamp(15px, 2vw, 20px) 'Rajdhani', sans-serif; color: #c9d4f2; }
+.fsp-names { margin: 0; font: 600 16px 'Rajdhani', sans-serif; color: #8fa0cc; }
+.fsp-label { font: 700 18px 'Rajdhani', sans-serif; letter-spacing: 0.4em; color: #ffb347; margin-top: 12px; }
+.fsp-num { font: 400 min(26vw, 200px) 'Saira Stencil One', 'Rajdhani', sans-serif; line-height: 1; text-shadow: 0 0 40px rgba(255, 106, 43, 0.8); animation: cfh-pop 0.5s both; }

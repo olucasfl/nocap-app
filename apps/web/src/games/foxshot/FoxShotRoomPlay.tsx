@@ -47,6 +47,7 @@ import { fsMapById } from '@nocap/games';
 import { FsBigMap, FsTelemetry, FsAmmo, FsCrosshair, FsKillFeed, FsMinimap, FsScoreboard, FsTopBar, FsVitals, type FeedItem, type FsIntelDot, type FsPlayerRow, type MinimapData } from './FsHud';
 import { FoxShotRoomFinal } from './FoxShotRoomFinal';
 import { FsShield } from './FsShield';
+import { FsPreMatch } from './FsPreMatch';
 import './foxshot.css';
 import './counterfox-hub.css';
 
@@ -1443,8 +1444,14 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           {board && <FsScoreboard bomb={h.bomb ? { mySide: h.bomb.mySide, tr: h.bomb.tr, ct: h.bomb.ct } : undefined} players={players} timeLeft={h.timeLeft} title={h.bomb ? `Bomba · Duna · online · primeiro a ${h.bomb.winRounds}` : `Mata-mata · Duna · online`} />}
           {count !== null && (
             <div className="fsr-count" role="status" data-testid="fsr-count">
-              <small>COMEÇA EM</small>
-              <b key={count}>{count}</b>
+              <FsPreMatch
+                count={count}
+                kind={snapshot.foxshot?.kind === 'bomb' ? 'bomb' : 'dm'}
+                map={snapshot.foxshot?.map === 'cidade' ? 'Cidade' : 'Duna'}
+                side={snapshot.foxshot?.kind === 'bomb' ? ((snapshot.foxshot?.teams?.[snapshot.me ?? ''] ?? 0) === 1 ? 'tr' : (snapshot.foxshot?.teams?.[snapshot.me ?? ''] ?? 0) === 0 ? 'ct' : null) : null}
+                winRounds={snapshot.foxshot?.winRounds ?? 8}
+                names={(snapshot.foxshot?.roster ?? []).filter((r) => !r.bot).map((r) => r.name)}
+              />
             </div>
           )}
           {needClick && !paused && (
