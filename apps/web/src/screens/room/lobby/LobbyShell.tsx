@@ -199,11 +199,16 @@ export function LobbyShell({
       <div className="lb3-foot">{footer}</div>
     </section>
   );
+  // a moldura temática (cenário, símbolo, fontes) é só dos jogos do Fox Cap!; Já Deu, Blocks, Mesmíssima, Echo etc. mantêm a sala deles
+  if (!FOX_CAP_GAMES.includes(snapshot.game) && !snapshot.flex) return content;
   return createPortal(
     <LobbyFrame game={(snapshot.game in GAME_LANDING ? snapshot.game : 'foxcap') as ThemeGame}>{content}</LobbyFrame>,
     document.body,
   );
 }
+
+/** Jogos que pertencem ao Fox Cap! (e a sala sem jogo escolhido). */
+const FOX_CAP_GAMES: string[] = ['foxcap', 'atravessa', 'desmorona', 'bola', 'pingpong', 'foxshot'];
 
 const FC_THEME = { line1: 'FOX', line2: 'CAP!', a: '#ffb347', b: '#3a1f45' };
 const FONTS = 'https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Saira+Stencil+One&display=swap';
