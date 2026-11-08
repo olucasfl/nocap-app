@@ -136,6 +136,11 @@ export interface FsDmBrain {
   waitT?: number;
   /** Mata-mata: bots que sabem jogar fazem emboscada (param agachados) ao chegar num ponto. */
   ambush?: boolean;
+  /** Pedido da tática do time: jogar uma granada neste ponto (execução do ataque, defesa do pátio). `any` usa a que tiver. */
+  throwReq?: { kind: FsGrenadeId | 'any'; x: number; z: number } | null;
+  /** Tempo (s) querendo andar sem sair do lugar (caixa, muro baixo na frente): passa de 0,3 s e o bot pula. */
+  blockT?: number;
+  jumpCool?: number;
 }
 
 export type FsDmAction =
@@ -230,6 +235,26 @@ export function fsDmStep(b: FsDmBrain, ctx: FsDmCtx): FsDmAction[] {
   if (b.reloadT > 0) {
     b.reloadT -= dt;
     if (b.reloadT <= 0) b.ammo = w.mag;
+  }
+
+  // ---- granada pedida pela tática do time (não precisa ver ninguém)
+  if (b.throwReq && b.reloadT <= 0 && !blind) {
+    const q = b.throwReq;
+    b.throwReq = null;
+    const kind: FsGrenadeId | null = q.kind !== 'any' && b.nades[q.kind] > 0 ? q.kind : b.nades.flash > 0 ? 'flash' : b.nades.frag > 0 ? 'frag' : null;
+    if (kind) {
+      b.nades[kind]--;
+      b.nadeCool = 5 + rng() * 4;
+      const dx = q.x - m.x;
+      const dz = q.z - m.z;
+      const d = Math.hypot(dx, dz);
+      const cy = yawTo(dx, dz) * D2R;
+      const cp = (14 + d * 0.55) * D2R;
+      out.push({
+        type: 'throw', kind, origin: [m.x, m.y + fsEyeHeight(m) - 0.15, m.z],
+        dir: [-Math.sin(cy) * Math.cos(cp), Math.sin(cp), -Math.cos(cy) * Math.cos(cp)], power: Math.min(1, 0.4 + d / 34),
+      });
+    }
   }
 
   // ---- percepção (a cada ~0,12 s)
@@ -459,6 +484,16 @@ export function fsDmStep(b: FsDmBrain, ctx: FsDmCtx): FsDmAction[] {
   }
 
   // ---- movimento com a física do jogador (passos fixos de 1/60 s)
+  // bloqueado por caixa ou muro baixo (a navegação deixa passar degraus de até ~0,9 m, que se vencem pulando): pula
+  if (move > 0.3 && (wantX !== 0 || wantZ !== 0) && m.onGround && b.speed < 0.7) b.blockT = (b.blockT ?? 0) + dt;
+  else b.blockT = 0;
+  b.jumpCool = (b.jumpCool ?? 0) - dt;
+  let hop = false;
+  if ((b.blockT ?? 0) > 0.3 && (b.jumpCool ?? 0) <= 0) {
+    hop = true;
+    b.jumpCool = 0.8;
+    b.blockT = 0;
+  }
   b.acc += dt;
   const yawR = b.yaw * D2R;
   const fwdX = -Math.sin(yawR);
@@ -469,7 +504,8 @@ export function fsDmStep(b: FsDmBrain, ctx: FsDmCtx): FsDmAction[] {
   const strafe = (wantX * rtX + wantZ * rtZ) * move;
   while (b.acc >= 1 / 60) {
     b.acc -= 1 / 60;
-    fsStepMover(m, { fwd, strafe, jump: false, yaw: b.yaw, speedMul: w.moveMul * 0.92, crouch, walk: !!b.sneak && !foe }, 1 / 60, boxes);
+    fsStepMover(m, { fwd, strafe, jump: hop, yaw: b.yaw, speedMul: w.moveMul * 0.92, crouch, walk: !!b.sneak && !foe }, 1 / 60, boxes);
+    hop = false;
   }
   b.speed = Math.hypot(m.vx, m.vz);
   b.anim = b.fireAnimT > 0 ? 'shoot' : b.speed > 1 ? (m.crouchK > 0.5 ? 'crouchwalk' : 'run') : 'idle';

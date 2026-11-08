@@ -59,6 +59,52 @@ interface Hold {
 }
 const holdCache = new Map<string, Hold[]>();
 
+/** Uma rota do mapa como linha quebrada: de onde os terroristas saem até uma bomba (ou até a base CT, que passa pelo meio). */
+export interface FsBotLane {
+  pts: [number, number][];
+  len: number;
+}
+const laneCache = new Map<string, { A: FsBotLane; B: FsBotLane; mid: FsBotLane } | null>();
+const mkLane = (path: [number, number][], from: { x: number; z: number }): FsBotLane => {
+  const pts: [number, number][] = [[from.x, from.z], ...path];
+  let len = 0;
+  for (let i = 1; i < pts.length; i++) len += Math.hypot(pts[i]![0] - pts[i - 1]![0], pts[i]![1] - pts[i - 1]![1]);
+  return { pts, len };
+};
+/** As três rotas principais (até A, até B e até a base CT, que é o meio do mapa), tiradas do caminho de verdade e guardadas por mapa. */
+export function fsBotLanes(map: FsMapApi): { A: FsBotLane; B: FsBotLane; mid: FsBotLane } | null {
+  if (laneCache.has(map.id)) return laneCache.get(map.id)!;
+  const t = map.marks.find((m) => m.kind === 'base' && m.id === 'T');
+  const ct = map.marks.find((m) => m.kind === 'base' && m.id === 'CT');
+  const a = map.marks.find((m) => m.kind === 'site' && m.id === 'A');
+  const b = map.marks.find((m) => m.kind === 'site' && m.id === 'B');
+  let out: { A: FsBotLane; B: FsBotLane; mid: FsBotLane } | null = null;
+  if (t && ct && a && b) {
+    const A = mkLane(map.path(t.x, t.z, a.x, a.z), t);
+    const B = mkLane(map.path(t.x, t.z, b.x, b.z), t);
+    const mid = mkLane(map.path(t.x, t.z, ct.x, ct.z), t);
+    if (A.len > 10 && B.len > 10 && mid.len > 10) out = { A, B, mid };
+  }
+  laneCache.set(map.id, out);
+  return out;
+}
+/** O ponto da rota a `s` metros do começo. */
+export const fsLaneAt = (l: FsBotLane, s: number): [number, number] => {
+  let left = Math.max(0, Math.min(l.len, s));
+  for (let i = 1; i < l.pts.length; i++) {
+    const a = l.pts[i - 1]!;
+    const c = l.pts[i]!;
+    const d = Math.hypot(c[0] - a[0], c[1] - a[1]);
+    if (left <= d || i === l.pts.length - 1) {
+      const k = d > 1e-6 ? Math.min(1, left / d) : 0;
+      return [a[0] + (c[0] - a[0]) * k, a[1] + (c[1] - a[1]) * k];
+    }
+    left -= d;
+  }
+  return l.pts[l.pts.length - 1]!;
+};
+
+
 /**
  * Postos de vigia em volta de um ponto: lugares livres que enxergam o ponto e têm paredes em volta (cobertura),
  * longe uns dos outros. É onde os bots esperam em vez de ficarem parados no meio da bomba.
@@ -88,8 +134,16 @@ export function fsBotHolds(map: FsMapApi, cx: number, cz: number, radius = 13, m
   }
   cands.sort((a, b) => b.score - a.score);
   const out: Hold[] = [];
+  // o posto precisa ser alcançável (o bot que recebe um posto sem caminho ficava parado no meio do nada)
+  const from = map.marks.find((m) => m.kind === 'base' && m.id === 'CT') ?? map.marks.find((m) => m.kind === 'base');
   for (const c of cands) {
-    if (out.every((o) => Math.hypot(o.x - c.x, o.z - c.z) >= 3)) out.push({ x: c.x, z: c.z });
+    if (!out.every((o) => Math.hypot(o.x - c.x, o.z - c.z) >= 3)) continue;
+    if (from) {
+      const pth = map.path(from.x, from.z, c.x, c.z);
+      const last = pth[pth.length - 1];
+      if (!last || Math.hypot(last[0] - c.x, last[1] - c.z) > 2.5) continue;
+    }
+    out.push({ x: c.x, z: c.z });
     if (out.length >= max) break;
   }
   if (out.length === 0) out.push({ x: cx, z: cz });
@@ -98,7 +152,11 @@ export function fsBotHolds(map: FsMapApi, cx: number, cz: number, radius = 13, m
 }
 
 interface Role {
-  kind: 'carrier' | 'escort' | 'follow' | 'lurk' | 'defend' | 'rotator';
+  kind: 'carrier' | 'escort' | 'follow' | 'lurk' | 'defend' | 'rotator' | 'mid';
+  /** Plano do ataque: quem é do grupo `mid` vai primeiro ao meio do mapa. */
+  group?: 'mid';
+  /** Contra-terrorista que avança: fica na posição adiantada até esse instante e depois recua para o posto. */
+  pushUntil?: number;
   site: SiteId;
   hold: number;
   /** Anda no Shift até chegar? (decidido uma vez por round, pelo nível) */
@@ -121,6 +179,18 @@ export class FsBombTactics {
   private liveStart = 0;
   private holdsPlanted: Hold[] = [];
   private holdsPlantedKey = '';
+  /** Plano do round de cada time: os bots mudam de estratégia de round em round e se adaptam ao que acontece. */
+  private ctPlan: 'hold' | 'stackA' | 'stackB' | 'pushMid' | 'aggro' = 'hold';
+  private trPlan: 'rush' | 'split' | 'mid' | 'slow' = 'rush';
+  /** Os terroristas esperam em pontos de preparação e só entram juntos (com granadas) quando esta marca vira. */
+  private trGo = false;
+  private lastEnemy: Record<FsSide, Record<SiteId, { x: number; z: number } | null>> = { tr: { A: null, B: null }, ct: { A: null, B: null } };
+  private lastPos = new Map<string, { x: number; z: number; alive: boolean }>();
+  private ctUtilAt = 0;
+  /** Bomba em apuros e quem foi mandado para lá: fica valendo por um tempo (sem isso os bots trocavam de ordem a cada passo e ficavam indo e voltando). */
+  private hot: { site: SiteId; since: number } | null = null;
+  private supporterId: string | null = null;
+  private watcherId: string | null = null;
 
   /** Mapa sem bombas (modo PvP): os bots só caçam o outro time, indo de ponto em ponto pelo lado do inimigo. */
   private isPvp(w: FsBotWorld) {
@@ -159,7 +229,25 @@ export class FsBombTactics {
     this.liveStart = w.now;
     this.seen = { tr: { A: { t: -99, n: 0 }, B: { t: -99, n: 0 } }, ct: { A: { t: -99, n: 0 }, B: { t: -99, n: 0 } } };
     this.lastSeenAny = { tr: -99, ct: -99 };
+    this.lastEnemy = { tr: { A: null, B: null }, ct: { A: null, B: null } };
+    this.lastPos.clear();
+    this.ctUtilAt = 0;
+    this.hot = null;
+    this.supporterId = null;
+    this.watcherId = null;
+    this.trGo = false;
     this.plan = w.rng() < 0.5 ? 'A' : 'B';
+    const r = w.rng();
+    this.ctPlan = r < 0.34 ? 'hold' : r < 0.44 ? 'stackA' : r < 0.54 ? 'stackB' : r < 0.76 ? 'pushMid' : 'aggro';
+    const q = w.rng();
+    this.trPlan = q < 0.3 ? 'rush' : q < 0.55 ? 'split' : q < 0.78 ? 'mid' : 'slow';
+    // granadas para a execução e para a defesa (os bots "compraram" uma ou duas)
+    for (const p of w.people) {
+      const b = p.brain;
+      if (!b) continue;
+      if (b.nades.flash + b.nades.frag === 0 && w.rng() < 0.7) b.nades.flash = 1;
+      if (b.skill.sense > 0.45 && b.nades.frag === 0 && w.rng() < 0.5) b.nades.frag = 1;
+    }
     this.assign(w);
   }
 
@@ -178,7 +266,10 @@ export class FsBombTactics {
       used.set(s, i + 1);
       return i;
     };
-    let lurker = false;
+    let lurkers = 0;
+    let midGroup = 0;
+    const lurkN = this.trPlan === 'split' ? Math.max(1, Math.floor(tr.length * 0.4)) : tr.length >= 4 ? 1 : 0;
+    const midN = this.trPlan === 'mid' ? Math.max(1, Math.ceil(tr.length * 0.4)) : 0;
     for (const p of tr) {
       const sk = p.brain!.skill;
       const sneak = w.rng() < sk.sneak;
@@ -187,30 +278,52 @@ export class FsBombTactics {
         this.roles.set(p.id, { kind: 'carrier', site: plan, hold: 0, sneak, crouch: false, rotated: false });
       } else if (sk.sense < 0.3) {
         this.roles.set(p.id, { kind: 'follow', site: plan, hold: take(plan), sneak: false, crouch, rotated: false });
-      } else if (!lurker && tr.length >= 4 && sk.sense > 0.8 && w.rng() < 0.5) {
-        lurker = true;
+      } else if (lurkers < lurkN && (this.trPlan === 'split' || (sk.sense > 0.8 && w.rng() < 0.5))) {
+        lurkers++;
         this.roles.set(p.id, { kind: 'lurk', site: other(plan), hold: take(other(plan)), sneak: true, crouch, rotated: false });
+      } else if (midGroup < midN) {
+        midGroup++;
+        this.roles.set(p.id, { kind: 'escort', group: 'mid', site: plan, hold: take(plan), sneak: false, crouch, rotated: false });
       } else {
         this.roles.set(p.id, { kind: 'escort', site: plan, hold: take(plan), sneak, crouch, rotated: false });
       }
     }
-    // contra-terroristas: metade em cada bomba; com 4+ um médio/craque fica de rotação no meio
+    // contra-terroristas: formação (2 em A, 2 em B e 1 no meio olhando, com 5); o plano do round empilha uma bomba, avança pelo meio ou
+    // manda dois adiantarem a posição antes de recuar
     const ct = this.bots(w, 'ct');
+    const order = [...ct].sort((x, y) => y.brain!.skill.sense - x.brain!.skill.sense);
+    const nMid = ct.length >= 3 ? (this.ctPlan === 'pushMid' && ct.length >= 4 ? 2 : 1) : 0;
+    const mids = order.slice(0, nMid);
+    const rest = ct.filter((p) => !mids.includes(p));
+    let aN = Math.ceil(rest.length / 2);
+    let bN = rest.length - aN;
+    if (this.ctPlan === 'stackA' && bN > 1) {
+      aN++;
+      bN--;
+    } else if (this.ctPlan === 'stackB' && aN > 1) {
+      aN--;
+      bN++;
+    }
     const cu = new Map<SiteId, number>([['A', 0], ['B', 0]]);
-    let rotator = false;
-    ct.forEach((p, i) => {
+    const pushedSites = new Set<SiteId>();
+    rest.forEach((p, i) => {
       const sk = p.brain!.skill;
-      const site: SiteId = i % 2 === 0 ? 'A' : 'B';
+      const site: SiteId = i < aN ? 'A' : 'B';
       const sneak = w.rng() < sk.sneak;
       const crouch = w.rng() < 0.2 + sk.sense * 0.6;
-      if (!rotator && ct.length >= 4 && sk.sense >= 0.5 && i >= 2) {
-        rotator = true;
-        this.roles.set(p.id, { kind: 'rotator', site, hold: 0, sneak, crouch: false, rotated: false });
-        return;
-      }
       const n = cu.get(site)!;
       cu.set(site, n + 1);
-      this.roles.set(p.id, { kind: 'defend', site, hold: n, sneak, crouch, rotated: false });
+      const role: Role = { kind: 'defend', site, hold: n, sneak, crouch, rotated: false };
+      if (this.ctPlan === 'aggro' && !pushedSites.has(site) && sk.sense >= 0.3) {
+        pushedSites.add(site);
+        role.pushUntil = w.now + 11 + w.rng() * 6;
+      }
+      this.roles.set(p.id, role);
+    });
+    mids.forEach((p, i) => {
+      const role: Role = { kind: 'mid', site: i % 2 === 0 ? 'A' : 'B', hold: i, sneak: w.rng() < p.brain!.skill.sneak, crouch: true, rotated: false };
+      if (this.ctPlan === 'pushMid') role.pushUntil = w.now + 16 + w.rng() * 9;
+      this.roles.set(p.id, role);
     });
   }
 
@@ -228,6 +341,7 @@ export class FsBombTactics {
       }
     }
     if (bd < 32) {
+      this.lastEnemy[by][best] = { x, z };
       const e = this.seen[by][best];
       e.n = now - e.t < 6 ? e.n + 1 : 1;
       e.t = now;
@@ -262,6 +376,16 @@ export class FsBombTactics {
       }
     }
 
+    // morte de um aliado também é notícia: o time sabe de que lado foi (para dar apoio)
+    if (fast) {
+      for (const p of w.people) {
+        const prev = this.lastPos.get(p.id);
+        if (prev?.alive && !p.alive) this.note(map, p.side, prev.x, prev.z, w.now);
+        this.lastPos.set(p.id, { x: p.x, z: p.z, alive: p.alive });
+      }
+    }
+    const lanes = fsBotLanes(map);
+
     // ---- terroristas
     const planted = w.phase === 'planted' && w.plantPos;
     const trBots = this.bots(w, 'tr');
@@ -281,6 +405,38 @@ export class FsBombTactics {
         this.plan = other(this.plan);
         this.planSwitched = true;
         this.assign(w);
+      }
+    }
+    // preparar e entrar juntos: cada um espera num ponto de preparação até a maioria chegar (ou o tempo/uma luta apertar) e então todos entram,
+    // jogando as granadas que tiverem no pátio antes
+    if (!planted && !this.trGo && fast) {
+      const elapsed = w.now - this.liveStart;
+      if (!lanes) this.trGo = true;
+      else {
+        const goAfter = { rush: 5, split: 9, mid: 14, slow: 17 }[this.trPlan];
+        const stageOf = (r: Role): [number, number] => (r.group === 'mid' ? fsLaneAt(lanes.mid, lanes.mid.len * 0.42) : fsLaneAt(lanes[r.site], lanes[r.site].len - 27));
+        let arrived = 0;
+        for (const p of trBots) {
+          const r = this.roles.get(p.id);
+          if (!r) continue;
+          const st = stageOf(r);
+          if (Math.hypot(p.x - st[0], p.z - st[1]) < 7) arrived++;
+        }
+        const need = Math.max(1, Math.ceil(trBots.length * 0.6));
+        const fightingAny = trBots.some((p) => !!p.brain!.target && p.brain!.lostT < 1);
+        if ((elapsed > goAfter && arrived >= need) || elapsed > goAfter + 16 || (fightingAny && elapsed > 4) || timeLeft < w.roundSec * 0.5) {
+          this.trGo = true;
+          for (const p of trBots) {
+            const r = this.roles.get(p.id);
+            const b = p.brain!;
+            if (!r || b.skill.sense < 0.2 || b.nades.flash + b.nades.frag === 0) continue;
+            const sm = siteMark(map, this.plan);
+            const holds = fsBotHolds(map, sm.x, sm.z);
+            const h = holds[(r.hold + 1) % holds.length]!;
+            const d = Math.hypot(p.x - h.x, p.z - h.z);
+            if (d > 9 && d < 34) b.throwReq = { kind: 'any', x: h.x, z: h.z };
+          }
+        }
       }
     }
     const nearest = (id: string, list: readonly FsBotPerson[]) => {
@@ -352,6 +508,15 @@ export class FsBombTactics {
       }
       const m = siteMark(map, r.site);
       const siteHolds = fsBotHolds(map, m.x, m.z);
+      // antes da entrada: espera no ponto de preparação do plano (rota da bomba, ou o meio para o grupo do meio)
+      if (!this.trGo && lanes) {
+        const st = r.group === 'mid' ? fsLaneAt(lanes.mid, lanes.mid.len * 0.42) : fsLaneAt(lanes[r.site], lanes[r.site].len - 27);
+        b.objective = [st[0], st[1]];
+        b.sneak = false;
+        b.holdCrouch = false;
+        b.lookAt = null;
+        continue;
+      }
       if (r.kind === 'carrier') {
         b.objective = [m.x, m.z];
         b.sneak = r.sneak && Math.hypot(p.x - m.x, p.z - m.z) < 28 && !fighting;
@@ -370,7 +535,8 @@ export class FsBombTactics {
         } else this.arrivedAt.delete(p.id);
         continue;
       }
-      if (r.kind === 'follow' && carrierP && carrierP.alive && Math.hypot(carrierP.x - p.x, carrierP.z - p.z) > 6) {
+      // novato acompanha o carregador o tempo todo (antes só passava de 6 m: ao cruzar essa distância o objetivo trocava a cada passo e o bot ficava parado)
+      if (r.kind === 'follow' && carrierP && carrierP.alive) {
         b.objective = [carrierP.x, carrierP.z];
         b.sneak = false;
         continue;
@@ -389,8 +555,45 @@ export class FsBombTactics {
     // ---- contra-terroristas
     const ctBots = this.bots(w, 'ct');
     const attackers = this.bots(w, 'tr');
-    // rotação: CT que vê o inimigo numa bomba chama quem está na outra
-    const hotSite = (['A', 'B'] as const).reduce<SiteId | null>((acc, s) => (w.now - this.seen.ct[s].t < 8 && (acc === null || this.seen.ct[s].t > this.seen.ct[acc].t) ? s : acc), null);
+    // apoio: contato (tiro visto ou aliado morto) numa bomba; o aliado mais perto de fora dela vai dar apoio e o seguinte fica de olho
+    const recent = (['A', 'B'] as const).reduce<SiteId | null>((acc, s) => (w.now - this.seen.ct[s].t < 8 && (acc === null || this.seen.ct[s].t > this.seen.ct[acc].t) ? s : acc), null);
+    if (!recent) {
+      if (this.hot && w.now - this.hot.since > 10) this.hot = null;
+    } else if (!this.hot || (recent !== this.hot.site && w.now - this.hot.since > 6)) {
+      this.hot = { site: recent, since: w.now };
+      this.supporterId = null;
+      this.watcherId = null;
+    } else if (recent === this.hot.site) this.hot.since = Math.max(this.hot.since, w.now - 5);
+    const hotSite: SiteId | null = this.hot?.site ?? null;
+    let supporter: string | null = null;
+    let watcher: string | null = null;
+    if (hotSite && !planted) {
+      const hm = siteMark(map, hotSite);
+      const aliveIds = new Set(ctBots.map((p) => p.id));
+      if (!this.supporterId || !aliveIds.has(this.supporterId)) {
+        const cands = ctBots
+          .filter((p) => (this.roles.get(p.id)?.site !== hotSite || this.roles.get(p.id)?.kind === 'mid') && p.brain!.skill.sense > 0.3)
+          .sort((a, c) => Math.hypot(a.x - hm.x, a.z - hm.z) - Math.hypot(c.x - hm.x, c.z - hm.z));
+        this.supporterId = cands[0]?.id ?? null;
+        this.watcherId = cands[1]?.id ?? null;
+      }
+      supporter = this.supporterId;
+      watcher = this.watcherId && aliveIds.has(this.watcherId) ? this.watcherId : null;
+      // defesa com granada: quem tem granada joga no último lugar onde o inimigo apareceu (a cada 6 s, um bot)
+      const le = this.lastEnemy.ct[hotSite];
+      if (fast && le && w.now >= this.ctUtilAt) {
+        for (const p of ctBots) {
+          const b = p.brain!;
+          if (b.skill.sense < 0.3 || b.nades.flash + b.nades.frag === 0 || (!!b.target && b.lostT < 1.2)) continue;
+          const d = Math.hypot(p.x - le.x, p.z - le.z);
+          if (d > 9 && d < 30 && fsClearLine(map.solids, [p.x, 1.1, p.z], [p.x + (le.x - p.x) * 0.2, 1.1, p.z + (le.z - p.z) * 0.2])) {
+            b.throwReq = { kind: 'any', x: le.x, z: le.z };
+            this.ctUtilAt = w.now + 6;
+            break;
+          }
+        }
+      }
+    }
     let defuser: string | null = null;
     if (planted) {
       // quem desarma: dono do alicate, senão o mais perto; só se der tempo
@@ -450,33 +653,63 @@ export class FsBombTactics {
         b.lookAt = [bp.x, bp.z];
         continue;
       }
-      // antes do plantio: rotação e postos
-      if (sk.sense > 0.45 && hotSite && !r.rotated && r.site !== hotSite && (r.kind !== 'defend' || ctBots.filter((o) => this.roles.get(o.id)?.site === r.site).length > 1)) {
-        r.site = hotSite;
-        r.rotated = true;
-        r.hold = (ctBots.length + p.id.length) % 6;
-        r.kind = 'defend';
-        r.sneak = false;
-      }
-      if (r.kind === 'rotator' && !hotSite) {
-        // sem notícia: fica no meio, entre as duas bombas
-        const a = siteMark(map, 'A');
-        const c = siteMark(map, 'B');
-        const [fc, fr] = map.nearestFree((a.x + c.x) / 2, (a.z + c.z) / 2 + 6);
-        b.objective = [map.cellX(fc), map.cellZ(fr)];
-        b.sneak = r.sneak && !fighting;
-        b.lookAt = null;
+      // antes do plantio: apoio, avanço/recuo e postos
+      // recuar: quem estava avançado volta ao posto quando o tempo da posição acaba ou quando bateu de frente com mais gente do que o time
+      if (r.pushUntil !== undefined && (w.now > r.pushUntil || (w.now - this.lastSeenAny.ct < 2 && ctBots.length < attackers.length))) r.pushUntil = undefined;
+      const mid = lanes ? { hold: fsLaneAt(lanes.mid, lanes.mid.len * 0.72), watch: fsLaneAt(lanes.mid, lanes.mid.len * 0.45), push: fsLaneAt(lanes.mid, lanes.mid.len * 0.42), far: fsLaneAt(lanes.mid, lanes.mid.len * 0.25) } : null;
+      if (supporter === p.id && hotSite) {
+        // apoio: vai para um posto da bomba onde houve tiro ou morte
+        const sm = siteMark(map, hotSite);
+        const hs = fsBotHolds(map, sm.x, sm.z);
+        const h = hs[(ctBots.indexOf(p) + 1) % hs.length]!;
+        b.objective = [h.x, h.z];
+        b.sneak = false;
+        b.lookAt = [sm.x, sm.z];
         continue;
       }
-      const site = r.kind === 'rotator' && hotSite ? hotSite : r.site;
-      const m = siteMark(map, site);
+      if (r.kind === 'mid') {
+        if (mid) {
+          if (r.pushUntil !== undefined) {
+            b.objective = [mid.push[0], mid.push[1]];
+            b.lookAt = [mid.far[0], mid.far[1]];
+            b.sneak = r.sneak && !fighting;
+          } else {
+            b.objective = [mid.hold[0], mid.hold[1]];
+            const dMid = Math.hypot(p.x - mid.hold[0], p.z - mid.hold[1]);
+            b.holdCrouch = dMid < 2.5;
+            // de olho: olha para o lado da bomba onde houve barulho, senão para a entrada do meio
+            const hs2 = hotSite ? siteMark(map, hotSite) : null;
+            b.lookAt = hs2 ? [hs2.x, hs2.z] : [mid.watch[0], mid.watch[1]];
+            b.sneak = r.sneak && !fighting && dMid < 30;
+          }
+        } else {
+          const a = siteMark(map, 'A');
+          const c = siteMark(map, 'B');
+          const [fc, fr] = map.nearestFree((a.x + c.x) / 2, (a.z + c.z) / 2);
+          b.objective = [map.cellX(fc), map.cellZ(fr)];
+        }
+        continue;
+      }
+      if (r.pushUntil !== undefined && lanes) {
+        // avança: posição adiantada na rota da bomba (a entrada), olhando para o lado de onde o inimigo vem
+        const ln = lanes[r.site];
+        const fwd = fsLaneAt(ln, ln.len - 20);
+        const far = fsLaneAt(ln, ln.len - 40);
+        b.objective = [fwd[0], fwd[1]];
+        b.lookAt = [far[0], far[1]];
+        b.sneak = r.sneak && !fighting;
+        continue;
+      }
+      const m = siteMark(map, r.site);
       const holds = fsBotHolds(map, m.x, m.z);
       const h = holds[r.hold % holds.length]!;
       b.objective = [h.x, h.z];
       const dist = Math.hypot(p.x - h.x, p.z - h.z);
-      b.sneak = r.sneak && !fighting && r.kind !== 'rotator' && !r.rotated && dist < 35;
+      b.sneak = r.sneak && !fighting && dist < 35;
       b.holdCrouch = r.crouch && dist < 2.5;
-      b.lookAt = [m.x, m.z];
+      // quem está de olho (segundo mais perto de onde houve contato) olha para lá sem sair do posto
+      const watchSm = hotSite && watcher === p.id ? siteMark(map, hotSite) : null;
+      b.lookAt = watchSm ? [watchSm.x, watchSm.z] : [m.x, m.z];
       void attackers;
     }
     return orders;
