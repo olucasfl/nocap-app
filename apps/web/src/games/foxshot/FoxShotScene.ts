@@ -1223,6 +1223,55 @@ export class FoxShotScene {
     light: THREE.PointLight;
   } | null = null;
   private bombDropObj: THREE.Group | null = null;
+  // ---- C4 na mão (terrorista): aparece no lugar da arma; ao plantar a mão abaixa e treme
+  private bombHand: THREE.Group | null = null;
+  private bombHandK = 0;
+  private bombHandOn = false;
+  private bombHandPlant = 0;
+  /** Põe a C4 na mão (some a arma) ou guarda; `plant` de 0 a 1 é o progresso do plantio. */
+  setBombInHand(on: boolean, plant = 0) {
+    this.bombHandOn = on;
+    this.bombHandPlant = plant;
+    if (on && !this.bombHand) {
+      const g = new THREE.Group();
+      const m = this.c4Model();
+      m.traverse((o) => {
+        (o as THREE.Mesh).frustumCulled = false;
+      });
+      m.scale.setScalar(0.3);
+      m.rotation.set(0.0, Math.PI * 0.5, 0);
+      g.add(m);
+      const led = new THREE.Mesh(new THREE.SphereGeometry(0.012, 10, 8), new THREE.MeshBasicMaterial({ color: 0xff3b2e }));
+      led.name = 'led';
+      led.position.set(0.05, 0.13, 0.02);
+      g.add(led);
+      // duas patas segurando
+      const fur = new THREE.MeshStandardMaterial({ color: 0xff8a1f, roughness: 0.8 });
+      for (const sx of [-1, 1]) {
+        const paw = new THREE.Mesh(new THREE.CapsuleGeometry(0.035, 0.12, 4, 8), fur);
+        paw.position.set(sx * 0.1, -0.03, 0.08);
+        paw.rotation.set(Math.PI / 2.4, 0, sx * 0.4);
+        g.add(paw);
+      }
+      g.position.set(0.1, -0.2, -0.42);
+      g.rotation.set(0.35, -0.5, 0.05);
+      this.vmCam.add(g);
+      this.bombHand = g;
+    }
+  }
+  private updateBombHand(dt: number) {
+    const g = this.bombHand;
+    const target = this.bombHandOn ? 1 : 0;
+    this.bombHandK += Math.sign(target - this.bombHandK) * Math.min(Math.abs(target - this.bombHandK), dt * 4);
+    this.vm.visible = this.bombHandK < 0.3;
+    if (!g) return;
+    g.visible = this.bombHandK > 0.02;
+    const up = this.bombHandK * this.bombHandK * (3 - 2 * this.bombHandK);
+    const p = this.bombHandPlant;
+    g.position.set(0.06 + Math.sin(this.t * 38) * 0.004 * p, -0.15 - (1 - up) * 0.4 - p * 0.05, -0.46 + p * 0.05);
+    const led = g.getObjectByName('led') as THREE.Mesh | undefined;
+    if (led) (led.material as THREE.MeshBasicMaterial).color.setHex(Math.sin(this.t * (p > 0 ? 20 : 4) * Math.PI) > 0 ? 0xff3b2e : 0x3a0a06);
+  }
   private c4Model(): THREE.Object3D {
     if (this.c4Tpl) return this.c4Tpl.clone(true);
     // sem o arquivo: uma caixa com tijolos de C4
@@ -2071,6 +2120,7 @@ export class FoxShotScene {
     }
     for (const [h, o] of this.drops) if (this.dropFloat.get(h) !== false) o.position.y = 0.14 + Math.sin(this.t * 2 + o.position.x) * 0.02;
     this.updateViewmodel(dt, { ...p, ads: p.adsTarget > 0.5 });
+    this.updateBombHand(dt);
   }
 
   render() {

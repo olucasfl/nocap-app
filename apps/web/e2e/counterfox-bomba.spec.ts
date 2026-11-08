@@ -121,7 +121,12 @@ test('modo Bomba: terrorista planta na Bomba A segurando E, solta e pega a C4, e
   // vai ao selo da Bomba A (altura do chão ali: 0,9 m) e segura E
   await fs<void>(page, 'teleport', 19, -20.5, 0.95);
   await fs<void>(page, 'look', 0, 20);
+  // sem a C4 na mão não planta, mesmo segurando o botão
   await fs<void>(page, 'useBtn', true);
+  await page.waitForTimeout(4000);
+  expect((await fs<{ planting: number }>(page, 'bombState')).planting).toBe(0);
+  // com a C4 na mão (tecla Z) planta
+  await fs<void>(page, 'bombHold', true);
   await expect.poll(async () => (await fs<{ planting: number }>(page, 'bombState')).planting, { timeout: 60_000 }).toBeGreaterThan(0.3);
   await fs<void>(page, 'bombPlantAlmost');
   await expect.poll(async () => (await bomb(page))?.phase, { timeout: 90_000 }).toBe('planted');

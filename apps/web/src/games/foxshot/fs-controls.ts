@@ -33,6 +33,8 @@ export interface FsFrameInput {
   map: boolean;
   drop: boolean;
   pickup: boolean;
+  /** Pegar a C4 na mão (ou guardar). */
+  bombSlot: boolean;
 }
 
 /**
@@ -47,7 +49,7 @@ export class FsControls {
   private cycleQueued = false;
   private reloadQueued = false;
   private jumpQueued = false;
-  private once = { map: false, inspect: false, buy: false, drop: false, pickup: false, grenade: false, grenadeFrag: false, grenadeFlash: false };
+  private once = { map: false, inspect: false, buy: false, drop: false, pickup: false, bombSlot: false, grenade: false, grenadeFrag: false, grenadeFlash: false };
   private dx = 0;
   private dy = 0;
   private stick: { id: number; ox: number; oy: number; x: number; y: number } | null = null;
@@ -141,7 +143,11 @@ export class FsControls {
     if (document.pointerLockElement) document.exitPointerLock();
   }
 
-  setTouch(name: keyof FsControls['touchBtn'] | 'cycle' | 'buy', down: boolean) {
+  setTouch(name: keyof FsControls['touchBtn'] | 'cycle' | 'buy' | 'bombslot', down: boolean) {
+    if (name === 'bombslot') {
+      if (down) this.once.bombSlot = true;
+      return;
+    }
     if (name === 'buy') {
       if (down) this.once.buy = true;
       return;
@@ -210,8 +216,8 @@ export class FsControls {
     const pick = this.pickKey;
     this.pickKey = -1;
     const on = this.enabled;
-    const { inspect, buy, drop, pickup, grenade, grenadeFrag, grenadeFlash, map } = this.once;
-    this.once = { map: false, inspect: false, buy: false, drop: false, pickup: false, grenade: false, grenadeFrag: false, grenadeFlash: false };
+    const { inspect, buy, drop, pickup, bombSlot, grenade, grenadeFrag, grenadeFlash, map } = this.once;
+    this.once = { map: false, inspect: false, buy: false, drop: false, pickup: false, bombSlot: false, grenade: false, grenadeFrag: false, grenadeFlash: false };
     return {
       fwd: on ? fwd : 0,
       strafe: on ? strafe : 0,
@@ -233,6 +239,7 @@ export class FsControls {
       map,
       drop: on && drop,
       pickup: on && pickup,
+      bombSlot: on && bombSlot,
     };
   }
 
@@ -256,6 +263,7 @@ export class FsControls {
       else if (e.code === b.map) this.once.map = true;
       else if (e.code === b.drop) this.once.drop = true;
       else if (e.code === b.pickup) this.once.pickup = true;
+      else if (b.bombSlot && e.code === b.bombSlot) this.once.bombSlot = true;
       else if (b.grenade && e.code === b.grenade) this.once.grenade = true;
       else if (b.grenadeFrag && e.code === b.grenadeFrag) this.once.grenadeFrag = true;
       else if (b.grenadeFlash && e.code === b.grenadeFlash) this.once.grenadeFlash = true;

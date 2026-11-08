@@ -130,6 +130,10 @@ export interface FsDmBrain {
   /** Parado no posto: agacha e vigia na direção de `lookAt`. */
   holdCrouch?: boolean;
   lookAt?: [number, number] | null;
+  /** Passeio: tempo parado de emboscada ao chegar (s); negativo = não sorteado ainda. */
+  waitT?: number;
+  /** Mata-mata: bots que sabem jogar fazem emboscada (param agachados) ao chegar num ponto. */
+  ambush?: boolean;
 }
 
 export type FsDmAction =
@@ -154,7 +158,7 @@ export function fsDmPickWeapon(rng: () => number): FsDmWeapon {
   return 'ak';
 }
 
-export function fsDmNew(id: string, x: number, z: number, yaw: number, weapon: FsDmWeapon, rng: () => number, y = 0, level: FsBotLevel = 'pro'): FsDmBrain {
+export function fsDmNew(id: string, x: number, z: number, yaw: number, weapon: FsDmWeapon, rng: () => number, y = 0, level: FsBotLevel = 'pro', ambush = false): FsDmBrain {
   const m = fsNewMover(x, z);
   m.y = y;
   return {
@@ -162,7 +166,7 @@ export function fsDmNew(id: string, x: number, z: number, yaw: number, weapon: F
     nades: { frag: rng() < 0.45 ? 1 : 0, flash: rng() < 0.45 ? 1 : 0 },
     nadeCool: 4 + rng() * 6, flashedUntil: 0, path: [], goal: null, stuckT: 0, lastX: x, lastZ: z,
     target: null, react: 0, lostT: 99, last: null, strafe: rng() < 0.5 ? 1 : -1, strafeT: 0.6, senseT: rng() * 0.12, acc: 0, fireAnimT: 0,
-    anim: 'idle', animSpeed: 1, headAim: false, speed: 0, level, skill: FS_BOT_LEVELS[level],
+    anim: 'idle', animSpeed: 1, headAim: false, speed: 0, level, skill: FS_BOT_LEVELS[level], ambush,
   };
 }
 
@@ -381,11 +385,25 @@ export function fsDmStep(b: FsDmBrain, ctx: FsDmCtx): FsDmAction[] {
       }
     }
   } else if (!b.goal || b.path.length === 0) {
-    // passeia: um ponto de interesse sorteado
-    const spots = FS_DUST_HOTSPOTS.filter(([x, z]) => Math.hypot(x - m.x, z - m.z) > 8);
-    const g = spots[Math.floor(rng() * spots.length)]!;
-    b.goal = [g[0], g[1]];
-    b.path = fsDustPath(m.x, m.z, g[0], g[1]);
+    // chegou: quem sabe jogar para um pouco, agachado e vigiando (emboscada), os outros seguem direto
+    if (b.waitT === undefined || b.waitT < 0) b.waitT = b.ambush && sk.sense > 0.4 ? (1 + rng() * 3) * sk.sense : 0;
+    if (b.waitT > 0) {
+      b.waitT = Math.max(0, b.waitT - dt);
+      crouch = sk.sense > 0.7;
+      b.sneak = false;
+    } else {
+      // passeia: um ponto de interesse sorteado; craques andam no Shift (sem barulho), novatos correm fazendo barulho
+      const spots = FS_DUST_HOTSPOTS.filter(([x, z]) => Math.hypot(x - m.x, z - m.z) > 8);
+      // sem caminho até o ponto sorteado: tenta outros na hora (não fica parado esperando a próxima rodada)
+      for (let tries = 0; tries < 5; tries++) {
+        const g = spots[Math.floor(rng() * spots.length)]!;
+        b.goal = [g[0], g[1]];
+        b.path = fsDustPath(m.x, m.z, g[0], g[1]);
+        if (b.path.length > 0) break;
+      }
+      b.sneak = b.ambush ? rng() < sk.sneak * 0.7 : false;
+      b.waitT = -1;
+    }
   }
 
   // recarrega sozinho se o carregador está baixo e não há ninguém à vista

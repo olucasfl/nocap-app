@@ -858,7 +858,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       const vest = gear ? gear.armor > 0 : rnd() < 0.55;
       st.armor = gear ? gear.armor : vest ? 100 : 0;
       spec.helmet = gear ? gear.helmet : vest && rnd() < 0.5;
-      brains.set(id, fsDmNew(id, x, z, yaw, gear ? gear.weapon : fsDmPickWeapon(rnd), rnd, y, botLevel.get(id)));
+      brains.set(id, fsDmNew(id, x, z, yaw, gear ? gear.weapon : fsDmPickWeapon(rnd), rnd, y, botLevel.get(id), true));
       if (gear) {
         const bb = brains.get(id)!;
         bb.nades = { frag: 0, flash: 0 };
@@ -936,6 +936,8 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     let lastCarrier: string | null = null;
     let beepIn = 0;
     let swapKey = 0;
+    /** Terrorista com a C4 na mão (tecla Z): só assim dá para plantar. */
+    let bombHeld = false;
     let tacticsRound = -1;
     let specWeapon: FsWeaponId | null = null;
     const moverOf = (id: string | null) => (id === 'me' || !id ? { x: mover.x, y: mover.y, z: mover.z } : (brains.get(id)?.mover ?? mover));
@@ -1121,10 +1123,12 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       const still = Math.hypot(mover.vx, mover.vz) < 2.2;
       if (meAlive && meSide === 'tr' && bm.carrier === 'me') {
         const site = fsSiteAt(mover.x, mover.z);
-        if (useHeld && site && still) plantPos = { x: mover.x, y: mover.y, z: mover.z };
-        bm.plant('me', useHeld && still, site, dt);
+        const go = useHeld && still && bombHeld;
+        if (go && site) plantPos = { x: mover.x, y: mover.y, z: mover.z };
+        bm.plant('me', go, site, dt);
         if (bm.phase === 'live' && !bm.planting) {
-          if (!site) say('Você tem a bomba: vá a um pátio A ou B', 400);
+          if (!bombHeld) say(site ? `Aperte ${bindLabel(fsSettings().binds.bombSlot)} para pegar a bomba na mão` : 'Você tem a bomba: vá a um pátio A ou B e aperte ' + bindLabel(fsSettings().binds.bombSlot), 400);
+          else if (!site) say('Vá a um pátio A ou B para plantar', 400);
           else if (!useHeld) say(`Segure ${bombKey()} para plantar a bomba`, 400);
           else if (!still) say('Fique parado para plantar', 400);
         }
@@ -1175,6 +1179,8 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
           bm.defuse(d.id, true, true, dt);
         }
       }
+      if (bombHeld && (bm.carrier !== 'me' || !meAlive || bm.phase === 'planted' || bm.phase === 'end')) bombHeld = false;
+      scene.setBombInHand(bombHeld && meAlive, bm.planting === 'me' ? bm.plantProgress / bm.cfg.plantSec : 0);
       // C4 na cena: plantando e desarmando aparecem para todos; plantada pisca e apita (som sai dela)
       const planter = bm.planting;
       const defuserId = bm.defusing;
@@ -1644,7 +1650,8 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
           else setShop(true);
         }
         const shopOpen = shopRef.current;
-        if (inp.drop && bm && bm.carrier === 'me' && loadout.weapon.melee) {
+        if (inp.drop && bm && bm.carrier === 'me' && (bombHeld || loadout.weapon.melee)) {
+          bombHeld = false;
           bm.dropBomb('me');
         } else if (inp.drop) {
           const d = loadout.drop();
@@ -1693,9 +1700,24 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
           }
         }
         if (shopOpen) inp.pick = -1;
-        if (inp.pick >= 0) switchTo(inp.pick);
-        else if (inp.cycle) handle(loadout.cycleAll(1));
-        if (inp.grenade) handle(loadout.selectGrenade('next'));
+        if (inp.bombSlot) {
+          if (bm && bm.carrier === 'me' && (bm.phase === 'live' || bm.phase === 'buy') && !playerDead) {
+            bombHeld = !bombHeld;
+            fsAudio.draw();
+            say(bombHeld ? `C4 na mão: vá a um pátio e segure ${bombKey()} para plantar` : 'C4 guardada', 1800);
+          } else if (bm) say('Só o terrorista que leva a bomba pode pegá-la na mão', 1800);
+        }
+        if (inp.pick >= 0) {
+          bombHeld = false;
+          switchTo(inp.pick);
+        } else if (inp.cycle) {
+          bombHeld = false;
+          handle(loadout.cycleAll(1));
+        }
+        if (inp.grenade) {
+          bombHeld = false;
+          handle(loadout.selectGrenade('next'));
+        }
         if (inp.grenadeFrag) handle(loadout.selectGrenade('frag'));
         if (inp.grenadeFlash) handle(loadout.selectGrenade('flash'));
 
@@ -2217,6 +2239,9 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         bombLate: () => {
           if (bm && bm.phase === 'live') bm.time = bm.cfg.roundSec - 16;
         },
+        bombHold: (on: boolean) => {
+          bombHeld = on;
+        },
         bombDrop: () => !!bm?.dropBomb('me'),
         bombState: () => ({ carrier: bm?.carrier ?? null, dropped: !!bm?.dropped, drop: dropAt, phase: bm?.phase ?? null, planting: bm?.plantProgress ?? 0, dbg: { x: mover.x, z: mover.z, site: fsSiteAt(mover.x, mover.z), use: useHeld, speed: Math.hypot(mover.vx, mover.vz), dead: clock < deadUntil } }),
         bombKillMe: () => {
@@ -2290,7 +2315,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
   const resumeRef = useRef<() => void>(() => undefined);
   const setBoardState = useCallback((v: boolean) => setBoard((b) => (b === v ? b : v)), []);
   const press = useCallback(
-    (name: 'fire' | 'ads' | 'jump' | 'reload' | 'cycle' | 'use', down: boolean) =>
+    (name: 'fire' | 'ads' | 'jump' | 'reload' | 'cycle' | 'use' | 'bombslot', down: boolean) =>
       ctl.current?.setTouch(name, down),
     [],
   );
@@ -2433,6 +2458,11 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
                 >
                   ATIRAR
                 </button>
+                {match?.mode === 'bomb' && hud.bomb?.carrier && (
+                  <button type="button" className="fs-tb" data-testid="fs-tb-c4" onPointerDown={() => press('bombslot', true)} aria-label="Pegar a C4 na mão">
+                    C4
+                  </button>
+                )}
                 {match?.mode === 'bomb' && (
                   <button
                     type="button"

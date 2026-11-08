@@ -75,7 +75,7 @@ interface SelfState {
   hp: number; armor: number; helmet: boolean; alive: boolean; respawnIn: number;
   cur: number; held: FsGrenadeId | null; ammo: number; reloading: boolean; slots: number[]; nades: Record<FsGrenadeId, number>;
   /** Modo Bomba: dinheiro, progresso de plantar/desarmar, ganho do último round, seu lado e rounds para vencer. */
-  bomb?: { money: number; plant: number; defuse: number; gain: number; side: 'tr' | 'ct'; win: number; kit?: boolean; buy?: boolean; mates?: Record<number, number> };
+  bomb?: { money: number; plant: number; defuse: number; gain: number; side: 'tr' | 'ct'; win: number; kit?: boolean; buy?: boolean; held?: boolean; mates?: Record<number, number> };
 }
 interface Frame {
   f: { k: number; left: number; p: number[][]; g: number[][]; b?: number[] };
@@ -123,7 +123,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
   const touchUi = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
   const [portrait, setPortrait] = useState(false);
   const press = useCallback(
-    (name: 'fire' | 'ads' | 'jump' | 'reload' | 'cycle' | 'use' | 'buy', down: boolean) => ctl.current?.setTouch(name, down),
+    (name: 'fire' | 'ads' | 'jump' | 'reload' | 'cycle' | 'use' | 'buy' | 'bombslot', down: boolean) => ctl.current?.setTouch(name, down),
     [],
   );
   useEffect(() => {
@@ -354,6 +354,8 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
     let beepIn = 0;
     let specWeapon: FsWeaponId | null = null;
     let swapKey = 0;
+    let bombHeld = false;
+    let bombHeldAt = -9;
     let sidePrev: 'tr' | 'ct' | null = null;
     let dropPrev = 0;
     let carrierPrev = -1;
@@ -757,6 +759,15 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         if (want && have !== want) {
           loadout.equip(want);
           if (i === loadout.current) afterEquip();
+        } else if (!want && have && i !== 2) {
+          // o servidor tirou a arma (morreu e perdeu tudo): some também aqui, e a mão vai para a que sobrou
+          loadout.slots[i] = null;
+          if (loadout.current === i) {
+            const next = loadout.slots.findIndex((x) => !!x);
+            loadout.switchTo(next < 0 ? 2 : next);
+            loadout.drawT = 0;
+            afterEquip();
+          }
         }
       });
       loadout.grenades.frag = s.nades.frag;
@@ -804,6 +815,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         const wasDead = !!self && !self.alive;
         self = s;
         bombSelf = s.bomb ?? null;
+        if (bombSelf && clock - bombHeldAt > 0.5) bombHeld = !!bombSelf.held;
         if (bombSelf) {
           if (sidePrev && sidePrev !== bombSelf.side) swapKey++;
           sidePrev = bombSelf.side;
@@ -844,13 +856,28 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         }
         const shopOpen = shopRef.current;
         if (alive) {
-          if (inp.pick >= 0 && !shopOpen) switchTo(inp.pick);
+          if (inp.bombSlot && !shopOpen) {
+            const myI = rosterNow().findIndex((r) => r.id === meId);
+            if (bf && bf[8] === myI && myI >= 0 && (bf[0] === 0 || bf[0] === 1)) {
+              bombHeld = !bombHeld;
+              bombHeldAt = clock;
+              cmdQueue.push({ t: 'bombslot' });
+              fsAudio.draw();
+              sayHint(bombHeld ? `C4 na mão: vá a um pátio e segure ${bombKey()} para plantar` : 'C4 guardada', 1800);
+            } else if (bf) sayHint('Só o terrorista que leva a bomba pode pegá-la na mão', 1800);
+          }
+          if (inp.pick >= 0 && !shopOpen) {
+            bombHeld = false;
+            switchTo(inp.pick);
+          }
           else if (inp.cycle && !shopOpen) {
+            bombHeld = false;
             cmdQueue.push({ t: 'cycle', d: 1 });
             handle(loadout.cycleAll(1));
           }
           if (inp.drop && bf && bf[8] === rosterNow().findIndex((r) => r.id === meId) && bf[8]! >= 0) cmdQueue.push({ t: 'dropbomb' });
           if (inp.grenade) {
+            bombHeld = false;
             cmdQueue.push({ t: 'nade', k: 'next' });
             handle(loadout.selectGrenade('next'));
           }
@@ -1086,10 +1113,14 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         // dicas de quem leva a C4
         if (carrier === myI && myI >= 0 && bf[0] === 1 && act !== 1) {
           const site = fsSiteAt(mover.x, mover.z);
-          if (!site) sayHint('Você tem a bomba: vá a um pátio A ou B', 400);
+          const zKey = bindLabel(fsSettings().binds.bombSlot);
+          if (!bombHeld) sayHint(site ? `Aperte ${zKey} para pegar a bomba na mão` : `Você tem a bomba: vá a um pátio A ou B e aperte ${zKey}`, 400);
+          else if (!site) sayHint('Vá a um pátio A ou B para plantar', 400);
           else if (!inp.use) sayHint(`Segure ${bombKey()} para plantar a bomba`, 400);
           else sayHint('Fique parado para plantar', 400);
         }
+        scene.setBombInHand(bombHeld && alive && carrier === myI, bombSelf?.plant ?? 0);
+        if (carrier !== myI) bombHeld = false;
         if (dropped && bombSelf?.side === 'tr' && Math.hypot(mover.x - bf[12]! / 100, mover.z - bf[13]! / 100) < 6) sayHint(`Pegue a bomba: ande até ela ou segure ${bombKey()}`, 400);
       } else scene.setBomb(0, 0, 0, 'off');
       scene.render();
@@ -1378,9 +1409,16 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
                   ATIRAR
                 </button>
                 {h.bomb && (
+                  <>
+                  {h.bomb.carrier && (
+                    <button type="button" className="fs-tb" data-testid="fs-tb-c4" onPointerDown={() => press('bombslot', true)} aria-label="Pegar a C4 na mão">
+                      C4
+                    </button>
+                  )}
                   <button type="button" className="fs-tb" data-testid="fs-tb-use" onPointerDown={() => press('use', true)} onPointerUp={() => press('use', false)} onPointerCancel={() => press('use', false)} aria-label="Plantar ou desarmar">
                     BOMBA
                   </button>
+                  </>
                 )}
                 <button type="button" className="fs-tb ads" onPointerDown={() => press('ads', true)} onPointerUp={() => press('ads', false)} onPointerCancel={() => press('ads', false)} aria-label="Mirar">
                   MIRAR

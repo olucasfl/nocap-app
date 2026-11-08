@@ -31,7 +31,7 @@ export const FS_NET_REWIND_MAX = 30;
 const QUEUE_MAX = 12;
 
 /** Um comando que viaja junto da entrada (trocar de arma, comprar). */
-export type FsNetCmd = { t: 'dropbomb' } | { t: 'slot'; i: number } | { t: 'nade'; k: FsGrenadeId | 'next' } | { t: 'cycle'; d: 1 | -1 } | { t: 'buy'; id: string };
+export type FsNetCmd = { t: 'dropbomb' } | { t: 'bombslot' } | { t: 'slot'; i: number } | { t: 'nade'; k: FsGrenadeId | 'next' } | { t: 'cycle'; d: 1 | -1 } | { t: 'buy'; id: string };
 
 /** A entrada de um passo de 1/60 s, como o aparelho a leu. */
 export interface FsNetInput {
@@ -110,6 +110,8 @@ export interface FsNetPlayer {
   team: 0 | 1;
   /** Nível do bot (novato, médio ou craque). */
   level: FsBotLevel;
+  /** Modo Bomba: a C4 está na mão (só assim dá para plantar). */
+  bombHeld: boolean;
   /** Até que tick está cego (luz de granada): o abate sai com o ícone de cego no kill feed. */
   blindUntil: number;
 }
@@ -144,6 +146,7 @@ export function fsNetParseInput(raw: unknown): FsNetInput | null {
     for (const c of o.cmds.slice(0, 4)) {
       const q = c as Record<string, unknown>;
       if (q?.t === 'dropbomb') cmds.push({ t: 'dropbomb' });
+      else if (q?.t === 'bombslot') cmds.push({ t: 'bombslot' });
       else if (q?.t === 'slot' && finite(q.i) && q.i >= 0 && q.i <= 2) cmds.push({ t: 'slot', i: Math.floor(q.i) });
       else if (q?.t === 'nade' && (q.k === 'frag' || q.k === 'flash' || q.k === 'next')) cmds.push({ t: 'nade', k: q.k });
       else if (q?.t === 'cycle' && (q.d === 1 || q.d === -1)) cmds.push({ t: 'cycle', d: q.d });
@@ -252,10 +255,10 @@ export class FsNetSim {
     const p: FsNetPlayer = {
       id, name, bot, mover, yaw: sp.yaw, pitch: 0, hp: 100, armor: 0, helmet: false, alive: true, respawnAt: 0,
       loadout: new FsLoadout(null, 'pistol'), kills: 0, assists: 0, deaths: 0, hs: 0, damage: 0, queue: [], last: null, lastSeq: 0,
-      level: bot ? fsBotLevelAt(this.botsMade++, this.levelOffset) : 'pro', hist: [], brain: null, dmgLog: [], flinch: { mul: 1, dur: 0 }, flinchAt: -1e9, firedAt: -1e9, heardAt: 0, team: bot ? botTeam : humanTeam !== undefined ? humanTeam : ((this.humansIn++ % 2) as 0 | 1), blindUntil: 0,
+      level: bot ? fsBotLevelAt(this.botsMade++, this.levelOffset) : 'pro', bombHeld: false, hist: [], brain: null, dmgLog: [], flinch: { mul: 1, dur: 0 }, flinchAt: -1e9, firedAt: -1e9, heardAt: 0, team: bot ? botTeam : humanTeam !== undefined ? humanTeam : ((this.humansIn++ % 2) as 0 | 1), blindUntil: 0,
     };
     if (bot) {
-      p.brain = fsDmNew(id, sp.x, sp.z, sp.yaw, fsDmPickWeapon(this.rng), this.rng, sp.y, p.level);
+      p.brain = fsDmNew(id, sp.x, sp.z, sp.yaw, fsDmPickWeapon(this.rng), this.rng, sp.y, p.level, true);
       this.dressBot(p);
     }
     this.players.set(id, p);
@@ -283,7 +286,7 @@ export class FsNetSim {
     p.bot = true;
     p.queue = [];
     const w = p.loadout.weapon.melee ? 'pistol' : (p.loadout.weapon.id as Exclude<FsWeaponId, 'knife'>);
-    p.brain = fsDmNew(id, p.mover.x, p.mover.z, p.yaw, w, this.rng, p.mover.y, p.level);
+    p.brain = fsDmNew(id, p.mover.x, p.mover.z, p.yaw, w, this.rng, p.mover.y, p.level, true);
     p.brain.mover = p.mover;
     const r = this.roster.find((q) => q.id === id);
     if (r) r.bot = true;
@@ -446,6 +449,12 @@ export class FsNetSim {
 
   private runCmd(p: FsNetPlayer, c: FsNetCmd) {
     const lo = p.loadout;
+    if (c.t === 'bombslot') {
+      // pegar a C4 na mão (ou guardar): só quem a leva, durante a compra ou o round
+      if (this.bm && this.bm.carrier === p.id && (this.bm.phase === 'live' || this.bm.phase === 'buy')) p.bombHeld = !p.bombHeld;
+      return;
+    }
+    p.bombHeld = false;
     if (c.t === 'dropbomb') {
       if (this.bm?.dropBomb(p.id)) {
         this.dropPos = { x: p.mover.x, y: p.mover.y, z: p.mover.z };
@@ -638,7 +647,7 @@ export class FsNetSim {
     if (!p.bot) p.loadout.refillAmmo();
     p.blindUntil = 0;
     if (p.bot) {
-      p.brain = fsDmNew(p.id, sp.x, sp.z, sp.yaw, fsDmPickWeapon(this.rng), this.rng, sp.y, p.level);
+      p.brain = fsDmNew(p.id, sp.x, sp.z, sp.yaw, fsDmPickWeapon(this.rng), this.rng, sp.y, p.level, true);
       p.mover = p.brain.mover;
       this.dressBot(p);
     }
@@ -714,7 +723,7 @@ export class FsNetSim {
           }
         }
         if (!p.armor && money.money >= vestPrice && bm.buy(p.id, vestPrice, true)) p.armor = 100;
-        p.brain = fsDmNew(p.id, s.x, s.z, s.yaw, weapon, this.rng, s.y, p.level);
+        p.brain = fsDmNew(p.id, s.x, s.z, s.yaw, weapon, this.rng, s.y, p.level, true);
         p.brain.nades = { frag: 0, flash: 0 };
         p.mover = p.brain.mover;
       } else if (!keep) {
@@ -735,6 +744,8 @@ export class FsNetSim {
   }
 
   private stepBomb() {
+    // a C4 só fica na mão de quem a leva (largou, morreu ou outro pegou: guarda)
+    for (const q of this.players.values()) if (q.bombHeld && (this.bm!.carrier !== q.id || !q.alive)) q.bombHeld = false;
     const bm = this.bm!;
     if (bm.phase === 'over') return;
     // bomba largada no chão: qualquer terrorista vivo pega andando por cima (ou apertando E perto)
@@ -758,8 +769,9 @@ export class FsNetSim {
         const use = !!p.last?.use && still;
         if (side === 'tr' && bm.carrier === p.id) {
           const site = this.siteAt(p.mover.x, p.mover.z);
-          if (use && site) this.plantPos = { x: p.mover.x, y: p.mover.y, z: p.mover.z };
-          bm.plant(p.id, use, site, FS_NET_DT);
+          const go = use && p.bombHeld;
+          if (go && site) this.plantPos = { x: p.mover.x, y: p.mover.y, z: p.mover.z };
+          bm.plant(p.id, go, site, FS_NET_DT);
         } else if (side === 'ct' && bm.phase === 'planted' && this.bombPos) {
           const near = Math.hypot(p.mover.x - this.bombPos.x, p.mover.z - this.bombPos.z) < 2.4;
           bm.defuse(p.id, use && near, near, FS_NET_DT);
@@ -962,7 +974,7 @@ export class FsNetSim {
               gain: this.lastGain[id] ?? 0,
               side: bp?.side ?? 'ct',
               kit: !!bp?.kit,
-              win: this.bm!.cfg.winRounds, buy: this.bm!.buyOpen,
+              win: this.bm!.cfg.winRounds, buy: this.bm!.buyOpen, held: this.bm!.carrier === id && q.bombHeld,
               // dinheiro só dos aliados (por posição na tabela); o do time inimigo nunca sai do servidor
               mates: Object.fromEntries(this.roster.flatMap((r, i) => { const o = this.bm!.players.get(r.id); return o && bp && o.side === bp.side && r.id !== id ? [[i, o.money]] : []; })) as Record<number, number>,
             };

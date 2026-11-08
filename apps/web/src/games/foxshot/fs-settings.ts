@@ -19,6 +19,7 @@ export const FS_ACTIONS = [
   { id: 'buy', label: 'Loja' },
   { id: 'drop', label: 'Largar a arma' },
   { id: 'pickup', label: 'Pegar do chão' },
+  { id: 'bombSlot', label: 'Bomba: pegar a C4 na mão (terrorista)' },
   { id: 'bomb', label: 'Bomba: plantar, desarmar e pegar (segurar)' },
   { id: 'next', label: 'Próxima arma' },
   { id: 'grenade', label: 'Pegar granada (passa por todas)' },
@@ -32,7 +33,7 @@ export type FsAction = (typeof FS_ACTIONS)[number]['id'];
 /** Os comandos agrupados por categoria (a ordem é a da tela de Comandos). */
 export const FS_CATS: { id: string; label: string; ids: FsAction[] }[] = [
   { id: 'move', label: 'Movimento', ids: ['forward', 'back', 'left', 'right', 'jump', 'crouch', 'walk'] },
-  { id: 'weapons', label: 'Armas', ids: ['fire', 'ads', 'reload', 'inspect', 'slot1', 'slot2', 'slot3', 'next', 'drop', 'pickup', 'bomb', 'buy'] },
+  { id: 'weapons', label: 'Armas', ids: ['fire', 'ads', 'reload', 'inspect', 'slot1', 'slot2', 'slot3', 'next', 'drop', 'pickup', 'bombSlot', 'bomb', 'buy'] },
   { id: 'grenades', label: 'Granadas', ids: ['grenade', 'grenadeFrag', 'grenadeFlash'] },
   { id: 'general', label: 'Geral', ids: ['scoreboard', 'map'] },
 ];
@@ -55,6 +56,7 @@ export const FS_DEFAULT_BINDS: Record<FsAction, string> = {
   buy: 'KeyB',
   drop: 'KeyG',
   pickup: 'KeyE',
+  bombSlot: 'KeyZ',
   bomb: 'KeyE',
   next: 'KeyQ',
   grenade: 'Digit4',
