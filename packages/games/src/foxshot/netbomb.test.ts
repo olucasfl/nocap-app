@@ -106,4 +106,22 @@ describe('modo Bomba na simulação do servidor', () => {
     // em alguns rounds a bomba tem de ser plantada
     expect(planted || sim.bm!.round > 1).toBe(true);
   }, 120_000);
+
+  it('a bomba que explode mata quem está perto, machuca quem está no meio e poupa quem está longe', () => {
+    const sim = new FsNetSim({ minutes: 5, humans: [], bots: 4, botTeams: [2, 2], bomb: { winRounds: 5, roundSec: 60, buySec: 5 } });
+    for (let i = 0; i < FS_NET_HZ * 6; i++) sim.step();
+    const [near, mid, far] = [...sim.players.values()];
+    const sx = sim as unknown as { bombPos: { x: number; y: number; z: number } | null; explodeBomb(): void };
+    sx.bombPos = { x: 0, y: 0, z: 0 };
+    near!.mover.x = 3; near!.mover.z = 0;
+    mid!.mover.x = 20; mid!.mover.z = 0;
+    far!.mover.x = 60; far!.mover.z = 0;
+    for (const q of sim.players.values()) q.hp = 100;
+    sx.explodeBomb();
+    expect(near!.alive).toBe(false);
+    expect(mid!.hp).toBeLessThan(100);
+    expect(mid!.hp).toBeGreaterThan(0);
+    expect(far!.hp).toBe(100);
+    expect(far!.alive).toBe(true);
+  });
 });

@@ -36,6 +36,8 @@ export interface FoxShotSettings {
   botsTr: number;
   winRounds: number;
   roundSec: number;
+  /** Mapa: `duna` ou `cidade`. */
+  map: 'duna' | 'cidade';
 }
 
 /**
@@ -73,7 +75,7 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
   constructor(opts: EngineOptions) {
     super({ ...opts, maxPlayers: FOXSHOT_ROOM_MAX });
     this.mode = 'mata';
-    this.settings = { rounds: 1, minutes: 5, bots: 0, kind: 'none', botsCt: 0, botsTr: 0, winRounds: 8, roundSec: 115 } as unknown as AnySettings;
+    this.settings = { rounds: 1, minutes: 5, bots: 0, kind: 'none', botsCt: 0, botsTr: 0, winRounds: 8, roundSec: 115, map: 'duna' } as unknown as AnySettings;
   }
 
   /** Bots da partida: no modo Bomba são os dois times somados; no mata-mata, o número escolhido. */
@@ -105,7 +107,8 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
       m.winRounds <= 13 &&
       Number.isInteger(m.roundSec) &&
       m.roundSec >= 60 &&
-      m.roundSec <= 180
+      m.roundSec <= 180 &&
+      (m.map === 'duna' || m.map === 'cidade')
     );
   }
 
@@ -156,8 +159,9 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
     this.dirty = true;
   }
 
+  /** O líder pausa para todo mundo (na sala o relógio da partida para; no ponto a ponto o aparelho do líder também para). */
   protected override pausable(): boolean {
-    return false;
+    return true;
   }
 
   override start(id: string) {
@@ -207,6 +211,7 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
       bots: bomb ? botTeams[0] + botTeams[1] : Math.min(this.botTotal(), 10 - humans.length),
       botTeams: bomb ? botTeams : undefined,
       bomb: bomb ? { winRounds: this.cfg.winRounds, roundSec: this.cfg.roundSec } : undefined,
+      map: this.cfg.map,
     };
     this.sim = new FsNetSim(this.simOpts);
     // conexão direta: a contagem é um pouco maior para dar tempo de os aparelhos conectarem ao do líder
@@ -217,7 +222,7 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
     this.p2pHost = this.hostId ?? '';
     const hostM = this.members.get(this.p2pHost);
     this.net = this.p2pEnabled && hostM?.connected ? 'pending' : 'server';
-    this.startAt = this.now() + (this.net === 'pending' ? FOXSHOT_P2P_COUNTDOWN_MS : FOXSHOT_COUNTDOWN_MS);
+    this.startAt = this.gnow() + (this.net === 'pending' ? FOXSHOT_P2P_COUNTDOWN_MS : FOXSHOT_COUNTDOWN_MS);
     this.p2pDeadline = this.startAt - 400;
     this.overAt = 0;
     this.phase = 'show';
@@ -258,6 +263,18 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
       const inp = fsNetParseInput(r);
       if (inp) this.sim.pushInput(id, inp);
     }
+  }
+
+  /** O líder encerra a partida com o placar de agora (sala ou aparelho do líder, tanto faz). */
+  endMatch(id: string): void {
+    this.requireHost(id);
+    if (this.phase !== 'play') throw new RoomError('A partida não está rolando');
+    if (this.net === 'p2p') {
+      // vale o último placar que o líder mandou
+      this.p2pOver = true;
+      this.p2pOverAt = this.now() - OVER_MS;
+    } else this.sim?.endNow();
+    this.dirty = true;
   }
 
   /** Quem precisa conectar ao aparelho do líder: todo mundo que está na sala agora. */
@@ -308,7 +325,7 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
       if (ready) {
         this.net = 'p2p';
         this.dirty = true;
-      } else if (this.now() >= this.p2pDeadline) this.toServerMode();
+      } else if (this.gnow() >= this.p2pDeadline) this.toServerMode();
     }
     if (this.phase === 'play' && this.net === 'p2p') {
       // o líder simula; aqui só se espera o fim (ou o líder sumir: fica o último placar dele)
@@ -331,7 +348,7 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
   }
 
   private tickServer(): boolean {
-    const t = this.now();
+    const t = this.gnow();
     if (this.phase === 'show') {
       if (t < this.startAt) return false;
       this.phase = 'play';
@@ -392,6 +409,7 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
         kind: this.cfg.kind,
         winRounds: this.cfg.winRounds,
         roundSec: this.cfg.roundSec,
+        map: this.cfg.map,
         teams: Object.fromEntries(this.teamPref),
         startAt: this.phase === 'lobby' ? null : this.startAt,
         roster: s ? s.roster : null,

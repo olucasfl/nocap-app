@@ -1,6 +1,6 @@
 import { fsTrace, type Vec3 } from './trace';
 import { FS_WEAPONS } from './weapons';
-import type { FsBox } from './map';
+import { fsBoxesInRect, type FsBox } from './map';
 
 export type FsGrenadeId = 'frag' | 'flash';
 
@@ -53,7 +53,7 @@ export function fsGrenadeStep(g: FsGrenadeBody, dt: number, boxes: readonly FsBo
   g.age += dt;
   g.vy -= GRAVITY * dt;
   const hits = (x: number, y: number, z: number) =>
-    boxes.find((b) => x > b.min[0] - G_RADIUS && x < b.max[0] + G_RADIUS && y > b.min[1] - G_RADIUS && y < b.max[1] + G_RADIUS && z > b.min[2] - G_RADIUS && z < b.max[2] + G_RADIUS);
+    fsBoxesInRect(boxes, x - 1, z - 1, x + 1, z + 1).find((b) => x > b.min[0] - G_RADIUS && x < b.max[0] + G_RADIUS && y > b.min[1] - G_RADIUS && y < b.max[1] + G_RADIUS && z > b.min[2] - G_RADIUS && z < b.max[2] + G_RADIUS);
   // x
   let nx = g.x + g.vx * dt;
   if (hits(nx, g.y, g.z)) {

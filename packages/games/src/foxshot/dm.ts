@@ -5,7 +5,7 @@
  */
 import type { FsBox } from './map';
 import { FS_MOVE, fsEyeHeight, fsNewMover, fsStepMover, type FsMover } from './movement';
-import { FS_DUST_SOLIDS, FS_DUST_HOTSPOTS, fsDustPath } from './dust';
+import { FS_MAP_DUNA, type FsMapApi } from './maps';
 import { fsClearLine, FS_GRENADES, type FsGrenadeId } from './grenades';
 import { fsFire, fsGunTick, fsNewGunState, type FsGunState } from './recoil';
 import { FS_HEAR_RANGE, FS_WEAPONS, type FsWeaponId } from './weapons';
@@ -147,6 +147,8 @@ export interface FsDmCtx {
   rng: () => number;
   boxes?: readonly FsBox[];
   foes: readonly FsDmFoe[];
+  /** O mapa em que joga (caminhos e pontos de interesse); sem isso, a Duna. */
+  map?: FsMapApi;
 }
 
 export function fsDmPickWeapon(rng: () => number): FsDmWeapon {
@@ -211,7 +213,8 @@ const chestOf = (f: FsDmFoe, head: boolean): Vec3 => [f.x, f.y + (head ? 1.17 : 
 export function fsDmStep(b: FsDmBrain, ctx: FsDmCtx): FsDmAction[] {
   const out: FsDmAction[] = [];
   const { now, dt, rng } = ctx;
-  const boxes = ctx.boxes ?? FS_DUST_SOLIDS;
+  const map = ctx.map ?? FS_MAP_DUNA;
+  const boxes = ctx.boxes ?? map.solids;
   const w = FS_WEAPONS[b.weapon];
   const st = FS_DM_STYLE[b.weapon];
   const m = b.mover;
@@ -361,7 +364,7 @@ export function fsDmStep(b: FsDmBrain, ctx: FsDmCtx): FsDmAction[] {
     // perdeu de vista: vai até onde viu/ouviu por último
     if (!b.goal || Math.hypot(b.goal[0] - b.last.x, b.goal[1] - b.last.z) > 3) {
       b.goal = [b.last.x, b.last.z];
-      b.path = fsDustPath(m.x, m.z, b.last.x, b.last.z);
+      b.path = map.path(m.x, m.z, b.last.x, b.last.z);
     }
     if (Math.hypot(b.last.x - m.x, b.last.z - m.z) < 2) b.last = null;
   } else if (b.objective) {
@@ -369,7 +372,7 @@ export function fsDmStep(b: FsDmBrain, ctx: FsDmCtx): FsDmAction[] {
     if (Math.hypot(b.objective[0] - m.x, b.objective[1] - m.z) > 1.8) {
       if (!b.goal || b.goal[0] !== b.objective[0] || b.goal[1] !== b.objective[1] || b.path.length === 0) {
         b.goal = [b.objective[0], b.objective[1]];
-        b.path = fsDustPath(m.x, m.z, b.objective[0], b.objective[1]);
+        b.path = map.path(m.x, m.z, b.objective[0], b.objective[1]);
       }
     } else {
       b.goal = null;
@@ -393,12 +396,12 @@ export function fsDmStep(b: FsDmBrain, ctx: FsDmCtx): FsDmAction[] {
       b.sneak = false;
     } else {
       // passeia: um ponto de interesse sorteado; craques andam no Shift (sem barulho), novatos correm fazendo barulho
-      const spots = FS_DUST_HOTSPOTS.filter(([x, z]) => Math.hypot(x - m.x, z - m.z) > 8);
+      const spots = map.hotspots.filter(([x, z]) => Math.hypot(x - m.x, z - m.z) > 8);
       // sem caminho até o ponto sorteado: tenta outros na hora (não fica parado esperando a próxima rodada)
       for (let tries = 0; tries < 5; tries++) {
         const g = spots[Math.floor(rng() * spots.length)]!;
         b.goal = [g[0], g[1]];
-        b.path = fsDustPath(m.x, m.z, g[0], g[1]);
+        b.path = map.path(m.x, m.z, g[0], g[1]);
         if (b.path.length > 0) break;
       }
       b.sneak = b.ambush ? rng() < sk.sneak * 0.7 : false;

@@ -229,6 +229,8 @@ export interface FoxShotRoomState {
   botsTr?: number;
   winRounds?: number;
   roundSec?: number;
+  /** O mapa da sala (`duna` ou `cidade`). */
+  map?: 'duna' | 'cidade';
   /** Time de cada pessoa no modo Bomba: 0 contra-terrorista, 1 terrorista, 2 espectando. */
   teams?: Record<string, 0 | 1 | 2>;
   startAt: number | null;

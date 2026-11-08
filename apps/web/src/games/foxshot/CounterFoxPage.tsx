@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link } from '@tanstack/react-router';
 import {
-  FS_DUST_COLS,
-  FS_DUST_MARKS,
-  FS_DUST_X0,
-  FS_DUST_Z0,
-  FS_DUST_GRID,
-  FS_DUST_ROWS,
+  FS_MAP_IDS,
+  FS_MAP_NAMES,
+  fsMapById,
+  type FsMapApi,
+  type FsMapId,
   FS_MATCH_BOTS,
   FS_MATCH_MINUTES,
   FS_POINTS,
@@ -33,7 +32,7 @@ export const CFX_NEW_ROOM = 'cfx-new-room';
 function saved(): FsMatchConfig {
   try {
     const p = JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<FsMatchConfig>;
-    return { ...fsMatchConfig(p.minutes ?? 5, p.bots ?? FS_MATCH_BOTS.default), mode: p.mode === 'bomb' ? 'bomb' : 'dm', side: p.side === 'tr' ? 'tr' : 'ct', bomb: p.bomb };
+    return { ...fsMatchConfig(p.minutes ?? 5, p.bots ?? FS_MATCH_BOTS.default), mode: p.mode === 'bomb' ? 'bomb' : 'dm', side: p.side === 'tr' ? 'tr' : 'ct', bomb: p.bomb, map: p.map === 'cidade' ? 'cidade' : 'duna' };
   } catch {
     return fsMatchConfig(5, FS_MATCH_BOTS.default);
   }
@@ -41,33 +40,33 @@ function saved(): FsMatchConfig {
 
 type Screen = 'main' | 'play' | 'offline' | 'online' | 'options';
 
-/** Miniatura do Duna feita do próprio desenho do mapa (cada nível de chão numa cor). */
-function MapCard() {
+/** Miniatura do mapa escolhido, feita do próprio desenho dele (cada altura de chão numa cor). */
+function MapCard({ mapId, mode }: { mapId: FsMapId; mode: 'dm' | 'bomb' }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const cv = ref.current;
     if (!cv) return;
-    const S = 6;
-    cv.width = FS_DUST_COLS * S;
-    cv.height = FS_DUST_ROWS * S;
+    const map: FsMapApi = fsMapById(mapId);
+    const gr = map.grid;
+    const S = 6 * gr.cell;
+    cv.width = Math.round(gr.cols * S);
+    cv.height = Math.round(gr.rows * S);
     const g = cv.getContext('2d')!;
     g.clearRect(0, 0, cv.width, cv.height);
-    for (let r = 0; r < FS_DUST_ROWS; r++) {
-      for (let c = 0; c < FS_DUST_COLS; c++) {
-        const ch = FS_DUST_GRID[r]![c]!;
-        if (ch === '#') continue;
-        if (ch === 'c' || ch === 'C') g.fillStyle = '#a0642f';
-        else {
-          const v = Number(ch);
-          g.fillStyle = `rgb(${120 + v * 22},${150 + v * 14},${190 - v * 6})`;
-        }
-        g.fillRect(c * S, r * S, S, S);
+    // a altura vira cor (a Duna tem 5 níveis de 0,3 m; a Cidade chega a uns 6 m)
+    const unit = map.id === 'duna' ? 0.3 : 1;
+    for (let r = 0; r < gr.rows; r++) {
+      for (let c = 0; c < gr.cols; c++) {
+        if (gr.wall(c, r)) continue;
+        const v = Math.min(8, Math.round(gr.height(c, r) / unit));
+        g.fillStyle = `rgb(${120 + v * 16},${150 + v * 10},${190 - v * 6})`;
+        g.fillRect(c * S, r * S, Math.ceil(S), Math.ceil(S));
       }
     }
     // as bases (áreas tingidas) e as bombas A e B com o nome
-    const px = (x: number) => (x - FS_DUST_X0) * S;
-    const pz = (z: number) => (z - FS_DUST_Z0) * S;
-    for (const m of FS_DUST_MARKS) {
+    const px = (x: number) => ((x - gr.x0) / gr.cell) * S;
+    const pz = (z: number) => ((z - gr.z0) / gr.cell) * S;
+    for (const m of map.marks) {
       if (m.kind !== 'base') continue;
       const col = m.id === 'CT' ? '63,130,255' : '255,122,40';
       g.fillStyle = `rgba(${col},0.38)`;
@@ -101,8 +100,8 @@ function MapCard() {
       return [x, y];
     };
     // as bolas das bombas entram primeiro (ocupam o espaço delas)
-    for (const m of FS_DUST_MARKS) if (m.kind === 'site') taken.push([px(m.x) - 32, pz(m.z) - 32, px(m.x) + 32, pz(m.z) + 32]);
-    for (const m of FS_DUST_MARKS) {
+    for (const m of map.marks) if (m.kind === 'site') taken.push([px(m.x) - 32, pz(m.z) - 32, px(m.x) + 32, pz(m.z) + 32]);
+    for (const m of map.marks) {
       const x = px(m.x);
       const z = pz(m.z);
       if (m.kind === 'site') {
@@ -134,13 +133,13 @@ function MapCard() {
         g.fillText(m.name.toUpperCase(), lx, ly);
       }
     }
-  }, []);
+  }, [mapId]);
   return (
     <div className="cfh-map" data-testid="cfh-map">
-      <canvas ref={ref} aria-label="Mapa Duna visto de cima" />
-      <p>Duna · Mata-mata</p>
+      <canvas ref={ref} aria-label={`Mapa ${FS_MAP_NAMES[mapId]} visto de cima`} />
+      <p>{FS_MAP_NAMES[mapId]} · {mode === 'bomb' ? 'Bomba' : 'Mata-mata'}</p>
       <span>
-        Três rotas, dois pátios de bomba, túneis e portas. Abate vale {FS_POINTS.kill} pontos, assistência {FS_POINTS.assist}.
+        {mapId === 'duna' ? 'Três rotas, dois pátios de bomba, túneis e portas.' : 'Ruas e prédios, duas bombas e as bases nas pontas.'} Abate vale {FS_POINTS.kill} pontos, assistência {FS_POINTS.assist}.
       </span>
     </div>
   );
@@ -319,6 +318,14 @@ function CounterFoxInner() {
                 ‹ Voltar
               </button>
               <h2>Offline · {cfg.mode === 'bomb' ? 'Bomba' : 'Mata-mata'}</h2>
+              <div className="cfh-grp">Mapa</div>
+              <div className="cfh-pills" role="radiogroup" aria-label="Mapa">
+                {FS_MAP_IDS.map((id) => (
+                  <button key={id} type="button" role="radio" aria-checked={(cfg.map ?? 'duna') === id} className={`cfh-pill${(cfg.map ?? 'duna') === id ? ' on' : ''}`} onClick={() => setCfg({ ...cfg, map: id })} data-testid={`cfx-map-${id}`}>
+                    {FS_MAP_NAMES[id]}
+                  </button>
+                ))}
+              </div>
               <div className="cfh-grp">Modo</div>
               <div className="cfh-pills" role="radiogroup" aria-label="Modo de jogo">
                 <button type="button" role="radio" aria-checked={cfg.mode !== 'bomb'} className={`cfh-pill${cfg.mode !== 'bomb' ? ' on' : ''}`} onClick={() => setCfg({ ...cfg, mode: 'dm' })} data-testid="cfx-mode-dm">
@@ -452,7 +459,7 @@ function CounterFoxInner() {
           )}
           {screen === 'options' && <Options onBack={back} />}
         </div>
-        <div className="cfh-right">{screen !== 'options' && <MapCard />}</div>
+        <div className="cfh-right">{screen !== 'options' && <MapCard mapId={(screen === 'offline' ? cfg.map : 'duna') ?? 'duna'} mode={cfg.mode === 'bomb' ? 'bomb' : 'dm'} />}</div>
       </div>
       <div className="cfh-foot">COUNTER FOX · FOX CAP!</div>
       <NicknameDialog nick={entry.nick} />

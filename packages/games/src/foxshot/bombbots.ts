@@ -7,7 +7,7 @@
  * O módulo é puro: quem chama (servidor ou página offline) passa o estado do mundo a cada passo e aplica as ordens de
  * plantar/desarmar que ele devolve.
  */
-import { FS_DUST_MARKS, FS_DUST_SOLIDS, fsDustCellX, fsDustCellZ, fsDustCol, fsDustNearestFree, fsDustRow, fsDustWalkable, fsSiteAt } from './dust';
+import type { FsMapApi } from './maps';
 import { fsClearLine } from './grenades';
 import type { FsDmBrain } from './dm';
 import type { FsSide } from './bomb';
@@ -23,6 +23,7 @@ export interface FsBotPerson {
 }
 
 export interface FsBotWorld {
+  map: FsMapApi;
   now: number;
   dt: number;
   rng: () => number;
@@ -50,7 +51,7 @@ export interface FsBotOrders {
 
 type SiteId = 'A' | 'B';
 const other = (s: SiteId): SiteId => (s === 'A' ? 'B' : 'A');
-const siteMark = (id: SiteId) => FS_DUST_MARKS.find((m) => m.kind === 'site' && m.id === id)!;
+const siteMark = (map: FsMapApi, id: SiteId) => map.marks.find((m) => m.kind === 'site' && m.id === id)!;
 
 interface Hold {
   x: number;
@@ -62,8 +63,8 @@ const holdCache = new Map<string, Hold[]>();
  * Postos de vigia em volta de um ponto: lugares livres que enxergam o ponto e têm paredes em volta (cobertura),
  * longe uns dos outros. É onde os bots esperam em vez de ficarem parados no meio da bomba.
  */
-export function fsBotHolds(cx: number, cz: number, radius = 13, max = 7): Hold[] {
-  const key = `${Math.round(cx)},${Math.round(cz)},${radius}`;
+export function fsBotHolds(map: FsMapApi, cx: number, cz: number, radius = 13, max = 7): Hold[] {
+  const key = `${map.id}:${Math.round(cx)},${Math.round(cz)},${radius}`;
   const hit = holdCache.get(key);
   if (hit) return hit;
   const cands: { x: number; z: number; score: number }[] = [];
@@ -74,14 +75,14 @@ export function fsBotHolds(cx: number, cz: number, radius = 13, max = 7): Hold[]
       if (d < 3.5 || d > radius) continue;
       const x = cx + dx;
       const z = cz + dz;
-      if (!fsDustWalkable(fsDustCol(x), fsDustRow(z))) continue;
-      const [fc, fr] = fsDustNearestFree(x, z);
-      if (Math.hypot(fsDustCellX(fc) - x, fsDustCellZ(fr) - z) > 0.6) continue;
+      if (!map.walkable(map.col(x), map.row(z))) continue;
+      const [fc, fr] = map.nearestFree(x, z);
+      if (Math.hypot(map.cellX(fc) - x, map.cellZ(fr) - z) > 0.6) continue;
       // precisa enxergar o ponto (para defender ou vigiar)
-      if (!fsClearLine(FS_DUST_SOLIDS, [x, 1.1, z], [cx, 1.0, cz])) continue;
+      if (!fsClearLine(map.solids, [x, 1.1, z], [cx, 1.0, cz])) continue;
       // cobertura: quantas direções batem numa parede logo perto
       let cover = 0;
-      for (const [ux, uz] of dirs) if (!fsClearLine(FS_DUST_SOLIDS, [x, 1.1, z], [x + ux * 6, 1.1, z + uz * 6])) cover++;
+      for (const [ux, uz] of dirs) if (!fsClearLine(map.solids, [x, 1.1, z], [x + ux * 6, 1.1, z + uz * 6])) cover++;
       cands.push({ x, z, score: cover * 1.2 - d / 7 });
     }
   }
@@ -137,6 +138,7 @@ export class FsBombTactics {
   }
 
   private assign(w: FsBotWorld) {
+    const map = w.map;
     // terroristas: um carrega, o resto escolta; novatos só seguem o carregador; com 4+ um craque faz "lurk" na outra bomba
     const tr = this.bots(w, 'tr');
     const plan = this.plan;
@@ -183,12 +185,12 @@ export class FsBombTactics {
   }
 
   /** Marca um contato: `by` viu um inimigo perto de uma bomba. */
-  private note(by: FsSide, x: number, z: number, now: number) {
+  private note(map: FsMapApi, by: FsSide, x: number, z: number, now: number) {
     this.lastSeenAny[by] = now;
     let best: SiteId = 'A';
     let bd = 1e9;
     for (const s of ['A', 'B'] as const) {
-      const m = siteMark(s);
+      const m = siteMark(map, s);
       const d = Math.hypot(m.x - x, m.z - z);
       if (d < bd) {
         bd = d;
@@ -203,6 +205,7 @@ export class FsBombTactics {
   }
 
   step(w: FsBotWorld): FsBotOrders {
+    const map = w.map;
     const orders: FsBotOrders = { plant: new Set(), defuse: new Set() };
     if (w.phase === 'end' || w.phase === 'over') {
       for (const p of w.people) if (p.brain) this.clear(p.brain);
@@ -221,7 +224,7 @@ export class FsBombTactics {
         const b = p.brain;
         if (!p.alive || !b || !b.target || b.lostT > 0.5) continue;
         const f = byId.get(b.target);
-        if (f) this.note(p.side, f.x, f.z, w.now);
+        if (f) this.note(map, p.side, f.x, f.z, w.now);
       }
     }
 
@@ -301,7 +304,7 @@ export class FsBombTactics {
         const hk = `${Math.round(bp.x)},${Math.round(bp.z)}`;
         if (this.holdsPlantedKey !== hk) {
           this.holdsPlantedKey = hk;
-          this.holdsPlanted = fsBotHolds(bp.x, bp.z, 14, 8);
+          this.holdsPlanted = fsBotHolds(map, bp.x, bp.z, 14, 8);
         }
         const idx = trBots.indexOf(p);
         const h = this.holdsPlanted[idx % this.holdsPlanted.length]!;
@@ -313,12 +316,12 @@ export class FsBombTactics {
         b.lookAt = [bp.x, bp.z];
         continue;
       }
-      const m = siteMark(r.site);
-      const siteHolds = fsBotHolds(m.x, m.z);
+      const m = siteMark(map, r.site);
+      const siteHolds = fsBotHolds(map, m.x, m.z);
       if (r.kind === 'carrier') {
         b.objective = [m.x, m.z];
         b.sneak = r.sneak && Math.hypot(p.x - m.x, p.z - m.z) < 28 && !fighting;
-        const inSite = fsSiteAt(p.x, p.z);
+        const inSite = map.siteAt(p.x, p.z);
         if (inSite) {
           const arrived = this.arrivedAt.get(p.id) ?? w.now;
           this.arrivedAt.set(p.id, arrived);
@@ -328,7 +331,7 @@ export class FsBombTactics {
           // craque espera o time chegar (ou o tempo apertar); novato planta assim que chega
           const covered = sk.sense < 0.5 || mates > 0 || waited > 4 || trBots.length === 1;
           const late = timeLeft < 35;
-          const nearEnemy = defenders.some((o) => Math.hypot(o.x - p.x, o.z - p.z) < 9 && fsClearLine(FS_DUST_SOLIDS, [p.x, 1.1, p.z], [o.x, 1.1, o.z]));
+          const nearEnemy = defenders.some((o) => Math.hypot(o.x - p.x, o.z - p.z) < 9 && fsClearLine(map.solids, [p.x, 1.1, p.z], [o.x, 1.1, o.z]));
           if (clear && (covered || late) && (!nearEnemy || late)) orders.plant.add(p.id);
         } else this.arrivedAt.delete(p.id);
         continue;
@@ -338,7 +341,7 @@ export class FsBombTactics {
         b.sneak = false;
         continue;
       }
-      const siteTarget = r.kind === 'lurk' ? fsBotHolds(siteMark(r.site).x, siteMark(r.site).z) : siteHolds;
+      const siteTarget = r.kind === 'lurk' ? fsBotHolds(map, siteMark(map, r.site).x, siteMark(map, r.site).z) : siteHolds;
       const h = siteTarget[r.hold % siteTarget.length]!;
       b.objective = [h.x, h.z];
       const dist = Math.hypot(p.x - h.x, p.z - h.z);
@@ -386,7 +389,7 @@ export class FsBombTactics {
         const hk = `${Math.round(bp.x)},${Math.round(bp.z)}`;
         if (this.holdsPlantedKey !== hk) {
           this.holdsPlantedKey = hk;
-          this.holdsPlanted = fsBotHolds(bp.x, bp.z, 14, 8);
+          this.holdsPlanted = fsBotHolds(map, bp.x, bp.z, 14, 8);
         }
         if (p.id === defuser) {
           // craque só avança quando o time limpou (sem contato recente) e tem companhia; novato corre direto
@@ -423,17 +426,17 @@ export class FsBombTactics {
       }
       if (r.kind === 'rotator' && !hotSite) {
         // sem notícia: fica no meio, entre as duas bombas
-        const a = siteMark('A');
-        const c = siteMark('B');
-        const [fc, fr] = fsDustNearestFree((a.x + c.x) / 2, (a.z + c.z) / 2 + 6);
-        b.objective = [fsDustCellX(fc), fsDustCellZ(fr)];
+        const a = siteMark(map, 'A');
+        const c = siteMark(map, 'B');
+        const [fc, fr] = map.nearestFree((a.x + c.x) / 2, (a.z + c.z) / 2 + 6);
+        b.objective = [map.cellX(fc), map.cellZ(fr)];
         b.sneak = r.sneak && !fighting;
         b.lookAt = null;
         continue;
       }
       const site = r.kind === 'rotator' && hotSite ? hotSite : r.site;
-      const m = siteMark(site);
-      const holds = fsBotHolds(m.x, m.z);
+      const m = siteMark(map, site);
+      const holds = fsBotHolds(map, m.x, m.z);
       const h = holds[r.hold % holds.length]!;
       b.objective = [h.x, h.z];
       const dist = Math.hypot(p.x - h.x, p.z - h.z);

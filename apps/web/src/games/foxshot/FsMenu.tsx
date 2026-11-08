@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
 import { toggleMute, useMuted } from '@/lib/sfx';
+import { closeRoom, sendRoom, useMeId, useRoom } from '@/lib/rooms';
 import {
   FS_ACTIONS, FS_CATS,
   bindLabel,
@@ -354,7 +355,11 @@ export function Customize({ only }: { only?: 'aim' | 'screen' } = {}) {
 }
 type FsSettingsQuality = 'auto' | 'low' | 'mid' | 'high';
 
-/** Menu do Esc do Counter Fox: jogo (continuar, encerrar, sair), personalizar e comandos. */
+/**
+ * Menu do Esc do Counter Fox, no formato dos outros jogos do Fox Cap!: uma lista só (continuar, pausar, encerrar a partida,
+ * personalizar, comandos, convidar, som, sair da sala, encerrar a sala). Personalizar e Comandos abrem as suas abas por cima,
+ * com "Voltar" para a lista. `online` liga o que só existe na sala (pausa e encerrar do líder, sair e encerrar a sala).
+ */
 export function FsMenu({
   touch,
   onResume,
@@ -366,6 +371,7 @@ export function FsMenu({
   endConfirm = true,
   onBack,
   backLabel = 'Voltar ao menu do Counter Fox',
+  online,
 }: {
   touch: boolean;
   onResume: () => void;
@@ -380,11 +386,30 @@ export function FsMenu({
   /** Volta ao menu do Counter Fox (que é uma tela dentro da mesma página, então não dá para ser um link). */
   onBack?: () => void;
   backLabel?: string;
+  /** Na sala: sair da sala. O líder também pausa, encerra a partida e encerra a sala. */
+  online?: { onLeave: () => void };
 }) {
-  const [tab, setTab] = useState<Tab>('jogo');
-  const [sure, setSure] = useState(false);
+  const [view, setView] = useState<Tab>('jogo');
+  const [sure, setSure] = useState<string | null>(null);
+  const muted = useMuted();
+  const meId = useMeId();
+  const hostId = useRoom((st) => st.snapshot?.hostId);
+  const pausable = useRoom((st) => !!st.snapshot?.pause);
+  const roomPaused = useRoom((st) => st.snapshot?.pause?.at != null);
+  const leader = !!online && !!meId && hostId === meId;
+  /** Itens que pedem um segundo toque para valer. */
+  const armed = (id: string, label: string, armedLabel: string, run: () => void, extra = '', testId?: string) => (
+    <button
+      type="button"
+      className={`fsm-item${extra}${sure === id ? ' sure' : ''}`}
+      onClick={() => (sure === id ? (setSure(null), run()) : setSure(id))}
+      onBlur={() => setSure((cur) => (cur === id ? null : cur))}
+      data-testid={testId}
+    >
+      {sure === id ? armedLabel : label}
+    </button>
+  );
   const TABS: [Tab, string][] = [
-    ['jogo', 'Jogo'],
     ['personalizar', 'Personalizar'],
     ['comandos', 'Comandos'],
   ];
@@ -393,66 +418,79 @@ export function FsMenu({
       <div className="fsm-card">
         <header>
           <h2>Counter Fox</h2>
-          <nav role="tablist" aria-label="Seções">
-            {TABS.map(([id, label]) => (
-              <button
-                key={id}
-                type="button"
-                role="tab"
-                aria-selected={tab === id}
-                className={tab === id ? 'on' : ''}
-                onClick={() => setTab(id)}
-                data-testid={`fsm-tab-${id}`}
-              >
-                {label}
+          {view !== 'jogo' && (
+            <nav role="tablist" aria-label="Seções">
+              <button type="button" onClick={() => setView('jogo')} data-testid="fsm-tab-jogo" data-sfx="back">
+                ‹ Voltar
               </button>
-            ))}
-          </nav>
+              {TABS.map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="tab"
+                  aria-selected={view === id}
+                  className={view === id ? 'on' : ''}
+                  onClick={() => setView(id)}
+                  data-testid={`fsm-tab-${id}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </nav>
+          )}
         </header>
         <div className="fsm-body">
-          {tab === 'jogo' && (
+          {view === 'jogo' && (
             <div className="fsm-game">
-              <button
-                type="button"
-                className="fsm-main"
-                onClick={onResume}
-                data-testid="fsm-resume"
-              >
+              <button type="button" className="fsm-main" onClick={onResume} data-testid="fsm-resume">
                 Continuar jogando
               </button>
-              <button
-                type="button"
-                className={`fsm-item${sure ? ' sure' : ''}`}
-                onClick={() => (!endConfirm || sure ? (setSure(false), onEnd()) : setSure(true))}
-                onBlur={() => setSure(false)}
-                data-testid="fsm-end"
-              >
-                {sure ? 'Toque de novo para confirmar' : endLabel}
+              {leader && pausable && (
+                <button
+                  type="button"
+                  className="fsm-item"
+                  onClick={() => {
+                    sendRoom(roomPaused ? 'resume' : 'pause');
+                    onResume();
+                  }}
+                  data-testid="fsm-pause"
+                >
+                  {roomPaused ? 'Despausar o jogo' : 'Pausar o jogo para todos'}
+                </button>
+              )}
+              {online
+                ? leader && armed('end', 'Encerrar a partida', 'Toque de novo para encerrar', () => (onResume(), sendRoom('fsend')), '', 'fsm-end')
+                : armed('end', endLabel, 'Toque de novo para confirmar', onEnd, '', 'fsm-end')}
+              <button type="button" className="fsm-item" onClick={() => setView('personalizar')} data-testid="fsm-open-personalizar">
+                Personalizar
               </button>
-              {onBack && (
+              <button type="button" className="fsm-item" onClick={() => setView('comandos')} data-testid="fsm-open-comandos">
+                Comandos
+              </button>
+              {children}
+              <button type="button" className="fsm-item" onClick={() => toggleMute()} aria-pressed={muted} data-testid="fsm-sound">
+                Som: {muted ? 'desligado' : 'ligado'}
+              </button>
+              {online && armed('leave', 'Sair da sala', 'Toque de novo para sair', online.onLeave, ' danger', 'fsm-leave')}
+              {online && leader && armed('close', 'Encerrar a sala (tira todo mundo)', 'Toque de novo para encerrar a sala', () => void closeRoom(), ' danger', 'fsm-close-room')}
+              {!online && onBack && (
                 <button type="button" className="fsm-item" data-sfx="back" onClick={onBack} data-testid="fsm-back">
                   {backLabel}
                 </button>
               )}
-              {exitTo && (
-                <Link
-                  to={exitTo}
-                  className="fsm-item danger"
-                  data-sfx="back"
-                  data-testid="fsm-exit"
-                >
+              {!online && exitTo && (
+                <Link to={exitTo} className="fsm-item danger" data-sfx="back" data-testid="fsm-exit">
                   {exitLabel}
                 </Link>
               )}
-              {children}
               <p className="fsm-hint mono">
                 {touch ? 'Toque em Continuar jogando para voltar. ' : 'Esc abre e fecha este menu. '}
                 {'As suas configurações valem na sua conta (e neste aparelho).'}
               </p>
             </div>
           )}
-          {tab === 'personalizar' && <Customize />}
-          {tab === 'comandos' && <Commands touch={touch} />}
+          {view === 'personalizar' && <Customize />}
+          {view === 'comandos' && <Commands touch={touch} />}
         </div>
       </div>
     </div>

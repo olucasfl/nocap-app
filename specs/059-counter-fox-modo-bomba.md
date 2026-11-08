@@ -122,3 +122,20 @@ Pedido do Lucas: o online do Counter Fox tinha lag; fazer como o Fut Fox/Ping Fo
 No modo Bomba a aba **Sala** do lobby do Counter Fox mostra os dois times com 5 vagas cada (pessoas, bots e vagas livres), quem está **espectando**, e cada pessoa escolhe o time clicando numa vaga (ou **Espectar**; quem espectar não entra na partida). O líder põe ou tira bots de cada time ali (− e +). A escolha de time saiu da aba Jogadores (fica só o rótulo TR/CT/Espectando) e os bots saíram da aba Modo no modo Bomba. A sala recusa o 6º do mesmo time (pessoas + bots ≤ 5).
 
 No mata-mata os bots também saíram da aba Modo: ficam na aba **Sala**, num quadro "Jogadores" com as vagas (pessoas, bots e vagas livres até 10) e a escolha de 0 a 9 bots para o líder.
+
+## Progresso: menu Esc completo, pausa, estouro da bomba, aliados
+
+- Menu Esc (`FsMenu`): uma lista só, como nos outros jogos do Fox Cap!: Continuar, Pausar o jogo para todos (líder, online), Encerrar a partida (líder online / confirmação offline), Personalizar e Comandos (abrem as abas por cima, com "Voltar"), Convidar, Som, Sair da sala e Encerrar a sala (líder). Pausa online: a sala para o relógio (`gnow`) e o aparelho do líder para o Worker; todos veem o `PauseOverlay`. Encerrar: `fsend` (a sala ou o último placar do líder).
+- Abrir o chat não abre mais o menu; a partida abre jogando (soltar o mouse logo no começo só mostra "Clique na tela").
+- Estouro da C4 (`fsBombBlastDamage`): mata até 10 m, dano cai em linha reta até 30 m e depois disso ninguém se machuca. Vale no servidor, no aparelho do líder e no offline.
+- Aliados: morto não mostra nome nem silhueta; o nome aparece sempre e a silhueta só atrás de parede (teste de linha de visão por quadro).
+
+## Spec 061: mapa Cidade e escolha de mapa
+
+O mapa novo (modelo 3D + `map.bsp` do Counter-Strike enviados pelo Lucas) virou o mapa **Cidade**, jogável no mata-mata e na bomba, offline e online, com as mesmas mecânicas.
+- `tools/art/map2_build.py` (sem Blender): converte o OBJ em `apps/web/public/models/foxshot/map2/map2.glb` (desenho, texturas embutidas) e gera `packages/games/src/foxshot/map2.data.ts`: grade de 0,5 m com a altura do chão (255 = parede), lida do próprio modelo (só o chão andável ligado aos nascimentos), mais os nascimentos TR/CT e as caixas das bombas e das zonas de compra lidos do BSP. A escala é 1 unidade do BSP = 1,65 cm (a raposa tem 1,3 m, como o jogador do CS de 72 unidades).
+- `gridmap.ts` (`createGridMap`) monta, de qualquer grade: caixas de colisão (chão elevado e paredes, juntando células), A* com fila de prioridade, nascimentos, bases e bombas, pontos dos bots. `maps.ts`: `FsMapApi` (a mesma interface para a Duna e para a Cidade), `fsMapById`, `FS_MAP_IDS`.
+- Motor, bots (`dm.ts`, `bombbots.ts`) e servidor (`FsNetSim`, opção `map`) usam o mapa recebido; telas escolhem pelo mapa da partida. Busca rápida de caixas por quadrados de 6 m (`fsBoxesInRect`) no movimento, no tiro e nas granadas, porque a Cidade tem milhares de caixas.
+- Escolha do mapa: menu offline (botões Duna/Cidade, a miniatura muda) e aba **Modo** da sala (o líder escolhe; vai no `setup` do aparelho do líder).
+- **Posições palpites:** Bomba A = a primeira `func_bomb_target` do BSP (sul, perto de x 14, z 30), Bomba B = a segunda (norte, x 18, z -14); base TR = zona de compra oeste (x -40), base CT = zona de compra do centro-leste. O Lucas ajusta depois (as marcas saem de `createGridMap`).
+- A grade tem uma componente andável só (do TR ao CT, sem andares múltiplos: teto de prédio e túnel debaixo ficam de fora).

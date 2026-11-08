@@ -7,8 +7,9 @@
  */
 import { fsAssister, type FsDamageEntry } from './assist';
 import { fsFlinch, fsFlinchAt, fsIsBackstab } from './damage';
-import { FS_DUST_MARKS, FS_DUST_SOLIDS, FS_DUST_SPAWNS, fsDustFloorY, fsSiteAt, fsPickSpawn, type FsSpawn } from './dust';
-import { FsBombMatch, fsOtherSide, type FsBombConfig, type FsSide } from './bomb';
+import type { FsSpawn } from './dust';
+import { fsMapById, type FsMapApi } from './maps';
+import { FsBombMatch, fsBombBlastDamage, fsOtherSide, type FsBombConfig, type FsSide } from './bomb';
 import { fsBotLevelAt, fsDmFlash, fsDmHear, fsDmHurt, fsDmNew, fsDmPickWeapon, fsDmStep, type FsBotLevel, type FsDmBrain, type FsDmFoe } from './dm';
 import { FsBombTactics } from './bombbots';
 import { fsClearLine, fsFlashEffect, fsFragDamage, fsGrenadeLaunch, fsGrenadeStep, FS_GRENADES, type FsGrenadeBody, type FsGrenadeId } from './grenades';
@@ -124,6 +125,8 @@ export interface FsNetOptions {
   bomb?: Partial<FsBombConfig>;
   /** Modo Bomba: quantos bots em cada time, [contra-terrorista, terrorista] (a sala só põe bot se o líder pedir). */
   botTeams?: [number, number];
+  /** O mapa (`duna` ou `cidade`); sem isso, a Duna. */
+  map?: string;
   rng?: () => number;
   boxes?: readonly FsBox[];
 }
@@ -195,6 +198,8 @@ export class FsNetSim {
   private dropPos: { x: number; y: number; z: number } | null = null;
   private dropAllowedAt = 0;
   private planSite: 'A' | 'B' = 'A';
+  /** O mapa da partida. */
+  readonly map: FsMapApi;
   private botsMade = 0;
   private levelOffset = 0;
   private tactics = new FsBombTactics();
@@ -211,7 +216,8 @@ export class FsNetSim {
     this.cfg = { minutes: base.minutes, bots: Math.max(0, Math.min(9, Math.round(Number.isFinite(opts.bots) ? opts.bots : 0))) };
     this.bm = opts.bomb ? new FsBombMatch(opts.bomb) : null;
     this.endTick = this.bm ? Number.MAX_SAFE_INTEGER : this.cfg.minutes * 60 * FS_NET_HZ;
-    this.boxes = opts.boxes ?? FS_DUST_SOLIDS;
+    this.map = fsMapById(opts.map);
+    this.boxes = opts.boxes ?? this.map.solids;
     this.rng = opts.rng ?? Math.random;
     this.levelOffset = Math.floor(this.rng() * 10);
     const humans = opts.humans.slice(0, 10);
@@ -248,7 +254,7 @@ export class FsNetSim {
   }
 
   private addPlayer(id: string, name: string, bot: boolean, placed: { x: number; z: number }[], botTeam: 0 | 1 = 0, humanTeam?: 0 | 1) {
-    const sp = fsPickSpawn(placed, this.rng, this.boxes);
+    const sp = this.map.pickSpawn(placed, this.rng, this.boxes);
     placed.push({ x: sp.x, z: sp.z });
     const mover = fsNewMover(sp.x, sp.z);
     mover.y = sp.y;
@@ -490,7 +496,7 @@ export class FsNetSim {
 
   private stepBot(p: FsNetPlayer, foes: FsDmFoe[]) {
     const b = p.brain!;
-    const acts = fsDmStep(b, { now: this.tick / FS_NET_HZ, dt: FS_NET_DT, rng: this.rng, boxes: this.boxes, foes });
+    const acts = fsDmStep(b, { now: this.tick / FS_NET_HZ, dt: FS_NET_DT, rng: this.rng, boxes: this.boxes, foes, map: this.map });
     p.mover = b.mover;
     p.yaw = b.yaw;
     p.pitch = b.pitch;
@@ -630,7 +636,7 @@ export class FsNetSim {
 
   private respawn(p: FsNetPlayer) {
     const foes = [...this.players.values()].filter((q) => q.alive && q.id !== p.id).map((q) => ({ x: q.mover.x, z: q.mover.z }));
-    const sp = fsPickSpawn(foes, this.rng, this.boxes);
+    const sp = this.map.pickSpawn(foes, this.rng, this.boxes);
     p.hp = 100;
     p.armor = 0;
     p.helmet = false;
@@ -664,19 +670,19 @@ export class FsNetSim {
   }
 
   private inBase(p: FsNetPlayer): boolean {
-    const m = FS_DUST_MARKS.find((k) => k.kind === 'base' && k.id === (this.sideOf(p) === 'tr' ? 'T' : 'CT'));
+    const m = this.map.marks.find((k) => k.kind === 'base' && k.id === (this.sideOf(p) === 'tr' ? 'T' : 'CT'));
     return !!m && p.mover.x >= m.x0 - 1 && p.mover.x <= m.x1 + 1 && p.mover.z >= m.z0 - 1 && p.mover.z <= m.z1 + 1;
   }
 
   private roundSpawns(): Map<string, FsSpawn> {
     const pool: Record<FsSide, FsSpawn[]> = {
-      tr: FS_DUST_SPAWNS.filter((q) => q.zone === 'TR').sort(() => this.rng() - 0.5),
-      ct: FS_DUST_SPAWNS.filter((q) => q.zone === 'CT').sort(() => this.rng() - 0.5),
+      tr: this.map.spawns.filter((q) => q.zone === 'TR').sort(() => this.rng() - 0.5),
+      ct: this.map.spawns.filter((q) => q.zone === 'CT').sort(() => this.rng() - 0.5),
     };
     const out = new Map<string, FsSpawn>();
     for (const p of this.players.values()) {
       const l = pool[this.sideOf(p)];
-      out.set(p.id, l.length ? l.pop()! : FS_DUST_SPAWNS[0]!);
+      out.set(p.id, l.length ? l.pop()! : this.map.spawns[0]!);
     }
     return out;
   }
@@ -740,7 +746,7 @@ export class FsNetSim {
 
   /** Em qual pátio está (A ou B): vale o retângulo marcado, com folga, ou até 7 m do centro (o círculo que se vê no mapa). */
   private siteAt(x: number, z: number): string | null {
-    return fsSiteAt(x, z);
+    return this.map.siteAt(x, z);
   }
 
   private stepBomb() {
@@ -807,6 +813,28 @@ export class FsNetSim {
     }
   }
 
+  /**
+   * A C4 explodeu: quem está perto morre, quem está mais longe leva menos dano e quem está muito longe não leva nada. O round
+   * já acabou (a bomba venceu), então o dano é aplicado direto e sem crédito de abate.
+   */
+  private explodeBomb() {
+    const at = this.bombPos;
+    if (!at) return;
+    this.events.push({ k: 'boom', id: ++this.nadeSeq, kind: 'frag', x: r2(at.x), y: r2(at.y), z: r2(at.z) });
+    for (const q of this.players.values()) {
+      if (!q.alive) continue;
+      const dmg = fsBombBlastDamage(Math.hypot(q.mover.x - at.x, q.mover.z - at.z));
+      if (dmg <= 0) continue;
+      q.hp -= dmg;
+      this.events.push({ k: 'hurt', vic: q.id, by: q.id, x: r2(at.x), z: r2(at.z), dmg, head: false });
+      if (q.hp > 0) continue;
+      q.hp = 0;
+      q.alive = false;
+      q.deaths++;
+      this.events.push({ k: 'kill', killer: q.id, victim: q.id, w: 'frag', head: false, assist: null, wall: false, noscope: false, blind: false });
+    }
+  }
+
   /** Retrato do mundo para a tática dos bots (todos os jogadores, humanos e bots). */
   private botWorld() {
     const bm = this.bm!;
@@ -814,6 +842,7 @@ export class FsNetSim {
       now: this.tick / FS_NET_HZ,
       dt: FS_NET_DT,
       rng: this.rng,
+      map: this.map,
       phase: bm.phase,
       time: bm.time,
       roundSec: bm.cfg.roundSec,
@@ -832,7 +861,9 @@ export class FsNetSim {
     for (const e of bm.drain()) {
       if (e.k === 'planted') {
         const at = this.plantPos ?? { x: 0, y: 0, z: 0 };
-        this.bombPos = { x: at.x, y: fsDustFloorY(at.x, at.z), z: at.z };
+        this.bombPos = { x: at.x, y: this.map.floorY(at.x, at.z), z: at.z };
+      } else if (e.k === 'exploded') {
+        this.explodeBomb();
       } else if (e.k === 'roundEnd') {
         this.roundEndAt = this.tick + 5 * FS_NET_HZ;
         this.lastWin = e.winner === 'tr' ? 1 : 2;
@@ -981,6 +1012,13 @@ export class FsNetSim {
           })()
         : undefined,
     };
+  }
+
+  /** O líder encerra a partida com o placar de agora. */
+  endNow(): void {
+    if (this.over) return;
+    this.over = true;
+    this.events.push({ k: 'over' });
   }
 
   /** Pontos de uma pessoa (atalho para testes e tela). */

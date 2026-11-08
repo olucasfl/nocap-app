@@ -106,4 +106,15 @@ describe('Counter Fox ponto a ponto', () => {
     const roster = s.room.sim!.roster.filter((r) => !r.bot).map((r) => r.id);
     expect(roster).toEqual(['lia']);
   });
+
+  it('o líder escolhe o mapa (Duna ou Cidade) e ele vai para a partida; mapa inválido é recusado', () => {
+    const s = mk(false);
+    expect((s.room.snapshot('lia') as unknown as { foxshot: { map: string } }).foxshot.map).toBe('duna');
+    s.room.configure('lia', { map: 'cidade' } as never);
+    expect((s.room.snapshot('lia') as unknown as { foxshot: { map: string } }).foxshot.map).toBe('cidade');
+    expect(() => s.room.configure('lia', { map: 'xyz' } as never)).toThrow();
+    s.room.setReady('bia', true);
+    s.room.start('lia');
+    expect(s.room.sim!.map.id).toBe('cidade');
+  });
 });

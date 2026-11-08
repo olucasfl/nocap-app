@@ -7,6 +7,8 @@ import {
   FS_ARENA,
   FS_BOTS,
   FS_DUST_BOXES,
+  FS_MAP_DUNA,
+  type FsMapApi,
   FS_DUST_DECALS,
   FS_DUST_DECOR,
   FS_DUST_HALF,
@@ -27,7 +29,9 @@ import {
 
 /** O mundo que a cena monta: a arena de teste (alvos, bots de treino, placas) ou o mapa Duna (com os bots do mata-mata). */
 export interface FsWorld {
-  style: 'train' | 'dust';
+  style: 'train' | 'dust' | 'glb';
+  /** O mapa (nos mapas de partida): bombas, bases, chão. */
+  map?: FsMapApi;
   boxes: readonly FsBox[];
   targets: readonly FsTargetSpec[];
   bots: readonly FsBotSpec[];
@@ -41,7 +45,10 @@ export interface FsWorld {
   signs: readonly { text: string; x: number; y: number; z: number; big?: boolean }[];
 }
 export const FS_WORLD_TRAIN: FsWorld = { style: 'train', boxes: FS_ARENA, targets: FS_TARGETS, bots: FS_BOTS, dm: [], half: [45, 27], labels: FS_TRAIN_LABELS, signs: FS_MOVE_SIGNS };
-export const fsWorldDust = (dm: FsWorld['dm']): FsWorld => ({ style: 'dust', boxes: FS_DUST_BOXES, targets: [], bots: [], dm, half: FS_DUST_HALF, labels: FS_DUST_LABELS, signs: [] });
+export const fsWorldDust = (dm: FsWorld['dm']): FsWorld => ({ style: 'dust', map: FS_MAP_DUNA, boxes: FS_DUST_BOXES, targets: [], bots: [], dm, half: FS_DUST_HALF, labels: FS_DUST_LABELS, signs: [] });
+/** O mundo de um mapa de partida: a Duna (desenhada por caixas e decoração) ou um mapa com modelo 3D. */
+export const fsWorldFor = (map: FsMapApi, dm: FsWorld['dm']): FsWorld =>
+  map.visual.kind === 'dust' ? fsWorldDust(dm) : { style: 'glb', map, boxes: map.solids, targets: [], bots: [], dm, half: map.half, labels: map.labels, signs: [] };
 
 export type Quality = 'low' | 'mid' | 'high';
 
@@ -462,6 +469,8 @@ export class FoxShotScene {
   readonly renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
   private cam = new THREE.PerspectiveCamera(75, 1, 0.05, 160);
+  /** O céu acompanha a câmera (os mapas grandes têm bordas longe do centro). */
+  private sky: THREE.Mesh | null = null;
   private signSprites: { sprite: THREE.Sprite; range: number }[] = [];
   private furMats: { t: THREE.Material; ct: THREE.Material } | null = null;
   private vmScene = new THREE.Scene();
@@ -570,6 +579,7 @@ export class FoxShotScene {
     );
     sky.renderOrder = -10;
     sky.frustumCulled = false;
+    this.sky = sky;
     this.scene.add(sky);
     this.scene.add(new THREE.HemisphereLight(0xcfe3ff, 0x7a6850, 1.0));
     this.sun = new THREE.DirectionalLight(0xffe0b0, 2.8);
@@ -621,6 +631,11 @@ export class FoxShotScene {
   }
 
   private buildArena() {
+    // mapa com modelo 3D: o desenho vem do arquivo (`buildGlbMap`); aqui não há chão nem caixas
+    if (this.world.style === 'glb') {
+      this.scene.fog = new THREE.Fog(0xe9d8bd, 45, 150);
+      return;
+    }
     const mats = materials();
     const dust = this.world.style === 'dust';
     const gsize = Math.max(...this.world.half) * 2 + 60;
@@ -871,6 +886,9 @@ export class FoxShotScene {
     if (this.world.style === 'dust') {
       this.buildSiteMarkers();
       await this.buildDustProps(loader, base).catch(() => undefined);
+    } else if (this.world.style === 'glb') {
+      await this.buildGlbMap(loader, base).catch(() => undefined);
+      this.buildSiteMarkers();
     }
     this.selectWeapon('ak', true);
   }
@@ -880,10 +898,10 @@ export class FoxShotScene {
    * Raposa do mesmo time que você (como o CS): o nome fica em cima da cabeça e o corpo aparece em azul por trás das paredes
    * (só onde está escondido). Vale só para aliados: os outros continuam escondidos pelo mapa.
    */
-  setAlly(id: string, ally: boolean, name = '', team: 'ct' | 't' = 'ct') {
+  setAlly(id: string, ally: boolean, name = '', team: 'ct' | 't' = 'ct', ghost = true) {
     const f = this.foxes.get(id);
     if (!f) return;
-    if (ally && !f.ghost) {
+    if (ally && ghost && !f.ghost) {
       const mat = new THREE.MeshBasicMaterial({ color: 0x4da3ff, transparent: true, opacity: 0.5, depthTest: true, depthFunc: THREE.GreaterDepth, depthWrite: false });
       f.ghost = [];
       f.ghostMat = mat;
@@ -904,7 +922,8 @@ export class FoxShotScene {
         f.ghost.push(g);
       }
     }
-    f.ghost?.forEach((g) => (g.visible = ally));
+    // a silhueta só aparece atrás de parede (`ghost`); o nome aparece sempre; morto não mostra nenhum dos dois
+    f.ghost?.forEach((g) => (g.visible = ally && ghost));
     f.ghostMat?.color.set(team === 't' ? 0xff9a3c : 0x4da3ff);
     if (ally) {
       const tagKey = `${name}|${team}`;
@@ -945,10 +964,27 @@ export class FoxShotScene {
   }
 
   /** O sinal das bombas A e B dentro do jogo: um selo no chão e a letra grande no ar (as bases só aparecem nos mapas). */
+  /** Mapa com modelo 3D: carrega o arquivo (já em metros, no mesmo eixo do jogo) com material simples e sem sombras (são milhares de triângulos). */
+  private async buildGlbMap(loader: GLTFLoader, base: string) {
+    const v = this.world.map!.visual;
+    if (v.kind !== 'glb') return;
+    const gltf = await loader.loadAsync(base + v.url);
+    gltf.scene.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh) return;
+      m.geometry.computeVertexNormals();
+      const old = m.material as THREE.MeshStandardMaterial;
+      m.material = new THREE.MeshLambertMaterial({ map: old.map ?? null, alphaTest: old.alphaTest || 0, side: THREE.DoubleSide });
+      m.castShadow = false;
+      m.receiveShadow = false;
+    });
+    this.scene.add(gltf.scene);
+  }
+
   private buildSiteMarkers() {
-    for (const mk of FS_DUST_MARKS) {
+    for (const mk of (this.world.map?.marks ?? FS_DUST_MARKS)) {
       if (mk.kind !== 'site') continue;
-      const y = fsDustFloorY(mk.x, mk.z);
+      const y = this.world.map ? this.world.map.floorY(mk.x, mk.z) : fsDustFloorY(mk.x, mk.z);
       const c = document.createElement('canvas');
       c.width = c.height = 512;
       const g = c.getContext('2d')!;
@@ -1079,6 +1115,7 @@ export class FoxShotScene {
   hideViewmodel = false;
   setView(x: number, y: number, z: number, yawDeg: number, pitchDeg: number, fov: number, rollDeg = 0) {
     this.cam.position.set(x, y, z);
+    this.sky?.position.set(x, y, z);
     {
       // a sombra cobre só o que está perto de quem joga: o sol acompanha a câmera
       this.sun.target.position.set(x, 0, z);

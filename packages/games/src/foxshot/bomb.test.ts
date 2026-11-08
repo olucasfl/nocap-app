@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FsBombMatch, fsBombConfig, FS_BOMB_DEFAULTS } from './bomb';
+import { FsBombMatch, fsBombBlastDamage, fsBombConfig, FS_BOMB_DEFAULTS } from './bomb';
 
 function mk(cfg = {}) {
   const m = new FsBombMatch(cfg);
@@ -186,5 +186,15 @@ describe('modo Bomba', () => {
     m.plant(first, true, 'A', 3.3);
     expect(m.phase).toBe('planted');
     expect(m.pickBomb(first)).toBe(false); // depois de plantada não se pega mais
+  });
+
+  it('o estouro da C4 mata perto, machuca no meio e não atinge quem está muito longe', () => {
+    expect(fsBombBlastDamage(3)).toBeGreaterThanOrEqual(100);
+    expect(fsBombBlastDamage(10)).toBeGreaterThanOrEqual(100);
+    const mid = fsBombBlastDamage(20);
+    expect(mid).toBeGreaterThan(0);
+    expect(mid).toBeLessThan(100);
+    expect(fsBombBlastDamage(30)).toBe(0);
+    expect(fsBombBlastDamage(80)).toBe(0);
   });
 });

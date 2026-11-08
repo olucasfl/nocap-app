@@ -14,6 +14,7 @@ type In =
   | { t: 'init'; opts: Opts; delayMs: number }
   | { t: 'input'; id: string; v: unknown }
   | { t: 'toBot'; id: string }
+  | { t: 'pause'; on: boolean }
   | { t: 'stop' };
 
 const STEP_MS = 1000 / FS_NET_HZ;
@@ -28,12 +29,17 @@ let finished = false;
 let lastStatus = 0;
 let sentOver = false;
 
+/** Pausa do líder: o relógio da partida para (e o tempo parado não conta quando volta). */
+let pausedAt: number | null = null;
+let skipped = 0;
+const clock = () => (pausedAt ?? Date.now()) - skipped;
+
 const post = (m: unknown) => (self as unknown as { postMessage(x: unknown): void }).postMessage(m);
 
 function loop() {
   const s = sim;
-  if (!s || finished) return;
-  const now = Date.now();
+  if (!s || finished || pausedAt !== null) return;
+  const now = clock();
   if (now < startAt) return;
   const want = Math.floor((now - startAt) / STEP_MS);
   let n = 0;
@@ -57,7 +63,7 @@ function loop() {
     // o último quadro vai mais vezes (o canal não garante entrega)
     let i = 0;
     const again = setInterval(() => {
-      emit(s, Date.now());
+      emit(s, clock());
       if (++i >= 4) {
         clearInterval(again);
         finished = true;
@@ -86,7 +92,7 @@ self.onmessage = (ev: MessageEvent<In>) => {
     case 'init': {
       if (sim) return;
       sim = new FsNetSim(msg.opts);
-      startAt = Date.now() + Math.max(0, msg.delayMs);
+      startAt = clock() + Math.max(0, msg.delayMs);
       // 8 ms: acorda duas vezes por passo e nunca atrasa um passo inteiro por causa do relógio
       timer = setInterval(loop, 8) as unknown as number;
       break;
@@ -96,6 +102,13 @@ self.onmessage = (ev: MessageEvent<In>) => {
       if (inp && sim && !finished) sim.pushInput(msg.id, inp);
       break;
     }
+    case 'pause':
+      if (msg.on && pausedAt === null) pausedAt = Date.now();
+      else if (!msg.on && pausedAt !== null) {
+        skipped += Date.now() - pausedAt;
+        pausedAt = null;
+      }
+      break;
     case 'toBot':
       if (sim && !finished) sim.takeOver(msg.id);
       break;

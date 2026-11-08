@@ -1,5 +1,5 @@
 import { fsDamage, type FsDamage, type FsZone } from './damage';
-import type { FsBox } from './map';
+import { fsBoxesInRect, type FsBox } from './map';
 import type { FsWeapon } from './weapons';
 
 export type Vec3 = [number, number, number];
@@ -107,7 +107,9 @@ export interface FsTrace {
 export function fsTrace(w: FsWeapon, o: Vec3, d: Vec3, boxes: readonly FsBox[], bodies: readonly FsBody[], maxDist = 200): FsTrace {
   type Ev = { t: number; kind: 'box'; box: FsBox } | { t: number; kind: 'body'; body: FsBody; zone: FsZone };
   const evs: Ev[] = [];
-  for (const box of boxes) {
+  // mapas grandes: só as caixas na faixa do raio
+  const reach = fsBoxesInRect(boxes, o[0], o[2], o[0] + d[0] * maxDist, o[2] + d[2] * maxDist);
+  for (const box of reach) {
     const h = rayBox(o, d, box, maxDist);
     if (h && h.t0 > 1e-6) evs.push({ t: h.t0, kind: 'box', box });
   }

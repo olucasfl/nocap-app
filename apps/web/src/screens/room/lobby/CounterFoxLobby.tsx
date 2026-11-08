@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { FS_MATCH_BOTS, FS_MATCH_MINUTES, FS_POINTS } from '@nocap/games';
+import { FS_MAP_IDS, FS_MAP_NAMES, FS_MATCH_BOTS, FS_MATCH_MINUTES, FS_POINTS, type FsMapId } from '@nocap/games';
 import { ChatPanel } from '@/components/Chat';
 import { chatColor } from '@/components/GameChat';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -170,6 +170,7 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
   const botsTr = snapshot.foxshot?.botsTr ?? 0;
   const bots = bomb ? botsCt + botsTr : (snapshot.foxshot?.bots ?? 0);
   const winRounds = snapshot.foxshot?.winRounds ?? 8;
+  const mapId = (snapshot.foxshot?.map ?? 'duna') as FsMapId;
   const roundSec = snapshot.foxshot?.roundSec ?? 115;
   const teams = snapshot.foxshot?.teams ?? {};
   /** Time de uma pessoa no modo Bomba: o escolhido; sem escolha, alterna pela ordem de entrada. */
@@ -256,7 +257,7 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
               <dl className="cfl-facts">
                 <div><dt>Jogo</dt><dd>Counter Fox</dd></div>
                 <div><dt>Modo</dt><dd>{kind === 'none' ? 'Escolha um' : bomb ? 'Bomba' : 'Mata-mata'}</dd></div>
-                <div><dt>Mapa</dt><dd>Duna</dd></div>
+                <div><dt>Mapa</dt><dd>{FS_MAP_NAMES[mapId]}</dd></div>
                 {bomb ? (
                   <>
                     <div><dt>Rounds</dt><dd>primeiro a {winRounds}</dd></div>
@@ -430,6 +431,14 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
 
           {tab === 'modo' && (
             <div className="cfl-pane" data-testid="cfl-mode">
+              <h4>Mapa</h4>
+              <div className="cfh-pills" role="radiogroup" aria-label="Mapa">
+                {FS_MAP_IDS.map((id) => (
+                  <button key={id} type="button" role="radio" aria-checked={mapId === id} disabled={!leader} className={`cfh-pill${mapId === id ? ' on' : ''}`} onClick={() => sendRoom('configure', { map: id })} data-testid={`cfl-map-${id}`}>
+                    {FS_MAP_NAMES[id]}
+                  </button>
+                ))}
+              </div>
               <button type="button" className={`cfl-mode${kind === 'dm' ? ' on' : ''}`} aria-pressed={kind === 'dm'} disabled={!leader} onClick={() => sendRoom('configure', { kind: 'dm' })} data-testid="cfl-mode-dm">
                 <b>Mata-mata{kind === 'dm' && <em className="cfl-sel"> · selecionado</em>}</b>
                 <span>Todos contra todos no Duna. Abate vale {FS_POINTS.kill} pontos, assistência {FS_POINTS.assist}. Vence quem tiver mais pontos no fim.</span>
