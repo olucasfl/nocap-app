@@ -27,6 +27,10 @@ export interface FsGridMapData {
   ladders?: readonly (readonly number[])[];
   /** lado dos voxels das caixas (m); padrão = cell */
   bcell?: number;
+  /** Degrau máximo da navegação entre células vizinhas, em andares (padrão 2; mapas com caixas e muretos usam 3, que o pulo vence). */
+  maxStep?: number;
+  /** altura dos voxels das caixas (m); padrão = bcell (mapas de pele fina usam voxels mais baixos para o chão não flutuar) */
+  bcellY?: number;
   tspawns: readonly (readonly [number, number, number])[];
   ctspawns: readonly (readonly [number, number, number])[];
   /** Caixas das bombas (x0, z0, x1, z1): a primeira é a A. */
@@ -135,10 +139,11 @@ export function createGridMap(opts: { id: string; name: string; data: FsGridMapD
     for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
     const u16 = new Uint16Array(u8.buffer, 0, Math.floor(u8.length / 2));
     const bc = d.bcell ?? cell;
+    const bcy = d.bcellY ?? bc;
     for (let i = 0; i + 5 < u16.length; i += 6) {
       solids.push({
-        min: [x0 + u16[i + 1]! * bc, u16[i + 2]! * bc, z0 + u16[i]! * bc],
-        max: [x0 + (u16[i + 4]! + 1) * bc, (u16[i + 5]! + 1) * bc, z0 + (u16[i + 3]! + 1) * bc],
+        min: [x0 + u16[i + 1]! * bc, u16[i + 2]! * bcy, z0 + u16[i]! * bc],
+        max: [x0 + (u16[i + 4]! + 1) * bc, (u16[i + 5]! + 1) * bcy, z0 + (u16[i + 3]! + 1) * bc],
         pen: 0,
         mat: 'wall',
       });
@@ -310,7 +315,7 @@ export function createGridMap(opts: { id: string; name: string; data: FsGridMapD
   };
 
   // ---- navegação
-  const stepOk = (c: number, r: number, nc: number, nr: number) => walkable(nc, nr) && Math.abs(level[idx(nc, nr)]! - level[idx(c, r)]!) <= 2;
+  const stepOk = (c: number, r: number, nc: number, nr: number) => walkable(nc, nr) && Math.abs(level[idx(nc, nr)]! - level[idx(c, r)]!) <= (d.maxStep ?? 2);
   const lineWalkable = (ax: number, az: number, bx: number, bz: number, margin = 0.42): boolean => {
     const len = Math.hypot(bx - ax, bz - az);
     if (len < 1e-6) return true;

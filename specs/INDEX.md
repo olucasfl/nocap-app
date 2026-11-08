@@ -62,5 +62,6 @@
 | 058 | [Pendências: online do Counter Fox, salvar dados universal, chat estilo CS, "Outros jogos", mapa do menu, Esc ao iniciar, troca de arma instantânea, sniper com dois zooms, espectar do Ping Fox e tela própria de cada jogo](058-pendencias-online-e-salvar-dados.md) | 10 | rascunho (04/11/2026): só levantamento, nada feito ainda |
 | 059 | [Counter Fox: modo Bomba (rounds, times, economia)](059-counter-fox-modo-bomba.md) | 10 | rascunho (07/11/2026): pesquisa e plano; aguarda respostas |
 | 062 | [Counter Fox: modo PvP (times, sem bomba, dinheiro infinito)](062-counter-fox-modo-pvp.md) | 10 | em andamento (08/11/2026): motor, mapa de blocos, bots, sala, menu, HUD e testes prontos; falta jogar online e ajustar |
+| 063 | [Counter Fox: mapa Dust 2 (modelo USDZ) ao lado da Duna](063-counter-fox-mapa-dust2.md) | 10 | em andamento (08/11/2026): mapa, colisão, navegação, escolha no menu e na sala e testes prontos; falta o Lucas testar e escolher |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.

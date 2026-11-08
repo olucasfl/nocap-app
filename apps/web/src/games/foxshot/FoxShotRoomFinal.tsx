@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { sendRoom, leaveRoom, useMeId, type RoomSnapshot } from '@/lib/rooms';
+import { FS_MAP_NAMES } from '@nocap/games';
 import { CounterFoxBackdrop } from './CounterFoxBackdrop';
 import { CounterFoxLogo } from './CounterFoxLogo';
 import { FsBombEnd } from './FsBombEnd';
@@ -33,7 +34,7 @@ export function FoxShotRoomFinal({ snapshot }: { snapshot: RoomSnapshot }) {
         tr={bomb.tr}
         ct={bomb.ct}
         mySide={mySide}
-        mapName={snapshot.foxshot?.pvp ? 'Arena de Blocos' : 'Duna'}
+        mapName={FS_MAP_NAMES[snapshot.foxshot?.pvp ? 'pvp' : snapshot.foxshot?.map === 'dust2' ? 'dust2' : 'duna']}
         pvp={!!snapshot.foxshot?.pvp}
         rows={rows.map((r) => ({ id: r.id, name: r.name, side: bomb.sides[r.id] ?? 'ct', kills: r.kills, assists: r.assists, deaths: r.deaths, points: r.points, me: r.id === me }))}
         exitLabel="Sair da sala"

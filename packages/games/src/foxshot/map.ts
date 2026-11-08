@@ -258,10 +258,12 @@ const bkey = (cx: number, cz: number) => cx * 4096 + cz;
 function indexOf(boxes: readonly FsBox[]): BoxIndex {
   let ix = indexCache.get(boxes);
   if (ix) return ix;
-  ix = { size: BUCKET, cells: new Map() };
+  // mapas com dezenas de milhares de caixas (a pele fina da Dust 2) pedem baldes menores, senão cada consulta devolve centenas
+  const size = boxes.length > 30000 ? 1.5 : BUCKET;
+  ix = { size, cells: new Map() };
   for (const b of boxes) {
-    const x0 = Math.floor(b.min[0] / BUCKET), x1 = Math.floor(b.max[0] / BUCKET);
-    const z0 = Math.floor(b.min[2] / BUCKET), z1 = Math.floor(b.max[2] / BUCKET);
+    const x0 = Math.floor(b.min[0] / size), x1 = Math.floor(b.max[0] / size);
+    const z0 = Math.floor(b.min[2] / size), z1 = Math.floor(b.max[2] / size);
     for (let cx = x0; cx <= x1; cx++) {
       for (let cz = z0; cz <= z1; cz++) {
         const k = bkey(cx, cz);
@@ -286,7 +288,7 @@ function indexOf(boxes: readonly FsBox[]): BoxIndex {
 export function fsBoxesAlongRay(boxes: readonly FsBox[], ox: number, oz: number, dx: number, dz: number, len: number): readonly FsBox[] {
   if (boxes.length < 160) return boxes;
   const ix = indexOf(boxes);
-  const n = Math.max(1, Math.ceil(len / (BUCKET * 0.4)));
+  const n = Math.max(1, Math.ceil(len / (ix.size * 0.4)));
   const l2 = Math.hypot(dx, dz) || 1;
   const nx = dx / l2, nz = dz / l2;
   const keys = new Set<number>();
@@ -296,7 +298,7 @@ export function fsBoxesAlongRay(boxes: readonly FsBox[], ox: number, oz: number,
     const t = (len * i) / n;
     const x = ox + dx * t, z = oz + dz * t;
     for (const [ex, ez] of [[0.5, 0.5], [-0.5, -0.5], [0.5, -0.5], [-0.5, 0.5]] as const) {
-      const cx = Math.floor((x + ex) / BUCKET), cz = Math.floor((z + ez) / BUCKET);
+      const cx = Math.floor((x + ex) / ix.size), cz = Math.floor((z + ez) / ix.size);
       const k = bkey(cx, cz);
       if (keys.has(k)) continue;
       keys.add(k);
@@ -312,8 +314,8 @@ export function fsBoxesAlongRay(boxes: readonly FsBox[], ox: number, oz: number,
 export function fsBoxesInRect(boxes: readonly FsBox[], x0: number, z0: number, x1: number, z1: number): readonly FsBox[] {
   if (boxes.length < 160) return boxes;
   const ix = indexOf(boxes);
-  const cx0 = Math.floor(Math.min(x0, x1) / BUCKET), cx1 = Math.floor(Math.max(x0, x1) / BUCKET);
-  const cz0 = Math.floor(Math.min(z0, z1) / BUCKET), cz1 = Math.floor(Math.max(z0, z1) / BUCKET);
+  const cx0 = Math.floor(Math.min(x0, x1) / ix.size), cx1 = Math.floor(Math.max(x0, x1) / ix.size);
+  const cz0 = Math.floor(Math.min(z0, z1) / ix.size), cz1 = Math.floor(Math.max(z0, z1) / ix.size);
   if (cx0 === cx1 && cz0 === cz1) return ix.cells.get(bkey(cx0, cz0)) ?? [];
   const seen = new Set<FsBox>();
   const out: FsBox[] = [];

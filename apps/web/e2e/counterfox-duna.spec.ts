@@ -106,3 +106,27 @@ test('PvP offline: arena de blocos, compra grátis e round sem bomba', async ({ 
   await page.waitForTimeout(1000);
   await page.screenshot({ path: 'test-results/pvp-mapa.png' });
 });
+
+test('Dust 2: escolher o mapa, jogar o mata-mata e andar pelos pontos principais', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'um projeto basta');
+  test.setTimeout(300_000);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await installApi(page);
+  await page.goto('/fox-cap/counter-fox');
+  await page.getByRole('button', { name: 'Agora não' }).click({ timeout: 8000 }).catch(() => undefined);
+  await page.getByTestId('cfh-play').click();
+  await page.getByTestId('cfh-offline').click();
+  await page.getByTestId('cfx-mode-dm').click();
+  await page.getByTestId('cfx-map-dust2').click();
+  await page.screenshot({ path: '/tmp/dust2/w/out/menu.png' });
+  await page.getByTestId('cfx-start').click();
+  await expect(page.getByTestId('fs-root')).toBeVisible({ timeout: 120_000 });
+  await expect.poll(async () => await fs<number>(page, 'hp'), { timeout: 120_000 }).toBe(100);
+  const spots: [string, number, number, number][] = [['spawn', -45, 4, 270], ['meio', -10, 8, 90], ['longa', 20, 30, 0], ['b', 20, -17, 180]];
+  for (const [name, x, z, yaw] of spots) {
+    await fs<void>(page, 'teleport', x, z);
+    await fs<void>(page, 'look', yaw, -3);
+    await page.waitForTimeout(2500);
+    await page.screenshot({ path: `/tmp/dust2/w/out/${name}.png` });
+  }
+});

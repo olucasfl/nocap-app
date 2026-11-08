@@ -43,7 +43,7 @@ const bombKey = () => bindLabel(fsSettings().binds.bomb);
 import { FsMenu } from './FsMenu';
 import { FsShop } from './FsShop';
 import { FsBombHud, type BombHud } from './FsBombHud';
-import { fsMapById } from '@nocap/games';
+import { FS_MAP_NAMES, fsMapById } from '@nocap/games';
 import { FsBigMap, FsTelemetry, FsAmmo, FsCrosshair, FsKillFeed, FsMinimap, FsScoreboard, FsTopBar, FsVitals, type FeedItem, type FsIntelDot, type FsPlayerRow, type MinimapData } from './FsHud';
 import { FoxShotRoomFinal } from './FoxShotRoomFinal';
 import { FsShield } from './FsShield';
@@ -1393,7 +1393,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           )}
           {h.bomb ? <FsBombHud b={h.bomb} /> : <FsTopBar players={players} timeLeft={h.timeLeft} kills={0} deaths={0} />}
           {settings.showMinimap && <FsMinimap get={getMini} />}
-          {bigMap && <FsBigMap get={getMini} title={`Mapa · ${snapshot.foxshot?.pvp ? 'Arena de Blocos' : 'Duna'}`} />}
+          {bigMap && <FsBigMap get={getMini} title={`Mapa · ${FS_MAP_NAMES[snapshot.foxshot?.pvp ? 'pvp' : snapshot.foxshot?.map === 'dust2' ? 'dust2' : 'duna']}`} />}
           <div className="fsh-rcol">
             {settings.showTelemetry && <FsTelemetry fps={h.fps} tris={h.tris} calls={h.calls} level={h.level} dpr={h.dpr} speed={h.speed} ref="" />}
             <FsKillFeed items={feed} />
@@ -1445,13 +1445,13 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
               ]}
             />
           )}
-          {board && <FsScoreboard bomb={h.bomb ? { mySide: h.bomb.mySide, tr: h.bomb.tr, ct: h.bomb.ct } : undefined} players={players} timeLeft={h.timeLeft} title={h.bomb ? (snapshot.foxshot?.pvp ? `PvP · Arena de Blocos · online · primeiro a ${h.bomb.winRounds}` : `Bomba · Duna · online · primeiro a ${h.bomb.winRounds}`) : `Mata-mata · Duna · online`} />}
+          {board && <FsScoreboard bomb={h.bomb ? { mySide: h.bomb.mySide, tr: h.bomb.tr, ct: h.bomb.ct } : undefined} players={players} timeLeft={h.timeLeft} title={h.bomb ? (snapshot.foxshot?.pvp ? `PvP · Arena de Blocos · online · primeiro a ${h.bomb.winRounds}` : `Bomba · ${FS_MAP_NAMES[snapshot.foxshot?.pvp ? 'pvp' : snapshot.foxshot?.map === 'dust2' ? 'dust2' : 'duna']} · online · primeiro a ${h.bomb.winRounds}`) : `Mata-mata · ${FS_MAP_NAMES[snapshot.foxshot?.pvp ? 'pvp' : snapshot.foxshot?.map === 'dust2' ? 'dust2' : 'duna']} · online`} />}
           {count !== null && (
             <div className="fsr-count" role="status" data-testid="fsr-count">
               <FsPreMatch
                 count={count}
                 kind={snapshot.foxshot?.kind === 'bomb' ? 'bomb' : 'dm'}
-                map={snapshot.foxshot?.pvp ? 'Arena de Blocos' : 'Duna'}
+                map={FS_MAP_NAMES[snapshot.foxshot?.pvp ? 'pvp' : snapshot.foxshot?.map === 'dust2' ? 'dust2' : 'duna']}
                 pvp={!!snapshot.foxshot?.pvp}
                 side={snapshot.foxshot?.kind === 'bomb' ? ((snapshot.foxshot?.teams?.[snapshot.me ?? ''] ?? 0) === 1 ? 'tr' : (snapshot.foxshot?.teams?.[snapshot.me ?? ''] ?? 0) === 0 ? 'ct' : null) : null}
                 winRounds={snapshot.foxshot?.winRounds ?? 8}

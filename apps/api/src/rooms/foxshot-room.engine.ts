@@ -36,8 +36,8 @@ export interface FoxShotSettings {
   botsTr: number;
   winRounds: number;
   roundSec: number;
-  /** Mapa: a Duna, ou a arena de blocos no PvP. */
-  map: 'duna' | 'pvp';
+  /** Mapa: a Duna, a Dust 2, ou a arena de blocos no PvP. */
+  map: 'duna' | 'dust2' | 'pvp';
   /** Modo PvP (variante do Bomba sem bomba, com dinheiro infinito e mapa próprio); só vale com `kind: 'bomb'`. */
   pvp: boolean;
 }
@@ -113,7 +113,9 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
       m.roundSec <= (m.pvp ? 300 : 180) &&
       typeof m.pvp === 'boolean' &&
       (!m.pvp || m.kind === 'bomb') &&
-      (m.map === 'duna' || m.map === 'pvp')
+      (m.map === 'duna' || m.map === 'dust2' || m.map === 'pvp') &&
+      (m.map !== 'pvp' || m.pvp) &&
+      (!m.pvp || m.map === 'pvp')
     );
   }
 
@@ -216,7 +218,7 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
       bots: bomb ? botTeams[0] + botTeams[1] : Math.min(this.botTotal(), 10 - humans.length),
       botTeams: bomb ? botTeams : undefined,
       bomb: bomb ? { winRounds: this.cfg.winRounds, roundSec: this.cfg.roundSec, pvp: this.cfg.pvp || undefined } : undefined,
-      map: this.cfg.pvp ? 'pvp' : 'duna',
+      map: this.cfg.pvp ? 'pvp' : this.cfg.map === 'dust2' ? 'dust2' : 'duna',
     };
     this.sim = new FsNetSim(this.simOpts);
     // conexão direta: a contagem é um pouco maior para dar tempo de os aparelhos conectarem ao do líder
@@ -422,7 +424,7 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
         kind: this.cfg.kind,
         winRounds: this.cfg.winRounds,
         roundSec: this.cfg.roundSec,
-        map: this.cfg.pvp ? 'pvp' : 'duna',
+        map: this.cfg.pvp ? 'pvp' : this.cfg.map === 'dust2' ? 'dust2' : 'duna',
         pvp: this.cfg.pvp,
         teams: Object.fromEntries(this.teamPref),
         startAt: this.phase === 'lobby' ? null : this.startAt,
