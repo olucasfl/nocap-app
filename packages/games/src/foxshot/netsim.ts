@@ -8,7 +8,7 @@
 import { fsAssister, type FsDamageEntry } from './assist';
 import { fsFlinch, fsFlinchAt, fsIsBackstab } from './damage';
 import { FS_DUST_MARKS, FS_DUST_SOLIDS, FS_DUST_SPAWNS, fsDustFloorY, fsSiteAt, fsPickSpawn, type FsSpawn } from './dust';
-import { FsBombMatch, fsOtherSide, type FsBombConfig, type FsSide } from './bomb';
+import { FsBombMatch, fsBombBlastDamage, fsOtherSide, type FsBombConfig, type FsSide } from './bomb';
 import { fsBotLevelAt, fsDmFlash, fsDmHear, fsDmHurt, fsDmNew, fsDmPickWeapon, fsDmStep, type FsBotLevel, type FsDmBrain, type FsDmFoe } from './dm';
 import { FsBombTactics } from './bombbots';
 import { fsClearLine, fsFlashEffect, fsFragDamage, fsGrenadeLaunch, fsGrenadeStep, FS_GRENADES, type FsGrenadeBody, type FsGrenadeId } from './grenades';
@@ -807,6 +807,28 @@ export class FsNetSim {
     }
   }
 
+  /**
+   * A C4 explodeu: quem está perto morre, quem está mais longe leva menos dano e quem está muito longe não leva nada. O round
+   * já acabou (a bomba venceu), então o dano é aplicado direto e sem crédito de abate.
+   */
+  private explodeBomb() {
+    const at = this.bombPos;
+    if (!at) return;
+    this.events.push({ k: 'boom', id: ++this.nadeSeq, kind: 'frag', x: r2(at.x), y: r2(at.y), z: r2(at.z) });
+    for (const q of this.players.values()) {
+      if (!q.alive) continue;
+      const dmg = fsBombBlastDamage(Math.hypot(q.mover.x - at.x, q.mover.z - at.z));
+      if (dmg <= 0) continue;
+      q.hp -= dmg;
+      this.events.push({ k: 'hurt', vic: q.id, by: q.id, x: r2(at.x), z: r2(at.z), dmg, head: false });
+      if (q.hp > 0) continue;
+      q.hp = 0;
+      q.alive = false;
+      q.deaths++;
+      this.events.push({ k: 'kill', killer: q.id, victim: q.id, w: 'frag', head: false, assist: null, wall: false, noscope: false, blind: false });
+    }
+  }
+
   /** Retrato do mundo para a tática dos bots (todos os jogadores, humanos e bots). */
   private botWorld() {
     const bm = this.bm!;
@@ -833,6 +855,8 @@ export class FsNetSim {
       if (e.k === 'planted') {
         const at = this.plantPos ?? { x: 0, y: 0, z: 0 };
         this.bombPos = { x: at.x, y: fsDustFloorY(at.x, at.z), z: at.z };
+      } else if (e.k === 'exploded') {
+        this.explodeBomb();
       } else if (e.k === 'roundEnd') {
         this.roundEndAt = this.tick + 5 * FS_NET_HZ;
         this.lastWin = e.winner === 'tr' ? 1 : 2;
@@ -981,6 +1005,13 @@ export class FsNetSim {
           })()
         : undefined,
     };
+  }
+
+  /** O líder encerra a partida com o placar de agora. */
+  endNow(): void {
+    if (this.over) return;
+    this.over = true;
+    this.events.push({ k: 'over' });
   }
 
   /** Pontos de uma pessoa (atalho para testes e tela). */

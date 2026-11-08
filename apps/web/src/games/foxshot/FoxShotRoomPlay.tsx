@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import {
   FS_DUST_SOLIDS,
   FS_TEAMS_ACTIVE,
+  fsClearLine,
   fsSiteAt,
   FsIntel,
   FS_DUST_MARKS,
@@ -34,6 +35,8 @@ import { fsAudio } from '@/lib/foxshot-audio';
 import { leaveRoom, sendRoom, serverNow, type RoomSnapshot } from '@/lib/rooms';
 import { FsNetClient } from '@/lib/foxshot-link';
 import { GameChat } from '@/components/GameChat';
+import { PauseOverlay } from '@/components/PauseOverlay';
+import { useGameChat } from '@/lib/game-chat-state';
 import { InviteDialog } from '@/components/InviteDialog';
 import { FoxShotScene, fsWorldDust, type Quality } from './FoxShotScene';
 import { FsControls } from './fs-controls';
@@ -159,7 +162,8 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
   useEffect(() => () => netRef.current?.dispose(), []);
   const settings = useFsSettings();
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
-  const [paused, setPausedState] = useState(mePlayer);
+  // a partida abre jogando (o menu só abre com o Esc); no celular não há mouse para prender
+  const [paused, setPausedState] = useState(false);
   const [needClick, setNeedClick] = useState(false);
   const [shop, setShopState] = useState(false);
   const [board, setBoard] = useState(false);
@@ -216,6 +220,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
     const touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
     let dead = false;
     let raf = 0;
+    let lastResumeAt = 0;
 
     const controls = new FsControls();
     ctl.current = controls;
@@ -240,7 +245,11 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         }
       },
       (locked) => {
-        if (!locked && !pausedRef.current && !shopRef.current && !bigMapRef.current) setPaused(true);
+        // abrir o chat solta o mouse de propósito: não é pedido de menu; e logo depois de começar, soltar o mouse só pede o clique
+        if (!locked && !pausedRef.current && !shopRef.current && !bigMapRef.current && !useGameChat.getState().open) {
+          if (performance.now() - lastResumeAt > 1500) setPaused(true);
+          else setNeedClick(true);
+        }
         if (locked) {
           setPaused(false);
           setNeedClick(false);
@@ -299,6 +308,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
     };
     window.addEventListener('keyup', onKeyUp);
     const resume = () => {
+      lastResumeAt = performance.now();
       setPaused(false);
       fsAudio.init();
       if (!isPlayerNow()) return;
@@ -379,7 +389,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
     const bombFrozen = () => !!bf && (bf[0] === 0 || bf[0] === 4);
     let lastFrameAt = 0;
     let timeLeft = info.minutes * 60;
-    const remotes = new Map<string, { buf: Snap[]; alive: boolean; shown: boolean; weapon: number; team?: 'ct' | 't'; teamBit?: 0 | 1; ally?: boolean; allyName?: string; allyTeam?: "ct" | "t" }>();
+    const remotes = new Map<string, { buf: Snap[]; alive: boolean; shown: boolean; weapon: number; team?: 'ct' | 't'; teamBit?: 0 | 1; ally?: boolean; allyName?: string; allyTeam?: "ct" | "t"; allyGhost?: boolean }>();
     for (const id of SLOTS) remotes.set(id, { buf: [], alive: true, shown: false, weapon: 0 });
     const rows = new Map<string, Row>();
     const nades = new Map<number, number>();
@@ -531,12 +541,19 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         const idx = Number(key.slice(1));
         const who = rosterNow()[idx];
         // hoje é todos contra todos: sem aliados (nome em cima da cabeça e silhueta por trás da parede só quando houver times)
-        const ally = (FS_TEAMS_ACTIVE || !!bf) && !!who && who.id !== meId && myBit !== undefined && rm.teamBit === myBit;
-        if (rm.ally !== ally || (ally && (rm.allyName !== who?.name || rm.allyTeam !== rm.team))) {
+        // morto não mostra nome nem silhueta; a silhueta só aparece quando há parede no meio (de frente o próprio corpo basta)
+        const ally = (FS_TEAMS_ACTIVE || !!bf) && !!who && who.id !== meId && myBit !== undefined && rm.teamBit === myBit && rm.alive && rm.shown;
+        let ghost = false;
+        if (ally) {
+          const row = rows.get(who!.id);
+          if (row) ghost = !fsClearLine(ARENA, [mover.x, mover.y + fsEyeHeight(mover), mover.z], [row.x, row.y + 0.9, row.z]);
+        }
+        if (rm.ally !== ally || rm.allyGhost !== ghost || (ally && (rm.allyName !== who?.name || rm.allyTeam !== rm.team))) {
           rm.ally = ally;
+          rm.allyGhost = ghost;
           rm.allyName = who?.name;
           rm.allyTeam = rm.team;
-          scene.setAlly(key, ally, who?.name ?? '', rm.team === 't' ? 't' : 'ct');
+          scene.setAlly(key, ally, who?.name ?? '', rm.team === 't' ? 't' : 'ct', ghost);
         }
       }
       // granadas no ar
@@ -1467,8 +1484,9 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           )}
           {inviteOpen && <InviteDialog onClose={() => setInviteOpen(false)} />}
           <GameChat enabled onClosed={(wasLocked) => wasLocked && ctl.current?.requestLock()} />
+          <PauseOverlay />
           {paused && (
-            <FsMenu touch={touchUi} onResume={() => resumeRef.current()} onEnd={() => void leaveRoom()} endLabel="Sair da sala" endConfirm={false} exitTo={null}>
+            <FsMenu touch={touchUi} onResume={() => resumeRef.current()} onEnd={() => void leaveRoom()} exitTo={null} online={{ onLeave: () => void leaveRoom() }}>
               <button type="button" className="fsm-item" onClick={() => setInviteOpen(true)} data-sfx="start" data-testid="fsr-invite">
                 Convidar amigos
               </button>

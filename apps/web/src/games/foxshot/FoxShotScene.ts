@@ -880,10 +880,10 @@ export class FoxShotScene {
    * Raposa do mesmo time que você (como o CS): o nome fica em cima da cabeça e o corpo aparece em azul por trás das paredes
    * (só onde está escondido). Vale só para aliados: os outros continuam escondidos pelo mapa.
    */
-  setAlly(id: string, ally: boolean, name = '', team: 'ct' | 't' = 'ct') {
+  setAlly(id: string, ally: boolean, name = '', team: 'ct' | 't' = 'ct', ghost = true) {
     const f = this.foxes.get(id);
     if (!f) return;
-    if (ally && !f.ghost) {
+    if (ally && ghost && !f.ghost) {
       const mat = new THREE.MeshBasicMaterial({ color: 0x4da3ff, transparent: true, opacity: 0.5, depthTest: true, depthFunc: THREE.GreaterDepth, depthWrite: false });
       f.ghost = [];
       f.ghostMat = mat;
@@ -904,7 +904,8 @@ export class FoxShotScene {
         f.ghost.push(g);
       }
     }
-    f.ghost?.forEach((g) => (g.visible = ally));
+    // a silhueta só aparece atrás de parede (`ghost`); o nome aparece sempre; morto não mostra nenhum dos dois
+    f.ghost?.forEach((g) => (g.visible = ally && ghost));
     f.ghostMat?.color.set(team === 't' ? 0xff9a3c : 0x4da3ff);
     if (ally) {
       const tagKey = `${name}|${team}`;

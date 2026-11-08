@@ -1,5 +1,5 @@
 import { FS_NET_HZ } from '@nocap/games';
-import { currentRtt, sendRoom, sendRoomQuiet, serverNow, subscribeRoom } from './rooms';
+import { currentRtt, gameFrozen, sendRoom, sendRoomQuiet, serverNow, subscribeRoom } from './rooms';
 
 /**
  * Por onde a partida do Counter Fox chega e a entrada sai (spec 060). O cliente do jogo só conhece `FsLink`:
@@ -61,6 +61,7 @@ interface HostPeer {
 export class FsHostSession {
   private peers = new Map<string, HostPeer>();
   private worker: Worker | null = null;
+  private pauseTimer = 0;
   private unsub: () => void;
   private frameCbs = new Set<(m: unknown) => void>();
   readonly link: FsLink;
@@ -162,6 +163,14 @@ export class FsHostSession {
     this.worker = w;
     w.onmessage = (ev: MessageEvent) => this.onWorker(ev.data as WorkerOut);
     w.postMessage({ t: 'init', opts, delayMs: Math.max(0, startAt - serverNow()) });
+    // a pausa do líder da sala para a partida daqui também
+    let frozen = false;
+    this.pauseTimer = window.setInterval(() => {
+      const now = gameFrozen();
+      if (now === frozen) return;
+      frozen = now;
+      this.worker?.postMessage({ t: 'pause', on: now });
+    }, 60);
   }
 
   private onWorker(m: WorkerOut) {
@@ -183,6 +192,7 @@ export class FsHostSession {
   }
 
   dispose() {
+    window.clearInterval(this.pauseTimer);
     this.worker?.postMessage({ t: 'stop' });
     this.worker?.terminate();
     this.worker = null;

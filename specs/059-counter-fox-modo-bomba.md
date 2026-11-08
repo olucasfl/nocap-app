@@ -122,3 +122,10 @@ Pedido do Lucas: o online do Counter Fox tinha lag; fazer como o Fut Fox/Ping Fo
 No modo Bomba a aba **Sala** do lobby do Counter Fox mostra os dois times com 5 vagas cada (pessoas, bots e vagas livres), quem está **espectando**, e cada pessoa escolhe o time clicando numa vaga (ou **Espectar**; quem espectar não entra na partida). O líder põe ou tira bots de cada time ali (− e +). A escolha de time saiu da aba Jogadores (fica só o rótulo TR/CT/Espectando) e os bots saíram da aba Modo no modo Bomba. A sala recusa o 6º do mesmo time (pessoas + bots ≤ 5).
 
 No mata-mata os bots também saíram da aba Modo: ficam na aba **Sala**, num quadro "Jogadores" com as vagas (pessoas, bots e vagas livres até 10) e a escolha de 0 a 9 bots para o líder.
+
+## Progresso: menu Esc completo, pausa, estouro da bomba, aliados
+
+- Menu Esc (`FsMenu`): uma lista só, como nos outros jogos do Fox Cap!: Continuar, Pausar o jogo para todos (líder, online), Encerrar a partida (líder online / confirmação offline), Personalizar e Comandos (abrem as abas por cima, com "Voltar"), Convidar, Som, Sair da sala e Encerrar a sala (líder). Pausa online: a sala para o relógio (`gnow`) e o aparelho do líder para o Worker; todos veem o `PauseOverlay`. Encerrar: `fsend` (a sala ou o último placar do líder).
+- Abrir o chat não abre mais o menu; a partida abre jogando (soltar o mouse logo no começo só mostra "Clique na tela").
+- Estouro da C4 (`fsBombBlastDamage`): mata até 10 m, dano cai em linha reta até 30 m e depois disso ninguém se machuca. Vale no servidor, no aparelho do líder e no offline.
+- Aliados: morto não mostra nome nem silhueta; o nome aparece sempre e a silhueta só atrás de parede (teste de linha de visão por quadro).

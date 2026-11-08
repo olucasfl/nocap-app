@@ -7,6 +7,14 @@ import type { FsWeaponId } from './weapons';
 
 /** Segundos a mais de compra (na base) depois de liberar o round. */
 export const FS_BUY_GRACE = 15;
+/** Estouro da C4: mata até 10 m, depois o dano cai em linha reta e some aos 30 m (além disso ninguém se machuca). */
+export const FS_BLAST_LETHAL = 10;
+export const FS_BLAST_MAX = 30;
+export function fsBombBlastDamage(dist: number): number {
+  if (dist <= FS_BLAST_LETHAL) return 999;
+  if (dist >= FS_BLAST_MAX) return 0;
+  return 100 * (1 - (dist - FS_BLAST_LETHAL) / (FS_BLAST_MAX - FS_BLAST_LETHAL));
+}
 export type FsSide = 'tr' | 'ct';
 export const fsOtherSide = (s: FsSide): FsSide => (s === 'tr' ? 'ct' : 'tr');
 

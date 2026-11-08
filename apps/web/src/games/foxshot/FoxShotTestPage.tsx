@@ -5,6 +5,7 @@ import {
   FS_DUST_MARKS,
   FS_TEAMS_ACTIVE,
   FS_FRIENDLY_FIRE,
+  fsBombBlastDamage,
   fsSiteAt,
   FsIntel,
   FS_DUST_SOLIDS,
@@ -78,6 +79,7 @@ import { bindLabel, fsSettings, useFsSettings } from './fs-settings';
 
 const bombKey = () => bindLabel(fsSettings().binds.bomb);
 import { FsMenu } from './FsMenu';
+import { useGameChat } from '@/lib/game-chat-state';
 import { FsShop } from './FsShop';
 import {
   FsBigMap,
@@ -289,6 +291,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     const cv = canvas.current!;
     let raf = 0;
     let dead = false;
+    let lastResumeAt = 0;
     const controls = new FsControls();
     ctl.current = controls;
     controls.enabled = false;
@@ -313,7 +316,10 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       (locked) => {
         if (endedRef.current) return;
         // o mouse soltou (Esc ou clique fora): abre o menu; prendeu: some o menu
-        if (!locked && !pausedRef.current && !shopRef.current && !bigMapRef.current && performance.now() - shopClosedAt.current > 600) setPaused(true);
+        if (!locked && !pausedRef.current && !shopRef.current && !bigMapRef.current && performance.now() - shopClosedAt.current > 600 && !useGameChat.getState().open) {
+          if (performance.now() - lastResumeAt > 1500) setPaused(true);
+          else setNeedClick(true);
+        }
         if (locked) {
           setPaused(false);
           setNeedClick(false);
@@ -356,6 +362,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     };
     window.addEventListener('keydown', onKey);
     const resume = () => {
+      lastResumeAt = performance.now();
       setPaused(false);
       // prepara os sons (um clique já aconteceu): sintetiza todos uma vez
       fsAudio.init();
@@ -782,9 +789,9 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       window.setTimeout(() => setFeed((l) => l.filter((x) => x.key !== key)), 6000);
     };
     /** Mata-mata: um bot (ou você) leva dano de `attacker`. Cuida de vida, colete, abate, assistência, pontos e do aviso na tela. */
-    function dealDamage(victim: string, attacker: string, hp: number, armorLoss: number, head: boolean, icon: FsWeaponId | FsGrenadeId, fx: number, fz: number): 'kill' | 'hit' | null {
-      // modo Bomba: sem dano na fase de compra ou depois do fim do round
-      if (bm && bm.phase !== 'live' && bm.phase !== 'planted') return null;
+    function dealDamage(victim: string, attacker: string, hp: number, armorLoss: number, head: boolean, icon: FsWeaponId | FsGrenadeId, fx: number, fz: number, force = false): 'kill' | 'hit' | null {
+      // modo Bomba: sem dano na fase de compra ou depois do fim do round (o estouro da bomba passa por cima disso)
+      if (bm && !force && bm.phase !== 'live' && bm.phase !== 'planted') return null;
       // fogo amigo: um quarto do dano e a cabeça não mata na hora (igual ao servidor)
       const friendly = !!bm && attacker !== victim && sideOf(attacker) === sideOf(victim);
       if (friendly) {
@@ -936,6 +943,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     let lastCarrier: string | null = null;
     let beepIn = 0;
     let swapKey = 0;
+    const allyState = new Map<string, string>();
     /** Terrorista com a C4 na mão (tecla Z): só assim dá para plantar. */
     let bombHeld = false;
     let tacticsRound = -1;
@@ -1075,6 +1083,16 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
           if (bombPos) {
             scene.explosion('frag', bombPos.x, bombPos.y, bombPos.z);
             fsAudio.nadeAt('boom-frag', bombPos.x, bombPos.y, bombPos.z, mover.x, mover.z);
+            // o estouro mata quem está perto, machuca quem está mais longe e não toca em quem está muito longe
+            const at = bombPos;
+            const dmMe = fsBombBlastDamage(Math.hypot(mover.x - at.x, mover.z - at.z));
+            if (dmMe > 0 && clock >= deadUntil) hurtPlayer(dmMe, 0, false, 'Bomba', 'frag', undefined, { x: at.x, z: at.z });
+            for (const d of dmSpecs) {
+              const bb = brains.get(d.id);
+              if (!bb || !targets.get(d.id)!.alive) continue;
+              const dm = fsBombBlastDamage(Math.hypot(bb.mover.x - at.x, bb.mover.z - at.z));
+              if (dm > 0) dealDamage(d.id, d.id, dm, 0, false, 'frag', at.x, at.z, true);
+            }
           }
           scene.setBomb(0, 0, 0, 'off');
           break;
@@ -1181,6 +1199,19 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       }
       if (bombHeld && (bm.carrier !== 'me' || !meAlive || bm.phase === 'planted' || bm.phase === 'end')) bombHeld = false;
       scene.setBombInHand(bombHeld && meAlive, bm.planting === 'me' ? bm.plantProgress / bm.cfg.plantSec : 0);
+      // aliados: nome sempre (só vivos) e silhueta só atrás de parede
+      for (const d of dmSpecs) {
+        const side = sideOf(d.id)!;
+        const alive = targets.get(d.id)!.alive && !!brains.get(d.id);
+        const ally = alive && side === sideOf('me');
+        const bm2 = brains.get(d.id);
+        const ghost = ally && !!bm2 && !fsClearLine(ARENA, [mover.x, mover.y + fsEyeHeight(mover), mover.z], [bm2.mover.x, bm2.mover.y + 0.9, bm2.mover.z]);
+        const key2 = `${ally}|${ghost}|${side}`;
+        if (allyState.get(d.id) !== key2) {
+          allyState.set(d.id, key2);
+          scene.setAlly(d.id, ally, d.label, side === 'tr' ? 't' : 'ct', ghost);
+        }
+      }
       // C4 na cena: plantando e desarmando aparecem para todos; plantada pisca e apita (som sai dela)
       const planter = bm.planting;
       const defuserId = bm.defusing;
@@ -2095,7 +2126,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         if (bm) {
           const side = sideOf(d.id)!;
           scene.setTeam(d.id, side === 'tr' ? 't' : 'ct');
-          scene.setAlly(d.id, side === sideOf('me'), d.label, side === 'tr' ? 't' : 'ct');
+          allyState.delete(d.id);
           return;
         }
         scene.setTeam(d.id, i % 2 === 0 ? 't' : 'ct');

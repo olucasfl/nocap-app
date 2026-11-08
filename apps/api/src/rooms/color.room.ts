@@ -889,6 +889,16 @@ export class FoxShotRoom extends ColorRoom {
       if (id) engine().receive(id, m);
     });
     // conexão direta (WebRTC): o aparelho avisa que conectou, o líder manda o placar e a sala só repassa a sinalização
+    this.onMessage('fsend', (c) => {
+      const id = (c.userData as AuthData | undefined)?.id;
+      if (!id) return;
+      try {
+        engine().endMatch(id);
+        this.publish();
+      } catch (e) {
+        c.send('error', e instanceof RoomError ? e.message : 'Não deu para encerrar');
+      }
+    });
     this.onMessage('fsp2p', (c, m: { ok?: unknown }) => {
       const id = (c.userData as AuthData | undefined)?.id;
       if (id) engine().p2pReport(id, m?.ok);

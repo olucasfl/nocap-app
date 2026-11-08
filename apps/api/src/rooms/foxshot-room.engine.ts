@@ -156,8 +156,9 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
     this.dirty = true;
   }
 
+  /** O líder pausa para todo mundo (na sala o relógio da partida para; no ponto a ponto o aparelho do líder também para). */
   protected override pausable(): boolean {
-    return false;
+    return true;
   }
 
   override start(id: string) {
@@ -217,7 +218,7 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
     this.p2pHost = this.hostId ?? '';
     const hostM = this.members.get(this.p2pHost);
     this.net = this.p2pEnabled && hostM?.connected ? 'pending' : 'server';
-    this.startAt = this.now() + (this.net === 'pending' ? FOXSHOT_P2P_COUNTDOWN_MS : FOXSHOT_COUNTDOWN_MS);
+    this.startAt = this.gnow() + (this.net === 'pending' ? FOXSHOT_P2P_COUNTDOWN_MS : FOXSHOT_COUNTDOWN_MS);
     this.p2pDeadline = this.startAt - 400;
     this.overAt = 0;
     this.phase = 'show';
@@ -258,6 +259,18 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
       const inp = fsNetParseInput(r);
       if (inp) this.sim.pushInput(id, inp);
     }
+  }
+
+  /** O líder encerra a partida com o placar de agora (sala ou aparelho do líder, tanto faz). */
+  endMatch(id: string): void {
+    this.requireHost(id);
+    if (this.phase !== 'play') throw new RoomError('A partida não está rolando');
+    if (this.net === 'p2p') {
+      // vale o último placar que o líder mandou
+      this.p2pOver = true;
+      this.p2pOverAt = this.now() - OVER_MS;
+    } else this.sim?.endNow();
+    this.dirty = true;
   }
 
   /** Quem precisa conectar ao aparelho do líder: todo mundo que está na sala agora. */
@@ -308,7 +321,7 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
       if (ready) {
         this.net = 'p2p';
         this.dirty = true;
-      } else if (this.now() >= this.p2pDeadline) this.toServerMode();
+      } else if (this.gnow() >= this.p2pDeadline) this.toServerMode();
     }
     if (this.phase === 'play' && this.net === 'p2p') {
       // o líder simula; aqui só se espera o fim (ou o líder sumir: fica o último placar dele)
@@ -331,7 +344,7 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
   }
 
   private tickServer(): boolean {
-    const t = this.now();
+    const t = this.gnow();
     if (this.phase === 'show') {
       if (t < this.startAt) return false;
       this.phase = 'play';
