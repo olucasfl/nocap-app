@@ -216,7 +216,7 @@ shell &= near2f[:, :, None]
 shell[:, :, : max(0, kmin * 2 - 4)] = False
 kmin_b = kmin * 2
 # colisão fantasma: só fica o sólido que tem superfície VISÍVEL (do OBJ do desenho) a menos de ~30 cm
-def visible_mask():
+def visible_mask(dil=2):
     obj = [f for f in os.listdir(sys.argv[1]) if f.endswith('.obj')][0]
     V = []; F = []
     for line in open(os.path.join(sys.argv[1], obj)):
@@ -243,12 +243,35 @@ def visible_mask():
             for j in range(mm + 1 - i):
                 u = i / mm; v = j / mm
                 mark(A[sel] * (1 - u - v) + B[sel] * u + C[sel] * v)
-    for _ in range(2):  # 2 voxels finos de folga
+    for _ in range(dil):  # voxels finos de folga
         nx_ = vis.copy()
         for ax in range(3):
             for sgn in (-1, 1): nx_ |= np.roll(vis, sgn, axis=ax)
         vis = nx_
     return vis
+if os.environ.get('ALIGN'):
+    v0 = visible_mask(0)
+    sh1 = fsolid & np.roll(ffree_tmp := ~fsolid, 1, 0) if False else None
+    surf = fsolid.copy(); free_ = ~fsolid
+    adj = np.zeros_like(fsolid)
+    for ax in range(3):
+        for sg in (-1, 1): adj |= np.roll(free_, sg, axis=ax)
+    surf &= adj
+    surf &= near2f[:, :, None]
+    best = None
+    for dy in range(-3, 4):
+        for dx in range(-3, 4):
+            for dz in range(-3, 4):
+                m_ = np.roll(np.roll(np.roll(v0, dx, 0), dy, 1), dz, 2)
+                # vizinhança de 1 voxel
+                d_ = m_.copy()
+                for ax in range(3):
+                    for sg in (-1, 1): d_ |= np.roll(m_, sg, axis=ax)
+                sc = int((surf & d_).sum())
+                if best is None or sc > best[0]: best = (sc, dx, dy, dz)
+                if (dx, dy, dz) == (0, 0, 0): print('sem deslocamento', sc, 'de', int(surf.sum()))
+    print('melhor deslocamento (voxels finos i,j,k):', best)
+    raise SystemExit
 vis = visible_mask()
 print('casca antes', int(shell.sum()), 'com superfície visível', int((shell & vis).sum()))
 if os.environ.get('VIS'): shell &= vis

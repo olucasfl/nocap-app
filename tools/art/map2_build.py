@@ -12,6 +12,7 @@ import numpy as np
 from PIL import Image
 
 K = 46.0
+ALIGN = (-0.10, -0.08, 0.52)  # deslocamento (x, y, z) em metros do desenho para a colisão
 S_BSP = 1 / 2419.2        # unidade do BSP -> unidade do OBJ
 BSP_CY, BSP_CX = -704.0, 876.0
 CELL = 0.5
@@ -251,6 +252,8 @@ for name, fl in faces.items():
     f = np.array(fl)
     tri_v = f[:, 0:3]; tri_t = f[:, 3:6]
     pos = G[tri_v.reshape(-1)].astype(np.float32).copy(); pos[:, 1] -= off_y
+    # o OBJ e o BSP não casam por ~0,5 m (medido com tools/art/map2_align.py): o desenho é deslocado para cair exatamente em cima da colisão
+    pos[:, 0] += ALIGN[0]; pos[:, 1] += ALIGN[1]; pos[:, 2] += ALIGN[2]
     P = pos.reshape(-1, 3, 3)
     uv = VT[tri_t.reshape(-1)].astype(np.float32).copy(); uv[:, 1] = 1 - uv[:, 1]
     mat = mats.get(name, {})
