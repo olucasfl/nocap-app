@@ -609,12 +609,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       const px = mover.x;
       const pz = mover.z;
       if (e.k === 'shot') {
-        // o motivo de um tiro seu não ter dado dano (só o que o servidor sabe): alvo protegido ou parede na frente
-        if (e.by === meId) {
-          if (e.o === 1) showMarker('armor', 'PROTEGIDO');
-          else if ((e.o === 2 || e.o === 3) && e.w === 'sniper') showMarker('armor', `${e.o === 2 ? 'PAREDE' : 'ERROU'} · DESVIO ${((e.c ?? 0) / 10).toFixed(1)}° · ${Math.hypot(e.to[0] - e.from[0], e.to[2] - e.from[2]).toFixed(0)} m${e.d ? ` · ALVO ${e.d[0]} cm lado, ${e.d[1]} cm altura, a ${e.d[2]} m, atraso ${e.d[3]}` : ''}`);
-          return;
-        }
+        if (e.by === meId) return;
         // escutei o tiro de alguém (ao alcance do som da arma): aparece no radar e vai atualizando enquanto atira
         if (isPlayerNow() && e.by !== meId) intel.hearShot(e.by, e.from[0], e.from[2], e.w, mover.x, mover.z, performance.now() / 1000, rows.get(e.by)?.yaw ?? 0);
         const o = new THREE.Vector3(e.from[0], e.from[1], e.from[2]);
