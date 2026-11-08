@@ -56,6 +56,8 @@ export default defineConfig(({ mode, command }) => {
           : {}),
       },
     },
+    // os workers (host do Counter Fox, bola) são módulos e importam o pacote de jogos, que carrega a Duna por import dinâmico: o formato padrão (iife) não aceita isso
+    worker: { format: 'es' },
     plugins: [
       react(),
       {
