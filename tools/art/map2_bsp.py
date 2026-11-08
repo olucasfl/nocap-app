@@ -12,7 +12,7 @@ import base64, json, math, os, re, struct, sys
 import numpy as np
 
 S_BSP = 1 / 2419.2     # unidade do BSP -> unidade do OBJ
-K = 40.0               # metros por unidade do OBJ
+K = 46.0               # metros por unidade do OBJ (o mapa original é 15% maior no jogo: o corpo do jogo é mais largo que o do CS e as passagens apertadas precisam caber)
 M = S_BSP * K          # metros por unidade do BSP (0,01653)
 BSP_CY, BSP_CX = -704.0, 876.0
 Z_ABS0 = 645.25        # altura (BSP) que corresponde ao zero do modelo do OBJ
@@ -194,6 +194,8 @@ for e in ents:
         X, Y, Z = np.meshgrid(fxs[lo[0]:hi[0]], fys[lo[1]:hi[1]], fzs[lo[2]:hi[2]], indexing='ij')
         P = np.stack([X.ravel(), Y.ravel(), Z.ravel()], axis=1).astype(np.float32)
         fsolid[lo[0]:hi[0], lo[1]:hi[1], lo[2]:hi[2]] |= classify(P, int(m[9])).reshape(X.shape)
+np.save('/tmp/newmap/fsolid.npy', np.packbits(fsolid, axis=2))
+json.dump({'x0': x0g, 'z0': z0g, 'bc': vox_m / 2, 'kmin_b': kmin * 2, 'shape': list(fsolid.shape)}, open('/tmp/newmap/fsolid.json', 'w'))
 ffree = ~fsolid
 fr = ffree.copy()
 for _ in range(2):  # 2 voxels finos de casca (26 cm): chão e parede nunca são finos demais para o corpo
@@ -204,7 +206,7 @@ for _ in range(2):  # 2 voxels finos de casca (26 cm): chão e parede nunca são
     fr = nx_
 shell = fsolid & fr
 near2d = has.copy()
-for _ in range(14):
+for _ in range(60):
     nxt = near2d.copy()
     for ax in range(2):
         for sgn in (-1, 1): nxt |= np.roll(near2d, sgn, axis=ax)
@@ -212,6 +214,44 @@ for _ in range(14):
 near2f = np.repeat(np.repeat(near2d, 2, axis=0), 2, axis=1)
 shell &= near2f[:, :, None]
 shell[:, :, : max(0, kmin * 2 - 4)] = False
+kmin_b = kmin * 2
+# colisão fantasma: só fica o sólido que tem superfície VISÍVEL (do OBJ do desenho) a menos de ~30 cm
+def visible_mask():
+    obj = [f for f in os.listdir(sys.argv[1]) if f.endswith('.obj')][0]
+    V = []; F = []
+    for line in open(os.path.join(sys.argv[1], obj)):
+        if line.startswith('v '): V.append(list(map(float, line.split()[1:4])))
+        elif line.startswith('f '):
+            vi = [int(t.split('/')[0]) - 1 for t in line.split()[1:]]
+            for k in range(1, len(vi) - 1): F.append((vi[0], vi[k], vi[k + 1]))
+    V = np.array(V); F = np.array(F)
+    G = np.stack([V[:, 1] * K, -V[:, 0] * K, V[:, 2] * K], axis=-1)
+    G[:, 1] -= hmin
+    vis = np.zeros(shell.shape, bool)
+    bc = vox_m / 2
+    def mark(P):
+        ii = np.floor((P[:, 2] - z0g) / bc).astype(int); jj = np.floor((P[:, 0] - x0g) / bc).astype(int); kk = np.floor(P[:, 1] / bc).astype(int) + kmin_b
+        ok = (ii >= 0) & (ii < vis.shape[0]) & (jj >= 0) & (jj < vis.shape[1]) & (kk >= 0) & (kk < vis.shape[2])
+        vis[ii[ok], jj[ok], kk[ok]] = True
+    A = G[F[:, 0]]; B = G[F[:, 1]]; C = G[F[:, 2]]
+    edge = np.maximum(np.maximum(np.linalg.norm(B - A, axis=1), np.linalg.norm(C - B, axis=1)), np.linalg.norm(A - C, axis=1))
+    for m in range(1, 40):
+        sel = (np.ceil(edge / 0.08) == m) if m < 39 else (np.ceil(edge / 0.08) >= m)
+        if not sel.any(): continue
+        mm = min(m, 60)
+        for i in range(mm + 1):
+            for j in range(mm + 1 - i):
+                u = i / mm; v = j / mm
+                mark(A[sel] * (1 - u - v) + B[sel] * u + C[sel] * v)
+    for _ in range(2):  # 2 voxels finos de folga
+        nx_ = vis.copy()
+        for ax in range(3):
+            for sgn in (-1, 1): nx_ |= np.roll(vis, sgn, axis=ax)
+        vis = nx_
+    return vis
+vis = visible_mask()
+print('casca antes', int(shell.sum()), 'com superfície visível', int((shell & vis).sum()))
+if os.environ.get('VIS'): shell &= vis
 print('voxels de casca (finos)', int(shell.sum()))
 kmin_b = kmin * 2   # origem vertical das caixas: em voxels finos
 

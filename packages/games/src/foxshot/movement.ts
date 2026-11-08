@@ -51,7 +51,7 @@ export const fsQuiet = (inp: Pick<FsMoveInput, 'crouch' | 'walk'>) => !!(inp.cro
 export const fsNewMover = (x: number, z: number): FsMover => ({ x, y: 0, z, vx: 0, vy: 0, vz: 0, onGround: true, crouchK: 0 });
 
 const overlaps = (m: FsMover, b: FsBox, r = FS_MOVE.radius) =>
-  m.x + r > b.min[0] && m.x - r < b.max[0] && m.z + r > b.min[2] && m.z - r < b.max[2] && m.y + fsBodyHeight(m) > b.min[1] && m.y < b.max[1];
+  m.x + r > b.min[0] + 1e-4 && m.x - r < b.max[0] - 1e-4 && m.z + r > b.min[2] + 1e-4 && m.z - r < b.max[2] - 1e-4 && m.y + fsBodyHeight(m) > b.min[1] + 1e-4 && m.y < b.max[1] - 1e-4;
 
 /** Um passo de movimento (use dt fixo, ex. 1/120): pulo, atrito, aceleração (chão ou ar), gravidade e colisão com as caixas. */
 export function fsStepMover(m: FsMover, inp: FsMoveInput, dt: number, allBoxes: readonly FsBox[], extra: readonly FsBox[] = []): void {
@@ -169,6 +169,12 @@ export function fsStepMover(m: FsMover, inp: FsMoveInput, dt: number, allBoxes: 
     if (m.y !== oy) {
       for (const b of boxes) {
         if (!overlaps(m, b)) continue;
+        // quem já estava dentro na altura antiga é obstáculo do lado (tratado em x/z), não chão nem teto
+        const ny = m.y;
+        m.y = oy;
+        const was = overlaps(m, b);
+        m.y = ny;
+        if (was) continue;
         if (m.y < oy || (m.y === oy && m.vy <= 0)) {
           m.y = b.max[1];
           grounded = true;

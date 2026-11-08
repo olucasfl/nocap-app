@@ -11,7 +11,7 @@ import json, math, os, re, struct, sys
 import numpy as np
 from PIL import Image
 
-K = 40.0                  # metros por unidade do OBJ (o mapa fica com uns 100 m de lado)
+K = 46.0
 S_BSP = 1 / 2419.2        # unidade do BSP -> unidade do OBJ
 BSP_CY, BSP_CX = -704.0, 876.0
 CELL = 0.5
