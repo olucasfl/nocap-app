@@ -57,7 +57,8 @@ export interface FsNetInput {
 }
 
 export type FsNetEvent =
-  | { k: 'shot'; by: string; from: Vec3; to: Vec3; w: FsWeaponId }
+  /** `o`: o que o tiro achou (0 corpo, 1 alvo protegido pelo nascimento, 2 parede ou chão, 3 nada): o atirador vê o motivo de não dar dano. */
+  | { k: 'shot'; by: string; from: Vec3; to: Vec3; w: FsWeaponId; o?: number }
   | { k: 'hit'; by: string; vic: string; dmg: number; head: boolean; armor: boolean; kill: boolean }
   | { k: 'hurt'; vic: string; by: string; x: number; z: number; dmg: number; head: boolean }
   | { k: 'kill'; killer: string; victim: string; w: FsWeaponId | FsGrenadeId; head: boolean; assist: string | null; wall: boolean; noscope: boolean; blind: boolean }
@@ -566,7 +567,8 @@ export class FsNetSim {
     const noscope = wid === 'sniper' && !scoped;
     for (const dir of rays) {
       const tr = fsTrace(w, eye, dir, this.boxes, bodies);
-      this.events.push({ k: 'shot', by: p.id, from: eye.map(r2) as Vec3, to: tr.point.map(r2) as Vec3, w: wid });
+      const shielded = tr.kind === 'player' && !!tr.targetId && (this.players.get(tr.targetId)?.shieldUntil ?? 0) > this.tick;
+      this.events.push({ k: 'shot', by: p.id, from: eye.map(r2) as Vec3, to: tr.point.map(r2) as Vec3, w: wid, o: shielded ? 1 : tr.kind === 'player' ? 0 : tr.kind === 'world' ? 2 : 3 });
       if (tr.kind === 'player' && tr.targetId && tr.damage) {
         const c = pool.get(tr.targetId) ?? { hp: 0, armorLoss: 0, head: false, armorHit: false, wall: false };
         c.hp += tr.damage.hp;
