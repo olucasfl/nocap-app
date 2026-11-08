@@ -72,3 +72,15 @@ test('Duna: ninguém cai do mapa na contagem e "Se matar" funciona sem tela bran
   await page.screenshot({ path: 'test-results/cidade-sematar.png' });
   expect(errors).toEqual([]);
 });
+
+test('Duna: mapa grande (M) mostra planta com bombas e bases sem nomes repetidos', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'um projeto basta');
+  test.setTimeout(240_000);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await start(page, 'bomb');
+  await expect(page.getByTestId('fb-hud')).toBeVisible({ timeout: 120_000 });
+  await page.waitForTimeout(2500);
+  await page.keyboard.press('KeyM');
+  await page.waitForTimeout(1200);
+  await page.screenshot({ path: 'test-results/duna-mapa.png' });
+});

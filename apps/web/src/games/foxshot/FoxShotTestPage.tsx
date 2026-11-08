@@ -73,6 +73,7 @@ import { FoxShotScene, FS_WORLD_TRAIN, fsWorldFor, type Quality } from './FoxSho
 import { FsMatchEnd } from './FsMatchEnd';
 import { FsBombEnd } from './FsBombEnd';
 import { FsShield } from './FsShield';
+import { fsMapPlan } from './FsMapPlan';
 import { FsControls } from './fs-controls';
 import { bindLabel, fsSettings, useFsSettings } from './fs-settings';
 
@@ -2087,6 +2088,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         yaw: view.yaw,
         intel: match ? intelDots : undefined,
         boxes: ARENA,
+        plan: world.style !== 'train' ? fsMapPlan(map) : undefined,
         labels: world.labels,
         marks: world.style !== 'train' ? map.marks : undefined,
         // no mata-mata todos são inimigos e o radar não entrega onde estão

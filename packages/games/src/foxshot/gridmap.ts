@@ -384,7 +384,8 @@ export function createGridMap(opts: { id: string; name: string; data: FsGridMapD
     return out;
   };
 
-  const labels = marks.map((m) => ({ x: m.x, z: m.z, text: m.name }));
+  // os nomes das bombas e das bases já saem das marcas; não repete aqui
+  const labels: { x: number; z: number; text: string }[] = [];
   return {
     id: opts.id,
     name: opts.name,

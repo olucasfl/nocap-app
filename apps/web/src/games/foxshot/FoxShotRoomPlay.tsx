@@ -47,6 +47,7 @@ import { fsMapById } from '@nocap/games';
 import { FsBigMap, FsTelemetry, FsAmmo, FsCrosshair, FsKillFeed, FsMinimap, FsScoreboard, FsTopBar, FsVitals, type FeedItem, type FsIntelDot, type FsPlayerRow, type MinimapData } from './FsHud';
 import { FoxShotRoomFinal } from './FoxShotRoomFinal';
 import { FsShield } from './FsShield';
+import { fsMapPlan } from './FsMapPlan';
 import { FsPreMatch } from './FsPreMatch';
 import './foxshot.css';
 import './counterfox-hub.css';
@@ -336,6 +337,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
 
     // o mapa da sala (a Duna)
     const map = fsMapById(snapRef.current.foxshot?.map);
+    const plan = fsMapPlan(map);
     const ARENA = map.solids;
     const world = fsWorldFor(map, SLOTS.map((id) => ({ id, x: 0, z: 0 })));
     const scene = new FoxShotScene(cv, world);
@@ -1231,7 +1233,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           if (player && (FS_TEAMS_ACTIVE || bf)) for (const o of others) if (o.team === myTeam && o.alive) intelDots.push({ x: o.x, z: o.z, yaw: o.yaw, kind: 'ally', alpha: 1, live: true, name: nameOf(o.id) });
         }
       }
-      mini.current = { x: mover.x, z: mover.z, yaw: view.yaw, targets: [], boxes: ARENA, labels: world.labels, marks: map.marks, intel: intelDots };
+      mini.current = { x: mover.x, z: mover.z, yaw: view.yaw, targets: [], boxes: ARENA, plan, labels: world.labels, marks: map.marks, intel: intelDots };
       if (player) setBoardState(inp.board && !isPaused);
 
       hudT += dt;

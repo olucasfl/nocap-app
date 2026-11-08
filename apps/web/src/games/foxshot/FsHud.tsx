@@ -41,6 +41,8 @@ export interface FeedItem {
   blindKiller?: boolean;
 }
 
+import type { FsPlan } from './FsMapPlan';
+
 export interface MinimapData {
   x: number;
   z: number;
@@ -48,6 +50,8 @@ export interface MinimapData {
   targets: { x: number; z: number; alive: boolean; armor: number }[];
   /** Paredes e caixas do mapa (padrão: a arena de teste). */
   boxes?: readonly { min: readonly [number, number, number]; max: readonly [number, number, number] }[];
+  /** A planta do mapa desenhada uma vez (substitui as caixas nos mapas grandes). */
+  plan?: FsPlan;
   /** Nomes das áreas, para o mapa grande. */
   labels?: readonly { x: number; z: number; text: string }[];
   /** As bombas A e B e as bases terrorista e contra-terrorista (só no Duna), nos dois mapas. */
@@ -339,7 +343,11 @@ export function FsMinimap({ get }: { get: () => MinimapData }) {
       g.rotate(yaw);
       g.translate(-d.x * k, -d.z * k);
       g.fillStyle = 'rgba(190,200,215,.55)';
-      for (const b of d.boxes ?? FS_ARENA) {
+      if (d.plan) {
+        g.imageSmoothingEnabled = true;
+        g.drawImage(d.plan.canvas, d.plan.x0 * k, d.plan.z0 * k, d.plan.w * k, d.plan.h * k);
+      }
+      for (const b of d.plan ? [] : d.boxes ?? FS_ARENA) {
         // mapas grandes: só o que cabe no radar
         if (b.max[0] < d.x - R - 2 || b.min[0] > d.x + R + 2 || b.max[2] < d.z - R - 2 || b.min[2] > d.z + R + 2) continue;
         g.fillRect(
@@ -675,15 +683,21 @@ export function FsBigMap({ get, title }: { get: () => MinimapData; title: string
     const g = c.getContext('2d')!;
     const draw = () => {
       const d = get();
-      const boxes = d.boxes ?? [];
+      const boxes = d.plan ? [] : d.boxes ?? [];
       let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9;
+      if (d.plan) {
+        x0 = d.plan.x0;
+        x1 = d.plan.x0 + d.plan.w;
+        z0 = d.plan.z0;
+        z1 = d.plan.z0 + d.plan.h;
+      }
       for (const b of boxes) {
         x0 = Math.min(x0, b.min[0]);
         x1 = Math.max(x1, b.max[0]);
         z0 = Math.min(z0, b.min[2]);
         z1 = Math.max(z1, b.max[2]);
       }
-      if (!boxes.length) return;
+      if (!boxes.length && !d.plan) return;
       const W = c.clientWidth;
       const H = c.clientHeight;
       const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -702,6 +716,10 @@ export function FsBigMap({ get, title }: { get: () => MinimapData; title: string
       g.textAlign = 'center';
       g.textBaseline = 'middle';
       const at = (x: number, z: number): [number, number] => [ox + x * k, oz + z * k];
+      if (d.plan) {
+        g.imageSmoothingEnabled = true;
+        g.drawImage(d.plan.canvas, ox + x0 * k, oz + z0 * k, (x1 - x0) * k, (z1 - z0) * k);
+      }
       if (d.marks) drawMarks(g, d.marks, at, k, true, 0, 'area');
       // pisos elevados e vidro primeiro, depois caixotes e as paredes por cima
       const layer = (b: (typeof boxes)[number]) => (b.max[1] <= 1.1 && b.min[1] <= 0.01 && b.max[0] - b.min[0] > 2.5 && b.max[2] - b.min[2] > 2.5 ? 0 : b.max[1] > 2.6 ? 2 : 1);
