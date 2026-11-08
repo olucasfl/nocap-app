@@ -102,4 +102,38 @@ describe('mapa Duna', async () => {
     }
     expect(bad).toEqual([]);
   }, 120_000);
+
+  it('previsão do cliente: refazer as entradas a partir do estado arredondado da rede quase nunca desvia (nada de teletransporte)', () => {
+    const r4 = (n: number) => Math.round(n * 10000) / 10000;
+    let seed = 7;
+    const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
+    const errs: number[] = [];
+    for (let run = 0; run < 12; run++) {
+      const s0 = map.spawns[Math.floor(rnd() * map.spawns.length)]!;
+      const srv = fsNewMover(s0.x, s0.z);
+      srv.y = s0.y;
+      const hist: { x: number; y: number; z: number; vx: number; vy: number; vz: number; onGround: boolean; crouchK: number }[] = [];
+      const inputs: { fwd: number; strafe: number; jump: boolean; yaw: number }[] = [];
+      let yaw = rnd() * 360;
+      const step = (m: typeof srv, i: { fwd: number; strafe: number; jump: boolean; yaw: number }) => {
+        for (let k = 0; k < 2; k++) fsStepMover(m, { ...i, jump: i.jump && k === 0, speedMul: 1, crouch: false }, 1 / 120, map.solids, [], map.ladders);
+      };
+      for (let t = 0; t < 60 * 15; t++) {
+        if (t % 40 === 0) yaw += (rnd() - 0.5) * 140;
+        const inp = { fwd: 1, strafe: rnd() < 0.2 ? 1 : 0, jump: rnd() < 0.03, yaw };
+        step(srv, inp);
+        hist.push({ ...srv });
+        inputs.push(inp);
+        if (t < 6) continue;
+        const b = hist[t - 6]!;
+        const m = { x: r4(b.x), y: r4(b.y), z: r4(b.z), vx: r4(b.vx), vy: r4(b.vy), vz: r4(b.vz), onGround: b.onGround, crouchK: b.crouchK };
+        for (let k = t - 5; k <= t; k++) step(m, inputs[k]!);
+        errs.push(Math.hypot(m.x - srv.x, m.y - srv.y, m.z - srv.z));
+      }
+    }
+    errs.sort((a, b) => a - b);
+    expect(errs[Math.floor(errs.length * 0.99)]!).toBeLessThan(0.05);
+    expect(errs.filter((e) => e > 0.15).length / errs.length).toBeLessThan(0.005);
+    expect(errs[errs.length - 1]!).toBeLessThan(3);
+  }, 60_000);
 });

@@ -142,6 +142,8 @@ export const fsNetWeaponId = (i: number): FsWeaponId => WEAPON_IDS[i] ?? 'pistol
 const finite = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n);
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 const r2 = (n: number) => Math.round(n * 100) / 100;
+/** O corpo do próprio jogador vai com 0,1 mm: a previsão do cliente refaz as entradas a partir dele, e a rede em centímetros desviava em quinas de muro. */
+const r4 = (n: number) => Math.round(n * 10000) / 10000;
 
 /** Confere e limpa uma entrada que veio da rede (nada de número absurdo). Devolve null se não presta. */
 export function fsNetParseInput(raw: unknown): FsNetInput | null {
@@ -1033,8 +1035,8 @@ export class FsNetSim {
     if (!q) return null;
     const lo = q.loadout;
     return {
-      x: r2(q.mover.x), y: r2(q.mover.y), z: r2(q.mover.z), vx: r2(q.mover.vx), vy: r2(q.mover.vy), vz: r2(q.mover.vz),
-      og: q.mover.onGround, ck: r2(q.mover.crouchK), seq: q.lastSeq, yaw: r2(q.yaw), pitch: r2(q.pitch), hp: Math.max(0, Math.round(q.hp)), armor: Math.round(q.armor), helmet: q.helmet, alive: q.alive,
+      x: r4(q.mover.x), y: r4(q.mover.y), z: r4(q.mover.z), vx: r4(q.mover.vx), vy: r4(q.mover.vy), vz: r4(q.mover.vz),
+      og: q.mover.onGround, ck: r4(q.mover.crouchK), seq: q.lastSeq, yaw: r2(q.yaw), pitch: r2(q.pitch), hp: Math.max(0, Math.round(q.hp)), armor: Math.round(q.armor), helmet: q.helmet, alive: q.alive,
       shield: q.alive && q.shieldUntil > this.tick ? (q.shieldUntil - this.tick) / (8 * FS_NET_HZ) : 0,
       respawnIn: q.alive ? 0 : Math.max(0, (q.respawnAt - this.tick) / FS_NET_HZ),
       cur: lo.current, held: lo.held, ammo: lo.held ? lo.grenades[lo.held] : lo.slot.ammo, reloading: lo.reloading,

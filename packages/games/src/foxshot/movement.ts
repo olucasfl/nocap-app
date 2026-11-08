@@ -220,15 +220,39 @@ function stepInner(m: FsMover, inp: FsMoveInput, dt: number, allBoxes: readonly 
   // nasceu ou foi empurrado para dentro de um bloco: sobe até achar espaço (nunca atravessa o chão para baixo)
   const ck0 = m.crouchK;
   m.crouchK = 1; // enterrado mesmo agachado (um teto baixo sobre quem está em pé não conta)
+  // encostado fundo de lado (até 4 cm: arredondamento da rede, borda de voxel): sai de lado pelo caminho mais curto; subir levava o corpo para cima do muro
+  for (let pass = 0; pass < 3; pass++) {
+    let moved = false;
+    for (const b of near) {
+      if (!overlaps(m, b)) continue;
+      const r = FS_MOVE.radius;
+      const dx0 = m.x + r - b.min[0], dx1 = b.max[0] - (m.x - r), dz0 = m.z + r - b.min[2], dz1 = b.max[2] - (m.z - r);
+      const px = Math.min(dx0, dx1), pz = Math.min(dz0, dz1);
+      const up = b.max[1] - m.y;
+      const pen = Math.min(px, pz);
+      if (pen > 0.04 || pen >= up) continue;
+      if (px <= pz) m.x += dx0 < dx1 ? -dx0 - 1e-3 : dx1 + 1e-3;
+      else m.z += dz0 < dz1 ? -dz0 - 1e-3 : dz1 + 1e-3;
+      moved = true;
+    }
+    if (!moved) break;
+  }
   const embedded = near.some((b) => overlaps(m, b));
   m.crouchK = ck0;
   if (embedded) {
     const y0 = m.y;
-    for (let up = 0.05; up <= 3; up += 0.05) {
+    // primeiro em passos de 5 mm (até 15 cm): quem só afundou um tiquinho no chão (arredondamento da rede, borda de voxel) sobe o mínimo; subir de 5 em
+    // 5 cm jogava o corpo para cima de um teto fino lá em cima (a pele fina da Duna tem tetos de poucos centímetros)
+    let free = false;
+    for (let up = 0.005; up <= 0.15 && !free; up += 0.005) {
       m.y = y0 + up;
-      if (!near.some((b) => overlaps(m, b))) break;
-      if (up > 2.95) m.y = y0;
+      free = !near.some((b) => overlaps(m, b));
     }
+    for (let up = 0.2; up <= 3 && !free; up += 0.05) {
+      m.y = y0 + up;
+      free = !near.some((b) => overlaps(m, b));
+    }
+    if (!free) m.y = y0;
     m.vy = Math.max(0, m.vy);
   }
   const wasGround = m.onGround;
