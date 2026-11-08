@@ -133,46 +133,60 @@ export function fsStepMover(m: FsMover, inp: FsMoveInput, dt: number, allBoxes: 
   }
   m.vy -= FS_MOVE.gravity * dt;
 
-  // x
-  m.x += m.vx * dt;
-  for (const b of boxes) {
-    if (!overlaps(m, b)) continue;
-    if (b.max[1] - m.y <= FS_MOVE.stepUp && m.onGround) m.y = b.max[1];
-    else {
-      m.x = m.vx > 0 ? b.min[0] - FS_MOVE.radius : b.max[0] + FS_MOVE.radius;
-      m.vx = 0;
+  // integra em passos curtos (<= 8 cm) para nunca atravessar parede ou chão fino, e resolve cada eixo
+  // pelo lado de onde o corpo veio (nunca pela velocidade, que pode ser zero: isso jogava o corpo para dentro/através da parede)
+  const sub = Math.max(1, Math.ceil((Math.hypot(m.vx, m.vz, m.vy) * dt) / 0.08));
+  const h = dt / sub;
+  let grounded = false;
+  for (let s = 0; s < sub; s++) {
+    const ox = m.x;
+    m.x += m.vx * h;
+    if (m.x !== ox) {
+      for (const b of boxes) {
+        if (!overlaps(m, b)) continue;
+        if (b.max[1] - m.y <= FS_MOVE.stepUp && (m.onGround || grounded) && m.vy <= 0.01) m.y = b.max[1];
+        else {
+          m.x = m.x > ox ? b.min[0] - FS_MOVE.radius : b.max[0] + FS_MOVE.radius;
+          m.vx = 0;
+        }
+      }
     }
-  }
-  // z
-  m.z += m.vz * dt;
-  for (const b of boxes) {
-    if (!overlaps(m, b)) continue;
-    if (b.max[1] - m.y <= FS_MOVE.stepUp && m.onGround) m.y = b.max[1];
-    else {
-      m.z = m.vz > 0 ? b.min[2] - FS_MOVE.radius : b.max[2] + FS_MOVE.radius;
-      m.vz = 0;
+    const oz = m.z;
+    m.z += m.vz * h;
+    if (m.z !== oz) {
+      for (const b of boxes) {
+        if (!overlaps(m, b)) continue;
+        if (b.max[1] - m.y <= FS_MOVE.stepUp && (m.onGround || grounded) && m.vy <= 0.01) m.y = b.max[1];
+        else {
+          m.z = m.z > oz ? b.min[2] - FS_MOVE.radius : b.max[2] + FS_MOVE.radius;
+          m.vz = 0;
+        }
+      }
     }
-  }
-  // y
-  m.y += m.vy * dt;
-  m.onGround = false;
-  for (const b of boxes) {
-    if (!overlaps(m, b)) continue;
-    if (m.vy <= 0) {
-      m.y = b.max[1];
-      m.onGround = true;
-    } else m.y = b.min[1] - fsBodyHeight(m);
-    m.vy = 0;
-  }
-  if (m.y <= 0) {
-    m.y = 0;
-    if (m.vy < 0) m.vy = 0;
-    m.onGround = true;
-  }
-  // um pé no chão por um degrau de caixa: continua "no chão" se estiver em cima de algo
-  if (!m.onGround) {
-    for (const b of boxes) {
-      if (Math.abs(m.y - b.max[1]) < 1e-3 && m.x + FS_MOVE.radius > b.min[0] && m.x - FS_MOVE.radius < b.max[0] && m.z + FS_MOVE.radius > b.min[2] && m.z - FS_MOVE.radius < b.max[2]) m.onGround = true;
+    const oy = m.y;
+    m.y += m.vy * h;
+    grounded = false;
+    if (m.y !== oy) {
+      for (const b of boxes) {
+        if (!overlaps(m, b)) continue;
+        if (m.y < oy || (m.y === oy && m.vy <= 0)) {
+          m.y = b.max[1];
+          grounded = true;
+        } else m.y = b.min[1] - fsBodyHeight(m);
+        m.vy = 0;
+      }
     }
+    if (m.y <= 0) {
+      m.y = 0;
+      if (m.vy < 0) m.vy = 0;
+      grounded = true;
+    }
+    if (!grounded && m.vy <= 0) {
+      // um pé no chão por um degrau: continua "no chão" se estiver em cima de algo
+      for (const b of boxes) {
+        if (Math.abs(m.y - b.max[1]) < 1e-3 && m.x + FS_MOVE.radius > b.min[0] && m.x - FS_MOVE.radius < b.max[0] && m.z + FS_MOVE.radius > b.min[2] && m.z - FS_MOVE.radius < b.max[2]) grounded = true;
+      }
+    }
+    m.onGround = grounded;
   }
 }

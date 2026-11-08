@@ -196,9 +196,12 @@ for e in ents:
         fsolid[lo[0]:hi[0], lo[1]:hi[1], lo[2]:hi[2]] |= classify(P, int(m[9])).reshape(X.shape)
 ffree = ~fsolid
 fr = ffree.copy()
-for ax in range(3):
-    for sgn in (-1, 1):
-        fr |= np.roll(ffree, sgn, axis=ax)
+for _ in range(2):  # 2 voxels finos de casca (26 cm): chão e parede nunca são finos demais para o corpo
+    nx_ = fr.copy()
+    for ax in range(3):
+        for sgn in (-1, 1):
+            nx_ |= np.roll(fr, sgn, axis=ax)
+    fr = nx_
 shell = fsolid & fr
 near2d = has.copy()
 for _ in range(14):

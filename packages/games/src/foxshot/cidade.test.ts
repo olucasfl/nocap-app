@@ -68,4 +68,24 @@ describe('mapa Cidade', () => {
       expect(wi, `${from} -> ${to} (parou em ${m.x.toFixed(1)}, ${m.z.toFixed(1)})`).toBe(wps.length);
     }
   }, 60_000);
+
+  it('andando e pulando sem rumo nunca entra em parede (física de corpo sólido)', () => {
+    let seed = 12345;
+    const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
+    const sp = map.spawns;
+    const bad: string[] = [];
+    for (let run = 0; run < 24; run++) {
+      const s0 = sp[Math.floor(rnd() * sp.length)]!;
+      const m = fsNewMover(s0.x, s0.z);
+      m.y = map.floorY(s0.x, s0.z);
+      let yaw = rnd() * 360;
+      for (let t = 0; t < 60 * 25; t++) {
+        if (t % 40 === 0) yaw += (rnd() - 0.5) * 140;
+        fsStepMover(m, { fwd: 1, strafe: rnd() < 0.2 ? 1 : 0, jump: rnd() < 0.03, yaw, speedMul: 1, crouch: rnd() < 0.05 }, 1 / 60, map.solids);
+        const inside = map.solids.some((b) => m.x + 0.29 > b.min[0] && m.x - 0.29 < b.max[0] && m.z + 0.29 > b.min[2] && m.z - 0.29 < b.max[2] && m.y + 1.2 > b.min[1] && m.y + 0.02 < b.max[1]);
+        if (inside) { bad.push(`run ${run} t ${t}: dentro de parede em ${m.x.toFixed(2)},${m.y.toFixed(2)},${m.z.toFixed(2)}`); break; }
+      }
+    }
+    expect(bad).toEqual([]);
+  }, 120_000);
 });
