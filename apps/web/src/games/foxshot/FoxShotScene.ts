@@ -974,7 +974,7 @@ export class FoxShotScene {
       if (!m.isMesh) return;
       m.geometry.computeVertexNormals();
       const old = m.material as THREE.MeshStandardMaterial;
-      m.material = new THREE.MeshLambertMaterial({ map: old.map ?? null, alphaTest: old.alphaTest || 0, side: THREE.DoubleSide });
+      m.material = new THREE.MeshLambertMaterial({ map: old.map ?? null, color: old.color ?? 0xffffff, alphaTest: old.alphaTest || 0, side: THREE.DoubleSide });
       m.castShadow = false;
       m.receiveShadow = false;
     });

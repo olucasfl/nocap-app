@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { FsNetSim, FS_NET_HZ } from './netsim';
 import { fsMapCidade } from './maps';
+import { fsNewMover, fsStepMover } from './movement';
 
 describe('mapa Cidade', () => {
   const map = fsMapCidade();
@@ -34,4 +35,37 @@ describe('mapa Cidade', () => {
     expect(moved).toBeGreaterThanOrEqual(5);
     expect(planted || sim.bm!.round > 1).toBe(true);
   }, 120_000);
+
+  it('um jogador de verdade consegue andar (com a física do jogo) das bases até as bombas seguindo o caminho', () => {
+    const mark = (id: string) => map.marks.find((m) => m.id === id)!;
+    for (const [from, to] of [['T', 'A'], ['T', 'B'], ['CT', 'A'], ['CT', 'B']] as const) {
+      const a = mark(from);
+      const b = mark(to);
+      const m = fsNewMover(a.x, a.z);
+      m.y = map.floorY(a.x, a.z);
+      const wps = map.path(a.x, a.z, b.x, b.z);
+      let wi = 0;
+      let t = 0;
+      let stuck = 0;
+      let lx = m.x;
+      let lz = m.z;
+      for (; t < 60 * 120 && wi < wps.length; t++) {
+        const [wx, wz] = wps[wi]!;
+        if (Math.hypot(wx - m.x, wz - m.z) < 0.5) {
+          wi++;
+          continue;
+        }
+        const yaw = (Math.atan2(-(wx - m.x), -(wz - m.z)) * 180) / Math.PI;
+        // pula se travar (caixa, degrau alto)
+        const jump = stuck > 20;
+        fsStepMover(m, { fwd: 1, strafe: 0, jump, yaw, speedMul: 1, crouch: jump && !m.onGround }, 1 / 60, map.solids);
+        if (t % 30 === 0) {
+          stuck = Math.hypot(m.x - lx, m.z - lz) < 0.3 ? stuck + 30 : 0;
+          lx = m.x;
+          lz = m.z;
+        }
+      }
+      expect(wi, `${from} -> ${to} (parou em ${m.x.toFixed(1)}, ${m.z.toFixed(1)})`).toBe(wps.length);
+    }
+  }, 60_000);
 });
