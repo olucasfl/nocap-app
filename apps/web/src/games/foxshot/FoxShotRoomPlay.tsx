@@ -1393,7 +1393,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           )}
           {h.bomb ? <FsBombHud b={h.bomb} /> : <FsTopBar players={players} timeLeft={h.timeLeft} kills={0} deaths={0} />}
           {settings.showMinimap && <FsMinimap get={getMini} />}
-          {bigMap && <FsBigMap get={getMini} title={`Mapa · ${FS_MAP_NAMES[snapshot.foxshot?.pvp ? 'pvp' : snapshot.foxshot?.map === 'dust2' ? 'dust2' : 'duna']}`} />}
+          {bigMap && <FsBigMap get={getMini} title={`Mapa · ${FS_MAP_NAMES[snapshot.foxshot?.pvp ? 'pvp' : 'duna']}`} />}
           <div className="fsh-rcol">
             {settings.showTelemetry && <FsTelemetry fps={h.fps} tris={h.tris} calls={h.calls} level={h.level} dpr={h.dpr} speed={h.speed} ref="" />}
             <FsKillFeed items={feed} />
@@ -1445,13 +1445,13 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
               ]}
             />
           )}
-          {board && <FsScoreboard bomb={h.bomb ? { mySide: h.bomb.mySide, tr: h.bomb.tr, ct: h.bomb.ct } : undefined} players={players} timeLeft={h.timeLeft} title={h.bomb ? (snapshot.foxshot?.pvp ? `PvP · Arena de Blocos · online · primeiro a ${h.bomb.winRounds}` : `Bomba · ${FS_MAP_NAMES[snapshot.foxshot?.pvp ? 'pvp' : snapshot.foxshot?.map === 'dust2' ? 'dust2' : 'duna']} · online · primeiro a ${h.bomb.winRounds}`) : `Mata-mata · ${FS_MAP_NAMES[snapshot.foxshot?.pvp ? 'pvp' : snapshot.foxshot?.map === 'dust2' ? 'dust2' : 'duna']} · online`} />}
+          {board && <FsScoreboard bomb={h.bomb ? { mySide: h.bomb.mySide, tr: h.bomb.tr, ct: h.bomb.ct } : undefined} players={players} timeLeft={h.timeLeft} title={h.bomb ? (snapshot.foxshot?.pvp ? `PvP · Arena de Blocos · online · primeiro a ${h.bomb.winRounds}` : `Bomba · ${FS_MAP_NAMES[snapshot.foxshot?.pvp ? 'pvp' : 'duna']} · online · primeiro a ${h.bomb.winRounds}`) : `Mata-mata · ${FS_MAP_NAMES[snapshot.foxshot?.pvp ? 'pvp' : 'duna']} · online`} />}
           {count !== null && (
             <div className="fsr-count" role="status" data-testid="fsr-count">
               <FsPreMatch
                 count={count}
                 kind={snapshot.foxshot?.kind === 'bomb' ? 'bomb' : 'dm'}
-                map={FS_MAP_NAMES[snapshot.foxshot?.pvp ? 'pvp' : snapshot.foxshot?.map === 'dust2' ? 'dust2' : 'duna']}
+                map={FS_MAP_NAMES[snapshot.foxshot?.pvp ? 'pvp' : 'duna']}
                 pvp={!!snapshot.foxshot?.pvp}
                 side={snapshot.foxshot?.kind === 'bomb' ? ((snapshot.foxshot?.teams?.[snapshot.me ?? ''] ?? 0) === 1 ? 'tr' : (snapshot.foxshot?.teams?.[snapshot.me ?? ''] ?? 0) === 0 ? 'ct' : null) : null}
                 winRounds={snapshot.foxshot?.winRounds ?? 8}

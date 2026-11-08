@@ -432,11 +432,11 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
 
           {tab === 'modo' && (
             <div className="cfl-pane" data-testid="cfl-mode">
-              <button type="button" className={`cfl-mode${kind === 'dm' ? ' on' : ''}`} aria-pressed={kind === 'dm'} disabled={!leader} onClick={() => sendRoom('configure', { kind: 'dm', pvp: false, map: mapId === 'dust2' ? 'dust2' : 'duna', winRounds: 8, roundSec: 115 })} data-testid="cfl-mode-dm">
+              <button type="button" className={`cfl-mode${kind === 'dm' ? ' on' : ''}`} aria-pressed={kind === 'dm'} disabled={!leader} onClick={() => sendRoom('configure', { kind: 'dm', pvp: false, map: 'duna', winRounds: 8, roundSec: 115 })} data-testid="cfl-mode-dm">
                 <b>Mata-mata{kind === 'dm' && <em className="cfl-sel"> · selecionado</em>}</b>
-                <span>Todos contra todos no mapa escolhido. Abate vale {FS_POINTS.kill} pontos, assistência {FS_POINTS.assist}. Vence quem tiver mais pontos no fim.</span>
+                <span>Todos contra todos na Duna. Abate vale {FS_POINTS.kill} pontos, assistência {FS_POINTS.assist}. Vence quem tiver mais pontos no fim.</span>
               </button>
-              <button type="button" className={`cfl-mode${bomb && !pvp ? ' on' : ''}`} aria-pressed={bomb && !pvp} disabled={!leader} onClick={() => sendRoom('configure', { kind: 'bomb', pvp: false, map: mapId === 'dust2' ? 'dust2' : 'duna', winRounds: 8, roundSec: 115 })} data-testid="cfl-mode-bomb">
+              <button type="button" className={`cfl-mode${bomb && !pvp ? ' on' : ''}`} aria-pressed={bomb && !pvp} disabled={!leader} onClick={() => sendRoom('configure', { kind: 'bomb', pvp: false, map: 'duna', winRounds: 8, roundSec: 115 })} data-testid="cfl-mode-bomb">
                 <b>Bomba{bomb && !pvp && <em className="cfl-sel"> · selecionado</em>}</b>
                 <span>Rounds de TR contra CT: os terroristas plantam a bomba, os contra-terroristas impedem. Compra só na base, dinheiro finito. Os times e os bots ficam na aba Sala.</span>
               </button>
@@ -444,15 +444,6 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
                 <b>PvP{pvp && <em className="cfl-sel"> · selecionado</em>}</b>
                 <span>1x1, 2x2, 2x1 e mais, na arena de blocos: sem bomba, dinheiro infinito na compra. Morreu, assiste; o time que cair inteiro perde o ponto. Times, bots e quem só assiste ficam na aba Sala.</span>
               </button>
-              {kind !== 'none' && !pvp && (
-                <div className="cfl-maps" role="radiogroup" aria-label="Mapa" data-testid="cfl-maps">
-                  {(['duna', 'dust2'] as const).map((id) => (
-                    <button key={id} type="button" role="radio" aria-checked={mapId === id || (id === 'duna' && mapId !== 'dust2')} disabled={!leader} className={`cfh-pill${mapId === id || (id === 'duna' && mapId !== 'dust2') ? ' on' : ''}`} onClick={() => sendRoom('configure', { map: id })} data-testid={`cfl-map-${id}`}>
-                      {FS_MAP_NAMES[id]}
-                    </button>
-                  ))}
-                </div>
-              )}
               {kind === 'none' ? (
                 <p className="cfl-note" data-testid="cfl-mode-none">{leader ? 'Escolha um modo para ver as regras dele.' : 'O líder ainda vai escolher o modo.'}</p>
               ) : bomb ? (

@@ -17,6 +17,6 @@ Os originais não entram no repositório.
 
 Mapa de mata-mata em blocos (FBX `CSDeathMatchMapMinecraft` com as texturas do pacote) enviado pelo Lucas em 08/11/2026. Autoria e licença não constam no pacote: confirmar antes de publicar. Usado em `apps/web/public/models/foxshot/pvp/pvp.glb` (gerado por `tools/art/pvp_build.py`).
 
-## Dust 2 (modo Mata-mata e Bomba, ao lado da Duna)
+## Duna atual (modo Mata-mata e Bomba)
 
-Modelo `De_dust2.usdz` (106 malhas, texturas JPEG) enviado pelo Lucas em 08/11/2026. Autoria e licença não constam no arquivo: confirmar antes de publicar. Usado em `apps/web/public/models/foxshot/dust2/dust2.glb` (gerado por `tools/art/dust2_build.py`, que precisa de `usd-core` só como ferramenta de trabalho).
+Modelo `De_dust2.usdz` (106 malhas, texturas JPEG) enviado pelo Lucas em 08/11/2026; substituiu a Duna feita antes. Autoria e licença não constam no arquivo: confirmar antes de publicar. Usado em `apps/web/public/models/foxshot/duna/duna.glb` (gerado por `tools/art/duna_build.py`, que precisa de `usd-core` só como ferramenta de trabalho).

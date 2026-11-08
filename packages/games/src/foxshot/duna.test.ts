@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { FsNetSim, FS_NET_HZ } from './netsim';
-import { fsMapDuna } from './maps';
+import { fsMapDuna, fsPreloadMap } from './maps';
+import { fsBoxesInRect } from './map';
 import { fsBodyHeight, fsNewMover, fsStepMover } from './movement';
 
-describe('mapa Duna', () => {
+describe('mapa Duna', async () => {
+  await fsPreloadMap('duna');
   const map = fsMapDuna();
   it('tem as duas bases, as duas bombas e nascimentos em chão andável', () => {
     expect(map.marks.map((m) => m.id).sort()).toEqual(['A', 'B', 'CT', 'T']);
@@ -28,7 +30,7 @@ describe('mapa Duna', () => {
     const sim = new FsNetSim({ minutes: 5, humans: [], bots: 10, botTeams: [5, 5], map: 'duna', bomb: { winRounds: 3, roundSec: 100, buySec: 5 } });
     const start = [...sim.players.values()].map((p) => ({ x: p.mover.x, z: p.mover.z }));
     let planted = false;
-    for (let i = 0; i < FS_NET_HZ * 60 * 3 && !sim.over; i++) {
+    for (let i = 0; i < FS_NET_HZ * 60 * 2 && !sim.over; i++) {
       sim.step();
       if (sim.bm!.phase === 'planted') planted = true;
     }
@@ -83,7 +85,7 @@ describe('mapa Duna', () => {
       for (let t = 0; t < 60 * 25; t++) {
         if (t % 40 === 0) yaw += (rnd() - 0.5) * 140;
         fsStepMover(m, { fwd: 1, strafe: rnd() < 0.2 ? 1 : 0, jump: rnd() < 0.03, yaw, speedMul: 1, crouch: rnd() < 0.05 }, 1 / 60, map.solids);
-        const inside = map.solids.some((b) => m.x + 0.29 > b.min[0] && m.x - 0.29 < b.max[0] && m.z + 0.29 > b.min[2] && m.z - 0.29 < b.max[2] && m.y + fsBodyHeight(m) - 0.03 > b.min[1] && m.y + 0.02 < b.max[1]);
+        const inside = fsBoxesInRect(map.solids, m.x - 0.5, m.z - 0.5, m.x + 0.5, m.z + 0.5).some((b) => m.x + 0.29 > b.min[0] && m.x - 0.29 < b.max[0] && m.z + 0.29 > b.min[2] && m.z - 0.29 < b.max[2] && m.y + fsBodyHeight(m) - 0.03 > b.min[1] && m.y + 0.02 < b.max[1]);
         if (inside) { bad.push(`run ${run} t ${t}: dentro de parede em ${m.x.toFixed(2)},${m.y.toFixed(2)},${m.z.toFixed(2)}`); break; }
       }
     }

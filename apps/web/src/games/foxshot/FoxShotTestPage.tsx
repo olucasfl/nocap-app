@@ -2462,7 +2462,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
           />}
           {!!hud.shield && <FsShield frac={hud.shield} />}
           {settings.showMinimap && <FsMinimap get={getMini} />}
-          {bigMap && !result && <FsBigMap get={getMini} title={match ? `Mapa · ${FS_MAP_NAMES[match.pvp ? 'pvp' : match.map === 'dust2' ? 'dust2' : 'duna']}` : 'Mapa · Treino'} />}
+          {bigMap && !result && <FsBigMap get={getMini} title={match ? `Mapa · ${FS_MAP_NAMES[match.pvp ? 'pvp' : 'duna']}` : 'Mapa · Treino'} />}
           <div className="fsh-rcol">
           {settings.showTelemetry && (
             <FsTelemetry
@@ -2523,7 +2523,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
               ]}
             />
           )}
-          {board && !result && <FsScoreboard bomb={hud.bomb ? { mySide: hud.bomb.mySide, tr: hud.bomb.tr, ct: hud.bomb.ct } : undefined} players={hud.players} timeLeft={hud.timeLeft} title={match ? (match.mode === 'bomb' ? (match.pvp ? `PvP · Arena de Blocos · primeiro a ${match.bomb?.winRounds ?? 5}` : `Bomba · ${FS_MAP_NAMES[match.map === 'dust2' ? 'dust2' : 'duna']} · primeiro a ${match.bomb?.winRounds ?? 8}`) : `Mata-mata · ${FS_MAP_NAMES[match.map === 'dust2' ? 'dust2' : 'duna']} · ${match.minutes} min`) : undefined} />}
+          {board && !result && <FsScoreboard bomb={hud.bomb ? { mySide: hud.bomb.mySide, tr: hud.bomb.tr, ct: hud.bomb.ct } : undefined} players={hud.players} timeLeft={hud.timeLeft} title={match ? (match.mode === 'bomb' ? (match.pvp ? `PvP · Arena de Blocos · primeiro a ${match.bomb?.winRounds ?? 5}` : `Bomba · ${FS_MAP_NAMES.duna} · primeiro a ${match.bomb?.winRounds ?? 8}`) : `Mata-mata · ${FS_MAP_NAMES.duna} · ${match.minutes} min`) : undefined} />}
           {needClick && !paused && (
             <div className="fs-hint mono" data-testid="fs-needclick">
               Clique na tela para prender o mouse
@@ -2622,7 +2622,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
               tr={bombEnd.tr}
               ct={bombEnd.ct}
               mySide={bombEnd.mySide}
-              mapName={FS_MAP_NAMES[match?.pvp ? 'pvp' : match?.map === 'dust2' ? 'dust2' : 'duna']}
+              mapName={FS_MAP_NAMES[match?.pvp ? 'pvp' : 'duna']}
               pvp={!!match?.pvp}
               rows={result.map((r) => ({ id: r.id, name: r.name, side: bombEnd.sides[r.id] ?? 'ct', kills: r.kills, assists: r.assists, deaths: r.deaths, points: r.points, me: r.id === 'me' }))}
               exitLabel="Mudar a partida"

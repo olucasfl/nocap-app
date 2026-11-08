@@ -34,7 +34,7 @@ export function FoxShotRoomFinal({ snapshot }: { snapshot: RoomSnapshot }) {
         tr={bomb.tr}
         ct={bomb.ct}
         mySide={mySide}
-        mapName={FS_MAP_NAMES[snapshot.foxshot?.pvp ? 'pvp' : snapshot.foxshot?.map === 'dust2' ? 'dust2' : 'duna']}
+        mapName={FS_MAP_NAMES[snapshot.foxshot?.pvp ? 'pvp' : 'duna']}
         pvp={!!snapshot.foxshot?.pvp}
         rows={rows.map((r) => ({ id: r.id, name: r.name, side: bomb.sides[r.id] ?? 'ct', kills: r.kills, assists: r.assists, deaths: r.deaths, points: r.points, me: r.id === me }))}
         exitLabel="Sair da sala"

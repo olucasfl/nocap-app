@@ -7,7 +7,7 @@ import './fs-map-gate.css';
 
 /** Mapas com arquivos pesados: baixados só quando alguém escolhe (o tamanho serve de plano B quando o servidor não informa). */
 const HEAVY: Partial<Record<FsMapId, { glb: string; plan: string; bytes: number }>> = {
-  dust2: { glb: 'dust2/dust2.glb', plan: 'dust2/dust2-plan.png', bytes: 5_770_000 },
+  duna: { glb: 'duna/duna.glb', plan: 'duna/duna-plan.png', bytes: 5_770_000 },
 };
 const TIPS = [
   'Caixas e muretos de até um metro se vencem pulando.',
@@ -34,7 +34,7 @@ async function fetchCounting(url: string, planBytes: number, onBytes: (n: number
 }
 
 /**
- * Tela de carregamento do mapa: para mapas pesados (Dust 2) baixa o modelo com barra de verdade, carrega os dados de colisão e só então mostra
+ * Tela de carregamento do mapa: para mapas pesados (Duna) baixa o modelo com barra de verdade, carrega os dados de colisão e só então mostra
  * o jogo. Os outros mapas passam direto, sem piscar. Anima só transform e opacity.
  */
 export function FsMapGate({ mapId, children }: { mapId: FsMapId | string | undefined; children: ReactNode }) {

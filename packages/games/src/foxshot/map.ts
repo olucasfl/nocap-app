@@ -258,7 +258,7 @@ const bkey = (cx: number, cz: number) => cx * 4096 + cz;
 function indexOf(boxes: readonly FsBox[]): BoxIndex {
   let ix = indexCache.get(boxes);
   if (ix) return ix;
-  // mapas com dezenas de milhares de caixas (a pele fina da Dust 2) pedem baldes menores, senão cada consulta devolve centenas
+  // mapas com dezenas de milhares de caixas (a pele fina da Duna) pedem baldes menores, senão cada consulta devolve centenas
   const size = boxes.length > 30000 ? 1.5 : BUCKET;
   ix = { size, cells: new Map() };
   for (const b of boxes) {

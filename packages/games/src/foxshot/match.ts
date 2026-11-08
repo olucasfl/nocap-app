@@ -13,8 +13,8 @@ export interface FsMatchConfig {
   bots: number;
   /** 'bomb' = modo Bomba (spec 059): rounds, TR contra CT, economia. Ausente = mata-mata. */
   mode?: 'dm' | 'bomb';
-  /** O mapa: a Duna, a Dust 2, ou a arena de blocos no PvP. */
-  map?: 'duna' | 'dust2' | 'pvp';
+  /** O mapa: a Duna, ou a arena de blocos no PvP. */
+  map?: 'duna' | 'pvp';
   /** Modo PvP (variante do Bomba sem bomba, dinheiro infinito e mapa próprio); vale com `mode: 'bomb'`. */
   pvp?: boolean;
   /** Seu lado no modo Bomba. */

@@ -3,5 +3,5 @@
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-  test: { include: ['src/**/*.sim.ts'], testTimeout: 600_000 },
+  test: { include: ['src/**/*.sim.ts'], testTimeout: 600_000, setupFiles: ['./test/preload-maps.ts'] },
 });
