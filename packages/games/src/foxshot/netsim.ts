@@ -58,7 +58,7 @@ export interface FsNetInput {
 
 export type FsNetEvent =
   /** `o`: o que o tiro achou (0 corpo, 1 alvo protegido pelo nascimento, 2 parede ou chão, 3 nada): o atirador vê o motivo de não dar dano. */
-  | { k: 'shot'; by: string; from: Vec3; to: Vec3; w: FsWeaponId; o?: number; c?: number }
+  | { k: 'shot'; by: string; from: Vec3; to: Vec3; w: FsWeaponId; o?: number; c?: number; d?: number[] }
   | { k: 'hit'; by: string; vic: string; dmg: number; head: boolean; armor: boolean; kill: boolean }
   | { k: 'hurt'; vic: string; by: string; x: number; z: number; dmg: number; head: boolean }
   | { k: 'kill'; killer: string; victim: string; w: FsWeaponId | FsGrenadeId; head: boolean; assist: string | null; wall: boolean; noscope: boolean; blind: boolean }
@@ -567,8 +567,27 @@ export class FsNetSim {
     const noscope = wid === 'sniper' && !scoped;
     for (const dir of rays) {
       const tr = fsTrace(w, eye, dir, this.boxes, bodies);
+      // diagnóstico (só quando não acertou corpo): onde o corpo mais perto do raio estava, de lado / para cima (cm), a distância (m) e o atraso usado (passos)
+      let diag: number[] | undefined;
+      if (tr.kind !== 'player' && bodies.length) {
+        let best: number[] | undefined;
+        let bd = 1e9;
+        const yr = Math.atan2(-dir[0], -dir[2]);
+        for (const b of bodies) {
+          const cx = b.pos[0] - eye[0], cy = b.pos[1] + 0.9 - eye[1], cz = b.pos[2] - eye[2];
+          const t = cx * dir[0] + cy * dir[1] + cz * dir[2];
+          if (t <= 0) continue;
+          const px = cx - dir[0] * t, py = cy - dir[1] * t, pz = cz - dir[2] * t;
+          const dist = Math.hypot(px, py, pz);
+          if (dist < bd) {
+            bd = dist;
+            best = [Math.round((px * Math.cos(yr) - pz * Math.sin(yr)) * 100), Math.round(py * 100), Math.round(t), this.tick - Math.round(clamp(viewTick, this.tick - FS_NET_REWIND_MAX, this.tick))];
+          }
+        }
+        diag = best;
+      }
       const shielded = tr.kind === 'player' && !!tr.targetId && (this.players.get(tr.targetId)?.shieldUntil ?? 0) > this.tick;
-      this.events.push({ k: 'shot', by: p.id, from: eye.map(r2) as Vec3, to: tr.point.map(r2) as Vec3, w: wid, o: shielded ? 1 : tr.kind === 'player' ? 0 : tr.kind === 'world' ? 2 : 3, ...(dev === undefined ? {} : { c: Math.round(dev * 10) }) });
+      this.events.push({ k: 'shot', by: p.id, from: eye.map(r2) as Vec3, to: tr.point.map(r2) as Vec3, w: wid, o: shielded ? 1 : tr.kind === 'player' ? 0 : tr.kind === 'world' ? 2 : 3, ...(dev === undefined ? {} : { c: Math.round(dev * 10) }), ...(diag ? { d: diag } : {}) });
       if (tr.kind === 'player' && tr.targetId && tr.damage) {
         const c = pool.get(tr.targetId) ?? { hp: 0, armorLoss: 0, head: false, armorHit: false, wall: false };
         c.hp += tr.damage.hp;

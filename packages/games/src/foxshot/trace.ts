@@ -20,7 +20,7 @@ export interface FsBody {
 /** Medidas da raposa (m): cabeça é esfera; corpo, três cilindros verticais. */
 /** Quanto o corpo encolhe agachado (altura 0,95 m contra 1,3 m de pé). */
 export const FS_CROUCH_K = 0.95 / 1.3;
-export const FS_BODY = { headY: 1.17, headR: 0.15, chestY0: 0.76, chestY1: 1.04, chestR: 0.22, bellyY0: 0.5, bellyY1: 0.76, bellyR: 0.2, legR: 0.16, top: 1.4 };
+export const FS_BODY = { headY: 1.2, headR: 0.2, chestY0: 0.76, chestY1: 1.04, chestR: 0.22, bellyY0: 0.5, bellyY1: 0.76, bellyR: 0.2, legR: 0.16, top: 1.4 };
 
 /** Entra/sai de uma caixa pelo método das lâminas; devolve null se o raio não encontra. */
 function rayBox(o: Vec3, d: Vec3, box: FsBox, maxT: number): { t0: number; t1: number } | null {
