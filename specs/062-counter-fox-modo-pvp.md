@@ -16,7 +16,7 @@ Status: em andamento (08/11/2026). Pedido do Lucas: 1x1, 2x2, 2x1 etc., dois tim
 - Janelas e vãos do modelo são buracos de verdade: dá para olhar, atirar e se esconder.
 
 ## Ajustes depois do primeiro teste (08/11/2026)
-- Escala final: 1 bloco = 0,8 m (o bloco do modelo tem 200 unidades; arena de 34 x 56 m). Colisão maciça (voxels de 10 cm, todo sólido perto de onde se anda), sem casca oca: acabou o buraco por dentro de muros e torres. Degraus do modelo (`Stair`, `StairWhite`) viram sólido do ponto mais baixo ao mais alto de cada coluna. As torres do meio dos muros são maciças na colisão (por dentro eram ocas e sem escada de mão).
+- Escala final: 1 bloco = 0,6 m na horizontal e 0,8 m na vertical (arena de 25 x 42 m: bases perto uma da outra). Colisão maciça (voxels de 10 cm, todo sólido perto de onde se anda), sem casca oca: acabou o buraco por dentro de muros e torres. Degraus do modelo (`Stair`, `StairWhite`) viram sólido do ponto mais baixo ao mais alto de cada coluna. As torres do meio dos muros são maciças na colisão (por dentro eram ocas e sem escada de mão).
 - Cada base ganhou a segunda saída: o muro divisor foi encurtado no lado que estava fechado (mesmo tamanho da saída original), no desenho e na colisão (`CARVES` em `pvp_build.py`).
 - Bases centralizadas: dois fileiras de 6 nascimentos em x = 0, e a área da base vai de parede a parede até o muro divisor.
 - Planta texturizada (`pvp-plan.png`, gerada por `tools/art/render_plan.mjs`) no radar, no mapa grande e no cartão do menu.

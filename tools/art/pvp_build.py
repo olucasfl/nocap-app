@@ -17,11 +17,16 @@ import base64, json, math, os, struct, sys
 import numpy as np
 from PIL import Image
 
-S = 0.004         # unidade do OBJ -> metros (1 bloco do mapa = 200 unidades = 0,8 m: portas de 2 blocos têm 1,6 m e vãos de 1 bloco têm 0,8 m, ainda cabe o boneco; o original, a 2,4 m por bloco, ficava enorme)
-BC = 0.08         # voxel de colisão (m): 1 bloco = 10 voxels, então as quinas ficam na grade
-CELL = 0.16       # célula da grade de navegação (m): 2 voxels
+# escala por eixo (unidade do OBJ -> metros): 1 bloco do mapa = 200 unidades. Na horizontal o bloco tem 0,6 m (o mapa fica pequeno e as bases ficam perto); na
+# vertical, 0,8 m (portas de 2 blocos têm 1,6 m, o boneco passa de pé; os degraus de 0,8 m ainda se sobem pulando).
+SXZ = 0.003
+SY = 0.004
+SCALE = np.array([SXZ, SY, SXZ])
+S = SXZ
+BC = 0.06         # voxel de colisão (m), cúbico: 1 bloco = 10 voxels na horizontal (13,3 na vertical, erro máximo de 3 cm)
+CELL = 0.12       # célula da grade de navegação (m): 2 voxels
 YMAX = 6.0        # altura máxima simulada (m); acima disso ninguém chega
-HEAD = 9          # células livres para o corpo na grade de navegação (1,44 m)
+HEAD = 12         # células livres para o corpo na grade de navegação (1,44 m)
 
 obj_path, tex_dir = sys.argv[1], sys.argv[2]
 root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -40,7 +45,7 @@ for line in open(obj_path):
         for k in range(1, len(vi) - 1):
             faces.setdefault(cur, []).append((vi[0], vi[k], vi[k + 1], ti[0], ti[k], ti[k + 1]))
             face_obj.setdefault(cur, []).append(cur_obj)
-V = np.array(V) * S
+V = np.array(V) * SCALE
 VT = np.array(VT) if VT else np.zeros((1, 2))
 # aberturas novas (pedido do Lucas): cada base tinha UMA saída (a barreira da base ia de uma ponta até quase a outra); abre a ponta
 # que estava fechada, com o mesmo tamanho (5 cubos de 2 blocos), tirando os cubos do muro nessa faixa. Unidades do OBJ.
@@ -48,7 +53,7 @@ CARVES = [(2900, 4000, -5400, -5100), (-4000, -2900, 5000, 5400)]  # (x0, x1, z0
 def carved(tri_verts_raw):
     xs = tri_verts_raw[:, 0]; zs = tri_verts_raw[:, 2]
     return any(xs.min() >= a - 1 and xs.max() <= b + 1 and zs.min() >= c - 1 and zs.max() <= d + 1 for a, b, c, d in CARVES)
-Vraw = V / S
+Vraw = V / SCALE
 removed = 0
 for mname in list(faces):
     keep_f = []; keep_o = []
@@ -125,7 +130,7 @@ FILLS = [(-200, 200, -5400, -5200, 200, 1200), (-200, 200, 5200, 5400, 200, 1200
 for fx0, fx1, fz0, fz1, fy0, fy1 in FILLS:
     j0 = max(0, int(math.floor((fx0 * S - X0) / BC + 0.5))); j1 = min(nx, int(math.ceil((fx1 * S - X0) / BC - 0.5)))
     i0 = max(0, int(math.floor((fz0 * S - Z0) / BC + 0.5))); i1 = min(nz, int(math.ceil((fz1 * S - Z0) / BC - 0.5)))
-    k0 = int(math.floor(fy0 * S / BC + 0.5)); k1 = min(ny, int(math.ceil(fy1 * S / BC - 0.5)))
+    k0 = int(math.floor(fy0 * SY / BC + 0.5)); k1 = min(ny, int(math.ceil(fy1 * SY / BC - 0.5)))
     solid[i0:i1, j0:j1, k0:k1] = True
 print('voxels sólidos', int(solid.sum()))
 
@@ -251,16 +256,16 @@ walk_cols = np.argwhere(has)   # (i = linha z, j = coluna x)
 BASE_Z = 5400 * S   # o muro divisor de cada base fica em |z| ~ 27 m: a base é a faixa entre ele e a parede do fundo
 def pick(side):
     """Dois fileiras de 6 nascimentos, centradas na base (x = 0), cada um no chão andável mais perto do ponto ideal."""
-    xs_ideal = [(i - 2.5) * 4.8 for i in range(6)]
+    xs_ideal = [(i - 2.5) * 3.2 for i in range(6)]
     out = []
-    for row_off in (2.2, 5.2):
+    for row_off in (1.5, 3.4):
         z_ideal = (Z0 + row_off) if side == 0 else (Z1 - row_off)
         for xi in xs_ideal:
             best = None
             for (i, j) in walk_cols:
                 x, z = xs[j], zs[i]
                 d = math.hypot(x - xi, z - z_ideal)
-                if d < 2.0 and (best is None or d < best[0]) and all(math.hypot(x - a, z - b) > 2.0 for a, b, _ in out):
+                if d < 1.4 and (best is None or d < best[0]) and all(math.hypot(x - a, z - b) > 1.4 for a, b, _ in out):
                     best = (d, x, z)
             if best: out.append((best[1], best[2], 0 if side == 0 else 180))
     return out
