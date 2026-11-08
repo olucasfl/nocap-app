@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-import { FS_NET_HZ, FsNetSim, fsNetParseInput } from '@nocap/games';
+import { FS_NET_HZ, FsNetSim, fsNetParseInput, fsPreloadMap } from '@nocap/games';
 
 /**
  * A partida do Counter Fox no aparelho do líder (spec 060), numa thread só dela: a simulação não espera a tela desenhar.
@@ -21,6 +21,7 @@ const STEP_MS = 1000 / FS_NET_HZ;
 const MAX_CATCHUP = 6;
 const EVENT_KEEP_MS = 600;
 let sim: FsNetSim | null = null;
+let initing = false;
 let timer = 0;
 let startAt = 0;
 let evSeq = 0;
@@ -90,11 +91,14 @@ self.onmessage = (ev: MessageEvent<In>) => {
   const msg = ev.data;
   switch (msg.t) {
     case 'init': {
-      if (sim) return;
-      sim = new FsNetSim(msg.opts);
-      startAt = clock() + Math.max(0, msg.delayMs);
-      // 8 ms: acorda duas vezes por passo e nunca atrasa um passo inteiro por causa do relógio
-      timer = setInterval(loop, 8) as unknown as number;
+      if (sim || initing) return;
+      initing = true;
+      void fsPreloadMap(msg.opts.map).then(() => {
+        sim = new FsNetSim(msg.opts);
+        startAt = clock() + Math.max(0, msg.delayMs);
+        // 8 ms: acorda duas vezes por passo e nunca atrasa um passo inteiro por causa do relógio
+        timer = setInterval(loop, 8) as unknown as number;
+      });
       break;
     }
     case 'input': {

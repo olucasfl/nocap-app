@@ -1,0 +1,100 @@
+/* Tela de carregamento do mapa (Counter Fox): tokens --cfx-*, só transform e opacity animam */
+.fmg {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  background: var(--cfx-bg0);
+  color: var(--cfx-ink);
+  overflow: hidden;
+}
+.fmg-card {
+  position: relative;
+  z-index: 2;
+  width: min(92vw, 480px);
+  padding: 28px 26px 24px;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  text-align: center;
+  background: var(--cfx-panel);
+  border: 1px solid var(--cfx-line);
+  border-radius: 18px;
+  backdrop-filter: blur(6px);
+  animation: fmg-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.fmg-kicker {
+  margin: 4px 0 0;
+  font: 700 13px var(--cfx-ui);
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--cfx-amber);
+}
+.fmg-name {
+  margin: 0;
+  font: 400 clamp(34px, 9vw, 52px) var(--cfx-title);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.fmg-bar {
+  position: relative;
+  width: 100%;
+  height: 12px;
+  margin-top: 8px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--cfx-line);
+}
+.fmg-bar i {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--cfx-ember), var(--cfx-amber));
+  transform-origin: left center;
+  transform: scaleX(0);
+  transition: transform 0.25s ease-out;
+}
+.fmg-bar b {
+  position: absolute;
+  inset: 0;
+  width: 35%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  animation: fmg-sweep 1.4s linear infinite;
+}
+.fmg-row {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  font: 600 14px var(--cfx-ui);
+  letter-spacing: 0.06em;
+  color: var(--cfx-muted);
+}
+.fmg-pct { color: var(--cfx-ink); font-variant-numeric: tabular-nums; }
+.fmg-tip {
+  margin: 10px 0 0;
+  min-height: 2.6em;
+  font: 500 15px/1.35 var(--cfx-ui);
+  color: var(--cfx-ink);
+  animation: fmg-tip 3.8s ease both;
+}
+.fmg-retry {
+  margin-top: 10px;
+  padding: 10px 22px;
+  font: 700 15px var(--cfx-ui);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #1a0f05;
+  background: linear-gradient(90deg, var(--cfx-ember), var(--cfx-amber));
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+@keyframes fmg-in { from { opacity: 0; transform: translateY(14px) scale(0.98); } to { opacity: 1; transform: none; } }
+@keyframes fmg-sweep { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
+@keyframes fmg-tip { 0% { opacity: 0; transform: translateY(6px); } 10%, 88% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .fmg-card, .fmg-bar b, .fmg-tip { animation: none; }
+  .fmg-bar i { transition: none; }
+}

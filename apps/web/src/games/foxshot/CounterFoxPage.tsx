@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router';
 import {
   FS_MAP_NAMES,
   fsMapById,
+  fsPreloadMap,
   type FsMapApi,
   type FsMapId,
   FS_MATCH_BOTS,
@@ -16,6 +17,7 @@ import { RoomConflictDialog } from '@/components/RoomConflictDialog';
 import { useRoomEntry } from '@/lib/my-room';
 import { setReturnTo, useAuth } from '@/lib/auth';
 import { FoxShotTestPage } from './FoxShotTestPage';
+import { FsMapGate } from './FsMapGate';
 import { CounterFoxLogo } from './CounterFoxLogo';
 import { CounterFoxBackdrop as Backdrop } from './CounterFoxBackdrop';
 import { Commands, Customize } from './FsMenu';
@@ -45,6 +47,9 @@ function MapCard({ mapId, mode }: { mapId: FsMapId; mode: 'dm' | 'bomb' | 'pvp' 
   useEffect(() => {
     const cv = ref.current;
     if (!cv) return;
+    let alive = true;
+    void fsPreloadMap(mapId).then(() => alive && draw());
+    const draw = () => {
     const map: FsMapApi = fsMapById(mapId);
     const gr = map.grid;
     const S = 6 * gr.cell;
@@ -142,6 +147,10 @@ function MapCard({ mapId, mode }: { mapId: FsMapId; mode: 'dm' | 'bomb' | 'pvp' 
         g.fillText(m.name.toUpperCase(), lx, ly);
       }
     }
+    };
+    return () => {
+      alive = false;
+    };
   }, [mapId]);
   return (
     <div className="cfh-map" data-testid="cfh-map">
@@ -276,7 +285,7 @@ function CounterFoxInner() {
   };
 
   if (training) return <FoxShotTestPage key="train" onExit={() => { setTraining(false); setScreen('main'); }} />;
-  if (playing) return <FoxShotTestPage key={run} match={cfg} onExit={() => { setPlaying(false); setScreen('main'); }} onAgain={() => setRun((r) => r + 1)} />;
+  if (playing) return <FsMapGate mapId={cfg.pvp ? 'pvp' : cfg.map}><FoxShotTestPage key={run} match={cfg} onExit={() => { setPlaying(false); setScreen('main'); }} onAgain={() => setRun((r) => r + 1)} /></FsMapGate>;
 
   return (
     <main className="cfh" data-testid="cfh" data-screen={screen}>

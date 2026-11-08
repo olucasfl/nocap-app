@@ -27,6 +27,7 @@ import { PingRoomPlay } from '@/games/pingpong/PingRoomPlay';
 import { PingRoomFinal } from '@/games/pingpong/PingRoomFinal';
 import { CounterFoxLobby } from './room/lobby/CounterFoxLobby';
 import { FoxShotRoomPlay } from '@/games/foxshot/FoxShotRoomPlay';
+import { FsMapGate } from '@/games/foxshot/FsMapGate';
 import './account.css';
 import './friends.css';
 import './room.css';
@@ -299,7 +300,11 @@ function RoomPageInner({ code, game = 'color' }: { code?: string; game?: RoomGam
     return <CounterFoxLobby snapshot={snapshot} />;
   }
   if (snapshot?.game === 'foxshot') {
-    return <FoxShotRoomPlay snapshot={snapshot} />;
+    return (
+      <FsMapGate mapId={snapshot.foxshot?.pvp ? 'pvp' : snapshot.foxshot?.map}>
+        <FoxShotRoomPlay snapshot={snapshot} />
+      </FsMapGate>
+    );
   }
   if (snapshot?.game === 'pingpong' && (snapshot.phase === 'show' || snapshot.phase === 'play')) {
     return <PingRoomPlay snapshot={snapshot} />;

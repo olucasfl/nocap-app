@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { FsNetSim, FS_NET_HZ } from './netsim';
-import { fsMapDust2 } from './maps';
+import { fsMapDust2, fsPreloadMap } from './maps';
 import { fsBoxesInRect } from './map';
 import { fsBodyHeight, fsNewMover, fsStepMover } from './movement';
 
-describe('mapa Dust 2', () => {
+describe('mapa Dust 2', async () => {
+  await fsPreloadMap('dust2');
   const map = fsMapDust2();
   it('tem as duas bases, as duas bombas e nascimentos em chão andável', () => {
     expect(map.marks.map((m) => m.id).sort()).toEqual(['A', 'B', 'CT', 'T']);

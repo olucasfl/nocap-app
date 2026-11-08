@@ -120,6 +120,8 @@ test('Dust 2: escolher o mapa, jogar o mata-mata e andar pelos pontos principais
   await page.getByTestId('cfx-map-dust2').click();
   await page.screenshot({ path: '/tmp/dust2/w/out/menu.png' });
   await page.getByTestId('cfx-start').click();
+  await expect(page.getByTestId('fmg')).toBeVisible({ timeout: 20_000 });
+  await page.screenshot({ path: '/tmp/dust2/w/out/loading.png' });
   await expect(page.getByTestId('fs-root')).toBeVisible({ timeout: 120_000 });
   await expect.poll(async () => await fs<number>(page, 'hp'), { timeout: 120_000 }).toBe(100);
   const spots: [string, number, number, number][] = [['spawn', -45, 4, 270], ['meio', -10, 8, 90], ['longa', 20, 30, 0], ['b', 20, -17, 180]];

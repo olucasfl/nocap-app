@@ -5,8 +5,12 @@ import {
   FsNetSim,
   fsNetParseInput,
   fsMatchConfig,
+  fsPreloadMap,
   type FsNetEvent,
 } from '@nocap/games';
+
+// o servidor carrega os dados da Dust 2 ao subir (o navegador só baixa quando alguém escolhe o mapa)
+void fsPreloadMap('dust2');
 import { ColorRoomEngine, RoomError, type AnySettings, type EngineOptions, type FinalRow } from './color-room.engine';
 
 /** Contagem antes de começar (ms). */
