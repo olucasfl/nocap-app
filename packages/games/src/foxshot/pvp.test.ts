@@ -71,7 +71,7 @@ describe('modo PvP: mapa e partida', () => {
     expect(map.marks.some((m) => m.kind === 'site')).toBe(false);
     for (const s of map.spawns) expect(map.walkable(map.col(s.x), map.row(s.z)), `${s.zone} ${s.x},${s.z}`).toBe(true);
     const mz = (l: typeof tr) => l.reduce((a, s) => a + s.z, 0) / l.length;
-    expect(Math.abs(mz(tr) - mz(ct))).toBeGreaterThan(80);
+    expect(Math.abs(mz(tr) - mz(ct))).toBeGreaterThan(60);
   });
   it('dá para andar de uma ponta à outra com a física do jogo', () => {
     const a = map.spawns.find((s) => s.zone === 'TR')!;

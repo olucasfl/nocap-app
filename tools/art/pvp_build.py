@@ -17,11 +17,11 @@ import base64, json, math, os, struct, sys
 import numpy as np
 from PIL import Image
 
-S = 0.0075        # unidade do OBJ -> metros (1 bloco = 0,75 m: o mapa original em 1 m por bloco ficava enorme para o corpo do jogo)
-BC = 0.25         # voxel de colisão (m)
-CELL = 0.25       # célula da grade de navegação (m)
+S = 0.0065        # unidade do OBJ -> metros (1 bloco = 0,65 m: a 1 m o mapa ficava enorme para o corpo do jogo; 0,65 ainda deixa passar de pé por 2 blocos de altura e por 1 de largura)
+BC = 0.13         # voxel de colisão (m): 1 bloco = 5 voxels, então as quinas ficam na grade
+CELL = 0.26       # célula da grade de navegação (m): 2 voxels
 YMAX = 6.0        # altura máxima simulada (m); acima disso ninguém chega
-HEAD = 6          # células livres para o corpo na grade de navegação (1,5 m)
+HEAD = 5          # células livres para o corpo na grade de navegação (1,3 m)
 
 obj_path, tex_dir = sys.argv[1], sys.argv[2]
 root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -40,10 +40,11 @@ for line in open(obj_path):
 V = np.array(V) * S
 VT = np.array(VT) if VT else np.zeros((1, 2))
 print('modelo (m):', V.min(axis=0).round(2), V.max(axis=0).round(2))
-X0, Z0 = math.floor(V[:, 0].min()), math.floor(V[:, 2].min())
-X1, Z1 = math.ceil(V[:, 0].max()), math.ceil(V[:, 2].max())
+# a grade nasce na quina do mapa (as quinas dos blocos ficam exatamente nas bordas dos voxels)
+X0, Z0 = float(V[:, 0].min()), float(V[:, 2].min())
+X1, Z1 = float(V[:, 0].max()), float(V[:, 2].max())
 Y0 = 0.0
-nx = int(round((X1 - X0) / BC)); nz = int(round((Z1 - Z0) / BC)); ny = int(round(YMAX / BC))
+nx = int(math.ceil((X1 - X0) / BC - 1e-6)); nz = int(math.ceil((Z1 - Z0) / BC - 1e-6)); ny = int(round(YMAX / BC))
 print('voxels finos (z, x, y):', nz, nx, ny)
 
 # ------------------------------------------------------------------ sólidos por paridade (raios verticais)
@@ -235,7 +236,7 @@ def rl(flat):
         out += [flat[i], j - i]; i = j
     return out
 data = {
-    'cols': cols, 'rows': rows, 'x0': X0, 'z0': Z0, 'cell': CELL, 'step': CELL, 'bcell': BC,
+    'cols': cols, 'rows': rows, 'x0': round(X0, 5), 'z0': round(Z0, 5), 'cell': CELL, 'step': CELL, 'bcell': BC,
     'rle': rl(level.reshape(-1).tolist()), 'boxes': boxes_b64,
     'tspawns': [[round(x, 2), round(z, 2), a] for x, z, a in sideA], 'ctspawns': [[round(x, 2), round(z, 2), a] for x, z, a in sideB],
     'sites': [], 'buys': [rect(sideA), rect(sideB)], 'hmin': 0,

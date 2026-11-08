@@ -11,8 +11,8 @@ Status: em andamento (08/11/2026). Pedido do Lucas: 1x1, 2x2, 2x1 etc., dois tim
 - Configuração antes de começar (offline e na sala): formato (1x1, 2x2, 2x1, 3x3, 5x5 no offline; bots por time e espectadores na aba Sala), pontos para vencer (1, 3, 5, 10, 15, 20, 30), tempo do round (30 s a 5 min).
 
 ## Mapa: Arena de Blocos
-- Modelo FBX de terceiros enviado pelo Lucas (sem informação de autoria ou licença: confirmar antes de publicar). `tools/art/fbx2obj.mjs` (FBXLoader do three) converte para OBJ; `tools/art/pvp_build.py` gera `pvp.data.ts` (colisão e grade) e `models/foxshot/pvp/pvp.glb` (texturas embutidas). Escala: 1 bloco = 0,75 m (a 1 m o mapa ficava enorme para o corpo do jogo).
-- Colisão exata: os blocos são malhas fechadas, então o sólido sai da paridade dos cruzamentos de raios verticais por coluna (voxels de 25 cm, centros longe das quinas). Conferido contra a malha com 432 raios de tiro: 1 divergência acima de 35 cm.
+- Modelo FBX de terceiros enviado pelo Lucas (sem informação de autoria ou licença: confirmar antes de publicar). `tools/art/fbx2obj.mjs` (FBXLoader do three) converte para OBJ; `tools/art/pvp_build.py` gera `pvp.data.ts` (colisão e grade) e `models/foxshot/pvp/pvp.glb` (texturas embutidas). Escala: 1 bloco = 0,65 m (a 1 m o mapa ficava enorme para o corpo do jogo).
+- Colisão exata: os blocos são malhas fechadas, então o sólido sai da paridade dos cruzamentos de raios verticais por coluna (voxels de 13 cm, 5 por bloco). Conferido contra a malha com 432 raios de tiro: 1 divergência acima de 35 cm.
 - Janelas e vãos do modelo são buracos de verdade: dá para olhar, atirar e se esconder.
 
 ## Feito
