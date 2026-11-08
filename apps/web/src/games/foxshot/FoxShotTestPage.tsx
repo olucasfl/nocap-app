@@ -1720,11 +1720,11 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         if (playerDead) blindUntil = 0;
         // o botão de mirar segurado não pode piscar: uma queda de 0,12 s no sinal não solta a mira
         const sn = w.adsFov > 0;
-        if (!sn || loadout.reloading || loadout.held) zoomLvl = 0;
+        if (!sn || loadout.reloading || loadout.held || loadout.drawT > 0) zoomLvl = 0;
         if (playerDead) zoomLvl = 0;
-        if (sn && !loadout.reloading && inp.ads && !adsPrev) zoomLvl = (zoomLvl + 1) % 3;
+        if (sn && !loadout.reloading && loadout.drawT <= 0 && inp.ads && !adsPrev) zoomLvl = (zoomLvl + 1) % 3;
         adsPrev = inp.ads;
-        aimHeld = sn ? zoomLvl > 0 : inp.ads;
+        aimHeld = sn ? zoomLvl > 0 : inp.ads && loadout.drawT <= 0;
         adsHold = aimHeld ? 0.12 : Math.max(0, adsHold - dt);
         adsOn = (aimHeld || adsHold > 0) && !loadout.reloading && !loadout.weapon.melee;
         const adsScale = Math.min(1, (zoomFov(w.adsFov) || 62) / baseFov) * st.adsSens;

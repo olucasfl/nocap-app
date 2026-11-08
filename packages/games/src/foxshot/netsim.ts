@@ -456,7 +456,7 @@ export class FsNetSim {
     // modo Bomba: parado na base na compra e no fim do round
     if (this.bombFrozen()) return;
     const lo = p.loadout;
-    const adsOn = inp.alt && !lo.reloading && !lo.weapon.melee;
+    const adsOn = inp.alt && !lo.reloading && !lo.weapon.melee && lo.drawT <= 0;
     const mul = lo.weapon.moveMul * (adsOn ? 0.65 : 1) * fsFlinchAt(p.flinch, (this.tick - p.flinchAt) / FS_NET_HZ);
     // o passo de 1/60 s se divide em dois de 1/120 s, igual ao aparelho
     for (let i = 0; i < 2; i++) {

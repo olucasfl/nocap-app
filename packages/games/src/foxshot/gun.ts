@@ -281,7 +281,9 @@ export class FsLoadout {
     if (this.cooldown > 0) this.cooldown = Math.max(0, this.cooldown - dt);
     if (this.inspectT > 0) this.inspectT = Math.max(0, this.inspectT - dt);
     let pressed = input.trigger && !this.triggerWas;
-    if (pressed && !w.auto && !w.melee && (this.cooldown > 0 || this.drawT > 0) && this.reloadT <= 0) this.buffered = 0.3;
+    // clique guardado só vale esperando o tiro anterior (cadência); durante o saque não guarda nada: nada de atirar antes de ver a arma
+    if (this.drawT > 0) this.buffered = 0;
+    else if (pressed && !w.auto && !w.melee && this.cooldown > 0 && this.reloadT <= 0) this.buffered = 0.3;
     else if (this.buffered > 0) this.buffered = Math.max(0, this.buffered - dt);
     if (this.buffered > 0 && this.drawT <= 0 && this.cooldown <= 0 && this.reloadT <= 0 && !w.auto) {
       pressed = true;
@@ -293,13 +295,13 @@ export class FsLoadout {
 
     // corpo a corpo: botão de atirar corta, o de mirar estoca
     if (w.melee) {
-      if (this.drawT <= 0 && this.cooldown <= 0) {
-        // clicar uma vez golpeia uma vez; segurar continua golpeando (corte mais rápido, estocada mais lenta)
-        if (input.trigger) {
+      if (this.cooldown <= 0) {
+        // clicar uma vez golpeia uma vez; segurar continua golpeando (corte mais rápido, estocada mais lenta); durante o saque só inspecionar
+        if (input.trigger && this.drawT <= 0) {
           this.inspectT = 0;
           this.cooldown = 0.5;
           ev.push({ type: 'melee', kind: 'slash', weapon: w });
-        } else if (input.alt) {
+        } else if (input.alt && this.drawT <= 0) {
           this.inspectT = 0;
           this.cooldown = w.melee.stabCd;
           ev.push({ type: 'melee', kind: 'stab', weapon: w });
@@ -312,7 +314,8 @@ export class FsLoadout {
     }
 
     // inspecionar (F) com a arma parada: não vale recarregando, sacando ou depois de atirar
-    if (input.inspect && w.inspect > 0 && this.ready && this.inspectT <= 0 && !this.reloading) {
+    // inspecionar vale na hora, até durante o saque (é a única ação permitida nele)
+    if (input.inspect && w.inspect > 0 && this.reloadT <= 0 && this.cooldown <= 0 && this.inspectT <= 0 && !this.reloading) {
       this.inspectT = w.inspect;
       ev.push({ type: 'inspect', weapon: w });
     }
