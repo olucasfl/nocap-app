@@ -78,6 +78,8 @@ export const FS_PVP_LIMITS = {
 } as const;
 /** Dinheiro do PvP: ilimitado (o valor só aparece na loja). */
 export const FS_PVP_MONEY = 99_999;
+/** Compra do 1º round no PvP (s). */
+export const FS_PVP_BUY_SEC = 5;
 
 /** Limita as opções à faixa permitida (a sala e o menu usam isto). */
 export function fsBombConfig(patch: Partial<FsBombConfig> = {}): FsBombConfig {
@@ -86,6 +88,8 @@ export function fsBombConfig(patch: Partial<FsBombConfig> = {}): FsBombConfig {
   const c = { ...FS_BOMB_DEFAULTS, ...clean } as FsBombConfig;
   const clamp = (v: number, [a, b]: readonly [number, number]) => Math.max(a, Math.min(b, Math.round(v)));
   c.pvp = c.pvp === true;
+  // PvP: a compra é rápida (5 s) se ninguém escolheu outro tempo
+  if (c.pvp && clean.buySec === undefined) c.buySec = FS_PVP_BUY_SEC;
   const lim = c.pvp ? FS_PVP_LIMITS : FS_BOMB_LIMITS;
   c.winRounds = clamp(c.winRounds, lim.winRounds);
   c.buySec = clamp(c.buySec, lim.buySec);

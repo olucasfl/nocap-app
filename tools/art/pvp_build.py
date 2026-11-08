@@ -17,11 +17,11 @@ import base64, json, math, os, struct, sys
 import numpy as np
 from PIL import Image
 
-S = 0.0065        # unidade do OBJ -> metros (1 bloco = 0,65 m: a 1 m o mapa ficava enorme para o corpo do jogo; 0,65 ainda deixa passar de pé por 2 blocos de altura e por 1 de largura)
-BC = 0.13         # voxel de colisão (m): 1 bloco = 5 voxels, então as quinas ficam na grade
-CELL = 0.26       # célula da grade de navegação (m): 2 voxels
+S = 0.006         # unidade do OBJ -> metros (1 bloco = 0,6 m: o mapa original em 1 m por bloco ficava enorme para o corpo do jogo; 0,6 ainda deixa o boneco entrar num vão de 1 bloco, e portas de 2 blocos (1,2 m) pedem agachar)
+BC = 0.12         # voxel de colisão (m): 1 bloco = 5 voxels, então as quinas ficam na grade
+CELL = 0.24       # célula da grade de navegação (m): 2 voxels
 YMAX = 6.0        # altura máxima simulada (m); acima disso ninguém chega
-HEAD = 5          # células livres para o corpo na grade de navegação (1,3 m)
+HEAD = 6          # células livres para o corpo na grade de navegação (1,4 m: portas baixas ficam só para quem agacha)
 
 obj_path, tex_dir = sys.argv[1], sys.argv[2]
 root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

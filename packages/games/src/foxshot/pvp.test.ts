@@ -12,6 +12,9 @@ describe('modo PvP: regras', () => {
     m.startRound();
     return m;
   };
+  it('a compra do primeiro round dura 5 s', () => {
+    expect(mk().time).toBe(5);
+  });
   it('compra de graça e sem limite; sem bomba', () => {
     const m = mk();
     expect(m.carrier).toBeNull();

@@ -4,15 +4,15 @@ Status: em andamento (08/11/2026). Pedido do Lucas: 1x1, 2x2, 2x1 etc., dois tim
 
 ## Regras
 - É uma variante do Bomba (`pvp: true` no `FsBombConfig` e `kind: 'bomb'` na sala): times TR/CT, rounds, espectar, tela final por time. Sem bomba, sem pátios, sem dinheiro.
-- Cada time nasce numa ponta da arena (eixo comprido). Fase de compra de 15 s no 1º round e de 3 s (`freezeSec`) nos seguintes; é a contagem que libera o tiro. Dinheiro infinito: qualquer arma, colete, capacete e granada; só na base (a área de nascimento).
+- Cada time nasce numa ponta da arena (eixo comprido). Fase de compra de 5 s no 1º round (`FS_PVP_BUY_SEC`) e de 3 s (`freezeSec`) nos seguintes; é a contagem que libera o tiro. Dinheiro infinito: qualquer arma, colete, capacete e granada; só na base (a área de nascimento).
 - Round acaba quando um time inteiro cai (quem morre assiste). Acabou o tempo: vence quem tem mais vivos; empate, quem tem mais vida somada. Cada round vale 1 ponto; vence o primeiro a N (1 a 30). Sem troca de lados.
 - Tela de fim de round diz quem marcou; depois da compra de 3 s o tiro libera.
 - Bots (aliados e inimigos) caçam o outro time indo de ponto em ponto pelo lado do inimigo (`FsBombTactics.pvpStep`).
 - Configuração antes de começar (offline e na sala): formato (1x1, 2x2, 2x1, 3x3, 5x5 no offline; bots por time e espectadores na aba Sala), pontos para vencer (1, 3, 5, 10, 15, 20, 30), tempo do round (30 s a 5 min).
 
 ## Mapa: Arena de Blocos
-- Modelo FBX de terceiros enviado pelo Lucas (sem informação de autoria ou licença: confirmar antes de publicar). `tools/art/fbx2obj.mjs` (FBXLoader do three) converte para OBJ; `tools/art/pvp_build.py` gera `pvp.data.ts` (colisão e grade) e `models/foxshot/pvp/pvp.glb` (texturas embutidas). Escala: 1 bloco = 0,65 m (a 1 m o mapa ficava enorme para o corpo do jogo).
-- Colisão exata: os blocos são malhas fechadas, então o sólido sai da paridade dos cruzamentos de raios verticais por coluna (voxels de 13 cm, 5 por bloco). Conferido contra a malha com 432 raios de tiro: 1 divergência acima de 35 cm.
+- Modelo FBX de terceiros enviado pelo Lucas (sem informação de autoria ou licença: confirmar antes de publicar). `tools/art/fbx2obj.mjs` (FBXLoader do three) converte para OBJ; `tools/art/pvp_build.py` gera `pvp.data.ts` (colisão e grade) e `models/foxshot/pvp/pvp.glb` (texturas embutidas). Escala: 1 bloco = 0,6 m (a 1 m o mapa ficava enorme para o corpo do jogo; portas de 2 blocos, 1,2 m, pedem agachar).
+- Colisão exata: os blocos são malhas fechadas, então o sólido sai da paridade dos cruzamentos de raios verticais por coluna (voxels de 12 cm, 5 por bloco). Conferido contra a malha com 432 raios de tiro: 1 divergência acima de 35 cm.
 - Janelas e vãos do modelo são buracos de verdade: dá para olhar, atirar e se esconder.
 
 ## Feito
