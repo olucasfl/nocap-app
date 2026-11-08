@@ -31,7 +31,8 @@ import {
   type FsWeaponId,
 } from '@nocap/games';
 import { fsAudio } from '@/lib/foxshot-audio';
-import { leaveRoom, sendRoom, sendRoomQuiet, serverNow, subscribeRoom, type RoomSnapshot } from '@/lib/rooms';
+import { leaveRoom, sendRoom, serverNow, type RoomSnapshot } from '@/lib/rooms';
+import { FsNetClient } from '@/lib/foxshot-link';
 import { GameChat } from '@/components/GameChat';
 import { InviteDialog } from '@/components/InviteDialog';
 import { FoxShotScene, fsWorldDust, type Quality } from './FoxShotScene';
@@ -50,7 +51,6 @@ import './counterfox-hub.css';
 
 /** Passo da simulação (igual ao servidor) e atraso da interpolação dos outros jogadores. */
 const TICK = 1 / 60;
-const INTERP_MS = 100;
 const ARENA = FS_DUST_SOLIDS;
 
 interface Row {
@@ -148,6 +148,15 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
   const mini = useRef<MinimapData>({ x: 0, z: 0, yaw: 0, targets: [] });
   const snapRef = useRef(snapshot);
   snapRef.current = snapshot;
+  // por onde a partida chega: a sala, ou o aparelho do líder por WebRTC (spec 060)
+  const netRef = useRef<FsNetClient | null>(null);
+  if (!netRef.current) netRef.current = new FsNetClient();
+  const fxs = snapshot.foxshot;
+  useEffect(() => {
+    netRef.current?.update({ me: snapshot.me ?? '', phase: snapshot.phase, foxshot: snapRef.current.foxshot });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [snapshot.me, snapshot.phase, fxs?.net, fxs?.p2pHost, fxs?.startAt, fxs?.setup]);
+  useEffect(() => () => netRef.current?.dispose(), []);
   const settings = useFsSettings();
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [paused, setPausedState] = useState(mePlayer);
@@ -417,13 +426,16 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
     };
 
     // ---- mensagens do servidor
+    /** Atraso de desenho dos outros: o servidor precisa de mais que a conexão direta (e o líder, de menos). */
+    const interpMs = () => netRef.current?.link.minDelay ?? 100;
+    let lastEvN = 0;
     const onFss = (m: unknown) => {
       const fr = m as Frame;
       if (!fr?.f) return;
       inbox.push(fr);
       if (inbox.length > 60) inbox.shift();
     };
-    const unsub = subscribeRoom('fss', onFss);
+    const unsub = netRef.current!.link.onFrame(onFss);
 
     const bodiesNow = (t: number): FsBody[] => {
       const out: FsBody[] = [];
@@ -547,7 +559,14 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           nades.delete(id);
         }
       }
-      for (const e of fr.e) onEvent(e);
+      for (const e of fr.e ?? []) {
+        const n = (e as { n?: number }).n;
+        if (typeof n === 'number') {
+          if (n <= lastEvN) continue;
+          lastEvN = n;
+        }
+        onEvent(e);
+      }
       if (fr.s) pendingSelf = fr.s;
     };
 
@@ -704,7 +723,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       const w = FS_WEAPONS[id];
       const eye: [number, number, number] = [mover.x, mover.y + fsEyeHeight(mover), mover.z];
       const from = scene.muzzleWorld();
-      const bodies = bodiesNow(performance.now() - INTERP_MS);
+      const bodies = bodiesNow(performance.now() - interpMs());
       for (const ray of shot.pellets ?? [{ devYaw: shot.devYaw, devPitch: shot.devPitch }]) {
         const dir = fsDir(view.yaw + view.rYaw + ray.devYaw, view.pitch + view.rPitch + ray.devPitch);
         const tr = fsTrace(w, eye, dir, ARENA, bodies);
@@ -914,7 +933,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
             seq: p.seq, fwd: p.fwd, strafe: p.strafe, jump: p.jump, crouch: p.crouch, walk: p.walk,
             yaw: view.yaw + view.rYaw, pitch: view.pitch + view.rPitch,
             trigger: alive && inp.trigger && !shopOpen && !bombFrozen(), alt: alive && aimHeld && !shopOpen, reload: alive && reloadOnce, inspect: alive && inspectOnce, use: alive && inp.use,
-            viewTick: Math.round(lastK + ((perfNow - lastFrameAt) / 1000) * 60 - (INTERP_MS / 1000) * 60),
+            viewTick: Math.round(lastK + ((perfNow - lastFrameAt) / 1000) * 60 - (interpMs() / 1000) * 60),
             cmds,
           });
           reloadOnce = false;
@@ -923,7 +942,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           sendT++;
           if (sendT >= 2) {
             sendT = 0;
-            sendRoomQuiet('fsin', outbox.slice(-4));
+            netRef.current!.link.sendInput(outbox.slice(-4));
           }
         }
         // movimento local de som: passos
@@ -972,7 +991,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       }
 
       // jogadores remotos: posição interpolada 100 ms atrás
-      const rt = perfNow - INTERP_MS;
+      const rt = perfNow - interpMs();
       // assistindo em primeira pessoa: a raposa seguida some (a câmera está dentro da cabeça dela)
       const followSlot = (!player || (!!bf && !alive)) && followId ? slotOf(followId) : null;
       for (const [id, rm] of remotes) {
@@ -1237,7 +1256,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
 
     if (import.meta.env.DEV) {
       (window as unknown as { __fsn?: unknown }).__fsn = {
-        state: () => ({ mover: { ...mover }, view: { ...view }, self, k: lastK, left: timeLeft, rows: [...rows.values()], pending: pending.length, seq, roster: rosterNow(), me: meId, phase: snapRef.current.phase }),
+        state: () => ({ mover: { ...mover }, view: { ...view }, self, k: lastK, left: timeLeft, rows: [...rows.values()], pending: pending.length, seq, roster: rosterNow(), me: meId, phase: snapRef.current.phase, direct: !!netRef.current?.direct, net: snapRef.current.foxshot?.net ?? 'server', rtt: netRef.current?.link.rtt() ?? -1 }),
         setView: (yaw: number, pitch: number) => {
           view.yaw = yaw;
           view.pitch = pitch;

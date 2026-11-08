@@ -9,7 +9,7 @@ test.skip(!process.env.E2E_ROOMS, 'precisa do servidor de salas (E2E_ROOMS=1)');
 test.beforeEach(({ page: _page }, info) => {
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
 });
-test.setTimeout(240_000);
+test.setTimeout(420_000);
 
 const fsn = <T,>(p: Page, fn: string, ...a: unknown[]) =>
   p.evaluate(([f, args]) => ((window as unknown as { __fsn: Record<string, (...x: unknown[]) => unknown> }).__fsn[f as string] as (...x: unknown[]) => T)(...(args as unknown[])), [fn, a] as [string, unknown[]]) as Promise<T>;
@@ -54,8 +54,8 @@ test('duas janelas: modo Bomba com times TR e CT, compra com dinheiro e HUD da b
   await bia.getByTestId('cfl-ready').click();
   await expect(ana.getByTestId('cfl-start')).toBeEnabled({ timeout: 10_000 });
   await ana.getByTestId('cfl-start').click();
-  await expect(ana.getByTestId('fb-hud')).toBeVisible({ timeout: 60_000 });
-  await expect(bia.getByTestId('fb-hud')).toBeVisible({ timeout: 60_000 });
+  await expect(ana.getByTestId('fb-hud')).toBeVisible({ timeout: 120_000 });
+  await expect(bia.getByTestId('fb-hud')).toBeVisible({ timeout: 120_000 });
   await fsn(ana, 'resume');
   await fsn(bia, 'resume');
   await expect(ana.getByTestId('fb-money')).toContainText('800');

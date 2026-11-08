@@ -869,13 +869,17 @@ export class PingRoom extends ColorRoom {
  * corpo exato da própria pessoa (para a previsão), a posição dos outros, os eventos (tiros, abates, granadas) e o tempo.
  */
 const fsSentAt = new WeakMap<object, number>();
+/** Conexão direta do Counter Fox ligada (padrão). `COUNTER_FOX_P2P=0` desliga e a sala simula tudo. */
+const FOX_SHOT_P2P_ON = () => process.env.COUNTER_FOX_P2P !== '0';
 
 export class FoxShotRoom extends ColorRoom {
   override maxClients = FOXSHOT_ROOM_MAX;
   protected override tickMs = 16;
 
   protected override makeEngine(opts: ConstructorParameters<typeof ColorRoomEngine>[0]) {
-    return new FoxShotRoomEngine(opts);
+    const e = new FoxShotRoomEngine(opts);
+    e.p2pEnabled = FOX_SHOT_P2P_ON();
+    return e;
   }
 
   protected override registerGameMessages() {
@@ -883,6 +887,22 @@ export class FoxShotRoom extends ColorRoom {
     this.onMessage('fsin', (c, m) => {
       const id = (c.userData as AuthData | undefined)?.id;
       if (id) engine().receive(id, m);
+    });
+    // conexão direta (WebRTC): o aparelho avisa que conectou, o líder manda o placar e a sala só repassa a sinalização
+    this.onMessage('fsp2p', (c, m: { ok?: unknown }) => {
+      const id = (c.userData as AuthData | undefined)?.id;
+      if (id) engine().p2pReport(id, m?.ok);
+    });
+    this.onMessage('fsres', (c, m: { rows?: unknown; over?: unknown }) => {
+      const id = (c.userData as AuthData | undefined)?.id;
+      if (id) engine().p2pStatus(id, m?.rows, m?.over === true);
+    });
+    this.onMessage('rtc', (c, m: { to?: unknown; data?: unknown }) => {
+      const from = (c.userData as AuthData | undefined)?.id;
+      if (!from || typeof m?.to !== 'string' || typeof m.data !== 'object' || m.data === null) return;
+      if (JSON.stringify(m.data).length > 12_000) return;
+      const target = this.clients.find((x) => (x.userData as AuthData | undefined)?.id === m.to);
+      target?.send('rtc', { from, data: m.data });
     });
     this.onMessage('fsteam', (c, m: { id?: string; team?: number }) => {
       const by = (c.userData as AuthData | undefined)?.id;
@@ -908,7 +928,7 @@ export class FoxShotRoom extends ColorRoom {
 
   protected override afterTick() {
     const engine = this.engine as FoxShotRoomEngine;
-    if (engine.currentPhase !== 'play' || !engine.sim) return;
+    if (engine.currentPhase !== 'play' || !engine.sim || !engine.serverSimulates) return;
     const now = Date.now();
     if (now - (fsSentAt.get(this) ?? 0) < 33) return;
     fsSentAt.set(this, now);
@@ -927,7 +947,14 @@ const FOX_GAMES = {
   atravessa: { name: 'Atravessa!', make: (o: EngineOpts) => new AtravessaRoomEngine(o) },
   desmorona: { name: 'Desmorona!', make: (o: EngineOpts) => new DesmoronaRoomEngine(o) },
   pingpong: { name: 'Ping Fox!', make: (o: EngineOpts) => new PingRoomEngine(o) },
-  foxshot: { name: 'Counter Fox', make: (o: EngineOpts) => new FoxShotRoomEngine(o) },
+  foxshot: {
+    name: 'Counter Fox',
+    make: (o: EngineOpts) => {
+      const e = new FoxShotRoomEngine(o);
+      e.p2pEnabled = FOX_SHOT_P2P_ON();
+      return e;
+    },
+  },
   bola: {
     name: 'Fut Fox',
     make: (o: EngineOpts) => {

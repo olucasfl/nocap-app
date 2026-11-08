@@ -13,9 +13,12 @@ test.skip(!process.env.E2E_ROOMS, 'precisa do servidor de salas (E2E_ROOMS=1)');
 test.beforeEach(({ page: _page }, info) => {
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
 });
-test.setTimeout(240_000);
+test.setTimeout(300_000);
 
 interface St {
+  direct: boolean;
+  net: string;
+  rtt: number;
   mover: { x: number; z: number };
   self: { seq: number; x: number; z: number; hp: number; alive: boolean; ammo: number } | null;
   k: number;
@@ -89,8 +92,12 @@ test('duas janelas: criar sala pelo menu, entrar pelo código, jogar e ver o ser
   await bia.waitForFunction(() => (window as unknown as { __fsn?: { state(): { phase: string } } }).__fsn?.state().phase === 'play', undefined, { timeout: 30_000 });
   await fsn(ana, 'resume');
   await fsn(bia, 'resume');
+  // a partida roda ponto a ponto: a sala marca p2p e os dois aparelhos jogam pelo caminho direto (WebRTC)
+  await expect.poll(async () => (await st(ana)).net, { timeout: 20_000 }).toBe('p2p');
+  await expect.poll(async () => (await st(bia)).direct, { timeout: 20_000 }).toBe(true);
+  await expect.poll(async () => (await st(ana)).direct, { timeout: 20_000 }).toBe(true);
 
-  // o servidor manda o quadro: 4 jogadores (2 pessoas e 2 bots) e a tela anda sozinha
+  // o líder manda o quadro o quadro: 4 jogadores (2 pessoas e 2 bots) e a tela anda sozinha
   await expect.poll(async () => (await st(ana)).rows.length, { timeout: 20_000 }).toBe(4);
   const s0 = await st(ana);
   expect(s0.roster.filter((r) => r.bot)).toHaveLength(2);

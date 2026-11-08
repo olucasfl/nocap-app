@@ -11,6 +11,8 @@ import { ColorRoomEngine, RoomError, type AnySettings, type EngineOptions, type 
 
 /** Contagem antes de começar (ms). */
 export const FOXSHOT_COUNTDOWN_MS = 5000;
+/** Contagem quando os aparelhos tentam a conexão direta (WebRTC). */
+export const FOXSHOT_P2P_COUNTDOWN_MS = Number(process.env.COUNTER_FOX_P2P_WINDOW_MS) || 7000;
 /** Quantas pessoas cabem na sala (quem passa dos 10 jogadores só espectaram). */
 export const FOXSHOT_ROOM_MAX = 15;
 /** Jogadores humanos + bots numa partida. */
@@ -49,6 +51,19 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
   protected override readonly minPlayers = 1;
 
   sim: FsNetSim | null = null;
+  /**
+   * Quem simula a partida (spec 060): `pending` = os aparelhos tentam conectar ao do líder por WebRTC; `p2p` = o aparelho do
+   * líder simula e manda o estado direto aos outros; `server` = esta sala simula (reserva, ou WebRTC desligado).
+   */
+  p2pEnabled = false;
+  private net: 'server' | 'pending' | 'p2p' = 'server';
+  private p2pHost = '';
+  private p2pDeadline = 0;
+  private readonly p2pOk = new Set<string>();
+  private p2pRows: { id: string; name: string; points: number; kills: number; assists: number; deaths: number; place: number }[] | null = null;
+  private p2pOver = false;
+  private p2pOverAt = 0;
+  private simOpts: ConstructorParameters<typeof FsNetSim>[0] | null = null;
   private startAt = 0;
   private overAt = 0;
   private dirty = false;
@@ -96,7 +111,8 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
 
   /** Dá para entrar (e ser convidado) com a partida rolando: a pessoa chega espectando e escolhe se joga. */
   override get joinableInPlay(): boolean {
-    return true;
+    // na conexão direta quem chega no meio não recebe o jogo (ainda): só entra com o servidor simulando
+    return this.net === 'server';
   }
 
   override join(id: string, username: string) {
@@ -129,6 +145,7 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
   joinPlay(id: string): void {
     const m = this.members.get(id);
     if (!m || !this.sim || (this.phase !== 'play' && this.phase !== 'show')) return;
+    if (this.net !== 'server') throw new RoomError('Nesta partida a conexão é direta com o líder: dá para entrar na próxima.');
     if (!this.sim.joinAs(id, m.username)) throw new RoomError('A partida já tem 10 jogadores. Siga espectando.');
     this.dirty = true;
   }
@@ -177,14 +194,24 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
     const humansIn: [number, number] = [0, 0];
     for (const h of humanTeams) if (h.team !== undefined) humansIn[h.team]++;
     const botTeams: [number, number] = [Math.max(0, Math.min(this.cfg.botsCt, 5 - humansIn[0])), Math.max(0, Math.min(this.cfg.botsTr, 5 - humansIn[1]))];
-    this.sim = new FsNetSim({
+    this.simOpts = {
       minutes: cfg.minutes,
       humans: humanTeams,
       bots: bomb ? botTeams[0] + botTeams[1] : Math.min(this.botTotal(), 10 - humans.length),
       botTeams: bomb ? botTeams : undefined,
       bomb: bomb ? { winRounds: this.cfg.winRounds, roundSec: this.cfg.roundSec } : undefined,
-    });
-    this.startAt = this.now() + FOXSHOT_COUNTDOWN_MS;
+    };
+    this.sim = new FsNetSim(this.simOpts);
+    // conexão direta: a contagem é um pouco maior para dar tempo de os aparelhos conectarem ao do líder
+    this.p2pOk.clear();
+    this.p2pRows = null;
+    this.p2pOver = false;
+    this.p2pOverAt = 0;
+    this.p2pHost = this.hostId ?? '';
+    const hostM = this.members.get(this.p2pHost);
+    this.net = this.p2pEnabled && hostM?.connected ? 'pending' : 'server';
+    this.startAt = this.now() + (this.net === 'pending' ? FOXSHOT_P2P_COUNTDOWN_MS : FOXSHOT_COUNTDOWN_MS);
+    this.p2pDeadline = this.startAt - 400;
     this.overAt = 0;
     this.phase = 'show';
     this.phaseEndsAt = this.startAt;
@@ -200,21 +227,25 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
   protected override reset() {
     super.reset();
     this.sim = null;
+    this.net = 'server';
+    this.p2pOk.clear();
+    this.p2pRows = null;
+    this.p2pOver = false;
   }
 
   override disconnect(id: string) {
     super.disconnect(id);
-    if (this.phase === 'play') this.sim?.takeOver(id);
+    if (this.phase === 'play' && this.net === 'server') this.sim?.takeOver(id);
   }
 
   override leave(id: string) {
-    if (this.phase === 'play' || this.phase === 'show') this.sim?.takeOver(id);
+    if ((this.phase === 'play' || this.phase === 'show') && this.net === 'server') this.sim?.takeOver(id);
     super.leave(id);
   }
 
   /** Entradas de uma pessoa (um pacote traz as últimas). Só vale com a partida rolando. */
   receive(id: string, raw: unknown): void {
-    if (this.phase !== 'play' || !this.sim) return;
+    if (this.phase !== 'play' || !this.sim || this.net !== 'server') return;
     const list = Array.isArray(raw) ? raw.slice(0, 8) : [raw];
     for (const r of list) {
       const inp = fsNetParseInput(r);
@@ -222,7 +253,77 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
     }
   }
 
+  /** Quem precisa conectar ao aparelho do líder: todo mundo que está na sala agora. */
+  private p2pPeers(): string[] {
+    return [...this.members.values()].filter((m) => m.connected).map((m) => m.id);
+  }
+
+  /** Um aparelho avisa que conectou ao do líder (`ok`) ou que não conseguiu (a partida vai para o servidor). */
+  p2pReport(id: string, ok: unknown): void {
+    if (this.net !== 'pending' || !this.members.has(id)) return;
+    if (ok === true) this.p2pOk.add(id);
+    else this.toServerMode();
+    this.dirty = true;
+  }
+
+  /** O líder manda o placar (de tempos em tempos e no fim): é o que vale se ele sair ou a partida acabar. */
+  p2pStatus(from: string, rows: unknown, over: boolean): void {
+    if (this.net !== 'p2p' || from !== this.p2pHost || !Array.isArray(rows)) return;
+    const clean = rows.slice(0, 10).flatMap((r) => {
+      const o = r as Record<string, unknown>;
+      const n = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(-1e6, Math.min(1e6, Math.round(v))) : 0);
+      return typeof o?.id === 'string' && typeof o.name === 'string' ? [{ id: o.id.slice(0, 40), name: o.name.slice(0, 24), points: n(o.points), kills: n(o.kills), assists: n(o.assists), deaths: n(o.deaths), place: n(o.place) }] : [];
+    });
+    if (clean.length === 0) return;
+    this.p2pRows = clean;
+    if (over && !this.p2pOver) {
+      this.p2pOver = true;
+      this.p2pOverAt = this.now();
+    }
+    this.dirty = true;
+  }
+
+  /** Volta ao jeito de sempre: esta sala simula (alguém não conseguiu conectar, ou o prazo acabou). */
+  private toServerMode(): void {
+    if (this.net === 'server') return;
+    this.net = 'server';
+    this.dirty = true;
+  }
+
+  /** A sala está simulando (o quadro `fss` sai daqui). */
+  get serverSimulates(): boolean {
+    return this.net === 'server';
+  }
+
   override tick(): boolean {
+    if (this.phase === 'show' && this.net === 'pending') {
+      const ready = this.p2pPeers().every((id) => this.p2pOk.has(id));
+      if (ready) {
+        this.net = 'p2p';
+        this.dirty = true;
+      } else if (this.now() >= this.p2pDeadline) this.toServerMode();
+    }
+    if (this.phase === 'play' && this.net === 'p2p') {
+      // o líder simula; aqui só se espera o fim (ou o líder sumir: fica o último placar dele)
+      const t = this.now();
+      const host = this.members.get(this.p2pHost);
+      if (!host?.connected && !this.p2pOver) {
+        this.p2pOver = true;
+        this.p2pOverAt = t - OVER_MS;
+      }
+      if (this.p2pOver && t - this.p2pOverAt >= OVER_MS) {
+        this.phase = 'final';
+        this.phaseEndsAt = null;
+        return true;
+      }
+      const d = this.dirty;
+      this.dirty = false;
+      return d;
+    }
+    return this.tickServer();
+  }
+
+  private tickServer(): boolean {
     const t = this.now();
     if (this.phase === 'show') {
       if (t < this.startAt) return false;
@@ -252,14 +353,17 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
 
   /** Eventos acumulados e quadros (o `FoxShotRoom` transmite). */
   drainEvents(): FsNetEvent[] {
-    return this.sim?.drainEvents() ?? [];
+    return this.net === 'server' ? (this.sim?.drainEvents() ?? []) : [];
   }
   frameFor(id: string) {
-    if (!this.sim) return null;
+    if (!this.sim || this.net !== 'server') return null;
     return { f: this.sim.frame(), s: this.sim.selfState(id) };
   }
 
   override finalRows(): FinalRow[] {
+    if (this.p2pRows) {
+      return this.p2pRows.map((r) => ({ userId: r.id, username: r.name, totalTenths: r.points * 10, placement: r.place || 1, answers: [] }));
+    }
     if (!this.sim) return [];
     return this.sim.results().map((r) => ({
       userId: r.id,
@@ -285,8 +389,11 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
         startAt: this.phase === 'lobby' ? null : this.startAt,
         roster: s ? s.roster : null,
         hz: FS_NET_HZ,
-        over: s?.over ?? false,
-        score: s ? s.results().map((r) => ({ id: r.id, name: r.name, points: r.points, kills: r.kills, assists: r.assists, deaths: r.deaths })) : null,
+        net: this.phase === 'lobby' ? 'server' : this.net,
+        p2pHost: this.net === 'server' ? null : this.p2pHost,
+        setup: this.net === 'server' ? null : this.simOpts,
+        over: this.net === 'p2p' ? this.p2pOver : (s?.over ?? false),
+        score: this.p2pRows ? this.p2pRows : s ? s.results().map((r) => ({ id: r.id, name: r.name, points: r.points, kills: r.kills, assists: r.assists, deaths: r.deaths })) : null,
       },
     };
   }
