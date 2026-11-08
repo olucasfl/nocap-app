@@ -351,6 +351,8 @@ export class FsNetClient {
   private started = false;
 
   constructor() {
+    // os getters abaixo têm o próprio `this` (o objeto literal), então a classe precisa de um nome
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
     this.link = {
       get local() {

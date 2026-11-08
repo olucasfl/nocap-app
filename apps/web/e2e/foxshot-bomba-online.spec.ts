@@ -50,7 +50,8 @@ test('duas janelas: modo Bomba com times TR e CT, compra com dinheiro e HUD da b
   await ana.getByTestId('cfl-join-tr').first().click();
   await expect(ana.getByTestId('cfl-slot-tr-Ana')).toBeVisible({ timeout: 10_000 });
   await bia.getByTestId('cfl-tab-sala').click();
-  await bia.getByTestId('cfl-join-ct').first().click();
+  // a sala já põe a Bia no time com menos gente (sem botão no próprio time): só clica se ela ainda não estiver no CT
+  if (!(await ana.getByTestId('cfl-slot-ct-Bia').isVisible())) await bia.getByTestId('cfl-join-ct').first().click({ timeout: 15_000 }).catch(() => undefined);
   await expect(ana.getByTestId('cfl-slot-ct-Bia')).toBeVisible({ timeout: 10_000 });
   await ana.getByTestId('cfl-botup-ct').click();
   await ana.getByTestId('cfl-botup-tr').click();
@@ -58,7 +59,8 @@ test('duas janelas: modo Bomba com times TR e CT, compra com dinheiro e HUD da b
   // quem quiser assistir escolhe Espectar (Bia testa e volta ao time)
   await bia.getByTestId('cfl-join-spec').click();
   await expect(ana.getByTestId('cfl-spec')).toContainText('Bia', { timeout: 10_000 });
-  await bia.getByTestId('cfl-join-ct').first().click();
+  // a sala já põe a Bia no time com menos gente (sem botão no próprio time): só clica se ela ainda não estiver no CT
+  if (!(await ana.getByTestId('cfl-slot-ct-Bia').isVisible())) await bia.getByTestId('cfl-join-ct').first().click({ timeout: 15_000 }).catch(() => undefined);
   await expect(ana.getByTestId('cfl-slot-ct-Bia')).toBeVisible({ timeout: 10_000 });
   await bia.getByTestId('cfl-ready').click();
   await expect(ana.getByTestId('cfl-start')).toBeEnabled({ timeout: 10_000 });
