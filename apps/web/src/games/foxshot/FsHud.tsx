@@ -18,6 +18,8 @@ export interface FsPlayerRow {
   points?: number;
   /** Time (só a cor): contra-terrorista azul ou terrorista laranja. */
   team?: 'ct' | 't';
+  /** Dinheiro (modo Bomba): só vem preenchido para aliados. */
+  money?: number;
 }
 
 export interface FeedItem {
@@ -535,10 +537,70 @@ export function FsCrosshair({ spreadPx }: { spreadPx: number }) {
 }
 
 /** Placar (Tab): todos os jogadores com abates, mortes, % de cabeça e dano, como o do CS. */
-export function FsScoreboard({ players, timeLeft, title = 'Treino · Mapa de Treino' }: { players: FsPlayerRow[]; timeLeft: number; title?: string }) {
+export function FsScoreboard({ players, timeLeft, title = 'Treino · Mapa de Treino', bomb }: { players: FsPlayerRow[]; timeLeft: number; title?: string; bomb?: { mySide: 'tr' | 'ct'; tr: number; ct: number } }) {
   const binds = useFsSettings((st) => st.binds);
   const withPts = players.some((p) => p.points !== undefined);
   const rows = [...players].sort((a, b) => (b.points ?? 0) - (a.points ?? 0) || b.kills - a.kills || a.deaths - b.deaths);
+  if (bomb) {
+    const mine = bomb.mySide === 'tr' ? 't' : 'ct';
+    const groups: { key: 't' | 'ct'; label: string; score: number; ally: boolean }[] = [
+      { key: mine, label: mine === 't' ? 'Terroristas' : 'Contra-terroristas', score: mine === 't' ? bomb.tr : bomb.ct, ally: true },
+      { key: mine === 't' ? 'ct' : 't', label: mine === 't' ? 'Contra-terroristas' : 'Terroristas', score: mine === 't' ? bomb.ct : bomb.tr, ally: false },
+    ];
+    return (
+      <div className="fsh-board" role="dialog" aria-label="Placar" data-testid="fs-board">
+        <div className="fsh-board-card">
+          <header>
+            <span className="mono">{title}</span>
+            <b>{clock(Math.max(0, timeLeft))}</b>
+          </header>
+          {groups.map((g) => {
+            const list = rows.filter((p) => p.team === g.key);
+            return (
+              <section key={g.key} className={`fsh-team ${g.key}${g.ally ? ' ally' : ' foe'}`} data-testid={`fs-team-${g.ally ? 'ally' : 'foe'}`}>
+                <h5>
+                  <span>{g.label}{g.ally ? ' · seu time' : ''}</span>
+                  <b>{g.score}</b>
+                </h5>
+                <table>
+                  <thead>
+                    <tr>
+                      <th />
+                      <th>Jogador</th>
+                      <th>{g.ally ? 'Dinheiro' : ''}</th>
+                      <th>Abates</th>
+                      <th>Assist.</th>
+                      <th>Mortes</th>
+                      <th>Dano</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {list.map((p) => (
+                      <tr key={p.id} className={`${p.you ? 'you' : ''}${p.alive ? '' : ' dead'}`}>
+                        <td>
+                          <i className={`fsh-av ${g.key}${p.armor > 0 ? ' vest' : ''}`} />
+                        </td>
+                        <td>
+                          {p.name}
+                          {p.you ? ' (você)' : ''}
+                        </td>
+                        <td className="money" data-testid={g.ally ? 'fs-money' : undefined}>{g.ally && p.money !== undefined ? `$${p.money}` : ''}</td>
+                        <td>{p.kills}</td>
+                        <td>{p.assists}</td>
+                        <td>{p.deaths}</td>
+                        <td>{p.damage}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </section>
+            );
+          })}
+          <footer className="mono">Segure {bindLabel(binds.scoreboard)} para ver o placar</footer>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="fsh-board" role="dialog" aria-label="Placar" data-testid="fs-board">
       <div className="fsh-board-card">

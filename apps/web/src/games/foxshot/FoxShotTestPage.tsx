@@ -926,6 +926,8 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     let dropReadyAt = 0;
     let lastCarrier: string | null = null;
     let beepIn = 0;
+    let swapKey = 0;
+    let specWeapon: FsWeaponId | null = null;
     const moverOf = (id: string | null) => (id === 'me' || !id ? { x: mover.x, y: mover.y, z: mover.z } : (brains.get(id)?.mover ?? mover));
     let planSite: 'A' | 'B' = 'A';
     let endT = 0;
@@ -1077,6 +1079,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         }
         case 'half':
           resetGear = true;
+          swapKey++;
           applyTeams();
           bombBanner = { text: 'Troca de lados', until: clock + 3 };
           break;
@@ -1205,6 +1208,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         site: bm.site,
         carrier: bm.carrier === 'me',
         banner: bombBanner && bombBanner.until > clock ? bombBanner.text : null,
+        swapKey,
         hint: bombHint && bombHint.until > clock ? bombHint.text : null,
         alliesAlive,
         foesAlive,
@@ -1433,7 +1437,8 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         hs: stats.hs,
         damage: stats.damage,
         points: match ? fsMatchScore(stats) : undefined,
-        team: 'ct',
+        team: bm ? (sideOf('me') === 'tr' ? ('t' as const) : ('ct' as const)) : 'ct',
+        money: bm ? bm.players.get('me')?.money : undefined,
       },
       ...ALL_TARGETS.map((t) => {
         const s = targets.get(t.id)!;
@@ -1449,7 +1454,8 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
           hs: s.hs,
           damage: s.damage,
           points: match ? fsMatchScore(s) : undefined,
-          team: isDm(t.id) ? (dmSpecs.findIndex((d) => d.id === t.id) % 2 === 0 ? ('t' as const) : ('ct' as const)) : undefined,
+          team: bm ? (sideOf(t.id) === 'tr' ? ('t' as const) : ('ct' as const)) : isDm(t.id) ? (dmSpecs.findIndex((d) => d.id === t.id) % 2 === 0 ? ('t' as const) : ('ct' as const)) : undefined,
+          money: bm && sideOf(t.id) === sideOf('me') ? bm.players.get(t.id)?.money : undefined,
         };
       }),
     ];
@@ -1878,8 +1884,17 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         camDm.ok = true;
         scene.hideTarget(followDm!);
         scene.setView(camDm.x, camDm.y, camDm.z, camDm.yaw, brains.get(followDm!)!.pitch, baseFov, 0);
-        scene.hideViewmodel = true;
+        // a arma de quem se assiste aparece na mão, como na visão dele
+        if (specWeapon !== fb.weapon) {
+          specWeapon = fb.weapon;
+          scene.selectWeapon(fb.weapon, true);
+        }
+        scene.hideViewmodel = false;
       } else {
+        if (specWeapon) {
+          specWeapon = null;
+          scene.selectWeapon(loadout.weapon.id, true);
+        }
         camDm.ok = false;
       scene.setView(
         prev.x + (mover.x - prev.x) * alpha,
@@ -2363,7 +2378,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
               ]}
             />
           )}
-          {board && !result && <FsScoreboard players={hud.players} timeLeft={hud.timeLeft} title={match ? (match.mode === 'bomb' ? `Bomba · Duna · primeiro a ${match.bomb?.winRounds ?? 8}` : `Mata-mata · Duna · ${match.minutes} min`) : undefined} />}
+          {board && !result && <FsScoreboard bomb={hud.bomb ? { mySide: hud.bomb.mySide, tr: hud.bomb.tr, ct: hud.bomb.ct } : undefined} players={hud.players} timeLeft={hud.timeLeft} title={match ? (match.mode === 'bomb' ? `Bomba · Duna · primeiro a ${match.bomb?.winRounds ?? 8}` : `Mata-mata · Duna · ${match.minutes} min`) : undefined} />}
           {needClick && !paused && (
             <div className="fs-hint mono" data-testid="fs-needclick">
               Clique na tela para prender o mouse

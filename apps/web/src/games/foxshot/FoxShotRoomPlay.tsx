@@ -75,7 +75,7 @@ interface SelfState {
   hp: number; armor: number; helmet: boolean; alive: boolean; respawnIn: number;
   cur: number; held: FsGrenadeId | null; ammo: number; reloading: boolean; slots: number[]; nades: Record<FsGrenadeId, number>;
   /** Modo Bomba: dinheiro, progresso de plantar/desarmar, ganho do último round, seu lado e rounds para vencer. */
-  bomb?: { money: number; plant: number; defuse: number; gain: number; side: 'tr' | 'ct'; win: number; kit?: boolean; buy?: boolean };
+  bomb?: { money: number; plant: number; defuse: number; gain: number; side: 'tr' | 'ct'; win: number; kit?: boolean; buy?: boolean; mates?: Record<number, number> };
 }
 interface Frame {
   f: { k: number; left: number; p: number[][]; g: number[][]; b?: number[] };
@@ -352,6 +352,9 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
     let bombBanner: { text: string; until: number } | null = null;
     let bombHint: { text: string; until: number } | null = null;
     let beepIn = 0;
+    let specWeapon: FsWeaponId | null = null;
+    let swapKey = 0;
+    let sidePrev: 'tr' | 'ct' | null = null;
     let dropPrev = 0;
     let carrierPrev = -1;
     let plantActPrev = 0;
@@ -801,6 +804,10 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         const wasDead = !!self && !self.alive;
         self = s;
         bombSelf = s.bomb ?? null;
+        if (bombSelf) {
+          if (sidePrev && sidePrev !== bombSelf.side) swapKey++;
+          sidePrev = bombSelf.side;
+        }
         reconcile(s);
         syncLoadout(s);
         if (!s.alive && deadSince < 0) deadSince = clock;
@@ -1014,8 +1021,22 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           scene.setView(cam.x, cam.y, cam.z, cam.yaw, camPitch, st.fov, 0);
           view.yaw = cam.yaw;
           fsAudio.listener(cam.x, cam.y, cam.z, fsDir(cam.yaw, 0));
+          // a arma de quem se assiste aparece na mão, como na visão dele
+          if (tr && tp) {
+            const wid = fsNetWeaponId(tr.weapon);
+            if (wid && specWeapon !== wid) {
+              specWeapon = wid;
+              scene.selectWeapon(wid, true);
+            }
+            scene.hideViewmodel = !wid;
+          }
         }
-      } else
+      } else {
+        if (specWeapon) {
+          // voltou a jogar: a sua própria arma de volta na mão
+          specWeapon = null;
+          scene.selectWeapon(loadout.weapon.id, true);
+        }
       scene.setView(
         prev.x + (mover.x - prev.x) * alpha + errOff.x,
         prev.y + (mover.y - prev.y) * alpha + errOff.y + fsEyeHeight(mover) - e * (fsEyeHeight(mover) - 0.22),
@@ -1025,6 +1046,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         THREE.MathUtils.lerp(scene.fovNow ?? st.fov, fov, Math.min(1, dt * 12)),
         (sk ? Math.sin(clock * 97) * sk * 0.6 : 0) + e * 24,
       );
+      }
       if (player) fsAudio.listener(mover.x, mover.y + fsEyeHeight(mover), mover.z, fsDir(view.yaw + view.rYaw, view.pitch + view.rPitch));
       scene.update(isPaused ? 0 : dt, { speed: Math.hypot(mover.vx, mover.vz), adsTarget: adsOn ? 1 : 0, airborne: !mover.onGround });
       // modo Bomba: C4 na cena. Plantando e desarmando aparecem para todos; plantada pisca e apita (o som sai dela)
@@ -1127,12 +1149,12 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       if (hudT > 0.1) {
         hudT = 0;
         const sc = scene.stats();
-        const players: FsPlayerRow[] = rosterNow().map((r) => {
+        const players: FsPlayerRow[] = rosterNow().map((r, idx) => {
           const row = rows.get(r.id);
           const mine = r.id === meId;
           const k = row?.kills ?? 0;
           const a = row?.assists ?? 0;
-          return { id: r.id, name: r.name, you: mine, alive: mine ? alive : row ? (row.flags & 1) !== 0 : true, armor: mine ? self?.armor ?? 0 : row?.armor ?? 0, kills: k, deaths: row?.deaths ?? 0, assists: a, hs: 0, damage: 0, points: fsMatchScore({ kills: k, assists: a }), team: ((row?.flags ?? 0) & 128) !== 0 ? ('t' as const) : ('ct' as const) };
+          return { id: r.id, name: r.name, you: mine, alive: mine ? alive : row ? (row.flags & 1) !== 0 : true, armor: mine ? self?.armor ?? 0 : row?.armor ?? 0, kills: k, deaths: row?.deaths ?? 0, assists: a, hs: 0, damage: 0, points: fsMatchScore({ kills: k, assists: a }), team: ((row?.flags ?? 0) & 128) !== 0 ? ('t' as const) : ('ct' as const), money: mine ? bombSelf?.money : bombSelf?.mates?.[idx] };
         });
         const mp = players.find((p) => p.you);
         setHud({
@@ -1147,7 +1169,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
             return {
               round: bf![2]!, winRounds: bombSelf!.win, tr: bf![3]!, ct: bf![4]!, mySide: bombSelf!.side, phase, time: bf![1]! / 10,
               money: Math.max(0, bombSelf!.money), plant: bombSelf!.plant, defuse: bombSelf!.defuse, site: bf![7] === 1 ? 'A' : bf![7] === 2 ? 'B' : null,
-              carrier: bf![8] === meIdx && meIdx >= 0, banner: bombBanner && bombBanner.until > clock ? bombBanner.text : null,
+              swapKey, carrier: bf![8] === meIdx && meIdx >= 0, banner: bombBanner && bombBanner.until > clock ? bombBanner.text : null,
               hint: bombHint && bombHint.until > clock ? bombHint.text : null, alliesAlive: allyAlive, foesAlive: foeAlive, kit: !!bombSelf!.kit,
             };
           })() : null,
@@ -1331,7 +1353,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
               ]}
             />
           )}
-          {board && <FsScoreboard players={players} timeLeft={h.timeLeft} title={h.bomb ? `Bomba · Duna · online · primeiro a ${h.bomb.winRounds}` : `Mata-mata · Duna · online`} />}
+          {board && <FsScoreboard bomb={h.bomb ? { mySide: h.bomb.mySide, tr: h.bomb.tr, ct: h.bomb.ct } : undefined} players={players} timeLeft={h.timeLeft} title={h.bomb ? `Bomba · Duna · online · primeiro a ${h.bomb.winRounds}` : `Mata-mata · Duna · online`} />}
           {count !== null && (
             <div className="fsr-count" role="status" data-testid="fsr-count">
               <small>COMEÇA EM</small>

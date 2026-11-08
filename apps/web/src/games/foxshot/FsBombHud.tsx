@@ -25,6 +25,8 @@ export interface BombHud {
   foesAlive: number;
   /** Tem o alicate de desarme (desarma em metade do tempo). */
   kit: boolean;
+  /** Sobe a cada troca de lados (meio da partida): reinicia a animação. 0 = nunca trocou. */
+  swapKey?: number;
 }
 
 const mmss = (t: number) => {
@@ -52,6 +54,7 @@ export function FsBombHud({ b }: { b: BombHud }) {
       <div className="fb-sub mono">
         Round {b.round} · primeiro a {b.winRounds} · você é {b.mySide === 'tr' ? 'TERRORISTA' : 'CONTRA-TERRORISTA'} · vivos {b.alliesAlive} x {b.foesAlive}
       </div>
+      {!!b.swapKey && <FsSideSwap key={b.swapKey} side={b.mySide} round={b.round} />}
       <div className="fb-money" data-testid="fb-money">US$ {b.money}</div>
       {b.carrier && b.phase !== 'planted' && <div className="fb-carry mono">VOCÊ TEM A BOMBA · segure {bindLabel(fsSettings().binds.bomb)} nos pátios A ou B</div>}
       {b.plant > 0 && (
@@ -68,6 +71,37 @@ export function FsBombHud({ b }: { b: BombHud }) {
       )}
       {b.hint && <div className="fb-hint mono">{b.hint}</div>}
       {b.banner && <div className="fb-banner" data-testid="fb-banner">{b.banner}</div>}
+    </div>
+  );
+}
+
+/**
+ * Troca de lados no meio da partida: uma faixa laranja e uma azul se cruzam pela tela, o título entra e o seu novo time
+ * aparece em destaque. Só transform e opacity (e só fade com movimento reduzido); some sozinha em 4 s.
+ */
+export function FsSideSwap({ side, round }: { side: 'tr' | 'ct'; round: number }) {
+  const tr = side === 'tr';
+  return (
+    <div className="fb-swap" data-testid="fb-swap" role="status" aria-live="polite">
+      <div className="fb-swap-dim" />
+      <div className="fb-swap-band t" />
+      <div className="fb-swap-band ct" />
+      <div className="fb-swap-card">
+        <small className="mono">METADE DA PARTIDA · ROUND {round}</small>
+        <h2>TROCA DE LADOS</h2>
+        <div className="fb-swap-arrows" aria-hidden="true">
+          <i className="t" />
+          <svg viewBox="0 0 64 32" width="64" height="32">
+            <path d="M4 10h44M40 2l10 8-10 8" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M60 22H16M24 14L14 22l10 8" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <i className="ct" />
+        </div>
+        <p className={`fb-swap-now ${tr ? 't' : 'ct'}`}>
+          <span>Agora você é</span>
+          <b>{tr ? 'TERRORISTA' : 'CONTRA-TERRORISTA'}</b>
+        </p>
+      </div>
     </div>
   );
 }

@@ -25,3 +25,37 @@
 .fb-end { position: absolute; top: 14%; left: 50%; transform: translateX(-50%); z-index: 30; padding: 10px 22px; background: rgba(8, 10, 20, 0.92); border: 2px solid #ffd27a; border-radius: 10px; color: #fff; font: 700 clamp(18px, 4vw, 30px) Rajdhani, system-ui, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; text-align: center; }
 
 .fb-dim { position: absolute; inset: 0; background: rgba(3, 5, 12, 0.62); pointer-events: none; transition: opacity 0.35s linear; }
+
+/* ---- troca de lados (premium): faixas se cruzando, título e novo time; só transform/opacity */
+.fb-swap { position: absolute; inset: 0; overflow: hidden; z-index: 20; display: grid; place-items: center; animation: fbs-life 4.2s linear forwards; }
+.fb-swap-dim { position: absolute; inset: 0; background: rgba(3, 5, 12, 0.78); animation: fbs-dim 4.2s ease forwards; }
+.fb-swap-band { position: absolute; left: -10%; width: 120%; height: 22vh; will-change: transform; }
+.fb-swap-band.t { top: 22%; background: linear-gradient(90deg, #ff7d26, #ffb347); transform: translateX(-130%) skewX(-18deg); animation: fbs-ltr 1.1s cubic-bezier(0.2, 0.8, 0.2, 1) 0.15s forwards; box-shadow: 0 0 0 4px #1b0d00; }
+.fb-swap-band.ct { top: 56%; background: linear-gradient(90deg, #5aa0ff, #2f6bff); transform: translateX(130%) skewX(-18deg); animation: fbs-rtl 1.1s cubic-bezier(0.2, 0.8, 0.2, 1) 0.15s forwards; box-shadow: 0 0 0 4px #04122e; }
+.fb-swap-card { position: relative; text-align: center; display: grid; gap: 10px; justify-items: center; opacity: 0; animation: fbs-card 4.2s ease 0.7s forwards; }
+.fb-swap-card small { letter-spacing: 0.3em; font-size: 12px; opacity: 0.85; }
+.fb-swap-card h2 { margin: 0; font: 900 clamp(34px, 8vw, 84px) / 1 'Saira Stencil One', var(--font-display, system-ui), sans-serif; letter-spacing: 0.06em; color: #fff; text-shadow: 0 4px 0 #000, 0 0 30px rgba(255, 255, 255, 0.35); }
+.fb-swap-arrows { display: flex; align-items: center; gap: 14px; }
+.fb-swap-arrows i { width: 44px; height: 44px; border-radius: 10px; border: 3px solid #fff; transform: rotate(45deg); }
+.fb-swap-arrows i.t { background: #ff7d26; animation: fbs-spin-a 1.4s ease 1s both; }
+.fb-swap-arrows i.ct { background: #2f6bff; animation: fbs-spin-b 1.4s ease 1s both; }
+.fb-swap-now { margin: 6px 0 0; display: grid; gap: 2px; padding: 8px 26px; border: 3px solid #fff; border-radius: 12px; transform: scale(0.8); animation: fbs-pop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) 1.5s forwards; opacity: 0; }
+.fb-swap-now.t { background: #ff7d26; color: #1b0d00; }
+.fb-swap-now.ct { background: #2f6bff; color: #fff; }
+.fb-swap-now span { font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; }
+.fb-swap-now b { font: 900 clamp(22px, 4vw, 40px) var(--font-display, system-ui); letter-spacing: 0.08em; }
+@keyframes fbs-life { 0%, 88% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes fbs-dim { from { opacity: 0; } 12% { opacity: 1; } }
+@keyframes fbs-ltr { 0% { transform: translateX(-130%) skewX(-18deg); } 55% { transform: translateX(0) skewX(-18deg); } 100% { transform: translateX(130%) skewX(-18deg); } }
+@keyframes fbs-rtl { 0% { transform: translateX(130%) skewX(-18deg); } 55% { transform: translateX(0) skewX(-18deg); } 100% { transform: translateX(-130%) skewX(-18deg); } }
+@keyframes fbs-card { 0% { opacity: 0; transform: scale(1.15); } 10% { opacity: 1; transform: scale(1); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes fbs-pop { to { opacity: 1; transform: scale(1); } }
+@keyframes fbs-spin-a { from { transform: rotate(45deg) translateX(0); } 50% { transform: rotate(225deg) translateX(0); } to { transform: rotate(405deg) translateX(0); } }
+@keyframes fbs-spin-b { from { transform: rotate(45deg); } 50% { transform: rotate(-135deg); } to { transform: rotate(-315deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .fb-swap-band { display: none; }
+  .fb-swap-arrows i, .fb-swap-now { animation: none; opacity: 1; transform: none; }
+  .fb-swap-arrows i { transform: rotate(45deg); }
+  .fb-swap-card { animation: fbs-card-rm 4.2s ease forwards; }
+  @keyframes fbs-card-rm { from { opacity: 0; } 12% { opacity: 1; } 100% { opacity: 1; } }
+}

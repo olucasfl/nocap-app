@@ -938,6 +938,8 @@ export class FsNetSim {
               side: bp?.side ?? 'ct',
               kit: !!bp?.kit,
               win: this.bm!.cfg.winRounds, buy: this.bm!.buyOpen,
+              // dinheiro só dos aliados (por posição na tabela); o do time inimigo nunca sai do servidor
+              mates: Object.fromEntries(this.roster.flatMap((r, i) => { const o = this.bm!.players.get(r.id); return o && bp && o.side === bp.side && r.id !== id ? [[i, o.money]] : []; })) as Record<number, number>,
             };
           })()
         : undefined,
