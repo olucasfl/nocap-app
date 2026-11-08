@@ -507,7 +507,7 @@ export function fsPickSpawn(
       if (d < 45 && fsClearLine(boxes, [s.x, s.y + 1, s.z], [f.x, s.y + 1, f.z])) seen++;
     }
     // quem é visto por inimigos perde muito (cada um vale 25 m); o resto é a distância ao mais perto
-    return { s, v: Math.min(near, 60) - seen * 25 };
+    return { s, v: Math.min(near, 60) - seen * 25 - (near < 15 ? 100 : 0) };
   });
   scored.sort((a, b) => b.v - a.v);
   const top = scored.slice(0, Math.min(3, scored.length));

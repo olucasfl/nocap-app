@@ -263,7 +263,7 @@ export function createGridMap(opts: { id: string; name: string; data: FsGridMapD
         near = Math.min(near, dd);
         if (dd < 45 && fsClearLine(boxes, [s.x, s.y + 1, s.z], [f.x, s.y + 1, f.z])) seen++;
       }
-      return { s, v: Math.min(near, 60) - seen * 25 };
+      return { s, v: Math.min(near, 60) - seen * 25 - (near < 15 ? 100 : 0) };
     });
     scored.sort((a, b) => b.v - a.v);
     const top = scored.slice(0, Math.min(3, scored.length));
