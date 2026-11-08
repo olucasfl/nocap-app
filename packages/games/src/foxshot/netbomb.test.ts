@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FsNetSim, FS_NET_HZ } from './netsim';
-import { FS_DUST_MARKS, fsSiteAt } from './dust';
+import { fsMapDuna } from './maps';
 import { fsShopPrice } from './shop';
 
 describe('modo Bomba na simulação do servidor', () => {
@@ -77,9 +77,12 @@ describe('modo Bomba na simulação do servidor', () => {
     expect(a.money).toBeGreaterThanOrEqual(moneyBefore);
   });
   it('a bomba é detectada em volta do selo de A e de B', () => {
-    expect(fsSiteAt(FS_DUST_MARKS.find((m) => m.id === 'A')!.x, FS_DUST_MARKS.find((m) => m.id === 'A')!.z)).toBe('A');
-    expect(fsSiteAt(FS_DUST_MARKS.find((m) => m.id === 'B')!.x + 3, FS_DUST_MARKS.find((m) => m.id === 'B')!.z)).toBe('B');
-    expect(fsSiteAt(0, -200)).toBeNull();
+    const map = fsMapDuna();
+    const A = map.marks.find((m) => m.id === 'A')!;
+    const B = map.marks.find((m) => m.id === 'B')!;
+    expect(map.siteAt(A.x, A.z)).toBe('A');
+    expect(map.siteAt(B.x + 1, B.z)).toBe('B');
+    expect(map.siteAt(0, -200)).toBeNull();
   });
   it('colete e capacete: quem já tem uma parte paga só a diferença', () => {
     const it = { id: 'vesthelm', price: 1000 };

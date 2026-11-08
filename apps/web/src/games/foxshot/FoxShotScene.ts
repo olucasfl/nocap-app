@@ -6,20 +6,10 @@ import { FsHands, KNIFE_BACKSTAB, KNIFE_HOLD, KNIFE_INSPECT, KNIFE_SLASH, KNIFE_
 import {
   FS_ARENA,
   FS_BOTS,
-  FS_DUST_BOXES,
-  FS_MAP_DUNA,
   type FsMapApi,
-  FS_DUST_DECALS,
-  FS_DUST_DECOR,
-  FS_DUST_HALF,
-  FS_DUST_LABELS,
-  FS_DUST_MARKS,
   FS_MOVE_SIGNS,
   FS_TRAIN_LABELS,
   FS_TARGETS,
-  fsDustFloorY,
-  fsDustHeight,
-  fsDustRectWorld,
   type FsBotSpec,
   type FsBox,
   type FsGrenadeId,
@@ -29,7 +19,7 @@ import {
 
 /** O mundo que a cena monta: a arena de teste (alvos, bots de treino, placas) ou o mapa Duna (com os bots do mata-mata). */
 export interface FsWorld {
-  style: 'train' | 'dust' | 'glb';
+  style: 'train' | 'glb';
   /** O mapa (nos mapas de partida): bombas, bases, chão. */
   map?: FsMapApi;
   boxes: readonly FsBox[];
@@ -45,10 +35,8 @@ export interface FsWorld {
   signs: readonly { text: string; x: number; y: number; z: number; big?: boolean }[];
 }
 export const FS_WORLD_TRAIN: FsWorld = { style: 'train', boxes: FS_ARENA, targets: FS_TARGETS, bots: FS_BOTS, dm: [], half: [45, 27], labels: FS_TRAIN_LABELS, signs: FS_MOVE_SIGNS };
-export const fsWorldDust = (dm: FsWorld['dm']): FsWorld => ({ style: 'dust', map: FS_MAP_DUNA, boxes: FS_DUST_BOXES, targets: [], bots: [], dm, half: FS_DUST_HALF, labels: FS_DUST_LABELS, signs: [] });
-/** O mundo de um mapa de partida: a Duna (desenhada por caixas e decoração) ou um mapa com modelo 3D. */
-export const fsWorldFor = (map: FsMapApi, dm: FsWorld['dm']): FsWorld =>
-  map.visual.kind === 'dust' ? fsWorldDust(dm) : { style: 'glb', map, boxes: map.solids, targets: [], bots: [], dm, half: map.half, labels: map.labels, signs: [] };
+/** O mundo de um mapa de partida: o modelo 3D da Duna. */
+export const fsWorldFor = (map: FsMapApi, dm: FsWorld['dm']): FsWorld => ({ style: 'glb', map, boxes: map.solids, targets: [], bots: [], dm, half: map.half, labels: map.labels, signs: [] });
 
 export type Quality = 'low' | 'mid' | 'high';
 
@@ -637,7 +625,6 @@ export class FoxShotScene {
       return;
     }
     const mats = materials();
-    const dust = this.world.style === 'dust';
     const gsize = Math.max(...this.world.half) * 2 + 60;
     const rep = (gsize / 80) * 14;
     const ground = new THREE.Mesh(new THREE.PlaneGeometry(gsize, gsize), mats.ground);
@@ -663,61 +650,8 @@ export class FoxShotScene {
     }
     for (const m of Object.values(mats)) if (m.map) m.map.repeat.set(1, 1);
     (mats.ground.map as THREE.Texture).repeat.set(rep, rep);
-    if (dust) this.buildDustDecor();
   }
 
-  /** Chão do Duna: cada zona com o seu piso (terra, pedra, ladrilho, tijolo) e as marcas de A, B e das bases. Só decoração, sem colisão. */
-  private buildDustDecor() {
-    const mats = materials();
-    for (const d of FS_DUST_DECALS) {
-      const w = d.x1 - d.x0;
-      const h = d.z1 - d.z0;
-      const geo = new THREE.PlaneGeometry(w, h);
-      const uv = geo.attributes.uv as THREE.BufferAttribute;
-      for (let i = 0; i < uv.count; i++) uv.setXY(i, (uv.getX(i) * w) / 2, (uv.getY(i) * h) / 2);
-      const m = new THREE.Mesh(geo, mats[d.mat]);
-      m.material = (m.material as THREE.MeshStandardMaterial).clone();
-      (m.material as THREE.MeshStandardMaterial).polygonOffset = true;
-      (m.material as THREE.MeshStandardMaterial).polygonOffsetFactor = -1;
-      m.rotation.x = -Math.PI / 2;
-      m.position.set((d.x0 + d.x1) / 2, 0.006, (d.z0 + d.z1) / 2);
-      m.receiveShadow = true;
-      this.scene.add(m);
-    }
-    const paint = (id: string, color: string, letter: string, c0: number, r0: number, c1: number, r1: number) => {
-      const r = fsDustRectWorld({ c0, r0, c1, r1 });
-      const w = r.x1 - r.x0;
-      const d = r.z1 - r.z0;
-      const tex = canvasTex((g) => {
-        g.clearRect(0, 0, TEX, TEX);
-        g.globalAlpha = 0.9;
-        g.strokeStyle = color;
-        g.lineWidth = 8;
-        g.strokeRect(5, 5, TEX - 10, TEX - 10);
-        g.globalAlpha = 0.5;
-        g.fillStyle = color;
-        g.font = '900 170px system-ui, sans-serif';
-        g.textAlign = 'center';
-        g.textBaseline = 'middle';
-        g.fillText(letter, TEX / 2, TEX / 2 + 8);
-      });
-      tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
-      const y = fsDustHeight(Math.floor((c0 + c1) / 2), Math.floor((r0 + r1) / 2)) + 0.014;
-      const sz = Math.min(w, d);
-      const m = new THREE.Mesh(
-        new THREE.PlaneGeometry(sz, sz),
-        new THREE.MeshStandardMaterial({ map: tex, transparent: true, roughness: 1, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3 }),
-      );
-      m.rotation.x = -Math.PI / 2;
-      m.position.set((r.x0 + r.x1) / 2, y, (r.z0 + r.z1) / 2);
-      this.scene.add(m);
-      void id;
-    };
-    paint('A', '#ff7d26', 'A', 44, 12, 52, 16);
-    paint('B', '#2f7bff', 'B', 8, 19, 16, 23);
-    paint('CT', '#4aa3ff', 'CT', 23, 19, 32, 22);
-    paint('TR', '#ff9a3a', 'TR', 6, 56, 14, 60);
-  }
 
   /** Carrega raposa e armas. Tenta primeiro os modelos de referência (se existirem) e cai nos modelos do jogo. */
   async load(): Promise<void> {
@@ -883,10 +817,7 @@ export class FoxShotScene {
       this.scene.add(sprite);
       this.signSprites.push({ sprite, range });
     }
-    if (this.world.style === 'dust') {
-      this.buildSiteMarkers();
-      await this.buildDustProps(loader, base).catch(() => undefined);
-    } else if (this.world.style === 'glb') {
+    if (this.world.style === 'glb') {
       await this.buildGlbMap(loader, base).catch(() => undefined);
       this.buildSiteMarkers();
     }
@@ -982,9 +913,9 @@ export class FoxShotScene {
   }
 
   private buildSiteMarkers() {
-    for (const mk of (this.world.map?.marks ?? FS_DUST_MARKS)) {
+    for (const mk of this.world.map?.marks ?? []) {
       if (mk.kind !== 'site') continue;
-      const y = this.world.map ? this.world.map.floorY(mk.x, mk.z) : fsDustFloorY(mk.x, mk.z);
+      const y = this.world.map ? this.world.map.floorY(mk.x, mk.z) : 0;
       const c = document.createElement('canvas');
       c.width = c.height = 512;
       const g = c.getContext('2d')!;
@@ -1040,42 +971,6 @@ export class FoxShotScene {
       sprite.position.set(mk.x, y + 4.2, mk.z);
       sprite.renderOrder = 9;
       this.scene.add(sprite);
-    }
-  }
-
-  private async buildDustProps(loader: GLTFLoader, base: string) {
-    const names = [...new Set(FS_DUST_DECOR.map((p) => p.model))];
-    for (const name of names) {
-      let gltf;
-      try {
-        gltf = await loader.loadAsync(`${base}map/${name}.glb`);
-      } catch {
-        continue;
-      }
-      const root = gltf.scene;
-      root.updateMatrixWorld(true);
-      const hgt = Math.max(0.01, new THREE.Box3().setFromObject(root).getSize(new THREE.Vector3()).y);
-      const places = FS_DUST_DECOR.filter((p) => p.model === name);
-      root.traverse((o) => {
-        const m = o as THREE.Mesh;
-        if (!m.isMesh) return;
-        const inst = new THREE.InstancedMesh(m.geometry, m.material, places.length);
-        const rel = m.matrixWorld.clone();
-        const q = new THREE.Quaternion();
-        const e = new THREE.Euler();
-        places.forEach((p, i) => {
-          const k = p.h > 0 ? p.h / hgt : 1;
-          e.set(0, p.rot, 0);
-          q.setFromEuler(e);
-          const mat = new THREE.Matrix4().compose(new THREE.Vector3(p.x, p.y, p.z), q, new THREE.Vector3(k, k, k));
-          inst.setMatrixAt(i, mat.multiply(rel));
-        });
-        inst.instanceMatrix.needsUpdate = true;
-        inst.frustumCulled = false;
-        inst.castShadow = !name.startsWith('bld_');
-        inst.receiveShadow = true;
-        this.scene.add(inst);
-      });
     }
   }
 

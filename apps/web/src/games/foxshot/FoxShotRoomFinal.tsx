@@ -33,7 +33,7 @@ export function FoxShotRoomFinal({ snapshot }: { snapshot: RoomSnapshot }) {
         tr={bomb.tr}
         ct={bomb.ct}
         mySide={mySide}
-        mapName={snapshot.foxshot?.map === 'cidade' ? 'Cidade' : 'Duna'}
+        mapName={'Duna'}
         rows={rows.map((r) => ({ id: r.id, name: r.name, side: bomb.sides[r.id] ?? 'ct', kills: r.kills, assists: r.assists, deaths: r.deaths, points: r.points, me: r.id === me }))}
         exitLabel="Sair da sala"
         onExit={() => void leaveRoom()}

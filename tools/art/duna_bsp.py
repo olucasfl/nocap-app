@@ -6,7 +6,7 @@ Passos: (1) amostra o espaço em voxels de 16 unidades do BSP (0,26 m); (2) acha
 em cima e folga dos lados) e fica só com o que liga os nascimentos; (3) gera a grade de navegação dos bots; (4) junta os voxels sólidos
 perto do espaço livre em caixas de colisão.
 
-Uso: python3 tools/art/map2_bsp.py <pasta com o map.bsp>   (escreve packages/games/src/foxshot/map2.data.ts e /tmp/newmap/hmin.txt)
+Uso: python3 tools/art/duna_bsp.py <pasta com o map.bsp>   (escreve packages/games/src/foxshot/duna.data.ts e /tmp/newmap/hmin.txt)
 """
 import base64, json, math, os, re, struct, sys
 import numpy as np
@@ -335,8 +335,8 @@ data = {
     'cols': cols, 'rows': rows, 'x0': round(x0g, 4), 'z0': round(z0g, 4), 'cell': round(vox_m, 5), 'step': round(vox_m, 5),
     'rle': rle, 'boxes': boxes_b64, 'bcell': round(vox_m / 2, 5), 'tspawns': sp(T), 'ctspawns': sp(CT), 'sites': sites, 'buys': buys, 'hmin': round(hmin, 4),
 }
-out_ts = os.path.join(root, 'packages/games/src/foxshot/map2.data.ts')
-open(out_ts, 'w').write('/* Gerado por tools/art/map2_bsp.py: colisão e grade do mapa novo (não editar à mão). */\nexport const FS_MAP2_DATA = ' + json.dumps(data) + ' as const;\n')
+out_ts = os.path.join(root, 'packages/games/src/foxshot/duna.data.ts')
+open(out_ts, 'w').write('/* Gerado por tools/art/duna_bsp.py: colisão e grade do mapa novo (não editar à mão). */\nexport const FS_DUNA_DATA = ' + json.dumps(data) + ' as const;\n')
 open('/tmp/newmap/hmin.txt', 'w').write(str(hmin))
 print('escrito', out_ts, os.path.getsize(out_ts) // 1024, 'KB')
 

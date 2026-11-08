@@ -7,7 +7,7 @@
  */
 import { fsAssister, type FsDamageEntry } from './assist';
 import { fsFlinch, fsFlinchAt, fsIsBackstab } from './damage';
-import type { FsSpawn } from './dust';
+import type { FsSpawn } from './spawn';
 import { fsMapById, type FsMapApi } from './maps';
 import { FsBombMatch, fsBombBlastDamage, fsOtherSide, type FsBombConfig, type FsSide } from './bomb';
 import { fsBotLevelAt, fsDmFlash, fsDmHear, fsDmHurt, fsDmNew, fsDmPickWeapon, fsDmStep, type FsBotLevel, type FsDmBrain, type FsDmFoe } from './dm';
@@ -985,7 +985,7 @@ export class FsNetSim {
       p.push([
         i, Math.round(q.mover.x * 100), Math.round(q.mover.y * 100), Math.round(q.mover.z * 100),
         Math.round((((q.yaw + 180) % 360) - 180) * 10), Math.round(q.pitch * 10), Math.max(0, Math.round(q.hp)), Math.round(q.armor), flags,
-        fsNetWeaponIndex(wid), Math.round(q.mover.crouchK * 100), q.lastSeq, q.kills, q.assists, q.deaths,
+        fsNetWeaponIndex(wid), Math.round(q.mover.crouchK * 100), q.lastSeq, q.kills, q.assists, q.deaths, Math.round(q.damage), q.hs,
       ]);
     });
     const g = this.grenades.map((n) => [n.id, n.body.kind === 'frag' ? 0 : 1, Math.round(n.body.x * 100), Math.round(n.body.y * 100), Math.round(n.body.z * 100)]);

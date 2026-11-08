@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { FS_MAP_IDS, FS_MAP_NAMES, FS_MATCH_BOTS, FS_MATCH_MINUTES, FS_POINTS, type FsMapId } from '@nocap/games';
+import { FS_MAP_NAMES, FS_MATCH_BOTS, FS_MATCH_MINUTES, FS_POINTS, type FsMapId } from '@nocap/games';
 import { ChatPanel } from '@/components/Chat';
 import { chatColor } from '@/components/GameChat';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -431,14 +431,6 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
 
           {tab === 'modo' && (
             <div className="cfl-pane" data-testid="cfl-mode">
-              <h4>Mapa</h4>
-              <div className="cfh-pills" role="radiogroup" aria-label="Mapa">
-                {FS_MAP_IDS.map((id) => (
-                  <button key={id} type="button" role="radio" aria-checked={mapId === id} disabled={!leader} className={`cfh-pill${mapId === id ? ' on' : ''}`} onClick={() => sendRoom('configure', { map: id })} data-testid={`cfl-map-${id}`}>
-                    {FS_MAP_NAMES[id]}
-                  </button>
-                ))}
-              </div>
               <button type="button" className={`cfl-mode${kind === 'dm' ? ' on' : ''}`} aria-pressed={kind === 'dm'} disabled={!leader} onClick={() => sendRoom('configure', { kind: 'dm' })} data-testid="cfl-mode-dm">
                 <b>Mata-mata{kind === 'dm' && <em className="cfl-sel"> · selecionado</em>}</b>
                 <span>Todos contra todos no Duna. Abate vale {FS_POINTS.kill} pontos, assistência {FS_POINTS.assist}. Vence quem tiver mais pontos no fim.</span>

@@ -5,7 +5,7 @@
  */
 import type { FsBox } from './map';
 import { FS_MOVE, fsEyeHeight, fsNewMover, fsStepMover, type FsMover } from './movement';
-import { FS_MAP_DUNA, type FsMapApi } from './maps';
+import { fsMapDuna, type FsMapApi } from './maps';
 import { fsClearLine, FS_GRENADES, type FsGrenadeId } from './grenades';
 import { fsFire, fsGunTick, fsNewGunState, type FsGunState } from './recoil';
 import { FS_HEAR_RANGE, FS_WEAPONS, type FsWeaponId } from './weapons';
@@ -213,7 +213,7 @@ const chestOf = (f: FsDmFoe, head: boolean): Vec3 => [f.x, f.y + (head ? 1.17 : 
 export function fsDmStep(b: FsDmBrain, ctx: FsDmCtx): FsDmAction[] {
   const out: FsDmAction[] = [];
   const { now, dt, rng } = ctx;
-  const map = ctx.map ?? FS_MAP_DUNA;
+  const map = ctx.map ?? fsMapDuna();
   const boxes = ctx.boxes ?? map.solids;
   const w = FS_WEAPONS[b.weapon];
   const st = FS_DM_STYLE[b.weapon];

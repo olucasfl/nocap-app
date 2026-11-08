@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { FsNetSim, FS_NET_HZ } from './netsim';
-import { fsMapCidade } from './maps';
+import { fsMapDuna } from './maps';
 import { fsBodyHeight, fsNewMover, fsStepMover } from './movement';
 
-describe('mapa Cidade', () => {
-  const map = fsMapCidade();
+describe('mapa Duna', () => {
+  const map = fsMapDuna();
   it('tem as duas bases, as duas bombas e nascimentos em chão andável', () => {
     expect(map.marks.map((m) => m.id).sort()).toEqual(['A', 'B', 'CT', 'T']);
     expect(map.spawns.filter((s) => s.zone === 'TR').length).toBeGreaterThan(8);
@@ -24,8 +24,8 @@ describe('mapa Cidade', () => {
       }
     }
   });
-  it('bots jogam rounds na Cidade (andam, plantam ou o round acaba)', () => {
-    const sim = new FsNetSim({ minutes: 5, humans: [], bots: 10, botTeams: [5, 5], map: 'cidade', bomb: { winRounds: 3, roundSec: 100, buySec: 5 } });
+  it('bots jogam rounds na Duna (andam, plantam ou o round acaba)', () => {
+    const sim = new FsNetSim({ minutes: 5, humans: [], bots: 10, botTeams: [5, 5], map: 'duna', bomb: { winRounds: 3, roundSec: 100, buySec: 5 } });
     const start = [...sim.players.values()].map((p) => ({ x: p.mover.x, z: p.mover.z }));
     let planted = false;
     for (let i = 0; i < FS_NET_HZ * 60 * 3 && !sim.over; i++) {

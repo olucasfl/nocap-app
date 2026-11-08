@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
 Converte o mapa novo (OBJ + texturas + BSP do Counter-Strike) para o jogo, sem Blender:
-  1. apps/web/public/models/foxshot/map2/map2.glb  -> o desenho (todos os materiais, texturas embutidas)
-  2. packages/games/src/foxshot/map2.data.ts       -> grade de colisão/navegação (0,5 m), spawns e bombas lidos do BSP
+  1. apps/web/public/models/foxshot/duna/duna.glb  -> o desenho (todos os materiais, texturas embutidas)
+  2. packages/games/src/foxshot/duna.data.ts       -> grade de colisão/navegação (0,5 m), spawns e bombas lidos do BSP
 
-Uso: python3 tools/art/map2_build.py <pasta com o OBJ, o MTL e o map.bsp> <pasta das texturas>
+Uso: python3 tools/art/duna_build.py <pasta com o OBJ, o MTL e o map.bsp> <pasta das texturas>
 O OBJ vem com o eixo vertical em X (para baixo = +X). Aqui: x_jogo = Y, y_jogo = -X, z_jogo = Z, escala K metros por unidade.
 """
 import json, math, os, re, struct, sys
@@ -204,7 +204,7 @@ data = {
     'ctspawns': [[round(x, 2), round(z, 2), a] for (x, z, a) in CT],
     'sites': [s for _i, s in sites], 'buys': buys, 'hmin': round(hmin, 3),
 }
-print('(grade antiga descartada: a colisão vem de map2_bsp.py)')
+print('(grade antiga descartada: a colisão vem de duna_bsp.py)')
 
 # imagem de conferência
 img = np.zeros((rows, cols, 3), np.uint8) + 25
@@ -246,13 +246,13 @@ def accessor(arr, ctype, atype, target=None, minmax=False):
     if minmax: a['min'] = arr.min(axis=0).tolist(); a['max'] = arr.max(axis=0).tolist()
     accessors.append(a); return len(accessors) - 1
 
-# a altura do chão mais baixo vem da colisão do BSP (map2_bsp.py), para o desenho e a colisão baterem
+# a altura do chão mais baixo vem da colisão do BSP (duna_bsp.py), para o desenho e a colisão baterem
 off_y = float(open('/tmp/newmap/hmin.txt').read())
 for name, fl in faces.items():
     f = np.array(fl)
     tri_v = f[:, 0:3]; tri_t = f[:, 3:6]
     pos = G[tri_v.reshape(-1)].astype(np.float32).copy(); pos[:, 1] -= off_y
-    # o OBJ e o BSP não casam por ~0,5 m (medido com tools/art/map2_align.py): o desenho é deslocado para cair exatamente em cima da colisão
+    # o OBJ e o BSP não casam por ~0,5 m (medido com tools/art/duna_align.py): o desenho é deslocado para cair exatamente em cima da colisão
     pos[:, 0] += ALIGN[0]; pos[:, 1] += ALIGN[1]; pos[:, 2] += ALIGN[2]
     P = pos.reshape(-1, 3, 3)
     uv = VT[tri_t.reshape(-1)].astype(np.float32).copy(); uv[:, 1] = 1 - uv[:, 1]
@@ -280,8 +280,8 @@ for name, fl in faces.items():
     prims.append({'attributes': {'POSITION': accessor(pos, 5126, 'VEC3', 34962, True), 'TEXCOORD_0': accessor(uv, 5126, 'VEC2', 34962)}, 'material': len(materials) - 1})
 
 gltf = {
-    'asset': {'version': '2.0', 'generator': 'map2_build.py'},
-    'scene': 0, 'scenes': [{'nodes': [0]}], 'nodes': [{'mesh': 0, 'name': 'map2'}],
+    'asset': {'version': '2.0', 'generator': 'duna_build.py'},
+    'scene': 0, 'scenes': [{'nodes': [0]}], 'nodes': [{'mesh': 0, 'name': 'duna'}],
     'meshes': [{'primitives': prims}], 'materials': materials, 'textures': textures, 'images': images,
     'samplers': [{'magFilter': 9729, 'minFilter': 9987, 'wrapS': 10497, 'wrapT': 10497}],
     'accessors': accessors, 'bufferViews': bufviews, 'buffers': [{'byteLength': sum(len(p) for p in bin_parts)}],
@@ -290,6 +290,6 @@ js = json.dumps(gltf, separators=(',', ':')).encode()
 js += b' ' * ((-len(js)) % 4)
 binb = b''.join(bin_parts); binb += b'\0' * ((-len(binb)) % 4)
 glb = struct.pack('<III', 0x46546C67, 2, 12 + 8 + len(js) + 8 + len(binb)) + struct.pack('<II', len(js), 0x4E4F534A) + js + struct.pack('<II', len(binb), 0x004E4942) + binb
-out_dir = os.path.join(root, 'apps/web/public/models/foxshot/map2'); os.makedirs(out_dir, exist_ok=True)
-open(os.path.join(out_dir, 'map2.glb'), 'wb').write(glb)
+out_dir = os.path.join(root, 'apps/web/public/models/foxshot/duna'); os.makedirs(out_dir, exist_ok=True)
+open(os.path.join(out_dir, 'duna.glb'), 'wb').write(glb)
 print('glb', len(glb) // 1024, 'KB', len(prims), 'primitivas')

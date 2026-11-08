@@ -36,8 +36,8 @@ export interface FoxShotSettings {
   botsTr: number;
   winRounds: number;
   roundSec: number;
-  /** Mapa: `duna` ou `cidade`. */
-  map: 'duna' | 'cidade';
+  /** Mapa (só a Duna). */
+  map: 'duna';
 }
 
 /**
@@ -109,7 +109,7 @@ export class FoxShotRoomEngine extends ColorRoomEngine {
       Number.isInteger(m.roundSec) &&
       m.roundSec >= 60 &&
       m.roundSec <= 180 &&
-      (m.map === 'duna' || m.map === 'cidade')
+      (m.map === 'duna')
     );
   }
 

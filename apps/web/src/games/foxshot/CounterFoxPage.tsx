@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link } from '@tanstack/react-router';
 import {
-  FS_MAP_IDS,
   FS_MAP_NAMES,
   fsMapById,
   type FsMapApi,
@@ -32,7 +31,7 @@ export const CFX_NEW_ROOM = 'cfx-new-room';
 function saved(): FsMatchConfig {
   try {
     const p = JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<FsMatchConfig>;
-    return { ...fsMatchConfig(p.minutes ?? 5, p.bots ?? FS_MATCH_BOTS.default), mode: p.mode === 'bomb' ? 'bomb' : 'dm', side: p.side === 'tr' ? 'tr' : 'ct', bomb: p.bomb, map: p.map === 'cidade' ? 'cidade' : 'duna' };
+    return { ...fsMatchConfig(p.minutes ?? 5, p.bots ?? FS_MATCH_BOTS.default), mode: p.mode === 'bomb' ? 'bomb' : 'dm', side: p.side === 'tr' ? 'tr' : 'ct', bomb: p.bomb, map: 'duna' };
   } catch {
     return fsMatchConfig(5, FS_MATCH_BOTS.default);
   }
@@ -53,8 +52,8 @@ function MapCard({ mapId, mode }: { mapId: FsMapId; mode: 'dm' | 'bomb' }) {
     cv.height = Math.round(gr.rows * S);
     const g = cv.getContext('2d')!;
     g.clearRect(0, 0, cv.width, cv.height);
-    // a altura vira cor (a Duna tem 5 níveis de 0,3 m; a Cidade chega a uns 6 m)
-    const unit = map.id === 'duna' ? 0.3 : 1;
+    // a altura vira cor (o mapa chega a uns 6 m)
+    const unit = 1;
     for (let r = 0; r < gr.rows; r++) {
       for (let c = 0; c < gr.cols; c++) {
         if (gr.wall(c, r)) continue;
@@ -318,14 +317,6 @@ function CounterFoxInner() {
                 ‹ Voltar
               </button>
               <h2>Offline · {cfg.mode === 'bomb' ? 'Bomba' : 'Mata-mata'}</h2>
-              <div className="cfh-grp">Mapa</div>
-              <div className="cfh-pills" role="radiogroup" aria-label="Mapa">
-                {FS_MAP_IDS.map((id) => (
-                  <button key={id} type="button" role="radio" aria-checked={(cfg.map ?? 'duna') === id} className={`cfh-pill${(cfg.map ?? 'duna') === id ? ' on' : ''}`} onClick={() => setCfg({ ...cfg, map: id })} data-testid={`cfx-map-${id}`}>
-                    {FS_MAP_NAMES[id]}
-                  </button>
-                ))}
-              </div>
               <div className="cfh-grp">Modo</div>
               <div className="cfh-pills" role="radiogroup" aria-label="Modo de jogo">
                 <button type="button" role="radio" aria-checked={cfg.mode !== 'bomb'} className={`cfh-pill${cfg.mode !== 'bomb' ? ' on' : ''}`} onClick={() => setCfg({ ...cfg, mode: 'dm' })} data-testid="cfx-mode-dm">

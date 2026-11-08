@@ -2607,7 +2607,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
               tr={bombEnd.tr}
               ct={bombEnd.ct}
               mySide={bombEnd.mySide}
-              mapName={match?.map === 'cidade' ? 'Cidade' : 'Duna'}
+              mapName={'Duna'}
               rows={result.map((r) => ({ id: r.id, name: r.name, side: bombEnd.sides[r.id] ?? 'ct', kills: r.kills, assists: r.assists, deaths: r.deaths, points: r.points, me: r.id === 'me' }))}
               exitLabel="Mudar a partida"
               onExit={() => onExit?.()}

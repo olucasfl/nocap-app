@@ -6,7 +6,7 @@ declare function atob(s: string): string;
  */
 import { fsBoxesInRect, type FsBox } from './map';
 import { fsClearLine } from './grenades';
-import type { FsDustMark, FsSpawn } from './dust';
+import type { FsDustMark, FsSpawn } from './spawn';
 
 export interface FsGridMapData {
   cols: number;
@@ -56,7 +56,7 @@ export interface FsMapApi {
   /** Para desenhar o mapa pequeno: colunas, linhas, canto e se a célula é parede (`wall`) ou chão com altura (m). */
   grid: { cols: number; rows: number; x0: number; z0: number; cell: number; wall(c: number, r: number): boolean; height(c: number, r: number): number };
   /** Como a cena desenha: com o cenário próprio da Duna (caixas, decoração) ou com um modelo 3D. */
-  visual: { kind: 'dust' } | { kind: 'glb'; url: string };
+  visual: { kind: 'glb'; url: string };
 }
 
 const WALL = 255;

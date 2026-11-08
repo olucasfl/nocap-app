@@ -225,8 +225,9 @@ function drawMarks(g: CanvasRenderingContext2D, marks: readonly FsMapMark[], at:
   }
 }
 
+/** Sem limite de tempo (modo Bomba): não mostra relógio. */
 export const clock = (s: number) =>
-  `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+  s > 86_400 ? '' : `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
 /** Faixa de cima, como a do CS: abates à esquerda, os jogadores (vivos ou caídos) no meio, mortes à direita e o tempo embaixo. */
 export function FsTopBar({

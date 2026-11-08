@@ -70,6 +70,8 @@ interface Row {
   kills: number;
   assists: number;
   deaths: number;
+  damage: number;
+  hs: number;
 }
 interface SelfState {
   x: number; y: number; z: number; vx: number; vy: number; vz: number; og: boolean; ck: number; seq: number; yaw: number; pitch: number;
@@ -103,7 +105,7 @@ interface Pending {
 }
 
 const toRow = (r: number[]): Row => ({
-  idx: r[0]!, x: r[1]! / 100, y: r[2]! / 100, z: r[3]! / 100, yaw: r[4]! / 10, pitch: r[5]! / 10, hp: r[6]!, armor: r[7]!, flags: r[8]!, weapon: r[9]!, crouch: r[10]! / 100, seq: r[11]!, kills: r[12]!, assists: r[13]!, deaths: r[14]!,
+  idx: r[0]!, x: r[1]! / 100, y: r[2]! / 100, z: r[3]! / 100, yaw: r[4]! / 10, pitch: r[5]! / 10, hp: r[6]!, armor: r[7]!, flags: r[8]!, weapon: r[9]!, crouch: r[10]! / 100, seq: r[11]!, kills: r[12]!, assists: r[13]!, deaths: r[14]!, damage: r[15] ?? 0, hs: r[16] ?? 0,
 });
 
 /** Counter Fox online (spec 057): a partida do mata-mata na sala. O servidor manda; aqui se prevê o próprio movimento, se interpola o resto e se mostra tudo. */
@@ -332,7 +334,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
     // a partida abre jogando (sem o menu do Esc); se o navegador negar prender o mouse, aparece "Clique na tela"
     if (mePlayer && !touch) resume();
 
-    // o mapa da sala (a Duna ou a Cidade)
+    // o mapa da sala (a Duna)
     const map = fsMapById(snapRef.current.foxshot?.map);
     const ARENA = map.solids;
     const world = fsWorldFor(map, SLOTS.map((id) => ({ id, x: 0, z: 0 })));
@@ -1241,7 +1243,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           const mine = r.id === meId;
           const k = row?.kills ?? 0;
           const a = row?.assists ?? 0;
-          return { id: r.id, name: r.name, you: mine, alive: mine ? alive : row ? (row.flags & 1) !== 0 : true, armor: mine ? self?.armor ?? 0 : row?.armor ?? 0, kills: k, deaths: row?.deaths ?? 0, assists: a, hs: 0, damage: 0, points: fsMatchScore({ kills: k, assists: a }), team: ((row?.flags ?? 0) & 128) !== 0 ? ('t' as const) : ('ct' as const), money: mine ? bombSelf?.money : bombSelf?.mates?.[idx] };
+          return { id: r.id, name: r.name, you: mine, alive: mine ? alive : row ? (row.flags & 1) !== 0 : true, armor: mine ? self?.armor ?? 0 : row?.armor ?? 0, kills: k, deaths: row?.deaths ?? 0, assists: a, hs: row?.hs ?? 0, damage: row?.damage ?? 0, points: fsMatchScore({ kills: k, assists: a }), team: ((row?.flags ?? 0) & 128) !== 0 ? ('t' as const) : ('ct' as const), money: mine ? bombSelf?.money : bombSelf?.mates?.[idx] };
         });
         const mp = players.find((p) => p.you);
         setHud({
@@ -1447,7 +1449,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
               <FsPreMatch
                 count={count}
                 kind={snapshot.foxshot?.kind === 'bomb' ? 'bomb' : 'dm'}
-                map={snapshot.foxshot?.map === 'cidade' ? 'Cidade' : 'Duna'}
+                map={'Duna'}
                 side={snapshot.foxshot?.kind === 'bomb' ? ((snapshot.foxshot?.teams?.[snapshot.me ?? ''] ?? 0) === 1 ? 'tr' : (snapshot.foxshot?.teams?.[snapshot.me ?? ''] ?? 0) === 0 ? 'ct' : null) : null}
                 winRounds={snapshot.foxshot?.winRounds ?? 8}
                 names={(snapshot.foxshot?.roster ?? []).filter((r) => !r.bot).map((r) => r.name)}

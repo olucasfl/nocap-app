@@ -962,139 +962,10 @@ describe('granadas', () => {
 
 // ---------------------------------------------------------------- Duna (spec 057)
 import {
-  FS_DUST_BOXES, FS_DUST_COLS, FS_DUST_GRID, FS_DUST_HOTSPOTS, FS_DUST_SPAWNS, FS_DUST_ZONES, FS_DUST_ROWS,
-  fsDustLevel, fsDustCol, fsDustPath, fsDustRow, fsDustWalkable, fsDustZoneAt, fsDustCellX, fsDustCellZ, fsPickSpawn, fsDustLineWalkable,
   fsDmNew, fsDmStep, fsDmFlash, type FsDmFoe, type FsDmAction,
-  fsFlinch, fsFlinchAt, fsDustDecor, FS_DUST_MARKS, FsNetSim, fsNetParseInput, type FsNetCmd, type FsNetInput, type FsIntelPlayer,
+  fsFlinch, fsFlinchAt, FsNetSim, fsNetParseInput, type FsNetCmd, type FsNetInput, type FsIntelPlayer,
   FS_MATCH_BOTS, fsMatchConfig, fsMatchResult, fsMatchScore, FS_MATCH_MINUTES,
 } from './index';
-
-describe('Duna: mapa', () => {
-  it('todas as linhas têm o mesmo tamanho e a borda é parede', () => {
-    for (const row of FS_DUST_GRID) expect(row.length).toBe(FS_DUST_COLS);
-    expect(FS_DUST_GRID.length).toBe(FS_DUST_ROWS);
-    for (const c of FS_DUST_GRID[0]!) expect(c).toBe('#');
-    for (const row of FS_DUST_GRID) {
-      expect(row[0]).toBe('#');
-      expect(row[FS_DUST_COLS - 1]).toBe('#');
-    }
-  });
-
-  it('as zonas existem: base CT, base TR, bomba A, bomba B e meio', () => {
-    const ids = FS_DUST_ZONES.map((z) => z.id);
-    for (const id of ['A', 'B', 'CT', 'TR', 'mid']) expect(ids).toContain(id);
-  });
-
-  it('o chão todo é um só pedaço: dá para ir de qualquer chão a qualquer outro subindo no máximo um degrau', () => {
-    const free: [number, number][] = [];
-    for (let r = 0; r < FS_DUST_ROWS; r++) for (let c = 0; c < FS_DUST_COLS; c++) if (fsDustWalkable(c, r)) free.push([c, r]);
-    const seen = new Set<number>([free[0]![1] * FS_DUST_COLS + free[0]![0]]);
-    const q = [free[0]!];
-    while (q.length) {
-      const [c, r] = q.pop()!;
-      for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
-        const k = (r + dr) * FS_DUST_COLS + (c + dc);
-        if (fsDustWalkable(c + dc, r + dr) && Math.abs(fsDustLevel(c + dc, r + dr) - fsDustLevel(c, r)) <= 1 && !seen.has(k)) {
-          seen.add(k);
-          q.push([c + dc, r + dr]);
-        }
-      }
-    }
-    expect(free.length - seen.size).toBe(0);
-  });
-
-  it('nenhum corredor é estreito demais: todo chão tem folga de ao menos 2 células em uma direção', () => {
-    for (let r = 0; r < FS_DUST_ROWS; r++) {
-      for (let c = 0; c < FS_DUST_COLS; c++) {
-        if (fsDustLevel(c, r) < 0) continue;
-        const h = (fsDustLevel(c - 1, r) >= 0 ? 1 : 0) + (fsDustLevel(c + 1, r) >= 0 ? 1 : 0);
-        const v = (fsDustLevel(c, r - 1) >= 0 ? 1 : 0) + (fsDustLevel(c, r + 1) >= 0 ? 1 : 0);
-        // célula sozinha (sem vizinha em nenhuma direção) seria um buraco inalcançável
-        expect(h + v, `${c},${r}`).toBeGreaterThan(0);
-      }
-    }
-  });
-
-  it('todo ponto de nascimento e de passeio é chão livre', () => {
-    for (const s of FS_DUST_SPAWNS) expect(fsDustWalkable(fsDustCol(s.x), fsDustRow(s.z))).toBe(true);
-    for (const [x, z] of FS_DUST_HOTSPOTS) expect(fsDustWalkable(fsDustCol(x), fsDustRow(z))).toBe(true);
-  });
-
-  it('ninguém nasce dentro de uma caixa', () => {
-    for (const s of FS_DUST_SPAWNS) {
-      const m = fsNewMover(s.x, s.z);
-      const inside = FS_DUST_BOXES.some((b) => s.x > b.min[0] && s.x < b.max[0] && s.z > b.min[2] && s.z < b.max[2] && b.min[1] < s.y + 1 && b.max[1] > s.y + 0.35);
-      expect(inside).toBe(false);
-      expect(m.y).toBe(0);
-    }
-  });
-
-  it('há caminho da base TR até as duas bombas, o meio e a base CT', () => {
-    const tr = FS_DUST_SPAWNS.find((s) => s.zone === 'TR')!;
-    for (const id of ['A', 'B', 'CT', 'mid'] as const) {
-      const spot = FS_DUST_SPAWNS.find((s) => s.zone === id)!;
-      const p = fsDustPath(tr.x, tr.z, spot.x, spot.z);
-      expect(p.length, id).toBeGreaterThan(0);
-      expect(Math.hypot(p[p.length - 1]![0] - spot.x, p[p.length - 1]![1] - spot.z)).toBeLessThan(1.1);
-    }
-  });
-
-  it('o caminho nunca atravessa parede: cada trecho é andável com folga', () => {
-    const a = FS_DUST_SPAWNS.find((s) => s.zone === 'TR')!;
-    const b = FS_DUST_SPAWNS.find((s) => s.zone === 'A')!;
-    const p = fsDustPath(a.x, a.z, b.x, b.z);
-    let x = a.x;
-    let z = a.z;
-    for (const [nx, nz] of p) {
-      expect(fsDustLineWalkable(x, z, nx, nz)).toBe(true);
-      x = nx;
-      z = nz;
-    }
-  });
-
-  it('um corpo andando em linha reta pelo caminho chega ao destino sem ficar preso', () => {
-    const a = FS_DUST_SPAWNS.find((s) => s.zone === 'TR')!;
-    const b = FS_DUST_SPAWNS.find((s) => s.zone === 'B')!;
-    const m = fsNewMover(a.x, a.z);
-    m.y = a.y;
-    const path = fsDustPath(a.x, a.z, b.x, b.z);
-    let t = 0;
-    for (const [px, pz] of path) {
-      for (let i = 0; i < 120 * 30 && Math.hypot(px - m.x, pz - m.z) > 0.35; i++) {
-        const yaw = (Math.atan2(-(px - m.x), -(pz - m.z)) * 180) / Math.PI;
-        fsStepMover(m, { fwd: 1, strafe: 0, jump: false, yaw, speedMul: 1 }, 1 / 120, FS_DUST_BOXES);
-        t++;
-      }
-      expect(Math.hypot(px - m.x, pz - m.z)).toBeLessThan(0.6);
-    }
-    expect(t / 120).toBeLessThan(40);
-  });
-
-  it('as paredes param a bala e os caixotes de madeira deixam passar parte', () => {
-    const w = FS_WEAPONS.ak;
-    // de dentro da base TR para o norte, através do prédio central: bate na parede
-    const tr = FS_DUST_SPAWNS.find((s) => s.zone === 'TR')!;
-    const tr1 = fsTrace(w, [tr.x, 1, tr.z], [0, 0, -1], FS_DUST_BOXES, []);
-    expect(tr1.kind).toBe('world');
-  });
-
-  it('zona do ponto: o centro da base CT é a base CT', () => {
-    const z = fsDustZoneAt(fsDustCellX(28), fsDustCellZ(17));
-    expect(z?.id).toBe('CT');
-  });
-
-  it('o ponto de nascimento escolhido fica longe e fora da vista dos inimigos vivos', () => {
-    const foe = FS_DUST_SPAWNS.find((s) => s.zone === 'CT')!;
-    const pick = fsPickSpawn([{ x: foe.x, z: foe.z }], () => 0);
-    expect(Math.hypot(pick.x - foe.x, pick.z - foe.z)).toBeGreaterThan(25);
-    // sem inimigos: qualquer um serve
-    expect(FS_DUST_SPAWNS).toContain(fsPickSpawn([], () => 0.99));
-  });
-
-  it('número de caixas é razoável para a cena', () => {
-    expect(FS_DUST_BOXES.length).toBeLessThan(400);
-  });
-});
 
 describe('Partida: pontos e resultado', () => {
   it('abate vale 10 e assistência 5', () => {
@@ -1140,63 +1011,7 @@ describe('Bots do mata-mata', () => {
     for (let t = 0; t < secs; t += 0.016) acts.push(...fsDmStep(b, { now: t, dt: 0.016, rng, foes }));
     return acts;
   };
-  const cell = (c: number, r: number) => [fsDustCellX(c), fsDustCellZ(r)] as const;
 
-  it('vê um inimigo em campo aberto e atira nele', () => {
-    const [x, z] = cell(27, 48);
-    const [fx, fz] = cell(27, 28);
-    const b = fsDmNew('b', x, z, 0, 'ak', rng);
-    const acts = run(b, [{ id: 'p', x: fx, y: 0, z: fz, crouch: 0, noisy: false }], 3);
-    expect(acts.some((a) => a.type === 'fire')).toBe(true);
-  });
-
-  it('não atira em quem está atrás da parede', () => {
-    const [x, z] = cell(11, 40);
-    const [fx, fz] = cell(27, 40); // do outro lado da parede entre o túnel e o Meio
-    const b = fsDmNew('b', x, z, -90, 'ak', rng);
-    const acts = run(b, [{ id: 'p', x: fx, y: 0, z: fz, crouch: 0, noisy: false }], 3);
-    expect(acts.some((a) => a.type === 'fire')).toBe(false);
-  });
-
-  it('com o carregador vazio recarrega e depois volta a atirar', () => {
-    const [x, z] = cell(29, 51);
-    const [fx, fz] = cell(29, 44);
-    const b = fsDmNew('b', x, z, 0, 'pistol', rng);
-    b.ammo = 1;
-    const acts = run(b, [{ id: 'p', x: fx, y: 0, z: fz, crouch: 0, noisy: false }], 8);
-    expect(acts.some((a) => a.type === 'reload')).toBe(true);
-    expect(acts.filter((a) => a.type === 'fire').length).toBeGreaterThan(2);
-  });
-
-  it('sozinho passeia pelo mapa sem ficar preso e sem atravessar parede', () => {
-    const [x, z] = cell(8, 56);
-    const b = fsDmNew('b', x, z, 0, 'm4', rng);
-    b.mover.y = 0.3;
-    const seen = new Set<string>();
-    for (let t = 0; t < 90; t += 0.016) {
-      fsDmStep(b, { now: t, dt: 0.016, rng, foes: [] });
-      seen.add(`${Math.floor(b.mover.x / 6)},${Math.floor(b.mover.z / 6)}`);
-      expect(fsDustWalkable(fsDustCol(b.mover.x), fsDustRow(b.mover.z))).toBe(true);
-    }
-    expect(seen.size).toBeGreaterThan(14);
-  });
-
-  it('cego pela luz não atira', () => {
-    const [x, z] = cell(27, 48);
-    const [fx, fz] = cell(27, 28);
-    const b = fsDmNew('b', x, z, 0, 'ak', rng);
-    fsDmFlash(b, 5);
-    const acts = run(b, [{ id: 'p', x: fx, y: 0, z: fz, crouch: 0, noisy: false }], 3);
-    expect(acts.some((a) => a.type === 'fire')).toBe(false);
-  });
-
-  it('escopeta não atira de longe', () => {
-    const [x, z] = cell(27, 50);
-    const [fx, fz] = cell(27, 25);
-    const b = fsDmNew('b', x, z, 0, 'shotgun', rng);
-    const acts = run(b, [{ id: 'p', x: fx, y: 0, z: fz, crouch: 0, noisy: false }], 1.5);
-    expect(acts.some((a) => a.type === 'fire')).toBe(false);
-  });
 });
 
 describe('Tiro recebido desacelera', () => {
@@ -1214,44 +1029,37 @@ describe('Tiro recebido desacelera', () => {
   });
 });
 
-describe('Duna: enfeites', () => {
-  it('a decoração é sempre a mesma e tem prédios, arcos e postes', () => {
-    const a = fsDustDecor();
-    const b = fsDustDecor();
-    expect(a).toEqual(b);
-    for (const m of ['arch_a', 'lamp', 'bld_a']) expect(a.some((p) => p.model === m), m).toBe(true);
-    expect(a.length).toBeLessThan(600);
-  });
-  it('nenhum prédio chega perto de chão andável (nada atravessa corredor)', () => {
-    const blds = fsDustDecor().filter((q) => q.model.startsWith('bld_'));
-    expect(blds.length).toBeGreaterThan(8);
-    for (const p of blds) {
-      const c0 = fsDustCol(p.x);
-      const r0 = fsDustRow(p.z);
-      for (let dr = -8; dr <= 8; dr++) for (let dc = -8; dc <= 8; dc++) expect(fsDustLevel(c0 + dc, r0 + dr) < 0, `${c0},${r0}`).toBe(true);
-    }
-  });
-});
-
 describe('Simulação do servidor (mata-mata online)', () => {
   const baseIn = { fwd: 0, strafe: 0, jump: false, crouch: false, walk: false, yaw: 0, pitch: 0, trigger: false, alt: false, reload: false, inspect: false, viewTick: 0 };
   let seqN = 0;
   const inp = (o: Partial<typeof baseIn> & { cmds?: FsNetCmd[] } = {}) => ({ ...baseIn, seq: ++seqN, ...o });
-  const aim = (a: { x: number; y: number; z: number }, b: { x: number; z: number }, yEye = 1.2) => ({
+  const aim = (a: { x: number; y: number; z: number }, b: { x: number; y?: number; z: number }, yEye = 1.2) => ({
     yaw: ((Math.atan2(-(b.x - a.x), -(b.z - a.z)) * 180) / Math.PI + 360) % 360,
-    pitch: (Math.atan2(0.9 - yEye, Math.hypot(b.x - a.x, b.z - a.z)) * 180) / Math.PI,
+    pitch: (Math.atan2((b.y ?? 0) + 0.9 - yEye, Math.hypot(b.x - a.x, b.z - a.z)) * 180) / Math.PI,
   });
   /** Dois humanos, sem bots, com um ao alcance e à vista do outro na Base TR. */
   const duel = () => {
     const sim = new FsNetSim({ minutes: 2, humans: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }, { id: 'c', name: 'C' }], bots: 1, rng: createRng('duel') });
     sim.dropShields();
-    for (const [id, x, z] of [['a', 9, 54], ['b', 9, 59], ['c', 10, 54]] as const) {
-      const p = sim.players.get(id)!;
-      p.mover.x = fsDustCellX(x);
-      p.mover.z = fsDustCellZ(z);
-      p.mover.y = 0.3;
-      p.hist = [];
+    // três pontos da base com linha livre entre eles e a poucos metros de distância
+    const pts = sim.map.spawns.filter((q) => q.zone === 'TR');
+    let trio: typeof pts | null = null;
+    for (const p0 of pts) {
+      const vis = pts.filter((q) => q !== p0 && Math.hypot(q.x - p0.x, q.z - p0.z) > 2 && Math.hypot(q.x - p0.x, q.z - p0.z) < 14 && fsClearLine(sim.map.solids, [p0.x, p0.y + 1, p0.z], [q.x, q.y + 1, q.z]));
+      if (vis.length >= 2) {
+        trio = [p0, vis[0]!, vis[1]!];
+        break;
+      }
     }
+    expect(trio, 'três pontos da base com linha livre').toBeTruthy();
+    ['a', 'b', 'c'].forEach((id, i) => {
+      const p = sim.players.get(id)!;
+      const q = trio![i]!;
+      p.mover.x = q.x;
+      p.mover.z = q.z;
+      p.mover.y = q.y;
+      p.hist = [];
+    });
     // os bots não atrapalham o teste
     sim.players.get('b1')!.alive = false;
     sim.players.get('b1')!.respawnAt = 1e9;
@@ -1261,7 +1069,7 @@ describe('Simulação do servidor (mata-mata online)', () => {
     const a = sim.players.get(from)!;
     const b = sim.players.get(to)!;
     for (let i = 0; i < ticks; i++) {
-      const ang = aim({ x: a.mover.x, y: a.mover.y, z: a.mover.z }, { x: b.mover.x, z: b.mover.z }, a.mover.y + 1.2);
+      const ang = aim({ x: a.mover.x, y: a.mover.y, z: a.mover.z }, { x: b.mover.x, y: b.mover.y, z: b.mover.z }, a.mover.y + 1.2);
       sim.pushInput(from, inp({ ...ang, trigger: i % 2 === 0, viewTick: sim.tick }));
       for (const id of ['a', 'b', 'c']) if (id !== from) sim.pushInput(id, inp({ yaw: 0 }));
       sim.step();
@@ -1296,7 +1104,7 @@ describe('Simulação do servidor (mata-mata online)', () => {
       sim.pushInput('a', o);
       sim.step();
       for (let k = 0; k < 2; k++) {
-        fsStepMover(mine, { fwd: o.fwd, strafe: o.strafe, jump: o.jump && k === 0, yaw: o.yaw, speedMul: FS_WEAPONS.pistol.moveMul, crouch: false, walk: false }, 1 / 120, FS_DUST_BOXES);
+        fsStepMover(mine, { fwd: o.fwd, strafe: o.strafe, jump: o.jump && k === 0, yaw: o.yaw, speedMul: FS_WEAPONS.pistol.moveMul, crouch: false, walk: false }, 1 / 120, sim.map.solids);
       }
     }
     expect(Math.hypot(a.mover.x - mine.x, a.mover.z - mine.z)).toBeLessThan(1e-6);
@@ -1336,36 +1144,6 @@ describe('Simulação do servidor (mata-mata online)', () => {
     expect(sim.drainEvents().some((e) => e.k === 'spawn' && e.id === 'b')).toBe(true);
   });
 
-  it('compensação de atraso: acerta onde o alvo estava na tela de quem atirou', () => {
-    const sim = duel();
-    const a = sim.players.get('a')!;
-    const b = sim.players.get('b')!;
-    // B ficou parado por 10 passos e depois saiu do lugar (3 m para o lado)
-    for (let i = 0; i < 10; i++) sim.step();
-    const was = { x: b.mover.x, z: b.mover.z };
-    const viewTick = sim.tick;
-    b.mover.x += 3;
-    for (let i = 0; i < 4; i++) sim.step();
-    // A mira onde B estava há 4 passos e a tela dele mostrava o passo `viewTick`
-    const ang = aim({ x: a.mover.x, y: a.mover.y, z: a.mover.z }, was, a.mover.y + 1.2);
-    sim.drainEvents();
-    sim.pushInput('a', inp({ ...ang, trigger: true, viewTick }));
-    sim.step();
-    expect(sim.drainEvents().some((e) => e.k === 'hit' && e.by === 'a' && e.vic === 'b')).toBe(true);
-    // sem compensação (tela atual) erraria
-    const sim2 = duel();
-    const a2 = sim2.players.get('a')!;
-    const b2 = sim2.players.get('b')!;
-    for (let i = 0; i < 10; i++) sim2.step();
-    const was2 = { x: b2.mover.x, z: b2.mover.z };
-    b2.mover.x += 3;
-    for (let i = 0; i < 40; i++) sim2.step();
-    sim2.drainEvents();
-    sim2.pushInput('a', inp({ ...aim({ x: a2.mover.x, y: a2.mover.y, z: a2.mover.z }, was2, a2.mover.y + 1.2), trigger: true, viewTick: sim2.tick }));
-    sim2.step();
-    expect(sim2.drainEvents().some((e) => e.k === 'hit')).toBe(false);
-  });
-
   it('comprar arma e colete pela entrada funciona no servidor', () => {
     const sim = duel();
     sim.pushInput('a', inp({ cmds: [{ t: 'buy', id: 'ak' }, { t: 'buy', id: 'vesthelm' }] }));
@@ -1400,7 +1178,7 @@ describe('Simulação do servidor (mata-mata online)', () => {
     const sim = new FsNetSim({ minutes: 2, humans: [{ id: 'a', name: 'A' }], bots: 2, rng: createRng('fim') });
     const f = sim.frame();
     expect(f.p.length).toBe(3);
-    expect(f.p[0]!.length).toBe(15);
+    expect(f.p[0]!.length).toBe(17);
     expect(f.left).toBe(2 * 60 * 60);
     for (let i = 0; i < 2 * 60 * 60 + 5; i++) sim.step();
     expect(sim.over).toBe(true);
@@ -1467,13 +1245,6 @@ describe('Times (cor): contra-terrorista azul e terrorista laranja, alternando p
     expect(sim.joinAs('e', 'E')).toBe(true);
     expect(sim.players.get('e')!.team).toBe(0);
   });
-  it('as marcações do mapa têm as duas bombas e as duas bases, com área e ponto livre', () => {
-    expect(FS_DUST_MARKS.map((m) => m.id).sort()).toEqual(['A', 'B', 'CT', 'T']);
-    for (const m of FS_DUST_MARKS) {
-      expect(m.x > m.x0 && m.x < m.x1 && m.z > m.z0 && m.z < m.z1, m.id).toBe(true);
-      expect(fsDustWalkable(fsDustCol(m.x), fsDustRow(m.z)), `${m.id} livre`).toBe(true);
-    }
-  });
 });
 
 describe('Kill feed: efeitos do abate (cego, sem mirar, varando parede, cabeça)', () => {
@@ -1498,41 +1269,6 @@ describe('Kill feed: efeitos do abate (cego, sem mirar, varando parede, cabeça)
   });
 });
 
-describe('Enfeites com corpo (ninguém entra nas fachadas, grades e postes)', () => {
-  it('cada fachada de arcos, barreira, grade e poste tem uma caixa dura e os nascimentos ficam fora delas', async () => {
-    const m = await import('./index');
-    const extra = m.fsDustDecorBoxes();
-    expect(extra.length).toBeGreaterThan(20);
-    expect(m.FS_DUST_SOLIDS.length).toBe(m.FS_DUST_BOXES.length + extra.length);
-    for (const sp of m.FS_DUST_SPAWNS) {
-      const inside = extra.some((b) => sp.x > b.min[0] - 0.3 && sp.x < b.max[0] + 0.3 && sp.z > b.min[2] - 0.3 && sp.z < b.max[2] + 0.3 && sp.y < b.max[1]);
-      expect(inside, `nascimento ${sp.x},${sp.z}`).toBe(false);
-    }
-  });
-  it('andar de frente contra uma fachada para na frente dela (não entra na parede)', async () => {
-    const m = await import('./index');
-    const arch = m.fsDustDecorBoxes().find((b) => b.max[1] - b.min[1] > 3)!;
-    const cx = (arch.min[0] + arch.max[0]) / 2;
-    const cz = (arch.min[2] + arch.max[2]) / 2;
-    const faceX = arch.max[0] - arch.min[0] < arch.max[2] - arch.min[2];
-    // sai de 1,5 m do corpo, andando de frente contra ele (do lado de dentro da sala)
-    const mv = m.fsNewMover(faceX ? arch.max[0] + 1.5 : cx, faceX ? cz : arch.max[2] + 1.5);
-    mv.y = arch.min[1];
-    // a sala pode ficar do outro lado: tenta os dois sentidos e exige que em ao menos um o corpo trave a 0,3 m ou mais
-    let blocked = false;
-    for (const side of [1, -1]) {
-      const mm = m.fsNewMover(faceX ? (side > 0 ? arch.max[0] + 1.5 : arch.min[0] - 1.5) : cx, faceX ? cz : (side > 0 ? arch.max[2] + 1.5 : arch.min[2] - 1.5));
-      mm.y = arch.min[1];
-      const yaw = faceX ? (side > 0 ? 90 : -90) : side > 0 ? 0 : 180;
-      for (let i = 0; i < 120 * 2; i++) m.fsStepMover(mm, { fwd: 1, strafe: 0, jump: false, yaw, speedMul: 1 }, 1 / 120, m.FS_DUST_SOLIDS);
-      const d = faceX ? (side > 0 ? mm.x - arch.max[0] : arch.min[0] - mm.x) : side > 0 ? mm.z - arch.max[2] : arch.min[2] - mm.z;
-      if (d > 0.1) blocked = true;
-    }
-    expect(blocked).toBe(true);
-    expect(mv.y).toBeDefined();
-    expect(cx + cz).toBeDefined();
-  });
-});
 
 describe('Renascer recarrega as armas (granadas não voltam)', () => {
   it('o pente de cada arma volta cheio e as granadas gastas continuam gastas', () => {

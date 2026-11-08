@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { installApi } from './mock-api';
 
-/** Counter Fox com o mapa Cidade (spec 061): escolher o mapa no menu offline, entrar e jogar nele (mata-mata e bomba). */
+/** Counter Fox na Duna (spec 061): entrar e jogar (mata-mata e bomba). */
 const fs = <T = unknown>(page: Page, fn: string, ...args: unknown[]) =>
   page.evaluate(
     ([f, a]) => ((window as unknown as { __fs: Record<string, (...x: unknown[]) => unknown> }).__fs[f as string] as (...x: unknown[]) => T)(...(a as unknown[])),
@@ -14,13 +14,12 @@ async function start(page: Page, mode: 'dm' | 'bomb') {
   await page.getByRole('button', { name: 'Agora não' }).click({ timeout: 8000 }).catch(() => undefined);
   await page.getByTestId('cfh-play').click();
   await page.getByTestId('cfh-offline').click();
-  await page.getByTestId('cfx-map-cidade').click();
   await page.getByTestId(`cfx-mode-${mode}`).click();
   if (mode === 'bomb') await page.getByTestId('cfx-side-tr').click();
   await page.getByTestId('cfx-start').click();
 }
 
-test('Cidade: escolher o mapa e jogar o mata-mata', async ({ page }, info) => {
+test('Duna: escolher o mapa e jogar o mata-mata', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
   test.setTimeout(240_000);
   await page.setViewportSize({ width: 1280, height: 720 });
@@ -37,7 +36,7 @@ test('Cidade: escolher o mapa e jogar o mata-mata', async ({ page }, info) => {
   await page.screenshot({ path: 'test-results/cidade-dm3.png' });
 });
 
-test('Cidade: modo Bomba como terrorista, a bomba e as bases existem', async ({ page }, info) => {
+test('Duna: modo Bomba como terrorista, a bomba e as bases existem', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
   test.setTimeout(240_000);
   await page.setViewportSize({ width: 1280, height: 720 });
@@ -47,7 +46,7 @@ test('Cidade: modo Bomba como terrorista, a bomba e as bases existem', async ({ 
   await page.screenshot({ path: 'test-results/cidade-bomba.png' });
 });
 
-test('Cidade: ninguém cai do mapa na contagem e "Se matar" funciona sem tela branca', async ({ page }, info) => {
+test('Duna: ninguém cai do mapa na contagem e "Se matar" funciona sem tela branca', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
   test.setTimeout(240_000);
   const errors: string[] = [];
