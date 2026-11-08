@@ -1,5 +1,5 @@
 import { fsDamage, type FsDamage, type FsZone } from './damage';
-import { fsBoxesAlongRay, type FsBox } from './map';
+import { fsEachBoxAlongRay, type FsBox } from './map';
 import type { FsWeapon } from './weapons';
 
 export type Vec3 = [number, number, number];
@@ -108,11 +108,13 @@ export function fsTrace(w: FsWeapon, o: Vec3, d: Vec3, boxes: readonly FsBox[], 
   type Ev = { t: number; kind: 'box'; box: FsBox } | { t: number; kind: 'body'; body: FsBody; zone: FsZone };
   const evs: Ev[] = [];
   // mapas grandes: só as caixas na faixa do raio
-  const reach = fsBoxesAlongRay(boxes, o[0], o[2], d[0], d[2], maxDist);
-  for (const box of reach) {
+  // a busca para no primeiro muro maciço (o que está depois dele nunca importa)
+  fsEachBoxAlongRay(boxes, o[0], o[2], d[0], d[2], maxDist, (box) => {
     const h = rayBox(o, d, box, maxDist);
-    if (h && h.t0 > 1e-6) evs.push({ t: h.t0, kind: 'box', box });
-  }
+    if (!h || h.t0 <= 1e-6) return Infinity;
+    evs.push({ t: h.t0, kind: 'box', box });
+    return box.pen <= 0 || box.pen * w.penPower <= 0 ? h.t0 : Infinity;
+  });
   for (const body of bodies) {
     if (!body.alive) continue;
     const h = fsRayBody(o, d, body, maxDist);

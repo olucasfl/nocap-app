@@ -311,6 +311,45 @@ export function fsBoxesAlongRay(boxes: readonly FsBox[], ox: number, oz: number,
   return out;
 }
 
+/**
+ * Anda pelo raio da origem para longe e entrega cada caixa perto dele uma vez (as mais perto primeiro, por balde). `visit` devolve até onde
+ * ainda vale procurar (a distância do primeiro choque com parede maciça): passando disso (mais uma folga) a busca para. Num mapa denso um
+ * tiro longo juntava milhares de caixas só para descartar quase todas; assim ele para no primeiro muro.
+ */
+export function fsEachBoxAlongRay(boxes: readonly FsBox[], ox: number, oz: number, dx: number, dz: number, len: number, visit: (b: FsBox) => number): void {
+  if (boxes.length < 160) {
+    for (const b of boxes) visit(b);
+    return;
+  }
+  const ix = indexOf(boxes);
+  const step = ix.size * 0.4;
+  const n = Math.max(1, Math.ceil(len / step));
+  const l2 = Math.hypot(dx, dz) || 1;
+  const ux = dx / l2, uz = dz / l2;
+  const keys = new Set<number>();
+  const seen = new Set<FsBox>();
+  let stop = Infinity;
+  for (let i = 0; i <= n; i++) {
+    const t = (len * i) / n;
+    // o raio 3D anda `t` no total; no plano ele anda só a parte horizontal
+    const th = t * l2;
+    if (th > stop * l2 + ix.size + 1.5) break;
+    const x = ox + ux * th, z = oz + uz * th;
+    for (const [ex, ez] of [[0.5, 0.5], [-0.5, -0.5], [0.5, -0.5], [-0.5, 0.5]] as const) {
+      const k = bkey(Math.floor((x + ex) / ix.size), Math.floor((z + ez) / ix.size));
+      if (keys.has(k)) continue;
+      keys.add(k);
+      const l = ix.cells.get(k);
+      if (!l) continue;
+      for (const b of l) {
+        if (seen.has(b)) continue;
+        seen.add(b);
+        stop = Math.min(stop, visit(b));
+      }
+    }
+  }
+}
+
 export function fsBoxesInRect(boxes: readonly FsBox[], x0: number, z0: number, x1: number, z1: number): readonly FsBox[] {
   if (boxes.length < 160) return boxes;
   const ix = indexOf(boxes);
