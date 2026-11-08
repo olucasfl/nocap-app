@@ -203,6 +203,8 @@ export class FsNetSim {
   private nadeSeq = 0;
   /** Quantas pessoas já entraram: a 1ª é contra-terrorista (azul), a 2ª terrorista (laranja), a 3ª azul... */
   private humansIn = 0;
+  /** Os últimos lugares de nascimento: os próximos fogem deles. */
+  private recentSpawns: { x: number; z: number }[] = [];
   private rng: () => number;
   over = false;
   /** Modo Bomba: o placar de rounds, o dinheiro e a bomba (null no mata-mata). */
@@ -277,8 +279,9 @@ export class FsNetSim {
   }
 
   private addPlayer(id: string, name: string, bot: boolean, placed: { x: number; z: number }[], botTeam: 0 | 1 = 0, humanTeam?: 0 | 1) {
-    const sp = this.map.pickSpawn(placed, this.rng, this.boxes);
+    const sp = this.map.pickSpawn(placed, this.rng, this.boxes, undefined, this.recentSpawns);
     placed.push({ x: sp.x, z: sp.z });
+    this.noteSpawn(sp);
     const mover = fsNewMover(sp.x, sp.z);
     mover.y = sp.y;
     const p: FsNetPlayer = {
@@ -709,9 +712,15 @@ export class FsNetSim {
     p.shieldZ = p.mover.z;
   }
 
+  private noteSpawn(sp: { x: number; z: number }) {
+    this.recentSpawns.push({ x: sp.x, z: sp.z });
+    if (this.recentSpawns.length > 10) this.recentSpawns.shift();
+  }
+
   private respawn(p: FsNetPlayer) {
     const foes = [...this.players.values()].filter((q) => q.alive && q.id !== p.id).map((q) => ({ x: q.mover.x, z: q.mover.z }));
-    const sp = this.map.pickSpawn(foes, this.rng, this.boxes);
+    const sp = this.map.pickSpawn(foes, this.rng, this.boxes, undefined, this.recentSpawns);
+    this.noteSpawn(sp);
     p.hp = 100;
     p.armor = 0;
     p.helmet = false;

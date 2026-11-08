@@ -51,7 +51,8 @@ export interface FsMapApi {
   labels: readonly { x: number; z: number; text: string }[];
   floorY(x: number, z: number): number;
   siteAt(x: number, z: number): 'A' | 'B' | null;
-  pickSpawn(foes: readonly { x: number; z: number }[], rng?: () => number, boxes?: readonly FsBox[], spawns?: readonly FsSpawn[]): FsSpawn;
+  /** `avoid`: lugares onde alguém acabou de nascer (os próximos nascimentos fogem deles, para o pessoal se espalhar pelo mapa). */
+  pickSpawn(foes: readonly { x: number; z: number }[], rng?: () => number, boxes?: readonly FsBox[], spawns?: readonly FsSpawn[], avoid?: readonly { x: number; z: number }[]): FsSpawn;
   path(ax: number, az: number, bx: number, bz: number): [number, number][];
   nearestFree(x: number, z: number): [number, number];
   cellX(c: number): number;
@@ -298,7 +299,9 @@ export function createGridMap(opts: { id: string; name: string; data: FsGridMapD
   }
   for (const m of marks) hotspots.push([m.x, m.z]);
 
-  const pickSpawn = (foes: readonly { x: number; z: number }[], rng: () => number = Math.random, boxes: readonly FsBox[] = solids, list: readonly FsSpawn[] = spawns): FsSpawn => {
+  const pickSpawn = (foes: readonly { x: number; z: number }[], rng: () => number = Math.random, boxes: readonly FsBox[] = solids, list: readonly FsSpawn[] = spawns, avoid: readonly { x: number; z: number }[] = []): FsSpawn => {
+    // nota: longe de todo mundo, fora da vista, longe dos últimos nascimentos (quem nasceu há pouco ali) e um sorteio de desempate; escolhe ao acaso entre os
+    // melhores 8% (antes eram só 3 e os empates ficavam sempre nos primeiros da lista: as bases)
     const scored = list.map((s) => {
       let near = 1e9;
       let seen = 0;
@@ -307,10 +310,12 @@ export function createGridMap(opts: { id: string; name: string; data: FsGridMapD
         near = Math.min(near, dd);
         if (dd < 45 && fsClearLine(boxes, [s.x, s.y + 1, s.z], [f.x, s.y + 1, f.z])) seen++;
       }
-      return { s, v: Math.min(near, 60) - seen * 25 - (near < 15 ? 100 : 0) };
+      let recent = 0;
+      for (const a of avoid) if (Math.hypot(a.x - s.x, a.z - s.z) < 9) recent += 30;
+      return { s, v: Math.min(near, 60) - seen * 25 - (near < 15 ? 100 : 0) - Math.min(recent, 60) + rng() * 6 };
     });
     scored.sort((a, b) => b.v - a.v);
-    const top = scored.slice(0, Math.min(3, scored.length));
+    const top = scored.slice(0, Math.max(3, Math.min(scored.length, Math.ceil(scored.length * 0.08))));
     return top[Math.min(top.length - 1, Math.floor(rng() * top.length))]!.s;
   };
 

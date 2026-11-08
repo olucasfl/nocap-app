@@ -136,4 +136,21 @@ describe('mapa Duna', async () => {
     expect(errs.filter((e) => e > 0.15).length / errs.length).toBeLessThan(0.005);
     expect(errs[errs.length - 1]!).toBeLessThan(3);
   }, 60_000);
+
+  it('mata-mata: os nascimentos se espalham pelo mapa (não ficam amontoados nas bases)', () => {
+    const sim = new FsNetSim({ minutes: 10, humans: [], bots: 10, map: 'duna' });
+    const spawns: { x: number; z: number }[] = [];
+    for (const p of sim.players.values()) spawns.push({ x: p.mover.x, z: p.mover.z });
+    for (let i = 0; i < FS_NET_HZ * 60 * 3 && !sim.over; i++) {
+      sim.step();
+      for (const e of sim.drainEvents()) if (e.k === 'spawn') spawns.push({ x: e.x, z: e.z });
+    }
+    expect(spawns.length).toBeGreaterThan(40);
+    const cells = new Set(spawns.map((s) => `${Math.floor(s.x / 12)},${Math.floor(s.z / 12)}`));
+    expect(cells.size).toBeGreaterThanOrEqual(18);
+    // nenhum pedaço de 12 x 12 m recebe mais de 12% dos nascimentos
+    const count = new Map<string, number>();
+    for (const s of spawns) count.set(`${Math.floor(s.x / 12)},${Math.floor(s.z / 12)}`, (count.get(`${Math.floor(s.x / 12)},${Math.floor(s.z / 12)}`) ?? 0) + 1);
+    expect(Math.max(...count.values()) / spawns.length).toBeLessThan(0.12);
+  }, 120_000);
 });
