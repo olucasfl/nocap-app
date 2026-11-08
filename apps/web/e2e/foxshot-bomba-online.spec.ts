@@ -66,8 +66,9 @@ test('duas janelas: modo Bomba com times TR e CT, compra com dinheiro e HUD da b
   await expect(ana.getByTestId('cfl-start')).toBeEnabled({ timeout: 10_000 });
   await ana.getByTestId('cfl-start').click();
   await expect(ana.getByTestId('fb-hud')).toBeVisible({ timeout: 120_000 });
-  await expect(bia.getByTestId('fb-hud')).toBeVisible({ timeout: 120_000 });
+  // sem pointer lock o menu Esc abre sozinho e pausa o relógio do líder: ele precisa continuar antes de a Bia receber quadros
   await fsn(ana, 'resume');
+  await expect(bia.getByTestId('fb-hud')).toBeVisible({ timeout: 120_000 });
   await fsn(bia, 'resume');
   await expect(ana.getByTestId('fb-money')).toContainText('800');
   await expect(bia.getByTestId('fb-money')).toContainText('800');

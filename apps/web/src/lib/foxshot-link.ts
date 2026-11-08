@@ -116,12 +116,12 @@ export class FsHostSession {
       } else {
         peer.ctl = ch;
         ch.onmessage = (ev) => this.onCtl(peer, ev.data);
-        ch.onclose = () => this.peerGone(id);
+        ch.onclose = () => this.peerGone(peer);
       }
     };
     pc.onconnectionstatechange = () => {
       logNet(`host pc ${pc.connectionState}`);
-      if (pc.connectionState === 'failed' || pc.connectionState === 'closed') this.peerGone(id);
+      if (pc.connectionState === 'failed' || pc.connectionState === 'closed') this.peerGone(peer);
     };
     pc.oniceconnectionstatechange = () => logNet(`host ice ${pc.iceConnectionState}`);
     return peer;
@@ -147,13 +147,15 @@ export class FsHostSession {
     }
   }
 
-  /** Quem saiu (ou perdeu a conexão) vira bot no lugar. */
-  private peerGone(id: string) {
-    const peer = this.peers.get(id);
-    if (!peer) return;
-    this.peers.delete(id);
+  /**
+   * Quem saiu (ou perdeu a conexão) vira bot no lugar. Vale só para ESTA conexão: se a pessoa já refez a conexão (o fechamento da
+   * antiga chega depois da oferta nova), o evento velho não pode derrubar a nova nem trocar a pessoa por um bot.
+   */
+  private peerGone(peer: HostPeer) {
     peer.pc.close();
-    this.worker?.postMessage({ t: 'toBot', id });
+    if (this.peers.get(peer.id) !== peer) return;
+    this.peers.delete(peer.id);
+    this.worker?.postMessage({ t: 'toBot', id: peer.id });
   }
 
   /** Começa a simular quando a contagem acabar (`startAt` na hora da sala). */
