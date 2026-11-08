@@ -6,7 +6,7 @@ export type FsGrenadeId = 'frag' | 'flash';
 
 /** Granadas: explosiva (dano em área) e de luz (cega e ensurdece). Tempos em s, distâncias em m. */
 export const FS_GRENADES: Record<FsGrenadeId, { name: string; fuse: number; radius: number; max: number; maxDamage: number }> = {
-  frag: { name: 'Granada explosiva', fuse: 1.9, radius: 7, max: 2, maxDamage: 60 },
+  frag: { name: 'Granada explosiva', fuse: 1.6, radius: 9, max: 2, maxDamage: 98 },
   flash: { name: 'Granada de luz', fuse: 1.5, radius: 22, max: 2, maxDamage: 0 },
 };
 
@@ -93,7 +93,7 @@ export function fsGrenadeStep(g: FsGrenadeBody, dt: number, boxes: readonly FsBo
   return g.age >= g.fuse;
 }
 
-/** Dano da explosão por distância ao centro: cheio no centro (60), cai em linha reta até 0 na borda do raio (7 m). */
+/** Dano da explosão por distância ao centro: cheio no centro (98, como a HE do CS:GO), cai em linha reta até 0 na borda do raio (9 m). */
 export function fsFragDamage(dist: number, radius = FS_GRENADES.frag.radius, max = FS_GRENADES.frag.maxDamage): number {
   if (dist >= radius) return 0;
   return Math.max(0, Math.round(max * (1 - dist / radius)));

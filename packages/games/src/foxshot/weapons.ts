@@ -1,4 +1,4 @@
-/** Armas do Fox Shot! (spec 056): números iniciais, no estilo do CS, para ajustar jogando. Distâncias em metros, ângulos em graus. */
+/** Armas do Fox Shot! (spec 056): números do CS:GO (de memória; quedas por distância convertidas: o CS usa 500 unidades, ~9 m no jogo, aqui o fator vale a cada 50 m). Distâncias em metros, ângulos em graus. */
 
 export type FsWeaponId = 'ak' | 'pistol' | 'sniper' | 'knife' | 'smg' | 'shotgun' | 'm4' | 'usp';
 export type FsSlot = 'primary' | 'secondary' | 'knife';
@@ -81,44 +81,44 @@ function m4Pattern(): [number, number][] {
 export const FS_WEAPONS: Record<FsWeaponId, FsWeapon> = {
   ak: {
     id: 'ak', name: 'AK-47', slot: 'primary', auto: true, rpm: 600, mag: 30, reload: 2.4, draw: 0.02,
-    damage: 36, armorRatio: 1.55, rangeMod: 0.98, headMult: 4, legMult: 0.75, penPower: 1,
+    damage: 36, armorRatio: 1.55, rangeMod: 0.89, headMult: 4, legMult: 0.75, penPower: 1,
     recoil: akPattern(), recoilResetS: 0.35, recoilRecover: 10,
     spread: { stand: 0.25, move: 3.6, air: 6, ads: 0.2, adsMove: 2.6 }, bloom: 3.4, bloomPerShot: 0.2,
-    moveMul: 0.92, adsFov: 0, boltS: 0, inspect: 3.4,
+    moveMul: 0.86, adsFov: 0, boltS: 0, inspect: 3.4,
   },
   pistol: {
-    id: 'pistol', name: 'Glock', slot: 'secondary', auto: false, rpm: 400, mag: 18, reload: 1.7, draw: 0.02,
-    damage: 34, armorRatio: 0.5, rangeMod: 0.45, headMult: 4, legMult: 0.75, penPower: 0.6,
+    id: 'pistol', name: 'Glock', slot: 'secondary', auto: false, rpm: 400, mag: 20, reload: 2.3, draw: 0.02,
+    damage: 30, armorRatio: 0.94, rangeMod: 0.4, headMult: 4, legMult: 0.75, penPower: 0.6,
     recoil: [[1.0, 0.15], [0.95, -0.2], [0.9, 0.2], [0.85, -0.15]], recoilResetS: 0.3, recoilRecover: 16,
     spread: { stand: 0.3, move: 1.5, air: 3.2, ads: 0.25, adsMove: 1.1 }, bloom: 0.9, bloomPerShot: 0.25,
-    moveMul: 1, adsFov: 0, boltS: 0, inspect: 3.0,
+    moveMul: 0.96, adsFov: 0, boltS: 0, inspect: 3.0,
   },
   sniper: {
-    id: 'sniper', name: 'L96A1', slot: 'primary', auto: false, rpm: 40, mag: 5, reload: 3.2, draw: 0.02,
-    damage: 115, armorRatio: 1.95, rangeMod: 0.99, headMult: 4, legMult: 1, penPower: 1.6,
+    id: 'sniper', name: 'L96A1', slot: 'primary', auto: false, rpm: 41, mag: 5, reload: 3.7, draw: 0.02,
+    damage: 115, armorRatio: 1.95, rangeMod: 0.95, headMult: 4, legMult: 0.75, penPower: 1.6,
     recoil: [[4.2, 0.4]], recoilResetS: 1.2, recoilRecover: 6,
     spread: { stand: 6.5, move: 10, air: 13, ads: 0, adsMove: 5.5 }, bloom: 0, bloomPerShot: 0,
     moveMul: 0.8, adsFov: 28, boltS: 1.3, inspect: 3.8,
   },
   knife: {
     id: 'knife', name: 'Faca', slot: 'knife', auto: false, rpm: 120, mag: 0, reload: 0, draw: 0.02,
-    damage: 35, armorRatio: 0.85, rangeMod: 1, headMult: 1, legMult: 1, penPower: 0,
+    damage: 40, armorRatio: 0.85, rangeMod: 1, headMult: 1, legMult: 1, penPower: 0,
     recoil: [[0, 0]], recoilResetS: 0.2, recoilRecover: 20,
     spread: { stand: 0, move: 0, air: 0, ads: 0, adsMove: 0 }, bloom: 0, bloomPerShot: 0,
-    moveMul: 1.1, adsFov: 0, boltS: 0, melee: { range: 1.7, stab: 70, stabCd: 1.0, backstab: 100 }, inspect: 4.0,
+    moveMul: 1, adsFov: 0, boltS: 0, melee: { range: 1.7, stab: 65, stabCd: 1.0, backstab: 100 }, inspect: 4.0,
   },
   smg: {
     // submetralhadora: dano menor que o do fuzil, mas atira bem mais rápido, com recuo curto
-    id: 'smg', name: 'MP9', slot: 'primary', auto: true, rpm: 850, mag: 30, reload: 2.1, draw: 0.02,
-    damage: 24, armorRatio: 0.6, rangeMod: 0.72, headMult: 4, legMult: 0.75, penPower: 0.45,
+    id: 'smg', name: 'MP9', slot: 'primary', auto: true, rpm: 857, mag: 30, reload: 2.1, draw: 0.02,
+    damage: 26, armorRatio: 1.2, rangeMod: 0.46, headMult: 4, legMult: 0.75, penPower: 0.45,
     recoil: smgPattern(), recoilResetS: 0.3, recoilRecover: 14,
     spread: { stand: 0.35, move: 2.8, air: 5, ads: 0.3, adsMove: 1.8 }, bloom: 1.6, bloomPerShot: 0.09,
-    moveMul: 1.0, adsFov: 0, boltS: 0, inspect: 3.0,
+    moveMul: 0.96, adsFov: 0, boltS: 0, inspect: 3.0,
   },
   shotgun: {
     // escopeta: um tiro por vez (bombeia entre eles), 9 projéteis espalhados; de perto mata, de longe quase nada acerta
-    id: 'shotgun', name: 'SPAS-12', slot: 'primary', auto: false, rpm: 70, mag: 8, reload: 3.8, draw: 0.02,
-    damage: 13.5, armorRatio: 1.9, rangeMod: 0.5, headMult: 2, legMult: 0.8, penPower: 0.3,
+    id: 'shotgun', name: 'SPAS-12', slot: 'primary', auto: false, rpm: 68, mag: 8, reload: 3.8, draw: 0.02,
+    damage: 26, armorRatio: 1.0, rangeMod: 0.14, headMult: 4, legMult: 0.75, penPower: 0.3,
     pellets: 9, pelletSpread: 3.2,
     recoil: [[5.5, 0.6]], recoilResetS: 0.6, recoilRecover: 9,
     spread: { stand: 0.4, move: 3, air: 5, ads: 0.3, adsMove: 2 }, bloom: 0, bloomPerShot: 0,
@@ -126,19 +126,19 @@ export const FS_WEAPONS: Record<FsWeaponId, FsWeapon> = {
   },
   m4: {
     // fuzil leve: dano e carregador menores que os do outro fuzil, atira um pouco mais rápido e sobe mais regular
-    id: 'm4', name: 'M4A1', slot: 'primary', auto: true, rpm: 700, mag: 25, reload: 2.3, draw: 0.02,
-    damage: 31, armorRatio: 1.4, rangeMod: 0.985, headMult: 4, legMult: 0.75, penPower: 0.85,
+    id: 'm4', name: 'M4A1', slot: 'primary', auto: true, rpm: 600, mag: 20, reload: 3.1, draw: 0.02,
+    damage: 33, armorRatio: 1.4, rangeMod: 0.84, headMult: 4, legMult: 0.75, penPower: 0.85,
     recoil: m4Pattern(), recoilResetS: 0.32, recoilRecover: 12,
     spread: { stand: 0.2, move: 3.2, air: 5.5, ads: 0.15, adsMove: 2.2 }, bloom: 3.0, bloomPerShot: 0.18,
-    moveMul: 0.95, adsFov: 0, boltS: 0, inspect: 3.4,
+    moveMul: 0.9, adsFov: 0, boltS: 0, inspect: 3.4,
   },
   usp: {
     // pistola silenciada de precisão: menos balas e menos dano que a outra, mas muito mais precisa
-    id: 'usp', name: 'USP-S', slot: 'secondary', auto: false, rpm: 330, mag: 12, reload: 1.9, draw: 0.02,
-    damage: 28, armorRatio: 0.55, rangeMod: 0.55, headMult: 4, legMult: 0.75, penPower: 0.6,
+    id: 'usp', name: 'USP-S', slot: 'secondary', auto: false, rpm: 352, mag: 12, reload: 2.2, draw: 0.02,
+    damage: 35, armorRatio: 1.01, rangeMod: 0.27, headMult: 4, legMult: 0.75, penPower: 0.6,
     recoil: [[0.45, 0.05], [0.4, -0.05], [0.4, 0.06]], recoilResetS: 0.3, recoilRecover: 20,
     spread: { stand: 0.06, move: 0.7, air: 2.2, ads: 0.04, adsMove: 0.5 }, bloom: 0.25, bloomPerShot: 0.08,
-    moveMul: 1, adsFov: 0, boltS: 0, inspect: 3.0,
+    moveMul: 0.96, adsFov: 0, boltS: 0, inspect: 3.0,
   },
 };
 

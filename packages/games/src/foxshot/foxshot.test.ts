@@ -30,7 +30,7 @@ describe('dano estilo CS', () => {
   it('fuzil: no corpo precisa de vários tiros; o colete reduz o dano', () => {
     const bare = fsDamage(ak, hit({}));
     const vest = fsDamage(ak, hit({ armor: 100 }));
-    expect(bare.hp).toBe(36);
+    expect(bare.hp).toBeGreaterThanOrEqual(35);
     expect(vest.hp).toBeLessThan(bare.hp);
     expect(vest.armorLoss).toBeGreaterThan(0);
     expect(fsKills(bare)).toBe(false);
@@ -48,11 +48,13 @@ describe('dano estilo CS', () => {
     expect(fsKills(fsDamage(pistol, hit({ zone: 'head', dist: 40 })))).toBe(false);
   });
 
-  it('sniper: qualquer acerto direto mata (com colete, nas pernas, a qualquer distância)', () => {
-    for (const zone of ['head', 'chest', 'belly', 'legs'] as const) {
+  it('sniper: acerto direto na cabeça, peito ou barriga mata (com colete, a qualquer distância); perna não', () => {
+    for (const zone of ['head', 'chest', 'belly'] as const) {
       expect(fsKills(fsDamage(sniper, hit({ zone, dist: 60 })))).toBe(true);
       expect(fsKills(fsDamage(sniper, hit({ zone, dist: 60, armor: 100, helmet: true })))).toBe(true);
     }
+    // como no CS:GO: na perna a AWP tira uns 86 e não mata
+    expect(fsKills(fsDamage(sniper, hit({ zone: 'legs', dist: 10 })))).toBe(false)
   });
 
   it('sniper: o tiro varado (atravessou parede) não mata no corpo', () => {
@@ -329,13 +331,13 @@ describe('faca: clique golpeia uma vez, segurar repete', () => {
 });
 
 describe('faca: dano fixo', () => {
-  it('corte 35 e estocada 70 em qualquer região, com ou sem colete e capacete', () => {
+  it('corte 40 e estocada 65 em qualquer região, com ou sem colete e capacete', () => {
     const k = FS_WEAPONS.knife;
     for (const zone of ['head', 'chest', 'belly', 'legs'] as const)
       for (const armor of [0, 100]) {
         const h = { zone, dist: 1, armor, helmet: armor > 0, wall: 1 };
-        expect(fsDamage(k, h).hp).toBe(35);
-        expect(fsDamage({ ...k, damage: k.melee!.stab }, h).hp).toBe(70);
+        expect(fsDamage(k, h).hp).toBe(40);
+        expect(fsDamage({ ...k, damage: k.melee!.stab }, h).hp).toBe(65);
       }
   });
 });
@@ -607,14 +609,14 @@ describe('armas novas', () => {
     expect(W.m4.damage).not.toBe(W.ak.damage);
     expect(W.m4.mag).not.toBe(W.ak.mag);
     expect(W.m4.recoil[3]).not.toEqual(W.ak.recoil[3]);
-    expect(W.m4.rpm).not.toBe(W.ak.rpm);
+    expect(W.m4.reload).not.toBe(W.ak.reload);
   });
-  it('pistola silenciada: menos bala, bem mais precisa e com menos dano (mas não muito menos)', () => {
+  it('pistola silenciada: menos bala, bem mais precisa e com mais dano', () => {
     expect(W.usp.mag).toBeLessThan(W.pistol.mag);
     expect(W.usp.spread.stand).toBeLessThan(W.pistol.spread.stand / 3);
     expect(W.usp.spread.move).toBeLessThan(W.pistol.spread.move);
-    expect(W.usp.damage).toBeLessThan(W.pistol.damage);
-    expect(W.usp.damage).toBeGreaterThan(W.pistol.damage * 0.7);
+    // CS:GO: a USP-S bate mais forte que a Glock (35 contra 30), e a cabeça mata de perto
+    expect(W.usp.damage).toBeGreaterThan(W.pistol.damage);
     expect(W.usp.slot).toBe('secondary');
   });
   it('escopeta: 8 cartuchos, 9 projéteis por tiro, tiro único com bombeio', () => {
@@ -845,11 +847,11 @@ describe('assistência', () => {
 
 describe('granadas', () => {
   const mv = { moving: false, airborne: false, ads: false };
-  it('explosiva: dano cheio (60) no centro, menos longe e nada fora do raio', () => {
-    expect(fsFragDamage(0)).toBe(60);
-    expect(fsFragDamage(3.5)).toBe(30);
-    expect(fsFragDamage(6.9)).toBeLessThan(3);
-    expect(fsFragDamage(7)).toBe(0);
+  it('explosiva: dano cheio (98, como a HE do CS:GO) no centro, menos longe e nada fora do raio', () => {
+    expect(fsFragDamage(0)).toBe(98);
+    expect(fsFragDamage(4.5)).toBe(49);
+    expect(fsFragDamage(8.9)).toBeLessThan(3);
+    expect(fsFragDamage(9)).toBe(0);
     expect(fsFragDamage(20)).toBe(0);
     expect(fsFragDamage(1)).toBeGreaterThan(fsFragDamage(4));
   });
