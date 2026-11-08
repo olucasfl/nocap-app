@@ -23,6 +23,7 @@ export function FsBombEnd({
   mySide,
   rows,
   mapName,
+  pvp,
   onExit,
   exitLabel,
   onAgain,
@@ -37,6 +38,7 @@ export function FsBombEnd({
   mySide: 'tr' | 'ct' | null;
   rows: FsBombEndRow[];
   mapName?: string;
+  pvp?: boolean;
   onExit: () => void;
   exitLabel: string;
   onAgain: () => void;
@@ -55,7 +57,7 @@ export function FsBombEnd({
         <header className="cfl-head">
           <CounterFoxLogo compact />
           <div className="cfl-chips">
-            <span className="cfl-chip">Modo Bomba</span>
+            <span className="cfl-chip">{pvp ? 'Modo PvP' : 'Modo Bomba'}</span>
             {mapName && <span className="cfl-chip">{mapName}</span>}
           </div>
         </header>

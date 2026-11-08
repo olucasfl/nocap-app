@@ -17,7 +17,7 @@ import base64, json, math, os, struct, sys
 import numpy as np
 from PIL import Image
 
-S = 0.01          # unidade do OBJ -> metros (1 bloco = 1 m)
+S = 0.0075        # unidade do OBJ -> metros (1 bloco = 0,75 m: o mapa original em 1 m por bloco ficava enorme para o corpo do jogo)
 BC = 0.25         # voxel de colisão (m)
 CELL = 0.25       # célula da grade de navegação (m)
 YMAX = 6.0        # altura máxima simulada (m); acima disso ninguém chega
@@ -46,33 +46,50 @@ Y0 = 0.0
 nx = int(round((X1 - X0) / BC)); nz = int(round((Z1 - Z0) / BC)); ny = int(round(YMAX / BC))
 print('voxels finos (z, x, y):', nz, nx, ny)
 
-# ------------------------------------------------------------------ superfície -> voxels
+# ------------------------------------------------------------------ sólidos por paridade (raios verticais)
+# Os blocos do mapa são malhas fechadas: em cada coluna, os cruzamentos dos triângulos com um raio vertical, em ordem, entram e saem
+# do sólido (1º entra, 2º sai...). Os centros das colunas e dos voxels ficam a meio voxel das quinas alinhadas com a grade, então
+# não há empate nem erro de um voxel no topo dos blocos (a casca por normais errava 25 cm porque as faces vêm com orientação mista).
 solid = np.zeros((nz, nx, ny), bool)
 allf = np.array([f[:3] for fl in faces.values() for f in fl])
 A = V[allf[:, 0]]; B = V[allf[:, 1]]; C = V[allf[:, 2]]
-N = np.cross(B - A, C - A); ln = np.linalg.norm(N, axis=1); ok = ln > 1e-9
-A, B, C, N, ln = A[ok], B[ok], C[ok], N[ok], ln[ok]
-N = N / ln[:, None]
-edge = np.maximum(np.maximum(np.linalg.norm(B - A, axis=1), np.linalg.norm(C - B, axis=1)), np.linalg.norm(A - C, axis=1))
-step = BC * 0.4
-
-def mark(P):
-    j = np.floor((P[:, 0] - X0) / BC).astype(np.int32); i = np.floor((P[:, 2] - Z0) / BC).astype(np.int32); k = np.floor((P[:, 1] - Y0) / BC).astype(np.int32)
-    m = (i >= 0) & (i < nz) & (j >= 0) & (j < nx) & (k >= 0) & (k < ny)
-    solid[i[m], j[m], k[m]] = True
-
-m_max = int(math.ceil(edge.max() / step))
-print('triângulos', len(A), 'maior aresta (m)', round(float(edge.max()), 1), 'passos', m_max)
-for m in range(1, m_max + 1):
-    sel = (np.ceil(edge / step) == m) if m < m_max else (np.ceil(edge / step) >= m)
-    if not sel.any(): continue
-    a, b, c, n = A[sel], B[sel], C[sel], N[sel]
-    for ii in range(m + 1):
-        for jj in range(m + 1 - ii):
-            u = ii / m; v = jj / m
-            p = a * (1 - u - v) + b * u + c * v
-            mark(p)
-            mark(p - n * BC)          # casca para dentro
+print('triângulos', len(A))
+cross_col = []; cross_y = []
+EPSJ = 1.7e-4  # desloca os centros das colunas um tiquinho: nada de empate exato na borda de dois triângulos
+for t in range(len(A)):
+    P0, P1, P2 = A[t], B[t], C[t]
+    x0, x1 = min(P0[0], P1[0], P2[0]), max(P0[0], P1[0], P2[0])
+    z0, z1 = min(P0[2], P1[2], P2[2]), max(P0[2], P1[2], P2[2])
+    j0 = max(0, int(math.floor((x0 - X0) / BC - 0.5))); j1 = min(nx - 1, int(math.ceil((x1 - X0) / BC - 0.5)))
+    i0 = max(0, int(math.floor((z0 - Z0) / BC - 0.5))); i1 = min(nz - 1, int(math.ceil((z1 - Z0) / BC - 0.5)))
+    if j1 < j0 or i1 < i0: continue
+    jj, ii = np.meshgrid(np.arange(j0, j1 + 1), np.arange(i0, i1 + 1))
+    px = X0 + (jj + 0.5) * BC + EPSJ; pz = Z0 + (ii + 0.5) * BC + EPSJ * 1.3
+    # coordenadas baricêntricas no plano xz
+    d = (P1[2] - P2[2]) * (P0[0] - P2[0]) + (P2[0] - P1[0]) * (P0[2] - P2[2])
+    if abs(d) < 1e-12: continue  # triângulo vertical: não cruza raio vertical
+    w0 = ((P1[2] - P2[2]) * (px - P2[0]) + (P2[0] - P1[0]) * (pz - P2[2])) / d
+    w1 = ((P2[2] - P0[2]) * (px - P2[0]) + (P0[0] - P2[0]) * (pz - P2[2])) / d
+    w2 = 1 - w0 - w1
+    ok = (w0 >= 0) & (w1 >= 0) & (w2 >= 0)
+    if not ok.any(): continue
+    y = w0[ok] * P0[1] + w1[ok] * P1[1] + w2[ok] * P2[1]
+    cross_col.append((ii[ok] * nx + jj[ok]).astype(np.int64)); cross_y.append(y)
+cc = np.concatenate(cross_col); cy = np.concatenate(cross_y)
+order = np.lexsort((cy, cc)); cc = cc[order]; cy = cy[order]
+print('cruzamentos', len(cc))
+starts = np.flatnonzero(np.r_[True, cc[1:] != cc[:-1]]); ends = np.r_[starts[1:], len(cc)]
+odd = 0
+zc = (np.arange(ny) + 0.5) * BC
+for s0, e0 in zip(starts, ends):
+    n = e0 - s0
+    if n % 2: odd += 1; n -= 1   # malha aberta nessa coluna: ignora o último cruzamento
+    col = int(cc[s0]); i, j = divmod(col, nx)
+    ys = cy[s0:s0 + n]
+    for q in range(0, n, 2):
+        k0 = int(math.ceil(ys[q] / BC - 0.5)); k1 = int(math.floor(ys[q + 1] / BC - 0.5))
+        if k1 >= k0: solid[i, j, max(0, k0):min(ny, k1 + 1)] = True
+print('colunas com número ímpar de cruzamentos (malha aberta):', odd, 'de', len(starts))
 print('voxels sólidos', int(solid.sum()))
 
 # ------------------------------------------------------------------ onde se fica em pé (grade de 25 cm)
@@ -224,7 +241,7 @@ data = {
     'sites': [], 'buys': [rect(sideA), rect(sideB)], 'hmin': 0,
 }
 out_ts = os.path.join(root, 'packages/games/src/foxshot/pvp.data.ts')
-open(out_ts, 'w').write('/* Gerado por tools/art/pvp_build.py: colisão e grade do mapa do modo PvP (não editar à mão). */\nexport const FS_PVP_DATA = ' + json.dumps(data) + ' as const;\n')
+open(out_ts, 'w').write('/* Gerado por tools/art/pvp_build.py: colisão e grade do mapa do modo PvP (não editar à mão). */\nexport const FS_PVP_DATA: Record<string, unknown> = ' + json.dumps(data) + ';\n')
 print('escrito', out_ts, os.path.getsize(out_ts) // 1024, 'KB')
 
 # ------------------------------------------------------------------ imagem de conferência

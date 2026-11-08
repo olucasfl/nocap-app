@@ -432,7 +432,7 @@ export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
 
           {tab === 'modo' && (
             <div className="cfl-pane" data-testid="cfl-mode">
-              <button type="button" className={`cfl-mode${kind === 'dm' ? ' on' : ''}`} aria-pressed={kind === 'dm'} disabled={!leader} onClick={() => sendRoom('configure', { kind: 'dm' })} data-testid="cfl-mode-dm">
+              <button type="button" className={`cfl-mode${kind === 'dm' ? ' on' : ''}`} aria-pressed={kind === 'dm'} disabled={!leader} onClick={() => sendRoom('configure', { kind: 'dm', pvp: false, map: 'duna', winRounds: 8, roundSec: 115 })} data-testid="cfl-mode-dm">
                 <b>Mata-mata{kind === 'dm' && <em className="cfl-sel"> · selecionado</em>}</b>
                 <span>Todos contra todos no Duna. Abate vale {FS_POINTS.kill} pontos, assistência {FS_POINTS.assist}. Vence quem tiver mais pontos no fim.</span>
               </button>

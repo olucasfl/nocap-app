@@ -621,7 +621,8 @@ export class FoxShotScene {
   private buildArena() {
     // mapa com modelo 3D: o desenho vem do arquivo (`buildGlbMap`); aqui não há chão nem caixas
     if (this.world.style === 'glb') {
-      this.scene.fog = new THREE.Fog(0xe9d8bd, 45, 150);
+      // a Duna tem névoa de areia; a arena de blocos (PvP) tem céu azul e enxerga o mapa inteiro
+      this.scene.fog = this.world.map?.id === 'pvp' ? new THREE.Fog(0xcfe4ff, 90, 260) : new THREE.Fog(0xe9d8bd, 45, 150);
       return;
     }
     const mats = materials();
@@ -995,8 +996,9 @@ export class FoxShotScene {
       this.sun.shadow.map?.dispose();
       this.sun.shadow.map = null;
     }
-    (this.scene.fog as THREE.Fog).far = q === 'low' ? 70 : 95;
-    this.cam.far = 120;
+    const wide = this.world.map?.id === 'pvp';
+    (this.scene.fog as THREE.Fog).far = wide ? (q === "low" ? 160 : 260) : q === 'low' ? 70 : 95;
+    this.cam.far = wide ? 290 : 120;
     this.cam.updateProjectionMatrix();
   }
   get fovNow(): number {

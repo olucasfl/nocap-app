@@ -1089,7 +1089,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       scene.setBombDrop(0, 0, 0, false);
       scene.setBomb(0, 0, 0, 'off');
       bombBanner = null;
-      say(meSide === 'tr' ? 'Compre na base (B) e depois vá aos pátios A ou B' : 'Compre na base (B) e defenda os pátios A e B', 4500);
+      say(match?.pvp ? 'Compre qualquer arma (B): dinheiro infinito. Depois elimine o outro time' : meSide === 'tr' ? 'Compre na base (B) e depois vá aos pátios A ou B' : 'Compre na base (B) e defenda os pátios A e B', 4500);
     };
     const meSide0 = () => sideOf('me');
     const handleBombEvent = (e: FsBombEvent) => {
@@ -2461,7 +2461,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
           />}
           {!!hud.shield && <FsShield frac={hud.shield} />}
           {settings.showMinimap && <FsMinimap get={getMini} />}
-          {bigMap && !result && <FsBigMap get={getMini} title={match ? 'Mapa · Duna' : 'Mapa · Treino'} />}
+          {bigMap && !result && <FsBigMap get={getMini} title={match ? `Mapa · ${match.pvp ? 'Arena de Blocos' : 'Duna'}` : 'Mapa · Treino'} />}
           <div className="fsh-rcol">
           {settings.showTelemetry && (
             <FsTelemetry
@@ -2522,7 +2522,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
               ]}
             />
           )}
-          {board && !result && <FsScoreboard bomb={hud.bomb ? { mySide: hud.bomb.mySide, tr: hud.bomb.tr, ct: hud.bomb.ct } : undefined} players={hud.players} timeLeft={hud.timeLeft} title={match ? (match.mode === 'bomb' ? `Bomba · Duna · primeiro a ${match.bomb?.winRounds ?? 8}` : `Mata-mata · Duna · ${match.minutes} min`) : undefined} />}
+          {board && !result && <FsScoreboard bomb={hud.bomb ? { mySide: hud.bomb.mySide, tr: hud.bomb.tr, ct: hud.bomb.ct } : undefined} players={hud.players} timeLeft={hud.timeLeft} title={match ? (match.mode === 'bomb' ? (match.pvp ? `PvP · Arena de Blocos · primeiro a ${match.bomb?.winRounds ?? 5}` : `Bomba · Duna · primeiro a ${match.bomb?.winRounds ?? 8}`) : `Mata-mata · Duna · ${match.minutes} min`) : undefined} />}
           {needClick && !paused && (
             <div className="fs-hint mono" data-testid="fs-needclick">
               Clique na tela para prender o mouse
@@ -2621,7 +2621,8 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
               tr={bombEnd.tr}
               ct={bombEnd.ct}
               mySide={bombEnd.mySide}
-              mapName={'Duna'}
+              mapName={match?.pvp ? 'Arena de Blocos' : 'Duna'}
+              pvp={!!match?.pvp}
               rows={result.map((r) => ({ id: r.id, name: r.name, side: bombEnd.sides[r.id] ?? 'ct', kills: r.kills, assists: r.assists, deaths: r.deaths, points: r.points, me: r.id === 'me' }))}
               exitLabel="Mudar a partida"
               onExit={() => onExit?.()}

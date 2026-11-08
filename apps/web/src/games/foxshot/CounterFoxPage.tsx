@@ -138,7 +138,7 @@ function MapCard({ mapId, mode }: { mapId: FsMapId; mode: 'dm' | 'bomb' | 'pvp' 
       <canvas ref={ref} aria-label={`Mapa ${FS_MAP_NAMES[mapId]} visto de cima`} />
       <p>{FS_MAP_NAMES[mapId]} · {mode === 'pvp' ? 'PvP' : mode === 'bomb' ? 'Bomba' : 'Mata-mata'}</p>
       <span>
-        {mapId === 'duna' ? 'Três rotas, dois pátios de bomba, túneis e portas.' : 'Ruas e prédios, duas bombas e as bases nas pontas.'} Abate vale {FS_POINTS.kill} pontos, assistência {FS_POINTS.assist}.
+        {mapId === 'pvp' ? 'Arena de blocos com muros, colunas e caixas: cada time começa numa ponta.' : 'Ruas e prédios, duas bombas e as bases nas pontas.'} {mode === 'pvp' ? 'Cada round vale um ponto: elimine o outro time.' : <>Abate vale {FS_POINTS.kill} pontos, assistência {FS_POINTS.assist}.</>}
       </span>
     </div>
   );

@@ -115,4 +115,24 @@ describe('Counter Fox ponto a ponto', () => {
     s.room.start('lia');
     expect(s.room.sim!.map.id).toBe('duna');
   });
+
+  it('modo PvP: variante do Bomba com mapa próprio, pontos de 1 a 30 e tempo de 30 a 300 s; só vale com o Bomba', () => {
+    const s = mk(false);
+    s.room.configure('lia', { kind: 'bomb', pvp: true, map: 'pvp', winRounds: 20, roundSec: 200 } as never);
+    const fx = (s.room.snapshot('lia') as unknown as { foxshot: { map: string; pvp: boolean; winRounds: number } }).foxshot;
+    expect(fx).toMatchObject({ map: 'pvp', pvp: true, winRounds: 20 });
+    expect(() => s.room.configure('lia', { winRounds: 31 } as never)).toThrow();
+    expect(() => s.room.configure('lia', { kind: 'dm' } as never)).toThrow();
+    s.room.configure('lia', { kind: 'bomb', botsCt: 1, botsTr: 1 } as never);
+    s.room.setReady('bia', true);
+    s.room.setTeam('lia', 'lia', 1);
+    s.room.setTeam('bia', 'bia', 0);
+    s.room.start('lia');
+    expect(s.room.sim!.map.id).toBe('pvp');
+    expect(s.room.sim!.bm!.cfg).toMatchObject({ pvp: true, winRounds: 20, roundSec: 200 });
+    // voltando ao Bomba normal, os limites voltam ao normal
+    const t = mk(false);
+    t.room.configure('lia', { kind: 'bomb', pvp: false, map: 'duna', winRounds: 8, roundSec: 115 } as never);
+    expect(() => t.room.configure('lia', { winRounds: 20 } as never)).toThrow();
+  });
 });

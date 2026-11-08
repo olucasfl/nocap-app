@@ -12,3 +12,7 @@ O Lucas enviou estes pacotes em 04/11/2026 dizendo que são **gratuitos e libera
 
 Conversão: `tools/art/map_props.py` (Blender via `bpy`, só ferramenta de trabalho). Cada peça sai em metros, com a origem no centro da base, só a textura de cor reduzida para 512 px (JPEG) e sem normal/metal, para ficar leve (todas juntas: cerca de 2 MB).
 Os originais não entram no repositório.
+
+## Arena de Blocos (modo PvP)
+
+Mapa de mata-mata em blocos (FBX `CSDeathMatchMapMinecraft` com as texturas do pacote) enviado pelo Lucas em 08/11/2026. Autoria e licença não constam no pacote: confirmar antes de publicar. Usado em `apps/web/public/models/foxshot/pvp/pvp.glb` (gerado por `tools/art/pvp_build.py`).

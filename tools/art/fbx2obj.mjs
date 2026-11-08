@@ -20,6 +20,8 @@ fbx.traverse((o) => {
   stats.meshes++;
   const g = o.geometry; const pos = g.attributes.position; const uv = g.attributes.uv;
   const m = o.matrixWorld;
+  const flip = m.determinant() < 0;
+  console.error('malha', o.name, 'det', m.determinant().toFixed(3), flip ? 'invertida' : '');
   out += `o ${o.name}\n`;
   const v = new THREE.Vector3();
   for (let i = 0; i < pos.count; i++) { v.fromBufferAttribute(pos, i).applyMatrix4(m); out += `v ${v.x} ${v.y} ${v.z}\n`; }
@@ -34,8 +36,9 @@ fbx.traverse((o) => {
     mats.set(name + '#col', mat.color ? mat.color.getHexString() : '');
     out += `usemtl ${name}\n`;
     for (let i = gr.start; i < gr.start + gr.count; i += 3) {
-      const a = idx[i] + 1 + vo, b = idx[i + 1] + 1 + vo, c = idx[i + 2] + 1 + vo;
-      const ta = uv ? idx[i] + 1 + vto : '', tb = uv ? idx[i + 1] + 1 + vto : '', tc = uv ? idx[i + 2] + 1 + vto : '';
+      const i1 = flip ? i + 2 : i + 1, i2 = flip ? i + 1 : i + 2;
+      const a = idx[i] + 1 + vo, b = idx[i1] + 1 + vo, c = idx[i2] + 1 + vo;
+      const ta = uv ? idx[i] + 1 + vto : '', tb = uv ? idx[i1] + 1 + vto : '', tc = uv ? idx[i2] + 1 + vto : '';
       out += uv ? `f ${a}/${ta} ${b}/${tb} ${c}/${tc}\n` : `f ${a} ${b} ${c}\n`;
       stats.tris++;
     }

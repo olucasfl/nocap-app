@@ -84,3 +84,25 @@ test('Duna: mapa grande (M) mostra planta com bombas e bases sem nomes repetidos
   await page.waitForTimeout(1200);
   await page.screenshot({ path: 'test-results/duna-mapa.png' });
 });
+
+test('PvP offline: arena de blocos, compra grátis e round sem bomba', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'um projeto basta');
+  test.setTimeout(300_000);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await installApi(page);
+  await page.goto('/fox-cap/counter-fox');
+  await page.getByRole('button', { name: 'Agora não' }).click({ timeout: 8000 }).catch(() => undefined);
+  await page.getByTestId('cfh-play').click();
+  await page.getByTestId('cfh-offline').click();
+  await page.getByTestId('cfx-mode-pvp').click();
+  await page.screenshot({ path: 'test-results/pvp-menu.png' });
+  await page.getByTestId('cfx-fmt-2x2').click();
+  await page.getByTestId('cfx-start').click();
+  await expect(page.getByTestId('fb-hud')).toBeVisible({ timeout: 120_000 });
+  await page.waitForTimeout(3000);
+  await page.screenshot({ path: 'test-results/pvp-spawn.png' });
+  await expect(page.getByTestId('fb-money')).toHaveText(/∞/);
+  await page.keyboard.press('KeyM');
+  await page.waitForTimeout(1000);
+  await page.screenshot({ path: 'test-results/pvp-mapa.png' });
+});
