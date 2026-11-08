@@ -372,6 +372,7 @@ export function FsMenu({
   onBack,
   backLabel = 'Voltar ao menu do Counter Fox',
   online,
+  onSuicide,
 }: {
   touch: boolean;
   onResume: () => void;
@@ -388,6 +389,8 @@ export function FsMenu({
   backLabel?: string;
   /** Na sala: sair da sala. O líder também pausa, encerra a partida e encerra a sala. */
   online?: { onLeave: () => void };
+  /** "Se matar": morre na hora (mata-mata e Bomba), depois de confirmar. */
+  onSuicide?: () => void;
 }) {
   const [view, setView] = useState<Tab>('jogo');
   const [sure, setSure] = useState<string | null>(null);
@@ -461,6 +464,7 @@ export function FsMenu({
               {online
                 ? leader && armed('end', 'Encerrar a partida', 'Toque de novo para encerrar', () => (onResume(), sendRoom('fsend')), '', 'fsm-end')
                 : armed('end', endLabel, 'Toque de novo para confirmar', onEnd, '', 'fsm-end')}
+              {onSuicide && armed('suicide', 'Se matar', 'Toque de novo para confirmar', () => (onResume(), onSuicide()), ' danger', 'fsm-suicide')}
               <button type="button" className="fsm-item" onClick={() => setView('personalizar')} data-testid="fsm-open-personalizar">
                 Personalizar
               </button>

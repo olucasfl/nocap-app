@@ -145,6 +145,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
   const shopRef = useRef(false);
   const buyRef = useRef<(item: FsShopItem) => void>(() => undefined);
   const resumeRef = useRef<() => void>(() => undefined);
+  const suicideRef = useRef<() => void>(() => undefined);
   const mini = useRef<MinimapData>({ x: 0, z: 0, yaw: 0, targets: [] });
   const snapRef = useRef(snapshot);
   snapRef.current = snapshot;
@@ -324,6 +325,9 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       }
     };
     resumeRef.current = resume;
+    suicideRef.current = () => {
+      cmdQueue.push({ t: 'suicide' });
+    };
     // a partida abre jogando (sem o menu do Esc); se o navegador negar prender o mouse, aparece "Clique na tela"
     if (mePlayer && !touch) resume();
 
@@ -653,7 +657,11 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         }
         if (e.deaf > 0) fsAudio.deafen(e.deaf);
       } else if (e.k === 'spawn') {
-        if (e.id === meId) deadSince = -1;
+        if (e.id === meId) {
+          deadSince = -1;
+          // todo nascimento (inclusive novo round da Bomba) volta com os pentes cheios; granadas, colete e capacete ficam como estão
+          loadout.refillAmmo();
+        }
       }
     };
 
@@ -1491,7 +1499,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           <GameChat enabled onClosed={(wasLocked) => wasLocked && ctl.current?.requestLock()} />
           <PauseOverlay />
           {paused && (
-            <FsMenu touch={touchUi} onResume={() => resumeRef.current()} onEnd={() => void leaveRoom()} exitTo={null} online={{ onLeave: () => void leaveRoom() }}>
+            <FsMenu touch={touchUi} onResume={() => resumeRef.current()} onEnd={() => void leaveRoom()} onSuicide={() => suicideRef.current()} exitTo={null} online={{ onLeave: () => void leaveRoom() }}>
               <button type="button" className="fsm-item" onClick={() => setInviteOpen(true)} data-sfx="start" data-testid="fsr-invite">
                 Convidar amigos
               </button>

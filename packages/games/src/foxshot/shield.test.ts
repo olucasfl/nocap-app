@@ -24,4 +24,11 @@ describe('proteção do nascimento (mata-mata)', () => {
     for (let i = 0; i < 60 * 2; i++) sim.step();
     expect(sim.selfState('a')!.shield).toBe(0);
   });
+
+  it('"Se matar" mata na hora, mesmo com a proteção do nascimento', () => {
+    const sim = mk();
+    sim.pushInput('a', { seq: 1, fwd: 0, strafe: 0, jump: false, crouch: false, walk: false, yaw: 0, pitch: 0, trigger: false, alt: false, reload: false, inspect: false, viewTick: 0, cmds: [{ t: 'suicide' }] });
+    sim.step();
+    expect(sim.selfState('a')!.alive).toBe(false);
+  });
 });

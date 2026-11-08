@@ -4,7 +4,7 @@ declare function atob(s: string): string;
  * nível do chão de cada célula (255 = parede) e as posições dos nascimentos e das bombas lidas do BSP. Daqui saem as caixas de
  * colisão, a navegação dos bots (A* com fila de prioridade), os pontos de nascimento e as marcas das bases e das bombas.
  */
-import type { FsBox } from './map';
+import { fsBoxesInRect, type FsBox } from './map';
 import { fsClearLine } from './grenades';
 import type { FsDustMark, FsSpawn } from './dust';
 
@@ -243,6 +243,20 @@ export function createGridMap(opts: { id: string; name: string; data: FsGridMapD
   // ---- nascimentos (BSP: o ângulo do CS vira o yaw da câmera) e pontos de interesse dos bots
   const mkSpawn = (p: readonly [number, number, number], zone: 'TR' | 'CT'): FsSpawn => ({ x: p[0], z: p[1], y: floorY(p[0], p[1]), yaw: p[2] + 180, zone: zone as FsSpawn['zone'] });
   const spawns: FsSpawn[] = [...d.tspawns.map((p) => mkSpawn(p, 'TR')), ...d.ctspawns.map((p) => mkSpawn(p, 'CT'))];
+  // mata-mata: nascimentos espalhados pelo mapa todo (reticulado de 5 m em chão andável onde o corpo cabe)
+  for (let z = z0 + 2.5; z < z0 + rows * cell; z += 5) {
+    for (let x = x0 + 2.5; x < x0 + cols * cell; x += 5) {
+      const c = col(x), r = row(z);
+      if (!walkable(c, r)) continue;
+      const px = cellX(c), pz = cellZ(r);
+      const py = floorY(px, pz);
+      const near = fsBoxesInRect(solids, px - 1, pz - 1, px + 1, pz + 1);
+      const blocked = near.some((b) => px + 0.35 > b.min[0] && px - 0.35 < b.max[0] && pz + 0.35 > b.min[2] && pz - 0.35 < b.max[2] && py + 1.4 > b.min[1] && py + 0.05 < b.max[1]);
+      const floored = near.some((b) => Math.abs(b.max[1] - py) < 0.35 && px > b.min[0] && px < b.max[0] && pz > b.min[2] && pz < b.max[2]);
+      if (blocked || !floored) continue;
+      spawns.push({ x: px, z: pz, y: py, yaw: Math.floor(((px * 7 + pz * 13) % 8) * 45), zone: 'open' });
+    }
+  }
   const hotspots: [number, number][] = [];
   for (let z = z0 + 6; z < z0 + rows * cell; z += 9) {
     for (let x = x0 + 6; x < x0 + cols * cell; x += 9) {

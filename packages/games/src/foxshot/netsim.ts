@@ -32,7 +32,7 @@ export const FS_NET_REWIND_MAX = 30;
 const QUEUE_MAX = 12;
 
 /** Um comando que viaja junto da entrada (trocar de arma, comprar). */
-export type FsNetCmd = { t: 'dropbomb' } | { t: 'bombslot' } | { t: 'slot'; i: number } | { t: 'nade'; k: FsGrenadeId | 'next' } | { t: 'cycle'; d: 1 | -1 } | { t: 'buy'; id: string };
+export type FsNetCmd = { t: 'dropbomb' } | { t: 'bombslot' } | { t: 'slot'; i: number } | { t: 'nade'; k: FsGrenadeId | 'next' } | { t: 'cycle'; d: 1 | -1 } | { t: 'buy'; id: string } | { t: 'suicide' };
 
 /** A entrada de um passo de 1/60 s, como o aparelho a leu. */
 export interface FsNetInput {
@@ -153,6 +153,7 @@ export function fsNetParseInput(raw: unknown): FsNetInput | null {
     for (const c of o.cmds.slice(0, 4)) {
       const q = c as Record<string, unknown>;
       if (q?.t === 'dropbomb') cmds.push({ t: 'dropbomb' });
+      else if (q?.t === 'suicide') cmds.push({ t: 'suicide' });
       else if (q?.t === 'bombslot') cmds.push({ t: 'bombslot' });
       else if (q?.t === 'slot' && finite(q.i) && q.i >= 0 && q.i <= 2) cmds.push({ t: 'slot', i: Math.floor(q.i) });
       else if (q?.t === 'nade' && (q.k === 'frag' || q.k === 'flash' || q.k === 'next')) cmds.push({ t: 'nade', k: q.k });
@@ -467,6 +468,11 @@ export class FsNetSim {
       return;
     }
     p.bombHeld = false;
+    if (c.t === 'suicide') {
+      p.shieldUntil = 0;
+      this.damage(p.id, p.id, 1000, 0, false, 'knife', false);
+      return;
+    }
     if (c.t === 'dropbomb') {
       if (this.bm?.dropBomb(p.id)) {
         this.dropPos = { x: p.mover.x, y: p.mover.y, z: p.mover.z };
@@ -739,6 +745,7 @@ export class FsNetSim {
         p.helmet = false;
         if (!p.bot) p.loadout.resetKit(side === 'ct' ? 'usp' : 'pistol');
       }
+      if (!p.bot) p.loadout.refillAmmo();
       if (p.bot) {
         let weapon: Exclude<FsWeaponId, 'knife'> = keep && p.brain ? p.brain.weapon : side === 'ct' ? 'usp' : 'pistol';
         const money = bm.players.get(p.id)!;

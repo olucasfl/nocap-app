@@ -139,6 +139,7 @@ export function fsStepMover(m: FsMover, inp: FsMoveInput, dt: number, allBoxes: 
   const h = dt / sub;
   let grounded = false;
   for (let s = 0; s < sub; s++) {
+    const px = m.x, py = m.y, pz = m.z;
     const ox = m.x;
     m.x += m.vx * h;
     if (m.x !== ox) {
@@ -192,6 +193,15 @@ export function fsStepMover(m: FsMover, inp: FsMoveInput, dt: number, allBoxes: 
       for (const b of boxes) {
         if (Math.abs(m.y - b.max[1]) < 1e-3 && m.x + FS_MOVE.radius > b.min[0] && m.x - FS_MOVE.radius < b.max[0] && m.z + FS_MOVE.radius > b.min[2] && m.z - FS_MOVE.radius < b.max[2]) grounded = true;
       }
+    }
+    // rede de segurança: se ainda sobrou dentro de algum bloco, volta ao ponto anterior (nunca fica preso na parede)
+    if (boxes.some((b) => overlaps(m, b)) && !boxes.some((b) => { const x = m.x, y = m.y, z = m.z; m.x = px; m.y = py; m.z = pz; const r = overlaps(m, b); m.x = x; m.y = y; m.z = z; return r; })) {
+      m.x = px;
+      m.y = py;
+      m.z = pz;
+      m.vx = m.vz = 0;
+      if (m.vy > 0) m.vy = 0;
+      grounded = grounded || m.vy <= 0;
     }
     m.onGround = grounded;
   }

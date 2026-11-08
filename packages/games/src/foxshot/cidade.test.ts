@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { FsNetSim, FS_NET_HZ } from './netsim';
 import { fsMapCidade } from './maps';
-import { fsNewMover, fsStepMover } from './movement';
+import { fsBodyHeight, fsNewMover, fsStepMover } from './movement';
 
 describe('mapa Cidade', () => {
   const map = fsMapCidade();
   it('tem as duas bases, as duas bombas e nascimentos em chão andável', () => {
     expect(map.marks.map((m) => m.id).sort()).toEqual(['A', 'B', 'CT', 'T']);
     expect(map.spawns.filter((s) => s.zone === 'TR').length).toBeGreaterThan(8);
+    expect(map.spawns.filter((s) => s.zone === 'open').length).toBeGreaterThan(60);
     expect(map.spawns.filter((s) => s.zone === 'CT').length).toBeGreaterThan(8);
     for (const s of map.spawns) expect(map.walkable(map.col(s.x), map.row(s.z))).toBe(true);
     expect(map.solids.length).toBeGreaterThan(100);
@@ -82,7 +83,7 @@ describe('mapa Cidade', () => {
       for (let t = 0; t < 60 * 25; t++) {
         if (t % 40 === 0) yaw += (rnd() - 0.5) * 140;
         fsStepMover(m, { fwd: 1, strafe: rnd() < 0.2 ? 1 : 0, jump: rnd() < 0.03, yaw, speedMul: 1, crouch: rnd() < 0.05 }, 1 / 60, map.solids);
-        const inside = map.solids.some((b) => m.x + 0.29 > b.min[0] && m.x - 0.29 < b.max[0] && m.z + 0.29 > b.min[2] && m.z - 0.29 < b.max[2] && m.y + 1.2 > b.min[1] && m.y + 0.02 < b.max[1]);
+        const inside = map.solids.some((b) => m.x + 0.29 > b.min[0] && m.x - 0.29 < b.max[0] && m.z + 0.29 > b.min[2] && m.z - 0.29 < b.max[2] && m.y + fsBodyHeight(m) - 0.03 > b.min[1] && m.y + 0.02 < b.max[1]);
         if (inside) { bad.push(`run ${run} t ${t}: dentro de parede em ${m.x.toFixed(2)},${m.y.toFixed(2)},${m.z.toFixed(2)}`); break; }
       }
     }

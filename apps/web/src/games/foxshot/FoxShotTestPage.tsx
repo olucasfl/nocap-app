@@ -259,6 +259,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     }
   }, []);
   const endMatchRef = useRef<() => void>(() => undefined);
+  const suicideRef = useRef<() => void>(() => undefined);
   const cycleDmRef = useRef<((d: 1 | -1) => void) | null>(null);
   const mini = useRef<MinimapData>({ x: 0, z: 0, yaw: 0, targets: [] });
   const getMini = useCallback(() => mini.current, []);
@@ -562,6 +563,14 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       setShopState(false);
       shopRef.current = false;
       controls.releaseLock();
+    };
+    suicideRef.current = () => {
+      if (!match || clock < deadUntil) return;
+      dropShield('me');
+      if (bm) {
+        if (bm.phase !== 'live' && bm.phase !== 'planted') return;
+        dealDamage('me', 'me', 1000, 0, false, 'knife', mover.x, mover.z, true);
+      } else dealDamage('me', 'me', 1000, 0, false, 'knife', mover.x, mover.z, true);
     };
     endMatchRef.current = () => {
       resetMatch();
@@ -1029,6 +1038,9 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         scene.endReload();
         scene.selectWeapon(loadout.weapon.id);
       }
+      // quem sobreviveu também volta com os pentes cheios (granadas, colete e capacete ficam)
+      loadout.refillAmmo();
+      scene.endReload();
       const msp = sp.get('me')!;
       view.yaw = msp.yaw;
       view.pitch = view.rPitch = view.rYaw = 0;
@@ -2609,6 +2621,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
               onBack={match ? undefined : () => onExit?.()}
               onResume={() => resumeRef.current()}
               onEnd={() => (match ? onExit?.() : endMatchRef.current())}
+              onSuicide={match ? () => suicideRef.current() : undefined}
             />
           )}
         </>
