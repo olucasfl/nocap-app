@@ -750,3 +750,13 @@
 .cfl-mode.on { opacity: 1; border-color: var(--cfx-ember); background: linear-gradient(90deg, rgba(255, 106, 43, 0.3), rgba(255, 106, 43, 0.06)); box-shadow: inset 5px 0 0 var(--cfx-ember); }
 .cfl-mode .cfl-sel { font-style: normal; font-size: 14px; letter-spacing: 0.2em; color: var(--cfx-amber); }
 .cfl-mode:disabled { cursor: default; }
+
+/* ---- aba Outros jogos da sala do Counter Fox: no mesmo estilo dos outros jogos (cartões escuros com recorte, destaque brasa) ---- */
+.cfl .lb-games-h { color: var(--cfx-muted); letter-spacing: 0.2em; font-family: var(--cfx-ui); }
+.cfl .lb-games-lead { color: var(--cfx-ink); }
+.cfl .lb-game { background: rgba(8, 12, 26, 0.84); border: 1px solid rgba(255, 255, 255, 0.28); border-radius: 0; color: var(--cfx-ink); box-shadow: none; clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%); font-family: var(--cfx-ui); }
+.cfl .lb-game b { font-family: var(--cfx-ui); font-weight: 700; letter-spacing: 0.12em; color: #fff; }
+.cfl .lb-game small { color: #e6ecfa; opacity: 1; }
+.cfl .lb-game span { color: #cfd8ee; opacity: 1; }
+.cfl .lb-game.is-on { background: color-mix(in srgb, var(--cfx-ember) 30%, rgba(8, 12, 26, 0.9)); border-color: var(--cfx-ember); color: #fff; }
+.cfl .lb-game:not(:disabled):not(.is-on):hover { transform: none; border-color: var(--cfx-amber); box-shadow: none; }

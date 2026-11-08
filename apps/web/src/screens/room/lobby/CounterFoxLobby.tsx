@@ -7,6 +7,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { MIN_SEARCH, fetchFriends, searchUsers } from '@/lib/friends';
 import { useAuth } from '@/lib/auth';
 import { GamePicker } from './GamePicker';
+import { CF_TO_SHELL, SHELL_TO_CF, tabMemo, type LobbyTab } from './LobbyShell';
 import { closeRoom, inviteFriend, leaveRoom, sendRoom, useMeId, useRoom, type RoomSnapshot } from '@/lib/rooms';
 import { CounterFoxLogo } from '@/games/foxshot/CounterFoxLogo';
 import { CounterFoxBackdrop } from '@/games/foxshot/CounterFoxBackdrop';
@@ -149,7 +150,15 @@ function Invite({ snapshot }: { snapshot: RoomSnapshot }) {
 export function CounterFoxLobby({ snapshot }: { snapshot: RoomSnapshot }) {
   const me = useMeId();
   const unread = useRoom((s) => s.unread);
-  const [tab, setTab] = useState<Tab>('sala');
+  // a aba aberta fica guardada por sala: ao trocar de jogo e voltar (ou o contrário) a pessoa continua na mesma aba
+  const [tab, setTabState] = useState<Tab>(() => {
+    const m = tabMemo.get(snapshot.code);
+    return (m && m in CF_TO_SHELL ? m : m && m in SHELL_TO_CF ? SHELL_TO_CF[m as LobbyTab] : 'sala') as Tab;
+  });
+  const setTab = (t: Tab) => {
+    tabMemo.set(snapshot.code, t);
+    setTabState(t);
+  };
   const [closing, setClosing] = useState(false);
   const leader = snapshot.hostId === me;
   const mine = snapshot.members.find((m) => m.id === me);

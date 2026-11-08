@@ -14,7 +14,10 @@ import './lobby.css';
 export type LobbyTab = 'members' | 'rules' | 'invite' | 'chat' | 'games';
 
 /** A aba aberta de cada sala: na sala do Fox Cap! trocar de jogo troca a tela do lobby, e a aba tem que ficar onde estava. */
-const tabMemo = new Map<string, LobbyTab>();
+export const tabMemo = new Map<string, string>();
+/** O Counter Fox usa outros nomes de aba: este mapa deixa a mesma aba aberta ao trocar de jogo. */
+export const CF_TO_SHELL: Record<string, LobbyTab> = { sala: 'members', jogadores: 'members', modo: 'rules', convidar: 'invite', chat: 'chat', jogos: 'games' };
+export const SHELL_TO_CF: Record<LobbyTab, string> = { members: 'jogadores', rules: 'modo', invite: 'convidar', chat: 'chat', games: 'jogos' };
 
 /** Uma linha só com o que falta para começar. */
 export function startHint(snapshot: RoomSnapshot): { text: string; ok: boolean } {
@@ -56,7 +59,10 @@ export function LobbyShell({
   footer: ReactNode;
 }) {
   const message = useRoom((s) => s.message);
-  const [tabRaw, setTabState] = useState<LobbyTab>(() => tabMemo.get(snapshot.code) ?? 'members');
+  const [tabRaw, setTabState] = useState<LobbyTab>(() => {
+    const m = tabMemo.get(snapshot.code);
+    return m && m in SHELL_TO_CF ? (m as LobbyTab) : (m ? CF_TO_SHELL[m] : undefined) ?? 'members';
+  });
   const setTab = (t: LobbyTab) => {
     tabMemo.set(snapshot.code, t);
     setTabState(t);
