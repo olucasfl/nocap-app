@@ -111,8 +111,9 @@ let pending: { run: SavedRun; timer: ReturnType<typeof setTimeout> } | null = nu
 
 function sendRemote(run: SavedRun) {
   if (useAuth.getState().user?.id !== run.userId) return;
-  const { userId: _u, ...body } = run;
-  void apiClient.put('/me/prefs/blocks-run', body satisfies RemoteRun).catch(() => undefined);
+  const body: RemoteRun & { userId?: string } = { ...run };
+  delete body.userId;
+  void apiClient.put('/me/prefs/blocks-run', body).catch(() => undefined);
 }
 
 /** Manda a partida para a conta, no máximo a cada poucos segundos (e ao sair da aba), sem travar o jogo. */

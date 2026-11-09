@@ -71,7 +71,8 @@ type StoredPrefs = PrefsInput & { blocksRun?: BlocksRun };
 
 /** Troca (ou apaga, com `null`) a partida guardada sem tocar nas preferências. */
 export function withBlocksRun(data: StoredPrefs | undefined, run: BlocksRun | null): StoredPrefs {
-  const { blocksRun: _old, ...rest } = data ?? {};
+  const rest: StoredPrefs = { ...(data ?? {}) };
+  delete rest.blocksRun;
   return run ? { ...rest, blocksRun: run } : rest;
 }
 
