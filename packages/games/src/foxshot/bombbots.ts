@@ -241,13 +241,6 @@ export class FsBombTactics {
     this.ctPlan = r < 0.34 ? 'hold' : r < 0.44 ? 'stackA' : r < 0.54 ? 'stackB' : r < 0.76 ? 'pushMid' : 'aggro';
     const q = w.rng();
     this.trPlan = q < 0.3 ? 'rush' : q < 0.55 ? 'split' : q < 0.78 ? 'mid' : 'slow';
-    // granadas para a execução e para a defesa (os bots "compraram" uma ou duas)
-    for (const p of w.people) {
-      const b = p.brain;
-      if (!b) continue;
-      if (b.nades.flash + b.nades.frag === 0 && w.rng() < 0.7) b.nades.flash = 1;
-      if (b.skill.sense > 0.45 && b.nades.frag === 0 && w.rng() < 0.5) b.nades.frag = 1;
-    }
     this.assign(w);
   }
 

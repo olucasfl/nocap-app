@@ -785,17 +785,32 @@ export class FsNetSim {
       if (p.bot) {
         let weapon: Exclude<FsWeaponId, 'knife'> = keep && p.brain ? p.brain.weapon : side === 'ct' ? 'usp' : 'pistol';
         const money = bm.players.get(p.id)!;
+        const nades = { frag: keep && p.brain ? p.brain.nades.frag : 0, flash: keep && p.brain ? p.brain.nades.flash : 0 };
+        const vestHelmPrice = fsShopPrice({ id: 'vesthelm', price: 1000 }, 0, false);
+        // compra como no CS: arma boa só se sobra para o colete; sem dinheiro fica na pistola (round "eco") e guarda para o próximo
         if ((weapon === 'pistol' || weapon === 'usp') && !keep) {
-          for (const w of [side === 'tr' ? 'ak' : 'm4', 'smg', 'shotgun'] as const) {
-            if (money.money >= this.priceOf(w) && bm.buy(p.id, this.priceOf(w), true)) {
+          const rifle = side === 'tr' ? 'ak' : 'm4';
+          const wish: Exclude<FsWeaponId, 'knife'>[] = p.level === 'pro' && this.rng() < 0.2 ? ['sniper', rifle, 'smg', 'shotgun'] : [rifle, 'smg', 'shotgun'];
+          for (const w of wish) {
+            const reserve = w === 'smg' || w === 'shotgun' ? 300 : vestPrice;
+            if (money.money >= this.priceOf(w) + reserve && bm.buy(p.id, this.priceOf(w), true)) {
               weapon = w;
               break;
             }
           }
         }
-        if (!p.armor && money.money >= vestPrice && bm.buy(p.id, vestPrice, true)) p.armor = 100;
+        if (!p.armor) {
+          if (money.money >= vestHelmPrice && bm.buy(p.id, vestHelmPrice, true)) {
+            p.armor = 100;
+            p.helmet = true;
+          } else if (money.money >= vestPrice && bm.buy(p.id, vestPrice, true)) p.armor = 100;
+        }
+        // alicate (CT) e granadas com o que sobrou: nada de acumular dinheiro sem gastar
+        if (side === 'ct' && money.money >= 400 + 650 && !bm.players.get(p.id)!.kit && this.rng() < 0.6 && bm.buy(p.id, 400, true)) bm.giveKit(p.id);
+        if (nades.flash === 0 && money.money >= 200 + 650 && this.rng() < 0.7 && bm.buy(p.id, 200, true)) nades.flash = 1;
+        if (nades.frag === 0 && money.money >= 300 + 650 && this.rng() < 0.5 && bm.buy(p.id, 300, true)) nades.frag = 1;
         p.brain = fsDmNew(p.id, s.x, s.z, s.yaw, weapon, this.rng, s.y, p.level, true);
-        p.brain.nades = { frag: 0, flash: 0 };
+        p.brain.nades = nades;
         p.mover = p.brain.mover;
       } else if (!keep) {
         p.loadout.refillAmmo();
