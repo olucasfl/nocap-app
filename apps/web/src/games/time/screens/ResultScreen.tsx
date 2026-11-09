@@ -163,10 +163,12 @@ export function ResultScreen({
       </div>
 
       <div className="tm-track" aria-hidden="true">
-        <div
-          className={`tm-fill${overshot ? ' over' : ''}`}
-          style={{ transform: `scaleX(${Math.min(1, shown / span)})` }}
-        />
+        <div className="tm-clip">
+          <div
+            className={`tm-fill${overshot ? ' over' : ''}`}
+            style={{ transform: `scaleX(${Math.min(1, shown / span)})` }}
+          />
+        </div>
         <div className="tm-mark" style={{ left: `${targetPct}%` }}>
           <span className="mono">ALVO</span>
         </div>
