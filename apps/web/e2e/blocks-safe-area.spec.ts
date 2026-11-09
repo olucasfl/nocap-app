@@ -24,7 +24,6 @@ for (const ph of PHONES) {
           .getByRole('button', { name: 'Agora não' })
           .click({ timeout: 1500 })
           .catch(() => undefined);
-        await page.getByTestId('menu-play').click();
         await page
           .getByRole('button', { name: mode === 'classic' ? /Block Classic/i : /Block Towers/i })
           .first()

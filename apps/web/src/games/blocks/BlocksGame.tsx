@@ -100,9 +100,7 @@ function BlocksStart({
   const navigate = useNavigate();
   const user = useAuth((st) => st.user);
   const stats = useQuery({ queryKey: ['stats'], queryFn: fetchStats, enabled: !!user });
-  const [screen, setScreen] = useState<'main' | 'play' | 'ranking' | UiMode | 'rules' | 'settings'>(
-    'main',
-  );
+  const [screen, setScreen] = useState<'main' | 'ranking' | UiMode | 'rules' | 'settings'>('main');
   const saved = useMemo(() => loadSavedRun(user?.id), [user?.id]);
   const savedInfo = useMemo(() => (saved ? summarize(saved) : null), [saved]);
 
@@ -121,10 +119,7 @@ function BlocksStart({
     return r > 0 ? `recorde ${r.toLocaleString('pt-BR')}` : 'sem recorde ainda';
   };
 
-  const back = () =>
-    screen === 'main'
-      ? void navigate({ to: '/' })
-      : setScreen(screen === 'classic' || screen === 'towers' ? 'play' : 'main');
+  const back = () => (screen === 'main' ? void navigate({ to: '/' }) : setScreen('main'));
   const mode = screen === 'classic' || screen === 'towers' ? screen : null;
   const current = MODES.find((m) => m.id === mode);
 
@@ -135,15 +130,22 @@ function BlocksStart({
       <nav className="gx-menu" aria-label="Menu do Block's" data-testid="wl-main">
         <WlBtn
           main
-          title="Jogar"
+          title="Block Classic"
           sub={
             saved && savedInfo
               ? `continuar · ${savedInfo.score.toLocaleString('pt-BR')} pts`
-              : 'Classic e Towers'
+              : recordTag('classic')
           }
-          onClick={() => setScreen('play')}
+          onClick={() => setScreen('classic')}
           sfx="start"
-          testid="menu-play"
+          testid="mode-classic"
+        />
+        <WlBtn
+          title="Block Towers"
+          sub={recordTag('towers')}
+          onClick={() => setScreen('towers')}
+          sfx="start"
+          testid="mode-towers"
         />
         <WlBtn
           title="Ranking"
@@ -176,32 +178,6 @@ function BlocksStart({
         testid="ranking-panel"
       >
         <HubRanking game="blocks" />
-      </WlPanel>
-    );
-  } else if (screen === 'play') {
-    left = (
-      <WlPanel title="Jogar" lead="Escolha o jogo de blocos." onBack={back} testid="play-panel">
-        <div className="wl-modes">
-          {MODES.map((m) => (
-            <button
-              key={m.id}
-              type="button"
-
-              className="wl-mode"
-              data-sfx="start"
-              data-testid={`mode-${m.id}`}
-              onClick={() => setScreen(m.id as 'classic' | 'towers')}
-            >
-              <b>{m.label}</b>
-              <span>
-                {m.id === 'classic' && saved && savedInfo
-                  ? `continuar · ${savedInfo.score.toLocaleString('pt-BR')} pts`
-                  : m.desc.toLowerCase()}
-              </span>
-              <small>{recordTag(m.id)}</small>
-            </button>
-          ))}
-        </div>
       </WlPanel>
     );
   } else if (mode && current) {
@@ -330,7 +306,7 @@ function BlocksStart({
       onBack={back}
       left={left}
       right={right}
-      pane={screen === 'play' || screen === 'ranking' ? 'levels' : 'show'}
+      pane={screen === 'ranking' ? 'levels' : 'show'}
     />
   );
 }
