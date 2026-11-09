@@ -78,39 +78,56 @@ export function ReflexFinal({
         </div>
       </div>
 
-      <nav className="rf-actions" aria-label="O que fazer agora">
-        {again && (
-          <button
-            type="button"
-            className="btn alt"
-            data-sfx="start"
-            onClick={again}
-            data-testid="final-again"
-          >
-            {againLabel}
-          </button>
-        )}
-        <button
-          type="button"
-          className="btn ghost"
-          data-sfx="select"
-          onClick={() => onMenu('ranking', board)}
-        >
-          Ranking
-        </button>
-        <button
-          type="button"
-          className="btn ghost"
-          data-sfx="back"
-          onClick={() => onMenu('modes')}
-          data-testid="final-modes"
-        >
-          Modos
-        </button>
-        <Link to="/" className="btn ghost">
-          Jogos
-        </Link>
-      </nav>
+      <ReflexActions again={again} againLabel={againLabel} board={board} onMenu={onMenu} />
     </section>
+  );
+}
+
+/** A barra de botões do fim de partida: jogar de novo, ranking, modos e jogos. */
+export function ReflexActions({
+  again,
+  againLabel = 'Revanche',
+  board,
+  onMenu,
+}: {
+  again?: () => void;
+  againLabel?: string;
+  board?: Board;
+  onMenu: (tab: GameTab, board?: Board) => void;
+}) {
+  return (
+    <nav className="rf-actions" aria-label="O que fazer agora">
+      {again && (
+        <button
+          type="button"
+          className="btn alt"
+          data-sfx="start"
+          onClick={again}
+          data-testid="final-again"
+        >
+          {againLabel}
+        </button>
+      )}
+      <button
+        type="button"
+        className="btn ghost"
+        data-sfx="select"
+        onClick={() => onMenu('ranking', board)}
+      >
+        Ranking
+      </button>
+      <button
+        type="button"
+        className="btn ghost"
+        data-sfx="back"
+        onClick={() => onMenu('modes')}
+        data-testid="final-modes"
+      >
+        Modos
+      </button>
+      <Link to="/" className="btn ghost">
+        Jogos
+      </Link>
+    </nav>
   );
 }

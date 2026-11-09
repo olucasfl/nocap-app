@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Link } from '@tanstack/react-router';
 import { sfx } from '@/lib/sfx';
-import { EndActions } from '@/components/EndActions';
+import { ReflexActions } from '@/components/ReflexFinal';
 import type { GameTab } from '@/components/GameTabs';
 import { MatchSummary } from '@/components/MatchSummary';
 import type { Board } from '@/lib/ranking';
@@ -47,24 +46,18 @@ function QuickFooter({
   const now = Math.round(result.score * 10);
   return (
     <>
-      <MatchSummary
-        game="time"
-        mode="quick"
-        scoreTenths={now}
-        previousBest={previousBest}
-        saved={save === 'saved'}
-        onRanking={() => onMenu('ranking', 'quick')}
-      />
-      <SaveNote className="tm-save" save={save} />
-      <div className="stack">
-        <button type="button" className="btn alt" onClick={onAgain}>
-          Outra rodada
-        </button>
-        <EndActions board="quick" onMenu={onMenu} />
-        <Link to="/" className="btn ghost">
-          Voltar aos jogos
-        </Link>
+      <div className="rf-qside">
+        <MatchSummary
+          game="time"
+          mode="quick"
+          scoreTenths={now}
+          previousBest={previousBest}
+          saved={save === 'saved'}
+          onRanking={() => onMenu('ranking', 'quick')}
+        />
+        <SaveNote className="tm-save" save={save} />
       </div>
+      <ReflexActions again={onAgain} againLabel="Outra rodada" board="quick" onMenu={onMenu} />
     </>
   );
 }
@@ -160,7 +153,9 @@ export function ResultScreen({
   }, []);
 
   return (
-    <section className={`screen tm-result${done ? ` done gr-${grade.id}` : ''}`}>
+    <section
+      className={`screen tm-result${done ? ` done gr-${grade.id}` : ''}${done && run.mode === 'quick' ? ' rf-quick' : ''}`}
+    >
       {done && <GradeFx id={grade.id} />}
       <div className="tm-slam">
         <div className="mono tm-label">ALVO</div>

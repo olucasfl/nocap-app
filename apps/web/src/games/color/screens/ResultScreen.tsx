@@ -88,7 +88,7 @@ export function ResultScreen({ result, isLast, onNext, footer, extra }: Props) {
   ];
 
   return (
-    <section className={`screen${shake ? ' cg-shake' : ''}`}>
+    <section className={`screen${shake ? ' cg-shake' : ''}${done && footer ? ' rf-quick' : ''}`}>
       {done && <GradeFx id={grade.id} />}
       <div className="cg-duo">
         <div className="cg-sw a" style={{ background: toHex(target) }}>

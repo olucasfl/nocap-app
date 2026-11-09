@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
-import { Link } from '@tanstack/react-router';
-import { EndActions } from '@/components/EndActions';
+import { ReflexActions } from '@/components/ReflexFinal';
 import type { GameTab } from '@/components/GameTabs';
 import { MatchSummary } from '@/components/MatchSummary';
 import type { Board } from '@/lib/ranking';
@@ -29,24 +28,18 @@ export function QuickActions({ run, result, previousBest, onMenu, onAgain }: Pro
   const now = Math.round(result.score * 10);
   return (
     <>
-      <MatchSummary
-        game="color"
-        mode="quick"
-        scoreTenths={now}
-        previousBest={previousBest}
-        saved={save === 'saved'}
-        onRanking={() => onMenu('ranking', 'quick')}
-      />
-      <SaveNote className="cg-save" save={save} />
-      <div className="stack">
-        <button type="button" className="btn alt" onClick={onAgain}>
-          Outra rodada
-        </button>
-        <EndActions board="quick" onMenu={onMenu} />
-        <Link to="/" className="btn ghost">
-          Voltar aos jogos
-        </Link>
+      <div className="rf-qside">
+        <MatchSummary
+          game="color"
+          mode="quick"
+          scoreTenths={now}
+          previousBest={previousBest}
+          saved={save === 'saved'}
+          onRanking={() => onMenu('ranking', 'quick')}
+        />
+        <SaveNote className="cg-save" save={save} />
       </div>
+      <ReflexActions again={onAgain} againLabel="Outra rodada" board="quick" onMenu={onMenu} />
     </>
   );
 }
