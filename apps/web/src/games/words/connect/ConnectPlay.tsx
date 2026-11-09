@@ -254,16 +254,26 @@ export function ConnectPlay() {
 
   if (!levels || (level && !order)) {
     return (
-      <WordsShell title={`Fase ${num}`} back="/words/connect" accent="blue" className="cx-theme">
+      <WordsShell
+        title={`Fase ${num}`}
+        back="/words/connect/fases"
+        accent="blue"
+        className="cx-theme"
+      >
         <GridLoader />
       </WordsShell>
     );
   }
   if (!level || !puzzle || !state) {
     return (
-      <WordsShell title="Connect Word's" back="/words/connect" accent="blue" className="cx-theme">
+      <WordsShell
+        title="Connect Word's"
+        back="/words/connect/fases"
+        accent="blue"
+        className="cx-theme"
+      >
         <p className="wd-error">Essa fase não existe.</p>
-        <Link to="/words/connect" className="btn alt">
+        <Link to="/words/connect/fases" className="btn alt">
           Ver as fases
         </Link>
       </WordsShell>
@@ -286,7 +296,7 @@ export function ConnectPlay() {
   return (
     <WordsShell
       title={`Fase ${num}`}
-      back="/words/connect"
+      back="/words/connect/fases"
       accent="blue"
       fit
       className="cx-theme"
@@ -481,7 +491,7 @@ export function ConnectPlay() {
                   Próxima fase
                 </Link>
               )}
-              <Link to="/words/connect" className="btn ghost" data-testid="back-catalog">
+              <Link to="/words/connect/fases" className="btn ghost" data-testid="back-catalog">
                 Ver todas as fases
               </Link>
             </ResultSheet>

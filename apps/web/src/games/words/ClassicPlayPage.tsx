@@ -16,7 +16,7 @@ export function ClassicPlayPage() {
           <Link to="/ranking" search={{ jogo: 'wclassic', modo: 'daily' }} className="btn alt">
             Ver ranking
           </Link>
-          <Link to="/words/classic" className="btn ghost">
+          <Link to="/words/classic/daily" className="btn ghost">
             Voltar aos modos
           </Link>
         </>

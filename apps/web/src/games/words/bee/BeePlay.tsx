@@ -287,16 +287,21 @@ export function BeePlay() {
 
   if (!levels) {
     return (
-      <WordsShell title={`Fase ${num}`} back="/words/bee" accent="yellow" className="bee-theme">
+      <WordsShell
+        title={`Fase ${num}`}
+        back="/words/bee/fases"
+        accent="yellow"
+        className="bee-theme"
+      >
         <HexLoader />
       </WordsShell>
     );
   }
   if (!level || !puzzle) {
     return (
-      <WordsShell title="Bee Word's" back="/words/bee" accent="yellow" className="bee-theme">
+      <WordsShell title="Bee Word's" back="/words/bee/fases" accent="yellow" className="bee-theme">
         <p className="wd-error">Essa fase não existe.</p>
-        <Link to="/words/bee" className="btn alt">
+        <Link to="/words/bee/fases" className="btn alt">
           Ver as fases
         </Link>
       </WordsShell>
@@ -333,7 +338,7 @@ export function BeePlay() {
   return (
     <WordsShell
       title={`Fase ${num}`}
-      back="/words/bee"
+      back="/words/bee/fases"
       accent="yellow"
       fit
       className={`bee-theme${tab !== 'words' ? ' info' : ''}`}
@@ -497,7 +502,7 @@ export function BeePlay() {
               Próxima fase
             </Link>
           ) : null}
-          <Link to="/words/bee" className="btn ghost" data-testid="back-catalog">
+          <Link to="/words/bee/fases" className="btn ghost" data-testid="back-catalog">
             Ver todas as fases
           </Link>
         </ResultSheet>

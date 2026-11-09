@@ -65,4 +65,6 @@
 | 063 | [Counter Fox: a nova Duna (modelo USDZ da Dust 2)](063-counter-fox-mapa-duna-novo.md) | 10 | em andamento (08/11/2026): virou a Duna, a antiga foi apagada; carregamento sob demanda com tela própria; falta jogar e ajustar |
 | 064 | [Counter Fox: granada de fumaça, 1 granada de cada, C4 junto das armas](064-counter-fox-granada-de-fumaca.md) | 10 | em andamento (09/11/2026): fumaça (regras do CS), limite de 1, C4 no HUD e testes prontos; falta jogar e ajustar |
 
+| 065 | [Telas próprias dos jogos do Word's](065-words-telas-proprias.md) | 7 | implementada (09/11/2026): Classic (Daily, 1/2/4 palavras), Connect e Bee com tela no estilo do Fox Cap!; falta ver no celular |
+
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.

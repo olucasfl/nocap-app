@@ -100,6 +100,7 @@ Ainda sem prioridade definida contra as salas do Ecooo. Cada item tem a sua spec
 
 - [x] **Word's** (grupo) e a **base de palavras em português** (coleção MIT `fserb/pt-br` + revisão humana): `specs/032-words-grupo-e-base.md`
 - [~] **Classic Word's** (estilo Termo: 1, 2 e 4 palavras e o Daily; API, tela de jogo e páginas prontas, faltam imagem de compartilhar, sons, tela do Daily com abas e jogar ao vivo): `specs/033-classic-words.md`
+- [x] **Telas próprias do Word's** (Classic, Connect e Bee no estilo do Fox Cap!): `specs/065-words-telas-proprias.md`
 - [x] **Connect Word's** (offline, 130 fases por dificuldade, progresso salvo no aparelho; sem Daily nem ranking): `specs/034-connect-words.md`
 - [x] **Bee Word's** (offline, 200 fases por dificuldade, progresso salvo no aparelho; sem Daily nem ranking): `specs/035-bee-words.md`
 - Ordem sugerida de construção: base de palavras → Classic → Bee → Connect (o Connect depende de **conteúdo escrito à mão**, a parte mais lenta; dá para produzir os puzzles em paralelo).

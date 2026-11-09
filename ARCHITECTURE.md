@@ -137,6 +137,7 @@ Etapa 1, passos 1 a 3 concluídos (lógica, API e UI da Cor). Próximo: PWA (pas
 
 - **Classic**: o Daily é servidor autoritativo; os modos de 1, 2 e 4 palavras são **fases offline** (spec 036: 400/150/66 fases, `classic-levels.json`, palavras fora do Daily, progresso no aparelho). Daily: servidor autoritativo (`word_runs`, `WordsService`); uma jogada = um `UPDATE ... array_append ... RETURNING`. O app baixa `GET /words/wclassic/accepted` para recusar palavras inválidas na hora; cor por `scoreGuess` com `colorKey` (ç é letra própria). O fim mostra tentativas, não nota.
 - **Progresso na conta** (spec 037): o progresso das fases (Bee, Connect e Classic) fica no aparelho e é sincronizado com a tabela `words_progress` (`/me/words-progress`), juntando sempre pelo mais adiantado: nunca se perde.
+- **Telas próprias** (spec 065): cada jogo abre uma tela no estilo do Fox Cap! (`games/words/landing/WordsLanding`, `ClassicLanding`, `ConnectLanding`, `BeeLanding`); os catálogos antigos viraram atalhos que abrem a tela já no submenu certo (`/words/classic/daily`, `/words/classic/fases/$modo`, `/words/bee|connect/fases`).
 - **Bee e Connect**: offline, só com fases (`apps/web/src/games/words/levels/*.json`, geradas por `apps/api/scripts/words/exportar-fases.mjs` em 4 faixas), progresso no aparelho (`nocap-words-bee-v2`, `nocap-words-connect-v2`). Connect não tem vidas: conta erros, tem 1 dica e desistência com classificação.
 
 ## 12b. Aperta! (clicker, spec 038)

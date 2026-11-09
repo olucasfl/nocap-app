@@ -179,9 +179,20 @@ const foxCapRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/fox-cap',
   // `jogo` abre a tela própria daquele jogo (o "hub"); `tela=amigos` já abre o "Jogar com amigos" dele
-  validateSearch: (search: Record<string, unknown>): { aba?: 'amigos'; jogo?: 'atravessa' | 'bola' | 'pingpong' | 'desmorona'; tela?: 'amigos' } => ({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): {
+    aba?: 'amigos';
+    jogo?: 'atravessa' | 'bola' | 'pingpong' | 'desmorona';
+    tela?: 'amigos';
+  } => ({
     ...(search.aba === 'amigos' ? { aba: 'amigos' as const } : {}),
-    ...(search.jogo === 'atravessa' || search.jogo === 'bola' || search.jogo === 'pingpong' || search.jogo === 'desmorona' ? { jogo: search.jogo } : {}),
+    ...(search.jogo === 'atravessa' ||
+    search.jogo === 'bola' ||
+    search.jogo === 'pingpong' ||
+    search.jogo === 'desmorona'
+      ? { jogo: search.jogo }
+      : {}),
     ...(search.tela === 'amigos' ? { tela: 'amigos' as const } : {}),
   }),
   component: lazyRouteComponent(() => import('@/games/desmorona/FoxCapPage'), 'FoxCapPage'),
@@ -281,6 +292,11 @@ const wordsBeeRoute = createRoute({
   path: '/words/bee',
   component: lazyRouteComponent(() => import('@/games/words/bee/BeeCatalog'), 'BeeCatalog'),
 });
+const wordsBeeLevelsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/words/bee/fases',
+  component: lazyRouteComponent(() => import('@/games/words/bee/BeeCatalog'), 'BeeLevels'),
+});
 const wordsBeeLevelRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/words/bee/fase/$n',
@@ -293,6 +309,19 @@ const wordsConnectRoute = createRoute({
     () => import('@/games/words/connect/ConnectCatalog'),
     'ConnectCatalog',
   ),
+});
+const wordsConnectLevelsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/words/connect/fases',
+  component: lazyRouteComponent(
+    () => import('@/games/words/connect/ConnectCatalog'),
+    'ConnectLevels',
+  ),
+});
+const wordsClassicDailyRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/words/classic/daily',
+  component: lazyRouteComponent(() => import('@/games/words/ClassicPage'), 'ClassicDaily'),
 });
 const wordsConnectLevelRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -319,8 +348,11 @@ const routeTree = rootRoute.addChildren([
   wordsClassicCatalogRoute,
   wordsClassicLevelRoute,
   wordsBeeRoute,
+  wordsBeeLevelsRoute,
   wordsBeeLevelRoute,
   wordsConnectRoute,
+  wordsConnectLevelsRoute,
+  wordsClassicDailyRoute,
   wordsConnectLevelRoute,
   loginRoute,
   registerRoute,

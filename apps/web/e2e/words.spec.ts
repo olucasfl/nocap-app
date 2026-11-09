@@ -89,12 +89,24 @@ test.describe("Hub do Word's", () => {
     await expect(page).toHaveURL('/');
     await page.goto('/words/bee/fase/1');
     await page.getByRole('link', { name: /voltar/i }).click();
-    await expect(page).toHaveURL('/words/bee');
-    await page.getByRole('link', { name: /voltar/i }).click();
+    await expect(page).toHaveURL('/words/bee/fases');
+    await expect(page.getByTestId('wl-levels')).toBeVisible();
+    // dentro da tela do jogo: Voltar leva ao menu e Voltar aos Word's leva à página dos jogos
+    await page.getByTestId('wl-back').click();
+    await expect(page.getByTestId('wl-main')).toBeVisible();
+    await page.getByTestId('wl-exit').click();
     await expect(page).toHaveURL('/words');
     await page.goto('/words/connect/fase/1');
     await page.getByRole('link', { name: /voltar/i }).click();
-    await expect(page).toHaveURL('/words/connect');
+    await expect(page).toHaveURL('/words/connect/fases');
+    await expect(page.getByTestId('wl-levels')).toBeVisible();
+    await page.goto('/words/classic/jogar?tipo=daily&modo=classic');
+    await page
+      .getByRole('link', { name: /voltar/i })
+      .first()
+      .click();
+    await expect(page).toHaveURL('/words/classic/daily');
+    await expect(page.getByTestId('daily-card')).toBeVisible();
   });
 
   test('cada cartão abre a página do jogo', async ({ page }) => {
@@ -128,18 +140,30 @@ test.describe("Classic Word's", () => {
 
   test('a página tem o Daily e os 3 modos de fases', async ({ page }) => {
     await page.goto('/words/classic');
-    await expect(page.getByTestId('play-daily')).toContainText('Jogar o Daily');
+    await expect(page.getByTestId('menu-daily')).toContainText('ainda não jogou');
     for (const [m, label, total] of [
-      ['classic', '1 palavra', 400],
-      ['dueto', '2 palavras', 150],
-      ['quarteto', '4 palavras', 66],
+      ['classic', '1 Palavra', 400],
+      ['dueto', '2 Palavras', 150],
+      ['quarteto', '4 Palavras', 66],
     ] as const) {
       await expect(page.getByTestId(`mode-${m}`)).toBeVisible();
-      await expect(page.getByTestId(`mode-card-${m}`)).toContainText(label);
-      await expect(page.getByTestId(`mode-card-${m}`)).toContainText(`${total} fases`);
+      await expect(page.getByTestId(`mode-${m}`)).toContainText(label);
+      await expect(page.getByTestId(`mode-${m}`)).toContainText(`${total} fases`);
     }
-    await page.getByTestId('tab-regras').click();
+    // Daily: ainda não jogado, com o botão de jogar e o tabuleiro vazio ao lado
+    await page.getByTestId('menu-daily').click();
+    await expect(page.getByTestId('daily-card')).toContainText('Ainda não jogou hoje');
+    await expect(page.getByTestId('play-daily')).toContainText('Jogar o Daily');
+    await expect(page.getByTestId('daily-board')).toBeVisible();
+    await page.getByTestId('wl-back').click();
+    // Como jogar e Configurações (com o som)
+    await page.getByTestId('menu-rules').click();
     await expect(page.getByText('Tem a letra, mas em outro lugar')).toBeVisible();
+    await page.getByTestId('wl-back').click();
+    await page.getByTestId('menu-settings').click();
+    await expect(page.getByTestId('wl-settings')).toContainText('Som do jogo');
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('wl-main')).toBeVisible();
     await noOverflow(page);
   });
 
@@ -147,7 +171,7 @@ test.describe("Classic Word's", () => {
     const errors = watch(page);
     await page.goto('/words/classic');
     await page.getByTestId('mode-dueto').click();
-    await expect(page).toHaveURL(/\/words\/classic\/fases\/dueto$/);
+    await expect(page.getByTestId('mode-panel-dueto')).toBeVisible();
     await expect(page.locator('[data-testid^="level-"]')).toHaveCount(150);
     await expect(page.getByTestId('level-1')).toHaveAttribute('data-status', 'new');
     await page.getByTestId('filter-done').click();
@@ -289,14 +313,19 @@ test.describe("Classic Word's", () => {
 
   test('Daily: jogar, terminar e ver "já jogou" na página', async ({ page }) => {
     await page.goto('/words/classic');
+    await page.getByTestId('menu-daily').click();
     await page.getByTestId('play-daily').click();
     await expect(page.getByTestId('board-0')).toBeVisible();
     await type(page, 'amigo');
     await page.keyboard.press('Enter');
     await expect(page.getByTestId('end-title')).toBeVisible({ timeout: 8000 });
     await page.goto('/words/classic');
+    await expect(page.getByTestId('menu-daily')).toContainText('concluído hoje');
+    await page.getByTestId('menu-daily').click();
     await expect(page.getByTestId('daily-card')).toContainText('Concluído hoje');
     await expect(page.getByTestId('play-daily')).toHaveCount(0);
+    await expect(page.getByTestId('daily-word')).toBeVisible();
+    await expect(page.getByTestId('daily-rows')).toBeVisible();
   });
 
   test('erro do servidor ao abrir o Daily mostra mensagem', async ({ page }) => {
@@ -320,12 +349,14 @@ test.describe("Bee Word's (fases offline)", () => {
     const errors = watch(page);
     await page.goto('/words/bee');
     await expect(page.getByTestId('bee-hero')).toContainText('200 favos');
+    await page.getByTestId('menu-levels').click();
     await expect(page.locator('[data-testid^="level-"]')).toHaveCount(200);
     await expect(page.getByTestId('level-1')).toHaveAttribute('data-status', 'new');
     await page.getByTestId('filter-done').click();
     await expect(page.locator('[data-testid^="level-"]')).toHaveCount(0);
     await page.getByTestId('filter-all').click();
-    await page.getByTestId('tab-regras').click();
+    await page.getByTestId('wl-back').click();
+    await page.getByTestId('menu-rules').click();
     await expect(page.getByText('Toda palavra tem 4 letras ou mais')).toBeVisible();
     await noOverflow(page);
     expect(errors).toEqual([]);
@@ -335,7 +366,7 @@ test.describe("Bee Word's (fases offline)", () => {
     page,
   }) => {
     const errors = watch(page);
-    await page.goto('/words/bee');
+    await page.goto('/words/bee/fases');
     await page.getByTestId('level-1').click();
     await expect(page).toHaveURL(/\/words\/bee\/fase\/1$/);
     await expect(page.getByTestId('hex-center')).toBeVisible();
@@ -352,7 +383,7 @@ test.describe("Bee Word's (fases offline)", () => {
     await page.getByTestId('submit').click();
     await expect(page.getByText('Já achada')).toBeVisible();
     // sair e voltar: a fase continua de onde parou
-    await page.goto('/words/bee');
+    await page.goto('/words/bee/fases');
     await expect(page.getByTestId('level-1')).toHaveAttribute('data-status', 'open');
     await expect(page.getByTestId('continue')).toContainText('Continuar');
     await page.getByTestId('level-1').click();
@@ -424,9 +455,11 @@ test.describe("Connect Word's (fases offline)", () => {
     const errors = watch(page);
     await page.goto('/words/connect');
     await expect(page.getByTestId('connect-hero')).toContainText('166 puzzles');
+    await page.getByTestId('menu-levels').click();
     await expect(page.locator('[data-testid^="level-"]')).toHaveCount(166);
     await expect(page.getByTestId('level-1')).toHaveAttribute('data-status', 'new');
-    await page.getByTestId('tab-regras').click();
+    await page.getByTestId('wl-back').click();
+    await page.getByTestId('menu-rules').click();
     await expect(page.getByText('Não há vidas')).toBeVisible();
     await noOverflow(page);
     expect(errors).toEqual([]);
@@ -464,7 +497,7 @@ test.describe("Connect Word's (fases offline)", () => {
     await expect(page.getByText('Você já tentou esse grupo')).toBeVisible();
     await expect(page.getByTestId('error-count')).toHaveText('1');
     // sair e voltar: continua de onde parou
-    await page.goto('/words/connect');
+    await page.goto('/words/connect/fases');
     await expect(page.getByTestId('level-1')).toHaveAttribute('data-status', 'open');
     await page.getByTestId('level-1').click();
     await expect(page.locator('.cx-word')).toHaveCount(12);
@@ -542,98 +575,6 @@ test.describe("Connect Word's (fases offline)", () => {
 
   test('fase que não existe mostra aviso', async ({ page }) => {
     await page.goto('/words/bee/fase/9999');
-    await expect(page.getByText('Essa fase não existe')).toBeVisible();
-  });
-});
-
-test.describe("Connect Word's (fases offline)", () => {
-  const first = CONNECT[0]!;
-  const word = (page: Page, w: string) => page.locator(`.cx-word[data-word="${w}"]`);
-  const pick = async (page: Page, words: string[]) => {
-    for (const w of words) await word(page, w).click();
-  };
-  const others = first.g.flatMap((g) => g.w);
-
-  test('o catálogo mostra todas as fases ordenadas e com status', async ({ page }) => {
-    const errors = watch(page);
-    await page.goto('/words/connect');
-    await expect(page.getByTestId('connect-hero')).toContainText('166 puzzles');
-    await expect(page.locator('[data-testid^="level-"]')).toHaveCount(166);
-    await expect(page.getByTestId('level-1')).toHaveAttribute('data-status', 'new');
-    await page.getByTestId('tab-regras').click();
-    await expect(page.getByText('Não há vidas')).toBeVisible();
-    await noOverflow(page);
-    expect(errors).toEqual([]);
-  });
-
-  test('não há vidas: a tela mostra o contador de erros e o progresso', async ({ page }) => {
-    const errors = watch(page);
-    await page.goto('/words/connect/fase/1');
-    await expect(page.getByTestId('errors')).toContainText('Erros');
-    await expect(page.getByTestId('error-count')).toHaveText('0');
-    await expect(page.getByTestId('heart')).toHaveCount(0);
-    await expect(page.getByText('0 de 4 grupos')).toBeVisible();
-    await expect(page.locator('.cx-word')).toHaveCount(16);
-    await noOverflow(page);
-    expect(errors).toEqual([]);
-  });
-
-  test('acertar trava o grupo; "falta uma" e erro somam erro; repetido não custa; tudo salvo', async ({
-    page,
-  }) => {
-    await page.goto('/words/connect/fase/1');
-    const [g1, g2, g3] = first.g;
-    await pick(page, g1!.w);
-    await page.getByTestId('submit').click();
-    await expect(page.getByTestId(`band-${g1!.l}`)).toContainText(g1!.t);
-    await expect(page.locator('.cx-word')).toHaveCount(12);
-    // 3 do grupo 2 + 1 do grupo 3 = falta uma
-    const oneAway = [...g2!.w.slice(0, 3), g3!.w[0]!];
-    await pick(page, oneAway);
-    await page.getByTestId('submit').click();
-    await expect(page.getByText('Falta uma!')).toBeVisible();
-    await expect(page.getByTestId('error-count')).toHaveText('1');
-    await pick(page, oneAway);
-    await page.getByTestId('submit').click();
-    await expect(page.getByText('Você já tentou esse grupo')).toBeVisible();
-    await expect(page.getByTestId('error-count')).toHaveText('1');
-    // sair e voltar: continua de onde parou
-    await page.goto('/words/connect');
-    await expect(page.getByTestId('level-1')).toHaveAttribute('data-status', 'open');
-    await page.getByTestId('level-1').click();
-    await expect(page.locator('.cx-word')).toHaveCount(12);
-    await expect(page.getByTestId('error-count')).toHaveText('1');
-    await page.reload();
-    await expect(page.getByTestId('error-count')).toHaveText('1');
-  });
-
-  test('o botão Enviar só liga com 4 palavras e Limpar desmarca', async ({ page }) => {
-    await page.goto('/words/connect/fase/1');
-    const submit = page.getByTestId('submit');
-    await expect(submit).toBeDisabled();
-    await pick(page, others.slice(0, 2));
-    await expect(submit).toContainText('2/4');
-    await page.getByTestId('clear').click();
-    await expect(submit).toContainText('0/4');
-    await pick(page, others.slice(0, 4));
-    await expect(submit).toBeEnabled();
-  });
-
-  test('vencer os 4 grupos conclui a fase e libera a próxima', async ({ page }) => {
-    await page.goto('/words/connect/fase/1');
-    for (const g of first.g) {
-      await pick(page, g.w);
-      await page.getByTestId('submit').click();
-      await expect(page.getByTestId(`band-${g.l}`)).toBeVisible();
-    }
-    await expect(page.getByText('Perfeito')).toBeVisible();
-    await expect(page.getByTestId('next')).toBeVisible();
-    await page.getByTestId('back-catalog').click();
-    await expect(page.getByTestId('level-1')).toHaveAttribute('data-status', 'done');
-  });
-
-  test('fase que não existe mostra aviso', async ({ page }) => {
-    await page.goto('/words/connect/fase/9999');
     await expect(page.getByText('Essa fase não existe')).toBeVisible();
   });
 });

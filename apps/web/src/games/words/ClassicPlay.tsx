@@ -20,7 +20,7 @@ export function ClassicPlay({
   mode,
   engine,
   title: fixedTitle,
-  back = '/words/classic',
+  back = '/words/classic/daily',
   loading,
   endActions,
 }: {
