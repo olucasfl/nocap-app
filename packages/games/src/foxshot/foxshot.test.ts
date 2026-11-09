@@ -415,7 +415,7 @@ describe('três armas: primária, secundária e faca', () => {
   it('a loja tem 5 colunas e só itens reais podem ser comprados', () => {
     expect(FS_SHOP).toHaveLength(5);
     const real = FS_SHOP.flatMap((c) => c.items).filter((i) => !i.soon);
-    expect(real.map((i) => i.id).sort()).toEqual(['ak', 'flash', 'frag', 'm4', 'pistol', 'shotgun', 'smg', 'sniper', 'usp', 'vest', 'vesthelm']);
+    expect(real.map((i) => i.id).sort()).toEqual(['ak', 'flash', 'frag', 'm4', 'pistol', 'shotgun', 'smg', 'smoke', 'sniper', 'usp', 'vest', 'vesthelm']);
   });
 });
 
@@ -903,9 +903,8 @@ describe('granadas', () => {
     expect(g.z).toBeGreaterThan(-4.1); // não atravessou a parede
     expect(g.bounces).toBeGreaterThan(0);
   });
-  it('inventário: máximo de 2 de cada, tecla 4 passa pela primeira, pela outra e volta à arma', () => {
+  it('inventário: máximo de 1 de cada, tecla 4 passa pela primeira, pela outra e volta à arma', () => {
     const l = new FsLoadout('ak', 'pistol');
-    expect(fsBuy(l, 'frag').ok).toBe(true);
     expect(fsBuy(l, 'frag').ok).toBe(true);
     expect(fsBuy(l, 'frag')).toMatchObject({ ok: false, reason: 'owned' });
     expect(fsBuy(l, 'flash').ok).toBe(true);
@@ -924,8 +923,8 @@ describe('granadas', () => {
   it('apertar o botão esquerdo tira o pino e soltar lança longe; o direito lança perto; sem granada sobrando volta à arma', () => {
     const l = new FsLoadout('ak', 'pistol');
     fsBuy(l, 'frag');
-    fsBuy(l, 'frag');
     fsBuy(l, 'flash');
+    fsBuy(l, 'smoke');
     l.selectGrenade('frag');
     l.drawT = 0;
     const run = (trigger: boolean, alt: boolean, secs: number) => {
@@ -943,13 +942,14 @@ describe('granadas', () => {
     const far = run(false, false, 0.05);
     expect(far.th[0]).toEqual({ power: 1, style: 'far' });
     run(false, false, 0.7); // acabou o arremesso
-    // direito: perto
-    expect(l.held).toBe('frag');
+    // acabou a explosiva (só se leva 1): passa para a de luz; direito: perto
+    expect(l.held).toBe('flash');
+    l.drawT = 0;
     run(false, true, 0.1);
     expect(run(false, false, 0.05).th[0]).toEqual({ power: 0.1, style: 'near' });
     run(false, false, 0.7);
-    // acabaram as explosivas: passa para a de luz; os dois botões = média distância
-    expect(l.held).toBe('flash');
+    // acabou a de luz: passa para a de fumaça; os dois botões = média distância
+    expect(l.held).toBe('smoke');
     l.drawT = 0;
     run(true, false, 0.05);
     run(true, true, 0.1);

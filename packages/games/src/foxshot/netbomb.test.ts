@@ -99,7 +99,7 @@ describe('modo Bomba na simulação do servidor', () => {
     let sneaked = false;
     let planted = false;
     let ticks = 0;
-    while (!sim.over && ticks < FS_NET_HZ * 60 * 6 && !planted) {
+    while (!sim.over && ticks < FS_NET_HZ * 60 * 6 && !(planted && sneaked)) {
       sim.step();
       ticks++;
       if (sim.bm!.phase === 'live') for (const p of sim.players.values()) if (p.brain?.sneak) sneaked = true;

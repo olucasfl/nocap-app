@@ -63,5 +63,6 @@
 | 059 | [Counter Fox: modo Bomba (rounds, times, economia)](059-counter-fox-modo-bomba.md) | 10 | rascunho (07/11/2026): pesquisa e plano; aguarda respostas |
 | 062 | [Counter Fox: modo PvP (times, sem bomba, dinheiro infinito)](062-counter-fox-modo-pvp.md) | 10 | em andamento (08/11/2026): motor, mapa de blocos, bots, sala, menu, HUD e testes prontos; falta jogar online e ajustar |
 | 063 | [Counter Fox: a nova Duna (modelo USDZ da Dust 2)](063-counter-fox-mapa-duna-novo.md) | 10 | em andamento (08/11/2026): virou a Duna, a antiga foi apagada; carregamento sob demanda com tela própria; falta jogar e ajustar |
+| 064 | [Counter Fox: granada de fumaça, 1 granada de cada, C4 junto das armas](064-counter-fox-granada-de-fumaca.md) | 10 | em andamento (09/11/2026): fumaça (regras do CS), limite de 1, C4 no HUD e testes prontos; falta jogar e ajustar |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.
