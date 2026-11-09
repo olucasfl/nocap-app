@@ -1608,3 +1608,11 @@
     font-size: 14px;
   }
 }
+
+/* botões de modo com cor própria: o texto claro no azul */
+.gx-btn.main[style*='#4a7bff'] {
+  color: #fff;
+}
+.gx-btn.main[style*='#4a7bff'] span {
+  color: rgba(255, 255, 255, 0.85);
+}

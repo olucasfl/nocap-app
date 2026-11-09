@@ -197,9 +197,12 @@ export function WlBtn({
   onClick,
   main = false,
   danger = false,
+  accent,
   testid,
   sfx = 'select',
 }: {
+  /** Cor própria do botão (um modo de jogo com a sua cor). */
+  accent?: string;
   title: string;
   sub?: string;
   onClick: () => void;
@@ -215,6 +218,7 @@ export function WlBtn({
       onClick={onClick}
       data-sfx={sfx}
       data-testid={testid}
+      style={accent ? ({ '--gl-a': accent } as CSSProperties) : undefined}
     >
       <b>{title}</b>
       {sub && <span>{sub}</span>}

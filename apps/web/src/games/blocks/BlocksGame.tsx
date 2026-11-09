@@ -130,6 +130,7 @@ function BlocksStart({
       <nav className="gx-menu" aria-label="Menu do Block's" data-testid="wl-main">
         <WlBtn
           main
+          accent="#ff6a2b"
           title="Block Classic"
           sub={
             saved && savedInfo
@@ -141,6 +142,8 @@ function BlocksStart({
           testid="mode-classic"
         />
         <WlBtn
+          main
+          accent="#4a7bff"
           title="Block Towers"
           sub={recordTag('towers')}
           onClick={() => setScreen('towers')}
