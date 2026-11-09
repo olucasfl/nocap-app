@@ -1,6 +1,9 @@
 import { useEffect, useId, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Backdrop, Emblem, type ThemeGame } from '@/components/GameLandingArt';
+import { Backdrop as WordsBackdrop, Emblem as WordsEmblem, type WordsGame } from '@/games/words/landing/WordsLandingArt';
+import { WORDS_LANDING } from '@/games/words/landing/WordsLanding';
+import '@/games/words/landing/words-landing.css';
 import type { RoomSnapshot } from '@/lib/rooms';
 import { useRoom } from '@/lib/rooms';
 import { bolaHint } from './bola-hint';
@@ -69,7 +72,8 @@ export function LobbyShell({
   };
   const uid = useId();
   const hint = startHint(snapshot);
-  const theme = GAME_LANDING[snapshot.game as LandingGame];
+  const wordsTheme = WORDS_ROOM[snapshot.game] ? WORDS_LANDING[WORDS_ROOM[snapshot.game]!] : undefined;
+  const theme = GAME_LANDING[snapshot.game as LandingGame] ?? wordsTheme;
   const noGame = snapshot.flex && snapshot.game === 'foxcap';
   // sem jogo não existe a aba Configurar: cai em Jogadores
   const tab: LobbyTab = noGame && tabRaw === 'rules' ? 'members' : tabRaw;
@@ -206,12 +210,19 @@ export function LobbyShell({
     </section>
   );
   // a moldura temática (cenário, símbolo, fontes) é só dos jogos do Fox Cap!; Já Deu, Blocks, Mesmíssima, Echo etc. mantêm a sala deles
-  if (!FOX_CAP_GAMES.includes(snapshot.game) && !snapshot.flex) return content;
+  if (!FOX_CAP_GAMES.includes(snapshot.game) && !snapshot.flex && !wordsTheme) return content;
   return createPortal(
-    <LobbyFrame game={(snapshot.game in GAME_LANDING ? snapshot.game : 'foxcap') as ThemeGame}>{content}</LobbyFrame>,
+    wordsTheme ? (
+      <LobbyFrame game={WORDS_ROOM[snapshot.game]!}>{content}</LobbyFrame>
+    ) : (
+      <LobbyFrame game={(snapshot.game in GAME_LANDING ? snapshot.game : 'foxcap') as ThemeGame}>{content}</LobbyFrame>
+    ),
     document.body,
   );
 }
+
+/** Jogos de rodadas com sala (spec 068): a sala usa o cenário e o símbolo do hub do jogo. */
+const WORDS_ROOM: Record<string, WordsGame | undefined> = { color: 'color', impostor: 'color', time: 'time', eco: 'eco' };
 
 /** Jogos que pertencem ao Fox Cap! (e a sala sem jogo escolhido). */
 const FOX_CAP_GAMES: string[] = ['foxcap', 'atravessa', 'desmorona', 'bola', 'pingpong', 'foxshot'];
@@ -223,8 +234,9 @@ const FONTS = 'https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;70
  * Moldura temática da sala (spec 058): tela cheia com o cenário e o símbolo do jogo escolhido (ou do Fox Cap! sem jogo),
  * no mesmo desenho do lobby do Counter Fox. A página de trás não rola; só esta moldura, e só se precisar.
  */
-function LobbyFrame({ game, children }: { game: ThemeGame; children: ReactNode }) {
-  const t = game === 'foxcap' ? FC_THEME : GAME_LANDING[game];
+function LobbyFrame({ game, children }: { game: ThemeGame | WordsGame; children: ReactNode }) {
+  const words = game === 'color' || game === 'time' || game === 'eco';
+  const t = words ? WORDS_LANDING[game] : game === 'foxcap' ? FC_THEME : GAME_LANDING[game as LandingGame];
   useEffect(() => {
     if (!document.querySelector('link[data-cfh-fonts]')) {
       const l = document.createElement('link');
@@ -243,11 +255,11 @@ function LobbyFrame({ game, children }: { game: ThemeGame; children: ReactNode }
     };
   }, []);
   return (
-    <div className="gll" data-game={game} data-testid="themed-lobby" style={{ ['--gl-a' as string]: t.a, ['--gl-b' as string]: t.b }}>
-      <Backdrop game={game} />
+    <div className="gll" data-game={game} data-words={words ? '1' : undefined} data-testid="themed-lobby" style={{ ['--gl-a' as string]: t.a, ['--gl-b' as string]: t.b }}>
+      {words ? <WordsBackdrop game={game} /> : <Backdrop game={game as ThemeGame} />}
       <div className="gll-wrap">
         <header className="gll-head">
-          <Emblem game={game} />
+          {words ? <WordsEmblem game={game} /> : <Emblem game={game as ThemeGame} />}
           <h1>
             <span>{t.line1}</span>
             <b>{t.line2}</b>

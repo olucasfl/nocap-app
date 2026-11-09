@@ -32,6 +32,7 @@ import { useSaveMatch } from './useSaveMatch';
 import type { Mode, RoundResult, Run } from './types';
 import './color.css';
 import { Page } from '@/components/Page';
+import { GameTheme } from '@/components/GameTheme';
 
 type Phase = 'start' | 'show' | 'pick' | 'result' | 'final';
 
@@ -142,6 +143,7 @@ export function ColorGame({
 
   return (
     <Page rail={!playing}>
+      {phase !== 'start' && <GameTheme game="color" still={phase === 'show' || phase === 'pick'} />}
       <header className="top">
         <Link to="/" className="logo" aria-label="Voltar aos jogos">
           no cap<span>!</span>

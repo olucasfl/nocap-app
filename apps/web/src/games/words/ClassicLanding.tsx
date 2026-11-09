@@ -10,6 +10,7 @@ import { loadClassicLevels, tierOf, tierRanges, type ClassicLevel } from './leve
 import { useProgress, type LevelStatus } from './levels/progress';
 import { fetchDaily, MODE_LABEL } from './words-api';
 import meta from './levels/meta.json';
+import { formatCountdown, secondsToBrasiliaMidnight, useNextWordCountdown } from '@/lib/daily-countdown';
 import { LevelBrowser, type BrowserCell } from './landing/LevelBrowser';
 import { WlBtn, WlMeter, WlPanel, WordsLanding } from './landing/WordsLanding';
 import './classic-levels.css';
@@ -26,31 +27,7 @@ const TITLE: Record<ClassicMode, string> = {
   quarteto: '4 Palavras',
 };
 
-/** Segundos até a meia-noite de Brasília (UTC-3, sem horário de verão), quando sai a próxima palavra do Daily. */
-export function secondsToBrasiliaMidnight(now = Date.now()): number {
-  const intoDay = (Math.floor(now / 1000) - 3 * 3600) % 86400;
-  return 86400 - (((intoDay % 86400) + 86400) % 86400);
-}
-export const formatCountdown = (s: number) =>
-  [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60]
-    .map((n) => String(n).padStart(2, '0'))
-    .join(':');
-
-/** Conta regressiva até a próxima palavra; ao zerar, avisa para recarregar o Daily. */
-function useNextWordCountdown(onZero: () => void) {
-  const [left, setLeft] = useState(() => secondsToBrasiliaMidnight());
-  useEffect(() => {
-    const id = setInterval(() => {
-      const s = secondsToBrasiliaMidnight();
-      setLeft((prev) => {
-        if (s > prev) onZero();
-        return s;
-      });
-    }, 1000);
-    return () => clearInterval(id);
-  }, []);
-  return left;
-}
+export { secondsToBrasiliaMidnight, formatCountdown };
 
 export const CLASSIC_STEPS = [
   'Digite uma palavra de 5 letras e aperte Enter. Ela precisa existir na lista do jogo.',

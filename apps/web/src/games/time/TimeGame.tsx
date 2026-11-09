@@ -19,7 +19,6 @@ import { rankingLink, type Board } from '@/lib/ranking';
 import { apiClient } from '@/lib/api-client';
 import { MIN_TAP_GAP_MS, formatSeconds } from './format';
 import { FinalScreen } from './screens/FinalScreen';
-import { IntroScreen } from './screens/IntroScreen';
 import { TimeRoundsTable } from './screens/TimeRoundsTable';
 import { useSaveTime } from './useSaveTime';
 import { ResultScreen } from './screens/ResultScreen';
@@ -29,8 +28,9 @@ import type { Mode, RoundResult, Run } from './types';
 import './time.css';
 import './result.css';
 import { Page } from '@/components/Page';
+import { GameTheme } from '@/components/GameTheme';
 
-type Phase = 'start' | 'intro' | 'target' | 'counting' | 'result' | 'final';
+type Phase = 'start' | 'target' | 'counting' | 'result' | 'final';
 
 interface SessionResponse {
   seed: string;
@@ -91,7 +91,7 @@ export function TimeGame({
       setRun(await newRun(m));
       setIndex(0);
       setResults([]);
-      setPhase('intro');
+      setPhase('target');
     } catch {
       setError(
         m === 'daily'
@@ -178,6 +178,9 @@ export function TimeGame({
 
   return (
     <Page rail={!playing} className={counting ? 'tm-silent' : ''}>
+      {phase !== 'start' && (
+        <GameTheme game="time" still={phase === 'target' || phase === 'counting'} />
+      )}
       <header className="top">
         <Link to="/" className="logo" aria-label="Voltar aos jogos">
           no cap<span>!</span>
@@ -214,7 +217,6 @@ export function TimeGame({
           onStart={(m) => void start(m)}
         />
       )}
-      {phase === 'intro' && run && <IntroScreen run={run} onBegin={() => setPhase('target')} />}
       {(phase === 'target' || counting) && target !== null && run && (
         <RoundScreen
           key={index}

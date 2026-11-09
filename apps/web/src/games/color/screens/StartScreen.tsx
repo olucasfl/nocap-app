@@ -1,7 +1,5 @@
-import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { SURVIVAL_MAX_ROUNDS, colorDailySettings, colorPresets } from '@nocap/games';
-import { DailyScreen } from '@/components/DailyScreen';
 import { GameHubLanding, type HubMode } from '@/components/GameHubLanding';
 import type { GameTab } from '@/components/GameTabs';
 import { useAuth } from '@/lib/auth';
@@ -36,6 +34,15 @@ const LEAD: Record<ModeId, string> = {
   daily: 'A cor de hoje é a mesma para todo mundo. Mesmas 5 cores, uma única chance por dia.',
 };
 
+const DAILY_INTRO = {
+  rules: [
+    { value: String(colorDailySettings.rounds), label: 'rodadas' },
+    { value: `${colorDailySettings.showMs / 1000}s`, label: 'para decorar' },
+    { value: '1', label: 'chance por dia' },
+  ],
+  text: 'Uma cor aparece e some. Recrie de memória nos controles.',
+};
+
 const seconds = (ms: number) => `${ms / 1000}s`.replace('.', ',');
 
 interface Props {
@@ -46,31 +53,10 @@ interface Props {
 }
 
 /** O hub da Mesmíssima (spec 067): Daily, modos, amigos, como jogar e configurações. */
-export function StartScreen({ initialTab = 'modes', onMode, onStart }: Props) {
+export function StartScreen({ initialTab, onMode, onStart }: Props) {
   const user = useAuth((s) => s.user);
   const stats = useQuery({ queryKey: ['stats'], queryFn: fetchStats, enabled: !!user });
   const daily = stats.data?.daily.color;
-  /** O Daily tem tela própria (resultado do dia e parte social), fora do hub. */
-  const [dailyView, setDailyView] = useState(false);
-
-  if (dailyView) {
-    return (
-      <DailyScreen
-        game="color"
-        onPlay={() => onStart('daily')}
-        intro={{
-          rules: [
-            { value: String(colorDailySettings.rounds), label: 'rodadas' },
-            { value: `${colorDailySettings.showMs / 1000}s`, label: 'para decorar' },
-            { value: '1', label: 'chance por dia' },
-          ],
-          text: 'Uma cor aparece e some. Recrie de memória nos controles. As cores são as mesmas para todo mundo, e sua nota soma no ranking do dia.',
-        }}
-        onBack={() => setDailyView(false)}
-      />
-    );
-  }
-
   const modes: HubMode[] = MODES.filter((m) => m.id !== 'daily').map((m) => {
     const id = m.id;
     const preset = id === 'impostor' ? null : colorPresets[id as Mode]!;
@@ -107,17 +93,14 @@ export function StartScreen({ initialTab = 'modes', onMode, onStart }: Props) {
       game="color"
       roomGame="color"
       modes={modes}
-      initial={initialTab === 'friends' ? 'friends' : 'main'}
+      initial={initialTab === 'friends' ? 'friends' : initialTab === 'modes' ? 'modes' : 'main'}
       dailyDone={!!daily?.playedToday}
       dailyNote={
         daily?.playedToday
           ? `feito · ${((daily.totalScore ?? 0) / 10).toFixed(1)}/${dailyMax('color')}`
           : 'disponível hoje'
       }
-      onDaily={() => {
-        onMode('daily');
-        setDailyView(true);
-      }}
+      dailyIntro={DAILY_INTRO}
       onStart={(id) => {
         onMode(id as Mode);
         onStart(id as Mode);

@@ -1,0 +1,9 @@
+/* Partidas com o tema do hub (spec 068). O cenário (.wd-bg) vem de words-landing.css; aqui só o acento e o cenário parado. */
+body[data-hub='color'] { --hg-a: #ff7a3d; }
+body[data-hub='time'] { --hg-a: #4a8dff; }
+body[data-hub='eco'] { --hg-a: #a06bff; }
+body[data-hub] .top { padding-bottom: 8px; border-bottom: 2px solid var(--hg-a); }
+body[data-hub] .top .chip.y { background: var(--hg-a); color: #0b0d1c; }
+.gt-bg.still .glb *, .gt-bg.still .glb { animation: none !important; }
+.gt-bg { z-index: 0; }
+body[data-hub] .screen, body[data-hub] .top { position: relative; z-index: 1; }

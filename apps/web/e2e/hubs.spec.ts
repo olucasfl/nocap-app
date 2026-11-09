@@ -37,10 +37,15 @@ for (const h of HUBS) {
     await page.getByTestId('menu-settings').click();
     await expect(page.getByTestId('wl-settings')).toContainText('Som do jogo');
     await page.keyboard.press('Escape');
-    // Daily abre a tela própria e volta ao hub
+    // Daily é uma tela do próprio hub: estado de hoje, contador e abas do dia
     await page.getByTestId('menu-daily').click();
-    await expect(page.getByTestId(`wl-${h.game}`)).toHaveCount(0);
-    await page.getByRole('button', { name: 'Jogos' }).first().click();
+    await expect(page.getByTestId('daily-panel')).toBeVisible();
+    await expect(page.getByTestId('daily-todo')).toBeVisible();
+    await expect(page.getByTestId('daily-countdown')).toContainText(/FALTA \d\d:\d\d:\d\d/);
+    await expect(page.getByTestId('play-daily')).toBeVisible();
+    await page.getByTestId('daily-tab-ranking').click();
+    await page.getByTestId('daily-tab-rules').click();
+    await page.getByTestId('wl-back').click();
     await expect(page.getByTestId(`wl-${h.game}`)).toBeVisible();
     // jogar sai do hub
     await page.getByTestId('menu-modes').click();

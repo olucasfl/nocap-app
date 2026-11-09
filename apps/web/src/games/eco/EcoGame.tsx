@@ -13,11 +13,11 @@ import { EcoPlay } from './EcoPlay';
 import { BatidaFinal } from './screens/BatidaFinal';
 import { BatidaIntro } from './screens/BatidaIntro';
 import { FinalScreen } from './screens/FinalScreen';
-import { IntroScreen } from './screens/IntroScreen';
 import { StartScreen } from './screens/StartScreen';
 import type { BatidaRunInfo, EndReason, Mode, Run } from './types';
 import './eco.css';
 import { Page } from '@/components/Page';
+import { GameTheme } from '@/components/GameTheme';
 
 type Phase = 'start' | 'intro' | 'play' | 'final';
 
@@ -97,7 +97,7 @@ export function EcoGame({
         }
         setRound(1);
         setEnding(null);
-        setPhase('intro');
+        setPhase(m === 'batida' ? 'intro' : 'play');
       } catch {
         setError(
           m === 'daily'
@@ -127,6 +127,7 @@ export function EcoGame({
 
   return (
     <Page rail={!playing}>
+      {phase !== 'start' && <GameTheme game="eco" still={phase === 'play'} />}
       <header className="top">
         <Link to="/" className="logo" aria-label="Voltar aos jogos">
           no cap<span>!</span>
@@ -163,7 +164,6 @@ export function EcoGame({
           }}
         />
       )}
-      {phase === 'intro' && run && <IntroScreen run={run} onBegin={() => setPhase('play')} />}
       {phase === 'play' && batida && (
         <BatidaPlay
           key={batida.info.matchId}

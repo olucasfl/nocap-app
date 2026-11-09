@@ -5,6 +5,8 @@ import { NicknameDialog } from '@/components/NicknameDialog';
 import { RoomConflictDialog } from '@/components/RoomConflictDialog';
 import { WlBtn, WlPanel, WordsLanding, type WordsGame } from '@/games/words/landing/WordsLanding';
 import { useOnline } from '@/lib/network';
+import { HubDailyBoard, HubDailyPanel, useDailyData } from '@/components/HubDaily';
+import type { ReactNode } from 'react';
 import { useRoomEntry } from '@/lib/my-room';
 import type { RoomGame } from '@/lib/rooms';
 
@@ -20,7 +22,7 @@ export interface HubMode {
   roomGame?: RoomGame;
 }
 
-type Screen = 'main' | 'modes' | 'mode' | 'friends' | 'rules' | 'settings';
+type Screen = 'main' | 'daily' | 'modes' | 'mode' | 'friends' | 'rules' | 'settings';
 
 /**
  * O hub de um jogo de rodadas (Mesmíssima, Já Deu?, Ecooo), no estilo das telas de jogo (spec 067): Daily em destaque, modos de
@@ -32,7 +34,7 @@ export function GameHubLanding({
   modes,
   dailyNote,
   dailyDone,
-  onDaily,
+  dailyIntro,
   onStart,
   busy = false,
   error = '',
@@ -44,11 +46,12 @@ export function GameHubLanding({
   modes: HubMode[];
   dailyNote: string;
   dailyDone: boolean;
-  onDaily: () => void;
+  /** Regras do dia mostradas antes de jogar. */
+  dailyIntro?: { rules: { value: string; label: string }[]; text: ReactNode };
   onStart: (id: string) => void;
   busy?: boolean;
   error?: string;
-  initial?: 'main' | 'friends';
+  initial?: 'main' | 'friends' | 'modes';
 }) {
   const navigate = useNavigate();
   const online = useOnline();
@@ -56,6 +59,7 @@ export function GameHubLanding({
   const [screen, setScreen] = useState<Screen>(initial);
   const [modeId, setModeId] = useState<string>(modes[0]!.id);
   const [code, setCode] = useState('');
+  const dailyData = useDailyData(roomGame as 'color' | 'time' | 'eco', screen === 'daily');
   const mode = modes.find((m) => m.id === modeId) ?? modes[0]!;
 
   const back = () => {
@@ -78,7 +82,7 @@ export function GameHubLanding({
           main
           title="Daily"
           sub={dailyNote}
-          onClick={onDaily}
+          onClick={() => setScreen('daily')}
           sfx="start"
           testid="menu-daily"
         />
@@ -112,6 +116,19 @@ export function GameHubLanding({
         <WlBtn danger title="Voltar aos jogos" onClick={back} sfx="back" testid="wl-exit" />
       </nav>
     );
+  } else if (screen === 'daily') {
+    left = (
+      <HubDailyPanel
+        game={roomGame as 'color' | 'time' | 'eco'}
+        data={dailyData}
+        intro={dailyIntro}
+        busy={busy}
+        error={error}
+        onPlay={() => onStart('daily')}
+        onBack={back}
+      />
+    );
+    right = <HubDailyBoard game={roomGame as 'color' | 'time' | 'eco'} data={dailyData} />;
   } else if (screen === 'modes') {
     left = (
       <WlPanel

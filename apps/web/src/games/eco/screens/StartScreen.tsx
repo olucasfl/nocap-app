@@ -1,7 +1,5 @@
-import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ECO_MAX_PADS, ecoPresets } from '@nocap/games';
-import { DailyScreen } from '@/components/DailyScreen';
 import { GameHubLanding, type HubMode } from '@/components/GameHubLanding';
 import type { GameTab } from '@/components/GameTabs';
 import { useAuth } from '@/lib/auth';
@@ -42,25 +40,10 @@ interface Props {
 }
 
 /** O hub do Ecooo (spec 067): Daily, modos, amigos, como jogar e configurações. */
-export function StartScreen({ initialTab = 'modes', onMode, onStart, busy, error }: Props) {
+export function StartScreen({ initialTab, onMode, onStart, busy, error }: Props) {
   const user = useAuth((s) => s.user);
   const stats = useQuery({ queryKey: ['stats'], queryFn: fetchStats, enabled: !!user });
   const daily = stats.data?.daily.eco;
-  /** O Daily tem tela própria (resultado do dia e parte social), fora do hub. */
-  const [dailyView, setDailyView] = useState(false);
-
-  if (dailyView) {
-    return (
-      <DailyScreen
-        game="eco"
-        busy={busy}
-        error={error}
-        onPlay={() => onStart('daily')}
-        onBack={() => setDailyView(false)}
-      />
-    );
-  }
-
   const modes: HubMode[] = MODES.filter((m) => m.id !== 'daily').map((m) => {
     if (m.id === 'batida')
       return {
@@ -109,17 +92,13 @@ export function StartScreen({ initialTab = 'modes', onMode, onStart, busy, error
       modes={modes}
       busy={busy}
       error={error}
-      initial={initialTab === 'friends' ? 'friends' : 'main'}
+      initial={initialTab === 'friends' ? 'friends' : initialTab === 'modes' ? 'modes' : 'main'}
       dailyDone={!!daily?.playedToday}
       dailyNote={
         daily?.playedToday
           ? `feito · ${dailyScoreText('eco', daily.totalScore ?? 0)}`
           : 'disponível hoje'
       }
-      onDaily={() => {
-        onMode('daily');
-        setDailyView(true);
-      }}
       onStart={(id) => {
         onMode(id as Mode);
         onStart(id as Mode);

@@ -362,11 +362,17 @@ export function Showcase({ game, text }: { game: WordsGame; text: string }) {
       </div>
     );
   } else if (game === 'time') {
+    // um ponteiro que oscila tentando parar na marca do alvo (sem número nenhum)
     art = (
       <div className="wl-show-time" aria-hidden="true">
-        <b>7,5 s</b>
-        <span>ALVO</span>
-        <i />
+        <i className="dial" />
+        {Array.from({ length: 12 }, (_, i) => (
+          <i key={i} className="arm tickarm" style={{ transform: `rotate(${i * 30}deg)` }} />
+        ))}
+        <i className="arm targetarm" />
+        <i className="arm lockarm" />
+        <i className="arm handarm" />
+        <i className="hubdot" />
       </div>
     );
   } else if (game === 'eco') {

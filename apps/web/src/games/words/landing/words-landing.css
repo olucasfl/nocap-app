@@ -1182,32 +1182,6 @@
   animation: wl-hexin 0.45s ease-out both;
   animation-delay: calc(var(--i) * 50ms);
 }
-.wl-show-time {
-  display: grid;
-  justify-items: center;
-  gap: 4px;
-  padding: 20px 0;
-}
-.wl-show-time b {
-  font:
-    400 clamp(40px, 7vw, 64px) 'Saira Stencil One',
-    Rajdhani,
-    sans-serif;
-  color: var(--gl-a);
-}
-.wl-show-time span {
-  color: var(--gl-muted);
-  font:
-    700 13px Rajdhani,
-    sans-serif;
-  letter-spacing: 0.3em;
-}
-.wl-show-time i {
-  width: 70%;
-  height: 8px;
-  background: rgba(255, 255, 255, 0.12);
-  margin-top: 10px;
-}
 .wl-show-eco {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -1290,4 +1264,241 @@
 }
 .wl-form input:focus {
   outline: 2px solid var(--gl-a);
+}
+
+/* Já Deu?: o ponteiro tenta acertar o alvo (só transform e opacity) */
+.wl-show-time {
+  position: relative;
+  width: min(100%, 250px);
+  aspect-ratio: 1;
+  margin: 0 auto;
+}
+.wl-show-time i {
+  position: absolute;
+  display: block;
+}
+.wl-show-time .dial {
+  inset: 0;
+  border-radius: 50%;
+  border: 6px solid var(--gl-a);
+  background: radial-gradient(circle, #101a38 0%, #0a1020 100%);
+}
+.wl-show-time .arm {
+  inset: 0;
+}
+.wl-show-time .tickarm::after {
+  content: '';
+  position: absolute;
+  left: calc(50% - 1.5px);
+  top: 9px;
+  width: 3px;
+  height: 11px;
+  background: rgba(255, 255, 255, 0.35);
+}
+.wl-show-time .targetarm {
+  transform: rotate(42deg);
+}
+.wl-show-time .targetarm::after {
+  content: '';
+  position: absolute;
+  left: calc(50% - 9px);
+  top: 22px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #3fcf7d;
+  box-shadow: 0 0 14px #3fcf7d;
+}
+.wl-show-time .lockarm {
+  transform: rotate(42deg);
+}
+.wl-show-time .lockarm::after {
+  content: '';
+  position: absolute;
+  left: calc(50% - 9px);
+  top: 22px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 3px solid #3fcf7d;
+  opacity: 0;
+  animation: wl-lock 6s ease-out infinite;
+}
+.wl-show-time .handarm {
+  animation: wl-aim 6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+.wl-show-time .handarm::after {
+  content: '';
+  position: absolute;
+  left: calc(50% - 3px);
+  top: 14%;
+  width: 6px;
+  height: 36%;
+  border-radius: 3px;
+  background: #f4efe6;
+}
+.wl-show-time .hubdot {
+  left: calc(50% - 8px);
+  top: calc(50% - 8px);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--gl-a);
+}
+@keyframes wl-aim {
+  0% {
+    transform: rotate(-110deg);
+  }
+  26% {
+    transform: rotate(96deg);
+  }
+  44% {
+    transform: rotate(18deg);
+  }
+  58% {
+    transform: rotate(58deg);
+  }
+  70% {
+    transform: rotate(36deg);
+  }
+  80% {
+    transform: rotate(43deg);
+  }
+  88%,
+  100% {
+    transform: rotate(42deg);
+  }
+}
+@keyframes wl-lock {
+  0%,
+  82% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  86% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.6);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wl-show-time .handarm {
+    animation: none;
+    transform: rotate(42deg);
+  }
+  .wl-show-time .lockarm::after {
+    animation: none;
+  }
+}
+
+/* Daily dos hubs (spec 068) */
+.wl-dboard {
+  text-align: left;
+  align-content: start;
+}
+.wl-dboard .wl-chips {
+  justify-content: center;
+}
+.wl-chip[aria-selected='true'] {
+  background: var(--gl-a);
+  color: #0b0d1c;
+  border-bottom-color: #fff;
+}
+.wl-dpane {
+  display: grid;
+  gap: 10px;
+  text-align: left;
+}
+.wl-dpane p {
+  margin: 0;
+  color: var(--gl-muted);
+  font-size: 15px;
+  text-align: center;
+}
+.wl-dpane h4 {
+  margin: 6px 0 0;
+  color: var(--gl-a);
+  font:
+    700 13px Rajdhani,
+    sans-serif;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.wl-rank {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+.wl-rank li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 1px solid var(--gl-line);
+  background: #0f1830;
+  font-size: 15px;
+}
+.wl-rank li.me {
+  border-color: var(--gl-a);
+  background: color-mix(in srgb, var(--gl-a) 20%, #0f1830);
+}
+.wl-rank b {
+  color: var(--gl-a);
+  min-width: 2.2em;
+  font:
+    800 16px Rajdhani,
+    sans-serif;
+}
+.wl-rank span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wl-rank em {
+  font-style: normal;
+  color: var(--gl-muted);
+  font-size: 13px;
+  letter-spacing: 0.05em;
+}
+.wl-rank.dim {
+  opacity: 0.7;
+}
+
+/* contador "FALTA hh:mm:ss" do Daily */
+.wl-next {
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  width: 100%;
+  max-width: 520px;
+  box-sizing: border-box;
+  padding: 12px 16px;
+  border: 1px solid var(--gl-line);
+  background: #0f1830;
+}
+.wl-next small {
+  color: var(--gl-muted);
+  font:
+    700 12px Rajdhani,
+    sans-serif;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.wl-next b {
+  font:
+    400 clamp(26px, 6vw, 36px) 'Saira Stencil One',
+    Rajdhani,
+    sans-serif;
+  letter-spacing: 0.06em;
+  color: var(--gl-a);
+  font-variant-numeric: tabular-nums;
+}
+.wl-stage .wl-dboard {
+  align-content: start;
 }
