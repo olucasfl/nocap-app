@@ -1,4 +1,6 @@
 import {
+  createContext,
+  useContext,
   useCallback,
   useEffect,
   useMemo,
@@ -9,9 +11,17 @@ import {
 } from 'react';
 import { BackButton } from '@/components/BackButton';
 import './words.css';
+import { Backdrop, type WordsGame } from './landing/WordsLandingArt';
+import { useWordsFonts } from './landing/WordsLanding';
+import '@/components/game-landing.css';
+import './landing/words-landing.css';
 import { Page } from '@/components/Page';
 
 export type Accent = 'green' | 'blue' | 'yellow';
+
+/** O tema do jogo em que a tela está (cenário, cores das comemorações); sem tema, o visual de sempre. */
+const ThemeCtx = createContext<Accent | undefined>(undefined);
+const GAME_OF: Record<Accent, WordsGame> = { green: 'classic', blue: 'connect', yellow: 'bee' };
 
 /** A moldura de toda tela do Word's: voltar, título e um cantinho à direita, com entrada animada. */
 export function WordsShell({
@@ -32,17 +42,25 @@ export function WordsShell({
   /** Tela de jogo que cabe inteira na tela do celular, sem rolar. */
   fit?: boolean;
 }) {
+  useWordsFonts();
   return (
-    <Page rail={!fit} className={`wd-app${fit ? ' fit' : ''}`}>
-      <main className={`screen wd ${accent ? `wd-${accent}` : ''} ${className}`}>
-        <header className="wd-top">
-          <BackButton to={back} />
-          <h1 className="wd-title">{title}</h1>
-          {right && <div className="wd-right">{right}</div>}
-        </header>
-        {children}
-      </main>
-    </Page>
+    <ThemeCtx.Provider value={accent}>
+      <Page rail={!fit} className={`wd-app${fit ? ' fit' : ''}`}>
+        {accent && (
+          <div className={`wd-bg wl-${GAME_OF[accent]}`} aria-hidden="true">
+            <Backdrop game={GAME_OF[accent]} />
+          </div>
+        )}
+        <main className={`screen wd ${accent ? `wd-${accent} wd-themed` : ''} ${className}`}>
+          <header className="wd-top">
+            <BackButton to={back} />
+            <h1 className="wd-title">{title}</h1>
+            {right && <div className="wd-right">{right}</div>}
+          </header>
+          {children}
+        </main>
+      </Page>
+    </ThemeCtx.Provider>
   );
 }
 
@@ -262,6 +280,12 @@ export function FilterBar({
 
 export type FxKind = 'win' | 'epic' | 'gold' | 'lose' | 'spark';
 
+const THEME_COLORS: Record<Accent, string[]> = {
+  green: ['#3fcf7d', '#f2c230', '#3fcf7d', '#4a5068'],
+  blue: ['#ffd23f', '#3fcf7d', '#4a8dff', '#a06bff'],
+  yellow: ['#ffd23f', '#ffb21f', '#fff3b0', '#ffd23f'],
+};
+
 /** Um número "aleatório" estável (0 a 1) para cada peça: a explosão sai igual em toda renderização. */
 const jitter = (i: number, salt: number) => (((i + 1) * 9301 + salt * 49297) % 233280) / 233280;
 
@@ -274,8 +298,24 @@ const jitter = (i: number, salt: number) => (((i + 1) * 9301 + salt * 49297) % 2
  *   lose        o tom escurece e cacos cinza caem devagar, sem festa
  */
 export function Celebrate({ burst, kind = 'win' }: { burst: number; kind?: FxKind }) {
+  const theme = useContext(ThemeCtx);
   const pieces = useMemo(() => {
-    const count = kind === 'epic' ? 54 : kind === 'spark' ? 10 : kind === 'lose' ? 14 : 38;
+    // com tema, a comemoração é mais enxuta e usa as peças do jogo (casas, barras ou favos)
+    const count = theme
+      ? kind === 'epic'
+        ? 34
+        : kind === 'spark'
+          ? 8
+          : kind === 'lose'
+            ? 10
+            : 24
+      : kind === 'epic'
+        ? 54
+        : kind === 'spark'
+          ? 10
+          : kind === 'lose'
+            ? 14
+            : 38;
     return Array.from({ length: count }, (_, i) => {
       const a = jitter(i, 1);
       const b = jitter(i, 2);
@@ -288,8 +328,8 @@ export function Celebrate({ burst, kind = 'win' }: { burst: number; kind?: FxKin
           s: 0.7 + b * 0.8,
           d: a * 0.5,
           w: 8 + Math.round(c * 8),
-          shape: 'shard',
-          color: 'var(--eco-graphite)',
+          shape: theme ? 'piece' : 'shard',
+          color: theme ? '#4a5068' : 'var(--eco-graphite)',
         };
       }
       const angle = a * Math.PI * 2;
@@ -302,17 +342,23 @@ export function Celebrate({ burst, kind = 'win' }: { burst: number; kind?: FxKin
         s: 0.6 + c * 0.9,
         d: (i % 2) * 0.18 + b * 0.08,
         w: kind === 'spark' ? 5 + Math.round(c * 4) : 7 + Math.round(c * 7),
-        shape: ['sq', 'dot', 'bar', 'star'][Math.floor(jitter(i, 4) * 4)]!,
-        color: gold
-          ? ['var(--yellow)', 'var(--orange)', 'var(--yellow)', 'var(--paper)'][i % 4]!
-          : CONFETTI_COLORS[i % CONFETTI_COLORS.length]!,
+        shape: theme ? 'piece' : ['sq', 'dot', 'bar', 'star'][Math.floor(jitter(i, 4) * 4)]!,
+        color: theme
+          ? THEME_COLORS[theme][i % THEME_COLORS[theme].length]!
+          : gold
+            ? ['var(--yellow)', 'var(--orange)', 'var(--yellow)', 'var(--paper)'][i % 4]!
+            : CONFETTI_COLORS[i % CONFETTI_COLORS.length]!,
       };
     });
-  }, [kind]);
+  }, [kind, theme]);
   if (burst === 0) return null;
   const light = kind === 'win' || kind === 'epic' || kind === 'gold';
   return (
-    <div className={`wd-fx ${kind}`} key={`${kind}-${burst}`} aria-hidden="true">
+    <div
+      className={`wd-fx ${kind}${theme ? ` t-${theme}` : ''}`}
+      key={`${kind}-${burst}`}
+      aria-hidden="true"
+    >
       {kind === 'lose' && <i className="veil" />}
       {light && (
         <>

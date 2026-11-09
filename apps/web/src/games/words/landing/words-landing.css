@@ -798,3 +798,144 @@
 .wl-stage {
   overscroll-behavior: contain;
 }
+
+/* ---------- telas de partida e comemorações com o tema do jogo (spec 065) ---------- */
+.wd-themed {
+  --wd-a: #3fcf7d;
+  position: relative;
+  z-index: 1;
+}
+.wd-blue.wd-themed {
+  --wd-a: #8b7bff;
+}
+.wd-yellow.wd-themed {
+  --wd-a: #ffd23f;
+}
+.wd-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.5;
+}
+.wd-bg .glb {
+  left: 0;
+  background: var(--wd-fill, transparent);
+}
+.wd-bg .glb-vig {
+  display: none;
+}
+.wd-themed .wd-top {
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--wd-a);
+}
+.wd-themed .wd-title {
+  font-family: 'Saira Stencil One', var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.03em;
+}
+.wd-themed .wd-result {
+  border-color: var(--wd-a);
+  box-shadow: 5px 5px 0 var(--wd-a);
+}
+.wd-themed .wd-result.won .wd-stamp {
+  background: var(--wd-a);
+  color: #0b0d1c;
+}
+.wd-themed .wd-result.lost .wd-stamp {
+  background: #4a5068;
+  color: #f4efe6;
+}
+.wd-themed .wd-score b {
+  font-family: 'Saira Stencil One', var(--font-display);
+  font-weight: 400;
+  color: var(--wd-a);
+}
+
+/* peças da comemoração: casas (Classic), barras (Connect) e favos (Bee) */
+.wd-fx.t-green .p.piece {
+  border: 0;
+  border-radius: 5px;
+}
+.wd-fx.t-blue .p.piece {
+  border: 0;
+  border-radius: 6px;
+  height: calc(var(--w) * 0.55);
+  width: calc(var(--w) * 1.5);
+}
+.wd-fx.t-yellow .p.piece {
+  border: 0;
+  border-radius: 0;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  height: calc(var(--w) * 1.1);
+}
+.wd-fx.lose.t-green .p.piece,
+.wd-fx.lose.t-blue .p.piece,
+.wd-fx.lose.t-yellow .p.piece {
+  background: #4a5068;
+  opacity: 0.8;
+}
+.wd-fx.t-green .ring,
+.wd-fx.t-green .ring.r2,
+.wd-fx.t-green .ring.r3 {
+  border-color: #3fcf7d;
+  border-radius: 14px;
+}
+.wd-fx.t-blue .ring,
+.wd-fx.t-blue .ring.r2,
+.wd-fx.t-blue .ring.r3 {
+  border-color: #8b7bff;
+  border-radius: 14px;
+}
+.wd-fx.t-yellow .ring,
+.wd-fx.t-yellow .ring.r2,
+.wd-fx.t-yellow .ring.r3 {
+  border-color: #ffd23f;
+  border-radius: 30%;
+}
+.wd-fx.t-green .glow {
+  background: radial-gradient(circle, #3fcf7d 0%, transparent 68%);
+}
+.wd-fx.t-blue .glow {
+  background: radial-gradient(circle, #8b7bff 0%, transparent 68%);
+}
+.wd-fx.t-yellow .glow {
+  background: radial-gradient(circle, #ffd23f 0%, transparent 68%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .wd-bg .glb * {
+    animation: none !important;
+  }
+}
+
+/* claro: só um toque de cor e as peças suaves; escuro: o cenário do jogo com fundo */
+.wd-bg {
+  opacity: 0.35;
+}
+:root[data-theme='dark'] .wd-bg {
+  opacity: 0.55;
+  --wd-fill-on: 1;
+}
+:root[data-theme='dark'] .wl-classic.wd-bg {
+  --wd-fill: radial-gradient(ellipse at 30% 40%, #11402e 0%, #08201a 60%, #050d0c 100%);
+}
+:root[data-theme='dark'] .wl-connect.wd-bg {
+  --wd-fill: linear-gradient(180deg, #0d0a26 0%, #1a1450 60%, #0a0820 100%);
+}
+:root[data-theme='dark'] .wl-bee.wd-bg {
+  --wd-fill: linear-gradient(180deg, #1c1304 0%, #3a2808 60%, #120c02 100%);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .wd-bg {
+    opacity: 0.55;
+  }
+  :root:not([data-theme='light']) .wl-classic.wd-bg {
+    --wd-fill: radial-gradient(ellipse at 30% 40%, #11402e 0%, #08201a 60%, #050d0c 100%);
+  }
+  :root:not([data-theme='light']) .wl-connect.wd-bg {
+    --wd-fill: linear-gradient(180deg, #0d0a26 0%, #1a1450 60%, #0a0820 100%);
+  }
+  :root:not([data-theme='light']) .wl-bee.wd-bg {
+    --wd-fill: linear-gradient(180deg, #1c1304 0%, #3a2808 60%, #120c02 100%);
+  }
+}

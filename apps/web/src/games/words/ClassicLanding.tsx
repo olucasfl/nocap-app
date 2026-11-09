@@ -32,7 +32,9 @@ export function secondsToBrasiliaMidnight(now = Date.now()): number {
   return 86400 - (((intoDay % 86400) + 86400) % 86400);
 }
 export const formatCountdown = (s: number) =>
-  [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60].map((n) => String(n).padStart(2, '0')).join(':');
+  [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60]
+    .map((n) => String(n).padStart(2, '0'))
+    .join(':');
 
 /** Conta regressiva até a próxima palavra; ao zerar, avisa para recarregar o Daily. */
 function useNextWordCountdown(onZero: () => void) {
@@ -277,7 +279,12 @@ export function ClassicLanding({ start }: { start?: string }) {
                 </>
               )}
             </div>
-            <div className="wl-next" data-testid="daily-countdown" role="timer" aria-label="Tempo até a próxima palavra">
+            <div
+              className="wl-next"
+              data-testid="daily-countdown"
+              role="timer"
+              aria-label="Tempo até a próxima palavra"
+            >
               <small>{dailyDone ? 'Próxima palavra em' : 'A palavra de hoje acaba em'}</small>
               <b>FALTA {formatCountdown(untilNext)}</b>
             </div>

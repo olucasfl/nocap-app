@@ -6,6 +6,18 @@ import './words-landing.css';
 
 export type { WordsGame };
 
+/** As fontes dos jogos (Saira Stencil One e Rajdhani), carregadas uma vez. */
+export function useWordsFonts() {
+  useEffect(() => {
+    if (document.querySelector('link[data-cfh-fonts]')) return;
+    const l = document.createElement('link');
+    l.rel = 'stylesheet';
+    l.href = FONTS;
+    l.setAttribute('data-cfh-fonts', '1');
+    document.head.appendChild(l);
+  }, []);
+}
+
 /** Tema de cada jogo do Word's (cores, nome em duas linhas e frase). Spec 065. */
 export const WORDS_LANDING: Record<
   WordsGame,
@@ -67,14 +79,7 @@ export function WordsLanding({
 }) {
   const t = WORDS_LANDING[game];
 
-  useEffect(() => {
-    if (document.querySelector('link[data-cfh-fonts]')) return;
-    const l = document.createElement('link');
-    l.rel = 'stylesheet';
-    l.href = FONTS;
-    l.setAttribute('data-cfh-fonts', '1');
-    document.head.appendChild(l);
-  }, []);
+  useWordsFonts();
 
   useEffect(() => {
     document.body.classList.add('gx-open');
