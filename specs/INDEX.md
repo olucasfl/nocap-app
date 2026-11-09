@@ -70,5 +70,6 @@
 | 067 | [Hubs da Mesmíssima, Já Deu? e Ecooo](067-hubs-reflexo-precisao.md) | 6 | implementada (09/11/2026): tela própria com Daily, modos, amigos, como jogar e configurações |
 | 068 | [Daily, sala e partidas com o tema dos hubs](068-hubs-daily-sala-partidas.md) | 6 | implementada (09/11/2026) |
 | 069 | [Tela final dos jogos de reflexo e precisão](069-final-reflexo.md) | 6 | implementada (09/11/2026) |
+| 070 | [Sala que troca entre todos os jogos do NoCap](070-sala-todos-os-jogos.md) | 3 | implementada (09/11/2026) |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.

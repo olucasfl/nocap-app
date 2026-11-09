@@ -954,6 +954,10 @@ export class FoxShotRoom extends ColorRoom {
 
 /** Nomes e limites dos jogos que a sala do Fox Cap! pode jogar. */
 const FOX_GAMES = {
+  color: { name: 'Mesmíssima', make: (o: EngineOpts) => new ColorRoomEngine(o) },
+  impostor: { name: 'Intruso', make: (o: EngineOpts) => new ImpostorRoomEngine(o) },
+  time: { name: 'Já Deu?', make: (o: EngineOpts) => new TimeRoomEngine(o) },
+  eco: { name: 'Ecooo', make: (o: EngineOpts) => new EcoRoomEngine(o) },
   atravessa: { name: 'Atravessa!', make: (o: EngineOpts) => new AtravessaRoomEngine(o) },
   desmorona: { name: 'Desmorona!', make: (o: EngineOpts) => new DesmoronaRoomEngine(o) },
   pingpong: { name: 'Ping Fox!', make: (o: EngineOpts) => new PingRoomEngine(o) },
@@ -999,6 +1003,10 @@ export class FoxRoom extends ColorRoom {
     // Cada jogo registra as suas mensagens como se a sala fosse dele (por um "sósia" que repassa tudo à sala). Aqui cada
     // tipo vira um só despachante que olha de quem é o motor de agora (o Atravessa! e o Desmorona! usam o mesmo "color").
     for (const [game, room] of [
+      ['color', ColorRoom],
+      ['impostor', ImpostorRoom],
+      ['time', TimeRoom],
+      ['eco', EcoRoom],
       ['atravessa', AtravessaRoom],
       ['desmorona', DesmoronaRoom],
       ['bola', BolaRoom],
@@ -1024,6 +1032,12 @@ export class FoxRoom extends ColorRoom {
     this.onMessage('pickgame', (c: Client, m: { game?: unknown }) =>
       this.act(c, (id) => this.pickGame(id, m?.game)),
     );
+  }
+
+  /** O Ecooo troca de formato (Corrida ou Siga o Líder) dentro da sala, como na sala própria dele. */
+  protected override beforeConfigure(id: string, m: { mode?: unknown } | undefined) {
+    if (this.engine.game !== 'eco') return;
+    (EcoRoom.prototype as unknown as { beforeConfigure(id: string, m: unknown): void }).beforeConfigure.call(this, id, m);
   }
 
   /** O líder escolhe ou troca o jogo da sala (só no lobby). */
@@ -1058,13 +1072,15 @@ export class FoxRoom extends ColorRoom {
   }
 
   protected override afterTick() {
-    const proto = {
-      atravessa: AtravessaRoom,
-      desmorona: DesmoronaRoom,
-      bola: BolaRoom,
-      pingpong: PingRoom,
-      foxshot: FoxShotRoom,
-    }[this.engine.game as FoxGame]?.prototype as unknown as { afterTick?: () => void } | undefined;
+    const proto = (
+      {
+        atravessa: AtravessaRoom,
+        desmorona: DesmoronaRoom,
+        bola: BolaRoom,
+        pingpong: PingRoom,
+        foxshot: FoxShotRoom,
+      } as Record<string, { prototype: unknown } | undefined>
+    )[this.engine.game]?.prototype as unknown as { afterTick?: () => void } | undefined;
     proto?.afterTick?.call(this);
   }
 }

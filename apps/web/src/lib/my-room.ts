@@ -119,6 +119,33 @@ let resumed = false;
  * Criar ou entrar numa sala num toque só: faz a conexão, abre o lobby e, se a conta já está em
  * outra sala, devolve `conflict` para a tela perguntar o que fazer (voltar a ela ou sair dela).
  */
+/** Jogos que podem ser trocados dentro de uma mesma sala (spec 070). */
+const SWITCHABLE: RoomGame[] = [
+  'color',
+  'time',
+  'impostor',
+  'eco',
+  'atravessa',
+  'desmorona',
+  'bola',
+  'pingpong',
+  'foxshot',
+];
+
+/**
+ * Toda sala nasce como sala flex (a do Fox Cap!): o líder pode trocar de jogo no lobby. O jogo que a pessoa pediu é guardado
+ * e o lobby o escolhe assim que a sala abre (`Lobby.tsx`).
+ */
+export function asFlexRoom(game: RoomGame): RoomGame {
+  if (!SWITCHABLE.includes(game)) return game;
+  try {
+    sessionStorage.setItem('cfx-new-room', game === 'foxshot' ? '1' : game);
+  } catch {
+    /* sem armazenamento: a sala nasce sem jogo e o líder escolhe */
+  }
+  return 'foxcap';
+}
+
 export function useRoomEntry(opts: { resume?: boolean } = {}) {
   const navigate = useNavigate();
   const leave = useLeaveRoom();
@@ -190,7 +217,7 @@ export function useRoomEntry(opts: { resume?: boolean } = {}) {
     error,
     conflict,
     clearError: () => setError(''),
-    create: (game: RoomGame) => run({ kind: 'create', game }),
+    create: (game: RoomGame) => run({ kind: 'create', game: asFlexRoom(game) }),
     join: (code: string) => {
       const c = code.trim().toUpperCase();
       if (!CODE_RE.test(c)) {

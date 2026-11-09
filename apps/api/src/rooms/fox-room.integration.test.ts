@@ -185,4 +185,31 @@ describe('encerrar e sair da sala (todos os jogos)', () => {
       await until(() => back.snap?.members.length === 3);
     }, 30_000);
   }
+
+  it('a mesma sala troca entre os jogos de rodadas (Mesmíssima, Já Deu?, Ecooo e Intruso) e os do Fox Cap!', async () => {
+    const ana = watch(await new Client(url).create('foxcap', { token: 'ana2' }));
+    const bia = watch(await new Client(url).joinById(ana.room.roomId, { token: 'bia2' }));
+    await until(() => ana.snap?.members.length === 2 && bia.snap?.members.length === 2);
+
+    for (const g of ['color', 'time', 'eco', 'impostor', 'atravessa', 'color'] as const) {
+      ana.room.send('pickgame', { game: g });
+      await until(() => ana.snap?.game === g && bia.snap?.game === g);
+      expect(ana.snap!.flex).toBe(true);
+      expect(ana.snap!.members).toHaveLength(2);
+      expect(ana.snap!.hostId).toBe('ana2');
+    }
+
+    // na Mesmíssima a regra do jogo vale: o líder muda as rodadas e a sala continua flex
+    ana.room.send('configure', { rounds: 5 });
+    await wait(200);
+    expect(ana.errors).toHaveLength(0);
+    expect((ana.snap as unknown as { settings: { rounds: number } }).settings.rounds).toBe(5);
+
+    // no Ecooo, o formato Siga o Líder troca o motor sem perder a sala flex
+    ana.room.send('pickgame', { game: 'eco' });
+    await until(() => ana.snap?.game === 'eco');
+    ana.room.send('configure', { mode: 'leader' });
+    await wait(250);
+    expect(ana.snap).toMatchObject({ game: 'eco', flex: true });
+  });
 });
