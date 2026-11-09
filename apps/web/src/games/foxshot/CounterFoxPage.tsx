@@ -62,6 +62,9 @@ function MapCard({ mapId, mode }: { mapId: FsMapId; mode: 'dm' | 'bomb' | 'pvp' 
       const S = 6 * gr.cell;
       cv.width = Math.round(gr.cols * S);
       cv.height = Math.round(gr.rows * S);
+      // o quadro tem a proporção do próprio mapa: sem faixas escuras em cima e embaixo
+      cv.style.aspectRatio = `${cv.width} / ${cv.height}`;
+      cv.parentElement?.style.setProperty('--ar', String(cv.width / cv.height));
       const g = cv.getContext('2d')!;
       g.clearRect(0, 0, cv.width, cv.height);
       // a altura vira cor (o mapa chega a uns 6 m)
@@ -170,15 +173,7 @@ function MapCard({ mapId, mode }: { mapId: FsMapId; mode: 'dm' | 'bomb' | 'pvp' 
   }, [mapId]);
   return (
     <div className="cfh-map" data-testid="cfh-map">
-      <div className="cfh-mapwrap">
-        <canvas ref={ref} aria-label={`Mapa ${FS_MAP_NAMES[mapId]} visto de cima`} />
-        <div className="cfh-radar" aria-hidden="true">
-          <i className="sweep" />
-          {[0, 1, 2, 3, 4].map((n) => (
-            <i key={n} className={`dot d${n}`} />
-          ))}
-        </div>
-      </div>
+      <canvas ref={ref} aria-label={`Mapa ${FS_MAP_NAMES[mapId]} visto de cima`} />
       <p>
         {FS_MAP_NAMES[mapId]} · {mode === 'pvp' ? 'PvP' : mode === 'bomb' ? 'Bomba' : 'Mata-mata'}
       </p>
