@@ -131,25 +131,27 @@ export function Backdrop({ game }: { game: WordsGame }) {
     const colors = ['#ffd23f', '#3fcf7d', '#4a8dff', '#a06bff'];
     return (
       <div className="glb wlb-connect" aria-hidden="true">
-        {Array.from({ length: 9 }, (_, i) => (
-          <div
-            key={i}
-            className="wlb-lane"
-            style={
-              {
-                '--y': `${6 + i * 10.5}%`,
-                '--t': `${26 + (i % 4) * 7}s`,
-                '--d': `${-i * 4}s`,
-                '--c': colors[i % 4],
-                '--dir': i % 2 ? 1 : -1,
-              } as CSSProperties
-            }
-          >
-            {Array.from({ length: 4 }, (_, j) => (
-              <i key={j} />
-            ))}
-          </div>
-        ))}
+        <div className="wlb-lanes">
+          {Array.from({ length: 9 }, (_, i) => (
+            <div
+              key={i}
+              className="wlb-lane"
+              style={
+                {
+                  '--y': `${6 + i * 10.5}%`,
+                  '--t': `${26 + (i % 4) * 7}s`,
+                  '--d': `${-i * 4}s`,
+                  '--c': colors[i % 4],
+                  '--dir': i % 2 ? 1 : -1,
+                } as CSSProperties
+              }
+            >
+              {Array.from({ length: 4 }, (_, j) => (
+                <i key={j} />
+              ))}
+            </div>
+          ))}
+        </div>
         <div className="glb-vig" />
       </div>
     );
