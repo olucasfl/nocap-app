@@ -137,12 +137,12 @@ export function GameHubLanding({
         onBack={back}
         testid="modes-panel"
       >
-        <div className="wl-modes" role="list">
+        <div className="wl-modes">
           {modes.map((m) => (
             <button
               key={m.id}
               type="button"
-              role="listitem"
+
               className="wl-mode"
               data-sfx="select"
               data-testid={`mode-${m.id}`}

@@ -1,10 +1,16 @@
-import { useEffect, type CSSProperties, type ReactNode } from 'react';
+import {
+  cloneElement,
+  isValidElement,
+  useEffect,
+  type CSSProperties,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import { SaveNote } from '@/components/GuestNotice';
 import type { SaveState } from '@/games/color/useSaveMatch';
-import { Link } from '@tanstack/react-router';
 import { buzz, sfx } from '@/lib/sfx';
 import type { Board } from '@/lib/ranking';
-import { EndActions } from './EndActions';
+import { ReflexFinal } from './ReflexFinal';
 import type { GameTab } from './GameTabs';
 import { useReveal } from '@/lib/useReveal';
 import { SURVIVAL_LIVES } from '@nocap/games';
@@ -153,37 +159,39 @@ export function SurvivalFinal({
     else sfx.gameOver();
     buzz(40);
   }, [done, completed]);
+  const part = (p: 'record' | 'ranking') =>
+    done && isValidElement(summary)
+      ? cloneElement(summary as ReactElement<{ part?: string }>, { part: p })
+      : undefined;
   return (
-    <section className="screen">
-      <div className="sv-total">
-        <div className="mono">{completed ? 'COMPLETOU!' : 'VOCÊ JOGOU'}</div>
-        <b>{shown}</b>
-        <div className="mono">{shown === 1 ? 'RODADA' : 'RODADAS'}</div>
-        {done && completed && <small className="mono">LIMITE DE {limit} RODADAS</small>}
-      </div>
-      {table?.(shown) ?? (
-        <ul className="sv-rows">
-          {rows.map((r, i) => (
-            <li key={i} className={`${r.passed ? 'ok' : 'bad'}${i < shown ? ' in' : ' pending'}`}>
-              <span className="mono">{i + 1}</span>
-              <span className="mono sv-detail">{r.detail}</span>
-              <b>{r.score.toFixed(1)}</b>
-              <span className="mono sv-tag">{r.passed ? 'PASSOU' : 'VIDA'}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-      {done && summary}
-      <SaveNote className="sv-save mono" save={save} />
-      <div className="stack">
-        <button type="button" className="btn alt" onClick={onRematch}>
-          Jogar de novo
-        </button>
-        <EndActions board="survival" onMenu={onMenu} />
-        <Link to="/" className="btn ghost">
-          Voltar aos jogos
-        </Link>
-      </div>
-    </section>
+    <ReflexFinal
+      modeLabel="Sobrevivência"
+      heroLabel={completed ? 'COMPLETOU!' : 'VOCÊ JOGOU'}
+      heroValue={shown}
+      heroUnit={shown === 1 ? 'rodada' : 'rodadas'}
+      heroNote={done && completed ? `LIMITE DE ${limit} RODADAS` : undefined}
+      detailsTitle="Rodada por rodada"
+      details={
+        table?.(shown) ?? (
+          <ul className="sv-rows">
+            {rows.map((r, i) => (
+              <li key={i} className={`${r.passed ? 'ok' : 'bad'}${i < shown ? ' in' : ' pending'}`}>
+                <span className="mono">{i + 1}</span>
+                <span className="mono sv-detail">{r.detail}</span>
+                <b>{r.score.toFixed(1)}</b>
+                <span className="mono sv-tag">{r.passed ? 'PASSOU' : 'VIDA'}</span>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+      record={part('record')}
+      ranking={part('ranking')}
+      save={<SaveNote className="sv-save mono" save={save} />}
+      again={onRematch}
+      againLabel="Jogar de novo"
+      board="survival"
+      onMenu={onMenu}
+    />
   );
 }

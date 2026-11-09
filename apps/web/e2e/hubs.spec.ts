@@ -62,10 +62,12 @@ test("hub Block's: os dois jogos e o voltar para o início", async ({ page }) =>
     .getByRole('button', { name: 'Agora não' })
     .click({ timeout: 800 })
     .catch(() => undefined);
+  await page.getByTestId('menu-play').click();
   await expect(page.getByTestId('mode-classic')).toBeVisible();
   await expect(page.getByTestId('mode-towers')).toBeVisible();
   await page.getByTestId('mode-towers').click();
   await expect(page.getByTestId('play-towers')).toBeVisible();
+  await page.keyboard.press('Escape');
   await page.keyboard.press('Escape');
   await page.getByTestId('wl-exit').click();
   await expect(page).toHaveURL('/');

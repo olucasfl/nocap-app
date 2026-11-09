@@ -33,6 +33,7 @@ for (const sz of SIZES) {
       for (const mode of ['classic', 'towers'] as const) {
         await page.goto('/blocks');
         await skip();
+        await page.getByTestId('menu-play').click();
         await page
           .getByRole('button', {
             name: new RegExp(mode === 'classic' ? 'Block Classic' : 'Block Towers', 'i'),

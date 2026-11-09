@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
-import { Link } from '@tanstack/react-router';
 import { SONGS, barStart, batidaMode, evaluateBatida, type BatidaTap } from '@nocap/games';
-import { EndActions } from '@/components/EndActions';
+import { ReflexFinal } from '@/components/ReflexFinal';
 import type { GameTab } from '@/components/GameTabs';
 import { MatchSummary } from '@/components/MatchSummary';
 import type { Board } from '@/lib/ranking';
@@ -33,74 +32,81 @@ export function BatidaFinal({ run, taps, previousBest, onMenu, onRematch }: Prop
   const played = Math.max(0, result.endedAtMs - barStart(song, 1));
   const notes = result.perfect + result.good + result.missed;
 
+  const board = batidaMode(run.song) as Board;
+  const word =
+    result.tenths === 0
+      ? 'TENTE DE NOVO'
+      : result.maxCombo >= 32
+        ? 'LENDA'
+        : result.maxCombo >= 16
+          ? 'NO RITMO'
+          : 'BOA';
   return (
-    <section className="screen">
-      <div className="mono eco-label">ECO HERO · {song.name.toUpperCase()}</div>
-      <div className="eco-total">
-        <div>
-          <div className="mono eco-label">PONTOS</div>
-          <b>{Math.round(result.tenths / 10)}</b>
-        </div>
-        <div className="eco-total-side">
-          <span className="eco-word">
-            {result.tenths === 0
-              ? 'TENTE DE NOVO'
-              : result.maxCombo >= 32
-                ? 'LENDA'
-                : result.maxCombo >= 16
-                  ? 'NO RITMO'
-                  : 'BOA'}
-          </span>
-          <span className="mono">COMBO {result.maxCombo}</span>
-        </div>
-      </div>
-
-      <dl className="bt-stats mono">
-        <div>
-          <dt>PERFEITOS</dt>
-          <dd>{result.perfect}</dd>
-        </div>
-        <div>
-          <dt>BONS</dt>
-          <dd>{result.good}</dd>
-        </div>
-        <div>
-          <dt>PERDIDOS</dt>
-          <dd>{result.missed + result.stray}</dd>
-        </div>
-        <div>
-          <dt>SEGURADAS</dt>
-          <dd>{result.holds}</dd>
-        </div>
-        <div>
-          <dt>DURAÇÃO</dt>
-          <dd>{clock(played)}</dd>
-        </div>
-      </dl>
-      <p className="mono eco-end">
-        {notes === 0
-          ? 'NENHUMA NOTA TOCADA'
-          : `${notes} NOTAS · A ENERGIA ACABOU NO COMPASSO ${result.endedBar}`}
-      </p>
-
-      <MatchSummary
-        game="eco"
-        mode={batidaMode(run.song) as Board}
-        scoreTenths={result.tenths}
-        previousBest={previousBest}
-        saved={save === 'saved'}
-        onRanking={() => onMenu('ranking', batidaMode(run.song) as Board)}
-      />
-      <SaveNote className="eco-save" save={save} />
-      <div className="stack">
-        <button type="button" className="btn alt" data-sfx="start" onClick={onRematch}>
-          Jogar de novo
-        </button>
-        <EndActions board={batidaMode(run.song) as Board} onMenu={onMenu} />
-        <Link to="/" className="btn ghost">
-          Voltar aos jogos
-        </Link>
-      </div>
-    </section>
+    <ReflexFinal
+      modeLabel={`Eco Hero · ${song.name}`}
+      heroLabel="PONTOS"
+      heroValue={Math.round(result.tenths / 10)}
+      heroWord={word}
+      heroNote={`COMBO ${result.maxCombo}`}
+      detailsTitle="Como foi a música"
+      details={
+        <>
+          <dl className="bt-stats mono">
+            <div>
+              <dt>PERFEITOS</dt>
+              <dd>{result.perfect}</dd>
+            </div>
+            <div>
+              <dt>BONS</dt>
+              <dd>{result.good}</dd>
+            </div>
+            <div>
+              <dt>PERDIDOS</dt>
+              <dd>{result.missed + result.stray}</dd>
+            </div>
+            <div>
+              <dt>SEGURADAS</dt>
+              <dd>{result.holds}</dd>
+            </div>
+            <div>
+              <dt>DURAÇÃO</dt>
+              <dd>{clock(played)}</dd>
+            </div>
+          </dl>
+          <p className="mono eco-end">
+            {notes === 0
+              ? 'NENHUMA NOTA TOCADA'
+              : `${notes} NOTAS · A ENERGIA ACABOU NO COMPASSO ${result.endedBar}`}
+          </p>
+        </>
+      }
+      record={
+        <MatchSummary
+          game="eco"
+          mode={board}
+          part="record"
+          scoreTenths={result.tenths}
+          previousBest={previousBest}
+          saved={save === 'saved'}
+          onRanking={() => onMenu('ranking', board)}
+        />
+      }
+      ranking={
+        <MatchSummary
+          game="eco"
+          mode={board}
+          part="ranking"
+          scoreTenths={result.tenths}
+          previousBest={previousBest}
+          saved={save === 'saved'}
+          onRanking={() => onMenu('ranking', board)}
+        />
+      }
+      save={<SaveNote className="eco-save" save={save} />}
+      again={onRematch}
+      againLabel="Jogar de novo"
+      board={board}
+      onMenu={onMenu}
+    />
   );
 }

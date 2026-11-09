@@ -35,6 +35,7 @@ for (const sz of SIZES) {
       .getByRole('button', { name: 'Agora não' })
       .click({ timeout: 1500 })
       .catch(() => undefined);
+    await page.getByTestId('menu-play').click();
     await page
       .getByRole('button', { name: /Block Classic/i })
       .first()

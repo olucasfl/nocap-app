@@ -140,7 +140,10 @@ export function MatchSummary({
   previousBest,
   saved,
   onRanking,
+  part = 'all',
 }: {
+  /** Só o cartão do recorde, só o lugar no ranking, ou os dois empilhados (o padrão). */
+  part?: 'all' | 'record' | 'ranking';
   game: Game;
   mode: Board;
   /** Nota desta partida em décimos (nas contagens, 10 por rodada ou passo). */
@@ -159,6 +162,7 @@ export function MatchSummary({
 
   // Sem conta não há recorde, nem ranking, nem "novo recorde": só a nota desta partida.
   if (guest) {
+    if (part === 'ranking') return null;
     return (
       <section className="sum sum-flat" aria-label="Sua nota">
         <div className="sum-pair">
@@ -176,44 +180,48 @@ export function MatchSummary({
 
   return (
     <>
-      {c.verdict === 'record' && (
+      {part !== 'ranking' && c.verdict === 'record' && (
         <NewRecord
           now={formatBest(game, mode, scoreTenths)}
           before={formatBest(game, mode, previousBest!)}
         />
       )}
-      <section className={`sum sum-${c.verdict}`} aria-label="Sua nota e o seu recorde">
-        <div className="sum-pair">
-          <div className="sum-cell now">
-            <span className="mono sum-label">ESTA PARTIDA</span>
-            <b>
-              {scoreValue(game, mode, scoreTenths)}
-              <small className="mono">{withSlash ? unit : ` ${unit}`}</small>
-            </b>
+      {part !== 'ranking' && (
+        <section className={`sum sum-${c.verdict}`} aria-label="Sua nota e o seu recorde">
+          <div className="sum-pair">
+            <div className="sum-cell now">
+              <span className="mono sum-label">ESTA PARTIDA</span>
+              <b>
+                {scoreValue(game, mode, scoreTenths)}
+                <small className="mono">{withSlash ? unit : ` ${unit}`}</small>
+              </b>
+            </div>
+            <div className="sum-cell best">
+              <span className="mono sum-label">SEU RECORDE</span>
+              <b>
+                {scoreValue(game, mode, c.best)}
+                <small className="mono">{withSlash ? unit : ` ${unit}`}</small>
+              </b>
+            </div>
           </div>
-          <div className="sum-cell best">
-            <span className="mono sum-label">SEU RECORDE</span>
-            <b>
-              {scoreValue(game, mode, c.best)}
-              <small className="mono">{withSlash ? unit : ` ${unit}`}</small>
-            </b>
+          <div className="sum-meter" aria-hidden="true">
+            <i className="sum-fill" style={{ width: `${bars.now}%` }} />
+            <i className="sum-mark" style={{ left: `${bars.best}%` }} />
           </div>
-        </div>
-        <div className="sum-meter" aria-hidden="true">
-          <i className="sum-fill" style={{ width: `${bars.now}%` }} />
-          <i className="sum-mark" style={{ left: `${bars.best}%` }} />
-        </div>
-        <p className="mono sum-verdict" role="status">
-          {verdictText(game, mode, c)}
-        </p>
-      </section>
-      <RankingPeek
-        game={game}
-        mode={mode}
-        scoreTenths={scoreTenths}
-        saved={saved}
-        onRanking={onRanking}
-      />
+          <p className="mono sum-verdict" role="status">
+            {verdictText(game, mode, c)}
+          </p>
+        </section>
+      )}
+      {part !== 'record' && (
+        <RankingPeek
+          game={game}
+          mode={mode}
+          scoreTenths={scoreTenths}
+          saved={saved}
+          onRanking={onRanking}
+        />
+      )}
     </>
   );
 }

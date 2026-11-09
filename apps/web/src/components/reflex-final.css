@@ -1,0 +1,155 @@
+/* Fim de partida dos jogos de reflexo e precisão (spec 069). */
+.rf {
+  gap: 14px;
+  padding-bottom: 0;
+}
+.rf-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
+}
+.rf-head h1 {
+  margin: 0;
+  font: 900 clamp(24px, 6vw, 34px) var(--font-display);
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+.rf-chip {
+  padding: 4px 10px;
+  border: var(--border);
+  border-radius: 999px;
+  background: var(--hg-a, var(--yellow));
+  color: #0b0d1c;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.rf-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(0, 1fr);
+  position: relative;
+  z-index: 1;
+}
+.rf-col {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  min-width: 0;
+}
+.rf-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.rf-h {
+  margin: 0;
+  font: 800 13px var(--font-mono, monospace);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.rf-hero {
+  justify-items: center;
+  text-align: center;
+  border-color: var(--hg-a, var(--ink));
+  box-shadow: 4px 4px 0 var(--hg-a, var(--ink));
+  padding: 18px 14px;
+}
+.rf-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+.rf-score {
+  font: 900 clamp(56px, 16vw, 92px) / 1 var(--font-display);
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+.rf-score small {
+  font-size: 16px;
+  font-weight: 700;
+  margin-left: 6px;
+  color: var(--muted);
+  letter-spacing: 0;
+}
+.rf-word {
+  padding: 4px 14px;
+  border: var(--border);
+  border-radius: 10px;
+  background: var(--hg-a, var(--green));
+  color: #0b0d1c;
+  font: 900 18px var(--font-display);
+  text-transform: uppercase;
+  transform: rotate(-2deg);
+}
+.rf-note {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+/* os cartões que já existiam (recorde, ranking) entram na mesma grade, sem o espaço extra */
+.rf .sum,
+.rf .sum-rank {
+  margin: 0;
+}
+.rf-actions {
+  position: sticky;
+  z-index: 5;
+  bottom: 0;
+  margin: 0 -16px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  padding: 10px max(12px, env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom))
+    max(12px, env(safe-area-inset-left));
+  background: var(--paper);
+  border-top: var(--border);
+}
+.rf-actions .btn {
+  min-height: 48px;
+  padding: 0 6px;
+  font-size: 15px;
+  justify-content: center;
+}
+.rf-actions .btn.alt:first-child {
+  grid-column: span 1;
+}
+@media (min-width: 900px) {
+  .rf {
+    padding-bottom: 24px;
+  }
+  .rf-actions {
+    margin: 0;
+  }
+  .rf-grid {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    gap: 18px;
+    align-items: start;
+  }
+  .rf-actions {
+    position: static;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    grid-template-columns: repeat(4, minmax(0, 220px));
+    justify-content: start;
+    position: relative;
+    z-index: 1;
+  }
+}
+@media (max-width: 380px) {
+  .rf-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

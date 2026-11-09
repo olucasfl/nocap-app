@@ -1,10 +1,9 @@
 import { useEffect } from 'react';
-import { Link } from '@tanstack/react-router';
-import { gradeOf, playGrade } from '@/lib/grade';
+import { gradeOf, gradeWord, playGrade } from '@/lib/grade';
 import { sfx } from '@/lib/sfx';
 import { useReveal } from '@/lib/useReveal';
 import { DailyPanel } from '@/components/DailyPanel';
-import { EndActions } from '@/components/EndActions';
+import { ReflexFinal } from '@/components/ReflexFinal';
 import type { GameTab } from '@/components/GameTabs';
 import { MatchSummary } from '@/components/MatchSummary';
 import type { Board } from '@/lib/ranking';
@@ -39,52 +38,70 @@ export function FinalScreen({ run, results, previousBest, onMenu, onRematch }: P
     if (done) playGrade(gradeOf(total / results.length).id);
   }, [done, total, results.length]);
 
+  const grade = gradeOf(total / results.length);
   return (
-    <section className="screen">
-      <div className="cg-total">
-        <div>
-          <div className="mono" style={{ fontWeight: 700, fontSize: 12 }}>
-            TOTAL
-          </div>
-          <b>{running.toFixed(1)}</b>
+    <ReflexFinal
+      modeLabel={run.kind === 'daily' ? 'Daily' : (MODE_NAME[run.preset] ?? run.preset)}
+      heroLabel="TOTAL"
+      heroValue={running.toFixed(1)}
+      heroUnit={`/ ${results.length * 10}`}
+      heroWord={done ? gradeWord(grade, 'color') : undefined}
+      detailsTitle="Rodada por rodada"
+      details={
+        <div className="cg-rows">
+          {results.map((r, i) => (
+            <div className={`cg-row${i < shown ? ' in' : ' pending'}`} key={i}>
+              <span>{i + 1}</span>
+              <i style={{ background: toHex(r.target) }} />
+              <i style={{ background: toHex(r.guess) }} />
+              <span className="m">ΔE {r.deltaE.toFixed(1)}</span>
+              <span className="s">{r.score.toFixed(1)}</span>
+            </div>
+          ))}
         </div>
-        <div style={{ font: '900 22px var(--font-display)' }}>/ {results.length * 10}</div>
-      </div>
-      <div className="cg-rows">
-        {results.map((r, i) => (
-          <div className={`cg-row${i < shown ? ' in' : ' pending'}`} key={i}>
-            <span>{i + 1}</span>
-            <i style={{ background: toHex(r.target) }} />
-            <i style={{ background: toHex(r.guess) }} />
-            <span className="m">ΔE {r.deltaE.toFixed(1)}</span>
-            <span className="s">{r.score.toFixed(1)}</span>
-          </div>
-        ))}
-      </div>
-      {done && run.kind !== 'daily' && (
-        <MatchSummary
-          game="color"
-          mode={run.preset}
-          scoreTenths={totalTenths}
-          previousBest={previousBest}
-          saved={save === 'saved'}
-          onRanking={() => onMenu('ranking', run.preset)}
-        />
-      )}
-      <SaveNote className="cg-save" save={save} />
-      {done && run.kind === 'daily' && <DailyPanel game="color" />}
-      <div className="stack">
-        {/* O Daily é uma tentativa por dia: sem revanche. */}
-        {run.kind !== 'daily' && (
-          <button type="button" className="btn alt" onClick={onRematch}>
-            Revanche
-          </button>
-        )}
-        <EndActions board={run.kind === 'daily' ? 'daily' : run.preset} onMenu={onMenu} />
-        <Link to="/" className="btn ghost">
-          Voltar aos jogos
-        </Link>
-      </div>
-    </section>
+      }
+      record={
+        done && run.kind !== 'daily' ? (
+          <MatchSummary
+            game="color"
+            mode={run.preset}
+            part="record"
+            scoreTenths={totalTenths}
+            previousBest={previousBest}
+            saved={save === 'saved'}
+            onRanking={() => onMenu('ranking', run.preset)}
+          />
+        ) : undefined
+      }
+      ranking={
+        done ? (
+          run.kind === 'daily' ? (
+            <DailyPanel game="color" />
+          ) : (
+            <MatchSummary
+              game="color"
+              mode={run.preset}
+              part="ranking"
+              scoreTenths={totalTenths}
+              previousBest={previousBest}
+              saved={save === 'saved'}
+              onRanking={() => onMenu('ranking', run.preset)}
+            />
+          )
+        ) : undefined
+      }
+      save={<SaveNote className="cg-save" save={save} />}
+      again={run.kind === 'daily' ? undefined : onRematch}
+      board={run.kind === 'daily' ? 'daily' : run.preset}
+      onMenu={onMenu}
+    />
   );
 }
+
+const MODE_NAME: Record<string, string> = {
+  classic: 'Clássico',
+  flash: 'Flash',
+  quick: 'Rápido',
+  blind: 'Às cegas',
+  survival: 'Sobrevivência',
+};

@@ -1,8 +1,7 @@
 import { useEffect, useMemo } from 'react';
-import { Link } from '@tanstack/react-router';
 import { evaluateRun, expectedTaps, lengthAt } from '@nocap/games';
 import { DailyPanel } from '@/components/DailyPanel';
-import { EndActions } from '@/components/EndActions';
+import { ReflexFinal } from '@/components/ReflexFinal';
 import type { GameTab } from '@/components/GameTabs';
 import { GradeFx } from '@/components/GradeFx';
 import { MatchSummary } from '@/components/MatchSummary';
@@ -58,52 +57,70 @@ export function FinalScreen({ run, taps, reason, previousBest, onMenu, onRematch
   }, [grade.id]);
 
   return (
-    <section className="screen">
+    <>
       <GradeFx id={grade.id} />
-      <div className="eco-total">
-        <div>
-          <div className="mono eco-label">PASSOS</div>
-          <b>{steps}</b>
-        </div>
-        <div className="eco-total-side">
-          <span className="eco-word">{grade.word}</span>
-          <span className="mono">/ {run.settings.maxSteps}</span>
-        </div>
-      </div>
-
-      <div className="eco-end mono">
-        <span>{REASON_TEXT[reason]}</span>
-        {miss && (
-          <span className="eco-miss">
-            ERA <PadChip pad={miss.correct} /> VOCÊ TOCOU <PadChip pad={miss.pressed} />
-          </span>
-        )}
-      </div>
-
-      {run.kind !== 'daily' && (
-        <MatchSummary
-          game="eco"
-          mode={run.preset}
-          scoreTenths={steps * 10}
-          previousBest={previousBest}
-          saved={save === 'saved'}
-          onRanking={() => onMenu('ranking', run.preset)}
-        />
-      )}
-      <SaveNote className="eco-save" save={save} />
-      {run.kind === 'daily' && <DailyPanel game="eco" />}
-      <div className="stack">
-        {/* O Daily é uma tentativa por dia: sem revanche. */}
-        {run.kind !== 'daily' && (
-          <button type="button" className="btn alt" data-sfx="start" onClick={onRematch}>
-            Revanche
-          </button>
-        )}
-        <EndActions board={run.kind === 'daily' ? 'daily' : run.preset} onMenu={onMenu} />
-        <Link to="/" className="btn ghost">
-          Voltar aos jogos
-        </Link>
-      </div>
-    </section>
+      <ReflexFinal
+        modeLabel={run.kind === 'daily' ? 'Daily' : (MODE_NAME[run.preset] ?? run.preset)}
+        heroLabel="PASSOS"
+        heroValue={steps}
+        heroUnit={`/ ${run.settings.maxSteps}`}
+        heroWord={grade.word}
+        heroNote={REASON_TEXT[reason]}
+        detailsTitle="Como terminou"
+        details={
+          <div className="eco-end mono">
+            <span>{REASON_TEXT[reason]}</span>
+            {miss ? (
+              <span className="eco-miss">
+                ERA <PadChip pad={miss.correct} /> VOCÊ TOCOU <PadChip pad={miss.pressed} />
+              </span>
+            ) : (
+              <span>
+                {steps} de {run.settings.maxSteps} passos
+              </span>
+            )}
+          </div>
+        }
+        record={
+          run.kind !== 'daily' ? (
+            <MatchSummary
+              game="eco"
+              mode={run.preset}
+              part="record"
+              scoreTenths={steps * 10}
+              previousBest={previousBest}
+              saved={save === 'saved'}
+              onRanking={() => onMenu('ranking', run.preset)}
+            />
+          ) : undefined
+        }
+        ranking={
+          run.kind === 'daily' ? (
+            <DailyPanel game="eco" />
+          ) : (
+            <MatchSummary
+              game="eco"
+              mode={run.preset}
+              part="ranking"
+              scoreTenths={steps * 10}
+              previousBest={previousBest}
+              saved={save === 'saved'}
+              onRanking={() => onMenu('ranking', run.preset)}
+            />
+          )
+        }
+        save={<SaveNote className="eco-save" save={save} />}
+        again={run.kind === 'daily' ? undefined : onRematch}
+        board={run.kind === 'daily' ? 'daily' : run.preset}
+        onMenu={onMenu}
+      />
+    </>
   );
 }
+
+const MODE_NAME: Record<string, string> = {
+  classic: 'Clássico',
+  escalada: 'Escalada',
+  velocidade: 'Velocidade',
+  reverso: 'Reverso',
+};

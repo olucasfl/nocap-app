@@ -1,10 +1,9 @@
 import { useEffect } from 'react';
-import { Link } from '@tanstack/react-router';
-import { gradeOf, playGrade } from '@/lib/grade';
+import { gradeOf, gradeWord, playGrade } from '@/lib/grade';
 import { sfx } from '@/lib/sfx';
 import { useReveal } from '@/lib/useReveal';
 import { DailyPanel } from '@/components/DailyPanel';
-import { EndActions } from '@/components/EndActions';
+import { ReflexFinal } from '@/components/ReflexFinal';
 import type { GameTab } from '@/components/GameTabs';
 import { MatchSummary } from '@/components/MatchSummary';
 import type { Board } from '@/lib/ranking';
@@ -38,40 +37,59 @@ export function FinalScreen({ run, results, previousBest, onMenu, onRematch }: P
     if (done) playGrade(gradeOf(total / results.length).id);
   }, [done, total, results.length]);
 
+  const grade = gradeOf(total / results.length);
+  const totalTenths = Math.round(total * 10);
   return (
-    <section className="screen">
-      <div className="tm-total">
-        <div>
-          <div className="mono tm-label">TOTAL</div>
-          <b>{running.toFixed(1)}</b>
-        </div>
-        <div className="tm-total-max">/ {results.length * 10}</div>
-      </div>
-      <TimeRoundsTable rows={results} shown={shown} />
-      {done && run.kind !== 'daily' && (
-        <MatchSummary
-          game="time"
-          mode={run.preset}
-          scoreTenths={Math.round(total * 10)}
-          previousBest={previousBest}
-          saved={save === 'saved'}
-          onRanking={() => onMenu('ranking', run.preset)}
-        />
-      )}
-      <SaveNote className="tm-save" save={save} />
-      {done && run.kind === 'daily' && <DailyPanel game="time" />}
-      <div className="stack">
-        {/* O Daily é uma tentativa por dia: sem revanche. */}
-        {run.kind !== 'daily' && (
-          <button type="button" className="btn alt" onClick={onRematch}>
-            Revanche
-          </button>
-        )}
-        <EndActions board={run.kind === 'daily' ? 'daily' : run.preset} onMenu={onMenu} />
-        <Link to="/" className="btn ghost">
-          Voltar aos jogos
-        </Link>
-      </div>
-    </section>
+    <ReflexFinal
+      modeLabel={run.kind === 'daily' ? 'Daily' : (MODE_NAME[run.preset] ?? run.preset)}
+      heroLabel="TOTAL"
+      heroValue={running.toFixed(1)}
+      heroUnit={`/ ${results.length * 10}`}
+      heroWord={done ? gradeWord(grade, 'time') : undefined}
+      detailsTitle="Rodada por rodada"
+      details={<TimeRoundsTable rows={results} shown={shown} />}
+      record={
+        done && run.kind !== 'daily' ? (
+          <MatchSummary
+            game="time"
+            mode={run.preset}
+            part="record"
+            scoreTenths={totalTenths}
+            previousBest={previousBest}
+            saved={save === 'saved'}
+            onRanking={() => onMenu('ranking', run.preset)}
+          />
+        ) : undefined
+      }
+      ranking={
+        done ? (
+          run.kind === 'daily' ? (
+            <DailyPanel game="time" />
+          ) : (
+            <MatchSummary
+              game="time"
+              mode={run.preset}
+              part="ranking"
+              scoreTenths={totalTenths}
+              previousBest={previousBest}
+              saved={save === 'saved'}
+              onRanking={() => onMenu('ranking', run.preset)}
+            />
+          )
+        ) : undefined
+      }
+      save={<SaveNote className="tm-save" save={save} />}
+      again={run.kind === 'daily' ? undefined : onRematch}
+      board={run.kind === 'daily' ? 'daily' : run.preset}
+      onMenu={onMenu}
+    />
   );
 }
+
+const MODE_NAME: Record<string, string> = {
+  classic: 'Clássico',
+  quick: 'Rápido',
+  strict: 'Sem estourar',
+  sequence: 'Sequência',
+  survival: 'Sobrevivência',
+};
