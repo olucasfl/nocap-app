@@ -68,16 +68,13 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.describe("Hub do Word's", () => {
-  test("a Home tem a capa de cada jogo do Word's e a página mostra os três jogos", async ({
-    page,
-  }) => {
+  test("a Home tem o cartão do Word's e a página mostra os três jogos", async ({ page }) => {
     const errors = watch(page);
     await page.goto('/');
-    for (const id of ['classic', 'connect', 'bee'])
-      await expect(page.getByTestId(`card-${id}`)).toBeVisible();
-    await page.getByTestId('card-classic').click();
-    await expect(page).toHaveURL(/\/words\/classic$/);
-    await page.goto('/words');
+    const card = page.locator('.hub-card-words');
+    await expect(card).toBeVisible();
+    await card.click();
+    await expect(page).toHaveURL(/\/words$/);
     for (const id of ['classic', 'connect', 'bee'])
       await expect(page.getByTestId(`game-${id}`)).toBeVisible();
     await expect(page.getByTestId('game-bee')).toContainText('200 fases');

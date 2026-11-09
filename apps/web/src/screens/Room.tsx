@@ -124,12 +124,7 @@ function Entry({
             ? '/tempo'
             : game === 'eco'
               ? '/eco'
-              : game === 'atravessa' ||
-                  game === 'desmorona' ||
-                  game === 'bola' ||
-                  game === 'pingpong' ||
-                  game === 'foxshot' ||
-                  game === 'foxcap'
+              : game === 'atravessa' || game === 'desmorona' || game === 'bola' || game === 'pingpong' || game === 'foxshot' || game === 'foxcap'
                 ? '/fox-cap'
                 : '/cor'
         }
@@ -217,12 +212,7 @@ function RoomPageInner({ code, game = 'color' }: { code?: string; game?: RoomGam
     // o Counter Fox volta para o menu dele (só sai do Counter Fox quem clica em "Sair do Counter Fox")
     if (lastGame === 'foxshot') void navigate({ to: '/fox-cap/counter-fox' });
     // os jogos do Fox Cap! (Fut Fox, Desmorona!, Atravessa!) voltam para a tela do Fox Cap!
-    else if (
-      lastGame === 'desmorona' ||
-      lastGame === 'bola' ||
-      lastGame === 'pingpong' ||
-      lastGame === 'atravessa'
-    )
+    else if (lastGame === 'desmorona' || lastGame === 'bola' || lastGame === 'pingpong' || lastGame === 'atravessa')
       // cada jogo volta para a tela própria dele (só sai do jogo quem clica em "Sair do ..." nessa tela)
       void navigate({ to: '/fox-cap', search: { jogo: lastGame } });
     else if (lastGame === 'foxcap') void navigate({ to: '/fox-cap' });

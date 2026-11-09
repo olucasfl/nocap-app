@@ -1,11 +1,7 @@
 import { useEffect, useId, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Backdrop, Emblem, type ThemeGame } from '@/components/GameLandingArt';
-import {
-  Backdrop as WordsBackdrop,
-  Emblem as WordsEmblem,
-  type WordsGame,
-} from '@/games/words/landing/WordsLandingArt';
+import { Backdrop as WordsBackdrop, Emblem as WordsEmblem, type WordsGame } from '@/games/words/landing/WordsLandingArt';
 import { WORDS_LANDING } from '@/games/words/landing/WordsLanding';
 import '@/games/words/landing/words-landing.css';
 import type { RoomSnapshot } from '@/lib/rooms';
@@ -23,21 +19,8 @@ export type LobbyTab = 'members' | 'rules' | 'invite' | 'chat' | 'games';
 /** A aba aberta de cada sala: na sala do Fox Cap! trocar de jogo troca a tela do lobby, e a aba tem que ficar onde estava. */
 export const tabMemo = new Map<string, string>();
 /** O Counter Fox usa outros nomes de aba: este mapa deixa a mesma aba aberta ao trocar de jogo. */
-export const CF_TO_SHELL: Record<string, LobbyTab> = {
-  sala: 'members',
-  jogadores: 'members',
-  modo: 'rules',
-  convidar: 'invite',
-  chat: 'chat',
-  jogos: 'games',
-};
-export const SHELL_TO_CF: Record<LobbyTab, string> = {
-  members: 'jogadores',
-  rules: 'modo',
-  invite: 'convidar',
-  chat: 'chat',
-  games: 'jogos',
-};
+export const CF_TO_SHELL: Record<string, LobbyTab> = { sala: 'members', jogadores: 'members', modo: 'rules', convidar: 'invite', chat: 'chat', jogos: 'games' };
+export const SHELL_TO_CF: Record<LobbyTab, string> = { members: 'jogadores', rules: 'modo', invite: 'convidar', chat: 'chat', games: 'jogos' };
 
 /** Uma linha só com o que falta para começar. */
 export function startHint(snapshot: RoomSnapshot): { text: string; ok: boolean } {
@@ -81,9 +64,7 @@ export function LobbyShell({
   const message = useRoom((s) => s.message);
   const [tabRaw, setTabState] = useState<LobbyTab>(() => {
     const m = tabMemo.get(snapshot.code);
-    return m && m in SHELL_TO_CF
-      ? (m as LobbyTab)
-      : ((m ? CF_TO_SHELL[m] : undefined) ?? 'members');
+    return m && m in SHELL_TO_CF ? (m as LobbyTab) : (m ? CF_TO_SHELL[m] : undefined) ?? 'members';
   });
   const setTab = (t: LobbyTab) => {
     tabMemo.set(snapshot.code, t);
@@ -91,9 +72,7 @@ export function LobbyShell({
   };
   const uid = useId();
   const hint = startHint(snapshot);
-  const wordsTheme = WORDS_ROOM[snapshot.game]
-    ? WORDS_LANDING[WORDS_ROOM[snapshot.game]!]
-    : undefined;
+  const wordsTheme = WORDS_ROOM[snapshot.game] ? WORDS_LANDING[WORDS_ROOM[snapshot.game]!] : undefined;
   const theme = GAME_LANDING[snapshot.game as LandingGame] ?? wordsTheme;
   const noGame = snapshot.flex && snapshot.game === 'foxcap';
   // sem jogo não existe a aba Configurar: cai em Jogadores
@@ -106,14 +85,10 @@ export function LobbyShell({
       count: `${snapshot.members.length}/${snapshot.maxPlayers}`,
     },
     // sem jogo escolhido não há o que configurar: a aba é só a lista de jogos
-    ...(noGame
-      ? []
-      : [{ id: 'rules' as LobbyTab, label: snapshot.flex ? 'Configurar' : 'Regras' }]),
+    ...(noGame ? [] : [{ id: 'rules' as LobbyTab, label: snapshot.flex ? 'Configurar' : 'Regras' }]),
     { id: 'invite', label: 'Convidar' },
     { id: 'chat', label: 'Chat' },
-    ...(snapshot.flex
-      ? [{ id: 'games' as LobbyTab, label: noGame ? 'Jogos' : 'Outros jogos' }]
-      : []),
+    ...(snapshot.flex ? [{ id: 'games' as LobbyTab, label: noGame ? 'Jogos' : 'Outros jogos' }] : []),
   ];
 
   const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -136,14 +111,7 @@ export function LobbyShell({
       data-tab={tab}
       data-game={snapshot.game}
       // a sala toma as cores do jogo escolhido (e muda quando o líder troca de jogo)
-      style={
-        theme
-          ? ({
-              ['--gl-a' as string]: theme.a,
-              ['--gl-b' as string]: theme.b,
-            } as React.CSSProperties)
-          : undefined
-      }
+      style={theme ? ({ ['--gl-a' as string]: theme.a, ['--gl-b' as string]: theme.b } as React.CSSProperties) : undefined}
     >
       <header className="lb3-bar">
         <div className="lb3-bar-code">
@@ -225,8 +193,7 @@ export function LobbyShell({
             className={`lb3-pane pane-chat${tab === 'chat' ? ' on' : ''}`}
           >
             <h2 className="lb3-h">Chat</h2>
-            {(tab === 'chat' ||
-              (typeof matchMedia === 'function' && matchMedia('(min-width: 1024px)').matches)) && (
+            {(tab === 'chat' || (typeof matchMedia === 'function' && matchMedia('(min-width: 1024px)').matches)) && (
               <ChatPanel snapshot={snapshot} colorOf={(id) => chatColor(snapshot, id)} />
             )}
           </div>
@@ -248,28 +215,20 @@ export function LobbyShell({
     wordsTheme ? (
       <LobbyFrame game={WORDS_ROOM[snapshot.game]!}>{content}</LobbyFrame>
     ) : (
-      <LobbyFrame game={(snapshot.game in GAME_LANDING ? snapshot.game : 'foxcap') as ThemeGame}>
-        {content}
-      </LobbyFrame>
+      <LobbyFrame game={(snapshot.game in GAME_LANDING ? snapshot.game : 'foxcap') as ThemeGame}>{content}</LobbyFrame>
     ),
     document.body,
   );
 }
 
 /** Jogos de rodadas com sala (spec 068): a sala usa o cenário e o símbolo do hub do jogo. */
-const WORDS_ROOM: Record<string, WordsGame | undefined> = {
-  color: 'color',
-  impostor: 'color',
-  time: 'time',
-  eco: 'eco',
-};
+const WORDS_ROOM: Record<string, WordsGame | undefined> = { color: 'color', impostor: 'color', time: 'time', eco: 'eco' };
 
 /** Jogos que pertencem ao Fox Cap! (e a sala sem jogo escolhido). */
 const FOX_CAP_GAMES: string[] = ['foxcap', 'atravessa', 'desmorona', 'bola', 'pingpong', 'foxshot'];
 
 const FC_THEME = { line1: 'FOX', line2: 'CAP!', a: '#ffb347', b: '#3a1f45' };
-const FONTS =
-  'https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Saira+Stencil+One&display=swap';
+const FONTS = 'https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Saira+Stencil+One&display=swap';
 
 /**
  * Moldura temática da sala (spec 058): tela cheia com o cenário e o símbolo do jogo escolhido (ou do Fox Cap! sem jogo),
@@ -277,11 +236,7 @@ const FONTS =
  */
 function LobbyFrame({ game, children }: { game: ThemeGame | WordsGame; children: ReactNode }) {
   const words = game === 'color' || game === 'time' || game === 'eco';
-  const t = words
-    ? WORDS_LANDING[game]
-    : game === 'foxcap'
-      ? FC_THEME
-      : GAME_LANDING[game as LandingGame];
+  const t = words ? WORDS_LANDING[game] : game === 'foxcap' ? FC_THEME : GAME_LANDING[game as LandingGame];
   useEffect(() => {
     if (!document.querySelector('link[data-cfh-fonts]')) {
       const l = document.createElement('link');
@@ -300,13 +255,7 @@ function LobbyFrame({ game, children }: { game: ThemeGame | WordsGame; children:
     };
   }, []);
   return (
-    <div
-      className="gll"
-      data-game={game}
-      data-words={words ? '1' : undefined}
-      data-testid="themed-lobby"
-      style={{ ['--gl-a' as string]: t.a, ['--gl-b' as string]: t.b }}
-    >
+    <div className="gll" data-game={game} data-words={words ? '1' : undefined} data-testid="themed-lobby" style={{ ['--gl-a' as string]: t.a, ['--gl-b' as string]: t.b }}>
       {words ? <WordsBackdrop game={game} /> : <Backdrop game={game as ThemeGame} />}
       <div className="gll-wrap">
         <header className="gll-head">
