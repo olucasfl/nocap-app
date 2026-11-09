@@ -103,10 +103,10 @@ window.ready = true;
 
 const WEAPONS = {
   ak: 'ref/ak.glb', pistol: 'ref/pistol.glb', sniper: 'ref/sniper.glb', smg: 'ref/smg.glb', shotgun: 'ref/shotgun.glb',
-  m4: 'ref/m4.glb', usp: 'ref/usp.glb', frag: 'ref/frag.glb', flash: 'ref/flash.glb', knife: '',
+  m4: 'ref/m4.glb', usp: 'ref/usp.glb', frag: 'ref/frag.glb', flash: 'ref/flash.glb', smoke: 'ref/smoke.glb', c4: 'c4.glb', knife: '',
 };
 // só o que sai do automático: granadas em pé e a faca vista de lado (BAKE_FLIPS troca na hora de ajustar)
-const FLIPS = { frag: { look: 'z', up: 'y' }, flash: { look: 'x', up: 'y' }, knife: { look: 'y', up: 'x', flipX: true }, ...JSON.parse(process.env.BAKE_FLIPS ?? '{}') };
+const FLIPS = { frag: { look: 'z', up: 'y' }, flash: { look: 'x', up: 'y' }, smoke: { look: 'z', up: 'y' }, knife: { look: 'y', up: 'x', flipX: true }, ...JSON.parse(process.env.BAKE_FLIPS ?? '{}') };
 
 const tmp = resolve(web, 'icon-bake.html');
 writeFileSync(tmp, html);

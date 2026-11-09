@@ -76,7 +76,7 @@ export const FS_SHOP: FsShopCategory[] = [
     label: 'Granadas',
     items: [
       { id: 'flash', name: 'Granada de luz', price: 200, kind: 'grenade', grenade: 'flash' },
-      { id: 'smoke', name: 'Granada de fumaça', price: 300, kind: 'grenade', soon: true },
+      { id: 'smoke', name: 'Granada de fumaça', price: 300, kind: 'grenade', grenade: 'smoke' },
       { id: 'frag', name: 'Granada explosiva', price: 300, kind: 'grenade', grenade: 'frag' },
       { id: 'fire', name: 'Granada incendiária', price: 600, kind: 'grenade', soon: true },
     ],

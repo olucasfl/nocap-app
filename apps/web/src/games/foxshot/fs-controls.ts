@@ -28,6 +28,7 @@ export interface FsFrameInput {
   grenade: boolean;
   grenadeFrag: boolean;
   grenadeFlash: boolean;
+  grenadeSmoke: boolean;
   buy: boolean;
   /** M: abre e fecha o mapa grande (toque único). */
   map: boolean;
@@ -49,7 +50,7 @@ export class FsControls {
   private cycleQueued = false;
   private reloadQueued = false;
   private jumpQueued = false;
-  private once = { map: false, inspect: false, buy: false, drop: false, pickup: false, bombSlot: false, grenade: false, grenadeFrag: false, grenadeFlash: false };
+  private once = { map: false, inspect: false, buy: false, drop: false, pickup: false, bombSlot: false, grenade: false, grenadeFrag: false, grenadeFlash: false, grenadeSmoke: false };
   private dx = 0;
   private dy = 0;
   private stick: { id: number; ox: number; oy: number; x: number; y: number } | null = null;
@@ -216,8 +217,8 @@ export class FsControls {
     const pick = this.pickKey;
     this.pickKey = -1;
     const on = this.enabled;
-    const { inspect, buy, drop, pickup, bombSlot, grenade, grenadeFrag, grenadeFlash, map } = this.once;
-    this.once = { map: false, inspect: false, buy: false, drop: false, pickup: false, bombSlot: false, grenade: false, grenadeFrag: false, grenadeFlash: false };
+    const { inspect, buy, drop, pickup, bombSlot, grenade, grenadeFrag, grenadeFlash, grenadeSmoke, map } = this.once;
+    this.once = { map: false, inspect: false, buy: false, drop: false, pickup: false, bombSlot: false, grenade: false, grenadeFrag: false, grenadeFlash: false, grenadeSmoke: false };
     return {
       fwd: on ? fwd : 0,
       strafe: on ? strafe : 0,
@@ -235,6 +236,7 @@ export class FsControls {
       grenade: on && grenade,
       grenadeFrag: on && grenadeFrag,
       grenadeFlash: on && grenadeFlash,
+      grenadeSmoke: on && grenadeSmoke,
       buy: buy,
       map,
       drop: on && drop,
@@ -267,6 +269,7 @@ export class FsControls {
       else if (b.grenade && e.code === b.grenade) this.once.grenade = true;
       else if (b.grenadeFrag && e.code === b.grenadeFrag) this.once.grenadeFrag = true;
       else if (b.grenadeFlash && e.code === b.grenadeFlash) this.once.grenadeFlash = true;
+      else if (b.grenadeSmoke && e.code === b.grenadeSmoke) this.once.grenadeSmoke = true;
     }
     if (e.code === b.jump && !e.repeat) this.jumpQueued = true;
     if (e.code === b.slot1) this.pickKey = 0;

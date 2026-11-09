@@ -6,7 +6,7 @@
 import type { FsBox } from './map';
 import { FS_MOVE, fsEyeHeight, fsNewMover, fsStepMover, type FsMover } from './movement';
 import { fsMapDuna, type FsMapApi } from './maps';
-import { fsClearLine, FS_GRENADES, type FsGrenadeId } from './grenades';
+import { fsClearLine, FS_GRENADES, fsSmoked, type FsGrenadeId, type FsSmoke } from './grenades';
 import { fsFire, fsGunTick, fsNewGunState, type FsGunState } from './recoil';
 import { FS_HEAR_RANGE, FS_WEAPONS, type FsWeaponId } from './weapons';
 import type { Vec3 } from './trace';
@@ -149,6 +149,8 @@ export type FsDmAction =
   | { type: 'reload'; weapon: FsDmWeapon };
 
 export interface FsDmCtx {
+  /** Fumaças no ar: tapam a visão dos bots (não os tiros). */
+  smokes?: readonly FsSmoke[];
   now: number;
   dt: number;
   rng: () => number;
@@ -172,7 +174,7 @@ export function fsDmNew(id: string, x: number, z: number, yaw: number, weapon: F
   m.y = y;
   return {
     id, mover: m, yaw, pitch: 0, weapon, ammo: FS_WEAPONS[weapon].mag, reloadT: 0, cool: 0.6, burstLeft: 0, gun: fsNewGunState(),
-    nades: { frag: rng() < 0.45 ? 1 : 0, flash: rng() < 0.45 ? 1 : 0 },
+    nades: { frag: rng() < 0.45 ? 1 : 0, flash: rng() < 0.45 ? 1 : 0, smoke: 0 },
     nadeCool: 4 + rng() * 6, flashedUntil: 0, path: [], goal: null, pathCool: 0, stuckT: 0, lastX: x, lastZ: z,
     target: null, react: 0, lostT: 99, last: null, strafe: rng() < 0.5 ? 1 : -1, strafeT: 0.6, senseT: rng() * 0.12, acc: 0, fireAnimT: 0,
     anim: 'idle', animSpeed: 1, headAim: false, speed: 0, level, skill: FS_BOT_LEVELS[level], ambush,
@@ -241,7 +243,7 @@ export function fsDmStep(b: FsDmBrain, ctx: FsDmCtx): FsDmAction[] {
   if (b.throwReq && b.reloadT <= 0 && !blind) {
     const q = b.throwReq;
     b.throwReq = null;
-    const kind: FsGrenadeId | null = q.kind !== 'any' && b.nades[q.kind] > 0 ? q.kind : b.nades.flash > 0 ? 'flash' : b.nades.frag > 0 ? 'frag' : null;
+    const kind: FsGrenadeId | null = q.kind !== 'any' && b.nades[q.kind] > 0 ? q.kind : q.kind !== 'any' ? null : b.nades.flash > 0 ? 'flash' : b.nades.frag > 0 ? 'frag' : null;
     if (kind) {
       b.nades[kind]--;
       b.nadeCool = 5 + rng() * 4;
@@ -272,7 +274,7 @@ export function fsDmStep(b: FsDmBrain, ctx: FsDmCtx): FsDmAction[] {
         const d = Math.hypot(dx, dz);
         if (d > sk.sight) continue;
         const inCone = Math.abs(angDiff(b.yaw, yawTo(dx, dz))) <= sk.fov / 2 || d < 3.5;
-        if (inCone && d < bd && fsClearLine(boxes, eye, chestOf(f, false))) {
+        if (inCone && d < bd && fsClearLine(boxes, eye, chestOf(f, false)) && !(ctx.smokes && fsSmoked(ctx.smokes, eye, chestOf(f, false), now))) {
           best = f;
           bd = d;
         }

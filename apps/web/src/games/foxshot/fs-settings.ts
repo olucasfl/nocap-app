@@ -25,6 +25,7 @@ export const FS_ACTIONS = [
   { id: 'grenade', label: 'Pegar granada (passa por todas)' },
   { id: 'grenadeFrag', label: 'Pegar a granada explosiva' },
   { id: 'grenadeFlash', label: 'Pegar a granada de luz' },
+  { id: 'grenadeSmoke', label: 'Pegar a granada de fumaça' },
   { id: 'scoreboard', label: 'Placar (segurar)' },
   { id: 'map', label: 'Mapa grande (abre e fecha)' },
 ] as const;
@@ -34,7 +35,7 @@ export type FsAction = (typeof FS_ACTIONS)[number]['id'];
 export const FS_CATS: { id: string; label: string; ids: FsAction[] }[] = [
   { id: 'move', label: 'Movimento', ids: ['forward', 'back', 'left', 'right', 'jump', 'crouch', 'walk'] },
   { id: 'weapons', label: 'Armas', ids: ['fire', 'ads', 'reload', 'inspect', 'slot1', 'slot2', 'slot3', 'next', 'drop', 'pickup', 'bombSlot', 'bomb', 'buy'] },
-  { id: 'grenades', label: 'Granadas', ids: ['grenade', 'grenadeFrag', 'grenadeFlash'] },
+  { id: 'grenades', label: 'Granadas', ids: ['grenade', 'grenadeFrag', 'grenadeFlash', 'grenadeSmoke'] },
   { id: 'general', label: 'Geral', ids: ['scoreboard', 'map'] },
 ];
 
@@ -62,6 +63,7 @@ export const FS_DEFAULT_BINDS: Record<FsAction, string> = {
   grenade: 'Digit4',
   grenadeFrag: '',
   grenadeFlash: '',
+  grenadeSmoke: '',
   scoreboard: 'Tab',
   map: 'KeyM',
 };

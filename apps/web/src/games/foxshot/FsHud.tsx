@@ -445,6 +445,7 @@ export function FsAmmo({
   current,
   nades,
   heldNade,
+  c4,
 }: {
   weapon: string;
   id: FsWeaponId;
@@ -456,6 +457,8 @@ export function FsAmmo({
   /** Granadas que tem (com a tecla de cada uma) e a que está na mão. */
   nades: { id: FsGrenadeId; name: string; count: number; key: string }[];
   heldNade: FsGrenadeId | null;
+  /** Terrorista com a C4 (modo Bomba): aparece junto das armas, com a tecla de pegar na mão. */
+  c4?: { held: boolean } | null;
 }) {
   const binds = useFsSettings((st) => st.binds);
   return (
@@ -467,10 +470,10 @@ export function FsAmmo({
       <ul className="fsh-slots" aria-label="Armas">
         {slots.map((s, i) =>
           s.id ? (
-            <li key={s.key} className={i === current && !heldNade ? 'on' : ''} data-testid={`fs-slot-${s.key}`}>
+            <li key={s.key} className={i === current && !heldNade && !c4?.held ? 'on' : ''} data-testid={`fs-slot-${s.key}`}>
               <i>{bindLabel(binds[`slot${s.key}` as 'slot1'])}</i>
               <WeaponIcon id={s.id} className="fsh-w" />
-              {i === current && !heldNade && <small>{s.name}</small>}
+              {i === current && !heldNade && !c4?.held && <small>{s.name}</small>}
             </li>
           ) : null,
         )}
@@ -482,6 +485,13 @@ export function FsAmmo({
             <em className="fsh-n">x{n.count}</em>
           </li>
         ))}
+        {c4 && (
+          <li className={c4.held ? 'on' : ''} data-testid="fs-slot-c4">
+            <i>{bindLabel(binds.bombSlot)}</i>
+            <span className="fs-wi fsh-w" style={{ WebkitMaskImage: `url(${import.meta.env.BASE_URL}icons/foxshot/c4.png)`, maskImage: `url(${import.meta.env.BASE_URL}icons/foxshot/c4.png)` }} aria-hidden="true" data-weapon="c4" />
+            {c4.held && <small>C4</small>}
+          </li>
+        )}
       </ul>
       <span className="fsh-sr">
         {weapon} {id}

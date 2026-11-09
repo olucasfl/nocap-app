@@ -12,7 +12,7 @@ import { fsMapById, type FsMapApi } from './maps';
 import { FsBombMatch, fsBombBlastDamage, fsOtherSide, type FsBombConfig, type FsSide } from './bomb';
 import { fsBotLevelAt, fsDmFlash, fsDmHear, fsDmHurt, fsDmNew, fsDmPickWeapon, fsDmStep, type FsBotLevel, type FsDmBrain, type FsDmFoe } from './dm';
 import { FsBombTactics } from './bombbots';
-import { fsClearLine, fsFlashEffect, fsFragDamage, fsGrenadeLaunch, fsGrenadeStep, FS_GRENADES, type FsGrenadeBody, type FsGrenadeId } from './grenades';
+import { fsClearLine, fsFlashEffect, fsFragDamage, fsGrenadeLaunch, fsGrenadeStep, FS_GRENADES, FS_SMOKE, type FsGrenadeBody, type FsGrenadeId, type FsSmoke } from './grenades';
 import { FsLoadout } from './gun';
 import { FS_RESPAWN_S, fsMatchConfig, fsMatchResult, fsMatchScore, type FsMatchConfig, type FsMatchRow } from './match';
 import { FS_MOVE, fsEyeHeight, fsNewMover, fsStepMover, type FsMover } from './movement';
@@ -164,7 +164,7 @@ export function fsNetParseInput(raw: unknown): FsNetInput | null {
       else if (q?.t === 'suicide') cmds.push({ t: 'suicide' });
       else if (q?.t === 'bombslot') cmds.push({ t: 'bombslot' });
       else if (q?.t === 'slot' && finite(q.i) && q.i >= 0 && q.i <= 2) cmds.push({ t: 'slot', i: Math.floor(q.i) });
-      else if (q?.t === 'nade' && (q.k === 'frag' || q.k === 'flash' || q.k === 'next')) cmds.push({ t: 'nade', k: q.k });
+      else if (q?.t === 'nade' && (q.k === 'frag' || q.k === 'flash' || q.k === 'smoke' || q.k === 'next')) cmds.push({ t: 'nade', k: q.k });
       else if (q?.t === 'cycle' && (q.d === 1 || q.d === -1)) cmds.push({ t: 'cycle', d: q.d });
       else if (q?.t === 'buy' && typeof q.id === 'string' && q.id.length < 24) cmds.push({ t: 'buy', id: q.id });
     }
@@ -198,6 +198,8 @@ export class FsNetSim {
   /** Ordem fixa dos jogadores (o índice vai nos pacotes). */
   readonly roster: { id: string; name: string; bot: boolean }[] = [];
   readonly grenades: { id: number; owner: string; body: FsGrenadeBody }[] = [];
+  /** Fumaças no ar (nuvens de 18 s): tapam a visão dos bots; as pessoas veem pelo desenho. */
+  readonly smokes: FsSmoke[] = [];
   private events: FsNetEvent[] = [];
   private nadeSeq = 0;
   /** Quantas pessoas já entraram: a 1ª é contra-terrorista (azul), a 2ª terrorista (laranja), a 3ª azul... */
@@ -538,7 +540,7 @@ export class FsNetSim {
 
   private stepBot(p: FsNetPlayer, foes: FsDmFoe[]) {
     const b = p.brain!;
-    const acts = fsDmStep(b, { now: this.tick / FS_NET_HZ, dt: FS_NET_DT, rng: this.rng, boxes: this.boxes, foes, map: this.map });
+    const acts = fsDmStep(b, { now: this.tick / FS_NET_HZ, dt: FS_NET_DT, rng: this.rng, boxes: this.boxes, foes, map: this.map, smokes: this.smokes });
     p.mover = b.mover;
     p.yaw = b.yaw;
     p.pitch = b.pitch;
@@ -785,7 +787,7 @@ export class FsNetSim {
       if (p.bot) {
         let weapon: Exclude<FsWeaponId, 'knife'> = keep && p.brain ? p.brain.weapon : side === 'ct' ? 'usp' : 'pistol';
         const money = bm.players.get(p.id)!;
-        const nades = { frag: keep && p.brain ? p.brain.nades.frag : 0, flash: keep && p.brain ? p.brain.nades.flash : 0 };
+        const nades = { frag: keep && p.brain ? p.brain.nades.frag : 0, flash: keep && p.brain ? p.brain.nades.flash : 0, smoke: keep && p.brain ? p.brain.nades.smoke : 0 };
         const vestHelmPrice = fsShopPrice({ id: 'vesthelm', price: 1000 }, 0, false);
         // compra como no CS: arma boa só se sobra para o colete; sem dinheiro fica na pistola (round "eco") e guarda para o próximo
         if ((weapon === 'pistol' || weapon === 'usp') && !keep) {
@@ -809,6 +811,7 @@ export class FsNetSim {
         if (side === 'ct' && money.money >= 400 + 650 && !bm.players.get(p.id)!.kit && this.rng() < 0.6 && bm.buy(p.id, 400, true)) bm.giveKit(p.id);
         if (nades.flash === 0 && money.money >= 200 + 650 && this.rng() < 0.7 && bm.buy(p.id, 200, true)) nades.flash = 1;
         if (nades.frag === 0 && money.money >= 300 + 650 && this.rng() < 0.5 && bm.buy(p.id, 300, true)) nades.frag = 1;
+        if (nades.smoke === 0 && money.money >= 300 + 650 && this.rng() < 0.55 && bm.buy(p.id, 300, true)) nades.smoke = 1;
         p.brain = fsDmNew(p.id, s.x, s.z, s.yaw, weapon, this.rng, s.y, p.level, true);
         p.brain.nades = nades;
         p.mover = p.brain.mover;
@@ -968,6 +971,8 @@ export class FsNetSim {
   }
 
   private stepGrenades() {
+    const nowS = this.tick / FS_NET_HZ;
+    for (let i = this.smokes.length - 1; i >= 0; i--) if (nowS >= this.smokes[i]!.t1) this.smokes.splice(i, 1);
     for (let i = this.grenades.length - 1; i >= 0; i--) {
       const g = this.grenades[i]!;
       let boom = false;
@@ -982,6 +987,11 @@ export class FsNetSim {
     const b = g.body;
     const blast: Vec3 = [b.x, b.y + 0.25, b.z];
     this.events.push({ k: 'boom', id: g.id, kind: b.kind, x: r2(b.x), y: r2(b.y), z: r2(b.z) });
+    if (b.kind === 'smoke') {
+      const now = this.tick / FS_NET_HZ;
+      this.smokes.push({ id: g.id, x: b.x, y: b.y, z: b.z, t0: now, t1: now + FS_SMOKE.lifeSec });
+      return;
+    }
     for (const q of [...this.players.values()]) {
       if (!q.alive) continue;
       if (b.kind === 'frag') {
@@ -1026,7 +1036,7 @@ export class FsNetSim {
    * [índice, x·100, y·100, z·100, yaw·10, pitch·10, vida, colete, bandeiras, arma, agachado·100, último número de entrada, abates, assist., mortes]
    * Bandeiras: 1 vivo, 2 capacete, 4 bot, 8 atirou agora há pouco, 16 recarregando, 32 no chão, 64 andando, 128 terrorista (laranja; sem a bandeira é contra-terrorista, azul).
    */
-  frame(): { k: number; left: number; p: number[][]; g: number[][]; b?: number[] } {
+  frame(): { k: number; left: number; p: number[][]; g: number[][]; b?: number[]; sm?: number[][] } {
     const p: number[][] = [];
     this.roster.forEach((r, i) => {
       const q = this.players.get(r.id)!;
@@ -1039,7 +1049,7 @@ export class FsNetSim {
         fsNetWeaponIndex(wid), Math.round(q.mover.crouchK * 100), q.lastSeq, q.kills, q.assists, q.deaths, Math.round(q.damage), q.hs,
       ]);
     });
-    const g = this.grenades.map((n) => [n.id, n.body.kind === 'frag' ? 0 : 1, Math.round(n.body.x * 100), Math.round(n.body.y * 100), Math.round(n.body.z * 100)]);
+    const g = this.grenades.map((n) => [n.id, n.body.kind === 'frag' ? 0 : n.body.kind === 'flash' ? 1 : 2, Math.round(n.body.x * 100), Math.round(n.body.y * 100), Math.round(n.body.z * 100)]);
     const bm = this.bm;
     // modo Bomba: [0 fase (0 compra, 1 round, 2 bomba plantada, 3 fim do round, 4 fim), 1 tempo·10, 2 round, 3 TR, 4 CT, 5 bomba x·100, 6 bomba z·100,
     //   7 pátio (0 nenhum, 1 A, 2 B), 8 portador (índice, -1), 9 vencedor, 10 motivo, 11 largada no chão (0/1), 12 x·100, 13 z·100,
@@ -1067,7 +1077,10 @@ export class FsNetSim {
           planting ? 1 : defusing ? 2 : 0,
         ]
       : undefined;
-    return { k: this.tick, left: Math.max(0, this.endTick - this.tick), p, g, b };
+    // fumaças no ar: [id, x, y, z (cm), segundos de vida·10, idade·10] (quem entra no meio da partida também vê)
+    const nowS = this.tick / FS_NET_HZ;
+    const sm = this.smokes.map((q) => [q.id, Math.round(q.x * 100), Math.round(q.y * 100), Math.round(q.z * 100), Math.round((q.t1 - nowS) * 10), Math.round((nowS - q.t0) * 10)]);
+    return { k: this.tick, left: Math.max(0, this.endTick - this.tick), p, g, b, ...(sm.length ? { sm } : {}) };
   }
 
   /** O que só a própria pessoa precisa (para a previsão e para a tela): corpo exato, armas e granadas. */

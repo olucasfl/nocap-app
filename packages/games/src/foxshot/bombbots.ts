@@ -187,6 +187,7 @@ export class FsBombTactics {
   private lastEnemy: Record<FsSide, Record<SiteId, { x: number; z: number } | null>> = { tr: { A: null, B: null }, ct: { A: null, B: null } };
   private lastPos = new Map<string, { x: number; z: number; alive: boolean }>();
   private ctUtilAt = 0;
+  private ctSmokeAt = 0;
   /** Bomba em apuros e quem foi mandado para lá: fica valendo por um tempo (sem isso os bots trocavam de ordem a cada passo e ficavam indo e voltando). */
   private hot: { site: SiteId; since: number } | null = null;
   private supporterId: string | null = null;
@@ -232,6 +233,7 @@ export class FsBombTactics {
     this.lastEnemy = { tr: { A: null, B: null }, ct: { A: null, B: null } };
     this.lastPos.clear();
     this.ctUtilAt = 0;
+    this.ctSmokeAt = 0;
     this.hot = null;
     this.supporterId = null;
     this.watcherId = null;
@@ -419,12 +421,24 @@ export class FsBombTactics {
         const fightingAny = trBots.some((p) => !!p.brain!.target && p.brain!.lostT < 1);
         if ((elapsed > goAfter && arrived >= need) || elapsed > goAfter + 16 || (fightingAny && elapsed > 4) || timeLeft < w.roundSec * 0.5) {
           this.trGo = true;
+          let smoked = false;
           for (const p of trBots) {
             const r = this.roles.get(p.id);
             const b = p.brain!;
-            if (!r || b.skill.sense < 0.2 || b.nades.flash + b.nades.frag === 0) continue;
+            if (!r) continue;
             const sm = siteMark(map, this.plan);
             const holds = fsBotHolds(map, sm.x, sm.z);
+            // a fumaça tapa o posto principal dos CTs (um bot só joga); as outras granadas vão nos demais postos
+            if (!smoked && b.nades.smoke > 0 && b.skill.sense >= 0.3) {
+              const h0 = holds[0]!;
+              const d0 = Math.hypot(p.x - h0.x, p.z - h0.z);
+              if (d0 > 9 && d0 < 34) {
+                b.throwReq = { kind: 'smoke', x: h0.x, z: h0.z };
+                smoked = true;
+                continue;
+              }
+            }
+            if (b.skill.sense < 0.2 || b.nades.flash + b.nades.frag === 0) continue;
             const h = holds[(r.hold + 1) % holds.length]!;
             const d = Math.hypot(p.x - h.x, p.z - h.z);
             if (d > 9 && d < 34) b.throwReq = { kind: 'any', x: h.x, z: h.z };
@@ -574,6 +588,21 @@ export class FsBombTactics {
       watcher = this.watcherId && aliveIds.has(this.watcherId) ? this.watcherId : null;
       // defesa com granada: quem tem granada joga no último lugar onde o inimigo apareceu (a cada 6 s, um bot)
       const le = this.lastEnemy.ct[hotSite];
+      // fumaça na rota de entrada da bomba em apuros (um CT por vez, a cada 12 s), para quebrar a vista de quem avança
+      if (fast && lanes && w.now >= this.ctSmokeAt) {
+        const ln = lanes[hotSite];
+        const e = fsLaneAt(ln, ln.len - 16);
+        for (const p of ctBots) {
+          const b = p.brain!;
+          if (b.skill.sense < 0.3 || b.nades.smoke === 0 || (!!b.target && b.lostT < 1.2)) continue;
+          const d = Math.hypot(p.x - e[0], p.z - e[1]);
+          if (d > 8 && d < 32) {
+            b.throwReq = { kind: 'smoke', x: e[0], z: e[1] };
+            this.ctSmokeAt = w.now + 12;
+            break;
+          }
+        }
+      }
       if (fast && le && w.now >= this.ctUtilAt) {
         for (const p of ctBots) {
           const b = p.brain!;

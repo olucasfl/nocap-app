@@ -8,6 +8,8 @@ import {
   FS_BOTS,
   type FsMapApi,
   FS_MOVE_SIGNS,
+  FS_SMOKE,
+  fsSmokeRadius,
   FS_TRAIN_LABELS,
   FS_TARGETS,
   type FsBotSpec,
@@ -733,7 +735,7 @@ export class FoxShotScene {
     this.vmPivot.add(kHolder);
     this.vm.add(this.hands.group, this.knifeObj);
     // granadas (modelos do Lucas; se faltarem, uma forma simples)
-    for (const [kind, file] of [['frag', 'ref/frag.glb'], ['flash', 'ref/flash.glb']] as const) {
+    for (const [kind, file] of [['frag', 'ref/frag.glb'], ['flash', 'ref/flash.glb'], ['smoke', 'ref/smoke.glb']] as const) {
       let tpl: THREE.Object3D;
       try {
         const g = await loader.loadAsync(base + file);
@@ -741,7 +743,7 @@ export class FoxShotScene {
       } catch {
         tpl = new THREE.Mesh(
           kind === 'frag' ? new THREE.SphereGeometry(0.045, 12, 10) : new THREE.CylinderGeometry(0.03, 0.03, 0.13, 12),
-          new THREE.MeshStandardMaterial({ color: kind === 'frag' ? 0x2a3a1a : 0x8a8d94, roughness: 0.6, metalness: 0.4 }),
+          new THREE.MeshStandardMaterial({ color: kind === 'frag' ? 0x2a3a1a : kind === 'smoke' ? 0xe0801e : 0x8a8d94, roughness: 0.6, metalness: 0.4 }),
         );
       }
       tpl.traverse((o) => {
@@ -1421,6 +1423,7 @@ export class FoxShotScene {
   /** Explosão: bola de fogo, fumaça, faíscas e um clarão de luz (a de luz é um clarão branco enorme). */
   explosion(kind: FsGrenadeId, x: number, y: number, z: number) {
     const at = new THREE.Vector3(x, y, z);
+    if (kind === 'smoke') return; // a fumaça é uma nuvem que dura (addSmoke)
     if (kind === 'flash') {
       this.puff(at, 0xffffff, 9, 0.3);
       this.puff(at, 0xfff6d0, 5, 0.5);
@@ -1440,6 +1443,101 @@ export class FoxShotScene {
     }
     this.flashLight(0xff9a40, 60, 0.4, at);
   }
+
+  // ---- fumaça: nuvem de 3,6 m que dura 18 s (regras do CS). Tapa a visão (muitas bolhas cinza quase opacas); de dentro, a névoa fecha em volta.
+  private smokes = new Map<number, { puffs: { s: THREE.Sprite; dir: THREE.Vector3; size: number; spin: number; ph: number }[]; x: number; y: number; z: number; age: number; life: number }>();
+  private smokeTex: THREE.Texture | null = null;
+  private fogBase: { near: number; far: number; color: THREE.Color } | null = null;
+  /** Quantas fumaças existem (os testes e o desenho conferem). */
+  get smokeCount(): number {
+    return this.smokes.size;
+  }
+  private makeSmokeTex(): THREE.Texture {
+    if (this.smokeTex) return this.smokeTex;
+    const c = document.createElement('canvas');
+    c.width = c.height = 128;
+    const g = c.getContext('2d')!;
+    let seed = 7;
+    const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
+    for (let i = 0; i < 16; i++) {
+      const x = 64 + (rnd() - 0.5) * 56, y = 64 + (rnd() - 0.5) * 56, r = 22 + rnd() * 26;
+      const gr = g.createRadialGradient(x, y, 0, x, y, r);
+      const v = 150 + Math.round(rnd() * 70);
+      gr.addColorStop(0, `rgba(${v},${v},${v},0.55)`);
+      gr.addColorStop(1, `rgba(${v},${v},${v},0)`);
+      g.fillStyle = gr;
+      g.fillRect(0, 0, 128, 128);
+    }
+    // borda sempre transparente (a bolha não tem corte quadrado)
+    const m = g.createRadialGradient(64, 64, 36, 64, 64, 64);
+    m.addColorStop(0, 'rgba(0,0,0,0)');
+    m.addColorStop(1, 'rgba(0,0,0,1)');
+    g.globalCompositeOperation = 'destination-out';
+    g.fillStyle = m;
+    g.fillRect(0, 0, 128, 128);
+    this.smokeTex = new THREE.CanvasTexture(c);
+    return this.smokeTex;
+  }
+  /** Uma fumaça que acabou de estourar (ou que já estava no ar quando a pessoa entrou: `age` e `remaining` em s). */
+  addSmoke(id: number, x: number, y: number, z: number, age = 0, remaining = 18) {
+    if (this.smokes.has(id)) return;
+    const tex = this.makeSmokeTex();
+    let seed = id * 9301 + 49297;
+    const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
+    const puffs: { s: THREE.Sprite; dir: THREE.Vector3; size: number; spin: number; ph: number }[] = [];
+    for (let i = 0; i < 34; i++) {
+      const mat = new THREE.SpriteMaterial({ map: tex, color: new THREE.Color().setHSL(0, 0, 0.5 + rnd() * 0.16), transparent: true, opacity: 0.95, depthWrite: false, fog: false });
+      const s = new THREE.Sprite(mat);
+      // direção dentro de uma esfera (mais bolhas perto da borda, para a nuvem parecer cheia)
+      const d = new THREE.Vector3(rnd() * 2 - 1, (rnd() * 2 - 1) * 0.8, rnd() * 2 - 1);
+      if (d.lengthSq() > 1) d.normalize().multiplyScalar(0.6 + rnd() * 0.4);
+      s.renderOrder = 6;
+      this.scene.add(s);
+      puffs.push({ s, dir: d, size: 3.4 + rnd() * 2.2, spin: (rnd() - 0.5) * 0.3, ph: rnd() * 6 });
+    }
+    this.smokes.set(id, { puffs, x, y, z, age, life: age + remaining });
+  }
+  private updateSmokes(dt: number) {
+    const cam = this.cam.position;
+    let inside = 0;
+    for (const [id, sm] of this.smokes) {
+      sm.age += dt;
+      if (sm.age >= sm.life) {
+        for (const p of sm.puffs) {
+          this.scene.remove(p.s);
+          (p.s.material as THREE.SpriteMaterial).dispose();
+        }
+        this.smokes.delete(id);
+        continue;
+      }
+      const R = fsSmokeRadius({ id, x: sm.x, y: sm.y, z: sm.z, t0: 0, t1: sm.life }, sm.age);
+      const fade = Math.min(1, (sm.life - sm.age) / FS_SMOKE.fadeSec);
+      const cy = sm.y + FS_SMOKE.centerUp;
+      for (const p of sm.puffs) {
+        const wob = Math.sin(sm.age * 0.6 + p.ph) * 0.18;
+        p.s.position.set(sm.x + p.dir.x * R * (0.78 + wob * 0.2), cy + p.dir.y * R * 0.8, sm.z + p.dir.z * R * (0.78 + wob * 0.2));
+        const sz = p.size * (R / FS_SMOKE.radius) * (0.8 + wob);
+        p.s.scale.set(sz, sz, 1);
+        const m = p.s.material as THREE.SpriteMaterial;
+        m.rotation += p.spin * dt;
+        m.opacity = 0.95 * fade;
+      }
+      const d = Math.hypot(cam.x - sm.x, cam.y - cy, cam.z - sm.z);
+      if (R > 0.5 && d < R * 1.05) inside = Math.max(inside, Math.min(1, (R * 1.05 - d) / (R * 0.5)));
+    }
+    // de dentro da fumaça tudo some a poucos metros (a névoa do mapa vira a cor da fumaça)
+    const fog = this.scene.fog as THREE.Fog | null;
+    if (!fog) return;
+    if (inside <= 0) {
+      this.fogBase = { near: fog.near, far: fog.far, color: fog.color.clone() };
+      return;
+    }
+    const base = this.fogBase ?? { near: fog.near, far: fog.far, color: fog.color.clone() };
+    fog.near = base.near + (0.4 - base.near) * inside;
+    fog.far = base.far + (4.5 - base.far) * inside;
+    fog.color.copy(base.color).lerp(new THREE.Color(0x8e8e90), inside);
+  }
+
   private flashLight(color: number, peak: number, dur: number, at: THREE.Vector3) {
     if (!this.blast) {
       this.blast = new THREE.PointLight(0xffffff, 0, 40, 1.6);
@@ -2028,6 +2126,7 @@ export class FoxShotScene {
 
   // ---- laço
   update(dt: number, p: { speed: number; adsTarget: number; airborne: boolean }) {
+    this.updateSmokes(dt);
     // placas: aparecem com a distância (some aos poucos nos últimos 8 m)
     for (const sg of this.signSprites) {
       const d = sg.sprite.position.distanceTo(this.cam.position);

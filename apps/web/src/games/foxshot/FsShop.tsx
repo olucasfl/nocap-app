@@ -48,7 +48,7 @@ export function FsShop({
   armor: number;
   helmet: boolean;
   /** Granadas que tem (aparecem na faixa Seu equipamento). */
-  nades?: { id: 'frag' | 'flash'; name: string; count: number }[];
+  nades?: { id: 'frag' | 'flash' | 'smoke'; name: string; count: number }[];
 }) {
   const buyKey = useFsSettings((st) => st.binds.buy);
   const [toast, setToast] = useState<{ key: number; text: string; warn?: boolean } | null>(null);

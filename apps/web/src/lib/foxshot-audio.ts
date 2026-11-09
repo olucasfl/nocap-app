@@ -197,6 +197,16 @@ const RECIPES: Record<string, Recipe> = {
       s.burst({ type: 'highpass', freq: 4000, dur: 0.6, peak: 0.18, delay: 0.1 });
     },
   },
+  // fumaça: um "pff" abafado e longo (estoura sem estrondo)
+  'boom-smoke': {
+    len: 1.6,
+    variants: 1,
+    make: (s) => {
+      s.burst({ type: 'lowpass', freq: 900, dur: 0.18, peak: 0.55 });
+      s.burst({ type: 'bandpass', freq: 1800, q: 0.5, dur: 1.1, peak: 0.32, delay: 0.04 });
+      s.burst({ type: 'highpass', freq: 3000, dur: 0.9, peak: 0.1, delay: 0.1 });
+    },
+  },
   'shot-knife': {
     len: 0.2,
     variants: 2,
@@ -525,10 +535,10 @@ export const fsAudio = {
     play(`nade-${name}`);
   },
   /** Quique e explosões no mundo: som 3D, mais baixo e abafado com a distância, e some além do alcance. */
-  nadeAt(name: 'bounce' | 'boom-frag' | 'boom-flash', x: number, y: number, z: number, listenerX: number, listenerZ: number) {
+  nadeAt(name: 'bounce' | 'boom-frag' | 'boom-flash' | 'boom-smoke', x: number, y: number, z: number, listenerX: number, listenerZ: number) {
     const kit = audioKit();
     if (!kit || kit.muted()) return;
-    const range = name === 'bounce' ? 20 : name === 'boom-frag' ? 75 : 60;
+    const range = name === 'bounce' ? 20 : name === 'boom-frag' ? 75 : name === 'boom-smoke' ? 35 : 60;
     const d = Math.hypot(x - listenerX, z - listenerZ);
     if (d > range) return;
     const k = d / range;

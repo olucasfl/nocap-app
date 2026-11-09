@@ -5,6 +5,7 @@ import {
   fsClearLine,
   FsIntel,
   FS_GRENADES,
+  FS_GRENADE_IDS,
   FS_WEAPONS,
   FsLoadout,
   fsBuy,
@@ -82,7 +83,7 @@ interface SelfState {
   bomb?: { money: number; plant: number; defuse: number; gain: number; side: 'tr' | 'ct'; win: number; kit?: boolean; buy?: boolean; held?: boolean; mates?: Record<number, number> };
 }
 interface Frame {
-  f: { k: number; left: number; p: number[][]; g: number[][]; b?: number[] };
+  f: { k: number; left: number; p: number[][]; g: number[][]; b?: number[]; sm?: number[][] };
   s: SelfState | null;
   e: FsNetEvent[];
 }
@@ -95,6 +96,8 @@ interface RoomHud {
   /** Modo Bomba: quem você assiste depois de morrer. */
   follow: string | null;
   bomb: BombHud | null;
+  /** Terrorista com a C4 (modo Bomba): o espaço da C4 aparece junto das armas. */
+  c4: { held: boolean } | null;
   fps: number; timeLeft: number; players: FsPlayerRow[]; points: number; tris: number; calls: number; level: Quality; dpr: number; pos: number[]; k: number;
 }
 interface Snap {
@@ -579,7 +582,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       for (const g of fr.f.g) {
         const id = g[0]!;
         seen.add(id);
-        const kind: FsGrenadeId = g[1] === 0 ? 'frag' : 'flash';
+        const kind: FsGrenadeId = g[1] === 0 ? 'frag' : g[1] === 1 ? 'flash' : 'smoke';
         let h = nades.get(id);
         if (h === undefined) {
           h = scene.addGrenade(kind);
@@ -588,6 +591,8 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         scene.setGrenade(h, g[2]! / 100, g[3]! / 100, g[4]! / 100, now * 0.01);
         nadeLast.set(id, [g[2]! / 100, g[3]! / 100, g[4]! / 100]);
       }
+      // fumaças que já estavam no ar quando entrei (as novas chegam pelo evento do estouro)
+      for (const q of fr.f.sm ?? []) scene.addSmoke(q[0]!, q[1]! / 100, q[2]! / 100, q[3]! / 100, (q[5] ?? 0) / 10, q[4]! / 10);
       for (const [id, h] of [...nades]) {
         if (!seen.has(id)) {
           scene.removeGrenade(h);
@@ -662,7 +667,8 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
         pushFeed({ killer: nameOf(e.killer), weapon: e.w, victim: nameOf(e.victim), head: e.head, you: e.killer === meId, youVictim: e.victim === meId, assist: e.assist ? nameOf(e.assist) : undefined, youAssist: e.assist === meId, wall: e.wall, noscope: e.noscope, blindKiller: e.blind });
       } else if (e.k === 'boom') {
         scene.explosion(e.kind, e.x, e.y, e.z);
-        fsAudio.nadeAt(e.kind === 'frag' ? 'boom-frag' : 'boom-flash', e.x, e.y, e.z, px, pz);
+        if (e.kind === 'smoke') scene.addSmoke(e.id, e.x, e.y, e.z);
+        fsAudio.nadeAt(e.kind === 'frag' ? 'boom-frag' : e.kind === 'smoke' ? 'boom-smoke' : 'boom-flash', e.x, e.y, e.z, px, pz);
       } else if (e.k === 'flash') {
         if (e.vic !== meId) return;
         if (e.blind > 0) {
@@ -831,6 +837,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       });
       loadout.grenades.frag = s.nades.frag;
       loadout.grenades.flash = s.nades.flash;
+      loadout.grenades.smoke = s.nades.smoke ?? 0;
       if (!loadout.held && !loadout.reloading && !loadout.inspecting && Math.abs(loadout.slot.ammo - s.ammo) > 0 && loadout.cooldown <= 0) loadout.slot.ammo = s.ammo;
     };
 
@@ -947,6 +954,10 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
           if (inp.grenadeFlash) {
             cmdQueue.push({ t: 'nade', k: 'flash' });
             handle(loadout.selectGrenade('flash'));
+          }
+          if (inp.grenadeSmoke) {
+            cmdQueue.push({ t: 'nade', k: 'smoke' });
+            handle(loadout.selectGrenade('smoke'));
           }
         }
         if (inp.jump) jumpBuf = 0.15;
@@ -1269,11 +1280,12 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
               hint: bombHint && bombHint.until > clock ? bombHint.text : null, alliesAlive: allyAlive, foesAlive: foeAlive, kit: !!bombSelf!.kit, pvp: !!snapRef.current.foxshot?.pvp,
             };
           })() : null,
+          c4: bf && rosterNow().findIndex((r) => r.id === meId) >= 0 && bf[8] === rosterNow().findIndex((r) => r.id === meId) && alive && (bf[0] === 0 || bf[0] === 1) ? { held: bombHeld } : null,
           ammo: loadout.held ? loadout.grenades[loadout.held] : loadout.slot.ammo,
           mag: loadout.held ? FS_GRENADES[loadout.held].max : loadout.weapon.mag,
           weapon: loadout.held ? FS_GRENADES[loadout.held].name : loadout.weapon.name,
           weaponId: loadout.weapon.id, heldNade: loadout.held,
-          nades: (['frag', 'flash'] as FsGrenadeId[]).filter((k) => loadout.grenades[k] > 0).map((k) => ({ id: k, name: FS_GRENADES[k].name, count: loadout.grenades[k], key: bindLabel((k === 'frag' ? fsSettings().binds.grenadeFrag : fsSettings().binds.grenadeFlash) || fsSettings().binds.grenade) })),
+          nades: FS_GRENADE_IDS.filter((k) => loadout.grenades[k] > 0).map((k) => ({ id: k, name: FS_GRENADES[k].name, count: loadout.grenades[k], key: bindLabel((k === 'frag' ? fsSettings().binds.grenadeFrag : k === 'flash' ? fsSettings().binds.grenadeFlash : fsSettings().binds.grenadeSmoke) || fsSettings().binds.grenade) })),
           speed: Math.round(Math.hypot(mover.vx, mover.vz) * 10) / 10,
           slots: loadout.slots.map((sl, i) => ({ id: sl?.id ?? null, name: sl ? FS_WEAPONS[sl.id].name : '', key: i + 1 })),
           current: loadout.current, reloading: !loadout.held && loadout.reloading, scoped,
@@ -1420,7 +1432,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
             </div>
           )}
           {!spectating && <FsVitals hp={h.hp} armor={h.armor} helmet={h.helmet} />}
-          {!spectating && <FsAmmo weapon={h.weapon} id={h.weaponId} ammo={h.ammo} mag={h.mag} reloading={h.reloading} slots={h.slots} current={h.current} nades={h.nades} heldNade={h.heldNade} />}
+          {!spectating && <FsAmmo weapon={h.weapon} id={h.weaponId} ammo={h.ammo} mag={h.mag} reloading={h.reloading} slots={h.slots} current={h.current} nades={h.nades} heldNade={h.heldNade} c4={h.c4} />}
           {spectating && !paused && (
             <div className="fsr-spec" data-testid="fsr-spec">
               <small>ESPECTANDO</small>

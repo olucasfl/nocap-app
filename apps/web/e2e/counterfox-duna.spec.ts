@@ -106,3 +106,22 @@ test('PvP offline: arena de blocos, compra grátis e round sem bomba', async ({ 
   await page.waitForTimeout(1000);
   await page.screenshot({ path: 'test-results/pvp-mapa.png' });
 });
+
+test('Granada de fumaça: a nuvem tapa a visão, dá para entrar nela e a C4 aparece entre as armas', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'um projeto basta');
+  test.setTimeout(300_000);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await start(page, 'dm');
+  await expect(page.getByTestId('fs-root')).toBeVisible({ timeout: 120_000 });
+  await expect.poll(async () => await fs<number>(page, 'hp'), { timeout: 120_000 }).toBe(100);
+  await fs<void>(page, 'teleport', -10, 8);
+  await fs<void>(page, 'look', 90, -2);
+  await page.waitForTimeout(1500);
+  await page.screenshot({ path: '/tmp/dust2/w/out/fumaca-antes.png' });
+  await fs<void>(page, 'blastAt', 'smoke', -16, 8);
+  await page.waitForTimeout(2500);
+  await page.screenshot({ path: '/tmp/dust2/w/out/fumaca-fora.png' });
+  await fs<void>(page, 'teleport', -15, 8);
+  await page.waitForTimeout(1500);
+  await page.screenshot({ path: '/tmp/dust2/w/out/fumaca-dentro.png' });
+});

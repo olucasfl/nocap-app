@@ -34,6 +34,9 @@ import {
   type FsTargetSpec,
   FS_BOT_SPEED,
   FS_GRENADES,
+  FS_GRENADE_IDS,
+  FS_SMOKE,
+  type FsSmoke,
   fsClearLine,
   fsFlashEffect,
   fsFragDamage,
@@ -160,6 +163,8 @@ interface Hud {
   weaponId: FsWeaponId;
   heldNade: FsGrenadeId | null;
   nades: { id: FsGrenadeId; name: string; count: number; key: string }[];
+  /** Terrorista com a C4 (modo Bomba): o espaço da C4 aparece junto das armas. */
+  c4?: { held: boolean } | null;
   /** Conta os tiros que você levou (cada um dispara o clarão vermelho) e se está morto esperando renascer. */
   hurtKey: number;
   heavyKey: number;
@@ -711,6 +716,9 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     }
     // ---- granadas: as que estão voando, o efeito de cegueira e os atiradores cegos
     const nades: { h: number; body: FsGrenadeBody; bounceSeen: number; bounceAt: number; owner?: string }[] = [];
+    /** Fumaças no ar (18 s): tapam a visão dos bots; o desenho fica na cena. */
+    const smokes: FsSmoke[] = [];
+    let smokeSeq = 0;
     let blindTotal = 0;
     let blindUntil = 0;
     let scopedNow = false;
@@ -766,7 +774,13 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     const explode = (g: FsGrenadeBody, owner = 'me') => {
       const blast: [number, number, number] = [g.x, g.y + 0.25, g.z];
       scene.explosion(g.kind, g.x, g.y, g.z);
-      fsAudio.nadeAt(g.kind === 'frag' ? 'boom-frag' : 'boom-flash', g.x, g.y, g.z, mover.x, mover.z);
+      fsAudio.nadeAt(g.kind === 'frag' ? 'boom-frag' : g.kind === 'smoke' ? 'boom-smoke' : 'boom-flash', g.x, g.y, g.z, mover.x, mover.z);
+      if (g.kind === 'smoke') {
+        const id = ++smokeSeq;
+        smokes.push({ id, x: g.x, y: g.y, z: g.z, t0: clock, t1: clock + FS_SMOKE.lifeSec });
+        scene.addSmoke(id, g.x, g.y, g.z);
+        return;
+      }
       if (g.kind === 'frag') {
         for (const t of ALL_TARGETS) {
           const st = targets.get(t.id)!;
@@ -802,6 +816,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       }
     };
     const stepNades = (dt: number) => {
+      for (let i = smokes.length - 1; i >= 0; i--) if (clock >= smokes[i]!.t1) smokes.splice(i, 1);
       for (let i = nades.length - 1; i >= 0; i--) {
         const n = nades[i]!;
         let boom = false;
@@ -920,7 +935,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       brains.set(id, fsDmNew(id, x, z, yaw, gear ? gear.weapon : fsDmPickWeapon(rnd), rnd, y, botLevel.get(id), true));
       if (gear) {
         const bb = brains.get(id)!;
-        bb.nades = { frag: 0, flash: 0 };
+        bb.nades = { frag: 0, flash: 0, smoke: 0 };
       }
       const bs = fsNewBot({ ...spec, kind: 'turn', x, z, x1: x, z1: z });
       bs.h = fsDmHeading(yaw);
@@ -1345,7 +1360,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
       for (const d of dmSpecs) {
         if (!targets.get(d.id)!.alive || botsFrozen) continue;
         const b = brains.get(d.id)!;
-        const acts = fsDmStep(b, { now: clock, dt, rng: rnd, boxes: ARENA, foes: foesFor(d.id), map });
+        const acts = fsDmStep(b, { now: clock, dt, rng: rnd, boxes: ARENA, foes: foesFor(d.id), map, smokes });
         for (const a of acts) {
           if (a.type === 'fire') dmFire(b, a);
           else if (a.type === 'throw') {
@@ -1810,6 +1825,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         }
         if (inp.grenadeFrag) handle(loadout.selectGrenade('frag'));
         if (inp.grenadeFlash) handle(loadout.selectGrenade('flash'));
+        if (inp.grenadeSmoke) handle(loadout.selectGrenade('smoke'));
 
         const speed0 = speed;
         const mul = loadout.weapon.moveMul * (adsOn ? 0.65 : 1) * fsFlinchAt(flinch, clock - flinchAt);
@@ -2157,9 +2173,9 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
           weapon: loadout.held ? FS_GRENADES[loadout.held].name : loadout.weapon.name,
           weaponId: loadout.weapon.id,
           heldNade: loadout.held,
-          nades: (['frag', 'flash'] as FsGrenadeId[])
-            .filter((k) => loadout.grenades[k] > 0)
-            .map((k) => ({ id: k, name: FS_GRENADES[k].name, count: loadout.grenades[k], key: bindLabel((k === 'frag' ? fsSettings().binds.grenadeFrag : fsSettings().binds.grenadeFlash) || fsSettings().binds.grenade) })),
+          nades: FS_GRENADE_IDS.filter((k) => loadout.grenades[k] > 0)
+            .map((k) => ({ id: k, name: FS_GRENADES[k].name, count: loadout.grenades[k], key: bindLabel((k === 'frag' ? fsSettings().binds.grenadeFrag : k === 'flash' ? fsSettings().binds.grenadeFlash : fsSettings().binds.grenadeSmoke) || fsSettings().binds.grenade) })),
+          c4: bm && bm.carrier === 'me' && clock >= deadUntil && (bm.phase === 'buy' || bm.phase === 'live') ? { held: bombHeld } : null,
           speed: Math.round(speed * 10) / 10,
           blur: Math.min(1, fsSpreadDeg(loadout.weapon, mvs, loadout.slot.gun) / 6),
           slots: loadout.slots.map((sl, i) => ({ id: sl?.id ?? null, name: sl ? FS_WEAPONS[sl.id].name : '', key: i + 1 })),
@@ -2504,6 +2520,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
             current={hud.current}
             nades={hud.nades}
             heldNade={hud.heldNade}
+            c4={hud.c4}
           />
           {shop && !paused && (
             <FsShop

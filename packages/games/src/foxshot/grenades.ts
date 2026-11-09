@@ -2,13 +2,58 @@ import { fsTrace, type Vec3 } from './trace';
 import { FS_WEAPONS } from './weapons';
 import { fsBoxesInRect, type FsBox } from './map';
 
-export type FsGrenadeId = 'frag' | 'flash';
+export type FsGrenadeId = 'frag' | 'flash' | 'smoke';
+/** Todas as granadas, na ordem das teclas e da loja. */
+export const FS_GRENADE_IDS: readonly FsGrenadeId[] = ['frag', 'flash', 'smoke'];
 
-/** Granadas: explosiva (dano em área) e de luz (cega e ensurdece). Tempos em s, distâncias em m. */
+/** Granadas: explosiva (dano em área), de luz (cega e ensurdece) e de fumaça (tapa a visão). Tempos em s, distâncias em m. Só se carrega 1 de cada. */
 export const FS_GRENADES: Record<FsGrenadeId, { name: string; fuse: number; radius: number; max: number; maxDamage: number }> = {
-  frag: { name: 'Granada explosiva', fuse: 1.6, radius: 9, max: 2, maxDamage: 98 },
-  flash: { name: 'Granada de luz', fuse: 1.5, radius: 22, max: 2, maxDamage: 0 },
+  frag: { name: 'Granada explosiva', fuse: 1.6, radius: 9, max: 1, maxDamage: 98 },
+  flash: { name: 'Granada de luz', fuse: 1.5, radius: 22, max: 1, maxDamage: 0 },
+  // fuse é o tempo máximo de voo: a fumaça estoura assim que a granada para de quicar (como no CS)
+  smoke: { name: 'Granada de fumaça', fuse: 2.6, radius: 3.6, max: 1, maxDamage: 0 },
 };
+
+/** Fumaça (regras do CS): nuvem de 3,6 m de raio, cresce em ~1 s e dura 18 s. Tapa a visão, mas não os tiros nem o corpo: dá para entrar e atirar através dela. */
+export const FS_SMOKE = { radius: 3.6, growSec: 1, lifeSec: 18, fadeSec: 3, centerUp: 1.5 } as const;
+export interface FsSmoke {
+  id: number;
+  x: number;
+  y: number;
+  z: number;
+  /** Instante da explosão e do fim (s do relógio de quem usa). */
+  t0: number;
+  t1: number;
+}
+/** Raio da nuvem no instante `now` (cresce no começo, encolhe no fim). */
+export function fsSmokeRadius(s: FsSmoke, now: number): number {
+  const age = now - s.t0;
+  if (age < 0 || now >= s.t1) return 0;
+  const grow = Math.min(1, age / FS_SMOKE.growSec);
+  const fade = Math.min(1, (s.t1 - now) / FS_SMOKE.fadeSec);
+  return FS_SMOKE.radius * (0.25 + 0.75 * Math.sqrt(grow)) * (0.55 + 0.45 * fade);
+}
+/** A linha de visão de `from` até `to` passa por dentro de alguma fumaça (corda de mais de 1 m)? Vale só para ver: tiro e corpo atravessam. */
+export function fsSmoked(smokes: readonly FsSmoke[], from: Vec3, to: Vec3, now: number): boolean {
+  if (smokes.length === 0) return false;
+  const dx = to[0] - from[0], dy = to[1] - from[1], dz = to[2] - from[2];
+  const L = Math.hypot(dx, dy, dz);
+  if (L < 1e-6) return false;
+  const ux = dx / L, uy = dy / L, uz = dz / L;
+  for (const s of smokes) {
+    const r = fsSmokeRadius(s, now);
+    if (r <= 0.5) continue;
+    const cx = s.x - from[0], cy = s.y + FS_SMOKE.centerUp - from[1], cz = s.z - from[2];
+    const t = cx * ux + cy * uy + cz * uz;
+    const d2 = cx * cx + cy * cy + cz * cz - t * t;
+    if (d2 >= r * r) continue;
+    const half = Math.sqrt(r * r - d2);
+    // trecho da linha dentro da esfera (limitado ao segmento)
+    const a = Math.max(0, t - half), b = Math.min(L, t + half);
+    if (b - a > 1) return true;
+  }
+  return false;
+}
 
 export interface FsGrenadeBody {
   kind: FsGrenadeId;
@@ -90,6 +135,8 @@ export function fsGrenadeStep(g: FsGrenadeBody, dt: number, boxes: readonly FsBo
     }
   }
   g.y = ny;
+  // fumaça: estoura quando a granada para (depois de quicar), sem esperar o tempo todo
+  if (g.kind === 'smoke' && g.bounces > 0 && g.age > 0.7 && Math.hypot(g.vx, g.vy, g.vz) < 0.8) return true;
   return g.age >= g.fuse;
 }
 
