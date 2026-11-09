@@ -2315,7 +2315,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         blind: () => Math.max(0, blindUntil - clock),
         fireBtn: (on: boolean) => controls.setTouch('fire', on),
         blastAt: (kind: FsGrenadeId, x: number, z: number) => {
-          const body = { kind, x, y: 0.15, z, vx: 0, vy: 0, vz: 0, age: 0, fuse: 0.05, bounces: 0 } as FsGrenadeBody;
+          const body = { kind, x, y: map.floorY(x, z) + 0.15, z, vx: 0, vy: 0, vz: 0, age: 0, fuse: 0.05, bounces: 0 } as FsGrenadeBody;
           nades.push({ h: scene.addGrenade(kind), body, bounceSeen: 0, bounceAt: -1 });
         },
         ads: (on: boolean) => controls.setTouch('ads', on),
