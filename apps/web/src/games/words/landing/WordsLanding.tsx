@@ -109,21 +109,42 @@ export function WordsLanding({
     >
       <Backdrop game={game} />
       <div className="gx-wrap">
-        <div className="gx-left">
-          <header className={`gx-logo${screen === 'main' ? '' : ' compact'}`}>
-            <Emblem game={game} />
-            <h1>
-              <span>{t.line1}</span>
-              <b>{t.line2}</b>
-            </h1>
-            <p>{t.tag}</p>
-          </header>
-          {left}
-        </div>
-        <aside className="gx-right">{right ?? <Showcase game={game} text={t.show} />}</aside>
+        {screen === 'main' ? (
+          <>
+            <div className="gx-left">
+              <Logo game={game} compact={false} />
+              {left}
+            </div>
+            <aside className="gx-right">{right ?? <Showcase game={game} text={t.show} />}</aside>
+          </>
+        ) : (
+          <>
+            <div className="wl-corner">
+              <Logo game={game} compact />
+            </div>
+            <div className="wl-stage" data-pane={pane}>
+              {left}
+              {right}
+            </div>
+          </>
+        )}
       </div>
     </main>,
     document.body,
+  );
+}
+
+function Logo({ game, compact }: { game: WordsGame; compact: boolean }) {
+  const t = WORDS_LANDING[game];
+  return (
+    <header className={`gx-logo${compact ? ' compact' : ''}`}>
+      <Emblem game={game} />
+      <h1>
+        <span>{t.line1}</span>
+        <b>{t.line2}</b>
+      </h1>
+      <p>{t.tag}</p>
+    </header>
   );
 }
 

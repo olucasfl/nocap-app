@@ -16,6 +16,7 @@
   font-family: var(--gl-ui);
 }
 .gx-wrap {
+  box-sizing: border-box;
   position: relative;
   z-index: 2;
   height: 100%;
@@ -176,7 +177,7 @@
   .gx-logo { grid-template-columns: auto 1fr; }
 }
 @media (max-height: 520px) {
-  .gx-wrap { padding-top: 10px; padding-bottom: 10px; }
+  .gx-wrap { padding-top: max(10px, env(safe-area-inset-top)); padding-bottom: max(10px, env(safe-area-inset-bottom)); }
   .gx-left { gap: 10px; }
   .gx-emblem { width: 52px; }
   .gx-btn { padding: 9px 22px 9px 18px; }

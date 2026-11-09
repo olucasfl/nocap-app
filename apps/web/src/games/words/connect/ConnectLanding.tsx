@@ -140,7 +140,7 @@ export function ConnectLanding({ start = 'main' }: { start?: 'main' | 'levels' }
     left = (
       <WlPanel
         title="Escolher fase"
-        lead="Do mais fácil ao mais difícil. Escolha qualquer uma no quadro ao lado."
+        lead="Do mais fácil ao mais difícil. Escolha qualquer uma logo abaixo."
         onBack={back}
         testid="levels-panel"
       >

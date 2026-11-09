@@ -26,6 +26,30 @@ const TITLE: Record<ClassicMode, string> = {
   quarteto: '4 Palavras',
 };
 
+/** Segundos até a meia-noite de Brasília (UTC-3, sem horário de verão), quando sai a próxima palavra do Daily. */
+export function secondsToBrasiliaMidnight(now = Date.now()): number {
+  const intoDay = (Math.floor(now / 1000) - 3 * 3600) % 86400;
+  return 86400 - (((intoDay % 86400) + 86400) % 86400);
+}
+export const formatCountdown = (s: number) =>
+  [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60].map((n) => String(n).padStart(2, '0')).join(':');
+
+/** Conta regressiva até a próxima palavra; ao zerar, avisa para recarregar o Daily. */
+function useNextWordCountdown(onZero: () => void) {
+  const [left, setLeft] = useState(() => secondsToBrasiliaMidnight());
+  useEffect(() => {
+    const id = setInterval(() => {
+      const s = secondsToBrasiliaMidnight();
+      setLeft((prev) => {
+        if (s > prev) onZero();
+        return s;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
+  return left;
+}
+
 export const CLASSIC_STEPS = [
   'Digite uma palavra de 5 letras e aperte Enter. Ela precisa existir na lista do jogo.',
   'Cada letra mostra uma cor. Use as cores para chegar na palavra certa.',
@@ -116,6 +140,7 @@ export function ClassicLanding({ start }: { start?: string }) {
   const goRank = () =>
     void navigate({ to: '/ranking', search: { jogo: 'wclassic', modo: 'daily' } });
 
+  const untilNext = useNextWordCountdown(() => void daily.refetch());
   const run = daily.data?.run;
   const dailyDone = !!run && run.state !== 'open';
   const dailySub = !user
@@ -252,6 +277,10 @@ export function ClassicLanding({ start }: { start?: string }) {
                 </>
               )}
             </div>
+            <div className="wl-next" data-testid="daily-countdown" role="timer" aria-label="Tempo até a próxima palavra">
+              <small>{dailyDone ? 'Próxima palavra em' : 'A palavra de hoje acaba em'}</small>
+              <b>FALTA {formatCountdown(untilNext)}</b>
+            </div>
             {streak && (
               <div className="wl-nums" data-testid="daily-streak">
                 <span>
@@ -363,7 +392,7 @@ export function ClassicLanding({ start }: { start?: string }) {
             <small>{open ? `${open.used} de ${open.tries}` : tierOf(levels![pick.n - 1]!)}</small>
           </button>
         )}
-        <p className="lead">Escolha qualquer fase no quadro ao lado.</p>
+        <p className="lead">Escolha qualquer fase logo abaixo.</p>
       </WlPanel>
     );
     right =

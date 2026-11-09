@@ -154,6 +154,7 @@ test.describe("Classic Word's", () => {
     await page.getByTestId('menu-daily').click();
     await expect(page.getByTestId('daily-card')).toContainText('Ainda não jogou hoje');
     await expect(page.getByTestId('play-daily')).toContainText('Jogar o Daily');
+    await expect(page.getByTestId('daily-countdown')).toContainText(/FALTA \d\d:\d\d:\d\d/);
     await expect(page.getByTestId('daily-board')).toBeVisible();
     await page.getByTestId('wl-back').click();
     // Como jogar e Configurações (com o som)

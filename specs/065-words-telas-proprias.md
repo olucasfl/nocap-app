@@ -14,6 +14,12 @@ Menu: **Daily**, **1 Palavra**, **2 Palavras**, **4 Palavras**, **Como jogar**, 
 ## Connect e Bee (`/words/connect`, `/words/bee`)
 Menu: **Continuar/Começar** (última fase em andamento ou próxima nova), **Escolher fase** (painel + catálogo à direita), **Como jogar**, **Configurações**, **Voltar aos Word's**. Resumo e barra de progresso na tela inicial. Connect mostra perfeitas e grupos; Bee mostra pontos por fase e soma.
 
+## Revisão de 09/11/2026 (pedido do Lucas)
+- Menu principal de cada jogo: botões à esquerda e quadro à direita, como antes. Subtelas (modo, escolher fase, Daily, regras, configurações): tudo **centralizado e dividido** (logo pequena no canto, painel no centro, catálogo logo abaixo; no Daily o painel e o tabuleiro lado a lado).
+- Nada animado atrás de botões e painéis: botões e painéis são sólidos e, no menu, o cenário fica só do lado do quadro.
+- Daily: contador "FALTA HH:MM:SS" até a meia-noite de Brasília (UTC-3), recarrega o Daily quando zera (`secondsToBrasiliaMidnight`, testado).
+- Bordas de iPhone/iPad: `e2e/safe-area-sweep.spec.ts` emula notch e barra de início (CDP) em 5 aparelhos e 28 rotas; corrigidos `.app` (largura da tela deitada ignorava a área segura) e `.gx-wrap` (altura passava da tela e o padding de segurança sumia em tela baixa).
+
 ## Rotas e compatibilidade
 `/words/classic` (menu), `/words/classic/daily` (abre o Daily; volta da partida do dia), `/words/classic/fases/$modo` (abre o modo), `/words/bee|connect` (menu), `/words/bee|connect/fases` (abre o catálogo; é para onde as telas de fase voltam). Links antigos continuam valendo. `CONNECT_RULES` e `BEE_RULES` seguem exportados dos arquivos de catálogo.
 
