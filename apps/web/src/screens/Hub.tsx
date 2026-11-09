@@ -1,5 +1,4 @@
-import { useApertaAllowed } from '@/lib/aperta-access';
-import { ApertaArt, FoxCapArt, BlocksArt, ColorArt, EcoArt, TimeArt } from '@/components/HubArt';
+import { FoxCapArt, BlocksArt, ColorArt, EcoArt, TimeArt } from '@/components/HubArt';
 import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { WordsHubArt } from '@/games/words/words-art';
@@ -143,7 +142,6 @@ function GameCard({
 
 export function Hub() {
   const user = useAuth((s) => s.user);
-  const apertaOk = useApertaAllowed();
   const stats = useQuery({
     queryKey: ['stats'],
     queryFn: fetchStats,
@@ -243,16 +241,6 @@ export function Hub() {
             loading={loading}
             badge="NOVO"
           />
-          {/* Em teste: o cartão só aparece para a conta liberada pelo servidor (visitante e outras contas não veem). */}
-          {apertaOk === true && (
-            <GameCard
-              to="/arcade/aperta"
-              cls="hub-card-aperta"
-              art={<ApertaArt />}
-              name="Aperta!"
-              lines={['CLICKER NO ESPAÇO']}
-            />
-          )}
         </div>
       </section>
 

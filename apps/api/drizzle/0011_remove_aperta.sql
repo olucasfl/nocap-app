@@ -1,0 +1,1 @@
+DROP TABLE "aperta_saves" CASCADE;

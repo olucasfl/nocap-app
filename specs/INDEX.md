@@ -41,11 +41,6 @@
 | 035 | [Bee Word's (7 letras, uma obrigatória)](035-bee-words.md) | 7 | rascunho |
 | 036 | [Classic Word's em fases (1, 2 e 4 palavras)](036-classic-fases.md) | 7 | concluída |
 | 037 | [Progresso das fases na conta](037-progresso-na-conta.md) | 7 | concluída |
-| 038 | [Aperta! (clicker no espaço, solo, saves na conta)](038-clicker.md) | 8 | em andamento na `develop`: etapas 1, 2 (falta aplicar a migration), 3, 4, 5 (Melhorias), 6 (grimórios e álbum), 7 (objetos no espaço), 8 (tutorial, refeito como dinâmico em 22/10/2026), 9 (colapso e Atlas), 10 (Árvore e conquistas), 11 e 11b (arte e sons, incluindo as telas novas) e 12 (conteúdo dos colapsos 1 a 5) prontas; economia reformulada em 22/10/2026 (começo do zero, melhorias progressivas, grimórios em números, vidas 1 a 5 recalibradas); ver seção 16 da spec |
-| 039 | [Aperta!: economia v2 (toque conquistado, geradores e raros)](039-aperta-economia-v2.md) | 8 | rascunho (aguarda decisões do Lucas) |
-| 040 | [Aperta!: colapso infinito, Cofre dos Proibidos e árvore grande](040-aperta-colapso-infinito.md) | 8 | plano escrito em 22/10/2026 (etapas 14 a 21); **etapas 14 (colapso infinito e requisitos), 15 (Cofre dos Proibidos), 16 (Cintilas e conquistas ampliadas) e 17 (Árvore: motor e dados) prontas em 22/10/2026 e as 18 (tela da árvore), 19 (automações e habilidades), 20 (Sorte e Exploração) e 21 (calibragem e QA, com 2 testes do simulador ainda vermelhos, seção 17) em 23/10/2026**; substitui o Atlas, os Fragmentos e a camada 2 da 038 |
-| 042 | [Aperta!: grimórios por raridade](042-aperta-grimorios-por-raridade.md) | 8 | implementada em 23/10/2026 (14 grimórios x 4 raridades, save v6, livro com 4 espaços); jogo liberado só para a conta do Lucas |
-| 043 | [Aperta!: reformulação dos itens, geradores e grimórios](043-aperta-reformulacao-itens.md) | 8 | implementada (25/10/2026; decisões do Lucas na seção 8) |
 | 044 | [Fox Cap! e Desmorona! (jogo de arena que desmorona)](044-fox-games-desmorona.md) | 9 | em andamento: Fases 1 (treino com bots) e 2 (salas online) no ar; Fase 3 (colisão) a seguir |
 | 045 | [Telas fora do jogo, responsivas e mais claras](045-redesign-telas-fora-do-jogo.md) | 9 | plano para aprovação do Lucas (26/10/2026) |
 | 046 | [Fut Fox (futebol de raposas, 2 a 4 times)](046-bola-maluca.md) | 9 | em andamento: Fase 1 (motor e bots) pronta e MVP offline jogável em `/fox-cap/bola` (26/10/2026); fases 1 a 4 prontas (motor, sala online, web e lobby); faltam som e testes em celular real |
@@ -76,5 +71,6 @@
 | 073 | [Block Classic guardado na conta](073-block-classic-na-conta.md) | 6 | implementada (09/11/2026); precisa da migration 0010 aplicada |
 | 074 | [Quadros animados nos menus dos hubs](074-quadros-animados-dos-hubs.md) | 6 | implementada (09/11/2026) |
 | 075 | [Quadros animados no Fox Cap! e no Counter Fox](075-quadros-animados-fox-cap.md) | 6 | implementada (09/11/2026) |
+| 076 | [Remover o Aperta!](076-remover-aperta.md) | 8 | código removido (09/11/2026); migration 0011 (apagar a tabela) pronta, falta o Lucas aplicar |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.

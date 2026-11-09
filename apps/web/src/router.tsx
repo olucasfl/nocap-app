@@ -230,12 +230,6 @@ const counterFoxRoute = createRoute({
   component: lazyRouteComponent(() => import('@/games/foxshot/CounterFoxPage'), 'CounterFoxPage'),
 });
 
-const apertaRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/arcade/aperta',
-  component: lazyRouteComponent(() => import('@/games/aperta/ApertaPage'), 'ApertaPage'),
-});
-
 const blocksRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/blocks',
@@ -338,7 +332,6 @@ const routeTree = rootRoute.addChildren([
   foxCapRoute,
   desmoronaRoute,
   bolaRoute,
-  apertaRoute,
   blocksRoute,
   foxShotTestRoute,
   counterFoxRoute,

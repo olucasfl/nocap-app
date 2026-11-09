@@ -300,7 +300,7 @@
 /*
  * Escala do texto e dos controles em telas grandes (spec 045): o app foi desenhado em pixels para o celular, então em
  * monitor ele ficaria minúsculo. `zoom` amplia a moldura inteira (menu lateral incluso); a altura mínima desconta a escala
- * para a página não ganhar rolagem à toa. Jogos em tela cheia (3D, Aperta!) não passam por aqui.
+ * para a página não ganhar rolagem à toa. Jogos em tela cheia (3D) não passam por aqui.
  */
 @media (min-width: 1100px) {
   :root {

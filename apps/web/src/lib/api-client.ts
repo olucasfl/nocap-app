@@ -16,7 +16,7 @@ export class ApiError extends Error {
   constructor(
     readonly status: number,
     message: string,
-    /** Corpo da resposta de erro (o 409 do Aperta! traz o save da conta). */
+    /** Corpo da resposta de erro (corpo da resposta do servidor). */
     readonly body?: unknown,
   ) {
     super(message);

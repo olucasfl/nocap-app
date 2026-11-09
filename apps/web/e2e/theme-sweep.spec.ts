@@ -33,7 +33,6 @@ const ROUTES = [
   '/fox-cap/desmorona',
   '/fox-cap/bola',
   '/fox-cap/counter-fox',
-  '/arcade/aperta',
 ];
 
 for (const scheme of ['light', 'dark'] as const) {

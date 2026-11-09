@@ -64,20 +64,15 @@ function hideSplash() {
 }
 
 const root = createRoot(document.getElementById('root')!);
-if (import.meta.env.DEV && window.location.pathname === '/dev/sons') {
-  // Página de teste manual dos sons: só em desenvolvimento, fora do roteador.
-  void import('@/dev/SoundTest').then(({ SoundTest }) => root.render(<SoundTest />));
-} else {
-  root.render(
-    <StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
-        <UpdatePrompt />
-        <UpdateBeforeEnter />
-      </QueryClientProvider>
-    </StrictMode>,
-  );
-}
+root.render(
+  <StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+      <UpdatePrompt />
+      <UpdateBeforeEnter />
+    </QueryClientProvider>
+  </StrictMode>,
+);
 
 // iOS ignora user-scalable=no: bloqueia o gesto de pinça e o zoom por toque duplo em todo o app.
 for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) {
