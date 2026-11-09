@@ -1,6 +1,7 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { Backdrop, Emblem, Showcase, type WordsGame } from './WordsLandingArt';
+import { Backdrop, Emblem, type WordsGame } from './WordsLandingArt';
+import { Showcase } from './WordsShowcase';
 import '@/components/game-landing.css';
 import './words-landing.css';
 

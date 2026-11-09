@@ -74,5 +74,6 @@
 | 071 | [Rankings nos hubs e Dailys da Home](071-rankings-nos-hubs.md) | 2 | implementada (09/11/2026) |
 | 072 | [Como jogar em páginas](072-como-jogar-em-paginas.md) | 6 | implementada (09/11/2026) |
 | 073 | [Block Classic guardado na conta](073-block-classic-na-conta.md) | 6 | implementada (09/11/2026); precisa da migration 0010 aplicada |
+| 074 | [Quadros animados nos menus dos hubs](074-quadros-animados-dos-hubs.md) | 6 | implementada (09/11/2026) |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.
