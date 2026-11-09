@@ -1,4 +1,4 @@
-import { useEffect, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Backdrop, Emblem, Showcase, type WordsGame } from './WordsLandingArt';
 import '@/components/game-landing.css';
@@ -282,6 +282,68 @@ export function WlMeter({
         <span>
           <b>{Math.max(0, total - done - open)}</b> novas
         </span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * "Como jogar" em páginas (spec 072): uma explicação por vez, com Anterior e Próximo, para tudo caber na tela sem rolar,
+ * inclusive no celular. As setas do teclado também viram a página.
+ */
+export function WlPager({
+  pages,
+  testid = 'pager',
+}: {
+  pages: { title: string; body: ReactNode }[];
+  testid?: string;
+}) {
+  const [i, setI] = useState(0);
+  const last = pages.length - 1;
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if (e.code === 'ArrowRight') setI((n) => Math.min(last, n + 1));
+      if (e.code === 'ArrowLeft') setI((n) => Math.max(0, n - 1));
+    };
+    window.addEventListener('keydown', key);
+    return () => window.removeEventListener('keydown', key);
+  }, [last]);
+  const page = pages[i]!;
+  return (
+    <div className="wl-pager" data-testid={testid}>
+      <div className="wl-pager-card" key={i}>
+        <span className="wl-pager-n mono">
+          {i + 1} / {pages.length}
+        </span>
+        <h3>{page.title}</h3>
+        <div className="wl-pager-body">{page.body}</div>
+      </div>
+      <div className="wl-pager-dots" aria-hidden="true">
+        {pages.map((_, d) => (
+          <i key={d} className={d === i ? 'on' : ''} />
+        ))}
+      </div>
+      <div className="wl-pager-nav">
+        <button
+          type="button"
+          className="gx-enter"
+          disabled={i === 0}
+          onClick={() => setI(i - 1)}
+          data-sfx="select"
+          data-testid={`${testid}-prev`}
+        >
+          ‹ Anterior
+        </button>
+        <button
+          type="button"
+          className="gx-enter"
+          disabled={i === last}
+          onClick={() => setI(i + 1)}
+          data-sfx="select"
+          data-testid={`${testid}-next`}
+        >
+          Próximo ›
+        </button>
       </div>
     </div>
   );

@@ -461,6 +461,7 @@ test.describe("Connect Word's (fases offline)", () => {
     await expect(page.getByTestId('level-1')).toHaveAttribute('data-status', 'new');
     await page.getByTestId('wl-back').click();
     await page.getByTestId('menu-rules').click();
+    await page.getByTestId('rules-pager-next').click();
     await expect(page.getByText('Não há vidas')).toBeVisible();
     await noOverflow(page);
     expect(errors).toEqual([]);

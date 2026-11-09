@@ -17,7 +17,7 @@ import {
 } from '@/lib/daily-countdown';
 import { HubRanking } from '@/components/HubRanking';
 import { LevelBrowser, type BrowserCell } from './landing/LevelBrowser';
-import { WlBtn, WlMeter, WlPanel, WordsLanding } from './landing/WordsLanding';
+import { WlBtn, WlMeter, WlPager, WlPanel, WordsLanding } from './landing/WordsLanding';
 import './classic-levels.css';
 
 const MODES: ClassicMode[] = ['classic', 'dueto', 'quarteto'];
@@ -431,28 +431,34 @@ export function ClassicLanding({ start }: { start?: string }) {
   } else if (screen === 'rules') {
     left = (
       <WlPanel title="Como jogar" onBack={back} testid="rules">
-        <div className="wl-scroll">
-          <ul className="wl-legend-list" aria-label="Significado das cores">
-            <li>
-              <span className="wl-tile hit">A</span> Letra no lugar certo
-            </li>
-            <li>
-              <span className="wl-tile near">M</span> Tem a letra, mas em outro lugar
-            </li>
-            <li>
-              <span className="wl-tile miss">B</span> Não tem essa letra
-            </li>
-          </ul>
-          <p className="lead">
-            Palavra AMIGO, tentativa AMBOS: A e M no lugar certo, O existe mas em outro lugar, B e S
-            não existem.
-          </p>
-          <ol className="wl-rules">
-            {CLASSIC_STEPS.map((s) => (
-              <li key={s}>{s}</li>
-            ))}
-          </ol>
-        </div>
+        <WlPager
+          testid="rules-pager"
+          pages={[
+            {
+              title: 'As cores',
+              body: (
+                <>
+                  <ul className="wl-legend-list" aria-label="Significado das cores">
+                    <li>
+                      <span className="wl-tile hit">A</span> Letra no lugar certo
+                    </li>
+                    <li>
+                      <span className="wl-tile near">M</span> Tem a letra, mas em outro lugar
+                    </li>
+                    <li>
+                      <span className="wl-tile miss">B</span> Não tem essa letra
+                    </li>
+                  </ul>
+                  <p className="lead">
+                    Palavra AMIGO, tentativa AMBOS: A e M no lugar certo, O existe mas em outro
+                    lugar, B e S não existem.
+                  </p>
+                </>
+              ),
+            },
+            ...CLASSIC_STEPS.map((t, n) => ({ title: `Regra ${n + 1}`, body: <p>{t}</p> })),
+          ]}
+        />
       </WlPanel>
     );
   } else {

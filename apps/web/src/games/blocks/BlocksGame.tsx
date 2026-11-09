@@ -5,7 +5,7 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import { BlocksGame as Engine, HINTS_PER_GAME, decodeMove, type BlocksMode } from '@nocap/games';
 import { BlocksClassicArt, BlocksTowersArt } from '@/components/HubArt';
 import { HubRanking } from '@/components/HubRanking';
-import { WlBtn, WlPanel, WordsLanding } from '../words/landing/WordsLanding';
+import { WlBtn, WlPager, WlPanel, WordsLanding } from '../words/landing/WordsLanding';
 import { MuteButton } from '@/components/MuteButton';
 import { useAuth } from '@/lib/auth';
 import { bestTenths, fetchStats } from '@/lib/stats';
@@ -297,18 +297,15 @@ function BlocksStart({
   } else if (screen === 'rules') {
     left = (
       <WlPanel title="Como jogar" onBack={back} testid="rules">
-        <div className="wl-scroll">
-          {MODES.map((m) => (
-            <div key={m.id} className="wl-state">
-              <b>{m.label}</b>
-              <ol className="wl-rules">
-                {HOW[m.id].map((t) => (
-                  <li key={t}>{t}</li>
-                ))}
-              </ol>
-            </div>
-          ))}
-        </div>
+        <WlPager
+          testid="rules-pager"
+          pages={MODES.flatMap((m) =>
+            HOW[m.id].map((t, n) => ({
+              title: `${m.label} · ${n + 1}/${HOW[m.id].length}`,
+              body: <p>{t}</p>,
+            })),
+          )}
+        />
       </WlPanel>
     );
   } else {

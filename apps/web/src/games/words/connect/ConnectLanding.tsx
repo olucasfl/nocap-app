@@ -11,7 +11,7 @@ import {
 } from '../levels/levels';
 import { connectProgress, useProgress, type LevelStatus } from '../levels/progress';
 import { LevelBrowser, type BrowserCell } from '../landing/LevelBrowser';
-import { WlBtn, WlMeter, WlPanel, WordsLanding } from '../landing/WordsLanding';
+import { WlBtn, WlMeter, WlPager, WlPanel, WordsLanding } from '../landing/WordsLanding';
 
 export const CONNECT_RULES = [
   'São 16 palavras e 4 grupos escondidos. Marque 4 palavras que têm algo em comum e toque em Enviar.',
@@ -179,13 +179,10 @@ export function ConnectLanding({ start = 'main' }: { start?: 'main' | 'levels' }
   } else if (screen === 'rules') {
     left = (
       <WlPanel title="Como jogar" onBack={back} testid="rules">
-        <div className="wl-scroll">
-          <ol className="wl-rules">
-            {CONNECT_RULES.map((s) => (
-              <li key={s}>{s}</li>
-            ))}
-          </ol>
-        </div>
+        <WlPager
+          testid="rules-pager"
+          pages={CONNECT_RULES.map((t, n) => ({ title: `Passo ${n + 1}`, body: <p>{t}</p> }))}
+        />
       </WlPanel>
     );
   } else {

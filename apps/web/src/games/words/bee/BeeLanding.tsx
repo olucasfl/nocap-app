@@ -5,7 +5,7 @@ import { MuteButton } from '@/components/MuteButton';
 import { loadBeeLevels, tierOf, tierRanges, toBeePuzzle, type BeeLevel } from '../levels/levels';
 import { beeProgress, useProgress, type LevelStatus } from '../levels/progress';
 import { LevelBrowser, type BrowserCell } from '../landing/LevelBrowser';
-import { WlBtn, WlMeter, WlPanel, WordsLanding } from '../landing/WordsLanding';
+import { WlBtn, WlMeter, WlPager, WlPanel, WordsLanding } from '../landing/WordsLanding';
 
 export const BEE_RULES = [
   'Toda palavra tem 4 letras ou mais, usa só as 7 letras do favo e leva a letra do centro (a amarela).',
@@ -162,13 +162,10 @@ export function BeeLanding({ start = 'main' }: { start?: 'main' | 'levels' }) {
   } else if (screen === 'rules') {
     left = (
       <WlPanel title="Como jogar" onBack={back} testid="rules">
-        <div className="wl-scroll">
-          <ol className="wl-rules">
-            {BEE_RULES.map((s) => (
-              <li key={s}>{s}</li>
-            ))}
-          </ol>
-        </div>
+        <WlPager
+          testid="rules-pager"
+          pages={BEE_RULES.map((t, n) => ({ title: `Passo ${n + 1}`, body: <p>{t}</p> }))}
+        />
       </WlPanel>
     );
   } else {

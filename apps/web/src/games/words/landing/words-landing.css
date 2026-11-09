@@ -1504,10 +1504,107 @@
 }
 
 /* ranking dentro dos hubs (spec 071) */
-.wl-rankbox { display: grid; gap: 10px; width: 100%; text-align: left; }
-.wl-chips-sub { justify-content: center; }
-.wl-chip.small { padding: 4px 12px; font-size: 13px; }
-.wl-rank-note { margin: 0; text-align: center; color: var(--gl-muted); font-size: 14px; }
-.wl-rank li.top b { color: #fff; }
-.wl-rank li.t1 { border-color: var(--gl-a); }
-.wl-rank li.t1 b::after { content: ' ★'; color: var(--gl-a); }
+.wl-rankbox {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+}
+.wl-chips-sub {
+  justify-content: center;
+}
+.wl-chip.small {
+  padding: 4px 12px;
+  font-size: 13px;
+}
+.wl-rank-note {
+  margin: 0;
+  text-align: center;
+  color: var(--gl-muted);
+  font-size: 14px;
+}
+.wl-rank li.top b {
+  color: #fff;
+}
+.wl-rank li.t1 {
+  border-color: var(--gl-a);
+}
+.wl-rank li.t1 b::after {
+  content: ' ★';
+  color: var(--gl-a);
+}
+
+/* "Como jogar" em páginas (spec 072) */
+.wl-pager {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+}
+.wl-pager-card {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  min-height: 170px;
+  padding: 14px 16px;
+  border: 1px solid var(--gl-line);
+  border-left: 5px solid var(--gl-a);
+  background: #0f1830;
+  animation: gl-in 0.25s ease-out both;
+}
+.wl-pager-card h3 {
+  margin: 0;
+  font:
+    700 20px Rajdhani,
+    sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.wl-pager-n {
+  color: var(--gl-a);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+.wl-pager-body {
+  color: var(--gl-ink);
+  font-size: 15px;
+  line-height: 1.4;
+}
+.wl-pager-body p {
+  margin: 0 0 8px;
+}
+.wl-pager-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+.wl-pager-dots i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+}
+.wl-pager-dots i.on {
+  background: var(--gl-a);
+}
+.wl-pager-nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.wl-pager-nav .gx-enter {
+  text-align: center;
+}
+@media (max-height: 560px) {
+  .wl-pager-card {
+    min-height: 0;
+    padding: 10px 12px;
+  }
+  .wl-pager-card h3 {
+    font-size: 17px;
+  }
+  .wl-pager-body {
+    font-size: 14px;
+  }
+}

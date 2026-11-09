@@ -72,5 +72,6 @@
 | 069 | [Tela final dos jogos de reflexo e precisão](069-final-reflexo.md) | 6 | implementada (09/11/2026) |
 | 070 | [Sala que troca entre todos os jogos do NoCap](070-sala-todos-os-jogos.md) | 3 | implementada (09/11/2026) |
 | 071 | [Rankings nos hubs e Dailys da Home](071-rankings-nos-hubs.md) | 2 | implementada (09/11/2026) |
+| 072 | [Como jogar em páginas](072-como-jogar-em-paginas.md) | 6 | implementada (09/11/2026) |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.

@@ -3,7 +3,13 @@ import { useNavigate } from '@tanstack/react-router';
 import { MuteButton } from '@/components/MuteButton';
 import { NicknameDialog } from '@/components/NicknameDialog';
 import { RoomConflictDialog } from '@/components/RoomConflictDialog';
-import { WlBtn, WlPanel, WordsLanding, type WordsGame } from '@/games/words/landing/WordsLanding';
+import {
+  WlBtn,
+  WlPager,
+  WlPanel,
+  WordsLanding,
+  type WordsGame,
+} from '@/games/words/landing/WordsLanding';
 import { useOnline } from '@/lib/network';
 import { HubRanking } from '@/components/HubRanking';
 import { HubDailyBoard, HubDailyPanel, useDailyData } from '@/components/HubDaily';
@@ -308,14 +314,25 @@ export function GameHubLanding({
   } else if (screen === 'rules') {
     left = (
       <WlPanel title="Como jogar" onBack={back} testid="rules">
-        <div className="wl-scroll">
-          {modes.map((m) => (
-            <div key={m.id} className="wl-state">
-              <b>{m.label}</b>
-              <span>{m.lead}</span>
-            </div>
-          ))}
-        </div>
+        <WlPager
+          testid="rules-pager"
+          pages={modes.map((m) => ({
+            title: m.label,
+            body: (
+              <>
+                <p>{m.lead}</p>
+                <div className="wl-rulechips">
+                  {m.rules.map(([big, small]) => (
+                    <div key={small}>
+                      <b>{big}</b>
+                      {small}
+                    </div>
+                  ))}
+                </div>
+              </>
+            ),
+          }))}
+        />
       </WlPanel>
     );
   } else {
