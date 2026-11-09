@@ -210,7 +210,13 @@ export function rulesSummary(s: RoomSnapshot): string {
 }
 
 export function rulesFor(s: RoomSnapshot): RuleDef[] {
-  if (s.game === 'desmorona' || s.game === 'bola' || s.game === 'pingpong' || s.game === 'foxshot' || s.game === 'foxcap')
+  if (
+    s.game === 'desmorona' ||
+    s.game === 'bola' ||
+    s.game === 'pingpong' ||
+    s.game === 'foxshot' ||
+    s.game === 'foxcap'
+  )
     return [];
   const out: RuleDef[] = [];
   const cfg = s.settings;

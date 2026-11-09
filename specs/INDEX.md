@@ -72,5 +72,6 @@
 | 074 | [Quadros animados nos menus dos hubs](074-quadros-animados-dos-hubs.md) | 6 | implementada (09/11/2026) |
 | 075 | [Quadros animados no Fox Cap! e no Counter Fox](075-quadros-animados-fox-cap.md) | 6 | implementada (09/11/2026) |
 | 076 | [Remover o Aperta!](076-remover-aperta.md) | 8 | código removido (09/11/2026); migration 0011 (apagar a tabela) pronta, falta o Lucas aplicar |
+| 077 | [Home como plataforma de jogos](077-home-plataforma-de-jogos.md) | 9 | primeira tela (Home) implementada em 09/11/2026; faltam Ranking, Amigos e Perfil |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.

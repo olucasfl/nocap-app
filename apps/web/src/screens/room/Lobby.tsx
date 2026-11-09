@@ -24,7 +24,20 @@ export function Lobby({ snapshot }: { snapshot: RoomSnapshot }) {
       sessionStorage.removeItem('cfx-new-room');
       // '1' vem do Counter Fox; os outros jogos guardam o próprio id
       const game = want === '1' ? 'foxshot' : want;
-      if (!['color', 'time', 'impostor', 'eco', 'foxshot', 'bola', 'pingpong', 'atravessa', 'desmorona'].includes(game)) return;
+      if (
+        ![
+          'color',
+          'time',
+          'impostor',
+          'eco',
+          'foxshot',
+          'bola',
+          'pingpong',
+          'atravessa',
+          'desmorona',
+        ].includes(game)
+      )
+        return;
       sendRoom('pickgame', { game });
     } catch {
       /* sem armazenamento: o líder escolhe o jogo na sala */

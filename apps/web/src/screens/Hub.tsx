@@ -1,165 +1,132 @@
-import { FoxCapArt, BlocksArt, ColorArt, EcoArt, TimeArt } from '@/components/HubArt';
 import { Link } from '@tanstack/react-router';
-import type { ReactNode } from 'react';
-import { WordsHubArt } from '@/games/words/words-art';
 import { useQuery } from '@tanstack/react-query';
 import { MuteButton } from '@/components/MuteButton';
 import { RoomBanner } from '@/components/RoomBanner';
 import { ThemeButton } from '@/components/ThemeButton';
+import { WORDS_LANDING, useWordsFonts } from '@/games/words/landing/WordsLanding';
 import { useAuth } from '@/lib/auth';
-import {
-  bestTenths,
-  fetchStats,
-  formatBest,
-  streakLabel,
-  type GameId,
-  type Stats,
-} from '@/lib/stats';
-import './hub.css';
+import { fetchStats, streakLabel, type GameId, type Stats } from '@/lib/stats';
+import { CoverArt, SHELVES, type Poster } from './home/posters';
+import './home/home.css';
 
-/** Recorde do modo Clássico do jogo (os outros modos mostram o recorde na ficha de cada um). */
-function bestLabel(stats: Stats | undefined, game: GameId): string | null {
-  if (!stats) return null;
-  const best = bestTenths(stats, game, 'classic');
-  if (best <= 0) return 'SEM RECORDE NO CLÁSSICO';
-  return `RECORDE CLÁSSICO ${formatBest(game, 'classic', best)}`;
-}
-
-/** O recorde do Atravessa!: o da conta (sem conta não há recorde). */
-function atravessaBestLabel(stats: Stats | undefined): string | null {
-  if (!stats) return null;
-  const rows = Math.floor(bestTenths(stats, 'atravessa', 'infinito') / 10);
-  return rows > 0 ? `RECORDE ${rows} LINHAS` : 'SEM RECORDE AINDA';
-}
-
-/** O recorde do Block's: o da conta (sem conta não há recorde). */
-function blocksBestLabel(stats: Stats | undefined): string | null {
-  if (!stats) return null;
-  const points = Math.floor(bestTenths(stats, 'blocks', 'classic') / 10);
-  return points > 0 ? `RECORDE ${points} PTS` : 'SEM RECORDE AINDA';
-}
-
-/** Os Dailys de hoje: o que cada jogo mostra no chip. */
+/** Os Dailys de hoje (cada um leva ao Daily do jogo). */
 const DAILIES = [
-  { game: 'color', name: 'Mesmíssima', to: '/cor' },
-  { game: 'time', name: 'Já Deu?', to: '/tempo' },
-  { game: 'eco', name: 'Ecooo', to: '/eco' },
-  { game: 'wclassic', name: "Word's", to: '/words/classic/daily' },
+  {
+    game: 'color',
+    name: 'Mesmíssima',
+    to: '/cor',
+    search: { modo: 'daily' },
+    a: '#ff7a3d',
+    b: '#6a2108',
+    word: 'cor',
+  },
+  {
+    game: 'time',
+    name: 'Já Deu?',
+    to: '/tempo',
+    search: { modo: 'daily' },
+    a: '#4a8dff',
+    b: '#0f2a6a',
+    word: 'tempo',
+  },
+  {
+    game: 'eco',
+    name: 'Ecooo',
+    to: '/eco',
+    search: { modo: 'daily' },
+    a: '#a06bff',
+    b: '#2f1668',
+    word: 'sequência',
+  },
+  {
+    game: 'wclassic',
+    name: "Word's",
+    to: '/words/classic/daily',
+    search: undefined,
+    a: '#3fcf7d',
+    b: '#0b3d2a',
+    word: 'palavra',
+  },
 ] as const;
 
-function DailyChip({
-  game,
-  name,
-  to,
-  stats,
-  loading,
-}: {
-  game: GameId;
-  name: string;
-  to: string;
-  stats: Stats | undefined;
-  loading: boolean;
-}) {
-  const done = !!stats?.daily[game]?.playedToday;
-  const state = loading ? 'loading' : !stats ? 'plain' : done ? 'done' : 'todo';
+const Check = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="4.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M5 12.5l4.5 4.5L19 7" />
+  </svg>
+);
+
+function PosterCard({ p, i, stats }: { p: Poster; i: number; stats: Stats | undefined }) {
+  const done = p.daily ? !!stats?.daily[p.daily as GameId]?.playedToday : false;
+  const chip = p.daily && stats ? (done ? 'Daily feito' : 'Daily hoje') : p.badge;
   return (
     <Link
-      to={to as '/'}
-      search={game === 'wclassic' ? undefined : ({ modo: 'daily' } as never)}
-      className={`hz-pill ${state}`}
+      to={p.to as '/'}
+      search={p.search as never}
+      className="nh-poster"
+      style={{ '--a': p.a, '--b': p.b, '--i': i } as React.CSSProperties}
       data-sfx="start"
-      data-testid={`daily-${game}`}
-      aria-label={`Daily de ${name}${done ? ', feito hoje' : ''}`}
+      data-testid={`card-${p.id}`}
+      aria-label={`${p.name}: ${p.tag}`}
     >
-      <span className="hz-pill-dot" aria-hidden="true">
-        {done && (
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="4.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M5 12.5l4.5 4.5L19 7" />
-          </svg>
-        )}
+      <svg
+        className="art"
+        viewBox="0 0 300 400"
+        preserveAspectRatio="xMidYMin slice"
+        aria-hidden="true"
+      >
+        <CoverArt id={p.id} />
+      </svg>
+      {chip && (
+        <span className={`nh-chip${done ? ' done' : ''}`}>
+          {p.daily && <i />}
+          {chip}
+        </span>
+      )}
+      <span className="nh-poster-info">
+        <b>{p.name}</b>
+        <span>{p.tag}</span>
       </span>
-      {name}
     </Link>
   );
 }
 
-/** Um cartão de jogo (a capa). `wide` ocupa a linha inteira, com a capa ao lado do texto. */
-function GameCard({
-  to,
-  cls,
-  art,
-  name,
-  size,
-  lines,
-  wide = false,
-  badge,
-  loading = false,
-}: {
-  to: string;
-  cls: string;
-  art: ReactNode;
-  name: string;
-  size?: 'mid' | 'long';
-  lines: (string | null)[];
-  wide?: boolean;
-  badge?: string;
-  /** A conta ainda carrega: no lugar do recorde vai uma barrinha apagada. */
-  loading?: boolean;
-}) {
-  return (
-    <Link
-      to={to as '/'}
-      className={`hub-card ${cls}${wide ? ' wide' : ''}`}
-      data-sfx="start"
-      data-testid={`card-${cls.replace('hub-card-', '')}`}
-    >
-      {badge && <span className="hz-badge mono">{badge}</span>}
-      <div className="hub-art">{art}</div>
-      <div className="hub-card-foot">
-        <div className={`hub-card-name${size ? ` ${size}` : ''}`}>{name}</div>
-        {loading ? (
-          <div className="hub-card-meta skel" aria-hidden="true" />
-        ) : (
-          lines
-            .filter((l): l is string => !!l)
-            .map((l) => (
-              <div key={l} className="mono hub-card-meta">
-                {l}
-              </div>
-            ))
-        )}
-      </div>
-    </Link>
-  );
-}
-
+/** A Home: o destaque do dia (os 4 Dailys) e os jogos em prateleiras de pôsteres, sem mais nada. */
 export function Hub() {
+  useWordsFonts();
   const user = useAuth((s) => s.user);
+  const authStatus = useAuth((s) => s.status);
   const stats = useQuery({
     queryKey: ['stats'],
     queryFn: fetchStats,
     enabled: !!user,
     retry: false,
   });
-  const authStatus = useAuth((s) => s.status);
   const data = user ? stats.data : undefined;
-  // a conta (e os números dela) ainda carregando: mostra um carregando, nunca "só com conta"
-  const loading = authStatus === 'loading' || (!!user && stats.isPending);
   const streak = data?.visit.current ?? 0;
   const rawName = user?.name?.trim().split(/\s+/)[0] || user?.username || '';
   const firstName = rawName ? rawName.charAt(0).toUpperCase() + rawName.slice(1).toLowerCase() : '';
 
+  const doneCount = data
+    ? DAILIES.filter((d) => data.daily[d.game as GameId]?.playedToday).length
+    : 0;
+  const next = data ? DAILIES.find((d) => !data.daily[d.game as GameId]?.playedToday) : DAILIES[0];
+  const allDone = !!data && !next;
+  const theme = allDone ? WORDS_LANDING.color : undefined;
+  const ha = next?.a ?? theme?.a ?? '#ff7a3d';
+  const hb = next?.b ?? '#2a0f06';
+
   return (
-    <main className="hub hz">
+    <main className="hub nh">
       <header className="top">
-        <div className="logo hub-logo">
+        <div className="nh-logo">
           no cap<span>!</span>
         </div>
         <div className="top-actions">
@@ -170,115 +137,87 @@ export function Hub() {
 
       <RoomBanner />
 
-      <section className="hz-hello" aria-label="Resumo">
-        <div>
-          <h1>{firstName ? `Olá, ${firstName}!` : 'Bora jogar?'}</h1>
-          {!user && authStatus === 'ready' && (
-            <p className="mono">ENTRE PARA GUARDAR RECORDES E DAILYS</p>
+      <section
+        className="nh-hero"
+        style={{ '--ha': ha, '--hb': hb } as React.CSSProperties}
+        aria-label="Dailys de hoje"
+        data-testid="home-hero"
+      >
+        <div className="nh-hero-top">
+          <span className="nh-kicker">{firstName ? `Olá, ${firstName}` : 'Bora jogar?'}</span>
+          {streak > 0 && (
+            <span className="nh-streak" title="Dias seguidos entrando no NoCap">
+              {streakLabel(streak).toUpperCase()} SEGUIDOS
+            </span>
           )}
         </div>
-        {streak > 0 && (
-          <span className="hz-streak mono" title="Dias seguidos entrando no NoCap">
-            <b>{streak}</b> {streakLabel(streak).replace(/^\d+ /, '').toUpperCase()} SEGUIDOS
-          </span>
-        )}
-      </section>
-
-      <section className="hz-sec hz-daily" aria-label="Dailys de hoje">
-        <h2 className="hz-h">
-          Dailys <small className="mono">1 POR JOGO, POR DIA</small>
-        </h2>
-        <div className="hz-pills">
-          {DAILIES.map((d) => (
-            <DailyChip
-              key={d.game}
-              game={d.game}
-              name={d.name}
-              to={d.to}
-              stats={data}
-              loading={loading}
-            />
-          ))}
+        <div>
+          <h1>
+            {allDone
+              ? 'Dailys completos!'
+              : data
+                ? `${doneCount} de ${DAILIES.length} dailys feitos`
+                : 'Os dailys de hoje'}
+          </h1>
+          <p>
+            {allDone
+              ? 'Volte amanhã para manter a sequência.'
+              : data
+                ? `Falta o Daily de ${next!.name}.`
+                : user || authStatus === 'loading'
+                  ? 'Um por jogo, por dia, igual para todo mundo.'
+                  : 'Entre para guardar recordes e dailys.'}
+          </p>
+        </div>
+        <div className="nh-hero-row">
+          <div className="nh-dots" role="group" aria-label="Um Daily por jogo">
+            {DAILIES.map((d) => {
+              const done = !!data?.daily[d.game as GameId]?.playedToday;
+              return (
+                <Link
+                  key={d.game}
+                  to={d.to as '/'}
+                  search={d.search as never}
+                  className={`nh-dot${done ? ' done' : ''}`}
+                  data-sfx="start"
+                  data-testid={`daily-${d.game}`}
+                  aria-label={`Daily de ${d.name}${done ? ', feito hoje' : ''}`}
+                  title={d.name}
+                >
+                  {done ? <Check /> : d.name.charAt(0)}
+                </Link>
+              );
+            })}
+          </div>
+          {next && (
+            <Link
+              to={next.to as '/'}
+              search={next.search as never}
+              className="nh-cta"
+              data-sfx="start"
+              data-testid="home-cta"
+            >
+              Jogar Daily <i aria-hidden="true">→</i>
+            </Link>
+          )}
         </div>
       </section>
 
-      <section className="hz-sec" aria-label="Palavras">
-        <h2 className="hz-h">
-          Palavras <small className="mono">CLASSIC, CONNECT E BEE</small>
-        </h2>
-        <div className="hz-grid one">
-          <GameCard
-            to="/words"
-            cls="hub-card-words"
-            art={<WordsHubArt />}
-            name="Word's"
-            lines={['JOGOS DE PALAVRAS', 'DAILY COM RANKING E CENTENAS DE FASES']}
-            wide
-          />
-        </div>
-      </section>
+      {SHELVES.map((shelf) => (
+        <section key={shelf.id} className="nh-shelf" aria-label={shelf.title}>
+          <div className="nh-shelf-h">
+            <h2>{shelf.title}</h2>
+            <small>{shelf.sub}</small>
+          </div>
+          <div className="nh-row">
+            {shelf.posters.map((p, i) => (
+              <PosterCard key={p.id} p={p} i={i} stats={data} />
+            ))}
+          </div>
+        </section>
+      ))}
 
-      <section className="hz-sec" aria-label="Arcade">
-        <h2 className="hz-h">
-          Arcade <small className="mono">BATA SEU RECORDE</small>
-        </h2>
-        <div className="hz-grid">
-          <GameCard
-            to="/blocks"
-            cls="hub-card-blocks"
-            art={<BlocksArt />}
-            name="Block's"
-            lines={[blocksBestLabel(data)]}
-            loading={loading}
-          />
-          <GameCard
-            to="/fox-cap"
-            cls="hub-card-atravessa"
-            art={<FoxCapArt />}
-            name="Fox Cap!"
-            size="long"
-            lines={[atravessaBestLabel(data)]}
-            loading={loading}
-            badge="NOVO"
-          />
-        </div>
-      </section>
-
-      <section className="hz-sec" aria-label="Reflexo e precisão">
-        <h2 className="hz-h">
-          Reflexo e precisão <small className="mono">COR, TEMPO E RITMO</small>
-        </h2>
-        <div className="hz-grid">
-          <GameCard
-            to="/cor"
-            cls="hub-card-color"
-            art={<ColorArt />}
-            name="Mesmíssima"
-            size="long"
-            lines={[bestLabel(data, 'color')]}
-            loading={loading}
-          />
-          <GameCard
-            to="/tempo"
-            cls="hub-card-time"
-            art={<TimeArt />}
-            name="Já Deu?"
-            size="mid"
-            lines={[bestLabel(data, 'time')]}
-            loading={loading}
-          />
-          <GameCard
-            to="/eco"
-            cls="hub-card-eco"
-            art={<EcoArt />}
-            name="Ecooo"
-            lines={[bestLabel(data, 'eco')]}
-            loading={loading}
-          />
-        </div>
-      </section>
-
-      <div className="hub-more mono">+ MAIS JOGOS EM BREVE</div>
+      <p className="nh-foot">Mais jogos em breve</p>
     </main>
   );
 }

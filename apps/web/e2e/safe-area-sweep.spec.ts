@@ -96,6 +96,14 @@ for (const route of ROUTES) {
               )) {
                 const r = el.getBoundingClientRect();
                 if (r.width < 2 || r.height < 2) continue;
+                // o que está numa fileira que rola de lado (as prateleiras da Home) pode passar da tela: é para rolar
+                let scroller = false;
+                for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+                  const ox = getComputedStyle(p).overflowX;
+                  if ((ox === 'auto' || ox === 'scroll') && p.scrollWidth > p.clientWidth + 2)
+                    scroller = true;
+                }
+                if (scroller) continue;
                 const cs = getComputedStyle(el);
                 if (cs.visibility === 'hidden' || cs.display === 'none' || +cs.opacity === 0)
                   continue;
