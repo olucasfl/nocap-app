@@ -20,6 +20,9 @@ Menu: **Continuar/Começar** (última fase em andamento ou próxima nova), **Esc
 - Daily: contador "FALTA HH:MM:SS" até a meia-noite de Brasília (UTC-3), recarrega o Daily quando zera (`secondsToBrasiliaMidnight`, testado).
 - Bordas de iPhone/iPad: `e2e/safe-area-sweep.spec.ts` emula notch e barra de início (CDP) em 5 aparelhos e 28 rotas; corrigidos `.app` (largura da tela deitada ignorava a área segura) e `.gx-wrap` (altura passava da tela e o padding de segurança sumia em tela baixa).
 
+- Telas de partida e comemorações temadas (Classic verde, Connect roxo, Bee âmbar): cenário suave atrás (com fundo no tema escuro, só um toque de cor no claro), título e detalhes na cor do jogo, resultado e confete com casas, barras e favos; derrota em cinza. Discreto, só transform/opacity.
+- `e2e/theme-sweep.spec.ts`: 28 rotas nos temas claro e escuro, contraste do texto de botões, links, campos e títulos (>= 3:1).
+
 ## Rotas e compatibilidade
 `/words/classic` (menu), `/words/classic/daily` (abre o Daily; volta da partida do dia), `/words/classic/fases/$modo` (abre o modo), `/words/bee|connect` (menu), `/words/bee|connect/fases` (abre o catálogo; é para onde as telas de fase voltam). Links antigos continuam valendo. `CONNECT_RULES` e `BEE_RULES` seguem exportados dos arquivos de catálogo.
 
