@@ -179,6 +179,22 @@ export async function installApi(page: Page, opts: MockOptions = {}) {
     // início de partida solo (Já Deu?, Ecooo, Block's): uma seed e uma sessão de mentira
     if (/^\/games\/[a-z]+\/session$/.test(path) && method === 'POST')
       return json(route, { seed: 'abcdef123456', session: 'mock-session' });
+    // ranking de qualquer jogo: três pessoas, eu em segundo
+    if (path.startsWith('/rankings/')) {
+      const entries = [
+        { rank: 1, username: 'ana', score: 280, playedAt: '2026-11-09T10:00:00Z' },
+        { rank: 2, username: 'lucas', score: 250, playedAt: '2026-11-09T11:00:00Z', isMe: true },
+        { rank: 3, username: 'bia', score: 200, playedAt: '2026-11-09T12:00:00Z' },
+      ];
+      return json(route, {
+        game: path.split('/')[2],
+        board: url.searchParams.get('board'),
+        period: url.searchParams.get('period'),
+        total: 3,
+        entries,
+        me: entries[1],
+      });
+    }
     if (path === '/me/ping' || path === '/me/invites') return json(route, []);
     if (path === '/me/room') return json(route, { room: null });
 

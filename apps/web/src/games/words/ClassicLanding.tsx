@@ -10,7 +10,12 @@ import { loadClassicLevels, tierOf, tierRanges, type ClassicLevel } from './leve
 import { useProgress, type LevelStatus } from './levels/progress';
 import { fetchDaily, MODE_LABEL } from './words-api';
 import meta from './levels/meta.json';
-import { formatCountdown, secondsToBrasiliaMidnight, useNextWordCountdown } from '@/lib/daily-countdown';
+import {
+  formatCountdown,
+  secondsToBrasiliaMidnight,
+  useNextWordCountdown,
+} from '@/lib/daily-countdown';
+import { HubRanking } from '@/components/HubRanking';
 import { LevelBrowser, type BrowserCell } from './landing/LevelBrowser';
 import { WlBtn, WlMeter, WlPanel, WordsLanding } from './landing/WordsLanding';
 import './classic-levels.css';
@@ -47,6 +52,7 @@ const isMode = (s: string | undefined): s is ClassicMode =>
 export function ClassicLanding({ start }: { start?: string }) {
   const navigate = useNavigate();
   const user = useAuth((s) => s.user);
+  const [dailyTab, setDailyTab] = useState<'board' | 'ranking'>('board');
   const [screen, setScreen] = useState<Screen>(
     isMode(start) ? start : start === 'daily' ? 'daily' : 'main',
   );
@@ -296,54 +302,84 @@ export function ClassicLanding({ start }: { start?: string }) {
     );
     right = (
       <div className="wl-board" data-testid="daily-board">
-        <h3>
-          {dailyDone
-            ? 'Seu jogo de hoje'
-            : rows.length > 0
-              ? 'Seu jogo até agora'
-              : 'Seu tabuleiro'}
-        </h3>
-        <div className="wl-show-board" data-testid={rows.length > 0 ? 'daily-rows' : undefined}>
-          {Array.from({ length: tries }, (_, r) => {
-            const g = rows[r];
-            const cells = g ? decodePattern(run!.boards[0]!.rows[r]!) : [];
-            return (
-              <div key={r} className="wl-show-row">
-                {Array.from({ length: 5 }, (_, c) => (
-                  <span
-                    key={c}
-                    className={`wl-tile ${g ? cells[c] : 'empty hint'}`}
-                    style={{ '--i': r * 5 + c } as CSSProperties}
-                  >
-                    {g ? g[c] : ''}
-                  </span>
-                ))}
-              </div>
-            );
-          })}
+        <div className="wl-chips" role="tablist" aria-label="Seções do Daily">
+          <button
+            type="button"
+            role="tab"
+            className="wl-chip"
+            aria-selected={dailyTab === 'board'}
+            aria-pressed={dailyTab === 'board'}
+            data-testid="daily-tab-board"
+            onClick={() => setDailyTab('board')}
+          >
+            Meu jogo
+          </button>
+          <button
+            type="button"
+            role="tab"
+            className="wl-chip"
+            aria-selected={dailyTab === 'ranking'}
+            aria-pressed={dailyTab === 'ranking'}
+            data-testid="daily-tab-ranking"
+            onClick={() => setDailyTab('ranking')}
+          >
+            Ranking
+          </button>
         </div>
-        {dailyDone && run!.answers?.[0] ? (
-          <div data-testid="daily-word">
-            <p>A palavra era</p>
-            <div
-              className="wl-answer"
-              aria-label={`A palavra era ${run!.answers[0].toUpperCase()}`}
-            >
-              {[...run!.answers[0]].map((ch, i) => (
-                <span key={i} className="wl-tile hit">
-                  {ch}
-                </span>
-              ))}
-            </div>
-          </div>
+        {dailyTab === 'ranking' ? (
+          <HubRanking game="wclassic" fixedBoard="daily" />
         ) : (
-          <p>
-            {user
-              ? rows.length > 0
-                ? 'As cores aparecem como na partida.'
-                : 'Seus palpites de hoje aparecem aqui.'
-              : 'Entre para jogar e ver seu tabuleiro aqui.'}
-          </p>
+          <>
+            <h3>
+              {dailyDone
+                ? 'Seu jogo de hoje'
+                : rows.length > 0
+                  ? 'Seu jogo até agora'
+                  : 'Seu tabuleiro'}
+            </h3>
+            <div className="wl-show-board" data-testid={rows.length > 0 ? 'daily-rows' : undefined}>
+              {Array.from({ length: tries }, (_, r) => {
+                const g = rows[r];
+                const cells = g ? decodePattern(run!.boards[0]!.rows[r]!) : [];
+                return (
+                  <div key={r} className="wl-show-row">
+                    {Array.from({ length: 5 }, (_, c) => (
+                      <span
+                        key={c}
+                        className={`wl-tile ${g ? cells[c] : 'empty hint'}`}
+                        style={{ '--i': r * 5 + c } as CSSProperties}
+                      >
+                        {g ? g[c] : ''}
+                      </span>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+            {dailyDone && run!.answers?.[0] ? (
+              <div data-testid="daily-word">
+                <p>A palavra era</p>
+                <div
+                  className="wl-answer"
+                  aria-label={`A palavra era ${run!.answers[0].toUpperCase()}`}
+                >
+                  {[...run!.answers[0]].map((ch, i) => (
+                    <span key={i} className="wl-tile hit">
+                      {ch}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p>
+                {user
+                  ? rows.length > 0
+                    ? 'As cores aparecem como na partida.'
+                    : 'Seus palpites de hoje aparecem aqui.'
+                  : 'Entre para jogar e ver seu tabuleiro aqui.'}
+              </p>
+            )}
+          </>
         )}
       </div>
     );

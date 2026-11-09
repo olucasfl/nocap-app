@@ -45,7 +45,7 @@ const DAILIES = [
   { game: 'color', name: 'Mesmíssima', to: '/cor' },
   { game: 'time', name: 'Já Deu?', to: '/tempo' },
   { game: 'eco', name: 'Ecooo', to: '/eco' },
-  { game: 'wclassic', name: "Word's", to: '/words/classic' },
+  { game: 'wclassic', name: "Word's", to: '/words/classic/daily' },
 ] as const;
 
 function DailyChip({

@@ -47,6 +47,13 @@ for (const h of HUBS) {
     await page.getByTestId('daily-tab-rules').click();
     await page.getByTestId('wl-back').click();
     await expect(page.getByTestId(`wl-${h.game}`)).toBeVisible();
+    // ranking do hub: um quadro por modo e a minha posição
+    await page.getByTestId('menu-ranking').click();
+    await expect(page.getByTestId('hub-ranking')).toBeVisible();
+    await expect(page.getByTestId('hub-ranking')).toContainText('@ana');
+    await expect(page.getByTestId('hub-ranking')).toContainText('@lucas');
+    await page.getByTestId('rank-period-week').click();
+    await page.getByTestId('wl-back').click();
     // jogar sai do hub
     await page.getByTestId('menu-modes').click();
     await page.getByTestId(`mode-${h.mode}`).click();
@@ -71,4 +78,48 @@ test("hub Block's: os dois jogos e o voltar para o início", async ({ page }) =>
   await page.keyboard.press('Escape');
   await page.getByTestId('wl-exit').click();
   await expect(page).toHaveURL('/');
+});
+
+test('os chips de Daily da Home abrem o Daily do jogo e não só o hub', async ({ page }) => {
+  await installApi(page);
+  await page.goto('/');
+  await page
+    .getByRole('button', { name: 'Agora não' })
+    .click({ timeout: 800 })
+    .catch(() => undefined);
+  await page.getByTestId('daily-color').click();
+  await expect(page.getByTestId('daily-panel')).toBeVisible();
+  await page.goto('/');
+  await page.getByTestId('daily-wclassic').click();
+  await expect(page).toHaveURL(/\/words\/classic\/daily$/);
+  await expect(page.getByTestId('daily-card')).toBeVisible();
+  await page.getByTestId('daily-tab-ranking').click();
+  await expect(page.getByTestId('hub-ranking')).toContainText('@ana');
+});
+
+test("hub do Block's tem ranking dos dois jogos", async ({ page }) => {
+  await installApi(page);
+  await page.goto('/blocks');
+  await page
+    .getByRole('button', { name: 'Agora não' })
+    .click({ timeout: 800 })
+    .catch(() => undefined);
+  await page.getByTestId('menu-ranking').click();
+  await expect(page.getByTestId('rank-board-classic')).toBeVisible();
+  await page.getByTestId('rank-board-towers').click();
+  await expect(page.getByTestId('hub-ranking')).toContainText('@ana');
+});
+
+test('tela do Atravessa! tem ranking temático', async ({ page }) => {
+  await installApi(page);
+  await page.goto('/fox-cap');
+  await page
+    .getByRole('button', { name: 'Agora não' })
+    .click({ timeout: 800 })
+    .catch(() => undefined);
+  await page.getByTestId('foxcap-atravessa').click();
+  await page.getByTestId('gl-ranking').click();
+  await expect(page.getByTestId('hub-ranking')).toContainText('@ana');
+  await page.getByTestId('gl-back').click();
+  await expect(page.getByTestId('gl-main')).toBeVisible();
 });

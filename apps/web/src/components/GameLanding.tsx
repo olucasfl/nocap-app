@@ -1,20 +1,70 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { MuteButton } from '@/components/MuteButton';
+import { HubRanking } from '@/components/HubRanking';
 import { Backdrop, Emblem, Showcase, type LandingGame } from './GameLandingArt';
 import './game-landing.css';
 
 export type { LandingGame };
 
 /** Tema de cada jogo do Fox Cap! (cores, nome em duas linhas e frase). Spec 058, seção 10. */
-export const GAME_LANDING: Record<LandingGame, { name: string; line1: string; line2: string; tag: string; a: string; b: string; sym: string; friends: boolean }> = {
-  atravessa: { name: 'Atravessa!', line1: 'ATRAVESSA!', line2: 'INFINITO', tag: 'ATRAVESSE TUDO, SEM PARAR', a: '#ff5a4d', b: '#7a1d2e', sym: 'A', friends: true },
-  bola: { name: 'Fut Fox', line1: 'FUT', line2: 'FOX', tag: 'FUTEBOL DAS RAPOSAS', a: '#38d27a', b: '#0f5a3a', sym: 'F', friends: true },
-  pingpong: { name: 'Ping Fox!', line1: 'PING', line2: 'FOX!', tag: 'PINGUE-PONGUE 1 CONTRA 1', a: '#4a8dff', b: '#16347a', sym: 'P', friends: true },
-  desmorona: { name: 'Desmorona!', line1: 'DESMORONA!', line2: 'O CHÃO SOME', tag: 'VENCE O ÚLTIMO DE PÉ', a: '#ff9d2e', b: '#7a3a0b', sym: 'D', friends: true },
+export const GAME_LANDING: Record<
+  LandingGame,
+  {
+    name: string;
+    line1: string;
+    line2: string;
+    tag: string;
+    a: string;
+    b: string;
+    sym: string;
+    friends: boolean;
+  }
+> = {
+  atravessa: {
+    name: 'Atravessa!',
+    line1: 'ATRAVESSA!',
+    line2: 'INFINITO',
+    tag: 'ATRAVESSE TUDO, SEM PARAR',
+    a: '#ff5a4d',
+    b: '#7a1d2e',
+    sym: 'A',
+    friends: true,
+  },
+  bola: {
+    name: 'Fut Fox',
+    line1: 'FUT',
+    line2: 'FOX',
+    tag: 'FUTEBOL DAS RAPOSAS',
+    a: '#38d27a',
+    b: '#0f5a3a',
+    sym: 'F',
+    friends: true,
+  },
+  pingpong: {
+    name: 'Ping Fox!',
+    line1: 'PING',
+    line2: 'FOX!',
+    tag: 'PINGUE-PONGUE 1 CONTRA 1',
+    a: '#4a8dff',
+    b: '#16347a',
+    sym: 'P',
+    friends: true,
+  },
+  desmorona: {
+    name: 'Desmorona!',
+    line1: 'DESMORONA!',
+    line2: 'O CHÃO SOME',
+    tag: 'VENCE O ÚLTIMO DE PÉ',
+    a: '#ff9d2e',
+    b: '#7a3a0b',
+    sym: 'D',
+    friends: true,
+  },
 };
 
-const FONTS = 'https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Saira+Stencil+One&display=swap';
+const FONTS =
+  'https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Saira+Stencil+One&display=swap';
 
 export interface LandingRoom {
   busy: boolean;
@@ -24,7 +74,7 @@ export interface LandingRoom {
   clearError: () => void;
 }
 
-type Screen = 'main' | 'friends' | 'settings';
+type Screen = 'main' | 'friends' | 'ranking' | 'settings';
 
 /**
  * Tela própria de cada jogo do Fox Cap!, no desenho do menu do Counter Fox: botões à esquerda, cenário temático ao fundo e um
@@ -101,7 +151,13 @@ export function GameLanding({
   };
 
   return createPortal(
-    <main className="gx" data-testid={`gl-${game}`} data-game={game} data-screen={screen} style={{ ['--gl-a' as string]: t.a, ['--gl-b' as string]: t.b }}>
+    <main
+      className="gx"
+      data-testid={`gl-${game}`}
+      data-game={game}
+      data-screen={screen}
+      style={{ ['--gl-a' as string]: t.a, ['--gl-b' as string]: t.b }}
+    >
       <Backdrop game={game} />
       <div className="gx-wrap">
         <div className="gx-left">
@@ -116,24 +172,66 @@ export function GameLanding({
 
           {screen === 'main' && (
             <nav className="gx-menu" aria-label={`Menu do ${t.name}`} data-testid="gl-main">
-              <button type="button" className="gx-btn main" onClick={onOffline} data-sfx="start" data-testid="gl-offline">
+              <button
+                type="button"
+                className="gx-btn main"
+                onClick={onOffline}
+                data-sfx="start"
+                data-testid="gl-offline"
+              >
                 <b>Jogar offline</b>
                 <span>contra bots, no seu aparelho</span>
               </button>
-              <button type="button" className="gx-btn" onClick={() => setScreen('friends')} data-sfx="start" data-testid="gl-friends">
+              <button
+                type="button"
+                className="gx-btn"
+                onClick={() => setScreen('friends')}
+                data-sfx="start"
+                data-testid="gl-friends"
+              >
                 <b>Jogar com amigos</b>
                 <span>criar sala ou entrar com código</span>
               </button>
-              <button type="button" className="gx-btn" onClick={onHelp} data-sfx="select" data-testid="gl-help">
+              {game === 'atravessa' && (
+                <button
+                  type="button"
+                  className="gx-btn"
+                  onClick={() => setScreen('ranking')}
+                  data-sfx="select"
+                  data-testid="gl-ranking"
+                >
+                  <b>Ranking</b>
+                  <span>quem foi mais longe</span>
+                </button>
+              )}
+              <button
+                type="button"
+                className="gx-btn"
+                onClick={onHelp}
+                data-sfx="select"
+                data-testid="gl-help"
+              >
                 <b>Como jogar</b>
                 <span>regras e controles</span>
               </button>
-              <button type="button" className="gx-btn" onClick={() => setScreen('settings')} data-sfx="select" data-testid="gl-settings-btn">
+              <button
+                type="button"
+                className="gx-btn"
+                onClick={() => setScreen('settings')}
+                data-sfx="select"
+                data-testid="gl-settings-btn"
+              >
                 <b>Configurações</b>
                 <span>som do jogo</span>
               </button>
               <div className="gx-gap" />
-              <button type="button" className="gx-btn danger" onClick={onExit} data-sfx="back" data-testid="gl-exit">
+              <button
+                type="button"
+                className="gx-btn danger"
+                onClick={onExit}
+                data-sfx="back"
+                data-testid="gl-exit"
+              >
                 <b>Sair do {t.name}</b>
               </button>
             </nav>
@@ -141,7 +239,13 @@ export function GameLanding({
 
           {screen === 'friends' && (
             <section className="gx-panel" data-testid="gl-friends-panel">
-              <button type="button" className="gx-back" onClick={back} data-sfx="back" data-testid="gl-back">
+              <button
+                type="button"
+                className="gx-back"
+                onClick={back}
+                data-sfx="back"
+                data-testid="gl-back"
+              >
                 ‹ Voltar
               </button>
               <h2>Com amigos</h2>
@@ -151,9 +255,18 @@ export function GameLanding({
                   {room.error}
                 </p>
               )}
-              <button type="button" className="gx-card" disabled={room.busy} onClick={room.create} data-sfx="start" data-testid="foxcap-friends">
+              <button
+                type="button"
+                className="gx-card"
+                disabled={room.busy}
+                onClick={room.create}
+                data-sfx="start"
+                data-testid="foxcap-friends"
+              >
                 <b>{room.busy ? 'Criando...' : 'Criar sala'}</b>
-                <span>Você é o líder: convida a galera e começa. Dá para trocar de jogo lá dentro.</span>
+                <span>
+                  Você é o líder: convida a galera e começa. Dá para trocar de jogo lá dentro.
+                </span>
               </button>
               <form className="gx-card join" onSubmit={submit} noValidate>
                 <b>Entrar com código</b>
@@ -171,16 +284,44 @@ export function GameLanding({
                   aria-label="Código da sala"
                   data-testid="gl-code"
                 />
-                <button type="submit" className="gx-enter" disabled={room.busy || code.trim().length < 4} data-sfx="start" data-testid="gl-join">
+                <button
+                  type="submit"
+                  className="gx-enter"
+                  disabled={room.busy || code.trim().length < 4}
+                  data-sfx="start"
+                  data-testid="gl-join"
+                >
                   {room.busy ? 'Entrando...' : 'Entrar'}
                 </button>
               </form>
             </section>
           )}
 
+          {screen === 'ranking' && game === 'atravessa' && (
+            <section className="gx-panel" data-testid="gl-ranking-panel">
+              <button
+                type="button"
+                className="gx-back"
+                onClick={back}
+                data-sfx="back"
+                data-testid="gl-back"
+              >
+                ‹ Voltar
+              </button>
+              <h2>Ranking</h2>
+              <HubRanking game="atravessa" />
+            </section>
+          )}
+
           {screen === 'settings' && (
             <section className="gx-panel" data-testid="gl-settings">
-              <button type="button" className="gx-back" onClick={back} data-sfx="back" data-testid="gl-back">
+              <button
+                type="button"
+                className="gx-back"
+                onClick={back}
+                data-sfx="back"
+                data-testid="gl-back"
+              >
                 ‹ Voltar
               </button>
               <h2>Configurações</h2>
@@ -188,7 +329,9 @@ export function GameLanding({
                 <span>Som do jogo</span>
                 <MuteButton />
               </div>
-              <p className="lead">As opções de controle ficam no menu de pausa, durante a partida.</p>
+              <p className="lead">
+                As opções de controle ficam no menu de pausa, durante a partida.
+              </p>
             </section>
           )}
         </div>

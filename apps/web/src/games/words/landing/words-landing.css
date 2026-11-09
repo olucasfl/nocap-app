@@ -1502,3 +1502,12 @@
 .wl-stage .wl-dboard {
   align-content: start;
 }
+
+/* ranking dentro dos hubs (spec 071) */
+.wl-rankbox { display: grid; gap: 10px; width: 100%; text-align: left; }
+.wl-chips-sub { justify-content: center; }
+.wl-chip.small { padding: 4px 12px; font-size: 13px; }
+.wl-rank-note { margin: 0; text-align: center; color: var(--gl-muted); font-size: 14px; }
+.wl-rank li.top b { color: #fff; }
+.wl-rank li.t1 { border-color: var(--gl-a); }
+.wl-rank li.t1 b::after { content: ' ★'; color: var(--gl-a); }

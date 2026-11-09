@@ -40,7 +40,7 @@ interface Props {
 }
 
 /** O hub do Ecooo (spec 067): Daily, modos, amigos, como jogar e configurações. */
-export function StartScreen({ initialTab, onMode, onStart, busy, error }: Props) {
+export function StartScreen({ initialTab, mode, onMode, onStart, busy, error }: Props) {
   const user = useAuth((s) => s.user);
   const stats = useQuery({ queryKey: ['stats'], queryFn: fetchStats, enabled: !!user });
   const daily = stats.data?.daily.eco;
@@ -92,7 +92,15 @@ export function StartScreen({ initialTab, onMode, onStart, busy, error }: Props)
       modes={modes}
       busy={busy}
       error={error}
-      initial={initialTab === 'friends' ? 'friends' : initialTab === 'modes' ? 'modes' : 'main'}
+      initial={
+        initialTab === 'friends'
+          ? 'friends'
+          : initialTab === 'modes'
+            ? 'modes'
+            : mode === 'daily'
+              ? 'daily'
+              : 'main'
+      }
       dailyDone={!!daily?.playedToday}
       dailyNote={
         daily?.playedToday

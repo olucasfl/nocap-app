@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { BlocksGame as Engine, HINTS_PER_GAME, decodeMove, type BlocksMode } from '@nocap/games';
 import { BlocksClassicArt, BlocksTowersArt } from '@/components/HubArt';
+import { HubRanking } from '@/components/HubRanking';
 import { WlBtn, WlPanel, WordsLanding } from '../words/landing/WordsLanding';
 import { MuteButton } from '@/components/MuteButton';
 import { useAuth } from '@/lib/auth';
@@ -99,7 +100,9 @@ function BlocksStart({
   const navigate = useNavigate();
   const user = useAuth((st) => st.user);
   const stats = useQuery({ queryKey: ['stats'], queryFn: fetchStats, enabled: !!user });
-  const [screen, setScreen] = useState<'main' | 'play' | UiMode | 'rules' | 'settings'>('main');
+  const [screen, setScreen] = useState<'main' | 'play' | 'ranking' | UiMode | 'rules' | 'settings'>(
+    'main',
+  );
   const saved = useMemo(() => loadSavedRun(user?.id), [user?.id]);
   const savedInfo = useMemo(() => (saved ? summarize(saved) : null), [saved]);
 
@@ -143,6 +146,12 @@ function BlocksStart({
           testid="menu-play"
         />
         <WlBtn
+          title="Ranking"
+          sub="Classic e Towers"
+          onClick={() => setScreen('ranking')}
+          testid="menu-ranking"
+        />
+        <WlBtn
           title="Como jogar"
           sub="regras dos dois jogos"
           onClick={() => setScreen('rules')}
@@ -157,6 +166,17 @@ function BlocksStart({
         <div className="gx-gap" />
         <WlBtn danger title="Voltar aos jogos" onClick={back} sfx="back" testid="wl-exit" />
       </nav>
+    );
+  } else if (screen === 'ranking') {
+    left = (
+      <WlPanel
+        title="Ranking"
+        lead="Um quadro para cada jogo de blocos."
+        onBack={back}
+        testid="ranking-panel"
+      >
+        <HubRanking game="blocks" />
+      </WlPanel>
     );
   } else if (screen === 'play') {
     left = (
@@ -313,7 +333,7 @@ function BlocksStart({
       onBack={back}
       left={left}
       right={right}
-      pane={screen === 'play' ? 'levels' : 'show'}
+      pane={screen === 'play' || screen === 'ranking' ? 'levels' : 'show'}
     />
   );
 }

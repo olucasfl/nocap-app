@@ -5,6 +5,7 @@ import { NicknameDialog } from '@/components/NicknameDialog';
 import { RoomConflictDialog } from '@/components/RoomConflictDialog';
 import { WlBtn, WlPanel, WordsLanding, type WordsGame } from '@/games/words/landing/WordsLanding';
 import { useOnline } from '@/lib/network';
+import { HubRanking } from '@/components/HubRanking';
 import { HubDailyBoard, HubDailyPanel, useDailyData } from '@/components/HubDaily';
 import type { ReactNode } from 'react';
 import { useRoomEntry } from '@/lib/my-room';
@@ -22,7 +23,7 @@ export interface HubMode {
   roomGame?: RoomGame;
 }
 
-type Screen = 'main' | 'daily' | 'modes' | 'mode' | 'friends' | 'rules' | 'settings';
+type Screen = 'main' | 'daily' | 'ranking' | 'modes' | 'mode' | 'friends' | 'rules' | 'settings';
 
 /**
  * O hub de um jogo de rodadas (Mesmíssima, Já Deu?, Ecooo), no estilo das telas de jogo (spec 067): Daily em destaque, modos de
@@ -51,7 +52,7 @@ export function GameHubLanding({
   onStart: (id: string) => void;
   busy?: boolean;
   error?: string;
-  initial?: 'main' | 'friends' | 'modes';
+  initial?: 'main' | 'friends' | 'modes' | 'daily';
 }) {
   const navigate = useNavigate();
   const online = useOnline();
@@ -101,6 +102,12 @@ export function GameHubLanding({
           testid="menu-friends"
         />
         <WlBtn
+          title="Ranking"
+          sub="por modo"
+          onClick={() => setScreen('ranking')}
+          testid="menu-ranking"
+        />
+        <WlBtn
           title="Como jogar"
           sub="cada modo explicado"
           onClick={() => setScreen('rules')}
@@ -129,6 +136,17 @@ export function GameHubLanding({
       />
     );
     right = <HubDailyBoard game={roomGame as 'color' | 'time' | 'eco'} data={dailyData} />;
+  } else if (screen === 'ranking') {
+    left = (
+      <WlPanel
+        title="Ranking"
+        lead="Um quadro para cada modo."
+        onBack={back}
+        testid="ranking-panel"
+      >
+        <HubRanking game={roomGame as 'color' | 'time' | 'eco'} />
+      </WlPanel>
+    );
   } else if (screen === 'modes') {
     left = (
       <WlPanel
@@ -320,7 +338,7 @@ export function GameHubLanding({
         onBack={back}
         left={left}
         right={right}
-        pane={screen === 'modes' ? 'levels' : 'show'}
+        pane={screen === 'modes' || screen === 'ranking' ? 'levels' : 'show'}
       />
       <NicknameDialog nick={entry.nick} />
       <RoomConflictDialog
