@@ -1,12 +1,53 @@
 import type { CSSProperties, ReactNode } from 'react';
 
-export type WordsGame = 'classic' | 'connect' | 'bee' | 'blocks';
+export type WordsGame = 'classic' | 'connect' | 'bee' | 'blocks' | 'color' | 'time' | 'eco';
 
 const HEX = 'M50 6 88 28V72L50 94 12 72V28Z';
 
 /** Símbolo de cada jogo, desenhado só para ele. */
 export function Emblem({ game }: { game: WordsGame }) {
   const body: Record<WordsGame, ReactNode> = {
+    // paleta de cor: um círculo repartido em fatias
+    color: (
+      <>
+        <circle cx="50" cy="50" r="42" fill="#ff7a3d" />
+        <path d="M50 50 50 8A42 42 0 0 1 86 29Z" fill="#ffd23f" />
+        <path d="M50 50 86 29A42 42 0 0 1 86 71Z" fill="#3fcf7d" />
+        <path d="M50 50 86 71A42 42 0 0 1 50 92Z" fill="#4a8dff" />
+        <path d="M50 50 50 92A42 42 0 0 1 14 71Z" fill="#a06bff" />
+        <path d="M50 50 14 71A42 42 0 0 1 14 29Z" fill="#ff5a8a" />
+        <circle cx="50" cy="50" r="15" fill="#0b0d1c" />
+      </>
+    ),
+    // relógio de ponteiros parado em um alvo
+    time: (
+      <>
+        <circle cx="50" cy="54" r="38" fill="#e8efff" />
+        <circle cx="50" cy="54" r="38" fill="none" stroke="#4a8dff" strokeWidth="7" />
+        <rect x="42" y="6" width="16" height="9" rx="3" fill="#4a8dff" />
+        <path d="M50 54V30M50 54 68 64" stroke="#0b0d1c" strokeWidth="6" strokeLinecap="round" />
+        <circle cx="50" cy="54" r="5" fill="#0b0d1c" />
+      </>
+    ),
+    // quatro botões de sequência
+    eco: (
+      <>
+        <rect x="8" y="8" width="40" height="40" rx="10" fill="#ff5a4d" />
+        <rect x="52" y="8" width="40" height="40" rx="10" fill="#ffd23f" />
+        <rect x="8" y="52" width="40" height="40" rx="10" fill="#3fcf7d" />
+        <rect x="52" y="52" width="40" height="40" rx="10" fill="#4a8dff" />
+        <rect
+          x="52"
+          y="8"
+          width="40"
+          height="40"
+          rx="10"
+          fill="none"
+          stroke="#fff"
+          strokeWidth="4"
+        />
+      </>
+    ),
     // peças de encaixe: um L e um quadrado sobre a grade
     blocks: (
       <>
@@ -128,6 +169,37 @@ const TILE_LETTERS = [...'PALAVRASTEMPOLETRASJOGOFOXCAPNOCAPGRUPOFAVOABELHA'];
 
 /** Cenário animado de cada jogo (só transform e opacity). */
 export function Backdrop({ game }: { game: WordsGame }) {
+  if (game === 'color' || game === 'time' || game === 'eco') {
+    const pal =
+      game === 'color'
+        ? ['#ff7a3d', '#ffd23f', '#3fcf7d', '#4a8dff', '#a06bff', '#ff5a8a']
+        : game === 'time'
+          ? ['#4a8dff', '#8fb6ff', '#2a5fd0', '#b9d2ff']
+          : ['#ff5a4d', '#ffd23f', '#3fcf7d', '#4a8dff'];
+    return (
+      <div className={`glb wlb-hub wlb-${game}`} aria-hidden="true">
+        <div className="wlb-clip">
+          {Array.from({ length: 14 }, (_, i) => (
+            <i
+              key={i}
+              className="wlb-orb"
+              style={
+                {
+                  '--x': `${(i * 29 + 5) % 92}%`,
+                  '--y': `${(i * 37 + 8) % 86}%`,
+                  '--s': `${50 + (i % 4) * 34}px`,
+                  '--t': `${16 + (i % 5) * 4}s`,
+                  '--d': `${-((i * 2.3) % 18)}s`,
+                  '--c': pal[i % pal.length],
+                } as CSSProperties
+              }
+            />
+          ))}
+        </div>
+        <div className="glb-vig" />
+      </div>
+    );
+  }
   if (game === 'blocks') {
     const colors = ['#ff6a2b', '#ffd23f', '#3f6bff', '#3fcf7d', '#a06bff'];
     return (
@@ -270,7 +342,42 @@ export function Backdrop({ game }: { game: WordsGame }) {
 /** O quadro à direita do menu: uma amostra viva do jogo. */
 export function Showcase({ game, text }: { game: WordsGame; text: string }) {
   let art: ReactNode;
-  if (game === 'blocks') {
+  if (game === 'color') {
+    const sw = [
+      '#ff7a3d',
+      '#ffd23f',
+      '#3fcf7d',
+      '#4a8dff',
+      '#a06bff',
+      '#ff5a8a',
+      '#2fc4c4',
+      '#c4d62f',
+      '#8b5a3c',
+    ];
+    art = (
+      <div className="wl-show-color" aria-hidden="true">
+        {sw.map((c, i) => (
+          <i key={c} style={{ background: c, '--i': i } as CSSProperties} />
+        ))}
+      </div>
+    );
+  } else if (game === 'time') {
+    art = (
+      <div className="wl-show-time" aria-hidden="true">
+        <b>7,5 s</b>
+        <span>ALVO</span>
+        <i />
+      </div>
+    );
+  } else if (game === 'eco') {
+    art = (
+      <div className="wl-show-eco" aria-hidden="true">
+        {['#ff5a4d', '#ffd23f', '#3fcf7d', '#4a8dff'].map((c, i) => (
+          <i key={c} style={{ background: c, '--i': i } as CSSProperties} />
+        ))}
+      </div>
+    );
+  } else if (game === 'blocks') {
     const cells = [
       '',
       '',

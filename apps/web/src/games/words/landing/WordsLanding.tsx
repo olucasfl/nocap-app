@@ -50,6 +50,33 @@ export const WORDS_LANDING: Record<
     b: '#7a4a0b',
     show: 'Dois jogos de blocos: encaixe peças numa grade no Block Classic ou monte uma torre que balança no Block Towers.',
   },
+  color: {
+    name: 'Mesmíssima',
+    line1: 'MESMÍSSIMA',
+    line2: 'A COR',
+    tag: 'UMA COR APARECE E SOME',
+    a: '#ff7a3d',
+    b: '#7a2a0b',
+    show: 'Uma cor aparece e some. Recrie de memória nos controles e veja o quanto você chegou perto.',
+  },
+  time: {
+    name: 'Já Deu?',
+    line1: 'JÁ DEU?',
+    line2: 'O TEMPO',
+    tag: 'CONTE E PARE NA HORA CERTA',
+    a: '#4a8dff',
+    b: '#16347a',
+    show: 'Você vê um tempo alvo, conta de cabeça e toca para parar. Quanto mais perto, maior a nota.',
+  },
+  eco: {
+    name: 'Ecooo',
+    line1: 'ECOOO',
+    line2: 'A SEQUÊNCIA',
+    tag: 'REPITA A SEQUÊNCIA',
+    a: '#a06bff',
+    b: '#3a1d7a',
+    show: 'Os botões se acendem numa ordem, cada um com o seu som. Repita tudo, e a cada acerto ela cresce.',
+  },
   bee: {
     name: "Bee Word's",
     line1: 'BEE',
@@ -61,6 +88,7 @@ export const WORDS_LANDING: Record<
   },
 };
 
+const HUBS: WordsGame[] = ['blocks', 'color', 'time', 'eco'];
 const FONTS =
   'https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Saira+Stencil+One&display=swap';
 
@@ -114,7 +142,7 @@ export function WordsLanding({
 
   return createPortal(
     <main
-      className={`gx wl wl-${game}`}
+      className={`gx wl wl-${game}${HUBS.includes(game) ? ' wl-hub' : ''}`}
       data-testid={`wl-${game}`}
       data-game={game}
       data-screen={screen}

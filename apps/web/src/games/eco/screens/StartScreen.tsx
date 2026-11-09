@@ -1,16 +1,9 @@
-import { EcoArt } from '@/components/HubArt';
-import { HubHero } from '@/components/GameHub';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ECO_MAX_PADS, ecoPresets } from '@nocap/games';
-import { BackButton } from '@/components/BackButton';
 import { DailyScreen } from '@/components/DailyScreen';
-import { FriendsPanel } from '@/components/FriendsPanel';
-import { ModePicker } from '@/components/ModePicker';
-import { ModeSheet } from '@/components/ModeSheet';
-import { GameTabs, type GameTab } from '@/components/GameTabs';
-import { ArrowRight } from '@/components/icons';
-import { PullToRefresh } from '@/components/PullToRefresh';
+import { GameHubLanding, type HubMode } from '@/components/GameHubLanding';
+import type { GameTab } from '@/components/GameTabs';
 import { useAuth } from '@/lib/auth';
 import { dailyScoreText, fetchStats, recordText } from '@/lib/stats';
 import type { Mode } from '../types';
@@ -48,24 +41,13 @@ interface Props {
   onStart: (m: Mode) => void;
 }
 
+/** O hub do Ecooo (spec 067): Daily, modos, amigos, como jogar e configurações. */
 export function StartScreen({ initialTab = 'modes', onMode, onStart, busy, error }: Props) {
   const user = useAuth((s) => s.user);
   const stats = useQuery({ queryKey: ['stats'], queryFn: fetchStats, enabled: !!user });
   const daily = stats.data?.daily.eco;
-  const [tab, setTab] = useState<GameTab>(initialTab === 'ranking' ? 'modes' : initialTab);
-  /** Modo cuja ficha está aberta (null = só a lista de modos). */
-  const [open, setOpen] = useState<Mode | null>(null);
-  const close = useCallback(() => setOpen(null), []);
-  const preset = ecoPresets[open && open !== 'daily' && open !== 'batida' ? open : 'classic'];
-
-  /** O Daily tem tela própria (resultado do dia e parte social), fora da ficha dos outros modos. */
+  /** O Daily tem tela própria (resultado do dia e parte social), fora do hub. */
   const [dailyView, setDailyView] = useState(false);
-
-  const openMode = (id: string) => {
-    onMode(id as Mode);
-    if (id === 'daily') setDailyView(true);
-    else setOpen(id as Mode);
-  };
 
   if (dailyView) {
     return (
@@ -79,100 +61,69 @@ export function StartScreen({ initialTab = 'modes', onMode, onStart, busy, error
     );
   }
 
+  const modes: HubMode[] = MODES.filter((m) => m.id !== 'daily').map((m) => {
+    if (m.id === 'batida')
+      return {
+        id: m.id,
+        label: m.label,
+        sub: m.desc,
+        lead: LEAD[m.id],
+        record: null,
+        rules: [
+          ['5', 'pistas'],
+          ['3', 'músicas'],
+          ['x4', 'multiplicador máx.'],
+        ] as [string, string][],
+      };
+    const preset = ecoPresets[m.id as Exclude<Mode, 'daily' | 'batida'>];
+    return {
+      id: m.id,
+      label: m.label,
+      sub: m.desc,
+      lead: LEAD[m.id],
+      record: recordText(stats.data, 'eco', m.id),
+      rules: [
+        [
+          preset.maxPads > preset.pads ? `${preset.pads}→${preset.maxPads}` : String(preset.pads),
+          'botões',
+        ],
+        [
+          preset.speedUpMs > 0
+            ? `${preset.stepMs}→${preset.minStepMs}`
+            : String(preset.startLength),
+          preset.speedUpMs > 0
+            ? 'ms por passo'
+            : preset.startLength === 1
+              ? 'passo no início'
+              : 'passos no início',
+        ],
+        [String(preset.maxSteps), 'passos máx.'],
+      ] as [string, string][],
+    };
+  });
+
   return (
-    <section className="screen gh">
-      <PullToRefresh />
-      <BackButton to="/" label="Jogos" />
-      <HubHero
-        accent="green"
-        art={<EcoArt />}
-        title="Ecooo"
-        text="Repita a sequência de sons e luzes sem errar."
-      />
-      <GameTabs game="eco" tab={tab} onTab={setTab} />
-      {tab === 'modes' && (
-        <>
-          <ModePicker
-            game="eco"
-            modes={MODES}
-            onOpen={openMode}
-            dailyNote={
-              daily?.playedToday
-                ? `FEITO · ${dailyScoreText('eco', daily.totalScore ?? 0)}`
-                : 'DISPONÍVEL HOJE'
-            }
-          />
-          {open && (
-            <ModeSheet
-              game="eco"
-              modeId={open}
-              title={MODES.find((m) => m.id === open)?.label ?? ''}
-              lead={LEAD[open]}
-              record={
-                open === 'daily' || open === 'batida' ? null : recordText(stats.data, 'eco', open)
-              }
-              onClose={close}
-              rules={
-                open === 'batida' ? (
-                  <>
-                    <div className="eco-rule">
-                      <b>5</b>pistas
-                    </div>
-                    <div className="eco-rule">
-                      <b>3</b>músicas
-                    </div>
-                    <div className="eco-rule">
-                      <b>x4</b>multiplicador máx.
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="eco-rule">
-                      <b>
-                        {preset.maxPads > preset.pads
-                          ? `${preset.pads}→${preset.maxPads}`
-                          : preset.pads}
-                      </b>
-                      botões
-                    </div>
-                    <div className="eco-rule">
-                      <b>
-                        {preset.speedUpMs > 0
-                          ? `${preset.stepMs}→${preset.minStepMs}`
-                          : preset.startLength}
-                      </b>
-                      {preset.speedUpMs > 0
-                        ? 'ms por passo'
-                        : preset.startLength === 1
-                          ? 'passo no início'
-                          : 'passos no início'}
-                    </div>
-                    <div className="eco-rule">
-                      <b>{preset.maxSteps}</b>passos máx.
-                    </div>
-                  </>
-                )
-              }
-            >
-              {error && (
-                <p className="acc-failure mono" role="alert">
-                  {error}
-                </p>
-              )}
-              <button
-                type="button"
-                className="btn"
-                data-sfx="start"
-                disabled={busy}
-                onClick={() => onStart(open)}
-              >
-                {busy ? 'Preparando...' : 'Jogar'} <ArrowRight />
-              </button>
-            </ModeSheet>
-          )}
-        </>
-      )}
-      {tab === 'friends' && <FriendsPanel game="eco" />}
-    </section>
+    <GameHubLanding
+      game="eco"
+      roomGame="eco"
+      modes={modes}
+      busy={busy}
+      error={error}
+      initial={initialTab === 'friends' ? 'friends' : 'main'}
+      dailyDone={!!daily?.playedToday}
+      dailyNote={
+        daily?.playedToday
+          ? `feito · ${dailyScoreText('eco', daily.totalScore ?? 0)}`
+          : 'disponível hoje'
+      }
+      onDaily={() => {
+        onMode('daily');
+        setDailyView(true);
+      }}
+      onStart={(id) => {
+        onMode(id as Mode);
+        onStart(id as Mode);
+      }}
+    />
   );
 }

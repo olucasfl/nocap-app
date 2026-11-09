@@ -989,29 +989,29 @@
 .wl-show-blocks .c-p {
   background: #a06bff;
 }
-.wl-blocks .gx-btn {
+.wl-hub .gx-btn {
   background: linear-gradient(90deg, #0b1224, #0e1730);
 }
-.wl-blocks .gx-btn.main {
+.wl-hub .gx-btn.main {
   background: linear-gradient(90deg, var(--gl-a), color-mix(in srgb, var(--gl-a) 55%, #0b0d1c));
 }
-.wl-blocks .gx-btn.danger {
+.wl-hub .gx-btn.danger {
   background: linear-gradient(90deg, #2a0c14, #1d0a14);
 }
-.wl-blocks .gx-btn:hover,
-.wl-blocks .gx-btn:focus-visible {
+.wl-hub .gx-btn:hover,
+.wl-hub .gx-btn:focus-visible {
   background: linear-gradient(90deg, #1a2646, #0e1730);
 }
-.wl-blocks .gx-panel,
-.wl-blocks .wl-board {
+.wl-hub .gx-panel,
+.wl-hub .wl-board {
   background: #0a1020;
   backdrop-filter: none;
 }
-.wl-blocks .wl-state {
+.wl-hub .wl-state {
   background: #0f1830;
 }
 @media (min-width: 901px) {
-  .wl-blocks[data-screen='main'] .wlb-clip {
+  .wl-hub[data-screen='main'] .wlb-clip {
     -webkit-mask-image: linear-gradient(90deg, transparent 42%, #000 56%);
     mask-image: linear-gradient(90deg, transparent 42%, #000 56%);
   }
@@ -1065,62 +1065,62 @@
 }
 /* celular deitado: o painel e o quadro lado a lado e o painel enxuto, para os botões caberem sem rolar */
 @media (max-height: 520px) {
-  .wl-blocks .wl-stage[data-pane='show'] {
+  .wl-hub .wl-stage[data-pane='show'] {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: start;
     gap: 12px;
   }
-  .wl-blocks .gx-panel {
+  .wl-hub .gx-panel {
     gap: 6px;
     padding: 10px 14px 12px;
   }
-  .wl-blocks .gx-panel h2 {
+  .wl-hub .gx-panel h2 {
     font-size: 22px;
   }
-  .wl-blocks .gx-panel .lead,
-  .wl-blocks .gx-panel .wl-state > span:not(.wl-badge) {
+  .wl-hub .gx-panel .lead,
+  .wl-hub .gx-panel .wl-state > span:not(.wl-badge) {
     display: none;
   }
-  .wl-blocks .wl-state {
+  .wl-hub .wl-state {
     padding: 8px 12px;
   }
-  .wl-blocks .wl-cta,
-  .wl-blocks .gx-enter {
+  .wl-hub .wl-cta,
+  .wl-hub .gx-enter {
     padding: 9px 16px;
     font-size: 17px;
   }
-  .wl-blocks .wl-board {
+  .wl-hub .wl-board {
     padding: 12px;
   }
-  .wl-blocks .wl-board .wl-rules,
-  .wl-blocks .wl-board-art {
+  .wl-hub .wl-board .wl-rules,
+  .wl-hub .wl-board-art {
     display: none;
   }
 }
 @media (max-height: 380px) {
-  .wl-blocks .wl-stage {
+  .wl-hub .wl-stage {
     padding-top: 46px;
   }
-  .wl-blocks .wl-corner .gx-emblem {
+  .wl-hub .wl-corner .gx-emblem {
     width: 30px;
   }
-  .wl-blocks .wl-corner .gx-logo h1 {
+  .wl-hub .wl-corner .gx-logo h1 {
     font-size: 18px;
   }
-  .wl-blocks .gx-panel > .wl-state:not([role='group']) {
+  .wl-hub .gx-panel > .wl-state:not([role='group']) {
     display: none;
   }
-  .wl-blocks .gx-panel h2 {
+  .wl-hub .gx-panel h2 {
     font-size: 18px;
   }
-  .wl-blocks .wl-nums {
+  .wl-hub .wl-nums {
     gap: 2px 10px;
     font-size: 12px;
   }
-  .wl-blocks .wl-nums b {
+  .wl-hub .wl-nums b {
     font-size: 14px;
   }
-  .wl-blocks .wl-badge {
+  .wl-hub .wl-badge {
     display: none;
   }
 }
@@ -1139,4 +1139,155 @@
 }
 .wl-board .wl-board-art svg {
   display: block;
+}
+
+/* hubs de jogos de rodadas (Mesmíssima, Já Deu?, Ecooo) */
+.wlb-hub {
+  background: radial-gradient(ellipse at 60% 40%, var(--gl-b) 0%, #0b0d1c 70%);
+}
+.wlb-orb {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--s);
+  height: var(--s);
+  border-radius: 50%;
+  background: var(--c);
+  opacity: 0.2;
+  animation: wlb-drift var(--t) ease-in-out var(--d) infinite alternate;
+}
+.wlb-time .wlb-orb {
+  background: transparent;
+  border: 3px solid var(--c);
+  opacity: 0.25;
+}
+.wlb-eco .wlb-orb {
+  border-radius: 24%;
+}
+@keyframes wlb-drift {
+  to {
+    transform: translate(24px, -34px) scale(1.12);
+  }
+}
+.wl-show-color {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  width: min(100%, 280px);
+  margin: 0 auto;
+}
+.wl-show-color i {
+  aspect-ratio: 1;
+  border-radius: 14px;
+  animation: wl-hexin 0.45s ease-out both;
+  animation-delay: calc(var(--i) * 50ms);
+}
+.wl-show-time {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 20px 0;
+}
+.wl-show-time b {
+  font:
+    400 clamp(40px, 7vw, 64px) 'Saira Stencil One',
+    Rajdhani,
+    sans-serif;
+  color: var(--gl-a);
+}
+.wl-show-time span {
+  color: var(--gl-muted);
+  font:
+    700 13px Rajdhani,
+    sans-serif;
+  letter-spacing: 0.3em;
+}
+.wl-show-time i {
+  width: 70%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  margin-top: 10px;
+}
+.wl-show-eco {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  width: min(100%, 240px);
+  margin: 0 auto;
+}
+.wl-show-eco i {
+  aspect-ratio: 1;
+  border-radius: 22%;
+  opacity: 0.8;
+  animation: wl-hexin 0.45s ease-out both;
+  animation-delay: calc(var(--i) * 80ms);
+}
+.wl-modes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+.wl-mode {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  padding: 14px 18px;
+  border: 1px solid var(--gl-line);
+  border-left: 5px solid var(--gl-a);
+  background: #0f1830;
+  color: var(--gl-ink);
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.12s ease-out;
+}
+.wl-mode:hover,
+.wl-mode:focus-visible {
+  transform: translateY(-2px);
+  outline: 0;
+  border-color: var(--gl-a);
+}
+.wl-mode b {
+  font:
+    700 19px Rajdhani,
+    sans-serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.wl-mode span {
+  color: var(--gl-muted);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+}
+.wl-mode small {
+  color: var(--gl-a);
+  font:
+    700 12px Rajdhani,
+    sans-serif;
+  letter-spacing: 0.1em;
+}
+.wl-form {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  max-width: 520px;
+  text-align: left;
+}
+.wl-form input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--gl-line);
+  color: var(--gl-ink);
+  font:
+    700 26px 'Saira Stencil One',
+    Rajdhani,
+    sans-serif;
+  letter-spacing: 0.5em;
+  text-align: center;
+  text-transform: uppercase;
+}
+.wl-form input:focus {
+  outline: 2px solid var(--gl-a);
 }

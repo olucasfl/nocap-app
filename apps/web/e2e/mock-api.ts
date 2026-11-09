@@ -176,6 +176,9 @@ export async function installApi(page: Page, opts: MockOptions = {}) {
         visit: { current: 1, best: 1, visitedToday: true },
       });
     }
+    // início de partida solo (Já Deu?, Ecooo, Block's): uma seed e uma sessão de mentira
+    if (/^\/games\/[a-z]+\/session$/.test(path) && method === 'POST')
+      return json(route, { seed: 'abcdef123456', session: 'mock-session' });
     if (path === '/me/ping' || path === '/me/invites') return json(route, []);
     if (path === '/me/room') return json(route, { room: null });
 

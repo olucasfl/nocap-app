@@ -1,19 +1,9 @@
-import { ColorArt } from '@/components/HubArt';
-import { HubHero } from '@/components/GameHub';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { SURVIVAL_MAX_ROUNDS, colorDailySettings, colorPresets } from '@nocap/games';
-import { BackButton } from '@/components/BackButton';
 import { DailyScreen } from '@/components/DailyScreen';
-import { FriendsPanel } from '@/components/FriendsPanel';
-import { ModePicker } from '@/components/ModePicker';
-import { ModeSheet } from '@/components/ModeSheet';
-import { GameTabs, type GameTab } from '@/components/GameTabs';
-import { ArrowRight } from '@/components/icons';
-import { PullToRefresh } from '@/components/PullToRefresh';
-import { RoomConflictDialog } from '@/components/RoomConflictDialog';
-import { NicknameDialog } from '@/components/NicknameDialog';
-import { useRoomEntry } from '@/lib/my-room';
+import { GameHubLanding, type HubMode } from '@/components/GameHubLanding';
+import type { GameTab } from '@/components/GameTabs';
 import { useAuth } from '@/lib/auth';
 import { dailyMax, fetchStats, recordText } from '@/lib/stats';
 import type { Mode } from '../types';
@@ -55,28 +45,13 @@ interface Props {
   onStart: (m: Mode) => void;
 }
 
+/** O hub da Mesmíssima (spec 067): Daily, modos, amigos, como jogar e configurações. */
 export function StartScreen({ initialTab = 'modes', onMode, onStart }: Props) {
   const user = useAuth((s) => s.user);
   const stats = useQuery({ queryKey: ['stats'], queryFn: fetchStats, enabled: !!user });
   const daily = stats.data?.daily.color;
-  const [tab, setTab] = useState<GameTab>(initialTab === 'ranking' ? 'modes' : initialTab);
-  /** Modo cuja ficha está aberta (null = só a lista de modos). */
-  const [open, setOpen] = useState<ModeId | null>(null);
-  const close = useCallback(() => setOpen(null), []);
-  const entry = useRoomEntry();
-  const preset =
-    open === 'daily'
-      ? colorDailySettings
-      : colorPresets[open && open !== 'impostor' ? open : 'classic']!;
-
-  /** O Daily tem tela própria (resultado do dia e parte social), fora da ficha dos outros modos. */
+  /** O Daily tem tela própria (resultado do dia e parte social), fora do hub. */
   const [dailyView, setDailyView] = useState(false);
-
-  const openMode = (id: string) => {
-    if (id !== 'impostor') onMode(id as Mode);
-    if (id === 'daily') setDailyView(true);
-    else setOpen(id as ModeId);
-  };
 
   if (dailyView) {
     return (
@@ -96,126 +71,57 @@ export function StartScreen({ initialTab = 'modes', onMode, onStart }: Props) {
     );
   }
 
+  const modes: HubMode[] = MODES.filter((m) => m.id !== 'daily').map((m) => {
+    const id = m.id;
+    const preset = id === 'impostor' ? null : colorPresets[id as Mode]!;
+    return {
+      id,
+      label: m.label,
+      sub: m.desc,
+      lead: LEAD[id],
+      roomGame: id === 'impostor' ? 'impostor' : undefined,
+      record: id === 'impostor' ? null : recordText(stats.data, 'color', id as Mode),
+      rules:
+        id === 'impostor'
+          ? [
+              ['3-12', 'pessoas'],
+              ['1-3', 'intrusos'],
+              ['300+', 'cores'],
+            ]
+          : id === 'survival'
+            ? [
+                ['3', 'vidas'],
+                ['6→9', 'nota mínima'],
+                [String(SURVIVAL_MAX_ROUNDS.color), 'rodadas máx.'],
+              ]
+            : [
+                [String(preset!.rounds), preset!.rounds === 1 ? 'rodada' : 'rodadas'],
+                [seconds(preset!.showMs), 'pra decorar'],
+                [String(preset!.rounds * 10), 'pontos max'],
+              ],
+    };
+  });
+
   return (
-    <section className="screen gh">
-      <PullToRefresh />
-      <BackButton to="/" label="Jogos" />
-      <HubHero
-        accent="orange"
-        art={<ColorArt />}
-        title="Mesmíssima"
-        text="Uma cor aparece e some. Recrie de memória."
-      />
-      <GameTabs game="color" tab={tab} onTab={setTab} />
-      {tab === 'modes' && (
-        <>
-          <ModePicker
-            game="color"
-            modes={MODES}
-            onOpen={openMode}
-            dailyNote={
-              daily?.playedToday
-                ? `FEITO · ${((daily.totalScore ?? 0) / 10).toFixed(1)}/${dailyMax('color')}`
-                : 'DISPONÍVEL HOJE'
-            }
-          />
-          {open && (
-            <ModeSheet
-              game="color"
-              modeId={open}
-              title={MODES.find((m) => m.id === open)?.label ?? ''}
-              lead={LEAD[open]}
-              record={
-                open === 'daily' || open === 'impostor'
-                  ? null
-                  : recordText(stats.data, 'color', open)
-              }
-              onClose={close}
-              rules={
-                open === 'impostor' ? (
-                  <>
-                    <div className="cg-rule">
-                      <b>3-12</b>pessoas
-                    </div>
-                    <div className="cg-rule">
-                      <b>1-3</b>intrusos
-                    </div>
-                    <div className="cg-rule">
-                      <b>300+</b>cores
-                    </div>
-                  </>
-                ) : open === 'survival' ? (
-                  <>
-                    <div className="cg-rule">
-                      <b>3</b>vidas
-                    </div>
-                    <div className="cg-rule">
-                      <b>6→9</b>nota mínima
-                    </div>
-                    <div className="cg-rule">
-                      <b>{SURVIVAL_MAX_ROUNDS.color}</b>rodadas máx.
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="cg-rule">
-                      <b>{preset.rounds}</b>
-                      {preset.rounds === 1 ? 'rodada' : 'rodadas'}
-                    </div>
-                    <div className="cg-rule">
-                      <b>{seconds(preset.showMs)}</b>pra decorar
-                    </div>
-                    <div className="cg-rule">
-                      <b>{preset.rounds * 10}</b>pontos max
-                    </div>
-                  </>
-                )
-              }
-            >
-              {open === 'impostor' ? (
-                <>
-                  <p className="mono ms-note">
-                    Esse modo só funciona em sala, com no mínimo 3 pessoas. Quer criar uma sala
-                    agora?
-                  </p>
-                  <button
-                    type="button"
-                    className="btn alt"
-                    data-sfx="start"
-                    disabled={entry.busy}
-                    onClick={() => void entry.create('impostor')}
-                  >
-                    {entry.busy ? 'Criando...' : 'Criar sala'} <ArrowRight />
-                  </button>
-                  {entry.error && (
-                    <p className="mono ms-note" role="alert">
-                      {entry.error}
-                    </p>
-                  )}
-                </>
-              ) : (
-                <button
-                  type="button"
-                  className="btn"
-                  data-sfx="start"
-                  onClick={() => onStart(open)}
-                >
-                  Jogar <ArrowRight />
-                </button>
-              )}
-            </ModeSheet>
-          )}
-        </>
-      )}
-      {tab === 'friends' && <FriendsPanel game="color" />}
-      <NicknameDialog nick={entry.nick} />
-      <RoomConflictDialog
-        open={!!entry.conflict}
-        code={entry.conflict?.code ?? null}
-        onBack={entry.backToCurrent}
-        onLeave={() => void entry.leaveAndContinue()}
-        onCancel={entry.dismissConflict}
-      />
-    </section>
+    <GameHubLanding
+      game="color"
+      roomGame="color"
+      modes={modes}
+      initial={initialTab === 'friends' ? 'friends' : 'main'}
+      dailyDone={!!daily?.playedToday}
+      dailyNote={
+        daily?.playedToday
+          ? `feito · ${((daily.totalScore ?? 0) / 10).toFixed(1)}/${dailyMax('color')}`
+          : 'disponível hoje'
+      }
+      onDaily={() => {
+        onMode('daily');
+        setDailyView(true);
+      }}
+      onStart={(id) => {
+        onMode(id as Mode);
+        onStart(id as Mode);
+      }}
+    />
   );
 }

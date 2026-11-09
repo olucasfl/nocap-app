@@ -67,5 +67,6 @@
 
 | 065 | [Telas próprias dos jogos do Word's](065-words-telas-proprias.md) | 7 | implementada (09/11/2026): Classic (Daily, 1/2/4 palavras), Connect e Bee com tela no estilo do Fox Cap!; falta ver no celular |
 | 066 | [Hub do Block's (Classic e Towers)](066-blocks-hub.md) | 6 | implementada (09/11/2026): tela própria com os dois jogos, continuar partida, como jogar e configurações |
+| 067 | [Hubs da Mesmíssima, Já Deu? e Ecooo](067-hubs-reflexo-precisao.md) | 6 | implementada (09/11/2026): tela própria com Daily, modos, amigos, como jogar e configurações |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.

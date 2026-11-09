@@ -1,16 +1,9 @@
-import { TimeArt } from '@/components/HubArt';
-import { HubHero } from '@/components/GameHub';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { SURVIVAL_MAX_ROUNDS, timePresets } from '@nocap/games';
-import { BackButton } from '@/components/BackButton';
 import { DailyScreen } from '@/components/DailyScreen';
-import { FriendsPanel } from '@/components/FriendsPanel';
-import { ModePicker } from '@/components/ModePicker';
-import { ModeSheet } from '@/components/ModeSheet';
-import { GameTabs, type GameTab } from '@/components/GameTabs';
-import { ArrowRight } from '@/components/icons';
-import { PullToRefresh } from '@/components/PullToRefresh';
+import { GameHubLanding, type HubMode } from '@/components/GameHubLanding';
+import type { GameTab } from '@/components/GameTabs';
 import { useAuth } from '@/lib/auth';
 import { dailyMax, fetchStats, recordText } from '@/lib/stats';
 import type { Mode } from '../types';
@@ -46,24 +39,13 @@ interface Props {
   onStart: (m: Mode) => void;
 }
 
+/** O hub do Já Deu? (spec 067): Daily, modos, amigos, como jogar e configurações. */
 export function StartScreen({ initialTab = 'modes', onMode, onStart, busy, error }: Props) {
   const user = useAuth((s) => s.user);
   const stats = useQuery({ queryKey: ['stats'], queryFn: fetchStats, enabled: !!user });
   const daily = stats.data?.daily.time;
-  const [tab, setTab] = useState<GameTab>(initialTab === 'ranking' ? 'modes' : initialTab);
-  /** Modo cuja ficha está aberta (null = só a lista de modos). */
-  const [open, setOpen] = useState<Mode | null>(null);
-  const close = useCallback(() => setOpen(null), []);
-  const preset = timePresets[(open ?? 'classic') === 'daily' ? 'classic' : (open ?? 'classic')]!;
-
-  /** O Daily tem tela própria (resultado do dia e parte social), fora da ficha dos outros modos. */
+  /** O Daily tem tela própria (resultado do dia e parte social), fora do hub. */
   const [dailyView, setDailyView] = useState(false);
-
-  const openMode = (id: string) => {
-    onMode(id as Mode);
-    if (id === 'daily') setDailyView(true);
-    else setOpen(id as Mode);
-  };
 
   if (dailyView) {
     return (
@@ -77,88 +59,51 @@ export function StartScreen({ initialTab = 'modes', onMode, onStart, busy, error
     );
   }
 
+  const modes: HubMode[] = MODES.filter((m) => m.id !== 'daily').map((m) => {
+    const preset = timePresets[m.id]!;
+    return {
+      id: m.id,
+      label: m.label,
+      sub: m.desc,
+      lead: LEAD[m.id],
+      record: recordText(stats.data, 'time', m.id),
+      rules:
+        m.id === 'survival'
+          ? [
+              ['3', 'vidas'],
+              ['6→9', 'nota mínima'],
+              [String(SURVIVAL_MAX_ROUNDS.time), 'rodadas máx.'],
+            ]
+          : [
+              [String(preset.rounds), preset.rounds === 1 ? 'rodada' : 'rodadas'],
+              [`${preset.minMs / 1000}–${preset.maxMs / 1000}s`, 'alvos'],
+              [String(preset.rounds * 10), 'pontos max'],
+            ],
+    };
+  });
+
   return (
-    <section className="screen gh">
-      <PullToRefresh />
-      <BackButton to="/" label="Jogos" />
-      <HubHero
-        accent="blue"
-        art={<TimeArt />}
-        title="Já Deu?"
-        text="Conte o tempo de cabeça e pare na hora certa."
-      />
-      <GameTabs game="time" tab={tab} onTab={setTab} />
-      {tab === 'modes' && (
-        <>
-          <ModePicker
-            game="time"
-            modes={MODES}
-            onOpen={openMode}
-            dailyNote={
-              daily?.playedToday
-                ? `FEITO · ${((daily.totalScore ?? 0) / 10).toFixed(1)}/${dailyMax('time')}`
-                : 'DISPONÍVEL HOJE'
-            }
-          />
-          {open && (
-            <ModeSheet
-              game="time"
-              modeId={open}
-              title={MODES.find((m) => m.id === open)?.label ?? ''}
-              lead={LEAD[open]}
-              record={open === 'daily' ? null : recordText(stats.data, 'time', open)}
-              onClose={close}
-              rules={
-                open === 'survival' ? (
-                  <>
-                    <div className="tm-rule">
-                      <b>3</b>vidas
-                    </div>
-                    <div className="tm-rule">
-                      <b>6→9</b>nota mínima
-                    </div>
-                    <div className="tm-rule">
-                      <b>{SURVIVAL_MAX_ROUNDS.time}</b>rodadas máx.
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="tm-rule">
-                      <b>{preset.rounds}</b>
-                      {preset.rounds === 1 ? 'rodada' : 'rodadas'}
-                    </div>
-                    <div className="tm-rule">
-                      <b>
-                        {preset.minMs / 1000}–{preset.maxMs / 1000}s
-                      </b>
-                      alvos
-                    </div>
-                    <div className="tm-rule">
-                      <b>{preset.rounds * 10}</b>pontos max
-                    </div>
-                  </>
-                )
-              }
-            >
-              {error && (
-                <p className="acc-failure mono" role="alert">
-                  {error}
-                </p>
-              )}
-              <button
-                type="button"
-                className="btn"
-                data-sfx="start"
-                disabled={busy}
-                onClick={() => onStart(open)}
-              >
-                {busy ? 'Preparando...' : 'Jogar'} <ArrowRight />
-              </button>
-            </ModeSheet>
-          )}
-        </>
-      )}
-      {tab === 'friends' && <FriendsPanel game="time" />}
-    </section>
+    <GameHubLanding
+      game="time"
+      roomGame="time"
+      modes={modes}
+      busy={busy}
+      error={error}
+      initial={initialTab === 'friends' ? 'friends' : 'main'}
+      dailyDone={!!daily?.playedToday}
+      dailyNote={
+        daily?.playedToday
+          ? `feito · ${((daily.totalScore ?? 0) / 10).toFixed(1)}/${dailyMax('time')}`
+          : 'disponível hoje'
+      }
+      onDaily={() => {
+        onMode('daily');
+        setDailyView(true);
+      }}
+      onStart={(id) => {
+        onMode(id as Mode);
+        onStart(id as Mode);
+      }}
+    />
   );
 }
