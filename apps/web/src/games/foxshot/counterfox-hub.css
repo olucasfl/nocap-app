@@ -834,3 +834,14 @@
 .fsp-names { margin: 0; font: 600 16px 'Rajdhani', sans-serif; color: #8fa0cc; }
 .fsp-label { font: 700 18px 'Rajdhani', sans-serif; letter-spacing: 0.4em; color: #ffb347; margin-top: 12px; }
 .fsp-num { font: 400 min(26vw, 200px) 'Saira Stencil One', 'Rajdhani', sans-serif; line-height: 1; text-shadow: 0 0 40px rgba(255, 106, 43, 0.8); animation: cfh-pop 0.5s both; }
+
+/* mapa vivo: um radar varre o mapa e os pontos andam (só transform e opacity) */
+.cfh-mapwrap { position: relative; display: grid; place-items: center; }
+.cfh-radar { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.cfh-radar .sweep { position: absolute; left: 50%; top: 50%; width: 140%; aspect-ratio: 1; margin: -70% 0 0 -70%; background: conic-gradient(from 0deg, rgba(255, 138, 61, 0.28), transparent 22%); animation: cfh-sweep 6s linear infinite; }
+.cfh-radar .dot { position: absolute; width: 9px; height: 9px; border-radius: 50%; background: #ff8a3d; box-shadow: 0 0 10px #ff8a3d; animation: cfh-dot 5s ease-in-out infinite alternate; }
+.cfh-radar .dot.d0 { left: 22%; top: 30%; } .cfh-radar .dot.d1 { left: 64%; top: 24%; background: #4a8dff; box-shadow: 0 0 10px #4a8dff; animation-delay: -1.2s; }
+.cfh-radar .dot.d2 { left: 42%; top: 58%; animation-delay: -2.4s; } .cfh-radar .dot.d3 { left: 76%; top: 66%; background: #4a8dff; box-shadow: 0 0 10px #4a8dff; animation-delay: -3.1s; } .cfh-radar .dot.d4 { left: 30%; top: 78%; animation-delay: -4s; }
+@keyframes cfh-sweep { to { transform: rotate(360deg); } }
+@keyframes cfh-dot { from { transform: translate(0, 0) scale(1); } to { transform: translate(26px, -18px) scale(1.25); } }
+@media (prefers-reduced-motion: reduce) { .cfh-radar .sweep, .cfh-radar .dot { animation: none !important; } }

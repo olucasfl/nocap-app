@@ -1,0 +1,463 @@
+/* Amostras animadas dos jogos do Fox Cap! no menu de cada um (spec 075). Só transform e opacity. */
+.fx-show .wl-stagecard {
+  min-height: 290px;
+}
+
+/* Atravessa!: a raposa atravessa estrada e rio */
+.fd-atr {
+  position: relative;
+  width: 280px;
+  height: 250px;
+  display: grid;
+  grid-template-rows: repeat(5, 50px);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.fd-atr .lane {
+  position: relative;
+  overflow: hidden;
+}
+.fd-atr .grass {
+  background: #3f8f4a;
+}
+.fd-atr .road {
+  background: #34343e;
+}
+.fd-atr .river {
+  background: #2f80d8;
+}
+.fd-atr .road::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-bottom: 3px dashed rgba(255, 210, 122, 0.55);
+}
+.fd-atr .car {
+  position: absolute;
+  top: 12px;
+  left: -64px;
+  width: 52px;
+  height: 26px;
+  border-radius: 7px;
+  background: var(--c);
+  animation: fd-drive var(--t) linear var(--d) infinite;
+}
+.fd-atr .log {
+  position: absolute;
+  top: 14px;
+  left: -100px;
+  width: 90px;
+  height: 22px;
+  border-radius: 8px;
+  background: #8a5a2b;
+  animation: fd-drive 6s linear infinite;
+}
+.fd-atr .fox {
+  position: absolute;
+  left: 127px;
+  bottom: 6px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #ff8a3d;
+  animation: fd-cross 8s ease-in-out infinite;
+}
+.fd-atr .fox::before,
+.fd-atr .fox::after {
+  content: '';
+  position: absolute;
+  top: -7px;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 10px solid #ff8a3d;
+}
+.fd-atr .fox::before {
+  left: 1px;
+  transform: rotate(-12deg);
+}
+.fd-atr .fox::after {
+  right: 1px;
+  transform: rotate(12deg);
+}
+@keyframes fd-drive {
+  to {
+    transform: translateX(400px);
+  }
+}
+@keyframes fd-cross {
+  0%,
+  8% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  16%,
+  24% {
+    transform: translateY(-50px);
+  }
+  32%,
+  40% {
+    transform: translateY(-100px);
+  }
+  48%,
+  56% {
+    transform: translateY(-150px);
+  }
+  64%,
+  86% {
+    transform: translateY(-200px);
+    opacity: 1;
+  }
+  92% {
+    transform: translateY(-200px);
+    opacity: 0;
+  }
+  93% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Fut Fox: passe e gol */
+.fd-bola {
+  position: relative;
+  width: 300px;
+  height: 225px;
+  background: #1c7a4a;
+  border: 3px solid #fff;
+  border-radius: 6px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.fd-bola i {
+  position: absolute;
+  display: block;
+}
+.fd-bola .mid {
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #fff;
+}
+.fd-bola .circ {
+  left: calc(50% - 32px);
+  top: calc(50% - 32px);
+  width: 64px;
+  height: 64px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+}
+.fd-bola .box {
+  top: 28%;
+  width: 36px;
+  height: 44%;
+  border: 3px solid #fff;
+}
+.fd-bola .box.l {
+  left: -3px;
+}
+.fd-bola .box.r {
+  right: -3px;
+}
+.fd-bola .pl {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #3f82ff;
+  animation: fd-run 3s ease-in-out infinite alternate;
+}
+.fd-bola .pl.a {
+  left: 36px;
+  top: 130px;
+}
+.fd-bola .pl.b {
+  left: 150px;
+  top: 100px;
+  animation-delay: -1s;
+}
+.fd-bola .pl.c {
+  left: 236px;
+  top: 60px;
+  background: #ff8a3d;
+  animation-delay: -2s;
+}
+.fd-bola .ball {
+  left: 0;
+  top: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  animation: fd-pass 6s ease-in-out infinite;
+}
+.fd-bola .goal {
+  right: 0;
+  top: 40%;
+  width: 7px;
+  height: 20%;
+  background: #fff;
+  opacity: 0.35;
+  animation: fd-goal 6s ease-out infinite;
+}
+@keyframes fd-run {
+  to {
+    transform: translate(14px, -10px);
+  }
+}
+@keyframes fd-pass {
+  0% {
+    transform: translate(40px, 142px);
+    opacity: 1;
+  }
+  25% {
+    transform: translate(110px, 70px);
+  }
+  45% {
+    transform: translate(170px, 108px);
+  }
+  68% {
+    transform: translate(282px, 100px);
+    opacity: 1;
+  }
+  78% {
+    transform: translate(282px, 100px);
+    opacity: 1;
+  }
+  86%,
+  99% {
+    transform: translate(282px, 100px);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(40px, 142px);
+    opacity: 0;
+  }
+}
+@keyframes fd-goal {
+  0%,
+  64% {
+    opacity: 0.35;
+    transform: none;
+  }
+  70%,
+  80% {
+    opacity: 1;
+    transform: scaleX(2.4);
+  }
+  90%,
+  100% {
+    opacity: 0.35;
+    transform: none;
+  }
+}
+
+/* Ping Fox!: a bolinha vai e volta entre as raquetes */
+.fd-png {
+  width: 300px;
+  height: 200px;
+  display: grid;
+  place-items: center;
+}
+.fd-png .table {
+  position: relative;
+  width: 300px;
+  height: 190px;
+  background: #1d5fd0;
+  clip-path: polygon(12% 0, 88% 0, 100% 100%, 0 100%);
+}
+.fd-png .table i {
+  position: absolute;
+  display: block;
+}
+.fd-png .net {
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: rgba(255, 255, 255, 0.85);
+}
+.fd-png .pad {
+  top: 70px;
+  width: 9px;
+  height: 52px;
+  border-radius: 4px;
+}
+.fd-png .pad.l {
+  left: 34px;
+  background: #ff8a3d;
+  animation: fd-pad 1.6s ease-in-out infinite alternate;
+}
+.fd-png .pad.r {
+  right: 34px;
+  background: #ffd27a;
+  animation: fd-pad 1.6s ease-in-out infinite alternate-reverse;
+}
+.fd-png .ball {
+  left: 48px;
+  top: 90px;
+  animation: fd-bx 1.6s linear infinite alternate;
+}
+.fd-png .ball::after {
+  content: '';
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  animation: fd-by 0.8s cubic-bezier(0.3, 0.1, 0.4, 1) infinite alternate;
+}
+@keyframes fd-bx {
+  to {
+    transform: translateX(196px);
+  }
+}
+@keyframes fd-by {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-62px);
+  }
+}
+@keyframes fd-pad {
+  from {
+    transform: translateY(-22px);
+  }
+  to {
+    transform: translateY(22px);
+  }
+}
+
+/* Desmorona!: o chão racha e cai, a raposa pula de ladrilho */
+.fd-dsm {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(6, 40px);
+  gap: 6px;
+}
+.fd-dsm .t {
+  display: block;
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  background: #ff9d2e;
+}
+.fd-dsm .t.crack {
+  background: #d4761c;
+}
+.fd-dsm .t.fall {
+  animation: fd-tile 8s ease-in var(--d) infinite;
+}
+.fd-dsm .fox {
+  position: absolute;
+  left: 7px;
+  top: 7px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #fff3d6;
+  border: 3px solid #ff8a3d;
+  box-sizing: border-box;
+  animation: fd-hopfox 8s ease-in-out infinite;
+}
+@keyframes fd-tile {
+  0%,
+  30% {
+    transform: none;
+    opacity: 1;
+  }
+  34% {
+    transform: translateX(-2px);
+  }
+  38% {
+    transform: translateX(2px);
+  }
+  44%,
+  94% {
+    transform: translateY(180px) rotate(40deg);
+    opacity: 0;
+  }
+  96% {
+    transform: none;
+    opacity: 0;
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes fd-hopfox {
+  0%,
+  10% {
+    transform: translate(0, 0);
+  }
+  18%,
+  28% {
+    transform: translate(46px, 0);
+  }
+  36%,
+  46% {
+    transform: translate(46px, 46px);
+  }
+  54%,
+  64% {
+    transform: translate(92px, 46px);
+  }
+  72%,
+  90% {
+    transform: translate(92px, 92px);
+  }
+  96%,
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fd-atr .car,
+  .fd-atr .log,
+  .fd-atr .fox,
+  .fd-bola .pl,
+  .fd-bola .ball,
+  .fd-bola .goal,
+  .fd-png .pad,
+  .fd-png .ball,
+  .fd-png .ball::after,
+  .fd-dsm .t,
+  .fd-dsm .fox {
+    animation: none !important;
+  }
+}
+
+/* menu do jogo do Fox Cap!: botões e painéis sólidos e o cenário só do lado do quadro, como nos outros hubs */
+.gx:not(.wl) .gx-btn:not(.main):not(.danger) {
+  background: linear-gradient(90deg, #0b1224, #0e1730);
+}
+.gx:not(.wl) .gx-btn.danger {
+  background: linear-gradient(90deg, #2a0c14, #1d0a14);
+}
+.gx:not(.wl) .gx-btn:hover,
+.gx:not(.wl) .gx-btn:focus-visible {
+  background: linear-gradient(90deg, #1a2646, #0e1730);
+}
+.gx:not(.wl) .gx-btn.main {
+  background: linear-gradient(90deg, var(--gl-a), color-mix(in srgb, var(--gl-a) 55%, #0b0d1c));
+}
+.gx:not(.wl) .gx-panel {
+  background: #0a1020;
+  backdrop-filter: none;
+}
+@media (min-width: 901px) {
+  .gx:not(.wl)[data-screen='main'] .glb {
+    -webkit-mask-image: linear-gradient(90deg, transparent 40%, #000 58%);
+    mask-image: linear-gradient(90deg, transparent 40%, #000 58%);
+  }
+}

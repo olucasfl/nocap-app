@@ -4,6 +4,8 @@ import { MuteButton } from '@/components/MuteButton';
 import { HubRanking } from '@/components/HubRanking';
 import { Backdrop, Emblem, Showcase, type LandingGame } from './GameLandingArt';
 import './game-landing.css';
+import '@/games/words/landing/words-landing.css';
+import './fox-showcase.css';
 
 export type { LandingGame };
 
