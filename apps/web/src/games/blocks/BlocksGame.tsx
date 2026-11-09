@@ -1,17 +1,13 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { soloSession } from '@/lib/solo-session';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { BlocksGame as Engine, HINTS_PER_GAME, decodeMove, type BlocksMode } from '@nocap/games';
-import { BackButton } from '@/components/BackButton';
-import { HubCard, HubHero, HubNote, HubSteps, HubTabs } from '@/components/GameHub';
-import { BlocksArt, BlocksClassicArt, BlocksTowersArt } from '@/components/HubArt';
-import { ModeSheet } from '@/components/ModeSheet';
+import { BlocksClassicArt, BlocksTowersArt } from '@/components/HubArt';
+import { WlBtn, WlPanel, WordsLanding } from '../words/landing/WordsLanding';
 import { MuteButton } from '@/components/MuteButton';
-import { ArrowRight } from '@/components/icons';
 import { useAuth } from '@/lib/auth';
 import { bestTenths, fetchStats } from '@/lib/stats';
-import { BlockDefs, Star, ThumbSeal } from './art';
 import { BlocksPlay, type BlocksEnd, type BlocksResume } from './BlocksPlay';
 import {
   clearSavedRun,
@@ -25,8 +21,7 @@ import {
 } from './storage';
 import { TowersPlay, type TowersEnd } from './towers/TowersPlay';
 import { BlocksFinal, TowersFinal } from './BlocksFinals';
-import { SaveNote } from '@/components/GuestNotice';
-import { useSaveBlocks, type BlocksRunInfo } from './useSaveBlocks';
+import type { BlocksRunInfo } from './useSaveBlocks';
 import './blocks.css';
 import { Page } from '@/components/Page';
 
@@ -91,7 +86,7 @@ function summarize(run: SavedRun): { score: number; sets: number } {
   return { score: g.score, sets: g.sets };
 }
 
-/** O menu: o Block's como aba de jogos de blocos, com cada modo como cartão. */
+/** O hub do Block's: tela própria no estilo das telas de jogo, com os dois jogos, como jogar e configurações (spec 066). */
 function BlocksStart({
   onStart,
   onResume,
@@ -101,26 +96,14 @@ function BlocksStart({
   onResume: (run: SavedRun) => void;
   busy: boolean;
 }) {
+  const navigate = useNavigate();
   const user = useAuth((st) => st.user);
   const stats = useQuery({ queryKey: ['stats'], queryFn: fetchStats, enabled: !!user });
-  const [open, setOpen] = useState<UiMode | null>(null);
-  const [tab, setTab] = useState<'jogar' | 'como'>('jogar');
-  const close = useCallback(() => setOpen(null), []);
-  // Com conta, o recorde é o do servidor (o mesmo do ranking); o do aparelho só vale sem conta.
-  const best =
-    !open || !user
-      ? 0
-      : stats.data
-        ? Math.floor(bestTenths(stats.data, 'blocks', open) / 10)
-        : open === 'towers'
-          ? getTowersBest()
-          : getBlocksBest();
-  const current = MODES.find((m) => m.id === open);
+  const [screen, setScreen] = useState<'main' | UiMode | 'rules' | 'settings'>('main');
   const saved = useMemo(() => loadSavedRun(user?.id), [user?.id]);
   const savedInfo = useMemo(() => (saved ? summarize(saved) : null), [saved]);
-  const resumable = open === 'classic' && saved && savedInfo;
 
-  // Recorde de cada modo (da conta; sem conta não há recorde)
+  // Com conta, o recorde é o do servidor (o mesmo do ranking); o do aparelho só vale sem conta.
   const recordOf = (mode: UiMode): number =>
     !user
       ? 0
@@ -129,142 +112,187 @@ function BlocksStart({
         : mode === 'towers'
           ? getTowersBest()
           : getBlocksBest();
-  const recordTag = (mode: UiMode): string => {
-    const r = recordOf(mode);
-    return r > 0
-      ? `Recorde ${r.toLocaleString('pt-BR')} ${mode === 'towers' ? 'peças' : 'pts'}`
-      : 'Sem recorde ainda';
+  const unit = (m: UiMode) => (m === 'towers' ? 'peças' : 'pontos');
+  const recordTag = (m: UiMode) => {
+    const r = recordOf(m);
+    return r > 0 ? `recorde ${r.toLocaleString('pt-BR')}` : 'sem recorde ainda';
   };
 
-  return (
-    <section className="screen gh">
-      <BackButton to="/" label="Jogos" />
-      <HubHero
-        accent="yellow"
-        art={<BlocksArt />}
-        title="Block's"
-        text="Encaixe, empilhe e bata o seu recorde."
-        stats={[
-          { label: 'Recorde Classic', value: recordOf('classic').toLocaleString('pt-BR') },
-          { label: 'Recorde Towers', value: recordOf('towers').toLocaleString('pt-BR') },
-        ].filter((x) => x.value !== '0')}
-      />
-      <HubTabs
-        value={tab}
-        onChange={setTab}
-        tabs={[
-          { id: 'jogar', label: 'Jogar' },
-          { id: 'como', label: 'Como jogar' },
-        ]}
-      />
-      {tab === 'jogar' ? (
-        <>
-          <div className="gh-modes">
-            {MODES.map((m, i) => (
-              <HubCard
-                key={m.id}
-                tone={i === 0 ? 'orange' : 'blue'}
-                art={m.id === 'classic' ? <BlocksClassicArt /> : <BlocksTowersArt />}
-                name={m.label}
-                desc={
-                  m.id === 'classic'
-                    ? 'Encaixe as peças na grade e feche linhas.'
-                    : 'Empilhe uma torre que balança de verdade.'
-                }
-                tags={m.desc.split(' · ')}
-                tag={recordTag(m.id)}
-                cta={m.id === 'classic' && saved && savedInfo ? 'Continuar ou jogar' : 'Jogar'}
-                onClick={() => setOpen(m.id)}
-                testId={`mode-${m.id}`}
-              />
-            ))}
-          </div>
-          <HubNote>+ mais modos de blocos em breve</HubNote>
-        </>
-      ) : (
-        <>
-          {MODES.map((m) => (
-            <HubSteps key={m.id} title={m.label} steps={HOW[m.id]} />
-          ))}
-          <HubNote>
-            Block Towers: no celular use os botões; no computador, setas ou A/D, cima para girar,
-            baixo para descer e E para a magia.
-          </HubNote>
-        </>
-      )}
-      {open && current && (
-        <ModeSheet
-          game="blocks"
-          modeId={open}
-          title={current.label}
-          lead={current.lead}
-          record={
-            best > 0
-              ? `Seu recorde aqui é de ${best.toLocaleString('pt-BR')} ${open === 'towers' ? 'peças' : 'pontos'}`
-              : null
+  const back = () => (screen === 'main' ? void navigate({ to: '/' }) : setScreen('main'));
+  const mode = screen === 'classic' || screen === 'towers' ? screen : null;
+  const current = MODES.find((m) => m.id === mode);
+
+  let left;
+  let right;
+  if (screen === 'main') {
+    left = (
+      <nav className="gx-menu" aria-label="Menu do Block's" data-testid="wl-main">
+        <WlBtn
+          main
+          title="Block Classic"
+          sub={
+            saved && savedInfo
+              ? `continuar · ${savedInfo.score.toLocaleString('pt-BR')} pts`
+              : recordTag('classic')
           }
-          onClose={close}
-          rules={RULES[open].map(([big, small]) => (
-            <div className="bk-rule" key={small}>
+          onClick={() => setScreen('classic')}
+          sfx="start"
+          testid="mode-classic"
+        />
+        <WlBtn
+          title="Block Towers"
+          sub={recordTag('towers')}
+          onClick={() => setScreen('towers')}
+          sfx="start"
+          testid="mode-towers"
+        />
+        <WlBtn
+          title="Como jogar"
+          sub="regras dos dois jogos"
+          onClick={() => setScreen('rules')}
+          testid="menu-rules"
+        />
+        <WlBtn
+          title="Configurações"
+          sub="som do jogo"
+          onClick={() => setScreen('settings')}
+          testid="menu-settings"
+        />
+        <div className="gx-gap" />
+        <WlBtn danger title="Voltar aos jogos" onClick={back} sfx="back" testid="wl-exit" />
+      </nav>
+    );
+  } else if (mode && current) {
+    const resumable = mode === 'classic' && saved && savedInfo;
+    const r = recordOf(mode);
+    left = (
+      <WlPanel
+        title={current.label}
+        lead={current.desc.replaceAll(' · ', ' · ').toLowerCase()}
+        onBack={back}
+        testid={`mode-panel-${mode}`}
+      >
+        <div className="wl-state">
+          <b>{r > 0 ? `${r.toLocaleString('pt-BR')} ${unit(mode)}` : 'Sem recorde ainda'}</b>
+          <span>
+            {user
+              ? 'Seu recorde neste jogo'
+              : 'Entre na sua conta para guardar recordes, ranking e histórico.'}
+          </span>
+        </div>
+        {resumable && (
+          <div className="wl-state" role="group" aria-label="Partida em andamento">
+            <span className="wl-badge">Partida em andamento</span>
+            <div className="wl-nums" data-testid="resume-info">
+              <span>
+                <b>{savedInfo.score.toLocaleString('pt-BR')}</b> pontos
+              </span>
+              <span>
+                rodada <b>{savedInfo.sets}</b>
+              </span>
+              <span>
+                <b>
+                  {HINTS_PER_GAME - saved.hintsUsed}/{HINTS_PER_GAME}
+                </b>{' '}
+                dicas
+              </span>
+            </div>
+          </div>
+        )}
+        {resumable && (
+          <button
+            type="button"
+            className="wl-cta"
+            data-sfx="start"
+            disabled={busy}
+            onClick={() => onResume(saved)}
+            data-testid="resume"
+          >
+            <span>Continuar partida</span>
+            <small>→</small>
+          </button>
+        )}
+        <button
+          type="button"
+          className={resumable ? 'gx-enter' : 'wl-cta'}
+          data-sfx="start"
+          disabled={busy}
+          onClick={() => onStart(mode)}
+          data-testid={`play-${mode}`}
+        >
+          <span>{busy ? 'Preparando...' : resumable ? 'Começar do zero' : 'Jogar'}</span>
+          {!resumable && <small>→</small>}
+        </button>
+      </WlPanel>
+    );
+    right = (
+      <div className="wl-board" data-testid={`mode-board-${mode}`}>
+        <h3>{current.label}</h3>
+        <div className="wl-board-art" aria-hidden="true">
+          {mode === 'classic' ? <BlocksClassicArt /> : <BlocksTowersArt />}
+        </div>
+        <div className="wl-rulechips">
+          {RULES[mode].map(([big, small]) => (
+            <div key={small}>
               <b>{big}</b>
               {small}
             </div>
           ))}
-        >
-          {resumable && (
-            <div className="bk-resume" role="group" aria-label="Partida em andamento">
-              <span className="mono bk-resume-kicker">PARTIDA EM ANDAMENTO</span>
-              <dl>
-                <div>
-                  <dt className="mono">PONTOS</dt>
-                  <dd>{savedInfo.score.toLocaleString('pt-BR')}</dd>
-                </div>
-                <div>
-                  <dt className="mono">RODADA</dt>
-                  <dd>{savedInfo.sets}</dd>
-                </div>
-                <div>
-                  <dt className="mono">DICAS</dt>
-                  <dd>
-                    {HINTS_PER_GAME - saved.hintsUsed}/{HINTS_PER_GAME}
-                  </dd>
-                </div>
-              </dl>
-              <button
-                type="button"
-                className="btn"
-                data-sfx="start"
-                disabled={busy}
-                onClick={() => onResume(saved)}
-              >
-                Continuar partida <ArrowRight />
-              </button>
+        </div>
+        <ol className="wl-rules">
+          {HOW[mode].map((t) => (
+            <li key={t}>{t}</li>
+          ))}
+        </ol>
+        {mode === 'towers' && (
+          <p>
+            No celular use os botões; no computador, setas ou A/D, cima para girar, baixo para
+            descer e E para a magia.
+          </p>
+        )}
+      </div>
+    );
+  } else if (screen === 'rules') {
+    left = (
+      <WlPanel title="Como jogar" onBack={back} testid="rules">
+        <div className="wl-scroll">
+          {MODES.map((m) => (
+            <div key={m.id} className="wl-state">
+              <b>{m.label}</b>
+              <ol className="wl-rules">
+                {HOW[m.id].map((t) => (
+                  <li key={t}>{t}</li>
+                ))}
+              </ol>
             </div>
-          )}
-          <button
-            type="button"
-            className={resumable ? 'btn ghost' : 'btn'}
-            data-sfx="start"
-            disabled={busy}
-            onClick={() => onStart(open)}
-          >
-            {busy ? 'Preparando...' : resumable ? 'Começar do zero' : 'Jogar'}{' '}
-            {!resumable && <ArrowRight />}
-          </button>
-          {open === 'towers' && (
-            <p className="mono bk-meta">
-              NO CELULAR USE OS BOTÕES. NO COMPUTADOR: SETAS OU A/D, CIMA PARA GIRAR, BAIXO PARA
-              DESCER E E PARA A MAGIA.
-            </p>
-          )}
-          {!user && (
-            <p className="mono bk-meta">
-              ENTRE NA SUA CONTA PARA SALVAR NO RANKING, NO HISTÓRICO E NOS RECORDES.
-            </p>
-          )}
-        </ModeSheet>
-      )}
-    </section>
+          ))}
+        </div>
+      </WlPanel>
+    );
+  } else {
+    left = (
+      <WlPanel title="Configurações" onBack={back} testid="wl-settings">
+        <div className="gx-row">
+          <span>Som do jogo</span>
+          <MuteButton />
+        </div>
+        <p className="lead">
+          O Block Classic guarda a partida em andamento e você continua de onde parou. As teclas do
+          Towers ficam em Como jogar.
+        </p>
+      </WlPanel>
+    );
+  }
+
+  return (
+    <WordsLanding
+      game="blocks"
+      screen={screen}
+      onBack={back}
+      left={left}
+      right={right}
+      pane="show"
+    />
   );
 }
 

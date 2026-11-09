@@ -773,7 +773,8 @@
 }
 @media (min-width: 901px) {
   .wl-connect[data-screen='main'] .wlb-lanes {
-    clip-path: inset(0 0 0 48%);
+    -webkit-mask-image: linear-gradient(90deg, transparent 42%, #000 56%);
+    mask-image: linear-gradient(90deg, transparent 42%, #000 56%);
   }
 }
 
@@ -938,4 +939,204 @@
   :root:not([data-theme='light']) .wl-bee.wd-bg {
     --wd-fill: linear-gradient(180deg, #1c1304 0%, #3a2808 60%, #120c02 100%);
   }
+}
+
+/* ---------- Block's (hub dos jogos de blocos) ---------- */
+.wlb-blocks {
+  background: radial-gradient(ellipse at 60% 40%, #3a2a0a 0%, #1c1404 60%, #0c0a02 100%);
+}
+.wlb-clip {
+  position: absolute;
+  inset: 0;
+}
+.wlb-sq {
+  position: absolute;
+  top: -12%;
+  left: var(--x);
+  width: var(--s);
+  height: var(--s);
+  border-radius: 22%;
+  background: var(--c);
+  opacity: 0.32;
+  animation: wlb-fall var(--t) linear var(--d) infinite;
+}
+.wl-show-blocks {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  width: min(100%, 300px);
+  margin: 0 auto;
+}
+.wl-show-blocks i {
+  aspect-ratio: 1;
+  border-radius: 22%;
+  background: rgba(255, 255, 255, 0.06);
+  animation: wl-hexin 0.45s ease-out both;
+  animation-delay: calc(var(--i) * 30ms);
+}
+.wl-show-blocks .c-o {
+  background: #ff6a2b;
+}
+.wl-show-blocks .c-y {
+  background: #ffd23f;
+}
+.wl-show-blocks .c-b {
+  background: #3f6bff;
+}
+.wl-show-blocks .c-g {
+  background: #3fcf7d;
+}
+.wl-show-blocks .c-p {
+  background: #a06bff;
+}
+.wl-blocks .gx-btn {
+  background: linear-gradient(90deg, #0b1224, #0e1730);
+}
+.wl-blocks .gx-btn.main {
+  background: linear-gradient(90deg, var(--gl-a), color-mix(in srgb, var(--gl-a) 55%, #0b0d1c));
+}
+.wl-blocks .gx-btn.danger {
+  background: linear-gradient(90deg, #2a0c14, #1d0a14);
+}
+.wl-blocks .gx-btn:hover,
+.wl-blocks .gx-btn:focus-visible {
+  background: linear-gradient(90deg, #1a2646, #0e1730);
+}
+.wl-blocks .gx-panel,
+.wl-blocks .wl-board {
+  background: #0a1020;
+  backdrop-filter: none;
+}
+.wl-blocks .wl-state {
+  background: #0f1830;
+}
+@media (min-width: 901px) {
+  .wl-blocks[data-screen='main'] .wlb-clip {
+    -webkit-mask-image: linear-gradient(90deg, transparent 42%, #000 56%);
+    mask-image: linear-gradient(90deg, transparent 42%, #000 56%);
+  }
+}
+.wl-blocks[data-screen='classic'] {
+  --gl-a: #ff6a2b;
+}
+.wl-blocks[data-screen='towers'] {
+  --gl-a: #4a7bff;
+}
+.wl-rulechips {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  width: 100%;
+}
+.wl-rulechips div {
+  display: grid;
+  gap: 2px;
+  padding: 10px 6px;
+  border: 1px solid var(--gl-line);
+  background: rgba(255, 255, 255, 0.05);
+  text-align: center;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gl-muted);
+}
+.wl-rulechips b {
+  font:
+    400 22px 'Saira Stencil One',
+    Rajdhani,
+    sans-serif;
+  color: var(--gl-ink);
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+.wl-board .wl-board-art {
+  width: min(100%, 220px);
+  margin: 0 auto;
+  display: block;
+}
+.wl-board .wl-rules {
+  text-align: left;
+}
+.wl-blocks[data-screen='classic'] {
+  --gl-a: #ff6a2b !important;
+}
+.wl-blocks[data-screen='towers'] {
+  --gl-a: #4a7bff !important;
+}
+/* celular deitado: o painel e o quadro lado a lado e o painel enxuto, para os botões caberem sem rolar */
+@media (max-height: 520px) {
+  .wl-blocks .wl-stage[data-pane='show'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 12px;
+  }
+  .wl-blocks .gx-panel {
+    gap: 6px;
+    padding: 10px 14px 12px;
+  }
+  .wl-blocks .gx-panel h2 {
+    font-size: 22px;
+  }
+  .wl-blocks .gx-panel .lead,
+  .wl-blocks .gx-panel .wl-state > span:not(.wl-badge) {
+    display: none;
+  }
+  .wl-blocks .wl-state {
+    padding: 8px 12px;
+  }
+  .wl-blocks .wl-cta,
+  .wl-blocks .gx-enter {
+    padding: 9px 16px;
+    font-size: 17px;
+  }
+  .wl-blocks .wl-board {
+    padding: 12px;
+  }
+  .wl-blocks .wl-board .wl-rules,
+  .wl-blocks .wl-board-art {
+    display: none;
+  }
+}
+@media (max-height: 380px) {
+  .wl-blocks .wl-stage {
+    padding-top: 46px;
+  }
+  .wl-blocks .wl-corner .gx-emblem {
+    width: 30px;
+  }
+  .wl-blocks .wl-corner .gx-logo h1 {
+    font-size: 18px;
+  }
+  .wl-blocks .gx-panel > .wl-state:not([role='group']) {
+    display: none;
+  }
+  .wl-blocks .gx-panel h2 {
+    font-size: 18px;
+  }
+  .wl-blocks .wl-nums {
+    gap: 2px 10px;
+    font-size: 12px;
+  }
+  .wl-blocks .wl-nums b {
+    font-size: 14px;
+  }
+  .wl-blocks .wl-badge {
+    display: none;
+  }
+}
+
+.wl-board .wl-board-art {
+  position: relative;
+  width: 190px;
+  height: 150px;
+  overflow: hidden;
+  border-radius: 12px;
+}
+.wl-board .wl-board-art > * {
+  position: static !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+.wl-board .wl-board-art svg {
+  display: block;
 }

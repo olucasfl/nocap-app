@@ -41,6 +41,15 @@ export const WORDS_LANDING: Record<
     b: '#2a1d7a',
     show: '16 palavras, 4 grupos e uma única divisão certa. Cuidado com as palavras que servem a dois grupos.',
   },
+  blocks: {
+    name: "Block's",
+    line1: "BLOCK'S",
+    line2: 'BLOCOS',
+    tag: 'ENCAIXE, EMPILHE E BATA O RECORDE',
+    a: '#ffc21f',
+    b: '#7a4a0b',
+    show: 'Dois jogos de blocos: encaixe peças numa grade no Block Classic ou monte uma torre que balança no Block Towers.',
+  },
   bee: {
     name: "Bee Word's",
     line1: 'BEE',

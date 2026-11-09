@@ -39,10 +39,10 @@ for (const sz of SIZES) {
       .getByRole('button', { name: /Block Classic/i })
       .first()
       .click();
-    const sheet = page.getByRole('dialog', { name: /Block Classic/i });
+    const sheet = page.getByTestId('mode-panel-classic');
     await expect(sheet).toBeVisible();
-    await expect(sheet.locator('.bk-howto')).toHaveCount(0);
-    for (const n of [/Continuar partida/i, /Começar do zero/i, /Escolher outro modo/i]) {
+    await expect(page.getByTestId('resume-info')).toBeVisible();
+    for (const n of [/Continuar partida/i, /Começar do zero/i, /Voltar/i]) {
       await expect(sheet.getByRole('button', { name: n })).toBeInViewport();
     }
     await page.waitForTimeout(500);

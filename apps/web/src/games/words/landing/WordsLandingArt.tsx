@@ -1,12 +1,36 @@
 import type { CSSProperties, ReactNode } from 'react';
 
-export type WordsGame = 'classic' | 'connect' | 'bee';
+export type WordsGame = 'classic' | 'connect' | 'bee' | 'blocks';
 
 const HEX = 'M50 6 88 28V72L50 94 12 72V28Z';
 
 /** Símbolo de cada jogo, desenhado só para ele. */
 export function Emblem({ game }: { game: WordsGame }) {
   const body: Record<WordsGame, ReactNode> = {
+    // peças de encaixe: um L e um quadrado sobre a grade
+    blocks: (
+      <>
+        <rect x="6" y="6" width="88" height="88" rx="12" fill="#1a1a14" />
+        <rect x="14" y="14" width="24" height="24" rx="5" fill="#ff6a2b" />
+        <rect x="14" y="42" width="24" height="24" rx="5" fill="#ff6a2b" />
+        <rect x="14" y="70" width="24" height="16" rx="5" fill="#ff6a2b" />
+        <rect x="42" y="70" width="24" height="16" rx="5" fill="#ffd23f" />
+        <rect x="42" y="42" width="24" height="24" rx="5" fill="#3f6bff" />
+        <rect x="70" y="42" width="16" height="24" rx="5" fill="#3fcf7d" />
+        <rect x="70" y="70" width="16" height="16" rx="5" fill="#a06bff" />
+        <rect
+          x="42"
+          y="14"
+          width="24"
+          height="24"
+          rx="5"
+          fill="none"
+          stroke="#fff8"
+          strokeWidth="3"
+          strokeDasharray="6 5"
+        />
+      </>
+    ),
     // três casas do Wordle: certa, no lugar errado, ausente
     classic: (
       <>
@@ -104,6 +128,31 @@ const TILE_LETTERS = [...'PALAVRASTEMPOLETRASJOGOFOXCAPNOCAPGRUPOFAVOABELHA'];
 
 /** Cenário animado de cada jogo (só transform e opacity). */
 export function Backdrop({ game }: { game: WordsGame }) {
+  if (game === 'blocks') {
+    const colors = ['#ff6a2b', '#ffd23f', '#3f6bff', '#3fcf7d', '#a06bff'];
+    return (
+      <div className="glb wlb-blocks" aria-hidden="true">
+        <div className="wlb-clip">
+          {Array.from({ length: 16 }, (_, i) => (
+            <i
+              key={i}
+              className="wlb-sq"
+              style={
+                {
+                  '--x': `${(i * 23 + 7) % 96}%`,
+                  '--s': `${26 + (i % 4) * 14}px`,
+                  '--t': `${12 + (i % 5) * 2.5}s`,
+                  '--d': `${-((i * 1.7) % 15)}s`,
+                  '--c': colors[i % 5],
+                } as CSSProperties
+              }
+            />
+          ))}
+        </div>
+        <div className="glb-vig" />
+      </div>
+    );
+  }
   if (game === 'classic') {
     return (
       <div className="glb wlb-classic" aria-hidden="true">
@@ -221,7 +270,42 @@ export function Backdrop({ game }: { game: WordsGame }) {
 /** O quadro à direita do menu: uma amostra viva do jogo. */
 export function Showcase({ game, text }: { game: WordsGame; text: string }) {
   let art: ReactNode;
-  if (game === 'classic') {
+  if (game === 'blocks') {
+    const cells = [
+      '',
+      '',
+      '',
+      'o',
+      '',
+      '',
+      '',
+      'o',
+      'o',
+      '',
+      'b',
+      '',
+      '',
+      'b',
+      'g',
+      'y',
+      '',
+      'p',
+      'b',
+      'g',
+      'o',
+      'o',
+      'y',
+      'p',
+      'g',
+    ];
+    art = (
+      <div className="wl-show-blocks" aria-hidden="true">
+        {cells.map((c, i) => (
+          <i key={i} className={c ? `c-${c}` : ''} style={{ '--i': i } as CSSProperties} />
+        ))}
+      </div>
+    );
+  } else if (game === 'classic') {
     const rows: [string, string[]][] = [
       ['AMBOS', ['hit', 'hit', 'miss', 'near', 'miss']],
       ['AMIGO', ['hit', 'hit', 'hit', 'hit', 'hit']],
