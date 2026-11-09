@@ -1,3 +1,4 @@
+import { newestRun } from './storage';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { clearSavedRun, loadSavedRun, saveRun, type SavedRun } from './storage';
 
@@ -52,5 +53,34 @@ describe('partida guardada do Block Classic', () => {
     saveRun(run());
     clearSavedRun();
     expect(loadSavedRun('u1', 1_000_500)).toBeNull();
+  });
+});
+
+describe('newestRun', () => {
+  const base = {
+    v: 1 as const,
+    userId: 'u1',
+    matchId: 'm',
+    seed: 's',
+    session: 'tok',
+    moves: [1],
+    thumbs: 0,
+    perfects: 0,
+    hintsUsed: 0,
+    before: 0,
+  };
+  it('escolhe a mais recente entre o aparelho e a conta', () => {
+    const local = { ...base, savedAt: 1000 };
+    const remote = { ...base, matchId: 'r', savedAt: 2000 };
+    expect(newestRun('u1', local, remote, 3000)).toBe(remote);
+    expect(newestRun('u1', { ...local, savedAt: 2500 }, remote, 3000)?.savedAt).toBe(2500);
+  });
+  it('usa só a que existe, e ignora outra conta, sem sessão ou velha demais', () => {
+    const r = { ...base, savedAt: 1000 };
+    expect(newestRun('u1', null, r, 2000)).toBe(r);
+    expect(newestRun('u1', r, null, 2000)).toBe(r);
+    expect(newestRun('u2', r, r, 2000)).toBeNull();
+    expect(newestRun('u1', { ...r, session: '' }, null, 2000)).toBeNull();
+    expect(newestRun('u1', r, null, 1000 + 7 * 24 * 3600_000)).toBeNull();
   });
 });

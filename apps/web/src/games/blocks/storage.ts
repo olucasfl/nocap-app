@@ -1,3 +1,6 @@
+import { apiClient } from '@/lib/api-client';
+import { useAuth } from '@/lib/auth';
+
 const BEST_KEY = 'nocap-blocks-best';
 
 /** O recorde (em pontos) deste aparelho, enquanto não há conta. O oficial vem do servidor. */
@@ -86,6 +89,7 @@ export function saveRun(run: SavedRun) {
   } catch {
     /* sem storage: a partida só não poderá ser retomada */
   }
+  queueRemote(run);
 }
 
 export function clearSavedRun() {
@@ -94,4 +98,69 @@ export function clearSavedRun() {
   } catch {
     /* nada a limpar */
   }
+  if (pending) clearTimeout(pending.timer);
+  pending = null;
+  if (useAuth.getState().user) void apiClient.delete('/me/prefs/blocks-run').catch(() => undefined);
+}
+
+/* ---------- na conta: a mesma partida em qualquer aparelho (spec 073) ---------- */
+
+type RemoteRun = Omit<SavedRun, 'userId'>;
+const REMOTE_EVERY_MS = 2500;
+let pending: { run: SavedRun; timer: ReturnType<typeof setTimeout> } | null = null;
+
+function sendRemote(run: SavedRun) {
+  if (useAuth.getState().user?.id !== run.userId) return;
+  const { userId: _u, ...body } = run;
+  void apiClient.put('/me/prefs/blocks-run', body satisfies RemoteRun).catch(() => undefined);
+}
+
+/** Manda a partida para a conta, no máximo a cada poucos segundos (e ao sair da aba), sem travar o jogo. */
+function queueRemote(run: SavedRun) {
+  if (pending) {
+    pending.run = run;
+    return;
+  }
+  const timer = setTimeout(() => {
+    const p = pending;
+    pending = null;
+    if (p) sendRemote(p.run);
+  }, REMOTE_EVERY_MS);
+  pending = { run, timer };
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'hidden' || !pending) return;
+    clearTimeout(pending.timer);
+    const p = pending;
+    pending = null;
+    sendRemote(p.run);
+  });
+}
+
+/** A partida guardada na conta (ou `null`). */
+export async function fetchRemoteRun(userId: string): Promise<SavedRun | null> {
+  const r = await apiClient.get<{ run: RemoteRun | null }>('/me/prefs/blocks-run');
+  return r.run ? { ...r.run, userId } : null;
+}
+
+/** Entre a partida deste aparelho e a da conta vale a mais recente (e que ainda pode ser enviada). */
+export function newestRun(
+  userId: string | undefined,
+  local: SavedRun | null,
+  remote: SavedRun | null,
+  now = Date.now(),
+): SavedRun | null {
+  const ok = (r: SavedRun | null): r is SavedRun =>
+    !!r &&
+    !!userId &&
+    r.userId === userId &&
+    r.session !== '' &&
+    r.moves.length > 0 &&
+    now - r.savedAt < RUN_MAX_AGE_MS;
+  const a = ok(local) ? local : null;
+  const b = ok(remote) ? remote : null;
+  if (a && b) return b.savedAt > a.savedAt ? b : a;
+  return a ?? b;
 }

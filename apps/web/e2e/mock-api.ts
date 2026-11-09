@@ -103,9 +103,12 @@ export interface MockOptions {
   classicDailyDone?: boolean;
   /** Falha as chamadas que criam partida (para testar mensagens de erro). */
   failClassic?: boolean;
+  /** Partida do Block Classic que já está guardada na conta (de outro aparelho). */
+  remoteBlocksRun?: Record<string, unknown>;
 }
 
 export async function installApi(page: Page, opts: MockOptions = {}) {
+  let remoteRun: unknown = opts.remoteBlocksRun ?? null;
   await page.addInitScript((user) => {
     localStorage.setItem('nocap-token', 'tok');
     localStorage.setItem('nocap-user', JSON.stringify(user));
@@ -175,6 +178,12 @@ export async function installApi(page: Page, opts: MockOptions = {}) {
         daily: { color: d, time: d, eco: d, blocks: d, atravessa: d, wclassic: d },
         visit: { current: 1, best: 1, visitedToday: true },
       });
+    }
+    // a partida do Block Classic guardada na conta (spec 073)
+    if (path === '/me/prefs/blocks-run') {
+      if (method === 'PUT') remoteRun = body;
+      else if (method === 'DELETE') remoteRun = null;
+      return json(route, method === 'GET' ? { run: remoteRun } : { ok: true });
     }
     // início de partida solo (Já Deu?, Ecooo, Block's): uma seed e uma sessão de mentira
     if (/^\/games\/[a-z]+\/session$/.test(path) && method === 'POST')

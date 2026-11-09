@@ -14,7 +14,9 @@ import {
   clearSavedRun,
   getBlocksBest,
   getTowersBest,
+  fetchRemoteRun,
   loadSavedRun,
+  newestRun,
   saveRun,
   setBlocksBest,
   setTowersBest,
@@ -101,7 +103,19 @@ function BlocksStart({
   const user = useAuth((st) => st.user);
   const stats = useQuery({ queryKey: ['stats'], queryFn: fetchStats, enabled: !!user });
   const [screen, setScreen] = useState<'main' | 'ranking' | UiMode | 'rules' | 'settings'>('main');
-  const saved = useMemo(() => loadSavedRun(user?.id), [user?.id]);
+  // a partida guardada: a deste aparelho e a da conta, vale a mais recente (assim dá para continuar em outro aparelho)
+  const local = useMemo(() => loadSavedRun(user?.id), [user?.id]);
+  const remote = useQuery({
+    queryKey: ['blocks-run', user?.id ?? null],
+    queryFn: () => fetchRemoteRun(user!.id),
+    enabled: !!user,
+    staleTime: 0,
+    retry: false,
+  });
+  const saved = useMemo(
+    () => newestRun(user?.id, local, remote.data ?? null),
+    [user?.id, local, remote.data],
+  );
   const savedInfo = useMemo(() => (saved ? summarize(saved) : null), [saved]);
 
   // Com conta, o recorde é o do servidor (o mesmo do ranking); o do aparelho só vale sem conta.
