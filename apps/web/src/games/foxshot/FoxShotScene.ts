@@ -1463,7 +1463,7 @@ export class FoxShotScene {
       const x = 64 + (rnd() - 0.5) * 56, y = 64 + (rnd() - 0.5) * 56, r = 22 + rnd() * 26;
       const gr = g.createRadialGradient(x, y, 0, x, y, r);
       const v = 150 + Math.round(rnd() * 70);
-      gr.addColorStop(0, `rgba(${v},${v},${v},0.55)`);
+      gr.addColorStop(0, `rgba(${v},${v},${v},0.75)`);
       gr.addColorStop(1, `rgba(${v},${v},${v},0)`);
       g.fillStyle = gr;
       g.fillRect(0, 0, 128, 128);
@@ -1485,8 +1485,8 @@ export class FoxShotScene {
     let seed = id * 9301 + 49297;
     const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
     const puffs: { s: THREE.Sprite; dir: THREE.Vector3; size: number; spin: number; ph: number }[] = [];
-    for (let i = 0; i < 34; i++) {
-      const mat = new THREE.SpriteMaterial({ map: tex, color: new THREE.Color().setHSL(0, 0, 0.5 + rnd() * 0.16), transparent: true, opacity: 0.95, depthWrite: false, fog: false });
+    for (let i = 0; i < 44; i++) {
+      const mat = new THREE.SpriteMaterial({ map: tex, color: new THREE.Color().setHSL(0, 0, 0.4 + rnd() * 0.14), transparent: true, opacity: 0.95, depthWrite: false, fog: false });
       const s = new THREE.Sprite(mat);
       // direção dentro de uma esfera (mais bolhas perto da borda, para a nuvem parecer cheia)
       const d = new THREE.Vector3(rnd() * 2 - 1, (rnd() * 2 - 1) * 0.8, rnd() * 2 - 1);
@@ -1520,7 +1520,7 @@ export class FoxShotScene {
         p.s.scale.set(sz, sz, 1);
         const m = p.s.material as THREE.SpriteMaterial;
         m.rotation += p.spin * dt;
-        m.opacity = 0.95 * fade;
+        m.opacity = 0.97 * fade;
       }
       const d = Math.hypot(cam.x - sm.x, cam.y - cy, cam.z - sm.z);
       if (R > 0.5 && d < R * 1.05) inside = Math.max(inside, Math.min(1, (R * 1.05 - d) / (R * 0.5)));
