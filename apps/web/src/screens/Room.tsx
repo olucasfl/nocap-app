@@ -13,7 +13,7 @@ import { useAuth } from '@/lib/auth';
 import { sfx } from '@/lib/sfx';
 import { useOnline } from '@/lib/network';
 import { useUpdateNeeded } from '@/lib/update-state';
-import { clearLastGame, resumeRoom, showNotice, useRoom, type RoomGame } from '@/lib/rooms';
+import { clearLastGame, resumeRoom, showNotice, useMeId, useRoom, type RoomGame } from '@/lib/rooms';
 import { RoomChatDock } from '@/components/GameChat';
 import { Final } from './room/Final';
 import { Lobby } from './room/Lobby';
@@ -23,6 +23,7 @@ import { DesmoronaRoomPlay } from '@/games/desmorona/DesmoronaRoomPlay';
 import { DesmoronaRoomFinal } from '@/games/desmorona/DesmoronaRoomFinal';
 import { GpRoomPlay } from '@/games/foxgp/GpRoomPlay';
 import { GpRoomFinal } from '@/games/foxgp/GpRoomFinal';
+import { GpLobbyGarage } from '@/games/foxgp/GpLobbyGarage';
 import { AtravessaRoomFinalPage } from '@/games/atravessa/AtravessaRoomFinalPage';
 import { BolaRoomPlay } from '@/games/bola/BolaRoomPlay';
 import { PingRoomPlay } from '@/games/pingpong/PingRoomPlay';
@@ -193,6 +194,7 @@ function RoomPageInner({ code, game = 'color' }: { code?: string; game?: RoomGam
   const online = useOnline();
   const { status: authStatus } = useAuth();
   const { status, snapshot, lastGame, message } = useRoom();
+  const meId = useMeId();
   const navigate = useNavigate();
   // com código no endereço a entrada automática já continua depois de atualizar; sem código, retoma o que a pessoa pediu
   const entry = useRoomEntry({ resume: !code });
@@ -366,6 +368,7 @@ function RoomPageInner({ code, game = 'color' }: { code?: string; game?: RoomGam
         onCancel={entry.dismissConflict}
       />
       {snapshot?.phase === 'lobby' && <Lobby snapshot={snapshot} />}
+      {snapshot?.phase === 'lobby' && snapshot.game === 'foxgp' && <GpLobbyGarage snapshot={snapshot} me={meId} />}
       {snapshot &&
         [
           'create',

@@ -1,20 +1,12 @@
 import { useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import {
-  closeRoom,
-  leaveRoom,
-  sendRoom,
-  useRoom,
-  useMeId,
-  at,
-  type RoomSnapshot,
-} from '@/lib/rooms';
+import { closeRoom, leaveRoom, sendRoom, useRoom, useMeId, at, type RoomSnapshot } from '@/lib/rooms';
 import { GpFinal, type GpFinalRow } from './GpFinal';
-import { lapClock } from './format';
+import { hexNum, lapClock } from './format';
+import { paintFromRoom } from './garage';
 import './foxgp.css';
 
-const nameOf = (id: string, username: string) =>
-  id.startsWith('guest:') ? username : at(username);
+const nameOf = (id: string, username: string) => (id.startsWith('guest:') ? username : at(username));
 
 /** O pódio do Fox GP em sala: a ordem final da sala com a votação de revanche. */
 export function GpRoomFinal({ snapshot }: { snapshot: RoomSnapshot }) {
@@ -31,6 +23,8 @@ export function GpRoomFinal({ snapshot }: { snapshot: RoomSnapshot }) {
       id: r.userId,
       name: nameOf(r.userId, r.username),
       color: info?.colors[r.userId] ?? '#ff7d26',
+      fur: hexNum(info?.colors[r.userId]),
+      paint: paintFromRoom(info?.paints?.[r.userId]),
       you: r.userId === me,
       ms: info?.finish[r.userId] ?? null,
       best: info?.best[r.userId] ?? null,

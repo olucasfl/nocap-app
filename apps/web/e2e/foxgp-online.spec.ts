@@ -20,9 +20,23 @@ interface W {
   phase: string;
   t: number;
   track: { length: number };
-  cars: { id: string; x: number; z: number; h: number; vx: number; vz: number; prog: number; qualiStartT: number | null; qualiMs: number | null }[];
+  cars: {
+    id: string;
+    x: number;
+    z: number;
+    h: number;
+    vx: number;
+    vz: number;
+    prog: number;
+    qualiStartT: number | null;
+    qualiStartProg: number;
+    qualiMs: number | null;
+    pitHold: number;
+    surface: string;
+    speed: number;
+  }[];
 }
-type Win = Window & { __gp?: W };
+type Win = Window & { __gp?: W; __gpAuto?: boolean };
 
 async function nick(page: Page, name: string) {
   await page.getByRole('dialog').locator('input').first().fill(name);
@@ -74,13 +88,24 @@ test('duas janelas: classificação, grid, corrida pela sala e pódio', async ({
   await A.getByTestId('gp-play').waitFor({ timeout: 20_000 });
   await B.getByTestId('gp-play').waitFor({ timeout: 20_000 });
 
-  // classificação: passados mais de 22 s, cada um "fecha" a volta (a Bia mais rápida)
+  // classificação: quem simula é a Ana (líder). Passados mais de 22 s, os dois "fecham" a volta no mundo dela (a Bia mais
+  // rápida); o tempo de cada um vai para a sala pelo relato da líder
   await A.waitForFunction(() => (window as Win).__gp?.phase === 'quali' && (window as Win).__gp!.t > 0.5, null, {
     timeout: 20_000,
   });
   await A.waitForTimeout(23_500);
-  await finishQuali(A, 23.4);
-  await finishQuali(B, 23.1);
+  await A.evaluate(() => {
+    const w = (window as Win).__gp!;
+    w.cars.forEach((c, i) => {
+      c.qualiStartT = w.t - (i === 0 ? 23.4 : 23.1);
+      c.qualiStartProg = 0;
+      c.prog = w.track.length - 0.2;
+      c.vx = Math.sin(c.h) * 15;
+      c.vz = -Math.cos(c.h) * 15;
+      c.pitHold = 0;
+      c.surface = 'asphalt';
+    });
+  });
 
   // grid pelos tempos: a Bia larga na frente
   const grid = A.getByTestId('gp-grid');
@@ -91,20 +116,28 @@ test('duas janelas: classificação, grid, corrida pela sala e pódio', async ({
   await expect(A.getByTestId('gp-lap')).toBeVisible({ timeout: 15_000 });
   await expect(B.getByTestId('gp-lap')).toBeVisible({ timeout: 15_000 });
 
-  // a Ana acelera: o carro dela anda na tela da Bia
-  const anaOnB = () =>
-    B.evaluate(() => {
+  // corrida: os dois no piloto automático. O carro da Ana anda na tela da Bia; o da Bia, simulado pela Ana a partir da
+  // entrada que a Bia manda, anda na tela da Ana
+  const carOn = (p: Page, mine: boolean) =>
+    p.evaluate((m) => {
       const w = (window as Win).__gp!;
-      const c = w.cars.find((x) => x.id !== w.meId)!;
+      const c = w.cars.find((x) => (m ? x.id === w.meId : x.id !== w.meId))!;
       return { x: c.x, z: c.z };
-    });
-  const before = await anaOnB();
-  await A.bringToFront();
-  await A.keyboard.down('KeyW');
-  await A.waitForTimeout(2500);
-  await A.keyboard.up('KeyW');
-  const after = await anaOnB();
-  expect(Math.hypot(after.x - before.x, after.z - before.z)).toBeGreaterThan(5);
+    }, mine);
+  const anaOnB0 = await carOn(B, false);
+  const biaOnA0 = await carOn(A, false);
+  await A.evaluate(() => ((window as Win).__gpAuto = true));
+  await B.evaluate(() => ((window as Win).__gpAuto = true));
+  await A.waitForTimeout(5000);
+  const anaOnB1 = await carOn(B, false);
+  const biaOnA1 = await carOn(A, false);
+  expect(Math.hypot(anaOnB1.x - anaOnB0.x, anaOnB1.z - anaOnB0.z)).toBeGreaterThan(20);
+  expect(Math.hypot(biaOnA1.x - biaOnA0.x, biaOnA1.z - biaOnA0.z)).toBeGreaterThan(20);
+  // e a Bia vê o próprio carro onde a líder o vê (previsão + correção)
+  const biaOnB = await carOn(B, true);
+  expect(Math.hypot(biaOnB.x - biaOnA1.x, biaOnB.z - biaOnA1.z)).toBeLessThan(25);
+  const net = await B.getByTestId('net-badge').textContent();
+  test.info().annotations.push({ type: 'rede da Bia', description: net ?? '' });
   await expect(B.getByTestId('gp-board')).toBeVisible();
 
   // a líder encerra pelo menu: os dois vão para o pódio

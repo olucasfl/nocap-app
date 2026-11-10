@@ -4,17 +4,19 @@ import type { GpPlayerInfo } from '@nocap/games';
 import { at, leaveRoom, type RoomSnapshot } from '@/lib/rooms';
 import { GpPlay, type GpOnline, type GpRoomLive } from './GpPlay';
 import { hexNum } from './format';
+import { paintFromRoom } from './garage';
 import './foxgp.css';
 
 const nameOf = (id: string, username: string | undefined) =>
   id.startsWith('guest:') ? (username ?? '') : at(username);
 
-/** A corrida do Fox GP em sala (spec 078): a mesma tela do treino, com o relógio e os outros carros vindos da sala. */
+/** A corrida do Fox GP em sala (specs 078 e 079): a mesma tela do treino; quem simula é o líder da partida. */
 export function GpRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   const info = snapshot.foxgp;
   const navigate = useNavigate();
   const seed = snapshot.round?.seed ?? '';
   const meId = info?.me ?? '';
+  const hostId = info?.host ?? snapshot.hostId ?? '';
   const members = snapshot.members;
   const slotKey = info ? JSON.stringify(info.slots) : '';
   const online = useMemo<GpOnline | null>(() => {
@@ -25,11 +27,12 @@ export function GpRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         id,
         name: nameOf(id, members.find((m) => m.id === id)?.username),
         color: hexNum(info.colors[id]),
+        paint: paintFromRoom(info.paints?.[id]) ?? undefined,
       }));
     // quem entrou com a corrida andando não está nas vagas: só assiste
-    return { seed, meId: info.slots[meId] !== undefined ? meId : '', infos: list };
+    return { seed, meId: info.slots[meId] !== undefined ? meId : '', hostId, infos: list };
     // a lista só muda se mudarem as vagas: nomes novos no meio da partida não recriam a cena
-  }, [seed, meId, slotKey]);
+  }, [seed, meId, hostId, slotKey]);
   const live: GpRoomLive | undefined = info
     ? {
         stage: info.stage,

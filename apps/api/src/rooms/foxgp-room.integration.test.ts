@@ -143,6 +143,33 @@ describe('sala do Fox GP com servidor de verdade', () => {
     expect(ana.snap!.foxgp.dnf).toEqual(['ana']);
   }, 30_000);
 
+  it('reserva do WebRTC: a sala repassa entradas ao líder e estados do líder aos outros', async () => {
+    const created = await new Client(url).create('foxgp', { token: 'lia' });
+    const lia = watch(created);
+    const gin: unknown[] = [];
+    const gsnap: unknown[] = [];
+    lia.room.onMessage('grin', ((m: unknown) => gin.push(m)) as never);
+    const theo = watch(await new Client(url).joinById(created.roomId, { token: 'theo' }));
+    theo.room.onMessage('grsnap', ((m: unknown) => gsnap.push(m)) as never);
+    const liaSnaps: unknown[] = [];
+    lia.room.onMessage('grsnap', ((m: unknown) => liaSnaps.push(m)) as never);
+    theo.room.send('ready', { ready: true });
+    await until(() => theo.snap?.foxgp.me === 'theo');
+    lia.room.send('start');
+    await until(() => lia.snap?.phase === 'play');
+    // o theo manda a entrada: só a lia (que simula) recebe, com quem mandou
+    theo.room.send('grin', { rows: [[1, 1, 0, 0, 0, 0]] });
+    await until(() => gin.length === 1);
+    expect(gin[0]).toEqual({ from: 'theo', p: { rows: [[1, 1, 0, 0, 0, 0]] } });
+    // a lia manda o estado: o theo recebe; quem não simula não consegue mandar estado
+    lia.room.send('grsnap', { t: 1, ph: 'q', cars: [] });
+    theo.room.send('grsnap', { t: 2, ph: 'q', cars: [] });
+    await until(() => gsnap.length === 1);
+    await wait(300);
+    expect(gsnap).toEqual([{ t: 1, ph: 'q', cars: [] }]);
+    expect(liaSnaps).toEqual([]);
+  }, 30_000);
+
   it('a sala do Fox Cap! troca para o Fox GP', async () => {
     const created = await new Client(url).create('foxcap', { token: 'caio' });
     const caio = watch(created);

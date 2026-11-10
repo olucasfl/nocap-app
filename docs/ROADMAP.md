@@ -99,6 +99,7 @@ Ainda sem prioridade definida contra as salas do Ecooo. Cada item tem a sua spec
 - [x] Mapa de Treino (8 áreas, pista de distância, estande), mapa grande (M), cartão no Fox Cap!, convidar e entrar/espectar no meio da partida, só com conta, ícones de arma dos modelos 3D (spec 057 §8b).
 - [ ] Online: arma no chão e controles de celular; bomba de verdade e ranking: fora da spec 057.
 - [x] (10/11/2026) **Fox GP** (spec 078, branch `feat/fox-gp`): motor, treino contra bots, sala online e pódio. Falta calibrar os [AJUSTAR] jogando e testar em celular real.
+- [ ] (10/11/2026) **Fox GP, atualização** (spec 079): física, colisão, online com o líder simulando, volta lançada individual, 3 câmeras, pista da Marina, tema do artifact, garagem, pódio. Falta o teste online com duas janelas (ver spec 079 §4).
 
 ## Etapa 6: produção
 

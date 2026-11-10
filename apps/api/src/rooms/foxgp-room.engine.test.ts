@@ -270,6 +270,49 @@ describe('sala do Fox GP', () => {
     expect(room.currentPhase).toBe('final');
   });
 
+  it('quem simula (o líder) relata posições, voltas e chegada por todos; os outros só por si', () => {
+    const { room, clock } = racing();
+    clock.advance(1000);
+    room.reportAll('ana', [
+      [1, 5, 6, 0, 20, 300, 0, 0, 0.1, 0],
+      [2, 7, 8, 0, 20, 280, 0, 0, 0.1, 0],
+    ]);
+    expect(room.positions().map((r) => r[0]).sort()).toEqual([1, 2]);
+    // quem não simula não relata pelos outros
+    room.reportAll('bia', [[2, 0, 0, 0, 0, 0, 0, 0, 0, 0]]);
+    expect(room.positions().find((r) => r[0] === 2)![1]).toBe(7);
+    clock.advance(135_000);
+    room.lap('ana', { id: 'caio', lap: 1, ms: 45_000 });
+    expect(snap(room).best.caio).toBe(45_000);
+    room.finishLine('ana', { id: 'bia', ms: 128_500, laps: [44_000, 42_000, 42_500] });
+    room.finishLine('caio', { id: 'ana', ms: 120_000, laps: [40_000, 40_000, 40_000] });
+    // o caio não relata pela ana (vale como o tempo dele mesmo)
+    expect(snap(room).finish.bia).toBe(128_500);
+    expect(snap(room).finish.ana).toBeUndefined();
+    expect((room.snapshot('ana') as unknown as { foxgp: { host: string } }).foxgp.host).toBe('ana');
+  });
+
+  it('se quem simula cai, a partida acaba', () => {
+    const { room } = racing();
+    room.disconnect('ana');
+    room.tick();
+    expect(room.currentPhase).toBe('final');
+  });
+
+  it('pintura do carro: validada, vai para todos e some com quem sai', () => {
+    const room = new FoxGpRoomEngine({ code: 'ABCD', now: () => T0, newSeed: () => 's' });
+    room.join('ana', 'ana');
+    room.join('bia', 'bia');
+    room.setPaint('ana', { body: '#FF7D26', accent: '#2f5bff', pattern: 'faixa', number: 7 });
+    expect(() => room.setPaint('ana', { body: 'red', accent: '#2f5bff', pattern: 'faixa', number: 7 })).toThrow(RoomError);
+    expect(() => room.setPaint('ana', { body: '#ff0000', accent: '#2f5bff', pattern: 'xadrez', number: 7 })).toThrow(RoomError);
+    expect(() => room.setPaint('ana', { body: '#ff0000', accent: '#2f5bff', pattern: 'faixa', number: 120 })).toThrow(RoomError);
+    const paints = (room.snapshot('bia') as unknown as { foxgp: { paints: Record<string, unknown> } }).foxgp.paints;
+    expect(paints.ana).toEqual({ body: '#ff7d26', accent: '#2f5bff', pattern: 'faixa', number: 7 });
+    room.leave('ana');
+    expect((room.snapshot('bia') as unknown as { foxgp: { paints: Record<string, unknown> } }).foxgp.paints.ana).toBeUndefined();
+  });
+
   it('não grava ranking nem histórico', () => {
     const { room } = started();
     expect(room.persistable).toBe(false);

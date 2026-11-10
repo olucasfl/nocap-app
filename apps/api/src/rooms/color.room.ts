@@ -693,6 +693,15 @@ export class FoxGpRoom extends ColorRoom {
   protected override registerGameMessages() {
     const engine = () => this.engine as FoxGpRoomEngine;
     const idOf = (c: Client) => (c.userData as AuthData | undefined)?.id;
+    const hostClient = () => {
+      const h = engine().simHostId;
+      return h ? this.clients.find((x) => idOf(x) === h) : undefined;
+    };
+    // posições: o líder manda as de todos ("gall"); "gpos" vale para quem relata só o próprio carro
+    this.onMessage('gall', (c, m) => {
+      const id = idOf(c);
+      if (id) engine().reportAll(id, m);
+    });
     this.onMessage('gpos', (c, m) => {
       const id = idOf(c);
       if (id) engine().report(id, m);
@@ -717,7 +726,28 @@ export class FoxGpRoom extends ColorRoom {
       this.act(c, (id) => engine().setColor(id, String(m?.hex ?? ''))),
     );
     this.onMessage('uncolor', (c) => this.act(c, (id) => engine().clearColor(id)));
+    this.onMessage('gpaint', (c, m) => this.act(c, (id) => engine().setPaint(id, m)));
     this.onMessage('gend', (c) => this.act(c, (id) => engine().endNow(id)));
+    // reserva do WebRTC: a sala só repassa entre o líder e os outros (sem olhar o conteúdo, com limite de tamanho)
+    this.onMessage('grin', (c, m) => {
+      const from = idOf(c);
+      if (!from || from === engine().simHostId || JSON.stringify(m ?? null).length > 4000) return;
+      hostClient()?.send('grin', { from, p: m });
+    });
+    for (const type of ['grsnap', 'grev'] as const) {
+      this.onMessage(type, (c, m) => {
+        if (idOf(c) !== engine().simHostId || JSON.stringify(m ?? null).length > 60_000) return;
+        for (const x of this.clients) if (x !== c) x.send(type, m);
+      });
+    }
+    this.onMessage('rtc', (c, m: { to?: unknown; data?: unknown }) => {
+      const from = idOf(c);
+      if (!from || typeof m?.to !== 'string' || typeof m.data !== 'object' || m.data === null)
+        return;
+      if (JSON.stringify(m.data).length > 12_000) return;
+      const target = this.clients.find((x) => idOf(x) === m.to);
+      target?.send('rtc', { from, data: m.data });
+    });
   }
 
   protected override afterTick() {

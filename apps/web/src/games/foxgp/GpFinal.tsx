@@ -1,12 +1,10 @@
-import type { CSSProperties } from 'react';
-import { FinalShell, type FinalTone } from '@/components/final/FinalShell';
-import {
-  RematchActions,
-  RematchPanel,
-  TrainingActions,
-  type RematchRoom,
-} from '@/components/final/RematchPanel';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import type { GpPaint } from '@nocap/games';
+import type { RematchRoom } from '@/components/final/RematchPanel';
+import { GpPodium3D } from './GpPodium3D';
 import { lapClock } from './format';
+import { GP_THEME } from './theme';
+import './theme.css';
 import './gp-final.css';
 
 export interface GpFinalRow {
@@ -14,6 +12,9 @@ export interface GpFinalRow {
   name: string;
   /** Cor da raposa (css). */
   color: string;
+  /** Cor do pelo (número) e pintura, para o carro no pódio. */
+  fur?: number;
+  paint?: GpPaint | null;
   you: boolean;
   bot?: boolean;
   /** Tempo total da corrida (ms); null = não terminou. */
@@ -27,44 +28,13 @@ export type GpFinalMode =
   | { kind: 'training'; onAgain?: () => void; onExit: () => void }
   | { kind: 'room'; room: RematchRoom };
 
-/** Os três primeiros no pódio (o 1º no meio, mais alto e com o troféu). */
-function Podium({ rows }: { rows: GpFinalRow[] }) {
-  const top = rows.slice(0, 3);
-  const order = [top[1], top[0], top[2]].flatMap((r, i) => {
-    const place = [2, 1, 3][i] as number;
-    return r ? [{ r, place }] : [];
-  });
-  return (
-    <ol className="gpf-podium" aria-label="Pódio">
-      {order.map(({ r, place }) => (
-        <li
-          key={r.id}
-          className={`gpf-pod p${place}${r.you ? ' is-you' : ''}`}
-          style={{ '--d': `${place === 1 ? 500 : place === 2 ? 350 : 250}ms` } as CSSProperties}
-        >
-          {place === 1 && (
-            <svg className="gpf-trophy" viewBox="0 0 40 40" aria-label="Troféu">
-              <path d="M10 6h20v8a10 10 0 0 1-20 0Z" fill="#ffd23f" stroke="#1b1535" strokeWidth="3" />
-              <path d="M10 9H5a5 5 0 0 0 5 7M30 9h5a5 5 0 0 1-5 7" fill="none" stroke="#1b1535" strokeWidth="3" />
-              <path d="M17 24h6v6h-6Z" fill="#ffd23f" stroke="#1b1535" strokeWidth="3" />
-              <path d="M12 34h16" stroke="#1b1535" strokeWidth="4" strokeLinecap="round" />
-            </svg>
-          )}
-          <span className="gpf-fox" style={{ background: r.color }} aria-hidden="true" />
-          <b className="gpf-pod-name">{r.name}</b>
-          <span className="gpf-block">
-            <i>{place}º</i>
-          </span>
-        </li>
-      ))}
-    </ol>
-  );
-}
+const CONFETTI = ['#ff7d26', '#2f5bff', '#ffd23a', '#f4f6fb', '#29c26a', '#e8343c'];
 
 /**
- * Pódio do Fox GP (treino e sala): os três primeiros (o campeão com o troféu), a tabela com posição, piloto e tempo (o
- * vencedor com o total, os outros com a diferença; DNF para quem não chegou) e os destaques: volta mais rápida e
- * ultrapassagens com o turbo da cauda.
+ * Pódio do Fox GP (spec 079, 3.5), no tema do artifact: o pódio em 3D com os carros dos três primeiros (o campeão com o
+ * troféu), confetes, a tabela completa (vencedor com o tempo total, os outros com a diferença, DNF para quem não chegou) e
+ * os destaques: volta mais rápida e ultrapassagens com o turbo da cauda. Treino: correr de novo ou voltar. Sala: revanche
+ * por votação, sair, e o líder encerra a sala.
  */
 export function GpFinal({
   rows,
@@ -72,100 +42,158 @@ export function GpFinal({
   passes,
   mode,
 }: {
-  /** Do 1º ao último. */
   rows: GpFinalRow[];
-  /** "Nome · 0:41.234" */
   fastest: string;
-  /** "Nome · 3" */
   passes: string;
   mode: GpFinalMode;
 }) {
   const winner = rows[0];
   const meIdx = rows.findIndex((r) => r.you);
   const me = meIdx >= 0 ? rows[meIdx] : undefined;
-  const tone: FinalTone = !me ? 'watch' : meIdx === 0 && !me.dnf ? 'win' : 'lose';
-  const title =
-    tone === 'win'
-      ? 'Você venceu!'
-      : tone === 'lose'
-        ? me?.dnf
-          ? 'Não terminou'
-          : `Você chegou em ${meIdx + 1}º`
-        : `${winner?.name ?? 'Alguém'} venceu`;
-  const sub =
-    tone === 'win'
-      ? `Primeiro na linha, em ${lapClock(winner?.ms ?? 0)}.`
-      : `${winner?.name ?? 'Alguém'} venceu em ${lapClock(winner?.ms ?? 0)}.`;
+  const won = !!me && meIdx === 0 && !me.dnf;
+  const title = won ? 'Vitória' : me?.dnf ? 'Não terminou' : me ? `${meIdx + 1}º lugar` : `${winner?.name ?? ''} venceu`;
   const lead = winner?.ms ?? 0;
-
+  const reduced = useMemo(
+    () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches,
+    [],
+  );
+  const card = useRef<HTMLDivElement>(null);
+  useEffect(() => card.current?.focus({ preventScroll: true }), []);
+  const [sureClose, setSureClose] = useState(false);
+  const room = mode.kind === 'room' ? mode.room : null;
+  const votes = room ? room.members.filter((m) => m.connected && m.rematch).length : 0;
+  const here = room ? room.members.filter((m) => m.connected).length : 0;
   return (
-    <FinalShell
-      theme="gp"
-      tone={tone}
-      kicker={`Fox GP · Circuito da Toca · ${rows.length} ${rows.length === 1 ? 'raposa' : 'raposas'}`}
-      title={title}
-      sub={sub}
-      label="Resultado do Fox GP"
-      testId="gp-final"
-      footer={
-        mode.kind === 'room' ? (
-          <RematchActions room={mode.room} />
-        ) : (
-          <TrainingActions onAgain={mode.onAgain} onExit={mode.onExit} />
-        )
-      }
-      deco={Array.from({ length: 8 }, (_, i) => (
-        <i key={i} className="gpf-flag" style={{ '--k': i } as CSSProperties} />
-      ))}
-    >
-      <div className={`fz-cols${mode.kind === 'room' ? '' : ' is-solo'}`}>
-        <div className="fz-main">
-          {rows.length >= 2 && <Podium rows={rows} />}
-
-          <ul className="fz-stats" aria-label="Destaques">
-            <li style={{ '--d': '300ms' } as CSSProperties}>
-              <small>Volta mais rápida</small>
-              <b data-testid="gp-final-fastest">{fastest}</b>
-            </li>
-            <li style={{ '--d': '420ms' } as CSSProperties}>
-              <small>Ultrapassagens com o turbo</small>
-              <b>{passes}</b>
-            </li>
-          </ul>
-
-          <ol className="fz-list" aria-label="Classificação">
-            {rows.map((r, i) => (
-              <li
-                key={r.id}
-                className={`fz-row${r.you ? ' is-you' : ''}${i === 0 ? ' is-first' : ''}`}
-                style={{ '--d': `${400 + i * 70}ms` } as CSSProperties}
-                data-testid={`gp-final-row-${i}`}
-              >
-                <span className="fz-pos">{i + 1}º</span>
-                <span className="fz-dot" style={{ background: r.color }} aria-hidden="true" />
-                <span className="fz-name">
-                  {r.name}
-                  {r.you && r.name.toLowerCase() !== 'você' && <small>você</small>}
-                  {r.bot && <small className="is-bot">bot</small>}
-                </span>
-                <span className="fz-val mono">
-                  {r.dnf || r.ms === null
-                    ? 'DNF'
-                    : i === 0
-                      ? lapClock(r.ms)
-                      : `+${((r.ms - lead) / 1000).toFixed(3)}`}
-                </span>
+    <div className="gpf" role="dialog" aria-modal="true" aria-label="Resultado do Fox GP" data-testid="gp-final" tabIndex={-1} ref={card}>
+      <div className="gpf-stripes" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+      </div>
+      <div className="gpf-flag gp-checker" aria-hidden="true" />
+      {!reduced && (
+        <div className="gpf-confetti" aria-hidden="true">
+          {Array.from({ length: 36 }, (_, i) => (
+            <i
+              key={i}
+              style={
+                {
+                  '--x': `${(i * 37) % 100}%`,
+                  '--d': `${(i * 0.17) % 2.4}s`,
+                  '--t': `${2.6 + ((i * 7) % 10) / 6}s`,
+                  '--r': `${(i * 53) % 360}deg`,
+                  background: CONFETTI[i % CONFETTI.length],
+                } as CSSProperties
+              }
+            />
+          ))}
+        </div>
+      )}
+      <div className="gpf-left">
+        <div className="gpf-head">
+          <span className="gp-kicker">Bandeirada · Circuito da Marina</span>
+          <h1 className="gp-title gpf-title">
+            {title}
+            {won && <span>!</span>}
+          </h1>
+        </div>
+        <div className="gpf-podium">
+          <GpPodium3D
+            top={rows.slice(0, 3).map((r) => ({ name: r.name, fur: r.fur ?? 0xff7d26, paint: r.paint ?? null }))}
+          />
+          <ol className="gpf-podium-names" aria-label="Pódio">
+            {rows.slice(0, 3).map((r, i) => (
+              <li key={r.id} className={`p${i + 1}`} style={{ '--m': GP_THEME.medals[i] } as CSSProperties}>
+                <b>{i + 1}º</b> {r.name}
               </li>
             ))}
           </ol>
         </div>
-
-        {mode.kind === 'room' && (
-          <aside>
-            <RematchPanel room={mode.room} />
-          </aside>
-        )}
       </div>
-    </FinalShell>
+      <div className="gpf-right">
+        <div className="gp-tpanel gpf-table" role="table" aria-label="Classificação final">
+          <div className="gpf-tr gpf-th" role="row">
+            <span role="columnheader">Pos</span>
+            <span role="columnheader">Piloto</span>
+            <span role="columnheader">Tempo</span>
+          </div>
+          {rows.map((r, i) => (
+            <div
+              key={r.id}
+              role="row"
+              className={`gpf-tr${r.you ? ' is-you' : ''}`}
+              style={{ '--d': `${300 + i * 70}ms`, '--m': GP_THEME.medals[i] ?? GP_THEME.muted } as CSSProperties}
+              data-testid={`gp-final-row-${i}`}
+            >
+              <span role="cell" className="gpf-pos">
+                {i + 1}
+              </span>
+              <span role="cell" className="gpf-name">
+                <i style={{ background: r.color }} aria-hidden="true" />
+                {r.name}
+                {r.bot && <small>bot</small>}
+              </span>
+              <span role="cell" className="gpf-time gpn">
+                {r.dnf || r.ms === null ? 'DNF' : i === 0 ? lapClock(r.ms) : `+${((r.ms - lead) / 1000).toFixed(3)}`}
+              </span>
+            </div>
+          ))}
+        </div>
+        <div className="gpf-stats">
+          <div className="gp-tpanel">
+            <span className="gp-kicker">Volta mais rápida</span>
+            <b data-testid="gp-final-fastest">{fastest}</b>
+          </div>
+          <div className="gp-tpanel">
+            <span className="gp-kicker">Turbos da cauda</span>
+            <b>{passes === 'ninguém' ? 'Nenhuma ultrapassagem' : `${passes} ultrapassagens`}</b>
+          </div>
+        </div>
+        {room && (
+          <p className="gpf-votes" role="status">
+            Revanche: {votes} de {here} {room.message ? `· ${room.message}` : ''}
+          </p>
+        )}
+        <div className="gpf-btns">
+          {mode.kind === 'training' ? (
+            <>
+              <button type="button" className="gp-tbtn is-ghost" onClick={mode.onExit} data-testid="final-exit">
+                Voltar
+              </button>
+              {mode.onAgain && (
+                <button type="button" className="gp-tbtn is-primary" onClick={mode.onAgain} data-testid="final-again">
+                  Correr de novo
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              <button type="button" className="gp-tbtn is-ghost" onClick={room!.onLeave} data-testid="final-leave">
+                Sair da sala
+              </button>
+              <button
+                type="button"
+                className="gp-tbtn is-primary"
+                aria-pressed={room!.voted}
+                onClick={() => room!.onVote(!room!.voted)}
+                data-testid="final-rematch"
+              >
+                {room!.voted ? 'Esperando a revanche' : 'Revanche'}
+              </button>
+              {room!.isHost && (
+                <button
+                  type="button"
+                  className={`gp-tbtn is-ghost${sureClose ? ' is-sure' : ''}`}
+                  onClick={() => (sureClose ? room!.onClose() : setSureClose(true))}
+                  onBlur={() => setSureClose(false)}
+                >
+                  {sureClose ? 'Toque de novo para encerrar' : 'Encerrar a sala'}
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

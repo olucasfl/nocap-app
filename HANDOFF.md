@@ -166,6 +166,8 @@ Fut Fox fluidez online (26/10/2026): mortal com impulso 6,4 (`Math.max` com a ve
 
 **Fox GP (10/11/2026, spec 078, branch `feat/fox-gp`, não está na `main`):** corrida de F1 das raposas no Fox Cap! (aba Offline, "Fox GP Treino"; e na sala trocável). Uma pista (Circuito da Toca), classificação de 1 volta, grid, semáforo, 3 voltas, turbo da cauda pelo vácuo, pneus e box, regra dos 30 s, pódio. Sem ranking. Testes: motor (`foxgp.test.ts`), sala (`foxgp-room.engine.test.ts`, `foxgp-room.integration.test.ts`), web (`format.test.ts`, `e2e/foxgp.spec.ts`, `e2e/foxgp-online.spec.ts` com E2E_ROOMS=1). **Falta:** calibrar os números [AJUSTAR] em `packages/games/src/foxgp/constants.ts` (o box hoje custa ~7 s e o pneu gasto só ~1 a 2 s por volta para os bots), jogar com 2+ aparelhos e no celular real.
 
+**Fox GP, atualização (10/11/2026, spec 079, branch `feat/fox-gp`):** feito tudo do documento de atualização (detalhes na spec). **Pendente:** o teste `e2e/foxgp-online.spec.ts` (duas janelas) parou na troca para o Fox GP na sala: investigar (servidor de teste antigo na porta 3340 ou erro na troca) e rodar até o fim. Também jogar com aparelhos reais e calibrar os [AJUSTAR].
+
 ## Conexão das salas (01/11/2026)
 
 - Bug "RECONECTANDO À SALA..." travado: depois de uma queda a referência da conexão morta continuava em `room` e a reconexão achava que já estava conectada (nunca tentava). Agora `onLeave` zera `room` antes de reconectar; só uma reconexão por vez; tentativas logo de cara, pausas crescentes, acordadas ao voltar para o app/internet; sala que não existe mais encerra rápido com aviso.

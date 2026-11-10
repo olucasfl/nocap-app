@@ -26,7 +26,8 @@ import type { BolaSetup } from '../bola/BolaPlay';
 import { DesmoronaPicker } from './DesmoronaPicker';
 import { PingPicker } from '../pingpong/PingPicker';
 import { GpPicker } from '../foxgp/GpPicker';
-import { GP_FURS } from '../foxgp/GpPlay';
+import { GpHome } from '../foxgp/GpHome';
+import { loadGarage } from '../foxgp/garage';
 import type { PpBotName } from '@nocap/games';
 import '@/screens/account.css';
 import '@/screens/room.css';
@@ -66,7 +67,6 @@ export function FoxCapPage() {
   const [bots, setBots] = useState(5);
   const [pingLevel, setPingLevel] = useState<PpBotName>('medio');
   const [gpBots, setGpBots] = useState(5);
-  const [gpColor, setGpColor] = useState<number>(GP_FURS[0]!);
   const [round, setRound] = useState(0);
   /** Tela própria do jogo aberta (Jogar abre a tela do jogo, não a partida). Vem do endereço, para voltar sempre para ela. */
   const hub: LandingGame | null = wanted.jogo ?? null;
@@ -123,7 +123,8 @@ export function FoxCapPage() {
           <GpPlay
             key={round}
             bots={gpBots}
-            color={gpColor}
+            color={loadGarage().fur}
+            paint={loadGarage().paint}
             onExit={() => setFlow(null)}
             onAgain={() => setRound((r) => r + 1)}
             onOfflineInvite={goFriends}
@@ -169,7 +170,29 @@ export function FoxCapPage() {
 
   return (
     <Page>
-      {hub && (!flow || flow.endsWith('-pick')) && (
+      {hub === 'foxgp' && (!flow || flow.endsWith('-pick')) && (
+        <GpHome
+          onRace={offline}
+          onHelp={() => setHelp('foxgp')}
+          onExit={closeHub}
+          start={wanted.tela === 'amigos' ? 'friends' : 'main'}
+          room={{
+            busy: entry.busy,
+            error: entry.error,
+            clearError: entry.clearError,
+            create: () => {
+              try {
+                sessionStorage.setItem('cfx-new-room', 'foxgp');
+              } catch {
+                /* sem armazenamento: o líder escolhe o jogo na sala */
+              }
+              void entry.create('foxcap');
+            },
+            join: (c) => void entry.join(c),
+          }}
+        />
+      )}
+      {hub && hub !== 'foxgp' && (!flow || flow.endsWith('-pick')) && (
         <GameLanding
           game={hub}
           onOffline={offline}
@@ -362,9 +385,7 @@ export function FoxCapPage() {
       {flow === 'gp-pick' && (
         <GpPicker
           bots={gpBots}
-          color={gpColor}
           onBots={setGpBots}
-          onColor={setGpColor}
           onStart={() => setFlow('gp-play')}
           onCancel={() => setFlow(null)}
         />

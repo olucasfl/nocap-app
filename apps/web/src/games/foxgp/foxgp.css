@@ -1,9 +1,9 @@
-/* Fox GP (spec 078): tela cheia da corrida, HUD, botões de toque e a escolha do treino. Só transform e opacity animam. */
+/* Fox GP (spec 079): partida em tela cheia com a HUD do artifact (tokens em theme.css). Só transform e opacity animam. */
 .gp-screen {
   position: fixed;
   inset: 0;
   z-index: 40;
-  background: #8fd8ff;
+  background: var(--gp-bg);
 }
 .gp-play {
   touch-action: none;
@@ -12,8 +12,9 @@
   overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
-  color: #1b1535;
-  font-family: var(--font-display, system-ui);
+  color: var(--gp-text);
+  font-family: var(--gp-body);
+  --hud-pad: max(16px, min(32px, 2.2vw));
 }
 .gp-canvas {
   position: absolute;
@@ -22,335 +23,766 @@
   height: 100%;
   display: block;
 }
+.gp-play .gpn {
+  font-variant-numeric: tabular-nums;
+}
 
-/* ---- topo: posição, volta, tempo e menu ---- */
-.gp-top {
+/* ---- em cima, à esquerda: posição, volta, tempo, setores ---- */
+.gpx-tl {
   position: absolute;
-  top: max(10px, env(safe-area-inset-top));
-  left: max(10px, env(safe-area-inset-left));
-  right: max(10px, env(safe-area-inset-right));
+  top: max(var(--hud-pad), env(safe-area-inset-top));
+  left: max(var(--hud-pad), env(safe-area-inset-left));
   display: flex;
-  gap: 8px;
-  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 10px;
+  max-width: calc(100% - 360px);
   pointer-events: none;
 }
-.gp-pill {
-  display: grid;
-  align-content: center;
-  padding: 4px 12px 5px;
-  border: 3px solid #1b1535;
-  border-radius: 12px;
-  background: #fff;
-  box-shadow: 0 3px 0 #1b1535;
-  font: 700 14px/1.05 var(--font-display, system-ui);
+.gpx-box {
+  background: var(--gp-hud);
+  padding: 10px 18px 12px;
 }
-.gp-pill small {
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  opacity: 0.7;
+.gpx-pos {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
 }
-.gp-pill b {
+.gpx-pos b {
+  font-family: var(--gp-display);
+  font-weight: 900;
+  font-style: italic;
+  font-size: 64px;
+  line-height: 0.9;
+}
+.gpx-pos span {
+  font-family: var(--gp-display);
+  font-weight: 700;
+  font-size: 24px;
+  color: var(--gp-muted);
+}
+.gpx-cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+}
+.gpx-cell small {
+  font-size: 12px;
+  color: var(--gp-muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.gpx-cell b {
+  font-family: var(--gp-display);
+  font-weight: 800;
+  font-size: 32px;
+  line-height: 1;
+}
+.gpx-cell b span {
+  color: var(--gp-muted);
+}
+.gpx-cell b.is-small {
   font-size: 22px;
 }
-.gp-pos {
-  background: #ffd23f;
+.gpx-cell.is-live {
+  box-shadow: inset 4px 0 0 var(--gp-accent);
 }
-.gp-pos b {
-  font-size: 26px;
+.gpx-cell.is-live b {
+  color: var(--gp-accent-soft);
 }
-.gp-clock b {
-  font-size: 18px;
+.gpx-sectors {
+  flex-basis: 100%;
+  display: flex;
+  gap: 4px;
 }
-.gp-top-end {
-  margin-left: auto;
+.gpx-sector {
   display: flex;
   gap: 8px;
-  pointer-events: auto;
+  align-items: baseline;
+  padding: 4px 10px;
+  background: var(--gp-hud);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gp-muted);
+  border-bottom: 3px solid var(--gp-line);
+}
+.gpx-sector b {
+  font-family: var(--gp-display);
+  font-size: 16px;
+  color: var(--gp-text);
+}
+.gpx-sector.is-best {
+  border-color: #b14dff;
+}
+.gpx-sector.is-pb {
+  border-color: var(--gp-green);
+}
+.gpx-sector.is-slow {
+  border-color: var(--gp-yellow);
 }
 
-/* ---- classificação ao vivo ---- */
-.gp-board {
+/* ---- em cima, à direita: câmera e menu; classificação ---- */
+.gpx-tools {
   position: absolute;
-  top: calc(max(10px, env(safe-area-inset-top)) + 62px);
-  left: max(10px, env(safe-area-inset-left));
-  margin: 0;
-  padding: 4px;
-  list-style: none;
-  width: 168px;
-  border: 3px solid #1b1535;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.92);
-  pointer-events: none;
-  font: 700 12px/1.2 var(--font-display, system-ui);
+  top: max(var(--hud-pad), env(safe-area-inset-top));
+  right: max(var(--hud-pad), env(safe-area-inset-right));
+  display: flex;
+  gap: 8px;
 }
-.gp-board li {
-  display: grid;
-  grid-template-columns: 16px 10px minmax(0, 1fr) auto;
-  gap: 5px;
+.gpx-tool {
+  display: flex;
   align-items: center;
-  padding: 2px 4px;
-  border-radius: 6px;
+  gap: 8px;
+  height: 44px;
+  padding: 0 14px;
+  border: 2px solid var(--gp-line-2);
+  background: var(--gp-hud);
+  color: var(--gp-text);
+  font-family: var(--gp-display);
+  font-weight: 700;
+  font-style: italic;
+  font-size: 18px;
+  text-transform: uppercase;
+  cursor: pointer;
 }
-.gp-board li.is-you {
-  background: #ffd23f;
+.gpx-tool:focus-visible {
+  outline: 3px solid var(--gp-accent-soft);
+  outline-offset: 2px;
 }
-.gp-board li.is-out {
+.gpx-board {
+  position: absolute;
+  top: calc(max(var(--hud-pad), env(safe-area-inset-top)) + 56px);
+  right: max(var(--hud-pad), env(safe-area-inset-right));
+  width: 280px;
+  margin: 0;
+  padding: 10px 0 8px;
+  list-style: none;
+  background: var(--gp-hud);
+  pointer-events: none;
+}
+.gpx-board li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 34px;
+  padding: 0 16px;
+}
+.gpx-board li.gpx-board-h {
+  height: 24px;
+  font-size: 12px;
+  color: var(--gp-muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.gpx-board li.is-you {
+  background: var(--gp-accent-bg);
+}
+.gpx-board li.is-you .gpx-board-name,
+.gpx-board li.is-you .gpx-board-pos {
+  color: var(--gp-accent-soft);
+}
+.gpx-board li.is-out {
   opacity: 0.45;
 }
-.gp-board i {
-  width: 10px;
-  height: 10px;
-  border: 2px solid #1b1535;
-  border-radius: 50%;
+.gpx-board-pos {
+  width: 18px;
+  font-family: var(--gp-display);
+  font-weight: 800;
+  font-size: 19px;
+  color: var(--gp-muted);
 }
-.gp-board-name {
+.gpx-board i {
+  width: 6px;
+  height: 20px;
+}
+.gpx-board-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  font-size: 15px;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-.gp-board-gap {
-  font-size: 11px;
+.gpx-board-gap {
+  font-size: 13px;
+  color: var(--gp-text-3);
 }
 
-/* ---- minimapa ---- */
-.gp-mini {
+/* ---- embaixo: minimapa (esquerda), turbo (meio), velocidade (direita) ---- */
+.gpx-mini {
   position: absolute;
-  top: calc(max(10px, env(safe-area-inset-top)) + 62px);
-  right: max(10px, env(safe-area-inset-right));
-  width: 150px;
-  height: 125px;
-  border: 3px solid #1b1535;
-  border-radius: 12px;
-  background: rgba(98, 194, 90, 0.85);
+  left: max(var(--hud-pad), env(safe-area-inset-left));
+  bottom: max(var(--hud-pad), env(safe-area-inset-bottom));
+  width: 240px;
+  height: 200px;
+  padding: 10px;
+  box-sizing: border-box;
+  background: var(--gp-hud);
   pointer-events: none;
 }
+.gpx-mini canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.gpx-turbo {
+  position: absolute;
+  left: 50%;
+  bottom: max(var(--hud-pad), env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: min(420px, 34vw);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+.gpx-turbo-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px;
+  background: var(--gp-hud);
+  color: var(--gp-text-3);
+  font-family: var(--gp-display);
+  font-weight: 800;
+  font-style: italic;
+  font-size: 19px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.gpx-turbo[data-full='1'] .gpx-turbo-badge,
+.gpx-turbo[data-on='1'] .gpx-turbo-badge {
+  background: var(--gp-accent);
+  color: var(--gp-bg);
+}
+.gpx-turbo[data-full='1'] .gpx-turbo-badge {
+  animation: gpx-pulse 0.7s ease-in-out infinite alternate;
+}
+.gpx-segs {
+  width: 100%;
+  height: 14px;
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  box-sizing: border-box;
+  background: var(--gp-hud);
+}
+.gpx-segs i {
+  flex: 1;
+  background: var(--gp-line);
+}
+.gpx-segs i.is-on {
+  background: var(--gp-accent);
+}
+.gpx-speed {
+  position: absolute;
+  right: max(var(--hud-pad), env(safe-area-inset-right));
+  bottom: max(var(--hud-pad), env(safe-area-inset-bottom));
+  width: 280px;
+  padding: 16px 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--gp-hud);
+  pointer-events: none;
+}
+.gpx-speed-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.gpx-speed-top > small {
+  font-size: 12px;
+  color: var(--gp-muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.gpx-gear {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3px 12px;
+  border: 2px solid var(--gp-accent);
+}
+.gpx-gear small {
+  font-size: 10px;
+  color: var(--gp-muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.gpx-gear b {
+  font-family: var(--gp-display);
+  font-weight: 900;
+  font-size: 30px;
+  line-height: 1;
+}
+.gpx-speed-num {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.gpx-speed-num b {
+  font-family: var(--gp-display);
+  font-weight: 900;
+  font-style: italic;
+  font-size: 72px;
+  line-height: 0.85;
+}
+.gpx-speed-num span {
+  font-family: var(--gp-display);
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--gp-muted);
+}
+.gpx-rpm {
+  display: flex;
+  gap: 3px;
+  height: 10px;
+}
+.gpx-rpm i {
+  flex: 1;
+  background: var(--gp-line);
+}
+.gpx-rpm i.g {
+  background: var(--gp-green);
+}
+.gpx-rpm i.y {
+  background: var(--gp-yellow);
+}
+.gpx-rpm i.o {
+  background: var(--gp-accent);
+}
+.gpx-tyre {
+  display: grid;
+  gap: 4px;
+}
+.gpx-tyre small {
+  font-size: 11px;
+  color: var(--gp-muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.gpx-tyre span {
+  position: relative;
+  height: 6px;
+  overflow: hidden;
+  background: var(--gp-line);
+}
+.gpx-tyre i {
+  position: absolute;
+  inset: 0;
+  transform-origin: left;
+  background: var(--gp-green);
+}
+.gpx-tyre[data-low='1'] i {
+  background: var(--gp-red);
+}
 
-/* ---- avisos do meio da tela ---- */
-.gp-center {
+/* ---- avisos e momentos ---- */
+.gpx-startlap {
+  position: absolute;
+  left: 50%;
+  bottom: calc(max(var(--hud-pad), env(safe-area-inset-bottom)) + 76px);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: gpx-pulse 0.9s ease-in-out infinite alternate;
+}
+.gpx-startlap kbd {
+  padding: 0 8px;
+  border: 2px solid var(--gp-bg);
+  font-family: var(--gp-body);
+  font-style: normal;
+  font-size: 15px;
+}
+.gpx-center {
   position: absolute;
   left: 50%;
   top: 40%;
   transform: translate(-50%, -50%);
   display: grid;
   justify-items: center;
-  color: #fff;
-  text-shadow:
-    0 5px 0 #1b1535,
-    0 0 24px rgba(0, 0, 0, 0.35);
   pointer-events: none;
 }
-.gp-center small {
-  font: 800 22px var(--font-display, system-ui);
+.gpx-center small {
+  font-family: var(--gp-display);
+  font-weight: 800;
+  font-style: italic;
+  font-size: 26px;
   text-transform: uppercase;
+  padding: 2px 14px;
+  background: var(--gp-accent);
+  color: var(--gp-bg);
 }
-.gp-center b {
-  font: 900 min(24vw, 140px) / 1 var(--font-display, system-ui);
+.gpx-center b {
+  font-family: var(--gp-display);
+  font-weight: 900;
+  font-style: italic;
+  font-size: min(24vw, 160px);
+  line-height: 1;
+  text-shadow: 0 6px 0 var(--gp-bg);
 }
-.gp-note {
+.gpx-note {
   position: absolute;
   left: 50%;
-  top: calc(max(10px, env(safe-area-inset-top)) + 62px);
+  top: calc(max(var(--hud-pad), env(safe-area-inset-top)) + 110px);
   transform: translateX(-50%);
-  max-width: min(440px, 60%);
-  padding: 8px 14px;
-  border: 3px solid #1b1535;
-  border-radius: 12px;
-  background: #fff;
-  font: 700 14px var(--font-display, system-ui);
+  max-width: min(520px, 50%);
+  padding: 10px 18px;
+  background: var(--gp-hud);
+  border-left: 4px solid var(--gp-accent);
+  font-weight: 600;
+  font-size: 15px;
   text-align: center;
   pointer-events: none;
+  animation: gpx-in 0.3s var(--gp-ease) both;
 }
-.gp-dnf,
-.gp-pit {
+.gpx-dnf,
+.gpx-pitlane {
   position: absolute;
   left: 50%;
-  top: calc(max(10px, env(safe-area-inset-top)) + 112px);
+  top: calc(max(var(--hud-pad), env(safe-area-inset-top)) + 60px);
   transform: translateX(-50%);
-  padding: 6px 14px;
-  border: 3px solid #1b1535;
-  border-radius: 999px;
-  background: #ff5a4d;
+  padding: 6px 16px;
+  background: var(--gp-red);
   color: #fff;
-  font: 700 14px var(--font-display, system-ui);
+  font-weight: 700;
+  font-size: 14px;
   white-space: nowrap;
   pointer-events: none;
 }
-.gp-pit {
-  background: #ffd23f;
-  color: #1b1535;
-  top: 40%;
-  font-size: 20px;
+.gpx-pitlane {
+  background: var(--gp-yellow);
+  color: var(--gp-bg);
 }
-
-/* ---- grid e luzes ---- */
-.gp-grid {
+.gpx-pit {
+  position: absolute;
+  left: 50%;
+  top: 34%;
+  transform: translate(-50%, -50%);
+  width: min(380px, 80vw);
+  display: grid;
+  gap: 8px;
+  padding: 18px 22px;
+  background: var(--gp-hud);
+  border-top: 4px solid var(--gp-yellow);
+  pointer-events: none;
+  animation: gpx-in 0.35s var(--gp-ease) both;
+}
+.gpx-pit small {
+  font-size: 12px;
+  color: var(--gp-muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.gpx-pit b {
+  font-family: var(--gp-display);
+  font-weight: 900;
+  font-style: italic;
+  font-size: 44px;
+  line-height: 0.9;
+  text-transform: uppercase;
+  color: var(--gp-yellow);
+}
+.gpx-pit-bar {
+  position: relative;
+  height: 12px;
+  overflow: hidden;
+  background: var(--gp-line);
+}
+.gpx-pit-bar i {
+  position: absolute;
+  inset: 0;
+  transform-origin: left;
+  background: var(--gp-yellow);
+}
+.gpx-pit-text {
+  font-weight: 600;
+  color: var(--gp-text-3);
+}
+.gpx-grid {
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: min(380px, 92vw);
+  width: min(460px, 92vw);
   max-height: 80dvh;
   overflow-y: auto;
-  padding: 14px;
-  border: 4px solid #1b1535;
-  border-radius: 16px;
-  background: #fff;
-  box-shadow: 0 5px 0 #1b1535;
-  animation: gp-pop 0.25s ease-out both;
+  background: var(--gp-panel);
+  border: 1px solid var(--gp-line);
+  animation: gpx-in 0.4s var(--gp-ease) both;
 }
-.gp-grid h2 {
-  margin: 0 0 8px;
-  font: 800 20px var(--font-display, system-ui);
+.gpx-grid-h {
+  padding: 16px 20px 10px;
+  border-bottom: 1px solid var(--gp-line);
+}
+.gpx-grid-h small {
+  font-size: 13px;
+  color: var(--gp-muted);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
-.gp-grid ol {
+.gpx-grid-h h2 {
+  margin: 4px 0 0;
+  font-family: var(--gp-display);
+  font-weight: 900;
+  font-style: italic;
+  font-size: 40px;
+  line-height: 0.9;
+  text-transform: uppercase;
+}
+.gpx-grid ol {
   margin: 0;
   padding: 0;
   list-style: none;
-  display: grid;
-  gap: 4px;
 }
-.gp-grid li {
+.gpx-grid li {
   display: grid;
-  grid-template-columns: 28px 14px minmax(0, 1fr) auto;
-  gap: 8px;
+  grid-template-columns: 34px 6px minmax(0, 1fr) auto;
+  gap: 12px;
   align-items: center;
-  padding: 4px 6px;
-  border-radius: 8px;
-  font: 700 15px var(--font-display, system-ui);
+  height: 44px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--gp-line-3);
 }
-.gp-grid li.is-you {
-  background: #ffd23f;
+.gpx-grid li.is-you {
+  background: var(--gp-accent-bg);
 }
-.gp-grid li i {
-  width: 14px;
-  height: 14px;
-  border: 2px solid #1b1535;
-  border-radius: 50%;
+.gpx-grid-pos {
+  font-family: var(--gp-display);
+  font-weight: 900;
+  font-style: italic;
+  font-size: 24px;
+  color: var(--gp-muted);
 }
-.gp-grid li b {
+.gpx-grid li i {
+  height: 22px;
+}
+.gpx-grid li b {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-.gp-lights {
+.gpx-lights {
   position: absolute;
   left: 50%;
-  top: 26%;
+  top: 22%;
   transform: translateX(-50%);
   display: flex;
-  gap: 10px;
-  padding: 12px 16px;
-  border: 4px solid #1b1535;
-  border-radius: 16px;
-  background: #1b1535;
+  gap: 12px;
+  padding: 14px 18px;
+  background: var(--gp-bg);
+  border: 2px solid var(--gp-line-2);
   pointer-events: none;
 }
-.gp-lights i {
+.gpx-lights i {
   position: relative;
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  background: #3a2f45;
+  background: #2a2130;
 }
-.gp-lights i::after {
+.gpx-lights i::after {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: 50%;
   background: #ff2a2a;
-  box-shadow: 0 0 18px #ff2a2a;
+  box-shadow: 0 0 22px #ff2a2a;
   opacity: 0;
-  transition: opacity 0.08s;
+  transition: opacity 80ms;
 }
-.gp-lights i.is-on::after {
+.gpx-lights i.is-on::after {
   opacity: 1;
 }
-
-/* ---- painel de baixo: velocidade, turbo e pneus ---- */
-.gp-dash {
+/* início da volta lançada: faixa quadriculada que passa e o título */
+.gpx-lapflash {
   position: absolute;
   left: 50%;
-  bottom: max(12px, env(safe-area-inset-bottom));
+  top: 30%;
+  transform: translate(-50%, -50%);
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  pointer-events: none;
+  animation: gpx-flash 2.2s var(--gp-ease) both;
+}
+.gpx-lapflash small {
+  font-size: 14px;
+  color: var(--gp-text);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.gpx-lapflash b {
+  font-family: var(--gp-display);
+  font-weight: 900;
+  font-style: italic;
+  font-size: clamp(48px, 9vw, 110px);
+  line-height: 0.9;
+  text-transform: uppercase;
+  text-shadow: 0 5px 0 var(--gp-bg);
+}
+.gpx-lapflash-go {
+  padding: 4px 14px;
+  background: var(--gp-accent);
+  color: var(--gp-bg);
+  font-family: var(--gp-display);
+  font-weight: 800;
+  font-style: italic;
+  font-size: 20px;
+  text-transform: uppercase;
+}
+.gpx-lapflash-bar {
+  width: 340px;
+  height: 18px;
+  animation: gpx-slide 1.2s var(--gp-ease) both;
+}
+@keyframes gpx-flash {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.85);
+  }
+  12% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.04);
+  }
+  20% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -60%) scale(1);
+  }
+}
+@keyframes gpx-slide {
+  from {
+    transform: translateX(-60px) scaleX(0.2);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes gpx-pulse {
+  from {
+    opacity: 0.82;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes gpx-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.gpx-spec {
+  position: absolute;
+  left: 50%;
+  bottom: calc(max(var(--hud-pad), env(safe-area-inset-bottom)) + 4px);
   transform: translateX(-50%);
   display: flex;
-  gap: 8px;
-  align-items: stretch;
-  padding: 6px 8px;
-  border: 3px solid #1b1535;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 3px 0 #1b1535;
-  pointer-events: none;
-}
-.gp-speed {
-  display: grid;
-  grid-template-columns: auto auto;
-  grid-template-rows: auto auto;
-  column-gap: 6px;
-  align-items: end;
-  min-width: 84px;
-}
-.gp-speed b {
-  font-size: 26px;
-  line-height: 1;
-}
-.gp-speed small {
-  grid-row: 2;
-  font-size: 10px;
-  opacity: 0.7;
-}
-.gp-gear {
-  grid-row: 1 / 3;
-  grid-column: 2;
-  align-self: center;
-  width: 30px;
-  height: 30px;
-  display: grid;
-  place-items: center;
-  border: 3px solid #1b1535;
-  border-radius: 8px;
-  background: #1b1535;
-  color: #fff;
-  font-size: 18px;
-}
-.gp-meter {
-  display: grid;
-  gap: 4px;
-  align-content: center;
-  width: 128px;
-}
-.gp-meter small {
-  font-size: 10px;
-  letter-spacing: 0.05em;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  background: var(--gp-hud);
+  font-weight: 600;
   white-space: nowrap;
 }
-.gp-meter span {
-  position: relative;
-  height: 12px;
-  border: 2px solid #1b1535;
-  border-radius: 999px;
-  overflow: hidden;
-  background: #e9e5f5;
+.gpx-spec button {
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--gp-line-2);
+  background: var(--gp-panel);
+  color: var(--gp-text);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
 }
-.gp-meter i {
+
+/* ---- transição entre etapas (faixas do tema que varrem a tela) ---- */
+.gpw {
   position: absolute;
   inset: 0;
-  transform-origin: left;
-  background: #4a8dff;
+  z-index: 55;
+  overflow: hidden;
+  pointer-events: none;
 }
-.gp-meter[data-full='1'] i {
-  background: #ff9d2e;
-  animation: gp-glow 0.6s ease-in-out infinite alternate;
+.gpw-band {
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  width: 34%;
+  transform: translateX(-140%) skewX(-18deg);
+  animation: gpw-sweep 1.2s var(--gp-ease) both;
 }
-.gp-meter[data-on='1'] i {
-  background: #ff5a4d;
+.gpw-band.b1 {
+  background: var(--gp-blue);
 }
-.gp-meter.is-tyre i {
-  background: #38d27a;
+.gpw-band.b2 {
+  background: var(--gp-accent);
+  animation-delay: 60ms;
+  width: 18%;
 }
-.gp-meter.is-tyre[data-low='1'] i {
-  background: #ff5a4d;
+.gpw-band.b3 {
+  background: var(--gp-bg);
+  animation-delay: 110ms;
+  width: 40%;
+}
+.gpw-band.b4 {
+  animation-delay: 150ms;
+  width: 8%;
+}
+.gpw-text {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--gp-display);
+  font-weight: 900;
+  font-style: italic;
+  font-size: clamp(40px, 8vw, 96px);
+  text-transform: uppercase;
+  color: var(--gp-text);
+  white-space: nowrap;
+  animation: gpw-text 1.2s var(--gp-ease) both;
+}
+@keyframes gpw-sweep {
+  0% {
+    transform: translateX(-140%) skewX(-18deg);
+  }
+  45%,
+  55% {
+    transform: translateX(120%) skewX(-18deg);
+  }
+  100% {
+    transform: translateX(420%) skewX(-18deg);
+  }
+}
+@keyframes gpw-text {
+  0%,
+  20% {
+    opacity: 0;
+    transform: translate(-60%, -50%);
+  }
+  40%,
+  70% {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-40%, -50%);
+  }
 }
 
 /* ---- botões de toque: direção à esquerda; acelerar, frear e turbo à direita ---- */
@@ -382,11 +814,11 @@
 .gp-pad {
   width: 74px;
   height: 74px;
-  border: 4px solid rgba(27, 21, 53, 0.9);
+  border: 2px solid var(--gp-line-2);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.72);
-  color: #1b1535;
-  font: 900 32px/1 var(--font-display, system-ui);
+  background: rgba(20, 26, 43, 0.72);
+  color: var(--gp-text);
+  font: 900 32px/1 var(--gp-display);
   touch-action: none;
   cursor: pointer;
 }
@@ -397,14 +829,17 @@
   grid-area: gas;
   width: 92px;
   height: 92px;
-  background: rgba(56, 210, 122, 0.82);
-  font-size: 11px;
+  background: rgba(41, 194, 106, 0.85);
+  color: var(--gp-bg);
+  font-size: 14px;
+  font-style: italic;
   text-transform: uppercase;
 }
 .gp-pad.is-brake {
   grid-area: brake;
-  background: rgba(255, 90, 77, 0.8);
-  font-size: 11px;
+  background: rgba(232, 52, 60, 0.85);
+  font-size: 14px;
+  font-style: italic;
   text-transform: uppercase;
 }
 /* o turbo fica logo acima do acelerador: dá para tocar com o mesmo polegar sem soltar o acelerador por muito tempo */
@@ -413,186 +848,72 @@
   justify-self: center;
   width: 64px;
   height: 64px;
-  background: rgba(233, 229, 245, 0.75);
-  font-size: 12px;
+  font-size: 13px;
+  font-style: italic;
   text-transform: uppercase;
 }
 .gp-pad.is-turbo[data-ready='1'] {
-  background: #ff9d2e;
-  animation: gp-glow 0.6s ease-in-out infinite alternate;
+  background: var(--gp-accent);
+  color: var(--gp-bg);
+  animation: gpx-pulse 0.6s ease-in-out infinite alternate;
 }
-/* com os botões de toque o painel sobe para não ficar embaixo deles */
-.gp-play:has(.gp-pads) .gp-dash {
+
+/* com toque: minimapa e velocidade sobem (os polegares ficam embaixo); a classificação encolhe */
+.gp-play[data-touch='1'] .gpx-mini {
   bottom: auto;
-  top: calc(max(10px, env(safe-area-inset-top)) + 62px);
+  top: calc(max(var(--hud-pad), env(safe-area-inset-top)) + 84px);
+  width: 160px;
+  height: 130px;
 }
-/* no celular o aviso vai para baixo, entre os botões, para não cobrir o carro (que fica no meio da tela) */
-.gp-play:has(.gp-pads) .gp-note {
-  top: auto;
-  bottom: max(16px, env(safe-area-inset-bottom));
-  max-width: min(320px, 42%);
-  font-size: 13px;
-}
-
-/* ---- assistindo ---- */
-.gp-spec {
-  position: absolute;
-  left: 50%;
-  bottom: max(18px, env(safe-area-inset-bottom));
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 14px;
-  border: 3px solid #1b1535;
-  border-radius: 999px;
-  background: #fff;
-  font: 700 15px var(--font-display, system-ui);
-  white-space: nowrap;
-}
-.gp-spec button {
-  width: 44px;
-  height: 44px;
-  border: 3px solid #1b1535;
-  border-radius: 50%;
-  background: #ffd23f;
-  font-size: 24px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-/* ---- escolha do treino ---- */
-.gp-pick {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  display: grid;
-  place-items: center;
-  padding: 16px;
-  background: rgba(10, 14, 36, 0.6);
-}
-.gp-pick-card {
-  width: min(460px, 100%);
-  max-height: calc(100dvh - 32px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 18px;
-  border: 4px solid #1b1535;
-  border-radius: 18px;
-  background: #fff;
-  color: #1b1535;
-  display: grid;
-  gap: 12px;
-}
-.gp-pick-card h2 {
-  margin: 0;
-  font: 800 22px var(--font-display, system-ui);
-  text-transform: uppercase;
-}
-.gp-pick-card h3 {
-  margin: 0;
-  font: 800 14px var(--font-display, system-ui);
-  text-transform: uppercase;
-  opacity: 0.75;
-}
-.gp-chips {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
+.gp-play[data-touch='1'] .gpx-speed {
+  bottom: auto;
+  top: calc(max(var(--hud-pad), env(safe-area-inset-top)) + 56px);
+  width: 190px;
+  padding: 10px 14px;
   gap: 6px;
 }
-.gp-chip {
-  min-height: 44px;
-  border: 3px solid #1b1535;
-  border-radius: 12px;
-  background: transparent;
-  color: inherit;
-  font: 800 18px var(--font-display, system-ui);
-  cursor: pointer;
+.gp-play[data-touch='1'] .gpx-speed-num b {
+  font-size: 44px;
 }
-.gp-chip.is-on {
-  background: #ff5a4d;
-  color: #fff;
+.gp-play[data-touch='1'] .gpx-board {
+  display: none;
 }
-.gp-colors {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+.gp-play[data-touch='1'] .gpx-turbo {
+  bottom: calc(max(var(--hud-pad), env(safe-area-inset-bottom)) + 4px);
+  width: min(300px, 34vw);
 }
-.gp-color {
-  width: 40px;
-  height: 40px;
-  border: 3px solid #1b1535;
-  border-radius: 50%;
-  cursor: pointer;
-}
-.gp-color.is-on {
-  outline: 4px solid #1b1535;
-  outline-offset: 3px;
-}
-.gp-chip:focus-visible,
-.gp-color:focus-visible {
-  outline: 3px solid #ffd23f;
-  outline-offset: 2px;
-}
-.gp-pick-btns {
-  display: flex;
-  gap: 10px;
-}
-.gp-btn {
-  flex: 1;
-  min-height: 48px;
-  border: 3px solid #1b1535;
-  border-radius: 12px;
-  background: #ff5a4d;
-  color: #fff;
-  font: 800 16px var(--font-display, system-ui);
-  text-transform: uppercase;
-  cursor: pointer;
-}
-.gp-btn.is-ghost {
-  background: #fff;
-  color: #1b1535;
+.gp-play[data-touch='1'] .gpx-startlap {
+  bottom: auto;
+  top: 58%;
 }
 
-@keyframes gp-glow {
-  from {
-    opacity: 0.75;
+/* telas baixas (celular deitado) e estreitas */
+@media (max-height: 520px) {
+  .gpx-pos b {
+    font-size: 40px;
   }
-  to {
-    opacity: 1;
+  .gpx-cell b {
+    font-size: 22px;
   }
-}
-@keyframes gp-pop {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -46%);
+  .gpx-box {
+    padding: 6px 12px 8px;
   }
-  to {
-    opacity: 1;
-    transform: translate(-50%, -50%);
+  .gpx-board li {
+    height: 26px;
   }
-}
-
-/* telas baixas (celular deitado): tudo mais compacto */
-@media (max-height: 460px) {
-  .gp-board {
-    width: 140px;
-    font-size: 11px;
-    top: calc(max(8px, env(safe-area-inset-top)) + 54px);
-  }
-  .gp-board li:nth-child(n + 6) {
+  .gpx-board li:nth-child(n + 7) {
     display: none;
   }
-  .gp-mini {
-    width: 112px;
-    height: 94px;
-    top: calc(max(8px, env(safe-area-inset-top)) + 54px);
+  .gpx-mini {
+    width: 170px;
+    height: 140px;
   }
-  .gp-pill b {
-    font-size: 18px;
+  .gpx-speed {
+    width: 210px;
+    padding: 10px 14px;
   }
-  .gp-pos b {
-    font-size: 20px;
+  .gpx-speed-num b {
+    font-size: 48px;
   }
   .gp-pad {
     width: 62px;
@@ -606,30 +927,119 @@
     width: 54px;
     height: 54px;
   }
-  .gp-lights i {
-    width: 32px;
-    height: 32px;
+  .gpx-lights i {
+    width: 34px;
+    height: 34px;
   }
 }
-/* celular em pé: a classificação some (o minimapa e a posição bastam) */
-@media (max-width: 560px) {
-  .gp-board {
+@media (max-width: 760px) {
+  .gpx-tl {
+    max-width: calc(100% - 170px);
+  }
+  .gpx-board {
     display: none;
   }
-  .gp-meter {
-    width: 92px;
-  }
-  .gp-clock small {
-    font-size: 9px;
+  .gpx-tool span {
+    display: none;
   }
 }
+
+/* ---- escolha do treino ---- */
+.gp-pick {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(11, 14, 23, 0.7);
+}
+.gp-pick-card {
+  width: min(460px, 100%);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 24px;
+  background: var(--gp-panel);
+  border: 1px solid var(--gp-line);
+  color: var(--gp-text);
+  font-family: var(--gp-body);
+  display: grid;
+  gap: 14px;
+}
+.gp-pick-card h2 {
+  margin: 0;
+  font-family: var(--gp-display);
+  font-weight: 900;
+  font-style: italic;
+  font-size: 34px;
+  text-transform: uppercase;
+}
+.gp-pick-card p {
+  margin: 0;
+  color: var(--gp-muted);
+}
+.gp-chips {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+.gp-chip {
+  min-height: 44px;
+  border: 2px solid var(--gp-line-2);
+  background: var(--gp-panel-2);
+  color: var(--gp-text);
+  font: italic 800 20px var(--gp-display);
+  cursor: pointer;
+}
+.gp-chip.is-on {
+  border-color: var(--gp-accent);
+  background: var(--gp-accent);
+  color: var(--gp-bg);
+}
+.gp-chip:focus-visible {
+  outline: 3px solid var(--gp-accent-soft);
+  outline-offset: 2px;
+}
+.gp-pick-btns {
+  display: flex;
+  gap: 10px;
+}
+.gp-pick-btns .gp-tbtn {
+  flex: 1;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .gp-pad:active {
     transform: none;
   }
-  .gp-meter[data-full='1'] i,
+  .gpx-turbo[data-full='1'] .gpx-turbo-badge,
   .gp-pad.is-turbo[data-ready='1'],
-  .gp-grid {
+  .gpx-startlap,
+  .gpx-note,
+  .gpx-pit,
+  .gpx-grid,
+  .gpx-lapflash-bar {
     animation: none;
+  }
+  .gpx-lapflash {
+    animation: gpx-blink 2.2s both;
+    transform: translate(-50%, -50%);
+  }
+  .gpw-band {
+    display: none;
+  }
+  .gpw-text {
+    animation: gpx-blink 1.2s both;
+  }
+}
+
+@keyframes gpx-blink {
+  0%,
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
   }
 }

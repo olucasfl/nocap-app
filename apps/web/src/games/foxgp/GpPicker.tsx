@@ -1,29 +1,27 @@
+import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { GP_FURS } from './GpPlay';
-import { css } from './format';
+import { GpGarage } from './GpGarage';
+import './theme.css';
 import './foxgp.css';
 
-/** Treino do Fox GP: contra quantas raposas correr e a cor do seu pelo (a pintura do carro segue). */
+/** Treino do Fox GP: contra quantas raposas correr, com atalho para a garagem (cor e pintura do seu carro). */
 export function GpPicker({
   bots,
-  color,
   onBots,
-  onColor,
   onStart,
   onCancel,
 }: {
   bots: number;
-  color: number;
   onBots: (n: number) => void;
-  onColor: (c: number) => void;
   onStart: () => void;
   onCancel: () => void;
 }) {
+  const [garage, setGarage] = useState(false);
   return createPortal(
     <div className="gp-pick" role="dialog" aria-modal="true" aria-label="Treino do Fox GP">
       <div className="gp-pick-card">
-        <h2>Treino do Fox GP</h2>
-        <h3>Contra quantas raposas?</h3>
+        <span className="gp-kicker">Treino</span>
+        <h2>Contra quantas raposas?</h2>
         <div className="gp-chips" role="radiogroup" aria-label="Quantidade de adversários">
           {[1, 2, 3, 4, 5, 6, 7].map((n) => (
             <button
@@ -38,33 +36,20 @@ export function GpPicker({
             </button>
           ))}
         </div>
-        <h3>Garagem: a cor da sua raposa</h3>
-        <div className="gp-colors" role="radiogroup" aria-label="Cor do pelo e do carro">
-          {GP_FURS.map((c) => (
-            <button
-              key={c}
-              type="button"
-              role="radio"
-              aria-checked={color === c}
-              aria-label={`Cor ${css(c)}`}
-              className={`gp-color${color === c ? ' is-on' : ''}`}
-              style={{ background: css(c) }}
-              onClick={() => onColor(c)}
-            />
-          ))}
-        </div>
-        <p className="mono">
-          Classificação de 1 volta, depois corrida de 3 voltas. A cor é só visual: todos os carros são iguais.
-        </p>
+        <p>Classificação individual (você escolhe quando começar a volta), depois 3 voltas no Circuito da Marina.</p>
+        <button type="button" className="gp-tbtn is-ghost" onClick={() => setGarage(true)} data-testid="gp-pick-garage">
+          Garagem: cor e pintura
+        </button>
         <div className="gp-pick-btns">
-          <button type="button" className="gp-btn" onClick={onStart} data-testid="gp-start">
-            Correr
-          </button>
-          <button type="button" className="gp-btn is-ghost" onClick={onCancel}>
+          <button type="button" className="gp-tbtn is-ghost" onClick={onCancel}>
             Cancelar
+          </button>
+          <button type="button" className="gp-tbtn is-primary" onClick={onStart} data-testid="gp-start">
+            Ir para a pista
           </button>
         </div>
       </div>
+      {garage && <GpGarage onClose={() => setGarage(false)} primary="Salvar" />}
     </div>,
     document.body,
   );

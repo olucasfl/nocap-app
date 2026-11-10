@@ -15,12 +15,22 @@ import {
 } from '@nocap/games';
 import { ColorRoomEngine, RoomError, type EngineOptions, type FinalRow } from './color-room.engine';
 
-/** Dois relatos de posição da mesma pessoa mais juntos que isto são ignorados. */
+/** Dois relatos de posição mais juntos que isto são ignorados. */
 const MIN_POS_GAP_MS = 25;
 /** Folga entre a soma das voltas relatadas e o tempo de chegada (ms). */
 const FINISH_SLACK_MS = 1500;
+/** Desenhos de pintura aceitos na garagem. */
+const PATTERNS = ['solida', 'faixa', 'listras', 'chevron'] as const;
 
 export type FoxGpStage = 'quali' | 'grid' | 'race';
+
+/** Pintura do carro (garagem): cores e desenho. Só visual. */
+export interface FoxGpPaint {
+  body: string;
+  accent: string;
+  pattern: (typeof PATTERNS)[number];
+  number: number;
+}
 
 interface Racer {
   id: string;
@@ -42,12 +52,14 @@ interface Racer {
 
 const finite = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n);
 const r2 = (n: number) => Math.round(n * 100) / 100;
+const HEX = /^#[0-9a-f]{6}$/i;
 
 /**
- * O Fox GP em sala (spec 078). Cada aparelho simula só o PRÓPRIO carro (a pista sai da seed, que aqui nem precisa: só há
- * uma) e relata a posição; a sala decide o que precisa ser igual para todos: a hora da classificação e da largada, os tempos
- * de classificação e o grid, quem terminou e quando, a regra dos 30 s, quem saiu (DNF) e o fim. Não grava ranking nem
- * histórico. Quem entra com a corrida andando espera a próxima, assistindo.
+ * O Fox GP em sala (specs 078 e 079). O aparelho do LÍDER simula todos os carros (autoridade: batidas iguais para todos),
+ * conectado aos outros por WebRTC; quando a conexão direta não sai, a sala só repassa as entradas (`grin`) e os estados
+ * (`grsnap`, `grev`) entre eles. A sala é o relógio e o juiz: hora da classificação e da largada, tempos de classificação
+ * e grid, voltas e chegada (que o líder relata por todos), regra dos 30 s, quem saiu (DNF) e o fim. Sem ranking nem
+ * histórico. Quem entra com a corrida andando espera a próxima, assistindo pelo fluxo `pos`.
  */
 export class FoxGpRoomEngine extends ColorRoomEngine {
   /** Tempos da partida (ms). Os testes com servidor de verdade encurtam para não esperar uma corrida inteira. */
@@ -64,6 +76,7 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
   protected override readonly modes: readonly string[] = ['classico'];
 
   private colors = new Map<string, string>();
+  private paints = new Map<string, FoxGpPaint>();
   private racers = new Map<string, Racer>();
   private stage: FoxGpStage = 'quali';
   /** Hora (relógio do jogo da sala, ms) em que a classificação começa e em que as luzes apagam. */
@@ -72,6 +85,8 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
   private grid: string[] = [];
   /** Hora (relógio do jogo, ms) em que o primeiro cruzou a linha. */
   private firstFinishAt: number | null = null;
+  /** Quem simula a partida (o líder quando ela começou). */
+  private simHost: string | null = null;
   private dirty = false;
   private readonly lapLength = gpTrack().length;
 
@@ -85,7 +100,7 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
     return mode === 'classico';
   }
 
-  // ---- pessoas e cores (a "Garagem") ----
+  // ---- pessoas, cores e pintura (a garagem) ----
 
   private giveColor(id: string) {
     if (this.colors.has(id)) return;
@@ -117,7 +132,7 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
     for (const id of [...this.members.keys()]) this.giveColor(id);
   }
 
-  /** Escolhe a cor do pelo (e da pintura) no lobby: nenhuma cor é de duas pessoas. */
+  /** Escolhe a cor do pelo no lobby: nenhuma cor é de duas pessoas. */
   setColor(id: string, hex: string) {
     this.requirePhase('lobby');
     if (!this.members.has(id)) throw new RoomError('Você não está na sala');
@@ -135,6 +150,31 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
     if (!m) throw new RoomError('Você não está na sala');
     this.colors.delete(id);
     m.ready = false;
+  }
+
+  /** A pintura do carro (garagem): cores, desenho e número. Só visual; os outros veem igual. */
+  setPaint(id: string, v: unknown) {
+    if (!this.members.has(id)) throw new RoomError('Você não está na sala');
+    const p = v as Partial<FoxGpPaint> | null;
+    if (
+      !p ||
+      typeof p.body !== 'string' ||
+      !HEX.test(p.body) ||
+      typeof p.accent !== 'string' ||
+      !HEX.test(p.accent) ||
+      !PATTERNS.includes(p.pattern as FoxGpPaint['pattern']) ||
+      !Number.isInteger(p.number) ||
+      (p.number as number) < 1 ||
+      (p.number as number) > 99
+    )
+      throw new RoomError('Pintura inválida');
+    this.paints.set(id, {
+      body: p.body.toLowerCase(),
+      accent: p.accent.toLowerCase(),
+      pattern: p.pattern as FoxGpPaint['pattern'],
+      number: p.number as number,
+    });
+    this.dirty = true;
   }
 
   override setReady(id: string, ready: boolean) {
@@ -171,6 +211,7 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
     this.stage = 'quali';
     this.qualiAt = this.now() + FoxGpRoomEngine.timing.countMs;
     this.raceAt = 0;
+    this.simHost = this.hostId;
     const ordered = [...this.members.values()]
       .filter((m) => m.connected)
       .sort((a, b) => a.joinedAt - b.joinedAt);
@@ -195,6 +236,11 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
     this.phaseEndsAt = this.qualiAt;
   }
 
+  /** Quem simula a partida agora (o líder quando ela começou). */
+  get simHostId(): string | null {
+    return this.simHost;
+  }
+
   /** Relógio da fase de agora (ms): na classificação, desde que ela começou; na corrida, desde que as luzes apagaram. */
   private stageMs(): number {
     return this.gnow() - (this.stage === 'race' ? this.raceAt : this.qualiAt);
@@ -208,9 +254,18 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
     );
   }
 
-  /** O relato do próprio carro (~15 por segundo). Inválido é ignorado. */
-  report(id: string, v: unknown): void {
+  /** De quem é o relato: quem simula pode relatar por qualquer piloto (`id` na mensagem); os outros só por si. */
+  private target(sender: string, v: unknown): Racer | undefined {
+    const m = v as { id?: unknown } | null;
+    const id = sender === this.simHost && m && typeof m.id === 'string' ? m.id : sender;
+    const r = this.racers.get(id);
+    return r && !r.gone ? r : undefined;
+  }
+
+  /** Posição de um carro (~10 por segundo): `[x, z, h, velocidade, progresso, flags, vácuo, pneu, volante]`. */
+  report(sender: string, v: unknown, forId?: string): void {
     if (!this.driving) return;
+    const id = forId !== undefined && sender === this.simHost ? forId : sender;
     const r = this.racers.get(id);
     if (!r || r.gone || !Array.isArray(v) || v.length !== 9 || !v.every(finite)) return;
     const [x, z, h, speed, prog, flags, slip, wear, steer] = v as number[];
@@ -236,12 +291,23 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
     ];
   }
 
+  /** Posições de todos de uma vez, mandadas por quem simula: linhas `[vaga, ...posição]`. */
+  reportAll(sender: string, rows: unknown): void {
+    if (sender !== this.simHost || !Array.isArray(rows)) return;
+    const bySlot = new Map([...this.racers.values()].map((r) => [r.slot, r.id]));
+    for (const row of rows.slice(0, GP_MAX_PLAYERS)) {
+      if (!Array.isArray(row) || row.length !== 10 || !Number.isInteger(row[0])) continue;
+      const id = bySlot.get(row[0] as number);
+      if (id) this.report(sender, row.slice(1), id);
+    }
+  }
+
   /** Tempo da volta de classificação (ms). Vale uma vez, dentro do tempo da sessão. */
-  qualiTime(id: string, v: unknown): void {
+  qualiTime(sender: string, v: unknown): void {
     if (this.phase !== 'play' || this.stage !== 'quali') return;
-    const r = this.racers.get(id);
+    const r = this.target(sender, v);
     const ms = (v as { ms?: unknown } | null)?.ms;
-    if (!r || r.gone || r.qualiMs !== null || !finite(ms)) return;
+    if (!r || r.qualiMs !== null || !finite(ms)) return;
     const now = this.stageMs();
     if (ms < FoxGpRoomEngine.timing.minLapMs || ms > now + 500) return;
     r.qualiMs = Math.round(ms);
@@ -250,11 +316,11 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
   }
 
   /** Uma volta da corrida (para a volta mais rápida de quem não chegar a terminar). */
-  lap(id: string, v: unknown): void {
+  lap(sender: string, v: unknown): void {
     if (!this.driving || this.stage !== 'race') return;
-    const r = this.racers.get(id);
+    const r = this.target(sender, v);
     const m = v as { lap?: unknown; ms?: unknown } | null;
-    if (!r || r.gone || r.finishMs !== null || !m || !Number.isInteger(m.lap) || !finite(m.ms)) return;
+    if (!r || r.finishMs !== null || !m || !Number.isInteger(m.lap) || !finite(m.ms)) return;
     const lap = m.lap as number;
     if (lap !== r.laps.length + 1 || lap > GP_LAPS || m.ms < FoxGpRoomEngine.timing.minLapMs) return;
     r.laps.push(Math.round(m.ms));
@@ -262,14 +328,15 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
     this.dirty = true;
   }
 
-  /** "Cruzei a linha de chegada": hora (ms desde as luzes), as voltas e as ultrapassagens com o turbo. */
-  finishLine(id: string, v: unknown): void {
+  /** Cruzou a linha de chegada: hora (ms desde as luzes), as voltas e as ultrapassagens com o turbo. */
+  finishLine(sender: string, v: unknown): void {
     if (!this.driving || this.stage !== 'race') return;
-    const r = this.racers.get(id);
+    const r = this.target(sender, v);
     const m = v as { ms?: unknown; laps?: unknown; passes?: unknown } | null;
-    if (!r || r.gone || r.finishMs !== null || !m || !finite(m.ms) || !Array.isArray(m.laps)) return;
+    if (!r || r.finishMs !== null || !m || !finite(m.ms) || !Array.isArray(m.laps)) return;
     const laps = m.laps as unknown[];
-    if (laps.length !== GP_LAPS || !laps.every((l) => finite(l) && l >= FoxGpRoomEngine.timing.minLapMs)) return;
+    if (laps.length !== GP_LAPS || !laps.every((l) => finite(l) && l >= FoxGpRoomEngine.timing.minLapMs))
+      return;
     const sum = (laps as number[]).reduce((a, b) => a + b, 0);
     if (Math.abs(sum - m.ms) > FINISH_SLACK_MS || m.ms > this.stageMs() + 2000) return;
     r.laps = (laps as number[]).map((l) => Math.round(l));
@@ -282,8 +349,8 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
   }
 
   /** Ultrapassagens com o turbo de quem ainda corre (o pódio mostra mesmo para quem não terminou). */
-  stats(id: string, v: unknown): void {
-    const r = this.racers.get(id);
+  stats(sender: string, v: unknown): void {
+    const r = this.target(sender, v);
     const passes = (v as { passes?: unknown } | null)?.passes;
     if (!r || r.finishMs !== null || !finite(passes)) return;
     r.passes = Math.max(0, Math.min(40, Math.trunc(passes)));
@@ -298,6 +365,7 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
 
   override leave(id: string) {
     this.colors.delete(id);
+    this.paints.delete(id);
     if (this.phase === 'show' || this.phase === 'play') this.kill(id);
     super.leave(id);
   }
@@ -320,6 +388,7 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
     this.grid = [];
     this.firstFinishAt = null;
     this.stage = 'quali';
+    this.simHost = null;
   }
 
   protected override pausable(): boolean {
@@ -335,6 +404,12 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
       return true;
     }
     if (this.phase !== 'play') return this.flush();
+    // quem simula saiu: sem ele não há partida (como no Fut Fox ponto a ponto)
+    const host = this.simHost ? this.members.get(this.simHost) : undefined;
+    if (!host || !host.connected) {
+      this.finish();
+      return true;
+    }
     const live = [...this.racers.values()].filter((r) => !r.gone);
     if (this.stage === 'quali') {
       const done =
@@ -358,7 +433,7 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
       this.stage = 'race';
       return true;
     }
-    // corrida: quem sumiu ou parou de relatar (aba em segundo plano) está fora
+    // corrida: quem sumiu está fora; sem relato de posição por muito tempo (o líder relata por todos) também
     for (const r of live) {
       const m = this.members.get(r.id);
       if ((m && !m.connected) || (r.finishMs === null && t - r.lastPosAt > GP_ROOM_STALL_MS))
@@ -448,11 +523,13 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
     return {
       foxgp: {
         me: viewerId ?? null,
+        host: started ? this.simHost : null,
         stage: started ? this.stage : null,
         qualiAt: started ? this.qualiAt : null,
         raceAt: started && this.stage !== 'quali' ? this.raceAt : null,
         slots: started ? slots : {},
         colors: Object.fromEntries(this.colors),
+        paints: Object.fromEntries(this.paints),
         quali: started ? quali : {},
         grid: this.grid,
         finish,

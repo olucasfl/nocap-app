@@ -167,6 +167,10 @@ export interface DesmoronaRoomState {
 /** O Fox GP em sala (spec 078): fases, horas, vagas, cores, grid, chegadas e quem saiu. As posições vêm no fluxo "pos". */
 export interface FoxGpRoomState {
   me: string | null;
+  /** Quem simula a partida (o líder quando ela começou). */
+  host: string | null;
+  /** A pintura de cada um (garagem). */
+  paints: Record<string, { body: string; accent: string; pattern: string; number: number }>;
   stage: 'quali' | 'grid' | 'race' | null;
   qualiAt: number | null;
   raceAt: number | null;
@@ -390,7 +394,10 @@ type LiveType =
   | 'pev'
   | 'prej'
   | 'ppads'
-  | 'fss';
+  | 'fss'
+  | 'grin'
+  | 'grsnap'
+  | 'grev';
 const live: Record<LiveType, Set<(m: unknown) => void>> = {
   pos: new Set(),
   ack: new Set(),
@@ -404,6 +411,9 @@ const live: Record<LiveType, Set<(m: unknown) => void>> = {
   prej: new Set(),
   ppads: new Set(),
   fss: new Set(),
+  grin: new Set(),
+  grsnap: new Set(),
+  grev: new Set(),
 };
 /** Só no desenvolvimento e nos testes de tela: injeta uma mensagem como se tivesse vindo da sala. */
 if (import.meta.env.DEV && typeof window !== 'undefined')
@@ -564,6 +574,9 @@ function attach(r: Room) {
     'prej',
     'ppads',
     'fss',
+    'grin',
+    'grsnap',
+    'grev',
   ] as const)
     r.onMessage(type, (m: unknown) => live[type].forEach((fn) => fn(m)));
   r.onMessage('chat', (m: ChatMessage) =>

@@ -1,102 +1,258 @@
-/* Tema do pódio do Fox GP: céu de corrida, bandeirinhas quadriculadas e pódio de degraus com o troféu. */
-.fz[data-theme='gp'] .fz-head {
-  background: #ffb0a8;
+/* Pódio do Fox GP (spec 079, 3.5): tema do artifact. Só transform e opacity animam. */
+.gpf {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 32px;
+  padding: 64px max(32px, env(safe-area-inset-right)) 32px max(32px, env(safe-area-inset-left));
+  overflow: hidden auto;
+  background: var(--gp-bg);
+  color: var(--gp-text);
+  font-family: var(--gp-body);
+  outline: none;
+  animation: gpf-in 0.6s var(--gp-ease) both;
 }
-.fz[data-theme='gp'] .fz-card[data-tone='win'] .fz-head {
-  background: #ff5a4d;
+.gpf-stripes {
+  position: absolute;
+  left: -60px;
+  top: -100px;
+  bottom: -100px;
+  display: flex;
+  gap: 24px;
+  transform: skewX(-18deg);
+  pointer-events: none;
+}
+.gpf-stripes i {
+  display: block;
+  width: 120px;
+  background: var(--gp-panel);
+}
+.gpf-stripes i:nth-child(2) {
+  width: 60px;
+  background: var(--gp-blue);
+}
+.gpf-stripes i:nth-child(3) {
+  width: 24px;
+  background: var(--gp-accent);
 }
 .gpf-flag {
   position: absolute;
-  top: -20px;
-  left: calc(var(--k) * 12.5% + 2%);
-  width: 20px;
-  height: 14px;
-  border: 2px solid #1b1535;
-  background: #fff;
-  box-shadow: inset 8px 5px 0 #1b1535;
-  opacity: 0;
-  animation: gpf-wave 2.8s ease-in-out infinite;
-  animation-delay: calc(var(--k) * 280ms);
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 28px;
 }
-@keyframes gpf-wave {
+.gpf-confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 3;
+}
+.gpf-confetti i {
+  position: absolute;
+  top: -20px;
+  left: var(--x);
+  width: 10px;
+  height: 16px;
+  opacity: 0;
+  animation: gpf-fall var(--t) linear var(--d) infinite;
+}
+@keyframes gpf-fall {
   0% {
-    transform: translateY(0) rotate(-8deg);
     opacity: 0;
+    transform: translateY(0) rotate(var(--r));
   }
-  20% {
-    opacity: 0.8;
+  10% {
+    opacity: 1;
   }
   100% {
-    transform: translateY(150px) rotate(14deg);
-    opacity: 0;
+    opacity: 0.9;
+    transform: translateY(105vh) rotate(calc(var(--r) + 540deg));
   }
 }
-.gpf-podium {
-  margin: 0;
-  padding: 6px 4px 0;
-  list-style: none;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  align-items: end;
-  gap: 8px;
+@keyframes gpf-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
-.gpf-pod {
-  display: grid;
-  justify-items: center;
-  gap: 4px;
+.gpf-left,
+.gpf-right {
+  position: relative;
+  z-index: 2;
   min-width: 0;
-  animation: fz-rise 0.5s ease-out both;
-  animation-delay: var(--d, 0ms);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
-.gpf-trophy {
-  width: 38px;
-  height: 38px;
+.gpf-head {
+  display: grid;
+  gap: 4px;
 }
-.gpf-fox {
-  width: 34px;
-  height: 34px;
-  border: 3px solid #1b1535;
-  border-radius: 50% 50% 40% 40%;
+.gpf-title {
+  margin: 0;
+  font-size: clamp(56px, 8vw, 96px);
 }
-.gpf-pod.p1 .gpf-fox {
-  width: 44px;
+.gpf-title span {
+  color: var(--gp-accent);
+}
+.gpf-podium {
+  position: relative;
+  flex: 1;
+  min-height: 300px;
+}
+.gpf-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.gpf-podium-names {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.gpf-podium-names li {
+  padding: 6px 12px;
+  background: var(--gp-hud);
+  border-left: 4px solid var(--m);
+  font-weight: 700;
+}
+.gpf-podium-names b {
+  color: var(--m);
+  font-family: var(--gp-display);
+  font-style: italic;
+}
+.gpf-table {
+  display: grid;
+}
+.gpf-tr {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) 120px;
+  align-items: center;
+  height: 52px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--gp-line-3);
+  animation: gpf-in 0.5s var(--gp-ease) var(--d, 0ms) both;
+}
+.gpf-tr.is-you {
+  background: var(--gp-accent-bg);
+}
+.gpf-th {
   height: 44px;
+  font-size: 13px;
+  color: var(--gp-muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-bottom-color: var(--gp-line);
 }
-.gpf-pod-name {
-  max-width: 100%;
+.gpf-th span:last-child,
+.gpf-time {
+  text-align: right;
+}
+.gpf-pos {
+  font-family: var(--gp-display);
+  font-weight: 900;
+  font-style: italic;
+  font-size: 28px;
+  color: var(--m);
+}
+.gpf-name {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 700;
+  font-size: 17px;
+  min-width: 0;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: 14px;
 }
-.gpf-block {
-  width: 100%;
+.gpf-name i {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--gp-bg);
+  box-shadow: 0 0 0 2px var(--gp-line-2);
+}
+.gpf-name small {
+  font-size: 11px;
+  color: var(--gp-muted);
+  text-transform: uppercase;
+}
+.gpf-time {
+  font-size: 16px;
+  color: var(--gp-text-2);
+}
+.gpf-stats {
   display: grid;
-  place-items: center;
-  border: 3px solid #1b1535;
-  border-radius: 8px 8px 0 0;
-  background: #e9e5f5;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.gpf-stats > div {
+  display: grid;
+  gap: 6px;
+  padding: 16px 20px;
+}
+.gpf-stats b {
+  font-family: var(--gp-display);
   font-weight: 800;
+  font-size: 26px;
 }
-.gpf-pod.p1 .gpf-block {
-  height: 64px;
-  background: #ffd23f;
+.gpf-votes {
+  margin: 0;
+  color: var(--gp-text-3);
 }
-.gpf-pod.p2 .gpf-block {
-  height: 46px;
-  background: #d9d4ea;
+.gpf-btns {
+  margin-top: auto;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
 }
-.gpf-pod.p3 .gpf-block {
-  height: 34px;
-  background: #ffb27a;
+.gpf-btns .gp-tbtn {
+  flex: 1;
+  min-width: 160px;
 }
-.gpf-pod.is-you .gpf-pod-name {
-  text-decoration: underline;
+.gpf-btns .gp-tbtn.is-primary {
+  flex: 1.4;
+}
+.gpf-btns .is-sure {
+  border-color: var(--gp-red);
+  color: var(--gp-red);
+}
+@media (max-width: 900px), (max-height: 520px) {
+  .gpf {
+    grid-template-columns: minmax(0, 1fr);
+    padding-top: 44px;
+    gap: 16px;
+  }
+  .gpf-podium {
+    min-height: 220px;
+  }
+  .gpf-tr {
+    height: 44px;
+    padding: 0 12px;
+    grid-template-columns: 40px minmax(0, 1fr) 96px;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .gpf-flag,
-  .gpf-pod {
+  .gpf,
+  .gpf-tr {
     animation: none;
-    opacity: 1;
   }
 }

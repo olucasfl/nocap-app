@@ -5,8 +5,6 @@ import {
   GP_HALF_WIDTH,
   GP_LAPS,
   GP_LAT_ACC,
-  GP_PIT_BOX,
-  GP_PIT_IN_START,
   GP_PIT_LIMIT,
   GP_SURFACE,
   GP_VMAX,
@@ -87,8 +85,10 @@ export function gpBotInput(world: GpWorld, c: GpCar, mem: GpBotMemory, rng: () =
   let lat = mem.lane;
   const rel = tr.rel(ts);
   const pc = tr.pitCenter(rel);
-  const goingToPit = mem.pit && pc !== null && tr.rel(c.s) < GP_PIT_BOX + 2;
+  const goingToPit = mem.pit && pc !== null && tr.rel(c.s) < tr.pit.box + 2;
+  const leavingPit = c.surface === 'pit' && !mem.pit;
   if (goingToPit) lat = pc!;
+  else if (leavingPit && pc !== null) lat = pc;
   else {
     // curva à frente: um pouco para dentro
     const k = tr.curv[tr.index(c.s + ahead * 1.5)]!;
@@ -110,8 +110,8 @@ export function gpBotInput(world: GpWorld, c: GpCar, mem: GpBotMemory, rng: () =
     const vc = Math.sqrt((GP_LAT_ACC * grip) / k);
     want = Math.min(want, Math.sqrt(vc * vc + 2 * GP_BRAKE * brakeK * Math.max(0, dd - 3)));
   }
-  if (goingToPit || (mem.pit && tr.rel(c.s) > GP_PIT_IN_START - 60 && tr.rel(c.s) < GP_PIT_BOX)) {
-    const toPit = Math.max(0, GP_PIT_IN_START - tr.rel(c.s));
+  if (goingToPit || (mem.pit && tr.rel(c.s) > tr.pit.inStart - 60 && tr.rel(c.s) < tr.pit.box)) {
+    const toPit = Math.max(0, tr.pit.inStart - tr.rel(c.s));
     want = Math.min(want, Math.sqrt(GP_PIT_LIMIT ** 2 + 2 * GP_BRAKE * brakeK * toPit));
   }
   // fora da pista: volta para o asfalto sem afundar o pé

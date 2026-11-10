@@ -91,9 +91,9 @@ export const GP_WALL_KEEP = 0.25;
 // ---- pneus ----
 
 /** [AJUSTAR] Desgaste por metro andado, por escorregão (por m/s de lado, por s), por freada forte (por s) e fora da pista (por s). */
-export const GP_WEAR_DIST = 0.000215;
-export const GP_WEAR_SLIP = 0.0016;
-export const GP_WEAR_BRAKE = 0.0035;
+export const GP_WEAR_DIST = 0.00015;
+export const GP_WEAR_SLIP = 0.0011;
+export const GP_WEAR_BRAKE = 0.0024;
 export const GP_WEAR_OFF = 0.006;
 /** [AJUSTAR] Pneu totalmente gasto: aderência mínima (parte da do pneu novo). Freio idem. */
 export const GP_GRIP_MIN = 0.4;
@@ -127,10 +127,12 @@ export const GP_VALID_EVERY = 0.25;
 
 // ---- classificação, largada e chegada ----
 
-/** [AJUSTAR] Tempo máximo da classificação (s). */
-export const GP_QUALI_MAX_SEC = 60;
-/** Onde cada um começa a volta lançada: antes da linha (m de traçado). */
-export const GP_QUALI_SPAWN = -70;
+/** Tempo máximo da classificação (s): cada um aquece e começa a volta quando quiser (decisão de 10/11/2026: 3 min, 1 volta). */
+export const GP_QUALI_MAX_SEC = 180;
+/** A volta começa sozinha ao cruzar a linha depois de andar isto de aquecimento (m); antes, só pelo botão. */
+export const GP_QUALI_WARMUP = 250;
+/** Onde cada um começa a classificação: na vaga do box (saindo para aquecer). */
+export const GP_QUALI_FROM_BOX = true;
 /** Volta mais curta que isto é impossível (validação leve da sala). */
 export const GP_MIN_LAP_SEC = 22;
 /** Grid: o primeiro lugar a esta distância antes da linha; cada fila mais para trás; lados alternados. */
@@ -164,3 +166,28 @@ export function gpGear(v: number): number {
   if (v < -0.5) return 0;
   return Math.max(1, Math.min(8, 1 + Math.floor((Math.abs(v) / (GP_VMAX * 1.12)) * 8)));
 }
+
+// ---- física (spec 079): motor, câmbio, arrasto e corpo rígido ----
+
+/** Relações do câmbio automático (multiplicam a força do motor); a 8ª é a de reta. */
+export const GP_GEARS = [3.2, 2.35, 1.85, 1.5, 1.27, 1.1, 0.98, 0.9] as const;
+/** Velocidade (m/s) em que cada marcha chega ao giro máximo: troca para cima perto daqui. */
+export const GP_GEAR_TOP = [9, 13, 17, 21, 25, 29, 33, 38] as const;
+/** Força do motor por relação (m/s²) no pico da curva de torque. */
+export const GP_ENGINE = 5.2;
+/** Arrasto aerodinâmico (por (m/s)²) e resistência de rolagem (por m/s e fixa). Com o motor, dão a máxima de ~32 m/s. */
+export const GP_DRAG = 0.0028;
+export const GP_ROLL = 0.025;
+export const GP_ROLL0 = 0.2;
+/** Aderência total do pneu novo no asfalto (m/s²): o círculo de atrito divide entre acelerar, frear e virar. */
+export const GP_GRIP_TOTAL = 26;
+/** O pedal de freio não é tudo ou nada: a força sobe até o pedido nesta taxa (por segundo). */
+export const GP_BRAKE_RAMP = 7;
+/** Corpo rígido do carro (massa 1): momento de inércia em torno do eixo vertical (comprimento 3,4 m, largura 1,8 m). */
+export const GP_INERTIA = (3.4 * 3.4 + 1.8 * 1.8) / 12;
+/** Atrito entre carros e com a barreira (impulso tangente máximo, parte do normal). */
+export const GP_BUMP_MU = 0.35;
+export const GP_WALL_E = 0.2;
+export const GP_WALL_MU = 0.45;
+/** O giro solto (de uma batida) some com a aderência: por segundo, multiplicado pela aderência. */
+export const GP_SPIN_DAMP = 3.2;
