@@ -98,6 +98,7 @@ Ainda sem prioridade definida contra as salas do Ecooo. Cada item tem a sua spec
 - [x] (07/11/2026) Radar estilo CS, ícones do kill feed, times só em cor (aliados desligados por `FS_TEAMS_ACTIVE`), troca de arma instantânea, sniper com 2 zooms por clique, partida sem o menu do Esc ao abrir, aba "Outros jogos", chat estilo CS e tela própria (`GameLanding`) dos demais jogos do Fox Cap! (spec 058).
 - [x] Mapa de Treino (8 áreas, pista de distância, estande), mapa grande (M), cartão no Fox Cap!, convidar e entrar/espectar no meio da partida, só com conta, ícones de arma dos modelos 3D (spec 057 §8b).
 - [ ] Online: arma no chão e controles de celular; bomba de verdade e ranking: fora da spec 057.
+- [x] (10/11/2026) **Fox GP** (spec 078, branch `feat/fox-gp`): motor, treino contra bots, sala online e pódio. Falta calibrar os [AJUSTAR] jogando e testar em celular real.
 
 ## Etapa 6: produção
 

@@ -1,0 +1,635 @@
+/* Fox GP (spec 078): tela cheia da corrida, HUD, botões de toque e a escolha do treino. Só transform e opacity animam. */
+.gp-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: #8fd8ff;
+}
+.gp-play {
+  touch-action: none;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  color: #1b1535;
+  font-family: var(--font-display, system-ui);
+}
+.gp-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ---- topo: posição, volta, tempo e menu ---- */
+.gp-top {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top));
+  left: max(10px, env(safe-area-inset-left));
+  right: max(10px, env(safe-area-inset-right));
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+  pointer-events: none;
+}
+.gp-pill {
+  display: grid;
+  align-content: center;
+  padding: 4px 12px 5px;
+  border: 3px solid #1b1535;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 3px 0 #1b1535;
+  font: 700 14px/1.05 var(--font-display, system-ui);
+}
+.gp-pill small {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  opacity: 0.7;
+}
+.gp-pill b {
+  font-size: 22px;
+}
+.gp-pos {
+  background: #ffd23f;
+}
+.gp-pos b {
+  font-size: 26px;
+}
+.gp-clock b {
+  font-size: 18px;
+}
+.gp-top-end {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+/* ---- classificação ao vivo ---- */
+.gp-board {
+  position: absolute;
+  top: calc(max(10px, env(safe-area-inset-top)) + 62px);
+  left: max(10px, env(safe-area-inset-left));
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  width: 168px;
+  border: 3px solid #1b1535;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.92);
+  pointer-events: none;
+  font: 700 12px/1.2 var(--font-display, system-ui);
+}
+.gp-board li {
+  display: grid;
+  grid-template-columns: 16px 10px minmax(0, 1fr) auto;
+  gap: 5px;
+  align-items: center;
+  padding: 2px 4px;
+  border-radius: 6px;
+}
+.gp-board li.is-you {
+  background: #ffd23f;
+}
+.gp-board li.is-out {
+  opacity: 0.45;
+}
+.gp-board i {
+  width: 10px;
+  height: 10px;
+  border: 2px solid #1b1535;
+  border-radius: 50%;
+}
+.gp-board-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.gp-board-gap {
+  font-size: 11px;
+}
+
+/* ---- minimapa ---- */
+.gp-mini {
+  position: absolute;
+  top: calc(max(10px, env(safe-area-inset-top)) + 62px);
+  right: max(10px, env(safe-area-inset-right));
+  width: 150px;
+  height: 125px;
+  border: 3px solid #1b1535;
+  border-radius: 12px;
+  background: rgba(98, 194, 90, 0.85);
+  pointer-events: none;
+}
+
+/* ---- avisos do meio da tela ---- */
+.gp-center {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  transform: translate(-50%, -50%);
+  display: grid;
+  justify-items: center;
+  color: #fff;
+  text-shadow:
+    0 5px 0 #1b1535,
+    0 0 24px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+.gp-center small {
+  font: 800 22px var(--font-display, system-ui);
+  text-transform: uppercase;
+}
+.gp-center b {
+  font: 900 min(24vw, 140px) / 1 var(--font-display, system-ui);
+}
+.gp-note {
+  position: absolute;
+  left: 50%;
+  top: calc(max(10px, env(safe-area-inset-top)) + 62px);
+  transform: translateX(-50%);
+  max-width: min(440px, 60%);
+  padding: 8px 14px;
+  border: 3px solid #1b1535;
+  border-radius: 12px;
+  background: #fff;
+  font: 700 14px var(--font-display, system-ui);
+  text-align: center;
+  pointer-events: none;
+}
+.gp-dnf,
+.gp-pit {
+  position: absolute;
+  left: 50%;
+  top: calc(max(10px, env(safe-area-inset-top)) + 112px);
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border: 3px solid #1b1535;
+  border-radius: 999px;
+  background: #ff5a4d;
+  color: #fff;
+  font: 700 14px var(--font-display, system-ui);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.gp-pit {
+  background: #ffd23f;
+  color: #1b1535;
+  top: 40%;
+  font-size: 20px;
+}
+
+/* ---- grid e luzes ---- */
+.gp-grid {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(380px, 92vw);
+  max-height: 80dvh;
+  overflow-y: auto;
+  padding: 14px;
+  border: 4px solid #1b1535;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 5px 0 #1b1535;
+  animation: gp-pop 0.25s ease-out both;
+}
+.gp-grid h2 {
+  margin: 0 0 8px;
+  font: 800 20px var(--font-display, system-ui);
+  text-transform: uppercase;
+}
+.gp-grid ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+.gp-grid li {
+  display: grid;
+  grid-template-columns: 28px 14px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 6px;
+  border-radius: 8px;
+  font: 700 15px var(--font-display, system-ui);
+}
+.gp-grid li.is-you {
+  background: #ffd23f;
+}
+.gp-grid li i {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #1b1535;
+  border-radius: 50%;
+}
+.gp-grid li b {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.gp-lights {
+  position: absolute;
+  left: 50%;
+  top: 26%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px;
+  border: 4px solid #1b1535;
+  border-radius: 16px;
+  background: #1b1535;
+  pointer-events: none;
+}
+.gp-lights i {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #3a2f45;
+}
+.gp-lights i::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #ff2a2a;
+  box-shadow: 0 0 18px #ff2a2a;
+  opacity: 0;
+  transition: opacity 0.08s;
+}
+.gp-lights i.is-on::after {
+  opacity: 1;
+}
+
+/* ---- painel de baixo: velocidade, turbo e pneus ---- */
+.gp-dash {
+  position: absolute;
+  left: 50%;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+  padding: 6px 8px;
+  border: 3px solid #1b1535;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 3px 0 #1b1535;
+  pointer-events: none;
+}
+.gp-speed {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  column-gap: 6px;
+  align-items: end;
+  min-width: 84px;
+}
+.gp-speed b {
+  font-size: 26px;
+  line-height: 1;
+}
+.gp-speed small {
+  grid-row: 2;
+  font-size: 10px;
+  opacity: 0.7;
+}
+.gp-gear {
+  grid-row: 1 / 3;
+  grid-column: 2;
+  align-self: center;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 3px solid #1b1535;
+  border-radius: 8px;
+  background: #1b1535;
+  color: #fff;
+  font-size: 18px;
+}
+.gp-meter {
+  display: grid;
+  gap: 4px;
+  align-content: center;
+  width: 128px;
+}
+.gp-meter small {
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+.gp-meter span {
+  position: relative;
+  height: 12px;
+  border: 2px solid #1b1535;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #e9e5f5;
+}
+.gp-meter i {
+  position: absolute;
+  inset: 0;
+  transform-origin: left;
+  background: #4a8dff;
+}
+.gp-meter[data-full='1'] i {
+  background: #ff9d2e;
+  animation: gp-glow 0.6s ease-in-out infinite alternate;
+}
+.gp-meter[data-on='1'] i {
+  background: #ff5a4d;
+}
+.gp-meter.is-tyre i {
+  background: #38d27a;
+}
+.gp-meter.is-tyre[data-low='1'] i {
+  background: #ff5a4d;
+}
+
+/* ---- botões de toque: direção à esquerda; acelerar, frear e turbo à direita ---- */
+.gp-pads {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 0 max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom))
+    max(14px, env(safe-area-inset-left));
+  pointer-events: none;
+}
+.gp-pads-l,
+.gp-pads-r {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  pointer-events: auto;
+}
+.gp-pads-r {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-areas:
+    '. turbo'
+    'brake gas';
+  gap: 10px;
+}
+.gp-pad {
+  width: 74px;
+  height: 74px;
+  border: 4px solid rgba(27, 21, 53, 0.9);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.72);
+  color: #1b1535;
+  font: 900 32px/1 var(--font-display, system-ui);
+  touch-action: none;
+  cursor: pointer;
+}
+.gp-pad:active {
+  transform: scale(0.94);
+}
+.gp-pad.is-gas {
+  grid-area: gas;
+  width: 92px;
+  height: 92px;
+  background: rgba(56, 210, 122, 0.82);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+.gp-pad.is-brake {
+  grid-area: brake;
+  background: rgba(255, 90, 77, 0.8);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+/* o turbo fica logo acima do acelerador: dá para tocar com o mesmo polegar sem soltar o acelerador por muito tempo */
+.gp-pad.is-turbo {
+  grid-area: turbo;
+  justify-self: center;
+  width: 64px;
+  height: 64px;
+  background: rgba(233, 229, 245, 0.75);
+  font-size: 12px;
+  text-transform: uppercase;
+}
+.gp-pad.is-turbo[data-ready='1'] {
+  background: #ff9d2e;
+  animation: gp-glow 0.6s ease-in-out infinite alternate;
+}
+/* com os botões de toque o painel sobe para não ficar embaixo deles */
+.gp-play:has(.gp-pads) .gp-dash {
+  bottom: auto;
+  top: calc(max(10px, env(safe-area-inset-top)) + 62px);
+}
+/* no celular o aviso vai para baixo, entre os botões, para não cobrir o carro (que fica no meio da tela) */
+.gp-play:has(.gp-pads) .gp-note {
+  top: auto;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  max-width: min(320px, 42%);
+  font-size: 13px;
+}
+
+/* ---- assistindo ---- */
+.gp-spec {
+  position: absolute;
+  left: 50%;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  border: 3px solid #1b1535;
+  border-radius: 999px;
+  background: #fff;
+  font: 700 15px var(--font-display, system-ui);
+  white-space: nowrap;
+}
+.gp-spec button {
+  width: 44px;
+  height: 44px;
+  border: 3px solid #1b1535;
+  border-radius: 50%;
+  background: #ffd23f;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* ---- escolha do treino ---- */
+.gp-pick {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(10, 14, 36, 0.6);
+}
+.gp-pick-card {
+  width: min(460px, 100%);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 18px;
+  border: 4px solid #1b1535;
+  border-radius: 18px;
+  background: #fff;
+  color: #1b1535;
+  display: grid;
+  gap: 12px;
+}
+.gp-pick-card h2 {
+  margin: 0;
+  font: 800 22px var(--font-display, system-ui);
+  text-transform: uppercase;
+}
+.gp-pick-card h3 {
+  margin: 0;
+  font: 800 14px var(--font-display, system-ui);
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+.gp-chips {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+.gp-chip {
+  min-height: 44px;
+  border: 3px solid #1b1535;
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  font: 800 18px var(--font-display, system-ui);
+  cursor: pointer;
+}
+.gp-chip.is-on {
+  background: #ff5a4d;
+  color: #fff;
+}
+.gp-colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.gp-color {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #1b1535;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.gp-color.is-on {
+  outline: 4px solid #1b1535;
+  outline-offset: 3px;
+}
+.gp-chip:focus-visible,
+.gp-color:focus-visible {
+  outline: 3px solid #ffd23f;
+  outline-offset: 2px;
+}
+.gp-pick-btns {
+  display: flex;
+  gap: 10px;
+}
+.gp-btn {
+  flex: 1;
+  min-height: 48px;
+  border: 3px solid #1b1535;
+  border-radius: 12px;
+  background: #ff5a4d;
+  color: #fff;
+  font: 800 16px var(--font-display, system-ui);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.gp-btn.is-ghost {
+  background: #fff;
+  color: #1b1535;
+}
+
+@keyframes gp-glow {
+  from {
+    opacity: 0.75;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes gp-pop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -46%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* telas baixas (celular deitado): tudo mais compacto */
+@media (max-height: 460px) {
+  .gp-board {
+    width: 140px;
+    font-size: 11px;
+    top: calc(max(8px, env(safe-area-inset-top)) + 54px);
+  }
+  .gp-board li:nth-child(n + 6) {
+    display: none;
+  }
+  .gp-mini {
+    width: 112px;
+    height: 94px;
+    top: calc(max(8px, env(safe-area-inset-top)) + 54px);
+  }
+  .gp-pill b {
+    font-size: 18px;
+  }
+  .gp-pos b {
+    font-size: 20px;
+  }
+  .gp-pad {
+    width: 62px;
+    height: 62px;
+  }
+  .gp-pad.is-gas {
+    width: 78px;
+    height: 78px;
+  }
+  .gp-pad.is-turbo {
+    width: 54px;
+    height: 54px;
+  }
+  .gp-lights i {
+    width: 32px;
+    height: 32px;
+  }
+}
+/* celular em pé: a classificação some (o minimapa e a posição bastam) */
+@media (max-width: 560px) {
+  .gp-board {
+    display: none;
+  }
+  .gp-meter {
+    width: 92px;
+  }
+  .gp-clock small {
+    font-size: 9px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gp-pad:active {
+    transform: none;
+  }
+  .gp-meter[data-full='1'] i,
+  .gp-pad.is-turbo[data-ready='1'],
+  .gp-grid {
+    animation: none;
+  }
+}

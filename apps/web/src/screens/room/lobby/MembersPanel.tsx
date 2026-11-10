@@ -159,10 +159,14 @@ function PlayerTile({
   );
 }
 
-/** Escolher a cor da raposa (Atravessa! e Desmorona!): só bolinhas; as já escolhidas por outros ficam apagadas. */
+/** Escolher a cor da raposa (Atravessa!, Desmorona! e Fox GP): só bolinhas; as já escolhidas por outros ficam apagadas. */
 function ColorPicker({ snapshot, me }: { snapshot: RoomSnapshot; me: string | undefined }) {
   const colors =
-    (snapshot.game === 'desmorona' ? snapshot.desmorona?.colors : snapshot.atravessa?.colors) ?? {};
+    (snapshot.game === 'desmorona'
+      ? snapshot.desmorona?.colors
+      : snapshot.game === 'foxgp'
+        ? snapshot.foxgp?.colors
+        : snapshot.atravessa?.colors) ?? {};
   const owner = (hex: string) => Object.entries(colors).find(([, h]) => h === hex)?.[0];
   const nameOf = (id?: string) => snapshot.members.find((m) => m.id === id)?.username;
   const mine = me ? colors[me] : undefined;
@@ -214,9 +218,14 @@ export function MembersPanel({
   canKick: boolean;
   onInvite: () => void;
 }) {
-  const colored = snapshot.game === 'atravessa' || snapshot.game === 'desmorona';
+  const colored =
+    snapshot.game === 'atravessa' || snapshot.game === 'desmorona' || snapshot.game === 'foxgp';
   const colors =
-    (snapshot.game === 'desmorona' ? snapshot.desmorona?.colors : snapshot.atravessa?.colors) ?? {};
+    (snapshot.game === 'desmorona'
+      ? snapshot.desmorona?.colors
+      : snapshot.game === 'foxgp'
+        ? snapshot.foxgp?.colors
+        : snapshot.atravessa?.colors) ?? {};
   const free = snapshot.maxPlayers - snapshot.members.length;
   // poucas vagas livres à vista: nada de uma fileira de 10 quadrados vazios
   const emptyShown = Math.min(free, snapshot.members.length < 3 ? 2 : 1);

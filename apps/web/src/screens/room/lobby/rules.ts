@@ -44,6 +44,7 @@ export const MIN_PLAYERS: Record<RoomGame, number> = {
   eco: 2,
   atravessa: 2,
   desmorona: 2,
+  foxgp: 2,
   // com bots, uma pessoa só já joga
   bola: 1,
   pingpong: 2,
@@ -54,6 +55,7 @@ export const MIN_PLAYERS: Record<RoomGame, number> = {
 export const GAME_NAME: Record<RoomGame, string> = {
   atravessa: 'Atravessa!',
   desmorona: 'Desmorona!',
+  foxgp: 'Fox GP',
   bola: 'Fut Fox',
   pingpong: 'Ping Fox!',
   foxshot: 'Counter Fox',
@@ -72,6 +74,7 @@ export const GAME_OF: Record<RoomGame, string> = {
   eco: 'do Ecooo',
   atravessa: 'do Atravessa!',
   desmorona: 'do Desmorona!',
+  foxgp: 'do Fox GP',
   bola: 'do Fut Fox',
   pingpong: 'do Ping Fox!',
   foxshot: 'do Counter Fox',
@@ -108,6 +111,13 @@ export const MODES: Record<RoomGame, { id: string; label: string; note: string }
       id: 'classico',
       label: 'Futebol',
       note: 'Futebol de raposas com 2 a 4 times. Vale o gol do time de quem tocou por último na bola. Sem ranking.',
+    },
+  ],
+  foxgp: [
+    {
+      id: 'classico',
+      label: 'Grande Prêmio',
+      note: 'Classificação de uma volta (todos juntos, como fantasmas, até 60 s), grid pelos tempos e corrida de 3 voltas no Circuito da Toca. Ande no vácuo para encher o turbo da cauda; os pneus gastam e o box troca em 3 s. Depois que o primeiro chega, os outros têm 30 s. Sem ranking.',
     },
   ],
   desmorona: [
@@ -187,6 +197,7 @@ export const modeOf = (s: RoomSnapshot) => MODES[s.game].find((m) => m.id === s.
 export function rulesSummary(s: RoomSnapshot): string {
   if (s.game === 'foxcap') return 'Fox Cap! · sem jogo escolhido';
   if (s.game === 'desmorona') return 'Desmorona! · Último de pé';
+  if (s.game === 'foxgp') return 'Fox GP · Circuito da Toca · 3 voltas';
   if (s.game === 'pingpong') return 'Ping Fox! · 1 contra 1 · 11 pontos';
   if (s.game === 'foxshot') return `Counter Fox · Mata-mata · ${s.foxshot?.minutes ?? 5} min`;
   if (s.game === 'bola' && s.bola) {
@@ -210,7 +221,7 @@ export function rulesSummary(s: RoomSnapshot): string {
 }
 
 export function rulesFor(s: RoomSnapshot): RuleDef[] {
-  if (s.game === 'desmorona' || s.game === 'bola' || s.game === 'pingpong' || s.game === 'foxshot' || s.game === 'foxcap')
+  if (s.game === 'desmorona' || s.game === 'foxgp' || s.game === 'bola' || s.game === 'pingpong' || s.game === 'foxshot' || s.game === 'foxcap')
     return [];
   const out: RuleDef[] = [];
   const cfg = s.settings;

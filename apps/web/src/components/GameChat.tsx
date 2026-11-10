@@ -30,7 +30,7 @@ const SPECTATOR = '#9a9aa5';
 const hex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
 
 /**
- * Como a pessoa aparece no chat: no Fut Fox a cor do time; no Desmorona! e no Atravessa! a cor da raposa; quem está de
+ * Como a pessoa aparece no chat: no Fut Fox a cor do time; no Desmorona!, no Fox GP e no Atravessa! a cor da raposa; quem está de
  * fora da partida (espectador, entrou depois) fica cinza.
  */
 export function chatColor(snapshot: RoomSnapshot, userId: string): string | null {
@@ -39,7 +39,7 @@ export function chatColor(snapshot: RoomSnapshot, userId: string): string | null
     const team = b.teamOf[userId];
     return team === undefined || team < 0 ? SPECTATOR : hex(BOL_TEAM_COLORS[team] ?? 0x888888);
   }
-  const g = snapshot.desmorona ?? snapshot.atravessa;
+  const g = snapshot.desmorona ?? snapshot.foxgp ?? snapshot.atravessa;
   if (g) {
     const playing = Object.keys(g.slots).length > 0;
     if (playing && g.slots[userId] === undefined) return SPECTATOR;

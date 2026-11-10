@@ -22,6 +22,15 @@ export const HOW_TO_PLAY = {
     ],
     keys: 'Computador: W A S D, Espaço pula (de novo no ar, pulo duplo), mouse gira a câmera. Celular: joystick e dedo à direita.',
   },
+  foxgp: {
+    title: 'Fox GP Treino',
+    points: [
+      'Classificação de uma volta: o melhor tempo larga na frente. Depois, 3 voltas; vence quem cruzar a linha primeiro.',
+      'Ande logo atrás de outro carro (no vácuo) para encher o turbo da cauda; cheio, solte para ganhar velocidade. Quem lidera não enche.',
+      'Grama e brita deixam o carro lento; cortar caminho volta você para trás. Os pneus gastam: o box troca em 3 s.',
+    ],
+    keys: 'Computador: W/S aceleram e freiam, A/D viram, Espaço solta o turbo. Celular: direção à esquerda; acelerar, frear e turbo à direita.',
+  },
   pingpong: {
     title: 'Ping Fox! Treino',
     points: [

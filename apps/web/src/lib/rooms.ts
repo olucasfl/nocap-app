@@ -17,6 +17,7 @@ export type RoomGame =
   | 'eco'
   | 'atravessa'
   | 'desmorona'
+  | 'foxgp'
   | 'bola'
   | 'pingpong'
   | 'foxshot'
@@ -163,6 +164,26 @@ export interface DesmoronaRoomState {
   winnerId: string | null;
 }
 
+/** O Fox GP em sala (spec 078): fases, horas, vagas, cores, grid, chegadas e quem saiu. As posições vêm no fluxo "pos". */
+export interface FoxGpRoomState {
+  me: string | null;
+  stage: 'quali' | 'grid' | 'race' | null;
+  qualiAt: number | null;
+  raceAt: number | null;
+  slots: Record<string, number>;
+  colors: Record<string, string>;
+  quali: Record<string, number | null>;
+  grid: string[];
+  finish: Record<string, number>;
+  best: Record<string, number>;
+  passes: Record<string, number>;
+  gone: string[];
+  fastest: { id: string; ms: number } | null;
+  firstFinishAt: number | null;
+  order: string[] | null;
+  dnf: string[];
+}
+
 /** O Ping Fox! em sala (spec 055, fase 3): quem joga, quem saca primeiro e a hora da largada. As batidas vêm em "pev". */
 export interface PingRoomState {
   me: string | null;
@@ -278,6 +299,7 @@ export interface RoomSnapshot {
   eco?: EcoRoomState;
   atravessa?: AtravessaRoomState;
   desmorona?: DesmoronaRoomState;
+  foxgp?: FoxGpRoomState;
   bola?: BolaRoomState;
   pingpong?: PingRoomState;
   foxshot?: FoxShotRoomState;
@@ -882,6 +904,7 @@ export function meOf(snapshot: RoomSnapshot | null, userId?: string): string | u
     snapshot?.me ??
     snapshot?.bola?.me ??
     snapshot?.desmorona?.me ??
+    snapshot?.foxgp?.me ??
     snapshot?.atravessa?.me ??
     undefined
   );

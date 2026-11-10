@@ -875,6 +875,36 @@ export function PingArt() {
   );
 }
 
+/** Fox GP: um carro de F1 com a raposa no cockpit, na reta, com a bandeira quadriculada. */
+export function FoxGpArt() {
+  return (
+    <svg className="ha ha-foxgp" viewBox="0 0 200 150" aria-hidden="true">
+      <rect width="200" height="150" fill="#ffd0d8" />
+      <rect y="92" width="200" height="40" fill="#3b3d4a" />
+      <path d="M0 92h200v5H0ZM0 127h200v5H0Z" fill="#fff" />
+      <path d="M10 112h24M54 112h24M98 112h24M142 112h24" stroke="#ffd23f" strokeWidth="3" />
+      <g className="ha-gp-car">
+        <rect x="40" y="96" width="112" height="16" rx="5" fill="#ff7d26" {...stroke} strokeWidth={3} />
+        <rect x="140" y="88" width="10" height="28" fill="#1b1535" />
+        <rect x="30" y="100" width="12" height="8" fill="#1b1535" />
+        <circle cx="62" cy="116" r="9" fill="#15151a" {...stroke} strokeWidth={2.5} />
+        <circle cx="128" cy="116" r="10" fill="#15151a" {...stroke} strokeWidth={2.5} />
+        <rect x="82" y="80" width="22" height="18" rx="4" fill="#ff7d26" {...stroke} strokeWidth={3} />
+        <path d="M78 82q15-12 30 0Z" fill="#2f5bff" {...stroke} strokeWidth={2.5} />
+        <path d="M86 70l4 10M100 70l-4 10" stroke="#ff7d26" strokeWidth="5" strokeLinecap="round" />
+        <circle cx="90" cy="89" r="2" fill="#1b1535" />
+        <circle cx="98" cy="89" r="2" fill="#1b1535" />
+        <path className="ha-gp-tail" d="M110 92q22-24 34-8q-12 2-18 14Z" fill="#ff7d26" {...stroke} strokeWidth={2.5} />
+      </g>
+      <g transform="translate(160 22)">
+        <path d="M0 0v54" stroke="#1b1535" strokeWidth="4" />
+        <path d="M2 2h30v20H2Z" fill="#fff" {...stroke} strokeWidth={2.5} />
+        <path d="M2 2h10v10H2ZM22 2h10v10H22ZM12 12h10v10H12Z" fill="#1b1535" />
+      </g>
+    </svg>
+  );
+}
+
 /** Fut Fox: campo verde visto de cima, bola e uma raposa. */
 export function BolaArt() {
   return (

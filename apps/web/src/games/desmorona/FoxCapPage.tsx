@@ -11,6 +11,7 @@ import {
   CounterFoxArt,
   DesmoronaTrainingArt,
   FoxCapArt,
+  FoxGpArt,
   PingArt,
 } from '@/components/HubArt';
 import { Loader } from '@/components/Loader';
@@ -24,6 +25,8 @@ import { BolaPicker } from '../bola/BolaPicker';
 import type { BolaSetup } from '../bola/BolaPlay';
 import { DesmoronaPicker } from './DesmoronaPicker';
 import { PingPicker } from '../pingpong/PingPicker';
+import { GpPicker } from '../foxgp/GpPicker';
+import { GP_FURS } from '../foxgp/GpPlay';
 import type { PpBotName } from '@nocap/games';
 import '@/screens/account.css';
 import '@/screens/room.css';
@@ -34,8 +37,18 @@ const DesmoronaPlay = lazy(() =>
   import('./DesmoronaPlay').then((m) => ({ default: m.DesmoronaPlay })),
 );
 const PingPlay = lazy(() => import('../pingpong/PingPlay').then((m) => ({ default: m.PingPlay })));
+const GpPlay = lazy(() => import('../foxgp/GpPlay').then((m) => ({ default: m.GpPlay })));
 
-type Flow = 'bola-pick' | 'bola-play' | 'dsm-pick' | 'dsm-play' | 'png-pick' | 'png-play' | null;
+type Flow =
+  | 'bola-pick'
+  | 'bola-play'
+  | 'dsm-pick'
+  | 'dsm-play'
+  | 'png-pick'
+  | 'png-play'
+  | 'gp-pick'
+  | 'gp-play'
+  | null;
 
 /**
  * Fox Cap! (spec 049): a aba "Offline" tem cada modo com "Jogar" (entra na partida sem passar por outra tela) e
@@ -52,6 +65,8 @@ export function FoxCapPage() {
   const [bola, setBola] = useState<BolaSetup>({ teams: 2, perTeam: 2, minutes: 3 });
   const [bots, setBots] = useState(5);
   const [pingLevel, setPingLevel] = useState<PpBotName>('medio');
+  const [gpBots, setGpBots] = useState(5);
+  const [gpColor, setGpColor] = useState<number>(GP_FURS[0]!);
   const [round, setRound] = useState(0);
   /** Tela própria do jogo aberta (Jogar abre a tela do jogo, não a partida). Vem do endereço, para voltar sempre para ela. */
   const hub: LandingGame | null = wanted.jogo ?? null;
@@ -101,6 +116,23 @@ export function FoxCapPage() {
     );
   }
 
+  if (flow === 'gp-play') {
+    return (
+      <div className="gp-screen">
+        <Suspense fallback={<Loader />}>
+          <GpPlay
+            key={round}
+            bots={gpBots}
+            color={gpColor}
+            onExit={() => setFlow(null)}
+            onAgain={() => setRound((r) => r + 1)}
+            onOfflineInvite={goFriends}
+          />
+        </Suspense>
+      </div>
+    );
+  }
+
   if (flow === 'png-play') {
     return (
       <div className="png-screen">
@@ -132,6 +164,7 @@ export function FoxCapPage() {
     if (g === 'bola') setFlow('bola-pick');
     else if (g === 'pingpong') setFlow('png-pick');
     else if (g === 'desmorona') setFlow('dsm-pick');
+    else if (g === 'foxgp') setFlow('gp-pick');
   };
 
   return (
@@ -225,6 +258,17 @@ export function FoxCapPage() {
                 helpTestId="help-pingpong"
               />
               <HubModeCard
+                tone="red"
+                art={<FoxGpArt />}
+                name="Fox GP Treino"
+                desc="Corrida de F1 das raposas: classificação, 3 voltas, turbo da cauda e box."
+                tags={['1 a 7 bots', 'Offline']}
+                onPlay={() => openHub('foxgp')}
+                onHelp={() => setHelp('foxgp')}
+                testId="foxcap-foxgp"
+                helpTestId="help-foxgp"
+              />
+              <HubModeCard
                 tone="orange"
                 art={<DesmoronaTrainingArt />}
                 name="Desmorona! Treino"
@@ -237,8 +281,8 @@ export function FoxCapPage() {
               />
             </div>
             <HubNote>
-              O Atravessa! guarda recorde e ranking. O Desmorona!, o Fut Fox e o Ping Fox! são só
-              diversão: sem ranking nem histórico.
+              O Atravessa! guarda recorde e ranking. O Desmorona!, o Fut Fox, o Ping Fox! e o Fox
+              GP são só diversão: sem ranking nem histórico.
             </HubNote>
           </>
         ) : (
@@ -253,7 +297,7 @@ export function FoxCapPage() {
                 <h2>Criar sala</h2>
                 <p className="mono">
                   A sala nasce sem jogo. Você convida a galera e escolhe o jogo lá dentro (Fut Fox,
-                  Ping Fox!, Atravessa! ou Desmorona!), e pode trocar quando quiser.
+                  Ping Fox!, Fox GP, Atravessa! ou Desmorona!), e pode trocar quando quiser.
                 </p>
                 <button
                   type="button"
@@ -312,6 +356,16 @@ export function FoxCapPage() {
           level={pingLevel}
           onChange={setPingLevel}
           onStart={() => setFlow('png-play')}
+          onCancel={() => setFlow(null)}
+        />
+      )}
+      {flow === 'gp-pick' && (
+        <GpPicker
+          bots={gpBots}
+          color={gpColor}
+          onBots={setGpBots}
+          onColor={setGpColor}
+          onStart={() => setFlow('gp-play')}
           onCancel={() => setFlow(null)}
         />
       )}

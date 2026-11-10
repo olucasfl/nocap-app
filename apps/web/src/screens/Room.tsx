@@ -21,6 +21,8 @@ import { Play } from './room/Play';
 import { AtravessaRoomPlay } from '@/games/atravessa/AtravessaRoomPlay';
 import { DesmoronaRoomPlay } from '@/games/desmorona/DesmoronaRoomPlay';
 import { DesmoronaRoomFinal } from '@/games/desmorona/DesmoronaRoomFinal';
+import { GpRoomPlay } from '@/games/foxgp/GpRoomPlay';
+import { GpRoomFinal } from '@/games/foxgp/GpRoomFinal';
 import { AtravessaRoomFinalPage } from '@/games/atravessa/AtravessaRoomFinalPage';
 import { BolaRoomPlay } from '@/games/bola/BolaRoomPlay';
 import { PingRoomPlay } from '@/games/pingpong/PingRoomPlay';
@@ -57,7 +59,7 @@ function Header({ round }: { round?: string }) {
 
 /** A página de cada jogo (o Intruso é jogado a partir da Mesmíssima). */
 const GAME_PAGE: Record<
-  Exclude<RoomGame, 'desmorona' | 'bola' | 'pingpong' | 'foxshot' | 'foxcap'>,
+  Exclude<RoomGame, 'desmorona' | 'foxgp' | 'bola' | 'pingpong' | 'foxshot' | 'foxcap'>,
   '/cor' | '/tempo' | '/eco' | '/atravessa'
 > = {
   color: '/cor',
@@ -69,6 +71,7 @@ const GAME_PAGE: Record<
 
 const GAME_NAME: Record<RoomGame, string> = {
   desmorona: 'Desmorona!',
+  foxgp: 'Fox GP',
   bola: 'Fut Fox',
   pingpong: 'Ping Fox!',
   foxshot: 'Counter Fox',
@@ -84,10 +87,12 @@ const ENTRY_LEAD: Record<RoomGame, string> = {
   foxshot:
     'Counter Fox com os amigos: mata-mata no mapa Duna, de 2 a 10 minutos, abate vale 10 pontos e assistência 5. Até 10 jogadores na sala, com bots para completar.',
   foxcap:
-    'Sala do Fox Cap!: a sala nasce sem jogo. Dentro dela você convida a galera e escolhe (e troca) o jogo: Fut Fox, Ping Fox!, Atravessa! ou Desmorona!.',
+    'Sala do Fox Cap!: a sala nasce sem jogo. Dentro dela você convida a galera e escolhe (e troca) o jogo: Fut Fox, Ping Fox!, Fox GP, Atravessa! ou Desmorona!.',
   bola: 'Fut Fox com os amigos: futebol de raposas com 2, 3 ou 4 times, até 15 pessoas na sala (12 jogam e o resto assiste). Você escolhe o formato e completa os times com bots dentro da sala.',
   pingpong:
     'Ping Fox! com os amigos: pingue-pongue 1 contra 1 até 11 pontos, com a raquete batendo de verdade (força, lob e efeito). Os 2 primeiros da sala jogam e o resto assiste. Até 8 pessoas.',
+  foxgp:
+    'Fox GP com os amigos: classificação de uma volta, grid pelos tempos e corrida de 3 voltas, com turbo da cauda e box. De 2 a 8 raposas.',
   desmorona:
     'Desmorona! com os amigos: todo mundo cai do céu, o chão some a cada passo e vence o último de pé. De 2 a 8 pessoas.',
   eco: 'Jogue o Ecooo com amigos: Corrida (todo mundo repete a mesma sequência e quem errar sai) ou Siga o Líder (um cria, os outros repetem). Você escolhe dentro da sala.',
@@ -124,7 +129,7 @@ function Entry({
             ? '/tempo'
             : game === 'eco'
               ? '/eco'
-              : game === 'atravessa' || game === 'desmorona' || game === 'bola' || game === 'pingpong' || game === 'foxshot' || game === 'foxcap'
+              : game === 'atravessa' || game === 'desmorona' || game === 'foxgp' || game === 'bola' || game === 'pingpong' || game === 'foxshot' || game === 'foxcap'
                 ? '/fox-cap'
                 : '/cor'
         }
@@ -212,7 +217,7 @@ function RoomPageInner({ code, game = 'color' }: { code?: string; game?: RoomGam
     // o Counter Fox volta para o menu dele (só sai do Counter Fox quem clica em "Sair do Counter Fox")
     if (lastGame === 'foxshot') void navigate({ to: '/fox-cap/counter-fox' });
     // os jogos do Fox Cap! (Fut Fox, Desmorona!, Atravessa!) voltam para a tela do Fox Cap!
-    else if (lastGame === 'desmorona' || lastGame === 'bola' || lastGame === 'pingpong' || lastGame === 'atravessa')
+    else if (lastGame === 'desmorona' || lastGame === 'foxgp' || lastGame === 'bola' || lastGame === 'pingpong' || lastGame === 'atravessa')
       // cada jogo volta para a tela própria dele (só sai do jogo quem clica em "Sair do ..." nessa tela)
       void navigate({ to: '/fox-cap', search: { jogo: lastGame } });
     else if (lastGame === 'foxcap') void navigate({ to: '/fox-cap' });
@@ -296,6 +301,13 @@ function RoomPageInner({ code, game = 'color' }: { code?: string; game?: RoomGam
     return <DesmoronaRoomPlay snapshot={snapshot} />;
   }
 
+  if (snapshot?.game === 'foxgp' && (snapshot.phase === 'show' || snapshot.phase === 'play')) {
+    return <GpRoomPlay snapshot={snapshot} />;
+  }
+  if (snapshot?.game === 'foxgp' && snapshot.phase === 'final') {
+    return <GpRoomFinal snapshot={snapshot} />;
+  }
+
   if (snapshot?.game === 'foxshot' && snapshot.phase === 'lobby') {
     return <CounterFoxLobby snapshot={snapshot} />;
   }
@@ -329,6 +341,7 @@ function RoomPageInner({ code, game = 'color' }: { code?: string; game?: RoomGam
           snapshot &&
           snapshot.game !== 'atravessa' &&
           snapshot.game !== 'desmorona' &&
+          snapshot.game !== 'foxgp' &&
           snapshot.game !== 'bola' &&
           snapshot?.round &&
           snapshot.phase !== 'lobby' &&
