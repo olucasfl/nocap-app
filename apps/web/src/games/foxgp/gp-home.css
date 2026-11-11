@@ -1,0 +1,400 @@
+/* Tela inicial e garagem do Fox GP (spec 079): o tema do artifact. Só transform e opacity animam. */
+.gph,
+.gph-garage {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  overflow: hidden auto;
+  background: var(--gp-bg);
+  color: var(--gp-text);
+  font-family: var(--gp-body);
+}
+.gph {
+  animation: gph-in 0.6s var(--gp-ease) both;
+}
+@keyframes gph-in {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.gph-stripes {
+  position: absolute;
+  right: -120px;
+  top: -140px;
+  bottom: -140px;
+  width: 980px;
+  display: flex;
+  gap: 28px;
+  transform: skewX(-18deg);
+  pointer-events: none;
+}
+.gph-stripes i:nth-child(1) {
+  width: 210px;
+  background: var(--gp-blue);
+}
+.gph-stripes i:nth-child(2) {
+  width: 90px;
+  background: var(--gp-accent);
+}
+.gph-stripes i:nth-child(3) {
+  width: 36px;
+  background: var(--gp-text);
+}
+.gph-stripes i:nth-child(4) {
+  width: 300px;
+  background: var(--gp-panel);
+}
+.gph-flag {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 36px;
+  background-size: 36px 36px;
+  opacity: 0.9;
+}
+.gph-car {
+  position: absolute;
+  right: 2vw;
+  top: 10vh;
+  width: min(60vw, 860px);
+  height: 70vh;
+}
+.gph-main {
+  position: relative;
+  z-index: 2;
+  width: min(520px, 100%);
+  min-height: 100%;
+  box-sizing: border-box;
+  padding: max(40px, 7vh) max(24px, 5.5vw) 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.gph-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.gph-tag {
+  padding: 6px 12px;
+  background: var(--gp-accent);
+  color: var(--gp-bg);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.gph-title {
+  margin: 0;
+  font-size: min(13vw, 18vh, 168px);
+  line-height: 0.82;
+  letter-spacing: -0.02em;
+}
+.gph-title span {
+  color: var(--gp-accent);
+}
+.gph-lead {
+  margin: 0;
+  max-width: 440px;
+  font-size: 19px;
+  line-height: 1.45;
+  color: var(--gp-text-3);
+}
+.gph-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(360px, 100%);
+}
+.gph-btns .gp-tbtn {
+  text-align: left;
+}
+.gph-go {
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 28px;
+}
+.gph-two {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.gph-two .gp-tbtn {
+  text-align: center;
+}
+.gph-panel {
+  width: min(420px, 100%);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.gph-panel h2 {
+  margin: 0;
+  font-family: var(--gp-display);
+  font-weight: 800;
+  font-style: italic;
+  font-size: 32px;
+  text-transform: uppercase;
+}
+.gph-panel p {
+  margin: 0;
+  color: var(--gp-muted);
+  line-height: 1.5;
+}
+.gph-error {
+  color: #ff8a8a !important;
+}
+.gph-join {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+.gph-join label {
+  flex: 1;
+  display: grid;
+  gap: 6px;
+}
+.gph-join input {
+  height: 52px;
+  padding: 0 14px;
+  border: 2px solid var(--gp-line-2);
+  background: var(--gp-panel-2);
+  color: var(--gp-text);
+  font: italic 800 28px var(--gp-display);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.gph-join input:focus-visible {
+  outline: 3px solid var(--gp-accent-soft);
+}
+.gph-map {
+  width: 100%;
+  height: auto;
+}
+
+/* ---- garagem ---- */
+.gph-garage {
+  z-index: 70;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) min(480px, 42vw);
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 16px 32px;
+  padding: 56px max(24px, 4vw);
+  box-sizing: border-box;
+  animation: gph-in 0.5s var(--gp-ease) both;
+}
+.gph-garage-floor {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 36%;
+  background: var(--gp-panel);
+  pointer-events: none;
+}
+.gph-garage-head {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 6px;
+}
+.gph-garage-head h1 {
+  margin: 0;
+  font-size: clamp(44px, 6vw, 72px);
+}
+.gph-garage-head p {
+  margin: 0;
+  color: var(--gp-text-3);
+}
+.gph-garage-car {
+  position: relative;
+  z-index: 1;
+  grid-row: 2;
+  width: 100%;
+  height: 100%;
+  min-height: 260px;
+  cursor: grab;
+}
+.gph-garage-panel {
+  position: relative;
+  z-index: 1;
+  grid-row: 1 / 3;
+  grid-column: 2;
+  padding: 22px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+.gph-garage-panel h2 {
+  margin: 0 0 8px;
+  font-family: var(--gp-display);
+  font-weight: 800;
+  font-style: italic;
+  font-size: 22px;
+  text-transform: uppercase;
+}
+.gph-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.gph-sw {
+  width: 36px;
+  height: 36px;
+  border: 2px solid var(--gp-bg);
+  box-shadow: 0 0 0 2px var(--gp-line-2);
+  cursor: pointer;
+}
+.gph-sw[aria-checked='true'] {
+  box-shadow:
+    0 0 0 2px var(--gp-bg),
+    0 0 0 5px var(--gp-accent);
+}
+.gph-sw:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+.gph-sw:focus-visible,
+.gph-pattern:focus-visible {
+  outline: 3px solid var(--gp-accent-soft);
+  outline-offset: 3px;
+}
+.gph-patterns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.gph-pattern {
+  height: 48px;
+  border: 2px solid var(--gp-line);
+  background: var(--gp-panel-2);
+  color: var(--gp-text);
+  font-weight: 700;
+  cursor: pointer;
+}
+.gph-pattern[aria-checked='true'] {
+  border-color: var(--gp-accent);
+  background: var(--gp-panel-on);
+}
+.gph-number > div {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.gph-number button {
+  width: 48px;
+  height: 48px;
+  border: 2px solid var(--gp-line-2);
+  background: var(--gp-panel-2);
+  color: var(--gp-text);
+  font-size: 26px;
+  cursor: pointer;
+}
+.gph-number b {
+  min-width: 64px;
+  color: var(--gp-text);
+  text-align: center;
+  font-family: var(--gp-display);
+  font-weight: 900;
+  font-style: italic;
+  font-size: 44px;
+}
+.gph-garage-btns {
+  margin-top: auto;
+  display: flex;
+  gap: 12px;
+}
+.gph-garage-btns .gp-tbtn {
+  flex: 1;
+}
+.gph-garage-btns .gp-tbtn.is-primary {
+  flex: 2;
+}
+.gpn {
+  font-variant-numeric: tabular-nums;
+}
+
+.gph-phys {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.gph-phys .gp-kicker {
+  margin-right: 4px;
+}
+.gph-phys-btn {
+  flex: 1;
+  height: 44px;
+  border: 2px solid var(--gp-line-2);
+  background: var(--gp-panel-2);
+  color: var(--gp-text);
+  font: italic 800 20px var(--gp-display);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.gph-phys-btn.is-on {
+  border-color: var(--gp-accent);
+  background: var(--gp-accent);
+  color: var(--gp-bg);
+}
+.gph-phys-btn:focus-visible {
+  outline: 3px solid var(--gp-accent-soft);
+  outline-offset: 2px;
+}
+.gph-best {
+  margin: -4px 0 0;
+  font-size: 14px;
+  color: var(--gp-text-3);
+}
+.gph-best b {
+  color: var(--gp-text);
+}
+
+@media (max-width: 900px) {
+  .gph-car {
+    opacity: 0.35;
+    width: 100vw;
+    right: -20vw;
+  }
+  .gph-stripes {
+    opacity: 0.5;
+  }
+  .gph-garage {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 280px auto;
+    padding: 32px 16px;
+  }
+  .gph-garage-panel {
+    grid-row: 3;
+    grid-column: 1;
+    padding: 18px;
+  }
+}
+@media (max-height: 520px) {
+  .gph-main {
+    padding-top: 28px;
+    gap: 14px;
+  }
+  .gph-title {
+    font-size: 72px;
+  }
+  .gph-lead {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gph,
+  .gph-garage {
+    animation: none;
+  }
+}

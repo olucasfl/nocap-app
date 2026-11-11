@@ -17,6 +17,7 @@ export type RoomGame =
   | 'eco'
   | 'atravessa'
   | 'desmorona'
+  | 'foxgp'
   | 'bola'
   | 'pingpong'
   | 'foxshot'
@@ -163,6 +164,33 @@ export interface DesmoronaRoomState {
   winnerId: string | null;
 }
 
+/** O Fox GP em sala (spec 078): fases, horas, vagas, cores, grid, chegadas e quem saiu. As posições vêm no fluxo "pos". */
+export interface FoxGpRoomState {
+  me: string | null;
+  /** Quem simula a partida (o líder quando ela começou). */
+  host: string | null;
+  /** A pintura de cada um (garagem). */
+  paints: Record<string, { body: string; accent: string; pattern: string; number: number }>;
+  stage: 'quali' | 'grid' | 'race' | null;
+  qualiAt: number | null;
+  raceAt: number | null;
+  /** Espera sorteada pela sala com as luzes acesas (ms). */
+  holdMs?: number | null;
+  /** Modo de física da sala (regra que só o líder muda). */
+  physics?: 'arcade' | 'real';
+  slots: Record<string, number>;
+  colors: Record<string, string>;
+  quali: Record<string, number | null>;
+  grid: string[];
+  finish: Record<string, number>;
+  best: Record<string, number>;
+  gone: string[];
+  fastest: { id: string; ms: number } | null;
+  firstFinishAt: number | null;
+  order: string[] | null;
+  dnf: string[];
+}
+
 /** O Ping Fox! em sala (spec 055, fase 3): quem joga, quem saca primeiro e a hora da largada. As batidas vêm em "pev". */
 export interface PingRoomState {
   me: string | null;
@@ -278,6 +306,7 @@ export interface RoomSnapshot {
   eco?: EcoRoomState;
   atravessa?: AtravessaRoomState;
   desmorona?: DesmoronaRoomState;
+  foxgp?: FoxGpRoomState;
   bola?: BolaRoomState;
   pingpong?: PingRoomState;
   foxshot?: FoxShotRoomState;
@@ -368,7 +397,10 @@ type LiveType =
   | 'pev'
   | 'prej'
   | 'ppads'
-  | 'fss';
+  | 'fss'
+  | 'grin'
+  | 'grsnap'
+  | 'grev';
 const live: Record<LiveType, Set<(m: unknown) => void>> = {
   pos: new Set(),
   ack: new Set(),
@@ -382,6 +414,9 @@ const live: Record<LiveType, Set<(m: unknown) => void>> = {
   prej: new Set(),
   ppads: new Set(),
   fss: new Set(),
+  grin: new Set(),
+  grsnap: new Set(),
+  grev: new Set(),
 };
 /** Só no desenvolvimento e nos testes de tela: injeta uma mensagem como se tivesse vindo da sala. */
 if (import.meta.env.DEV && typeof window !== 'undefined')
@@ -542,6 +577,9 @@ function attach(r: Room) {
     'prej',
     'ppads',
     'fss',
+    'grin',
+    'grsnap',
+    'grev',
   ] as const)
     r.onMessage(type, (m: unknown) => live[type].forEach((fn) => fn(m)));
   r.onMessage('chat', (m: ChatMessage) =>
@@ -882,6 +920,7 @@ export function meOf(snapshot: RoomSnapshot | null, userId?: string): string | u
     snapshot?.me ??
     snapshot?.bola?.me ??
     snapshot?.desmorona?.me ??
+    snapshot?.foxgp?.me ??
     snapshot?.atravessa?.me ??
     undefined
   );

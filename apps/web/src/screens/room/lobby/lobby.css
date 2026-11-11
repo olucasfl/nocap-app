@@ -1693,14 +1693,16 @@
 .lb3[data-game='atravessa'],
 .lb3[data-game='bola'],
 .lb3[data-game='pingpong'],
-.lb3[data-game='desmorona'] {
+.lb3[data-game='desmorona'],
+.lb3[data-game='foxgp'] {
   --lb-accent: var(--gl-a);
 }
 :is(
     .lb3[data-game='atravessa'],
     .lb3[data-game='bola'],
     .lb3[data-game='pingpong'],
-    .lb3[data-game='desmorona']
+    .lb3[data-game='desmorona'],
+    .lb3[data-game='foxgp']
   )
   .lb3-bar-code
   b,
@@ -1708,7 +1710,8 @@
     .lb3[data-game='atravessa'],
     .lb3[data-game='bola'],
     .lb3[data-game='pingpong'],
-    .lb3[data-game='desmorona']
+    .lb3[data-game='desmorona'],
+    .lb3[data-game='foxgp']
   )
   .lb3-tabs
   [aria-selected='true'] {
@@ -1719,7 +1722,8 @@
     .lb3[data-game='atravessa'],
     .lb3[data-game='bola'],
     .lb3[data-game='pingpong'],
-    .lb3[data-game='desmorona']
+    .lb3[data-game='desmorona'],
+    .lb3[data-game='foxgp']
   )
   .lb3-bar {
   border-bottom: 4px solid var(--gl-a, transparent);

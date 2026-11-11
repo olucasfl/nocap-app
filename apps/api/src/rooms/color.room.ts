@@ -10,6 +10,7 @@ import { AtravessaRoomEngine } from './atravessa-room.engine';
 import { BolaRoomEngine } from './bola-room.engine';
 import { FoxLobbyEngine } from './fox-lobby.engine';
 import { DesmoronaRoomEngine } from './desmorona-room.engine';
+import { FoxGpRoomEngine } from './foxgp-room.engine';
 import { PingRoomEngine } from './ping-room.engine';
 import { FOXSHOT_ROOM_MAX, FoxShotRoomEngine } from './foxshot-room.engine';
 import {
@@ -17,6 +18,7 @@ import {
   BOL_ROOM_MAX,
   PP_ROOM_MAX,
   DSM_MAX_PLAYERS,
+  GP_MAX_PLAYERS,
   IMPOSTOR_MAX_PLAYERS,
   packBolaFrame,
 } from '@nocap/games';
@@ -499,6 +501,7 @@ export class ColorRoom extends Room {
           game === 'impostor' ||
           game === 'atravessa' ||
           game === 'desmorona' ||
+          game === 'foxgp' ||
           game === 'bola' ||
           game === 'pingpong' ||
           game === 'foxshot' ||
@@ -672,6 +675,81 @@ export class DesmoronaRoom extends ColorRoom {
       const target = this.clients.find((c) => (c.userData as AuthData | undefined)?.id === p.to);
       target?.send('dpushed', { from: p.from, kx: p.kx, kz: p.kz });
     }
+  }
+}
+
+/**
+ * Sala do Fox GP (spec 078). Cada aparelho simula o próprio carro e manda "gpos" (posição); a sala transmite "pos" 10 vezes
+ * por segundo e decide classificação ("gq"), voltas ("glap"), chegada ("gfin"), grid, DNF e o fim.
+ */
+export class FoxGpRoom extends ColorRoom {
+  override maxClients = GP_MAX_PLAYERS;
+  protected override tickMs = 100;
+
+  protected override makeEngine(opts: ConstructorParameters<typeof ColorRoomEngine>[0]) {
+    return new FoxGpRoomEngine(opts);
+  }
+
+  protected override registerGameMessages() {
+    const engine = () => this.engine as FoxGpRoomEngine;
+    const idOf = (c: Client) => (c.userData as AuthData | undefined)?.id;
+    const hostClient = () => {
+      const h = engine().simHostId;
+      return h ? this.clients.find((x) => idOf(x) === h) : undefined;
+    };
+    // posições: o líder manda as de todos ("gall"); "gpos" vale para quem relata só o próprio carro
+    this.onMessage('gall', (c, m) => {
+      const id = idOf(c);
+      if (id) engine().reportAll(id, m);
+    });
+    this.onMessage('gpos', (c, m) => {
+      const id = idOf(c);
+      if (id) engine().report(id, m);
+    });
+    this.onMessage('gq', (c, m) => {
+      const id = idOf(c);
+      if (id) engine().qualiTime(id, m);
+    });
+    this.onMessage('glap', (c, m) => {
+      const id = idOf(c);
+      if (id) engine().lap(id, m);
+    });
+    this.onMessage('gfin', (c, m) => {
+      const id = idOf(c);
+      if (id) engine().finishLine(id, m);
+    });
+    this.onMessage('color', (c, m: { hex?: string }) =>
+      this.act(c, (id) => engine().setColor(id, String(m?.hex ?? ''))),
+    );
+    this.onMessage('uncolor', (c) => this.act(c, (id) => engine().clearColor(id)));
+    this.onMessage('gpaint', (c, m) => this.act(c, (id) => engine().setPaint(id, m)));
+    this.onMessage('gend', (c) => this.act(c, (id) => engine().endNow(id)));
+    // reserva do WebRTC: a sala só repassa entre o líder e os outros (sem olhar o conteúdo, com limite de tamanho)
+    this.onMessage('grin', (c, m) => {
+      const from = idOf(c);
+      if (!from || from === engine().simHostId || JSON.stringify(m ?? null).length > 4000) return;
+      hostClient()?.send('grin', { from, p: m });
+    });
+    for (const type of ['grsnap', 'grev'] as const) {
+      this.onMessage(type, (c, m) => {
+        if (idOf(c) !== engine().simHostId || JSON.stringify(m ?? null).length > 60_000) return;
+        for (const x of this.clients) if (x !== c) x.send(type, m);
+      });
+    }
+    this.onMessage('rtc', (c, m: { to?: unknown; data?: unknown }) => {
+      const from = idOf(c);
+      if (!from || typeof m?.to !== 'string' || typeof m.data !== 'object' || m.data === null)
+        return;
+      if (JSON.stringify(m.data).length > 12_000) return;
+      const target = this.clients.find((x) => idOf(x) === m.to);
+      target?.send('rtc', { from, data: m.data });
+    });
+  }
+
+  protected override afterTick() {
+    const engine = this.engine as FoxGpRoomEngine;
+    if (engine.currentPhase !== 'play') return;
+    this.broadcast('pos', engine.positions());
   }
 }
 
@@ -960,6 +1038,7 @@ const FOX_GAMES = {
   eco: { name: 'Ecooo', make: (o: EngineOpts) => new EcoRoomEngine(o) },
   atravessa: { name: 'Atravessa!', make: (o: EngineOpts) => new AtravessaRoomEngine(o) },
   desmorona: { name: 'Desmorona!', make: (o: EngineOpts) => new DesmoronaRoomEngine(o) },
+  foxgp: { name: 'Fox GP', make: (o: EngineOpts) => new FoxGpRoomEngine(o) },
   pingpong: { name: 'Ping Fox!', make: (o: EngineOpts) => new PingRoomEngine(o) },
   foxshot: {
     name: 'Counter Fox',
@@ -1009,6 +1088,7 @@ export class FoxRoom extends ColorRoom {
       ['eco', EcoRoom],
       ['atravessa', AtravessaRoom],
       ['desmorona', DesmoronaRoom],
+      ['foxgp', FoxGpRoom],
       ['bola', BolaRoom],
       ['pingpong', PingRoom],
       ['foxshot', FoxShotRoom],
@@ -1076,6 +1156,7 @@ export class FoxRoom extends ColorRoom {
       {
         atravessa: AtravessaRoom,
         desmorona: DesmoronaRoom,
+        foxgp: FoxGpRoom,
         bola: BolaRoom,
         pingpong: PingRoom,
         foxshot: FoxShotRoom,

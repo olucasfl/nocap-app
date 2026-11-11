@@ -1,0 +1,131 @@
+/*
+ * THEME_TOKENS do Fox GP (spec 079, passo 0.1): extraídos do artifact de conceito (tela inicial, HUD, garagem e pódio).
+ * Todo o resto do Fox GP consome estes tokens. Exceção 8 do RULES.md: vale só dentro do Fox GP.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Saira+Condensed:ital,wght@0,600;0,700;0,800;0,900;1,700;1,800;1,900&family=Inter:wght@400;600;700&display=swap');
+
+:root {
+  /* cores */
+  --gp-bg: #0b0e17;
+  --gp-panel: #141a2b;
+  --gp-panel-2: #0f1422;
+  --gp-panel-on: #1d2440;
+  --gp-hud: rgba(11, 14, 23, 0.88);
+  --gp-line: #2a3350;
+  --gp-line-2: #3a4560;
+  --gp-line-3: #1d2440;
+  --gp-text: #f4f6fb;
+  --gp-text-2: #dfe4ef;
+  --gp-text-3: #c9d0e0;
+  --gp-muted: #a9b2c7;
+  --gp-accent: #ff7d26;
+  --gp-accent-soft: #ffb27a;
+  --gp-accent-pale: #ffd2b0;
+  --gp-accent-bg: rgba(255, 125, 38, 0.18);
+  --gp-blue: #2f5bff;
+  --gp-green: #29c26a;
+  --gp-live: #29ff6a;
+  --gp-yellow: #ffd23a;
+  --gp-red: #e8343c;
+  --gp-gold: #ffd23a;
+  --gp-silver: #d4d8e2;
+  --gp-bronze: #e08a4a;
+  /* tipografia */
+  --gp-display: 'Saira Condensed', Inter, system-ui, sans-serif;
+  --gp-body: Inter, system-ui, sans-serif;
+  /* tamanhos e ritmo */
+  --gp-gap: 12px;
+  --gp-pad: 16px;
+  --gp-btn-h: 56px;
+  --gp-hud-pad: 32px;
+  /* movimento: transições do fluxo (400 a 800 ms, ease-in-out) */
+  --gp-ease: cubic-bezier(0.65, 0, 0.35, 1);
+  --gp-dur: 600ms;
+}
+
+/* a faixa quadriculada do tema (padrão de bandeira, não degradê decorativo) */
+.gp-checker {
+  background: repeating-conic-gradient(var(--gp-text) 0 25%, var(--gp-bg) 0 50%) 0 0 / 28px 28px;
+}
+
+/* título no estilo do artifact: condensada, pesada e inclinada */
+.gp-title {
+  font-family: var(--gp-display);
+  font-weight: 900;
+  font-style: italic;
+  text-transform: uppercase;
+  line-height: 0.9;
+  letter-spacing: -0.01em;
+}
+.gp-kicker {
+  font-family: var(--gp-body);
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gp-muted);
+}
+
+/* botões do tema: primário laranja e secundário escuro com borda */
+.gp-tbtn {
+  height: var(--gp-btn-h);
+  padding: 0 22px;
+  border: 2px solid var(--gp-line-2);
+  border-radius: 0;
+  background: var(--gp-panel);
+  color: var(--gp-text);
+  font-family: var(--gp-display);
+  font-weight: 700;
+  font-style: italic;
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 160ms var(--gp-ease), opacity 160ms;
+}
+.gp-tbtn:hover {
+  transform: translateY(-2px);
+}
+.gp-tbtn:active {
+  transform: translateY(1px);
+}
+.gp-tbtn.is-primary {
+  border-color: transparent;
+  background: var(--gp-accent);
+  color: var(--gp-bg);
+  font-weight: 800;
+}
+.gp-tbtn.is-ghost {
+  background: transparent;
+}
+.gp-tbtn:focus-visible {
+  outline: 3px solid var(--gp-accent-soft);
+  outline-offset: 3px;
+}
+.gp-tbtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* painel do tema */
+.gp-tpanel {
+  background: var(--gp-panel);
+  border: 1px solid var(--gp-line);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gp-tbtn,
+  .gp-tbtn:hover,
+  .gp-tbtn:active {
+    transition: none;
+    transform: none;
+  }
+}
+
+/* botão Garagem no lobby do Fox GP */
+.gp-lobby-garage {
+  position: fixed;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  z-index: 30;
+  box-shadow: 0 4px 0 var(--gp-bg);
+}

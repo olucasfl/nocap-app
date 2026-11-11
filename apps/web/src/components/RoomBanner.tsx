@@ -13,6 +13,7 @@ const GAME_NAME: Record<RoomGame, string> = {
   eco: 'Ecooo',
   atravessa: 'Atravessa!',
   desmorona: 'Desmorona!',
+  foxgp: 'Fox GP',
   bola: 'Fut Fox',
   pingpong: 'Ping Fox!',
   foxshot: 'Counter Fox',

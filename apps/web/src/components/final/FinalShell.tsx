@@ -19,7 +19,7 @@ export function FinalShell({
   footer,
   children,
 }: {
-  theme: 'dsm' | 'atr' | 'png' | 'bkc' | 'twr';
+  theme: 'dsm' | 'atr' | 'png' | 'bkc' | 'twr' | 'gp';
   tone: FinalTone;
   kicker: string;
   title: string;

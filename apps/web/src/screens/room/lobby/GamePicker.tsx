@@ -68,6 +68,12 @@ export const GAME_CATEGORIES: { id: string; title: string; games: PickGame[] }[]
         cap: 'até 8',
       },
       {
+        id: 'foxgp',
+        name: 'Fox GP',
+        note: 'Corrida de F1 das raposas: classificação, 3 voltas, DRS, vácuo e box. Física Arcade ou Realista.',
+        cap: 'até 20',
+      },
+      {
         id: 'atravessa',
         name: 'Atravessa!',
         note: 'Atravesse estrada e rio, cada um com a sua cor.',
