@@ -166,7 +166,9 @@ Fut Fox fluidez online (26/10/2026): mortal com impulso 6,4 (`Math.max` com a ve
 
 **Fox GP (10/11/2026, spec 078, branch `feat/fox-gp`, não está na `main`):** corrida de F1 das raposas no Fox Cap! (aba Offline, "Fox GP Treino"; e na sala trocável). Uma pista (Circuito da Toca), classificação de 1 volta, grid, semáforo, 3 voltas, turbo da cauda pelo vácuo, pneus e box, regra dos 30 s, pódio. Sem ranking. Testes: motor (`foxgp.test.ts`), sala (`foxgp-room.engine.test.ts`, `foxgp-room.integration.test.ts`), web (`format.test.ts`, `e2e/foxgp.spec.ts`, `e2e/foxgp-online.spec.ts` com E2E_ROOMS=1). **Falta:** calibrar os números [AJUSTAR] em `packages/games/src/foxgp/constants.ts` (o box hoje custa ~7 s e o pneu gasto só ~1 a 2 s por volta para os bots), jogar com 2+ aparelhos e no celular real.
 
-**Fox GP, atualização (10/11/2026, spec 079, branch `feat/fox-gp`):** feito tudo do documento de atualização (detalhes na spec). **Pendente:** o teste `e2e/foxgp-online.spec.ts` (duas janelas) parou na troca para o Fox GP na sala: investigar (servidor de teste antigo na porta 3340 ou erro na troca) e rodar até o fim. Também jogar com aparelhos reais e calibrar os [AJUSTAR].
+**Fox GP, atualização (10/11/2026, spec 079, branch `feat/fox-gp`):** feito tudo do documento de atualização (detalhes na spec). O teste com duas janelas ficou verde em 11/11/2026.
+
+**Fox GP v2 (11/11/2026, spec 080, branch `feat/fox-gp`):** física Arcade ou Realista (offline na tela inicial; na sala, regra do líder), DRS e vácuo no lugar do turbo, bots com perfil, 20 carros, gráficos e carro novos, HUD da referência, menu Comandos, avisos em fila, volta lançada manual, som do motor. Testes de motor, sala e e2e verdes (o e2e online precisa de `rooms-only.ts` recompilado: um servidor de teste antigo na porta 3340 faz a troca de jogo parecer quebrada). **Pendente:** medir um celular como líder com 20 carros (envio de ~700 KB/s), jogar com aparelhos reais e calibrar os [AJUSTAR] e os `GP_REAL_*`.
 
 ## Conexão das salas (01/11/2026)
 

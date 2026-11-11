@@ -35,6 +35,8 @@ export class GpHostLink {
   private inputCb: ((id: string, p: GpInputPacket) => void) | null = null;
   /** Quem joga e não está conectado direto: o estado também vai pela sala. */
   private racers = new Set<string>();
+  /** A vaga de cada um (o estado completo do carro vai só para o dono). */
+  private slotOf = new Map<string, number>();
 
   constructor(private readonly meId: string) {
     this.unsubs.push(
@@ -46,9 +48,10 @@ export class GpHostLink {
     );
   }
 
-  /** Quem participa da corrida (para saber se ainda precisa da sala como repasse). */
+  /** Quem participa da corrida, na ordem das vagas (para o repasse pela sala e o estado de cada um). */
   setRacers(ids: string[]) {
     this.racers = new Set(ids.filter((id) => id !== this.meId));
+    this.slotOf = new Map(ids.map((id, i) => [id, i]));
   }
 
   onInput(cb: (id: string, p: GpInputPacket) => void) {
@@ -86,7 +89,15 @@ export class GpHostLink {
 
   private newPeer(id: string): HostPeer {
     const pc = new RTCPeerConnection(ICE);
-    const peer: HostPeer = { id, pc, game: null, ctl: null, cands: [], remoteSet: false, open: false };
+    const peer: HostPeer = {
+      id,
+      pc,
+      game: null,
+      ctl: null,
+      cands: [],
+      remoteSet: false,
+      open: false,
+    };
     this.peers.set(id, peer);
     pc.onicecandidate = (e) => {
       if (e.candidate) signal(id, { cand: e.candidate.toJSON() });
@@ -110,7 +121,8 @@ export class GpHostLink {
           try {
             const m = JSON.parse(ev.data) as { t?: string; ts?: number };
             if (m.t === 'hello') peer.open = true;
-            else if (m.t === 'ping' && ch.readyState === 'open') ch.send(JSON.stringify({ t: 'pong', ts: m.ts }));
+            else if (m.t === 'ping' && ch.readyState === 'open')
+              ch.send(JSON.stringify({ t: 'pong', ts: m.ts }));
           } catch {
             /* ignora */
           }
@@ -131,21 +143,32 @@ export class GpHostLink {
     p.pc.close();
   }
 
-  /** Estado do líder: direto para quem está conectado; pela sala se alguém ainda não está. */
-  sendSnapshot(s: GpSnapshot) {
-    const text = JSON.stringify(s);
+  /**
+   * Estado do líder: direto para quem está conectado (cada um recebe o estado completo só do próprio carro: com 20 carros
+   * o pacote fica enxuto); pela sala se alguém ainda não está (com o estado completo de quem depende dela).
+   */
+  sendSnapshot(s: GpSnapshot, only: (s: GpSnapshot, slots: number[]) => GpSnapshot) {
     for (const p of this.peers.values()) {
       // canal entupido (rede ruim): pula o estado em vez de empilhar atraso
-      if (p.open && p.game?.readyState === 'open' && p.game.bufferedAmount < 64_000) p.game.send(text);
+      if (!p.open || p.game?.readyState !== 'open' || p.game.bufferedAmount >= 64_000) continue;
+      const slot = this.slotOf.get(p.id);
+      p.game.send(JSON.stringify(only(s, slot === undefined ? [] : [slot])));
     }
-    if (this.relayNeeded()) sendRoomQuiet('grsnap', s);
+    if (this.relayNeeded()) {
+      const slots = [...this.racers]
+        .filter((id) => !this.peers.get(id)?.open)
+        .map((id) => this.slotOf.get(id))
+        .filter((v): v is number => v !== undefined);
+      sendRoomQuiet('grsnap', only(s, slots));
+    }
   }
 
   /** Eventos (voltas, chegada, box, batidas): com garantia de entrega. */
   sendEvents(ev: GpEvent[]) {
     if (ev.length === 0) return;
     const text = JSON.stringify(ev);
-    for (const p of this.peers.values()) if (p.open && p.ctl?.readyState === 'open') p.ctl.send(text);
+    for (const p of this.peers.values())
+      if (p.open && p.ctl?.readyState === 'open') p.ctl.send(text);
     if (this.relayNeeded()) sendRoomQuiet('grev', ev);
   }
 
@@ -207,7 +230,12 @@ export class GpPeerLink {
     };
     this.ctl.onmessage = (e) => this.onCtl(e.data);
     const check = () => {
-      if (this.mode === 'direto' || this.game?.readyState !== 'open' || this.ctl?.readyState !== 'open') return;
+      if (
+        this.mode === 'direto' ||
+        this.game?.readyState !== 'open' ||
+        this.ctl?.readyState !== 'open'
+      )
+        return;
       this.mode = 'direto';
       window.clearTimeout(this.failTimer);
       this.ctl.send(JSON.stringify({ t: 'hello' }));
@@ -248,7 +276,8 @@ export class GpPeerLink {
   }
 
   private ping() {
-    if (this.ctl?.readyState === 'open') this.ctl.send(JSON.stringify({ t: 'ping', ts: Date.now() }));
+    if (this.ctl?.readyState === 'open')
+      this.ctl.send(JSON.stringify({ t: 'ping', ts: Date.now() }));
   }
 
   private onCtl(data: unknown) {
@@ -283,7 +312,8 @@ export class GpPeerLink {
   }
 
   sendInput(p: GpInputPacket) {
-    if (this.mode === 'direto' && this.game?.readyState === 'open') this.game.send(JSON.stringify(p));
+    if (this.mode === 'direto' && this.game?.readyState === 'open')
+      this.game.send(JSON.stringify(p));
     else sendRoomQuiet('grin', p);
   }
 

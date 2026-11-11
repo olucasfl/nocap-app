@@ -1,7 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
 
 /**
- * Fox GP em sala com DUAS janelas de verdade (spec 078): criar a sala do Fox Cap!, escolher o Fox GP, classificação, grid,
+ * Fox GP em sala com DUAS janelas de verdade (specs 078 a 080): criar a sala do Fox Cap!, escolher o Fox GP e a física,
+ * classificação, grid,
  * luzes, corrida (o carro de um aparece andando na tela do outro) e o pódio quando o líder encerra. Só roda com
  * `E2E_ROOMS=1` (mesmo preparo de ping-online.spec.ts):
  *
@@ -43,18 +44,6 @@ async function nick(page: Page, name: string) {
   await page.getByRole('button', { name: 'Entrar na sala' }).click();
 }
 
-/** Faz a sua volta de classificação "terminar agora" com o tempo dado (o carro precisa estar andando). */
-const finishQuali = (page: Page, sec: number) =>
-  page.evaluate((s) => {
-    const w = (window as Win).__gp!;
-    const me = w.cars.find((c) => c.id === w.meId)!;
-    me.qualiStartT = w.t - s;
-    me.prog = w.track.length - 0.2;
-    // um empurrão para a frente: o carro cruza a linha no próximo passo
-    me.vx = Math.sin(me.h) * 15;
-    me.vz = -Math.cos(me.h) * 15;
-  }, sec);
-
 test('duas janelas: classificação, grid, corrida pela sala e pódio', async ({ browser }) => {
   const mk = async () => {
     const ctx = await browser.newContext({ viewport: { width: 1100, height: 700 }, locale: 'pt-BR' });
@@ -83,10 +72,15 @@ test('duas janelas: classificação, grid, corrida pela sala e pódio', async ({
   await A.getByRole('tab', { name: /Jogos/i }).click();
   await A.getByTestId('pick-foxgp').click();
   await expect(A.getByTestId('themed-lobby')).toHaveAttribute('data-game', 'foxgp', { timeout: 20_000 });
+  // regra da sala: a líder escolhe a física Realista (só ela pode); todos correm nesse modo
+  await A.getByRole('tab', { name: /Configurar|Regras/ }).click();
+  await A.getByRole('radio', { name: 'Realista' }).click();
+  await expect(A.getByRole('radio', { name: 'Realista' })).toHaveAttribute('aria-checked', 'true');
   await B.getByRole('button', { name: /ESTOU PRONTO/i }).click();
   await A.getByRole('button', { name: /COMEÇAR/i }).click();
   await A.getByTestId('gp-play').waitFor({ timeout: 20_000 });
   await B.getByTestId('gp-play').waitFor({ timeout: 20_000 });
+  for (const p of [A, B]) await expect(p.getByTestId('gp-play')).toHaveAttribute('data-physics', 'real');
 
   // classificação: quem simula é a Ana (líder). Passados mais de 22 s, os dois "fecham" a volta no mundo dela (a Bia mais
   // rápida); o tempo de cada um vai para a sala pelo relato da líder
@@ -100,6 +94,8 @@ test('duas janelas: classificação, grid, corrida pela sala e pódio', async ({
       c.qualiStartT = w.t - (i === 0 ? 23.4 : 23.1);
       c.qualiStartProg = 0;
       c.prog = w.track.length - 0.2;
+      // no Realista a velocidade é o número `speed` (sempre para o nariz); no Arcade, o vetor
+      c.speed = 15;
       c.vx = Math.sin(c.h) * 15;
       c.vz = -Math.cos(c.h) * 15;
       c.pitHold = 0;
@@ -115,6 +111,11 @@ test('duas janelas: classificação, grid, corrida pela sala e pódio', async ({
   await expect(A.getByTestId('gp-lights')).toBeVisible({ timeout: 10_000 });
   await expect(A.getByTestId('gp-lap')).toBeVisible({ timeout: 15_000 });
   await expect(B.getByTestId('gp-lap')).toBeVisible({ timeout: 15_000 });
+  // o selo da volta já aparece no grid e nas luzes: só mede depois que as luzes apagam
+  for (const p of [A, B])
+    await p.waitForFunction(() => (window as Win).__gp?.phase === 'race' && (window as Win).__gp!.t > 0.3, null, {
+      timeout: 20_000,
+    });
 
   // corrida: os dois no piloto automático. O carro da Ana anda na tela da Bia; o da Bia, simulado pela Ana a partir da
   // entrada que a Bia manda, anda na tela da Ana

@@ -23,7 +23,7 @@ export function GpPicker({
         <span className="gp-kicker">Treino</span>
         <h2>Contra quantas raposas?</h2>
         <div className="gp-chips" role="radiogroup" aria-label="Quantidade de adversários">
-          {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+          {[1, 3, 5, 7, 9, 12, 15, 19].map((n) => (
             <button
               key={n}
               type="button"
@@ -36,7 +36,10 @@ export function GpPicker({
             </button>
           ))}
         </div>
-        <p>Classificação individual (você escolhe quando começar a volta), depois 3 voltas no Circuito da Marina.</p>
+        <p>
+          Classificação individual (você escolhe quando começar a volta lançada), depois 3 voltas no Circuito da Marina.
+          Com 19, o grid fica cheio: 20 carros.
+        </p>
         <button type="button" className="gp-tbtn is-ghost" onClick={() => setGarage(true)} data-testid="gp-pick-garage">
           Garagem: cor e pintura
         </button>

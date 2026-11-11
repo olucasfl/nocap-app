@@ -1,7 +1,7 @@
 # Spec 079: Fox GP, atualização (física, online, pista da Marina e tema)
 
-Pedido em 10/11/2026 (documento "Atualização do Jogo de Corrida", artifact de tema e imagem da pista). Status: **em
-andamento** na branch `feat/fox-gp`; uma pendência listada na seção 4.
+Pedido em 10/11/2026 (documento "Atualização do Jogo de Corrida", artifact de tema e imagem da pista). Status:
+**implementada** na branch `feat/fox-gp`; o teste com duas janelas ficou verde em 11/11/2026 (spec 080, Fase 0).
 
 ## 1. Decisões (10/11/2026)
 
@@ -47,9 +47,7 @@ andamento** na branch `feat/fox-gp`; uma pendência listada na seção 4.
 
 ## 4. Pendente
 
-- **Teste online com duas janelas (`e2e/foxgp-online.spec.ts`)**: na última execução a líder clicou em "Fox GP" na aba
-  Jogos e a sala não trocou de jogo (o teste esperou até o tempo esgotar). Falta descobrir se foi o servidor de teste
-  (`rooms-only.ts`) antigo ainda ocupando a porta 3340 ou um erro na troca de jogo; depois, rodar o teste até o fim
-  (classificação pelo líder, corrida com os dois no piloto automático, pódio).
+- ~~Teste online com duas janelas~~: resolvido na spec 080 (era o servidor de teste antigo na porta; o teste achou um
+  erro real no relógio do aparelho na largada, corrigido).
 - Jogar com 2+ aparelhos de verdade (WebRTC fora da mesma máquina) e no celular real.
 - Calibrar os números marcados [AJUSTAR] (`packages/games/src/foxgp/constants.ts`).

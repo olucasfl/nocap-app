@@ -1,6 +1,9 @@
 import {
-  ATR_ROOM_COLORS,
   GP_DNF_SEC,
+  GP_LIGHTS_HOLD_MAX,
+  GP_LIGHTS_HOLD_MIN,
+  GP_MAX_PLAYERS,
+  GP_ROOM_COLORS,
   GP_QUALI_MAX_SEC,
   GP_ROOM_GRID_MS,
   GP_ROOM_LIGHTS_MS,
@@ -17,13 +20,14 @@ interface GpSnap {
   stage: string | null;
   qualiAt: number | null;
   raceAt: number | null;
+  holdMs: number | null;
+  physics: string;
   slots: Record<string, number>;
   colors: Record<string, string>;
   quali: Record<string, number | null>;
   grid: string[];
   finish: Record<string, number>;
   best: Record<string, number>;
-  passes: Record<string, number>;
   gone: string[];
   fastest: { id: string; ms: number } | null;
   order: string[] | null;
@@ -68,7 +72,7 @@ function racing(times: Record<string, number> = { ana: 41_000, bia: 40_000, caio
     s.room.qualiTime(id, { ms });
   }
   s.room.tick();
-  s.clock.advance(GP_ROOM_GRID_MS + GP_ROOM_LIGHTS_MS + 10);
+  s.clock.advance(GP_ROOM_GRID_MS + GP_ROOM_LIGHTS_MS + GP_LIGHTS_HOLD_MAX * 1000 + 10);
   s.room.tick();
   return s;
 }
@@ -82,7 +86,7 @@ describe('sala do Fox GP', () => {
     expect(c.ana).toBeTruthy();
     expect(c.ana).not.toBe(c.bia);
     expect(() => room.setColor('bia', c.ana!)).toThrow(RoomError);
-    const free = ATR_ROOM_COLORS.find((x) => x.hex !== c.ana && x.hex !== c.bia)!.hex;
+    const free = GP_ROOM_COLORS.find((x) => x.hex !== c.ana && x.hex !== c.bia)!.hex;
     room.setColor('bia', free);
     expect(snap(room).colors.bia).toBe(free);
     room.clearColor('bia');
@@ -102,6 +106,33 @@ describe('sala do Fox GP', () => {
     room.setReady('bia', true);
     room.start('ana');
     expect(room.currentPhase).toBe('show');
+  });
+
+  it('regra Física: Arcade por padrão, só o líder troca, só Arcade ou Realista', () => {
+    const room = new FoxGpRoomEngine({ code: 'ABCD', now: () => T0, newSeed: () => 's' });
+    room.join('ana', 'ana');
+    room.join('bia', 'bia');
+    expect(snap(room).physics).toBe('arcade');
+    expect(() => room.configure('bia', { physics: 'real' } as never)).toThrow(RoomError);
+    expect(() => room.configure('ana', { physics: 'drift' } as never)).toThrow(RoomError);
+    room.configure('ana', { physics: 'real' } as never);
+    expect(snap(room, 'bia').physics).toBe('real');
+    expect(room.physics).toBe('real');
+  });
+
+  it('até 20 na sala; com mais de 10 a cor do pelo pode repetir (enquanto houver livre, não)', () => {
+    const room = new FoxGpRoomEngine({ code: 'ABCD', now: () => T0, newSeed: () => 's' });
+    const ids = Array.from({ length: GP_MAX_PLAYERS }, (_, i) => `p${i}`);
+    for (const id of ids) room.join(id, id);
+    expect(() => room.join('extra', 'extra')).toThrow(RoomError);
+    const c = snap(room, 'p0').colors;
+    expect(new Set(ids.slice(0, GP_ROOM_COLORS.length).map((id) => c[id])).size).toBe(GP_ROOM_COLORS.length);
+    // sala cheia de cores: o 11º pode escolher uma já usada
+    room.setColor('p15', c.p0!);
+    expect(snap(room).colors.p15).toBe(c.p0);
+    for (const id of ids.slice(1)) room.setReady(id, true);
+    room.start('p0');
+    expect(Object.keys(snap(room).slots).length).toBe(GP_MAX_PLAYERS);
   });
 
   it('não começa com uma pessoa só', () => {
@@ -143,7 +174,10 @@ describe('sala do Fox GP', () => {
     const s = snap(room);
     expect(s.stage).toBe('grid');
     expect(s.grid).toEqual(['bia', 'caio', 'ana', 'davi']);
-    expect(s.raceAt).toBe(clock.now + GP_ROOM_GRID_MS + GP_ROOM_LIGHTS_MS);
+    // a espera com as luzes acesas é sorteada pelo servidor (uma para todos)
+    expect(s.holdMs).toBeGreaterThanOrEqual(GP_LIGHTS_HOLD_MIN * 1000);
+    expect(s.holdMs).toBeLessThanOrEqual(GP_LIGHTS_HOLD_MAX * 1000);
+    expect(s.raceAt).toBe(clock.now + GP_ROOM_GRID_MS + GP_ROOM_LIGHTS_MS + s.holdMs!);
   });
 
   it('a classificação acaba antes do tempo se todo mundo já marcou', () => {
@@ -152,13 +186,13 @@ describe('sala do Fox GP', () => {
     expect(snap(room).grid).toEqual(['bia', 'ana', 'caio']);
   });
 
-  it('chegada: valida as voltas, ordena por tempo e o pódio tem a volta mais rápida e as ultrapassagens', () => {
+  it('chegada: valida as voltas, ordena por tempo e o pódio tem a volta mais rápida', () => {
     const { room, clock } = racing();
     clock.advance(130_000);
     // soma das voltas não bate com o tempo: ignorado
     room.finishLine('bia', { ms: 129_000, laps: [40_000, 40_000, 40_000] });
     expect(snap(room).finish.bia).toBeUndefined();
-    room.finishLine('bia', { ms: 128_500, laps: [44_000, 42_000, 42_500], passes: 2 });
+    room.finishLine('bia', { ms: 128_500, laps: [44_000, 42_000, 42_500] });
     room.finishLine('ana', { ms: 129_200, laps: [44_500, 41_900, 42_800] });
     room.lap('caio', { lap: 1, ms: 45_000 });
     room.lap('caio', { lap: 2, ms: 41_000 });
@@ -169,7 +203,6 @@ describe('sala do Fox GP', () => {
     const s = snap(room);
     expect(s.finish).toEqual({ bia: 128_500, ana: 129_200 });
     expect(s.fastest).toEqual({ id: 'caio', ms: 41_000 });
-    expect(s.passes).toEqual({ bia: 2 });
     expect(room.currentPhase).toBe('play');
   });
 

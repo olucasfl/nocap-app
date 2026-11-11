@@ -117,7 +117,7 @@ export const MODES: Record<RoomGame, { id: string; label: string; note: string }
     {
       id: 'classico',
       label: 'Grande Prêmio',
-      note: 'Classificação de uma volta (todos juntos, como fantasmas, até 60 s), grid pelos tempos e corrida de 3 voltas no Circuito da Toca. Ande no vácuo para encher o turbo da cauda; os pneus gastam e o box troca em 3 s. Depois que o primeiro chega, os outros têm 30 s. Sem ranking.',
+      note: 'Classificação de 3 minutos (cada um faz a sua volta lançada quando quiser), grid pelos tempos e corrida de 3 voltas no Circuito da Marina, com até 20 carros. DRS nas zonas verdes das retas e vácuo atrás de outro carro; os pneus gastam e o box troca em 3 s. Depois que o primeiro chega, os outros têm 30 s. Sem ranking.',
     },
   ],
   desmorona: [
@@ -197,7 +197,8 @@ export const modeOf = (s: RoomSnapshot) => MODES[s.game].find((m) => m.id === s.
 export function rulesSummary(s: RoomSnapshot): string {
   if (s.game === 'foxcap') return 'Fox Cap! · sem jogo escolhido';
   if (s.game === 'desmorona') return 'Desmorona! · Último de pé';
-  if (s.game === 'foxgp') return 'Fox GP · Circuito da Toca · 3 voltas';
+  if (s.game === 'foxgp')
+    return `Fox GP · Circuito da Marina · 3 voltas · ${s.foxgp?.physics === 'real' ? 'Realista' : 'Arcade'}`;
   if (s.game === 'pingpong') return 'Ping Fox! · 1 contra 1 · 11 pontos';
   if (s.game === 'foxshot') return `Counter Fox · Mata-mata · ${s.foxshot?.minutes ?? 5} min`;
   if (s.game === 'bola' && s.bola) {
@@ -221,7 +222,25 @@ export function rulesSummary(s: RoomSnapshot): string {
 }
 
 export function rulesFor(s: RoomSnapshot): RuleDef[] {
-  if (s.game === 'desmorona' || s.game === 'foxgp' || s.game === 'bola' || s.game === 'pingpong' || s.game === 'foxshot' || s.game === 'foxcap')
+  // Fox GP: a física é da sala inteira (o líder simula todos os carros) e só o líder muda
+  if (s.game === 'foxgp') {
+    const cur = (s.settings as unknown as { physics?: string }).physics === 'real' ? 'real' : 'arcade';
+    return [
+      {
+        id: 'physics',
+        label: 'FÍSICA',
+        values: ['arcade', 'real'],
+        current: cur,
+        format: (v) => (v === 'real' ? 'Realista' : 'Arcade'),
+        patch: (v) => ({ physics: v }),
+        note:
+          cur === 'real'
+            ? 'Realista: a curva tem limite; pediu demais, o carro abre e perde velocidade (sem escorregar de lado).'
+            : 'Arcade: o carro escorrega de lado e perdoa mais.',
+      },
+    ];
+  }
+  if (s.game === 'desmorona' || s.game === 'bola' || s.game === 'pingpong' || s.game === 'foxshot' || s.game === 'foxcap')
     return [];
   const out: RuleDef[] = [];
   const cfg = s.settings;

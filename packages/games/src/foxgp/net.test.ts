@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createRng } from '../core/rng';
-import { GP_DT } from './constants';
+import { GP_DT, GP_NET_VERSION, type GpPhysicsMode } from './constants';
 import { gpBotInput, newGpBotMemory, type GpBotMemory } from './bots';
 import { GpClient, GpHost, type GpInputPacket, type GpSnapshot } from './net';
 import { GpWorld, type GpPlayerInfo } from './world';
@@ -22,15 +22,15 @@ function due<T>(p: Pipe<T>, now: number): T[] {
   return out.map((m) => m.v);
 }
 
-function setup(oneWay: number, loss: number, phase: 'race' | 'quali' = 'race') {
+function setup(oneWay: number, loss: number, phase: 'race' | 'quali' = 'race', mode: GpPhysicsMode = 'arcade') {
   const infos: GpPlayerInfo[] = ['h', 'a', 'b'].map((id, i) => ({ id, name: id, color: 0xff0000 + i }));
   const order = ['h', 'a', 'b'];
-  const hostWorld = new GpWorld('net', infos);
+  const hostWorld = new GpWorld('net', infos, undefined, mode);
   hostWorld.autoEnd = false;
   if (phase === 'race') hostWorld.beginRace(order);
   const host = new GpHost(hostWorld, 'h');
   const clients = ['a', 'b'].map((id) => {
-    const w = new GpWorld('net', infos);
+    const w = new GpWorld('net', infos, undefined, mode);
     w.goOnline(id);
     if (phase === 'race') w.beginRace(order);
     return new GpClient(w, id);
@@ -113,6 +113,15 @@ describe('rede do Fox GP (líder simula, aparelhos preveem)', () => {
     for (const c of s.clients) expect(c.corrections).toBeGreaterThan(100);
   });
 
+  it('Realista: 150 ms de ida e volta e 5 % de perda, sem teleporte (o aparelho prevê com o modo da sala)', () => {
+    const s = setup(75, 0.05, 'race', 'real');
+    const r = run(s, 30);
+    expect(r.worstOwn).toBeLessThan(1.5);
+    expect(r.worstOther).toBeLessThan(1.5);
+    expect(r.meanGap).toBeLessThan(4);
+    for (const c of s.clients) expect(c.world.mode).toBe('real');
+  });
+
   it('os tempos do líder chegam a todos (voltas e setores)', () => {
     const s = setup(75, 0.05);
     run(s, 75);
@@ -134,16 +143,35 @@ describe('rede do Fox GP (líder simula, aparelhos preveem)', () => {
     expect(Math.hypot(mine.x - truth.x, mine.z - truth.z)).toBeLessThan(6);
   });
 
+  it('da classificação para a corrida: o relógio do líder recomeça e os estados da corrida não são descartados', () => {
+    const s = setup(75, 0.02, 'quali');
+    run(s, 12);
+    const order = ['h', 'a', 'b'];
+    s.host.world.beginRace(order);
+    for (const c of s.clients) c.world.beginRace(order);
+    run(s, 6);
+    const a = s.clients[0]!;
+    // o relógio do aparelho segue o do líder (e não ficou parado no zero)
+    expect(a.world.t).toBeGreaterThan(4);
+    // o carro do líder, desenhado no aparelho, anda junto com o de verdade
+    const hostOnA = a.world.car('h')!;
+    const truth = s.host.world.car('h')!;
+    expect(truth.prog).toBeGreaterThan(40);
+    expect(Math.hypot(hostOnA.x - truth.x, hostOnA.z - truth.z)).toBeLessThan(8);
+  });
+
   it('entrada repetida, velha ou quebrada não entra duas vezes na fila', () => {
     const s = setup(0, 0);
-    const pkt: GpInputPacket = { rows: [[1, 1, 0, 0, 0, 0], [2, 1, 0, 0, 0, 0]] };
+    const pkt: GpInputPacket = { v: GP_NET_VERSION, rows: [[1, 1, 0, 0, 0, 0], [2, 1, 0, 0, 0, 0]] };
     s.host.receive('a', pkt);
     s.host.receive('a', pkt);
-    s.host.receive('a', { rows: [[3, 1, 0, 0, Number.NaN, 0] as never, [0, 1, 0, 0, 0, 0]] });
-    s.host.step({ throttle: 0, brake: 0, steer: 0, turbo: false });
-    s.host.step({ throttle: 0, brake: 0, steer: 0, turbo: false });
+    s.host.receive('a', { v: GP_NET_VERSION, rows: [[3, 1, 0, 0, Number.NaN, 0] as never, [0, 1, 0, 0, 0, 0]] });
+    // versão antiga do protocolo: ignorado
+    s.host.receive('a', { v: GP_NET_VERSION - 1, rows: [[9, 1, 0, 0, 0, 0]] });
+    s.host.step({ throttle: 0, brake: 0, steer: 0 });
+    s.host.step({ throttle: 0, brake: 0, steer: 0 });
     const snap = s.host.snapshot();
-    const row = snap.cars.find((r) => r[0] === 1)!;
+    const row = snap.full.find((r) => r[0] === 1)!;
     expect(row[1]).toBe(2);
   });
 });

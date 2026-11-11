@@ -20,7 +20,6 @@ export interface GpFinalRow {
   /** Tempo total da corrida (ms); null = não terminou. */
   ms: number | null;
   best: number | null;
-  passes: number;
   dnf: boolean;
 }
 
@@ -33,28 +32,36 @@ const CONFETTI = ['#ff7d26', '#2f5bff', '#ffd23a', '#f4f6fb', '#29c26a', '#e8343
 /**
  * Pódio do Fox GP (spec 079, 3.5), no tema do artifact: o pódio em 3D com os carros dos três primeiros (o campeão com o
  * troféu), confetes, a tabela completa (vencedor com o tempo total, os outros com a diferença, DNF para quem não chegou) e
- * os destaques: volta mais rápida e ultrapassagens com o turbo da cauda. Treino: correr de novo ou voltar. Sala: revanche
+ * os destaques: volta mais rápida e o modo de física da partida. Treino: correr de novo ou voltar. Sala: revanche
  * por votação, sair, e o líder encerra a sala.
  */
 export function GpFinal({
   rows,
   fastest,
-  passes,
+  physics,
   mode,
 }: {
   rows: GpFinalRow[];
   fastest: string;
-  passes: string;
+  /** Nome do modo de física da partida (Arcade ou Realista). */
+  physics: string;
   mode: GpFinalMode;
 }) {
   const winner = rows[0];
   const meIdx = rows.findIndex((r) => r.you);
   const me = meIdx >= 0 ? rows[meIdx] : undefined;
   const won = !!me && meIdx === 0 && !me.dnf;
-  const title = won ? 'Vitória' : me?.dnf ? 'Não terminou' : me ? `${meIdx + 1}º lugar` : `${winner?.name ?? ''} venceu`;
+  const title = won
+    ? 'Vitória'
+    : me?.dnf
+      ? 'Não terminou'
+      : me
+        ? `${meIdx + 1}º lugar`
+        : `${winner?.name ?? ''} venceu`;
   const lead = winner?.ms ?? 0;
   const reduced = useMemo(
-    () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches,
+    () =>
+      typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches,
     [],
   );
   const card = useRef<HTMLDivElement>(null);
@@ -64,7 +71,15 @@ export function GpFinal({
   const votes = room ? room.members.filter((m) => m.connected && m.rematch).length : 0;
   const here = room ? room.members.filter((m) => m.connected).length : 0;
   return (
-    <div className="gpf" role="dialog" aria-modal="true" aria-label="Resultado do Fox GP" data-testid="gp-final" tabIndex={-1} ref={card}>
+    <div
+      className="gpf"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Resultado do Fox GP"
+      data-testid="gp-final"
+      tabIndex={-1}
+      ref={card}
+    >
       <div className="gpf-stripes" aria-hidden="true">
         <i />
         <i />
@@ -99,11 +114,17 @@ export function GpFinal({
         </div>
         <div className="gpf-podium">
           <GpPodium3D
-            top={rows.slice(0, 3).map((r) => ({ name: r.name, fur: r.fur ?? 0xff7d26, paint: r.paint ?? null }))}
+            top={rows
+              .slice(0, 3)
+              .map((r) => ({ name: r.name, fur: r.fur ?? 0xff7d26, paint: r.paint ?? null }))}
           />
           <ol className="gpf-podium-names" aria-label="Pódio">
             {rows.slice(0, 3).map((r, i) => (
-              <li key={r.id} className={`p${i + 1}`} style={{ '--m': GP_THEME.medals[i] } as CSSProperties}>
+              <li
+                key={r.id}
+                className={`p${i + 1}`}
+                style={{ '--m': GP_THEME.medals[i] } as CSSProperties}
+              >
                 <b>{i + 1}º</b> {r.name}
               </li>
             ))}
@@ -122,7 +143,12 @@ export function GpFinal({
               key={r.id}
               role="row"
               className={`gpf-tr${r.you ? ' is-you' : ''}`}
-              style={{ '--d': `${300 + i * 70}ms`, '--m': GP_THEME.medals[i] ?? GP_THEME.muted } as CSSProperties}
+              style={
+                {
+                  '--d': `${300 + i * 70}ms`,
+                  '--m': GP_THEME.medals[i] ?? GP_THEME.muted,
+                } as CSSProperties
+              }
               data-testid={`gp-final-row-${i}`}
             >
               <span role="cell" className="gpf-pos">
@@ -134,7 +160,11 @@ export function GpFinal({
                 {r.bot && <small>bot</small>}
               </span>
               <span role="cell" className="gpf-time gpn">
-                {r.dnf || r.ms === null ? 'DNF' : i === 0 ? lapClock(r.ms) : `+${((r.ms - lead) / 1000).toFixed(3)}`}
+                {r.dnf || r.ms === null
+                  ? 'DNF'
+                  : i === 0
+                    ? lapClock(r.ms)
+                    : `+${((r.ms - lead) / 1000).toFixed(3)}`}
               </span>
             </div>
           ))}
@@ -145,8 +175,8 @@ export function GpFinal({
             <b data-testid="gp-final-fastest">{fastest}</b>
           </div>
           <div className="gp-tpanel">
-            <span className="gp-kicker">Turbos da cauda</span>
-            <b>{passes === 'ninguém' ? 'Nenhuma ultrapassagem' : `${passes} ultrapassagens`}</b>
+            <span className="gp-kicker">Física</span>
+            <b data-testid="gp-final-physics">{physics}</b>
           </div>
         </div>
         {room && (
@@ -157,18 +187,33 @@ export function GpFinal({
         <div className="gpf-btns">
           {mode.kind === 'training' ? (
             <>
-              <button type="button" className="gp-tbtn is-ghost" onClick={mode.onExit} data-testid="final-exit">
+              <button
+                type="button"
+                className="gp-tbtn is-ghost"
+                onClick={mode.onExit}
+                data-testid="final-exit"
+              >
                 Voltar
               </button>
               {mode.onAgain && (
-                <button type="button" className="gp-tbtn is-primary" onClick={mode.onAgain} data-testid="final-again">
+                <button
+                  type="button"
+                  className="gp-tbtn is-primary"
+                  onClick={mode.onAgain}
+                  data-testid="final-again"
+                >
                   Correr de novo
                 </button>
               )}
             </>
           ) : (
             <>
-              <button type="button" className="gp-tbtn is-ghost" onClick={room!.onLeave} data-testid="final-leave">
+              <button
+                type="button"
+                className="gp-tbtn is-ghost"
+                onClick={room!.onLeave}
+                data-testid="final-leave"
+              >
                 Sair da sala
               </button>
               <button

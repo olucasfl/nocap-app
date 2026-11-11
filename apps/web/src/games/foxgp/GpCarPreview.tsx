@@ -1,11 +1,13 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import type { GpPaint } from '@nocap/games';
 import { buildCar, type CarModel } from './car-model';
 
 /**
- * Prévia 3D do carro em tempo real (garagem e tela inicial): luz de estúdio, chão, o carro com a pintura de agora e a
- * cauda balançando. Arraste para girar (órbita); parado, ele gira sozinho devagar.
+ * Prévia 3D do carro em tempo real (garagem, tela inicial e lobby): luz de estúdio com reflexo na pintura, chão, o carro
+ * com a pintura de agora e a cauda balançando. Arrastar com o mouse ou o dedo gira o carro; ao soltar ele segue com
+ * inércia e, uns 3 s depois, volta a girar sozinho devagar (spec 080, Fase 7).
  */
 export function GpCarPreview({
   fur,
@@ -33,6 +35,12 @@ export function GpCarPreview({
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     const scene = new THREE.Scene();
+    // reflexo de estúdio na pintura com verniz
+    const pm = new THREE.PMREMGenerator(renderer);
+    const envTex = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+    pm.dispose();
+    scene.environment = envTex;
+    scene.environmentIntensity = 0.45;
     const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
     const key = new THREE.DirectionalLight(0xffffff, 2.8);
     key.position.set(-5, 8, 6);
@@ -59,22 +67,34 @@ export function GpCarPreview({
     live.current = { setCar };
     let yaw = 0.7;
     let pitch = 0.32;
-    let dragging: { x: number; y: number } | null = null;
-    let idle = 0;
+    let dragging: { x: number; y: number; t: number } | null = null;
+    let idle = 99;
+    /** Giro que sobra ao soltar (rad/s): some aos poucos. */
+    let spin = 0;
     const down = (e: PointerEvent) => {
       if (!interactive) return;
-      dragging = { x: e.clientX, y: e.clientY };
+      e.preventDefault();
+      dragging = { x: e.clientX, y: e.clientY, t: performance.now() };
+      spin = 0;
       cv.setPointerCapture(e.pointerId);
+      cv.style.cursor = 'grabbing';
     };
     const move = (e: PointerEvent) => {
       if (!dragging) return;
-      yaw -= (e.clientX - dragging.x) * 0.01;
+      const now = performance.now();
+      const dx = (e.clientX - dragging.x) * 0.01;
+      yaw -= dx;
+      const dts = Math.max(0.008, (now - dragging.t) / 1000);
+      spin = spin * 0.6 + (-dx / dts) * 0.4;
       pitch = Math.max(0.05, Math.min(1.1, pitch + (e.clientY - dragging.y) * 0.006));
-      dragging = { x: e.clientX, y: e.clientY };
+      dragging = { x: e.clientX, y: e.clientY, t: now };
       idle = 0;
     };
     const up = () => {
+      if (!dragging) return;
       dragging = null;
+      idle = 0;
+      cv.style.cursor = interactive ? 'grab' : '';
     };
     cv.addEventListener('pointerdown', down);
     cv.addEventListener('pointermove', move);
@@ -97,7 +117,12 @@ export function GpCarPreview({
       last = now;
       t += dt;
       idle += dt;
-      if (!dragging && idle > 1.5 && !reduced) yaw += dt * 0.35;
+      if (!dragging) {
+        // inércia ao soltar; depois de ~3 s parado, volta a girar sozinho devagar
+        yaw += spin * dt;
+        spin *= Math.exp(-dt * 2.5);
+        if (idle > 3 && !reduced) yaw += dt * 0.35;
+      }
       if (car) car.tail.rotation.y = reduced ? 0 : Math.sin(t * 5) * 0.25;
       const dist = 9;
       camera.position.set(Math.sin(yaw) * Math.cos(pitch) * dist, 0.8 + Math.sin(pitch) * dist, Math.cos(yaw) * Math.cos(pitch) * dist);
@@ -119,6 +144,7 @@ export function GpCarPreview({
         m.geometry?.dispose?.();
         (m.material as THREE.Material | undefined)?.dispose?.();
       });
+      envTex.dispose();
       renderer.dispose();
       live.current = null;
     };
@@ -127,5 +153,14 @@ export function GpCarPreview({
   useEffect(() => {
     live.current?.setCar(fur, paint);
   }, [fur, paint]);
-  return <canvas ref={ref} className={className} role="img" aria-label={label} style={{ touchAction: 'none' }} />;
+  return (
+    <canvas
+      ref={ref}
+      className={className}
+      role="img"
+      aria-label={label}
+      data-testid="gp-car-preview"
+      style={{ touchAction: 'none', cursor: interactive ? 'grab' : undefined }}
+    />
+  );
 }

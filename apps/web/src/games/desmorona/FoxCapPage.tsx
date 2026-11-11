@@ -28,6 +28,7 @@ import { PingPicker } from '../pingpong/PingPicker';
 import { GpPicker } from '../foxgp/GpPicker';
 import { GpHome } from '../foxgp/GpHome';
 import { loadGarage } from '../foxgp/garage';
+import { loadPhysics } from '../foxgp/gp-best';
 import type { PpBotName } from '@nocap/games';
 import '@/screens/account.css';
 import '@/screens/room.css';
@@ -125,6 +126,7 @@ export function FoxCapPage() {
             bots={gpBots}
             color={loadGarage().fur}
             paint={loadGarage().paint}
+            physics={loadPhysics()}
             onExit={() => setFlow(null)}
             onAgain={() => setRound((r) => r + 1)}
             onOfflineInvite={goFriends}
@@ -284,8 +286,8 @@ export function FoxCapPage() {
                 tone="red"
                 art={<FoxGpArt />}
                 name="Fox GP Treino"
-                desc="Corrida de F1 das raposas: classificação, 3 voltas, turbo da cauda e box."
-                tags={['1 a 7 bots', 'Offline']}
+                desc="Corrida de F1 das raposas: classificação, 3 voltas, DRS, vácuo e box. Física Arcade ou Realista."
+                tags={['1 a 19 bots', 'Offline']}
                 onPlay={() => openHub('foxgp')}
                 onHelp={() => setHelp('foxgp')}
                 testId="foxcap-foxgp"

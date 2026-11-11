@@ -7,7 +7,36 @@
 export const GP_DT = 1 / 60;
 
 export const GP_MIN_PLAYERS = 2;
-export const GP_MAX_PLAYERS = 8;
+/**
+ * Cores do pelo na sala (spec 080, decisão 8): as 8 do Fox Cap! mais 2 (raposa-do-ártico e raposa prateada). Com mais de
+ * 10 pessoas a cor pode repetir; a barra de cor da classificação usa a carroceria.
+ */
+export const GP_ROOM_COLORS: readonly { name: string; hex: string }[] = [
+  { name: 'Laranja', hex: '#ff6a2b' },
+  { name: 'Azul', hex: '#2f5bff' },
+  { name: 'Amarelo', hex: '#ffd23f' },
+  { name: 'Verde', hex: '#33c27f' },
+  { name: 'Rosa', hex: '#ff9ecf' },
+  { name: 'Roxo', hex: '#7a3cff' },
+  { name: 'Ciano', hex: '#25c7e8' },
+  { name: 'Vermelho', hex: '#e5303a' },
+  { name: 'Branco', hex: '#f1ede4' },
+  { name: 'Prata', hex: '#8b93a3' },
+];
+/** Até 20 carros (spec 080): na sala e no jogo contra bots (você mais 19). */
+export const GP_MAX_PLAYERS = 20;
+
+/**
+ * Os dois modos de física (spec 080). Arcade é a física da spec 079 (velocidade em vetor, escorrega de lado); Realista é
+ * o modelo do repositório de referência (a velocidade sempre aponta para o nariz e a curva é limitada pela aderência).
+ * Só a física muda: pista, carros, regras e tela são os mesmos.
+ */
+export type GpPhysicsMode = 'arcade' | 'real';
+export const GP_PHYSICS_MODES: readonly GpPhysicsMode[] = ['arcade', 'real'];
+export const GP_PHYSICS_DEFAULT: GpPhysicsMode = 'arcade';
+export const gpIsPhysicsMode = (v: unknown): v is GpPhysicsMode => v === 'arcade' || v === 'real';
+/** Versão do protocolo da rede: sobe quando o formato da entrada ou do estado muda (aparelho antigo não entra). */
+export const GP_NET_VERSION = 2;
 export const GP_LAPS = 3;
 
 // ---- pista ----
@@ -99,22 +128,28 @@ export const GP_WEAR_OFF = 0.006;
 export const GP_GRIP_MIN = 0.4;
 export const GP_BRAKE_MIN = 0.55;
 
-// ---- vácuo e turbo da cauda ----
+// ---- vácuo e DRS (spec 080) ----
 
 /** O vácuo vale até esta distância atrás do outro carro (m) e nesta largura para cada lado (m). */
 export const GP_SLIP_LEN = 24;
 export const GP_SLIP_W = 2.8;
 /** Só no vácuo com pelo menos esta velocidade (m/s). */
 export const GP_SLIP_MIN_V = 12;
-/** [AJUSTAR] Quanto da barra enche por segundo: colado (máximo) e no fim do vácuo (mínimo). */
-export const GP_SLIP_FILL_NEAR = 0.42;
-export const GP_SLIP_FILL_FAR = 0.12;
-/** [AJUSTAR] Turbo: duração (s) e ganho na velocidade máxima. */
-export const GP_TURBO_SEC = 2.5;
-export const GP_TURBO_GAIN = 0.15;
-export const GP_TURBO_ACCEL = 6;
-/** Ultrapassagem "com o turbo": durante o turbo ou até este tempo depois (s). */
-export const GP_TURBO_PASS_GRACE = 1;
+/** [AJUSTAR] Vácuo passivo: colado no outro carro o arrasto cai até 25 % (menos conforme a distância). */
+export const GP_SLIP_DRAG = 0.25;
+/** [AJUSTAR] DRS aberto: arrasto 15 % menor (sem ganho de aderência). Multiplica com o vácuo. */
+export const GP_DRS_DRAG = 0.15;
+/**
+ * Zonas de DRS, calculadas uma vez por pista: trecho com curvatura abaixo de `GP_DRS_CURV_MAX` (raio acima de 150 m) por
+ * pelo menos `GP_DRS_MIN_STRAIGHT`; a zona começa um pouco depois da curva e acaba antes da freada. Calibrado na Marina
+ * (~1,5 km): dá a reta norte (~210 m de zona) e a reta seguinte (~100 m).
+ */
+export const GP_DRS_CURV_MAX = 1 / 150;
+export const GP_DRS_MIN_STRAIGHT = 150;
+export const GP_DRS_START_OFFSET = 20;
+export const GP_DRS_END_OFFSET = 40;
+/** Na corrida o DRS só abre depois de completar esta quantidade de voltas (como na F1). */
+export const GP_DRS_FROM_LAP = 1;
 
 // ---- corte de caminho ----
 
@@ -129,22 +164,34 @@ export const GP_VALID_EVERY = 0.25;
 
 /** Tempo máximo da classificação (s): cada um aquece e começa a volta quando quiser (decisão de 10/11/2026: 3 min, 1 volta). */
 export const GP_QUALI_MAX_SEC = 180;
-/** A volta começa sozinha ao cruzar a linha depois de andar isto de aquecimento (m); antes, só pelo botão. */
-export const GP_QUALI_WARMUP = 250;
+/**
+ * Volta lançada manual (spec 080, Fase 11): ao apertar, o carro vai para a linha de largada (distância do traçado),
+ * parado e alinhado, e espera esta contagem (s); o tempo começa quando ela acaba. Não há mais início automático.
+ */
+export const GP_QUALI_START_S = 0;
+export const GP_QUALI_HOLD_SEC = 3;
 /** Onde cada um começa a classificação: na vaga do box (saindo para aquecer). */
 export const GP_QUALI_FROM_BOX = true;
 /** Volta mais curta que isto é impossível (validação leve da sala). */
 export const GP_MIN_LAP_SEC = 22;
 /** Grid: o primeiro lugar a esta distância antes da linha; cada fila mais para trás; lados alternados. */
 export const GP_GRID_FIRST = -12;
-export const GP_GRID_GAP = 7;
+/** 6 m entre um lugar e o seguinte (lados alternados): 20 carros cabem em ~126 m antes da linha. */
+export const GP_GRID_GAP = 6;
 export const GP_GRID_SIDE = 3;
 /** [AJUSTAR] Depois que o primeiro cruza a linha, os outros têm este tempo (s); depois é DNF. */
 export const GP_DNF_SEC = 30;
 /** Semáforo: 5 luzes acendendo uma por segundo e a espera antes de apagar (s). */
 export const GP_LIGHTS = 5;
 export const GP_LIGHT_SEC = 0.9;
-export const GP_LIGHTS_HOLD = 0.8;
+/**
+ * Espera com as 5 luzes acesas antes de apagar (s): sorteada entre o mínimo e o máximo. Na sala quem sorteia é o servidor
+ * (todos largam juntos); contra bots, a seed da partida (`gpLightsHold`).
+ */
+export const GP_LIGHTS_HOLD_MIN = 0.6;
+export const GP_LIGHTS_HOLD_MAX = 1.8;
+/** "Vai!" fica na tela este tempo depois que as luzes apagam (s). */
+export const GP_GO_SEC = 1;
 
 // ---- sala ----
 
@@ -152,8 +199,11 @@ export const GP_LIGHTS_HOLD = 0.8;
 export const GP_ROOM_QUALI_COUNT_MS = 4000;
 /** Grid mostrado antes das luzes (ms). */
 export const GP_ROOM_GRID_MS = 4500;
-/** Tempo das luzes (ms): acendem e apagam. */
-export const GP_ROOM_LIGHTS_MS = Math.round((GP_LIGHTS * GP_LIGHT_SEC + GP_LIGHTS_HOLD) * 1000);
+/** Tempo das luzes até a última acender (ms); a espera sorteada vem depois. */
+export const GP_ROOM_LIGHTS_MS = Math.round(GP_LIGHTS * GP_LIGHT_SEC * 1000);
+/** Espera sorteada com as luzes acesas (s), a partir de um número de 0 a 1 (seed da partida ou sorteio da sala). */
+export const gpLightsHold = (u: number) =>
+  GP_LIGHTS_HOLD_MIN + (GP_LIGHTS_HOLD_MAX - GP_LIGHTS_HOLD_MIN) * Math.max(0, Math.min(1, u));
 /** Corrida mais longa que isto acaba sozinha (s). */
 export const GP_ROOM_MAX_RACE_SEC = 420;
 /** Sem relatar posição por tanto tempo conta como desconectado (ms). */
@@ -191,3 +241,53 @@ export const GP_WALL_E = 0.2;
 export const GP_WALL_MU = 0.45;
 /** O giro solto (de uma batida) some com a aderência: por segundo, multiplicado pela aderência. */
 export const GP_SPIN_DAMP = 3.2;
+
+// ---- modo Realista (spec 080): o modelo do repositório de referência, recalculado para a escala do Fox GP ----
+// A referência anda em escala real (96 m/s, entre-eixos 3,6 m num carro de 5,6 m); aqui a máxima é ~32 m/s e o carro tem
+// 3,4 m. Os números abaixo dão a mesma cara de pilotagem nesta escala e uma volta da Marina parecida com a do Arcade.
+
+/** Entre-eixos (m): 3,4 m de carro, a mesma proporção da referência. */
+export const GP_REAL_WHEELBASE = 2.4;
+/** Esterço máximo das rodas (rad) e quanto ele cai com a velocidade: `ângulo = volante * MAX / (1 + v / FADE)`. */
+export const GP_REAL_STEER_MAX = 0.6;
+export const GP_REAL_STEER_FADE = 9;
+/**
+ * Aderência lateral máxima: `GRIP0 + DOWNFORCE * v²` (m/s²). Embaixo vale o pneu (curva lenta exige frear); em alta o
+ * ganho da asa deixa fazer curva rápida cheia (~30 m/s² a 32 m/s).
+ */
+export const GP_REAL_GRIP0 = 18;
+export const GP_REAL_DOWNFORCE = 0.012;
+/** Pedir mais curva do que o pneu aguenta: o carro abre e perde velocidade até este tanto por segundo (m/s²). */
+export const GP_REAL_SCRUB = 7;
+/** Motor: aceleração máxima embaixo (m/s²) e potência por massa (m²/s³); arrasto (por (m/s)²) e rolagem (m/s²). */
+export const GP_REAL_ACC_MAX = 9;
+export const GP_REAL_POWER = 120;
+export const GP_REAL_DRAG = 0.0034;
+export const GP_REAL_ROLL = 0.25;
+/** Freio: `BRAKE0 + BRAKE_V2 * v²` (m/s²): o carro freia mais em alta (asa). */
+export const GP_REAL_BRAKE0 = 22;
+export const GP_REAL_BRAKE_V2 = 0.008;
+/** Ré: força para sair dela acelerando (m/s² por acelerador) e o mínimo, como na referência. */
+export const GP_REAL_REVERSE_OUT = 10;
+export const GP_REAL_REVERSE_OUT0 = 4;
+/** Entradas suavizadas (por segundo): acelerador sobe/desce, freio, volante (subir, inverter, voltar ao centro). */
+export const GP_REAL_THR_RISE = 6;
+export const GP_REAL_THR_FALL = 8;
+export const GP_REAL_BRK_RATE = 10;
+export const GP_REAL_STEER_RISE = 2.6;
+export const GP_REAL_STEER_FLIP = 7;
+export const GP_REAL_STEER_CENTER = 5;
+/** Barreira: guarda esta parte da velocidade, alinha esta parte da direção com a pista e espera este tempo (s). */
+export const GP_REAL_WALL_KEEP = 0.7;
+export const GP_REAL_WALL_ALIGN = 0.25;
+export const GP_REAL_WALL_CD = 0.3;
+/** Batida entre carros: caixa do carro (comprimento e largura, m), empurrão de lado e perda na batida de traseira. */
+export const GP_REAL_CAR_LEN = 3.4;
+export const GP_REAL_CAR_WID = 1.8;
+export const GP_REAL_SIDE_PUSH = 0.6;
+export const GP_REAL_REAR_LOSS = 0.9;
+
+/** Aderência lateral máxima do Realista na velocidade dada (m/s²), com pneu novo no asfalto. */
+export const gpRealLatMax = (v: number) => GP_REAL_GRIP0 + GP_REAL_DOWNFORCE * v * v;
+/** Freio do Realista na velocidade dada (m/s²). */
+export const gpRealBrake = (v: number) => GP_REAL_BRAKE0 + GP_REAL_BRAKE_V2 * v * v;

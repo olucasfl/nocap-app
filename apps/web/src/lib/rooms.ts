@@ -174,13 +174,16 @@ export interface FoxGpRoomState {
   stage: 'quali' | 'grid' | 'race' | null;
   qualiAt: number | null;
   raceAt: number | null;
+  /** Espera sorteada pela sala com as luzes acesas (ms). */
+  holdMs?: number | null;
+  /** Modo de física da sala (regra que só o líder muda). */
+  physics?: 'arcade' | 'real';
   slots: Record<string, number>;
   colors: Record<string, string>;
   quali: Record<string, number | null>;
   grid: string[];
   finish: Record<string, number>;
   best: Record<string, number>;
-  passes: Record<string, number>;
   gone: string[];
   fastest: { id: string; ms: number } | null;
   firstFinishAt: number | null;

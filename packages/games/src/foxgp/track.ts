@@ -1,4 +1,8 @@
 import {
+  GP_DRS_CURV_MAX,
+  GP_DRS_END_OFFSET,
+  GP_DRS_MIN_STRAIGHT,
+  GP_DRS_START_OFFSET,
   GP_GRAVEL_RADIUS,
   GP_HALF_WIDTH,
   GP_KERB_RADIUS,
@@ -291,6 +295,10 @@ export class GpTrack {
   readonly sectorS: readonly [number, number];
   /** Distância do traçado de cada ponto de controle. */
   readonly cpS: readonly number[];
+  /** Zonas de DRS (spec 080): distâncias do traçado onde começa e acaba cada uma (`to` pode passar de L). */
+  readonly drsZones: readonly { from: number; to: number }[];
+  /** 1 nas amostras dentro de uma zona de DRS. */
+  readonly drsAt: Uint8Array;
 
   constructor(def: GpTrackDef) {
     this.def = def;
@@ -401,6 +409,10 @@ export class GpTrack {
       }
     }
     this.buildWalls();
+    this.drsZones = this.findDrsZones();
+    this.drsAt = new Uint8Array(this.n);
+    for (const zn of this.drsZones)
+      for (let s = zn.from; s < zn.to; s += this.ds) this.drsAt[this.index(s)] = 1;
     // nada de brita na reta do box
     for (let i = 0; i < n; i++)
       if (this.pitCenter(this.rel(i * this.ds)) !== null) this.gravel[i] = 0;
@@ -457,6 +469,33 @@ export class GpTrack {
         else this.wallL[i] = Math.max(this.wallL[i]!, need);
       }
     }
+  }
+
+  /** Retas com curvatura baixa por um bom trecho viram zona de DRS (começa depois da curva e acaba antes da freada). */
+  private findDrsZones(): { from: number; to: number }[] {
+    const n = this.n;
+    const straight = (i: number) => Math.abs(this.curv[((i % n) + n) % n]!) < GP_DRS_CURV_MAX;
+    // começa a varredura numa amostra de curva, para não partir uma reta no meio
+    let i0 = 0;
+    while (i0 < n && straight(i0)) i0++;
+    if (i0 >= n) return [];
+    const out: { from: number; to: number }[] = [];
+    let start = -1;
+    for (let k = 0; k <= n; k++) {
+      const on = k < n && straight(i0 + k);
+      if (on && start < 0) start = k;
+      if (!on && start >= 0) {
+        const len = (k - start) * this.ds;
+        if (len >= GP_DRS_MIN_STRAIGHT) {
+          const from = (i0 + start) * this.ds + GP_DRS_START_OFFSET;
+          const to = (i0 + k) * this.ds - GP_DRS_END_OFFSET;
+          const w = this.wrap(from);
+          out.push({ from: w, to: w + (to - from) });
+        }
+        start = -1;
+      }
+    }
+    return out.sort((a, b) => a.from - b.from);
   }
 
   /** Direção da pista na amostra i (o mesmo ângulo do carro). */

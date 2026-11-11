@@ -718,10 +718,6 @@ export class FoxGpRoom extends ColorRoom {
       const id = idOf(c);
       if (id) engine().finishLine(id, m);
     });
-    this.onMessage('gstat', (c, m) => {
-      const id = idOf(c);
-      if (id) engine().stats(id, m);
-    });
     this.onMessage('color', (c, m: { hex?: string }) =>
       this.act(c, (id) => engine().setColor(id, String(m?.hex ?? ''))),
     );

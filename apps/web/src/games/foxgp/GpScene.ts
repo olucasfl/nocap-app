@@ -5,8 +5,11 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { AfterimagePass } from 'three/examples/jsm/postprocessing/AfterimagePass.js';
 import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+import { Sky } from 'three/examples/jsm/objects/Sky.js';
+import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import {
   GP_HALF_WIDTH,
+  GP_MAX_PLAYERS,
   GP_KERB_W,
   GP_PIT_BOX_LEN,
   GP_PIT_HALF,
@@ -32,8 +35,6 @@ export interface GpPose {
 const FAR_DIR = new THREE.Vector3(4.6, 9.4, 7.2).normalize();
 const FAR_FOV = 24;
 
-const GRASS = 0x5bb653;
-const GRASS_DARK = 0x4ea548;
 const GRAVEL = 0xe6cf92;
 const WATER = 0x2a7fd4;
 const STAND = 0xf2c230;
@@ -41,6 +42,10 @@ const STAND = 0xf2c230;
 interface CarView {
   id: string;
   m: CarModel;
+  /** Giro das rodas e abertura da asa (suavizada). */
+  wheelA: number;
+  flapA: number;
+  shadow: boolean;
   tag: THREE.Sprite;
   you: THREE.Sprite | null;
   ghost: boolean;
@@ -80,32 +85,6 @@ const UP = new THREE.Vector3(0, 1, 0);
 
 const side = (track: GpWorld['track'], i: number) => ({ x: -track.tz[i]!, z: track.tx[i]! });
 
-/** Textura de ruído (asfalto): cinza com grão. */
-function noiseTexture(base: number, amount: number, size = 256, seed = 'n'): THREE.CanvasTexture {
-  const cv = document.createElement('canvas');
-  cv.width = size;
-  cv.height = size;
-  const g = cv.getContext('2d');
-  const rng = createRng(seed);
-  if (g) {
-    const img = g.createImageData(size, size);
-    const c = new THREE.Color(base);
-    for (let i = 0; i < size * size; i++) {
-      const n = (rng() - 0.5) * amount;
-      img.data[i * 4] = Math.max(0, Math.min(255, c.r * 255 + n));
-      img.data[i * 4 + 1] = Math.max(0, Math.min(255, c.g * 255 + n));
-      img.data[i * 4 + 2] = Math.max(0, Math.min(255, c.b * 255 + n));
-      img.data[i * 4 + 3] = 255;
-    }
-    g.putImageData(img, 0, 0);
-  }
-  const t = new THREE.CanvasTexture(cv);
-  t.wrapS = THREE.RepeatWrapping;
-  t.wrapT = THREE.RepeatWrapping;
-  t.colorSpace = THREE.SRGBColorSpace;
-  return t;
-}
-
 /** Mapa de relevo de ruído (o grão do asfalto pega luz). */
 function normalNoise(size = 256, seed = 'nn'): THREE.CanvasTexture {
   const cv = document.createElement('canvas');
@@ -129,7 +108,62 @@ function normalNoise(size = 256, seed = 'nn'): THREE.CanvasTexture {
   return t;
 }
 
-function labelTexture(text: string, fg: string, bg: string, w = 256, h = 64, font = 34): THREE.CanvasTexture {
+/** Textura desenhada por código (como a referência): repete, sRGB e anisotropia. */
+function tex(
+  w: number,
+  h: number,
+  draw: (g: CanvasRenderingContext2D, w: number, h: number) => void,
+  aniso = 8,
+  nearest = false,
+) {
+  const cv = document.createElement('canvas');
+  cv.width = w;
+  cv.height = h;
+  const g = cv.getContext('2d');
+  if (g) draw(g, w, h);
+  const t = new THREE.CanvasTexture(cv);
+  t.wrapS = THREE.RepeatWrapping;
+  t.wrapT = THREE.RepeatWrapping;
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = aniso;
+  if (nearest) t.magFilter = THREE.NearestFilter;
+  return t;
+}
+/** Granulado: pontinhos de cores parecidas (asfalto, grama). */
+function speckle(
+  g: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  n: number,
+  cols: string[],
+  rng: () => number,
+  size = 2,
+) {
+  for (let i = 0; i < n; i++) {
+    g.fillStyle = cols[Math.floor(rng() * cols.length)]!;
+    g.globalAlpha = 0.2 + rng() * 0.5;
+    g.fillRect(rng() * w, rng() * h, size * rng() + 0.6, size * rng() + 0.6);
+  }
+  g.globalAlpha = 1;
+}
+/** As marcas fictícias do NoCap nas placas da pista. */
+const SPONSORS: [string, string, string, string][] = [
+  ['FOX ENERGY', '#ff7d26', '#0b0e17', 'BEBIDA OFICIAL'],
+  ['NOCAP', '#0b0e17', '#ff7d26', 'JOGOS'],
+  ['TOCA TYRES', '#ffd23a', '#0b0e17', 'PNEUS'],
+  ['FOX GP', '#2f5bff', '#ffffff', 'MARINA'],
+  ['RABO LISO', '#f1ede4', '#2f5bff', 'OFICINA'],
+  ['FAÍSCA', '#e5303a', '#ffffff', 'TELECOM'],
+];
+
+function labelTexture(
+  text: string,
+  fg: string,
+  bg: string,
+  w = 256,
+  h = 64,
+  font = 34,
+): THREE.CanvasTexture {
   const cv = document.createElement('canvas');
   cv.width = w;
   cv.height = h;
@@ -182,7 +216,11 @@ export class GpScene {
   /** Objetos do cockpit (volante e bordas): só aparecem na câmera de dentro do carro. */
   private cockpit: THREE.Group;
   private cockpitWheel: THREE.Group;
-  private cockpitGear: { tex: THREE.CanvasTexture; ctx: CanvasRenderingContext2D | null; last: string };
+  private cockpitGear: {
+    tex: THREE.CanvasTexture;
+    ctx: CanvasRenderingContext2D | null;
+    last: string;
+  };
   private puffs: Puff[] = [];
   private puffTex: THREE.Texture;
   private sparks: Spark[] = [];
@@ -190,11 +228,13 @@ export class GpScene {
   private marks: THREE.InstancedMesh;
   private markCap: number;
   private markNext = 0;
-  private crew: { g: THREE.Group; home: THREE.Vector3; to: THREE.Vector3; gun: THREE.Object3D }[] = [];
+  private crew: { g: THREE.Group; home: THREE.Vector3; to: THREE.Vector3; gun: THREE.Object3D }[] =
+    [];
   private boxSpot: { x: number; z: number; h: number };
   private quality: GpQuality;
   private reduced: boolean;
   private meId: string;
+  private envTex: THREE.Texture | null = null;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -216,15 +256,19 @@ export class GpScene {
     const maxRatio = q === 'low' ? 1 : q === 'medium' ? (touch ? 1.5 : 1.75) : 2;
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxRatio));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.05;
+    // tone mapping neutro (referência): cores da pintura sem puxar para o laranja
+    this.renderer.toneMapping = THREE.NeutralToneMapping;
+    this.renderer.toneMappingExposure = 0.9;
     this.renderer.shadowMap.enabled = q !== 'low';
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    this.scene.background = new THREE.Color(0x8fd0f5);
-    this.scene.fog = new THREE.Fog(0xa8dcf7, 160, 520);
+    this.scene.background = new THREE.Color(0x9fc8ea);
+    this.scene.fog = new THREE.Fog(0xbfd0e0, 260, 1500);
+    this.buildSky();
     // o escurecimento lateral é do Atravessa e vale para os materiais das raposas: aqui é tudo sol
     mapEdge.uEdge.value = 1e6;
     // sol com sombra suave (a caixa da sombra segue o carro em foco) e céu/chão de ambiente
+    this.sun.color.setHex(0xfff0dc);
+    this.sun.intensity = 2.7;
     this.sun.position.set(-40, 80, 30);
     this.sun.castShadow = q !== 'low';
     const sm = q === 'high' ? 2048 : 1024;
@@ -238,7 +282,7 @@ export class GpScene {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.add(this.sun, this.sun.target);
-    this.scene.add(new THREE.HemisphereLight(0xdff2ff, 0x5c8a4a, 1.25));
+    this.scene.add(new THREE.HemisphereLight(0xdfeaff, 0x4f6d3c, q === 'low' ? 1.3 : 0.6));
 
     this.puffTex = this.makePuffTexture();
     this.buildGround();
@@ -256,7 +300,12 @@ export class GpScene {
     this.markCap = q === 'low' ? 0 : 900;
     this.marks = new THREE.InstancedMesh(
       markGeo,
-      new THREE.MeshBasicMaterial({ color: 0x15151a, transparent: true, opacity: 0.45, depthWrite: false }),
+      new THREE.MeshBasicMaterial({
+        color: 0x15151a,
+        transparent: true,
+        opacity: 0.45,
+        depthWrite: false,
+      }),
       Math.max(1, this.markCap),
     );
     this.marks.count = 0;
@@ -279,6 +328,39 @@ export class GpScene {
     this.scene.add(this.camera);
     for (const c of world.cars) this.addCar(c);
     this.setupPost();
+  }
+
+  // ---- céu e luz de ambiente (referência: Sky + mapa de ambiente gerado do céu) ----
+
+  private sunDir = new THREE.Vector3().setFromSphericalCoords(
+    1,
+    THREE.MathUtils.degToRad(50),
+    THREE.MathUtils.degToRad(205),
+  );
+
+  private makeSky(): Sky {
+    const sky = new Sky();
+    sky.scale.setScalar(4000);
+    const u = sky.material.uniforms as Record<string, { value: unknown }>;
+    u.turbidity!.value = 3.2;
+    u.rayleigh!.value = 1.25;
+    u.mieCoefficient!.value = 0.004;
+    u.mieDirectionalG!.value = 0.8;
+    (u.sunPosition!.value as THREE.Vector3).copy(this.sunDir);
+    return sky;
+  }
+
+  /** Céu de verdade na média e na alta; o reflexo na pintura vem dele (na baixa, só a cor de fundo). */
+  private buildSky() {
+    if (this.quality === 'low') return;
+    this.scene.add(this.makeSky());
+    const pm = new THREE.PMREMGenerator(this.renderer);
+    const env = new THREE.Scene();
+    env.add(this.makeSky());
+    this.envTex = pm.fromScene(env, 0.02, 1, 5000).texture;
+    pm.dispose();
+    this.scene.environment = this.envTex;
+    this.scene.environmentIntensity = 0.5;
   }
 
   // ---- pós-processamento ----
@@ -318,7 +400,11 @@ export class GpScene {
       if (!ra || !rb) continue;
       const si = side(tr, i);
       const sj = side(tr, j);
-      const p = (k: number, s: { x: number; z: number }, d: number) => [tr.x[k]! + s.x * d, y, tr.z[k]! + s.z * d];
+      const p = (k: number, s: { x: number; z: number }, d: number) => [
+        tr.x[k]! + s.x * d,
+        y,
+        tr.z[k]! + s.z * d,
+      ];
       const q = [p(i, si, ra.a), p(i, si, ra.b), p(j, sj, rb.a), p(j, sj, rb.b)];
       const vu = [
         [ra.a, i],
@@ -344,7 +430,11 @@ export class GpScene {
       material ??
         (this.quality === 'low'
           ? new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })
-          : new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, side: THREE.DoubleSide })),
+          : new THREE.MeshStandardMaterial({
+              vertexColors: true,
+              roughness: 0.95,
+              side: THREE.DoubleSide,
+            })),
     );
     m.receiveShadow = true;
     this.scene.add(m);
@@ -358,18 +448,34 @@ export class GpScene {
   }
 
   private buildGround() {
-    const g = new THREE.Mesh(new THREE.PlaneGeometry(1400, 1100), this.std(GRASS, 1));
+    const rng = createRng('gp:grass');
+    const grass = tex(256, 256, (g, w, h) => {
+      g.fillStyle = '#4b8b3a';
+      g.fillRect(0, 0, w, h);
+      // faixas de corte
+      g.fillStyle = 'rgba(255,255,255,.055)';
+      g.fillRect(0, 0, w / 2, h);
+      speckle(
+        g,
+        w,
+        h,
+        this.quality === 'low' ? 4000 : 22000,
+        ['#3d7a2f', '#5a9a45', '#355f28', '#6aa850'],
+        rng,
+      );
+    });
+    grass.repeat.set(140, 110);
+    this.textures.push(grass);
+    const g = new THREE.Mesh(
+      new THREE.PlaneGeometry(1400, 1100),
+      this.quality === 'low'
+        ? new THREE.MeshLambertMaterial({ map: grass })
+        : new THREE.MeshStandardMaterial({ map: grass, roughness: 1 }),
+    );
     g.rotation.x = -Math.PI / 2;
     g.position.set(0, -0.06, 0);
     g.receiveShadow = true;
     this.scene.add(g);
-    // faixas de grama mais escura dentro dos limites (o corte de grama de autódromo)
-    const tr = this.world.track;
-    this.ribbon(
-      (i) => ({ a: -Math.min(tr.wallL[i]!, tr.limit), b: Math.min(tr.wallR[i]!, tr.limit) }),
-      (i) => (Math.floor(i / 12) % 2 === 0 ? GRASS : GRASS_DARK),
-      -0.03,
-    );
   }
 
   private buildTrack() {
@@ -388,31 +494,94 @@ export class GpScene {
       () => GRAVEL,
       -0.01,
     );
-    // asfalto com textura de grão e relevo
-    const asphaltTex = noiseTexture(0x3b3d4a, this.quality === 'low' ? 10 : 34, 256, 'asfalto');
+    // asfalto cinza com granulado e a faixa de borracha no meio (a textura cobre a largura toda uma vez)
+    const arng = createRng('gp:asfalto');
+    const asphaltTex = tex(512, 512, (g, w, h) => {
+      g.fillStyle = '#55575c';
+      g.fillRect(0, 0, w, h);
+      speckle(
+        g,
+        w,
+        h,
+        this.quality === 'low' ? 12000 : 70000,
+        ['#3e4044', '#62656b', '#2f3134', '#707379'],
+        arng,
+        2.2,
+      );
+      const gr = g.createLinearGradient(0, 0, w, 0);
+      gr.addColorStop(0, 'rgba(0,0,0,0)');
+      gr.addColorStop(0.3, 'rgba(16,16,18,.16)');
+      gr.addColorStop(0.7, 'rgba(16,16,18,.16)');
+      gr.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = gr;
+      g.fillRect(0, 0, w, h);
+    });
+    asphaltTex.offset.x = 0.5;
     this.textures.push(asphaltTex);
     let asphalt: THREE.Material;
-    if (this.quality === 'low') asphalt = new THREE.MeshLambertMaterial({ map: asphaltTex, side: THREE.DoubleSide });
+    if (this.quality === 'low')
+      asphalt = new THREE.MeshLambertMaterial({ map: asphaltTex, side: THREE.DoubleSide });
     else {
       const nm = normalNoise(256, 'asfalto-relevo');
       this.textures.push(nm);
       asphalt = new THREE.MeshStandardMaterial({
         map: asphaltTex,
         normalMap: this.quality === 'high' ? nm : null,
-        normalScale: new THREE.Vector2(0.35, 0.35),
-        roughness: 0.92,
+        normalScale: new THREE.Vector2(0.25, 0.25),
+        roughness: 0.88,
         metalness: 0,
         side: THREE.DoubleSide,
+        polygonOffset: true,
+        polygonOffsetFactor: -1,
+        polygonOffsetUnits: -2,
       });
     }
-    this.ribbon(() => ({ a: -H, b: H }), () => 0xffffff, 0.02, asphalt, 6);
+    this.ribbon(
+      () => ({ a: -H, b: H }),
+      () => 0xffffff,
+      0.02,
+      asphalt,
+      H * 2,
+    );
+    // as faixas pintadas ficam um pouco à frente do asfalto na profundidade (não piscam)
+    const painted = (color?: number) =>
+      this.quality === 'low'
+        ? new THREE.MeshLambertMaterial({
+            vertexColors: color === undefined,
+            color: color ?? 0xffffff,
+            side: THREE.DoubleSide,
+            polygonOffset: true,
+            polygonOffsetFactor: -2,
+            polygonOffsetUnits: -4,
+          })
+        : new THREE.MeshStandardMaterial({
+            vertexColors: color === undefined,
+            color: color ?? 0xffffff,
+            roughness: 0.7,
+            side: THREE.DoubleSide,
+            polygonOffset: true,
+            polygonOffsetFactor: -2,
+            polygonOffsetUnits: -4,
+          });
     // linhas brancas da borda
-    this.ribbon(() => ({ a: -H, b: -H + 0.35 }), () => 0xf4f4f4, 0.03);
-    this.ribbon(() => ({ a: H - 0.35, b: H }), () => 0xf4f4f4, 0.03);
-    // zebras vermelhas e brancas nas curvas
-    const kerb = (i: number) => (Math.floor((i * tr.ds) / 2) % 2 === 0 ? 0xe8322e : 0xf6f6f6);
-    this.ribbon((i) => (tr.kerb[i] ? { a: -H - GP_KERB_W, b: -H } : null), kerb, 0.045);
-    this.ribbon((i) => (tr.kerb[i] ? { a: H, b: H + GP_KERB_W } : null), kerb, 0.045);
+    this.ribbon(
+      () => ({ a: -H + 0.1, b: -H + 0.5 }),
+      () => 0xf2f2f2,
+      0.03,
+      painted(0xf2f2f2),
+    );
+    this.ribbon(
+      () => ({ a: H - 0.5, b: H - 0.1 }),
+      () => 0xf2f2f2,
+      0.03,
+      painted(0xf2f2f2),
+    );
+    // zebras vermelhas e brancas só nas curvas (a regra de zebra da pista)
+    const kerb = (i: number) => (Math.floor((i * tr.ds) / 2) % 2 === 0 ? 0xd4202c : 0xf2f2f2);
+    this.ribbon((i) => (tr.kerb[i] ? { a: -H - GP_KERB_W, b: -H } : null), kerb, 0.045, painted());
+    this.ribbon((i) => (tr.kerb[i] ? { a: H, b: H + GP_KERB_W } : null), kerb, 0.045, painted());
+    // zonas de DRS: faixa verde na largada da zona, "DRS" pintado no chão e placa na margem
+    this.buildDrsZones();
     // a linha de chegada quadriculada e as linhas dos setores
     const cells = 14;
     const size = (H * 2) / cells;
@@ -431,14 +600,17 @@ export class GpScene {
     }
     for (const s of tr.sectorS) {
       const p = tr.pointAt(s, 0);
-      const m = new THREE.Mesh(new THREE.BoxGeometry(H * 2, 0.03, 0.35), new THREE.MeshBasicMaterial({ color: 0xffd23a }));
+      const m = new THREE.Mesh(
+        new THREE.BoxGeometry(H * 2, 0.03, 0.35),
+        new THREE.MeshBasicMaterial({ color: 0xffd23a }),
+      );
       m.position.set(p.x, 0.04, p.z);
       m.rotation.y = -p.h;
       this.scene.add(m);
     }
-    // marcas do grid
+    // marcas do grid (20 lugares)
     const mark = this.std(0xffffff);
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < GP_MAX_PLAYERS; i++) {
       const s = gpGridSpot(tr, i);
       const m = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.03, 0.3), mark);
       const p = tr.pointAt(s.s - 2, s.d);
@@ -462,7 +634,10 @@ export class GpScene {
     // a vaga do box (amarela) e as garagens atrás da faixa
     const pc = tr.pitCenter(tr.pit.box) ?? 0;
     const p = tr.pointAt(tr.pit.box, pc);
-    const box = new THREE.Mesh(new THREE.BoxGeometry(GP_PIT_HALF * 2 - 0.6, 0.04, GP_PIT_BOX_LEN), this.std(0xffd23a, 0.7));
+    const box = new THREE.Mesh(
+      new THREE.BoxGeometry(GP_PIT_HALF * 2 - 0.6, 0.04, GP_PIT_BOX_LEN),
+      this.std(0xffd23a, 0.7),
+    );
     box.position.set(p.x, 0.045, p.z);
     box.rotation.y = -p.h;
     this.scene.add(box);
@@ -510,14 +685,25 @@ export class GpScene {
     g.add(beam);
     const banner = labelTexture('FOX GP', '#0b0e17', '#ff7d26', 512, 64, 46);
     this.textures.push(banner);
-    const bm = new THREE.Mesh(new THREE.PlaneGeometry(GP_HALF_WIDTH * 2, 0.9), new THREE.MeshBasicMaterial({ map: banner }));
+    const bm = new THREE.Mesh(
+      new THREE.PlaneGeometry(GP_HALF_WIDTH * 2, 0.9),
+      new THREE.MeshBasicMaterial({ map: banner }),
+    );
     bm.position.set(0, 7.2, 0.41);
     g.add(bm);
+    // o painel preto com 5 colunas de 2 luzes (acendem juntas, coluna a coluna, com as da HUD)
+    const panel = new THREE.Mesh(new THREE.BoxGeometry(8.4, 2.2, 0.4), this.std(0x080808, 0.6));
+    panel.position.set(0, 4.7, 0.25);
+    g.add(panel);
+    const disc = new THREE.CircleGeometry(0.34, 20);
     for (let k = 0; k < 5; k++) {
-      const l = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.9, 0.3), this.lightOff);
-      l.position.set(-3.2 + k * 1.6, 6.2, 0.45);
-      g.add(l);
-      this.lights.push(l);
+      for (let r = 0; r < 2; r++) {
+        const l = new THREE.Mesh(disc, this.lightOff);
+        l.position.set(-3.2 + k * 1.6, 5.15 - r * 0.85, 0.46);
+        l.userData.col = k;
+        g.add(l);
+        this.lights.push(l);
+      }
     }
     // girado como um carro: o x do grupo atravessa a pista e as luzes olham para o grid (que vem de trás, +Z)
     g.position.set(p.x, 0, p.z);
@@ -527,7 +713,121 @@ export class GpScene {
 
   /** Acende `n` luzes; `out` apaga todas (largada). */
   setLights(n: number, out = false) {
-    this.lights.forEach((l, i) => (l.material = !out && i < n ? this.lightOn : this.lightOff));
+    for (const l of this.lights)
+      l.material = !out && (l.userData.col as number) < n ? this.lightOn : this.lightOff;
+  }
+
+  /** Zonas de DRS: faixa de detecção verde, "DRS" no chão e placas na margem (começo e fim). */
+  private buildDrsZones() {
+    const tr = this.world.track;
+    const H = GP_HALF_WIDTH;
+    const green = new THREE.MeshBasicMaterial({
+      color: 0x1fd05a,
+      transparent: true,
+      opacity: 0.85,
+      polygonOffset: true,
+      polygonOffsetFactor: -3,
+      polygonOffsetUnits: -6,
+    });
+    const word = labelTexture('DRS', '#ffffff', 'rgba(0,0,0,0)', 256, 96, 80);
+    this.textures.push(word);
+    const wordMat = new THREE.MeshBasicMaterial({
+      map: word,
+      transparent: true,
+      depthWrite: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -3,
+      polygonOffsetUnits: -6,
+    });
+    const signOn = labelTexture('DRS', '#0b0e17', '#1fd05a', 256, 128, 84);
+    const signOff = labelTexture('FIM DRS', '#ffffff', '#0b0e17', 256, 128, 56);
+    this.textures.push(signOn, signOff);
+    for (const zn of tr.drsZones) {
+      const a = tr.pointAt(zn.from, 0);
+      const line = new THREE.Mesh(new THREE.PlaneGeometry(H * 2, 0.6), green);
+      line.rotation.x = -Math.PI / 2;
+      line.rotation.z = -a.h;
+      line.position.set(a.x, 0.05, a.z);
+      this.scene.add(line);
+      const w = tr.pointAt(zn.from + 8, 0);
+      const txt = new THREE.Mesh(new THREE.PlaneGeometry(5, 1.9), wordMat);
+      txt.rotation.x = -Math.PI / 2;
+      txt.rotation.z = -w.h + Math.PI;
+      txt.position.set(w.x, 0.05, w.z);
+      this.scene.add(txt);
+      for (const [s, t] of [
+        [zn.from, signOn],
+        [zn.to, signOff],
+      ] as const) {
+        const i = tr.index(s);
+        const sd = tr.wallAt(i, 1) < tr.wallAt(i, -1) ? 1 : -1;
+        const off = Math.min(tr.wallAt(i, sd), tr.limit) - 0.4;
+        const q = tr.pointAt(s, sd * Math.max(H + GP_KERB_W + 1, off));
+        const post = new THREE.Mesh(
+          new THREE.BoxGeometry(0.12, 2.4, 0.12),
+          this.std(0x8a8f96, 0.4, 0.7),
+        );
+        post.position.set(q.x, 1.2, q.z);
+        const b = new THREE.Mesh(
+          new THREE.PlaneGeometry(1.6, 0.8),
+          new THREE.MeshBasicMaterial({ map: t, side: THREE.DoubleSide }),
+        );
+        b.position.set(q.x, 2.4, q.z);
+        b.rotation.y = -q.h;
+        this.scene.add(post, b);
+      }
+    }
+  }
+
+  /**
+   * Uma faixa vertical ao longo da barreira (placas, alambrado), a `extra` m além dela, só onde há barreira. A posição
+   * da barreira é a do `GpTrack` (a física usa a mesma).
+   */
+  private wallStrip(
+    sd: 1 | -1,
+    extra: number,
+    y0: number,
+    y1: number,
+    mat: THREE.Material,
+    vLen: number,
+  ) {
+    const tr = this.world.track;
+    const pos: number[] = [];
+    const uv: number[] = [];
+    const at = (i: number) => {
+      const w = tr.wallAt(i, sd);
+      if (w === Infinity) return null;
+      const sv = side(tr, i);
+      const d = sd * (w + extra);
+      return { x: tr.x[i]! + sv.x * d, z: tr.z[i]! + sv.z * d };
+    };
+    const every = Math.max(1, Math.round(1 / tr.ds));
+    for (let i = 0; i < tr.n; i += every) {
+      const j = (i + every) % tr.n;
+      const a = at(i);
+      const b = at(j);
+      if (!a || !b || Math.hypot(a.x - b.x, a.z - b.z) > 4 * every * tr.ds) continue;
+      const va = (i * tr.ds) / vLen;
+      const vb = va + (every * tr.ds) / vLen;
+      const q = [
+        [a.x, y1, a.z, va, 1],
+        [a.x, y0, a.z, va, 0],
+        [b.x, y1, b.z, vb, 1],
+        [b.x, y0, b.z, vb, 0],
+      ];
+      for (const k of [0, 1, 2, 2, 1, 3]) {
+        pos.push(q[k]![0]!, q[k]![1]!, q[k]![2]!);
+        uv.push(q[k]![3]!, q[k]![4]!);
+      }
+    }
+    if (pos.length === 0) return;
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    g.computeVertexNormals();
+    const m = new THREE.Mesh(g, mat);
+    m.receiveShadow = true;
+    this.scene.add(m);
   }
 
   private buildBarriers() {
@@ -564,8 +864,75 @@ export class GpScene {
       m.receiveShadow = true;
       this.scene.add(m);
     }
+    // placas com as marcas fictícias e o alambrado por trás (na baixa, só as placas)
+    const board = tex(2048, 128, (g, w, h) =>
+      SPONSORS.forEach(([n, bg, fg, sub], k) => {
+        const x = (k * w) / SPONSORS.length;
+        const bw = w / SPONSORS.length;
+        g.fillStyle = bg;
+        g.fillRect(x, 0, bw, h);
+        g.fillStyle = fg;
+        g.textAlign = 'center';
+        g.font = 'italic 900 54px "Saira Condensed", Inter, system-ui, sans-serif';
+        g.fillText(n, x + bw / 2, 70);
+        g.font = '700 18px Inter, system-ui, sans-serif';
+        g.fillText(sub, x + bw / 2, 104);
+        g.fillStyle = 'rgba(0,0,0,.3)';
+        g.fillRect(x + bw - 3, 0, 3, h);
+      }),
+    );
+    this.textures.push(board);
+    const boardMat =
+      this.quality === 'low'
+        ? new THREE.MeshLambertMaterial({ map: board, side: THREE.DoubleSide })
+        : new THREE.MeshStandardMaterial({ map: board, roughness: 0.55, side: THREE.DoubleSide });
+    for (const sd of [1, -1] as const) this.wallStrip(sd, 1.3, 0, 1.15, boardMat, 48);
+    if (this.quality !== 'low') {
+      const fence = tex(64, 64, (g, w, h) => {
+        g.clearRect(0, 0, w, h);
+        g.strokeStyle = 'rgba(205,210,215,1)';
+        g.lineWidth = 3;
+        g.beginPath();
+        g.moveTo(0, 0);
+        g.lineTo(w, h);
+        g.moveTo(w, 0);
+        g.lineTo(0, h);
+        g.stroke();
+      });
+      this.textures.push(fence);
+      const fenceMat = new THREE.MeshStandardMaterial({
+        map: fence,
+        alphaTest: 0.4,
+        metalness: 0.5,
+        roughness: 0.5,
+        side: THREE.DoubleSide,
+      });
+      for (const sd of [1, -1] as const) this.wallStrip(sd, 1.45, 1.15, 4.2, fenceMat, 1.3);
+      // postes do alambrado (instanciados)
+      const postG = new THREE.BoxGeometry(0.14, 4.4, 0.14).translate(0, 2.2, 0);
+      const spots: { x: number; z: number }[] = [];
+      for (let i = 0; i < tr.n; i += Math.round(8 / tr.ds))
+        for (const sd of [1, -1]) {
+          const w = tr.wallAt(i, sd);
+          if (w === Infinity) continue;
+          const sv = side(tr, i);
+          spots.push({ x: tr.x[i]! + sv.x * sd * (w + 1.5), z: tr.z[i]! + sv.z * sd * (w + 1.5) });
+        }
+      const im = new THREE.InstancedMesh(
+        postG,
+        this.std(0x8a8f96, 0.4, 0.7),
+        Math.max(1, spots.length),
+      );
+      spots.forEach((p, k) => im.setMatrixAt(k, tmpM.makeTranslation(p.x, 0, p.z)));
+      im.count = spots.length;
+      this.scene.add(im);
+    }
     if (walls.length) {
-      const wm = new THREE.InstancedMesh(new THREE.BoxGeometry(0.5, 1.1, 2.4), this.std(0xd7d9e0, 0.9), walls.length);
+      const wm = new THREE.InstancedMesh(
+        new THREE.BoxGeometry(0.5, 1.1, 2.4),
+        this.std(0xd7d9e0, 0.9),
+        walls.length,
+      );
       walls.forEach((p, i) => {
         tmpQ.setFromAxisAngle(UP, -p.h);
         tmpM.compose(tmpP.set(p.x, 0.55, p.z), tmpQ, tmpS.set(1, 1, 1));
@@ -629,7 +996,43 @@ export class GpScene {
     // arquibancadas amarelas com torcida e o nome de cada uma
     const stand = this.std(STAND, 0.7);
     const seat = this.std(0xd9d4ea, 0.8);
-    const crowd = [0xff7d26, 0x2f5bff, 0xffd23a, 0xff6f91, 0x7be07b, 0xb98cff].map((c) => this.std(c, 0.9));
+    const crng = createRng('gp:torcida');
+    const crowdTex = tex(
+      256,
+      256,
+      (g, w, h) => {
+        g.fillStyle = '#2a2e38';
+        g.fillRect(0, 0, w, h);
+        const cols = [
+          '#e53935',
+          '#fdd835',
+          '#1e88e5',
+          '#fafafa',
+          '#43a047',
+          '#fb8c00',
+          '#8e24aa',
+          '#f06292',
+          '#00acc1',
+          '#ff7d26',
+        ];
+        for (let y = 0; y < h; y += 8)
+          for (let x = 0; x < w; x += 5)
+            if (crng() < 0.9) {
+              const jy = crng() * 2;
+              g.fillStyle = cols[Math.floor(crng() * cols.length)]!;
+              g.fillRect(x + 1, y + 3 + jy, 3, 4);
+              g.fillStyle = '#e2b996';
+              g.fillRect(x + 1.5, y + 1 + jy, 2, 2);
+            }
+      },
+      4,
+      true,
+    );
+    this.textures.push(crowdTex);
+    const crowdMat =
+      this.quality === 'low'
+        ? new THREE.MeshLambertMaterial({ map: crowdTex })
+        : new THREE.MeshStandardMaterial({ map: crowdTex, roughness: 0.9 });
     for (const st of def.stands ?? []) {
       const s0 = tr.cpS[st.from] ?? 0;
       let s1 = tr.cpS[st.to] ?? s0 + 40;
@@ -648,13 +1051,12 @@ export class GpScene {
           b.castShadow = true;
           b.receiveShadow = true;
           this.scene.add(b);
-          if (!low)
-            for (let f = 0; f < 6; f++) {
-              const fq = tr.pointAt(s - 4.5 + f * 1.8, off);
-              const fan = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.8, 0.7), crowd[(f + row) % 6]!);
-              fan.position.set(fq.x, hgt + 0.4, fq.z);
-              this.scene.add(fan);
-            }
+          // a torcida sentada em cada degrau
+          const fq = tr.pointAt(s, off);
+          const fan = new THREE.Mesh(new THREE.PlaneGeometry(10.6, 0.9), crowdMat);
+          fan.position.set(fq.x, hgt + 0.45, fq.z);
+          fan.rotation.y = -fq.h + (st.side > 0 ? -Math.PI / 2 : Math.PI / 2) + Math.PI / 2;
+          this.scene.add(fan);
         }
         // o teto amarelo e a placa com o nome
         const q = tr.pointAt(s, st.side * (wall + 5.2));
@@ -720,24 +1122,87 @@ export class GpScene {
         this.scene.add(b);
       });
     }
-    // árvores de voxel longe da pista
-    const trunk = this.std(0x8a5a33, 0.9);
-    const leafs = [0x2f9e44, 0x3fb950, 0x2b8a3e].map((c) => this.std(c, 0.9));
-    const count = low ? 90 : 240;
-    for (let k = 0; k < count; k++) {
-      const x = -330 + rng() * 660;
-      const z = -230 + rng() * 460;
+    this.buildTrees(rng);
+    this.buildMountains(rng);
+  }
+
+  /** Árvores instanciadas (uma chamada de desenho), sem nascer perto da pista, do box nem da água da marina. */
+  private buildTrees(rng: () => number) {
+    const tr = this.world.track;
+    const low = this.quality === 'low';
+    const want = low ? 260 : this.quality === 'medium' ? 800 : 1500;
+    const water = tr.def.scale ? [tr.mapPoint(-200, 250), tr.mapPoint(215, 1000)] : null;
+    const inWater = (x: number, z: number) =>
+      !!water &&
+      x > Math.min(water[0]!.x, water[1]!.x) - 6 &&
+      x < Math.max(water[0]!.x, water[1]!.x) + 6 &&
+      z > Math.min(water[0]!.z, water[1]!.z) - 6 &&
+      z < Math.max(water[0]!.z, water[1]!.z) + 6;
+    const cone = new THREE.ConeGeometry(1, 1, 7).translate(0, 0.5, 0);
+    const trunkG = new THREE.CylinderGeometry(0.14, 0.2, 1, 5).translate(0, 0.5, 0);
+    const leaf = new THREE.InstancedMesh(cone, this.std(0xffffff, 1), want);
+    const trunk = new THREE.InstancedMesh(trunkG, this.std(0x4a3526, 1), want);
+    const col = new THREE.Color();
+    let n = 0;
+    for (let k = 0; k < want * 12 && n < want; k++) {
+      const x = -650 + rng() * 1300;
+      const z = -520 + rng() * 1040;
+      if (inWater(x, z)) continue;
       const p = tr.projectGlobal(x, z);
-      if (p.dist < tr.limit + 8) continue;
-      const h = 1.6 + rng() * 2.4;
-      const t = new THREE.Mesh(new THREE.BoxGeometry(0.6, h, 0.6), trunk);
-      t.position.set(x, h / 2, z);
-      const s = 2 + rng() * 1.6;
-      const l = new THREE.Mesh(new THREE.BoxGeometry(s, s, s), leafs[k % 3]!);
-      l.position.set(x, h + s / 2 - 0.2, z);
-      t.castShadow = !low;
-      l.castShadow = !low;
-      this.scene.add(t, l);
+      if (p.dist < tr.limit + 14) continue;
+      const h = 6 + rng() * 8;
+      const w = 1.8 + rng() * 1.6;
+      leaf.setMatrixAt(n, tmpM.compose(tmpP.set(x, 1.6, z), tmpQ.identity(), tmpS.set(w, h, w)));
+      trunk.setMatrixAt(n, tmpM.compose(tmpP.set(x, 0, z), tmpQ.identity(), tmpS.set(1, 2, 1)));
+      leaf.setColorAt(n, col.setHSL(0.27 + rng() * 0.06, 0.42 + rng() * 0.2, 0.15 + rng() * 0.08));
+      n++;
+    }
+    leaf.count = n;
+    trunk.count = n;
+    leaf.castShadow = !low;
+    leaf.receiveShadow = !low;
+    this.scene.add(leaf, trunk);
+  }
+
+  /** Montanhas ao longe, feitas por código (icosaedro deformado com cor pela altura). */
+  private buildMountains(rng: () => number) {
+    if (this.quality === 'low') return;
+    const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1 });
+    const c1 = new THREE.Color(0x4c7a44);
+    const c2 = new THREE.Color(0x8d968c);
+    const tc = new THREE.Color();
+    for (let k = 0; k < 12; k++) {
+      const ang = (k / 12) * Math.PI * 2 + rng() * 0.4;
+      const dist = 900 + rng() * 450;
+      const r = 200 + rng() * 220;
+      let g: THREE.BufferGeometry = new THREE.IcosahedronGeometry(r, 4);
+      g.deleteAttribute('normal');
+      g.deleteAttribute('uv');
+      g = mergeVertices(g);
+      const p = g.attributes.position!;
+      const col: number[] = [];
+      for (let i = 0; i < p.count; i++) {
+        let x = p.getX(i);
+        let y = p.getY(i);
+        let z = p.getZ(i);
+        const nn =
+          1 +
+          0.2 * Math.sin(x * 0.02 + k) * Math.cos(z * 0.022 - k) +
+          0.08 * Math.sin(x * 0.06 + y * 0.05);
+        x *= nn;
+        y *= nn;
+        z *= nn;
+        p.setXYZ(i, x, y, z);
+        const hh = Math.max(0, Math.min(1, (y / r) * 1.2));
+        tc.copy(c1).lerp(c2, hh * hh);
+        col.push(tc.r, tc.g, tc.b);
+      }
+      g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+      g.computeVertexNormals();
+      const m = new THREE.Mesh(g, mat);
+      m.scale.y = 0.35 + rng() * 0.4;
+      m.position.set(Math.cos(ang) * dist, -r * 0.12, Math.sin(ang) * dist);
+      this.scene.add(m);
     }
   }
 
@@ -784,7 +1249,11 @@ export class GpScene {
   /** O volante (com o visor da marcha) e as bordas do cockpit, presos à câmera de dentro do carro. */
   private buildCockpit() {
     const g = new THREE.Group();
-    const carbon = new THREE.MeshStandardMaterial({ color: 0x1b1535, roughness: 0.4, metalness: 0.3 });
+    const carbon = new THREE.MeshStandardMaterial({
+      color: 0x1b1535,
+      roughness: 0.4,
+      metalness: 0.3,
+    });
     const grip = new THREE.MeshStandardMaterial({ color: 0x0b0e17, roughness: 0.9 });
     const accent = new THREE.MeshBasicMaterial({ color: 0xff7d26, toneMapped: false });
     const wheel = new THREE.Group();
@@ -863,7 +1332,9 @@ export class GpScene {
     const tex = new THREE.CanvasTexture(cv);
     tex.colorSpace = THREE.SRGBColorSpace;
     this.textures.push(tex);
-    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }));
+    const s = new THREE.Sprite(
+      new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }),
+    );
     s.scale.set(w, h, 1);
     s.renderOrder = 10;
     return s;
@@ -889,13 +1360,32 @@ export class GpScene {
     // sombra de contato (sempre: com ou sem mapa de sombra)
     const blob = new THREE.Mesh(
       new THREE.PlaneGeometry(2.0, 3.8),
-      new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.25, depthWrite: false }),
+      new THREE.MeshBasicMaterial({
+        color: 0x000000,
+        transparent: true,
+        opacity: 0.25,
+        depthWrite: false,
+      }),
     );
     blob.rotation.x = -Math.PI / 2;
     blob.position.y = 0.06;
     m.group.add(blob);
     this.scene.add(m.group);
-    this.cars.set(c.id, { id: c.id, m, tag, you, ghost: false, wag: 0, shake: 0, markAcc: 0, lastX: 0, lastZ: 0 });
+    this.cars.set(c.id, {
+      id: c.id,
+      m,
+      tag,
+      you,
+      ghost: false,
+      wag: 0,
+      shake: 0,
+      markAcc: 0,
+      lastX: 0,
+      lastZ: 0,
+      wheelA: 0,
+      flapA: 0,
+      shadow: true,
+    });
   }
 
   /** Classificação: os outros carros ficam transparentes (fantasmas). */
@@ -924,7 +1414,11 @@ export class GpScene {
   /** Troca de câmera com transição suave (a preferência fica com quem chama). */
   setCamMode(mode: GpCamMode) {
     if (mode === this.mode) return;
-    this.camFrom = { p: this.camera.position.clone(), q: this.camera.quaternion.clone(), fov: this.camera.fov };
+    this.camFrom = {
+      p: this.camera.position.clone(),
+      q: this.camera.quaternion.clone(),
+      fov: this.camera.fov,
+    };
     this.camMix = this.reduced ? 1 : 0;
     this.mode = mode;
     this.chaseInit = false;
@@ -942,7 +1436,8 @@ export class GpScene {
         const b = this.cars.get(e.b);
         if (a) a.shake = Math.min(1, a.shake + e.force * 0.15);
         if (b) b.shake = Math.min(1, b.shake + e.force * 0.15);
-        if (e.force > 2 && typeof e.x === 'number') this.spark(e.x, e.z, Math.min(16, Math.round(e.force * 2)));
+        if (e.force > 2 && typeof e.x === 'number')
+          this.spark(e.x, e.z, Math.min(16, Math.round(e.force * 2)));
       } else if (e.type === 'wall') {
         const v = this.cars.get(e.id);
         if (v) v.shake = 1;
@@ -959,7 +1454,15 @@ export class GpScene {
     for (let i = 0; i < n && this.sparks.length < 120; i++) {
       const a = Math.random() * Math.PI * 2;
       const sp = 3 + Math.random() * 6;
-      this.sparks.push({ x, y: 0.4, z, vx: Math.cos(a) * sp, vy: 2 + Math.random() * 4, vz: Math.sin(a) * sp, age: 0 });
+      this.sparks.push({
+        x,
+        y: 0.4,
+        z,
+        vx: Math.cos(a) * sp,
+        vy: 2 + Math.random() * 4,
+        vz: Math.sin(a) * sp,
+        age: 0,
+      });
     }
   }
 
@@ -969,7 +1472,12 @@ export class GpScene {
     if (!p) {
       if (this.puffs.length >= 80) return;
       const s = new THREE.Sprite(
-        new THREE.SpriteMaterial({ map: this.puffTex, transparent: true, depthWrite: false, opacity: 0 }),
+        new THREE.SpriteMaterial({
+          map: this.puffTex,
+          transparent: true,
+          depthWrite: false,
+          opacity: 0,
+        }),
       );
       this.scene.add(s);
       p = { s, age: 1, life: 1, vx: 0, vy: 0, vz: 0, grow: 1 };
@@ -1015,13 +1523,16 @@ export class GpScene {
       v.m.group.position.set(p.x, 0, p.z);
       v.m.group.rotation.y = -p.h;
       for (const wh of v.m.wheelsF) wh.rotation.y = -c.steer * 0.45;
+      // as rodas giram com a velocidade; a asa de trás abre com o DRS (suave)
+      v.wheelA += (c.speed * dt) / v.m.wheelR;
+      for (const wh of v.m.wheels) wh.rotation.x = v.wheelA;
+      v.flapA += ((c.drsOpen ? -0.75 : 0) - v.flapA) * Math.min(1, dt * 10);
+      v.m.flap.rotation.x = v.flapA;
       // a cauda: balanço calmo andando; forte no vácuo
       const fast = Math.min(1, Math.abs(c.speed) / GP_VMAX);
       v.wag += dt * (5 + fast * 4 + c.slip * 12);
       const amp = this.reduced ? 0.08 : 0.16 + fast * 0.12 + c.slip * 0.55;
       v.m.tail.rotation.y = Math.sin(v.wag) * amp;
-      v.m.flame.visible = c.turbo > 0;
-      if (c.turbo > 0) v.m.flame.scale.set(1, 1, 0.7 + Math.abs(Math.sin(this.t * 40)) * 0.6);
       v.shake = Math.max(0, v.shake - dt * 3);
       v.m.body.position.x = this.reduced ? 0 : Math.sin(this.t * 60) * v.shake * 0.08;
       v.m.body.rotation.z = -c.steer * Math.min(1, fast * 1.2) * 0.05;
@@ -1085,6 +1596,20 @@ export class GpScene {
     this.sparkMesh.count = sn;
     this.sparkMesh.instanceMatrix.needsUpdate = true;
     this.updateCamera(dt, focusPose, focusCar);
+    // sombra só dos carros perto do foco (20 carros projetando sombra pesa no celular)
+    if (focusPose && this.quality !== 'low') {
+      for (const c of w.cars) {
+        const v = this.cars.get(c.id);
+        if (!v) continue;
+        const near = Math.hypot(c.x - focusPose.x, c.z - focusPose.z) < 70;
+        if (near === v.shadow) continue;
+        v.shadow = near;
+        v.m.group.traverse((o) => {
+          const mesh = o as THREE.Mesh;
+          if (mesh.isMesh) mesh.castShadow = near;
+        });
+      }
+    }
     // a caixa da sombra acompanha o foco
     if (focusPose) {
       this.sun.position.set(focusPose.x - 40, 80, focusPose.z + 30);
@@ -1190,6 +1715,7 @@ export class GpScene {
       else mat?.dispose?.();
     });
     this.composer?.dispose();
+    this.envTex?.dispose();
     this.renderer.dispose();
   }
 }

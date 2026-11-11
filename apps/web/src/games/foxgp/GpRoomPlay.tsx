@@ -10,7 +10,7 @@ import './foxgp.css';
 const nameOf = (id: string, username: string | undefined) =>
   id.startsWith('guest:') ? (username ?? '') : at(username);
 
-/** A corrida do Fox GP em sala (specs 078 e 079): a mesma tela do treino; quem simula é o líder da partida. */
+/** A corrida do Fox GP em sala (specs 078 a 080): a mesma tela do treino; quem simula é o líder, no modo da sala. */
 export function GpRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   const info = snapshot.foxgp;
   const navigate = useNavigate();
@@ -30,14 +30,21 @@ export function GpRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         paint: paintFromRoom(info.paints?.[id]) ?? undefined,
       }));
     // quem entrou com a corrida andando não está nas vagas: só assiste
-    return { seed, meId: info.slots[meId] !== undefined ? meId : '', hostId, infos: list };
+    return {
+      seed,
+      meId: info.slots[meId] !== undefined ? meId : '',
+      hostId,
+      infos: list,
+      physics: info.physics ?? 'arcade',
+    };
     // a lista só muda se mudarem as vagas: nomes novos no meio da partida não recriam a cena
-  }, [seed, meId, hostId, slotKey]);
+  }, [seed, meId, hostId, slotKey, info?.physics]);
   const live: GpRoomLive | undefined = info
     ? {
         stage: info.stage,
         qualiAt: info.qualiAt,
         raceAt: info.raceAt,
+        holdMs: info.holdMs ?? null,
         grid: info.grid,
         quali: info.quali,
         finish: info.finish,

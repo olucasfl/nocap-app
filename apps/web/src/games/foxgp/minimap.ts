@@ -4,7 +4,8 @@ import { css } from './format';
 
 /**
  * O minimapa do Fox GP (spec 079): o traçado da pista com a faixa do box, a linha de chegada quadriculada, as marcas dos
- * três setores, a entrada do box e um ponto por carro na cor da raposa (o seu maior e com anel branco).
+ * três setores, as zonas de DRS (verde), a entrada do box e um ponto por carro na cor da carroceria (o seu maior e com
+ * anel branco).
  */
 export function drawMinimap(cv: HTMLCanvasElement, world: GpWorld, meId: string, focus: string) {
   const g = cv.getContext('2d');
@@ -57,6 +58,18 @@ export function drawMinimap(cv: HTMLCanvasElement, world: GpWorld, meId: string,
   g.strokeStyle = GP_THEME.text2;
   g.lineWidth = 3.5;
   g.stroke();
+  // zonas de DRS (verde, por cima do traçado)
+  for (const zn of tr.drsZones) {
+    g.beginPath();
+    for (let q = zn.from; q <= zn.to; q += 2) {
+      const i = tr.index(q);
+      if (q === zn.from) g.moveTo(X(tr.x[i]!), Z(tr.z[i]!));
+      else g.lineTo(X(tr.x[i]!), Z(tr.z[i]!));
+    }
+    g.strokeStyle = '#1fd05a';
+    g.lineWidth = 5;
+    g.stroke();
+  }
   // marcas dos setores (amarelo) e entrada do box
   for (const s of tr.sectorS) {
     const i = tr.index(s);
@@ -90,7 +103,7 @@ export function drawMinimap(cv: HTMLCanvasElement, world: GpWorld, meId: string,
     const big = mine || c.id === focus;
     g.beginPath();
     g.arc(X(c.x), Z(c.z), big ? 7 : 5.5, 0, Math.PI * 2);
-    g.fillStyle = css(c.color);
+    g.fillStyle = css(c.paint?.body ?? c.color);
     g.fill();
     g.lineWidth = mine ? 3 : 2;
     g.strokeStyle = mine ? '#ffffff' : GP_THEME.bg;

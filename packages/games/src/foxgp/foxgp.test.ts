@@ -8,10 +8,9 @@ import {
   GP_KERB_W,
   GP_LAPS,
   GP_PIT_STOP_SEC,
+  GP_DRS_DRAG,
+  GP_QUALI_HOLD_SEC,
   GP_QUALI_MAX_SEC,
-  GP_QUALI_WARMUP,
-  GP_TURBO_GAIN,
-  GP_TURBO_SEC,
   GP_VMAX,
   gpGear,
   gpKmh,
@@ -23,7 +22,7 @@ import { GP_IDLE, GpWorld, gpAutoGear, gpGridOrder, gpTorque, type GpCar, type G
 const info = (n: number, bot = false) =>
   Array.from({ length: n }, (_, i) => ({ id: `p${i}`, name: `P${i}`, color: 0xff7d26, bot }));
 
-const full: GpInput = { throttle: 1, brake: 0, steer: 0, turbo: false };
+const full: GpInput = { throttle: 1, brake: 0, steer: 0 };
 
 /** A maior parte dos testes de física usa a pista antiga (reta longa e conhecida); a pista do jogo tem os seus. */
 const toca = (seed: string, n: number, bot = false) => new GpWorld(seed, info(n, bot), GP_TRACK_TOCA);
@@ -423,14 +422,12 @@ describe('box', () => {
     const c = w.cars[0]!;
     c.surface = 'pit';
     expect(w.vmaxOf(c)).toBeLessThan(GP_VMAX * 0.7);
-    c.turbo = 1;
-    expect(w.vmaxOf(c)).toBeLessThan(GP_VMAX * 0.7);
   });
 });
 
-describe('vácuo e turbo da cauda', () => {
-  function pair() {
-    const w = toca('a', 2);
+describe('vácuo e DRS', () => {
+  function pair(mode: 'arcade' | 'real' = 'arcade') {
+    const w = new GpWorld('a', info(2), GP_TRACK_TOCA, mode);
     w.beginRace(['p0', 'p1']);
     const [a, b] = w.cars as [GpCar, GpCar];
     put(w, a, -150, 0, 25);
@@ -439,84 +436,176 @@ describe('vácuo e turbo da cauda', () => {
     return { w, a, b };
   }
 
-  it('enche no vácuo de quem está na frente; o líder não enche', () => {
+  it('no vácuo de quem está na frente o arrasto cai; quem está na frente não ganha', () => {
     const { w, a, b } = pair();
-    for (let i = 0; i < 1.5 / GP_DT; i++) w.step(GP_DT, { p0: full, p1: full });
-    expect(b.bar).toBeGreaterThan(0.2);
-    expect(a.bar).toBe(0);
-    expect(b.slip).toBeGreaterThan(0);
+    for (let i = 0; i < 30; i++) w.step(GP_DT, { p0: full, p1: full });
+    expect(b.slip).toBeGreaterThan(0.3);
+    expect(a.slip).toBe(0);
+    expect(w.dragOf(b)).toBeLessThan(1);
+    expect(w.dragOf(a)).toBe(1);
   });
 
-  it('mais perto enche mais rápido', () => {
+  it('mais perto, mais vácuo', () => {
     const near = pair();
     const far = pair();
     put(far.w, far.b, -170, 0, 25);
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 5; i++) {
       near.w.step(GP_DT, { p0: full, p1: full });
       far.w.step(GP_DT, { p0: full, p1: full });
     }
-    expect(near.b.bar).toBeGreaterThan(far.b.bar);
+    expect(near.b.slip).toBeGreaterThan(far.b.slip);
   });
 
-  it('turbo só com a barra cheia, esvazia toda, dura 2,5 s e dá +15 % na máxima', () => {
-    const { w, b } = pair();
-    b.bar = 0.9;
-    w.step(GP_DT, { p1: { ...full, turbo: true } });
-    expect(b.turbo).toBe(0);
-    b.bar = 1;
-    w.step(GP_DT, { p1: { ...full, turbo: true } });
-    expect(b.turbo).toBeGreaterThan(GP_TURBO_SEC - 0.1);
-    expect(b.bar).toBe(0);
-    expect(w.vmaxOf(b)).toBeCloseTo(GP_VMAX * (1 + GP_TURBO_GAIN));
-    const left = b.turbo;
-    w.step(GP_DT, { p1: { ...full, turbo: true } });
-    expect(b.turbo).toBeLessThan(left);
-    for (let i = 0; i < GP_TURBO_SEC / GP_DT + 5; i++) w.step(GP_DT, { p1: full });
-    expect(b.turbo).toBe(0);
-  });
+  for (const mode of ['arcade', 'real'] as const) {
+    it(`${mode}: atrás de outro carro na reta o ganho de velocidade é perceptível`, () => {
+      // dois carros na reta longa: um sozinho, outro colado no vácuo de um carro mais lento
+      const solo = new GpWorld('v', info(1), GP_TRACK_TOCA, mode);
+      solo.beginRace(['p0']);
+      const s0 = solo.cars[0]!;
+      put(solo, s0, -300, 0, 26);
+      const duo = pair(mode);
+      put(duo.w, duo.a, -292, 0, 26);
+      put(duo.w, duo.b, -300, 0, 26);
+      for (let i = 0; i < 2.5 / GP_DT; i++) {
+        solo.step(GP_DT, { p0: full });
+        duo.w.step(GP_DT, { p0: { ...full, throttle: 0.8 }, p1: full });
+      }
+      expect(duo.b.speed).toBeGreaterThan(s0.speed + 0.3);
+    });
+  }
 
-  it('a barra não enche durante o turbo', () => {
-    const { w, b } = pair();
-    b.bar = 1;
-    w.step(GP_DT, { p1: { ...full, turbo: true } });
-    for (let i = 0; i < 60; i++) w.step(GP_DT, { p0: full, p1: full });
-    expect(b.bar).toBe(0);
+  it('não existe mais turbo: nem na entrada, nem no carro', () => {
+    const { a } = pair();
+    expect('turbo' in a).toBe(false);
+    expect('bar' in a).toBe(false);
   });
 });
 
+describe('DRS', () => {
+  const zoneS = (w: GpWorld) => w.track.drsZones[0]!.from + 30;
+  function racer(mode: 'arcade' | 'real' = 'arcade', n = 2) {
+    const w = new GpWorld('drs', info(n), undefined, mode);
+    w.beginRace(info(n).map((i) => i.id));
+    return w;
+  }
+
+  it('a Marina tem zona de DRS, e nenhuma em curva', () => {
+    const tr = gpTrack();
+    expect(tr.drsZones.length).toBeGreaterThanOrEqual(1);
+    for (let i = 0; i < tr.n; i++) if (tr.drsAt[i]) expect(Math.abs(tr.curv[i]!)).toBeLessThan(1 / 150);
+    const total = tr.drsZones.reduce((a, z) => a + z.to - z.from, 0);
+    expect(total).toBeGreaterThan(150);
+  });
+
+  it('na corrida: só depois da 1ª volta, só na zona, nunca para quem está em 1º', () => {
+    const w = racer();
+    const [a, b] = w.cars as [GpCar, GpCar];
+    // 2º colocado, na zona, mas ainda na 1ª volta: não abre
+    put(w, a, zoneS(w) + 20, 0, 25);
+    put(w, b, zoneS(w), 0, 25);
+    w.step(GP_DT, { p0: full, p1: { ...full, drs: true } });
+    expect(b.drsAvail).toBe(false);
+    expect(b.drsOpen).toBe(false);
+    // com uma volta completa: abre
+    a.laps = [60_000];
+    b.laps = [60_000];
+    a.prog += w.track.length;
+    b.prog += w.track.length;
+    w.step(GP_DT, { p0: full, p1: { ...full, drs: true } });
+    expect(b.drsAvail).toBe(true);
+    expect(b.drsOpen).toBe(true);
+    expect(w.dragOf(b)).toBeLessThanOrEqual(1 - GP_DRS_DRAG + 1e-9);
+    // o 1º nunca
+    w.step(GP_DT, { p0: { ...full, drs: true }, p1: full });
+    expect(a.drsAvail).toBe(false);
+    expect(a.drsOpen).toBe(false);
+  });
+
+  it('frear fecha; sair da zona fecha', () => {
+    const w = racer();
+    const [a, b] = w.cars as [GpCar, GpCar];
+    a.laps = [60_000];
+    b.laps = [60_000];
+    put(w, a, w.track.length + zoneS(w) + 30, 0, 25);
+    put(w, b, w.track.length + zoneS(w), 0, 25);
+    w.step(GP_DT, { p1: { ...full, drs: true } });
+    expect(b.drsOpen).toBe(true);
+    w.step(GP_DT, { p1: { throttle: 0, brake: 1, steer: 0, drs: true } });
+    expect(b.drsOpen).toBe(false);
+    w.step(GP_DT, { p1: { ...full, drs: true } });
+    expect(b.drsOpen).toBe(true);
+    const zone = w.track.drsZones[0]!;
+    put(w, b, w.track.length + zone.to + 15, 0, 25);
+    w.step(GP_DT, { p1: { ...full, drs: true } });
+    w.step(GP_DT, { p1: { ...full, drs: true } });
+    expect(b.drsOpen).toBe(false);
+  });
+
+  it('na classificação o DRS fica liberado nas zonas para todos', () => {
+    const w = new GpWorld('drsq', info(1));
+    const c = w.cars[0]!;
+    put(w, c, zoneS(w), 0, 25);
+    w.step(GP_DT, { p0: { ...full, drs: true } });
+    expect(c.drsAvail).toBe(true);
+    expect(c.drsOpen).toBe(true);
+  });
+
+  for (const mode of ['arcade', 'real'] as const) {
+    it(`${mode}: a asa aberta dá mais velocidade na reta`, () => {
+      const go = (drs: boolean) => {
+        const w = new GpWorld('drsv', info(1), undefined, mode);
+        const c = w.cars[0]!;
+        put(w, c, w.track.drsZones[0]!.from + 1, 0, 24);
+        for (let i = 0; i < 4 / GP_DT; i++) w.step(GP_DT, { p0: { ...full, drs } });
+        return c.speed;
+      };
+      expect(go(true)).toBeGreaterThan(go(false) + 0.2);
+    });
+  }
+});
+
 describe('classificação individual', () => {
-  it('todos saem do box e a volta só começa quando a pessoa quer', () => {
+  it('todos saem do box; a volta lançada só começa pelo botão: o carro vai para a largada, conta e larga', () => {
     const w = toca('q', 2);
     const [a] = w.cars as [GpCar];
     expect(a.surface).toBe('pit');
     expect(a.qualiStartT).toBeNull();
-    // "iniciar volta" dentro do box não vale
-    w.step(GP_DT, { p0: { ...GP_IDLE, lap: true } });
-    expect(a.qualiStartT).toBeNull();
-    // na pista vale: o cronômetro começa agora, daqui
+    // andando livre, sem tempo correndo
     put(w, a, 300, 0, 20);
+    for (let i = 0; i < 30; i++) w.step(GP_DT, { p0: full });
+    expect(a.qualiStartT).toBeNull();
+    // apertou: vai para a largada, parado e alinhado com a pista
     w.step(GP_DT, { p0: { ...full, lap: true } });
+    expect(w.drainEvents().some((e) => e.type === 'qready' && e.id === 'p0')).toBe(true);
+    const line = w.track.pointAt(0, 0);
+    expect(Math.hypot(a.x - line.x, a.z - line.z)).toBeLessThan(0.5);
+    expect(a.speed).toBe(0);
+    expect(a.h).toBeCloseTo(line.h, 5);
+    // durante a contagem não anda nem com o pé no fundo, e o tempo não corre
+    for (let i = 0; i < (GP_QUALI_HOLD_SEC - 0.2) / GP_DT; i++) w.step(GP_DT, { p0: full });
+    expect(a.speed).toBe(0);
+    expect(a.qualiStartT).toBeNull();
+    for (let i = 0; i < 0.3 / GP_DT; i++) w.step(GP_DT, { p0: full });
     expect(a.qualiStartT).not.toBeNull();
+    expect(a.speed).toBeGreaterThan(0);
     expect(w.drainEvents().some((e) => e.type === 'qstart' && e.id === 'p0')).toBe(true);
-    // e acaba depois de exatamente uma volta inteira a partir dali
+    // e acaba depois de exatamente uma volta inteira a partir da linha
     a.prog = a.qualiStartProg + w.track.length - 0.3;
-    w.step(GP_DT, { p0: full });
+    for (let i = 0; i < 30 && a.qualiMs === null; i++) w.step(GP_DT, { p0: full });
     expect(a.qualiMs).not.toBeNull();
     expect(w.drainEvents().some((e) => e.type === 'qtime')).toBe(true);
+    // depois do tempo o carro continua andando livre, e não dá para começar outra volta
+    w.step(GP_DT, { p0: { ...full, lap: true } });
+    expect(a.qualiHold).toBe(0);
   });
 
-  it('cruzar a linha depois do aquecimento começa a volta sozinho (e antes do aquecimento não)', () => {
+  it('cruzar a linha não começa a volta sozinho (só o botão)', () => {
     const w = toca('q', 1);
     const c = w.cars[0]!;
-    put(w, c, -10, 0, 20);
-    c.warm = 0;
-    for (let i = 0; i < 40; i++) w.step(GP_DT, { p0: full });
-    expect(c.qualiStartT).toBeNull();
     put(w, c, w.track.length - 10, 0, 20);
-    c.warm = GP_QUALI_WARMUP + 1;
-    for (let i = 0; i < 40; i++) w.step(GP_DT, { p0: full });
-    expect(c.qualiStartT).not.toBeNull();
-    expect(c.qualiStartProg).toBeCloseTo(w.track.length, 6);
+    for (let i = 0; i < 2 / GP_DT; i++) w.step(GP_DT, { p0: full });
+    expect(c.prog).toBeGreaterThan(w.track.length);
+    expect(c.qualiStartT).toBeNull();
   });
 
   it('com bots na pista do jogo: todos marcam tempo, com setores, e o grid segue os tempos', () => {
@@ -622,7 +711,7 @@ describe('corrida e chegada', () => {
       runBots(w, GP_QUALI_MAX_SEC + 5, () => w.qualiDone(), 'same');
       w.beginRace(w.gridOrder());
       runBots(w, 60, () => w.ended, 'same');
-      return w.cars.map((c) => [c.x.toFixed(4), c.z.toFixed(4), c.wear.toFixed(5), c.bar.toFixed(5)]);
+      return w.cars.map((c) => [c.x.toFixed(4), c.z.toFixed(4), c.wear.toFixed(5), c.slip.toFixed(5)]);
     };
     expect(run()).toEqual(run());
   });

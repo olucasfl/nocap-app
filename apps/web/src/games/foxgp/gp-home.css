@@ -324,6 +324,42 @@
   font-variant-numeric: tabular-nums;
 }
 
+.gph-phys {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.gph-phys .gp-kicker {
+  margin-right: 4px;
+}
+.gph-phys-btn {
+  flex: 1;
+  height: 44px;
+  border: 2px solid var(--gp-line-2);
+  background: var(--gp-panel-2);
+  color: var(--gp-text);
+  font: italic 800 20px var(--gp-display);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.gph-phys-btn.is-on {
+  border-color: var(--gp-accent);
+  background: var(--gp-accent);
+  color: var(--gp-bg);
+}
+.gph-phys-btn:focus-visible {
+  outline: 3px solid var(--gp-accent-soft);
+  outline-offset: 2px;
+}
+.gph-best {
+  margin: -4px 0 0;
+  font-size: 14px;
+  color: var(--gp-text-3);
+}
+.gph-best b {
+  color: var(--gp-text);
+}
+
 @media (max-width: 900px) {
   .gph-car {
     opacity: 0.35;

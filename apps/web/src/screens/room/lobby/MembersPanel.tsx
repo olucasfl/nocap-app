@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ATR_ROOM_COLORS } from '@nocap/games';
+import { ATR_ROOM_COLORS, GP_ROOM_COLORS } from '@nocap/games';
 import { acceptRequest, fetchFriends, sendRequest, type RelationState } from '@/lib/friends';
 import { Check, Crown } from '@/components/icons';
 import { FoxAvatar } from '@/components/HubArt';
@@ -167,9 +167,12 @@ function ColorPicker({ snapshot, me }: { snapshot: RoomSnapshot; me: string | un
       : snapshot.game === 'foxgp'
         ? snapshot.foxgp?.colors
         : snapshot.atravessa?.colors) ?? {};
-  const owner = (hex: string) => Object.entries(colors).find(([, h]) => h === hex)?.[0];
+  const owner = (hex: string) => Object.entries(colors).find(([id, h]) => h === hex && id !== me)?.[0];
   const nameOf = (id?: string) => snapshot.members.find((m) => m.id === id)?.username;
   const mine = me ? colors[me] : undefined;
+  // Fox GP: 10 cores; com todas usadas (mais de 10 na sala) a cor pode repetir
+  const palette = snapshot.game === 'foxgp' ? GP_ROOM_COLORS : ATR_ROOM_COLORS;
+  const full = snapshot.game === 'foxgp' && palette.every((c) => owner(c.hex));
   return (
     <section className="lb3-colors" aria-label="Cor da sua raposa">
       <div className="lb3-colors-head">
@@ -177,9 +180,9 @@ function ColorPicker({ snapshot, me }: { snapshot: RoomSnapshot; me: string | un
         {!mine && <span className="mono warn">Escolha uma para ficar pronto</span>}
       </div>
       <div className="lb3-dots" role="radiogroup" aria-label="Cor da raposa">
-        {ATR_ROOM_COLORS.map((c) => {
-          const by = owner(c.hex);
-          const isMine = by === me;
+        {palette.map((c) => {
+          const isMine = mine === c.hex;
+          const by = full ? undefined : owner(c.hex);
           return (
             <button
               key={c.hex}

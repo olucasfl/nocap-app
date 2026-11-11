@@ -1,9 +1,13 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { gpTrack } from '@nocap/games';
+import type { GpPhysicsMode } from '@nocap/games';
 import { GpCarPreview } from './GpCarPreview';
+import { GpCommands } from './GpCommands';
 import { GpGarage } from './GpGarage';
 import { loadGarage } from './garage';
+import { PHYSICS_NAME, loadBest, loadPhysics, savePhysics } from './gp-best';
+import { lapClock } from './format';
 import { GP_THEME } from './theme';
 import './theme.css';
 import './gp-home.css';
@@ -38,6 +42,14 @@ export function GpHome({
   const [garage, setGarage] = useState(false);
   const [car, setCar] = useState(() => loadGarage());
   const [code, setCode] = useState('');
+  const [physics, setPhysics] = useState<GpPhysicsMode>(() => loadPhysics());
+  const [commands, setCommands] = useState(false);
+  const touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+  const pickPhysics = (m: GpPhysicsMode) => {
+    setPhysics(m);
+    savePhysics(m);
+  };
+  const best = loadBest(physics);
   useEffect(() => {
     const html = document.documentElement;
     const prev = html.style.overflow;
@@ -48,13 +60,13 @@ export function GpHome({
   }, []);
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
-      if (e.code !== 'Escape' || garage) return;
+      if (e.code !== 'Escape' || garage || commands) return;
       if (screen === 'main') onExit();
       else setScreen('main');
     };
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
-  }, [screen, garage, onExit]);
+  }, [screen, garage, commands, onExit]);
   const join = (e: FormEvent) => {
     e.preventDefault();
     room.join(code);
@@ -68,7 +80,12 @@ export function GpHome({
         <i />
       </div>
       <div className="gph-flag gp-checker" aria-hidden="true" />
-      <GpCarPreview fur={car.fur} paint={car.paint} className="gph-car" label="O seu carro, com a raposa no cockpit" interactive={false} />
+      <GpCarPreview
+        fur={car.fur}
+        paint={car.paint}
+        className="gph-car"
+        label="O seu carro, com a raposa no cockpit. Arraste para girar."
+      />
       <div className="gph-main">
         <div className="gph-brand">
           <span className="gph-tag">Fox Cap</span>
@@ -82,9 +99,30 @@ export function GpHome({
         {screen === 'main' && (
           <>
             <p className="gph-lead">
-              A raposa do Atravessa trocou a travessia pela pista. Corrida voxel de F1, sozinho ou com a sala toda.
+              A raposa do Atravessa trocou a travessia pela pista. Corrida de F1 com até 20 carros, sozinho ou com a sala
+              toda.
             </p>
             <div className="gph-btns">
+              <div className="gph-phys" role="radiogroup" aria-label="Física" data-testid="gp-physics">
+                <span className="gp-kicker">Física</span>
+                {(['arcade', 'real'] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    role="radio"
+                    aria-checked={physics === m}
+                    className={physics === m ? 'gph-phys-btn is-on' : 'gph-phys-btn'}
+                    onClick={() => pickPhysics(m)}
+                    data-testid={'gp-physics-' + m}
+                  >
+                    {PHYSICS_NAME[m]}
+                  </button>
+                ))}
+              </div>
+              <p className="gph-best" data-testid="gp-best">
+                Sua melhor volta ({PHYSICS_NAME[physics]}):{' '}
+                <b className="gpn">{best !== null ? lapClock(best) : 'ainda sem tempo'}</b>
+              </p>
               <button type="button" className="gp-tbtn is-primary gph-go" onClick={onRace} data-testid="gl-offline">
                 Correr agora
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -103,6 +141,9 @@ export function GpHome({
                   Pistas
                 </button>
               </div>
+              <button type="button" className="gp-tbtn" onClick={() => setCommands(true)} data-testid="gp-open-commands">
+                Comandos
+              </button>
               <div className="gph-two">
                 <button type="button" className="gp-tbtn is-ghost" onClick={onHelp} data-testid="gl-help">
                   Como jogar
@@ -117,7 +158,10 @@ export function GpHome({
         {screen === 'friends' && (
           <div className="gph-panel gp-tpanel" data-testid="gl-friends-panel">
             <h2>Corrida online</h2>
-            <p>Crie a sala e mande o código, ou entre com o código de alguém. De 2 a 8 raposas.</p>
+            <p>
+              Crie a sala e mande o código, ou entre com o código de alguém. De 2 a 20 raposas; o líder escolhe a física
+              no lobby.
+            </p>
             {room.error && (
               <p className="gph-error" role="alert" data-testid="gl-error">
                 {room.error}
@@ -164,6 +208,7 @@ export function GpHome({
           </div>
         )}
       </div>
+      {commands && <GpCommands touch={touch} onClose={() => setCommands(false)} />}
       {garage && (
         <GpGarage
           onClose={() => setGarage(false)}

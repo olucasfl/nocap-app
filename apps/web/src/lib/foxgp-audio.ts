@@ -2,7 +2,7 @@ import { audioKit } from './sfx';
 
 /**
  * Sons do Fox GP, sintetizados em Web Audio (sem arquivos) e respeitando o mudo do `sfx`: o motor do próprio carro é uma
- * voz contínua que sobe com a velocidade; o resto são toques curtos (luzes, turbo, batida, volta, box).
+ * voz contínua que sobe com a rotação; o resto são toques curtos (luzes, DRS, batida, volta, box).
  */
 let bus: { ctx: AudioContext; node: AudioNode } | null = null;
 function busFor(kit: NonNullable<ReturnType<typeof audioKit>>): AudioNode {
@@ -56,10 +56,20 @@ function noise(f0: number, f1: number, q: number, dur: number, peak: number, del
   src.stop(t + dur + 0.05);
 }
 
-/** O ronco do motor: duas ondas desafinadas num filtro, seguindo a rotação. */
+/**
+ * O ronco do motor (spec 080, voz do repositório de referência, MIT): uma dente de serra a 1,5× e uma quadrada a 0,75× da
+ * rotação, num passa-baixa e num ganho, ligados ao `audioKit` (o mesmo `AudioContext`, que já cuida do mudo e de só tocar
+ * depois de um toque). A rotação vem da marcha e do giro do motor (`GpCar.gear`, `GpCar.rpm`): sobe em cada marcha e cai
+ * na troca; parado, o acelerador só sobe o giro.
+ */
 class Engine {
-  private nodes: { ctx: AudioContext; a: OscillatorNode; b: OscillatorNode; f: BiquadFilterNode; g: GainNode } | null =
-    null;
+  private nodes: {
+    ctx: AudioContext;
+    a: OscillatorNode;
+    b: OscillatorNode;
+    f: BiquadFilterNode;
+    g: GainNode;
+  } | null = null;
 
   start() {
     const kit = audioKit();
@@ -71,11 +81,9 @@ class Engine {
     const g = ctx.createGain();
     a.type = 'sawtooth';
     b.type = 'square';
-    a.frequency.value = 55;
-    b.frequency.value = 56.5;
     f.type = 'lowpass';
-    f.frequency.value = 500;
-    f.Q.value = 2;
+    f.frequency.value = 1500;
+    f.Q.value = 1.5;
     g.gain.value = 0.0001;
     a.connect(f);
     b.connect(f);
@@ -85,18 +93,25 @@ class Engine {
     this.nodes = { ctx, a, b, f, g };
   }
 
-  /** `rpm` de 0 a 1 (a marcha faz o serrote: sobe e cai a cada troca), `load` de 0 a 1 (acelerando). */
-  update(rpm: number, load: number, turbo: boolean) {
+  /** Rotação do motor em RPM (como no conta-giros): `rpm` de 0 a 1 dentro da marcha; parado, o acelerador sobe o giro. */
+  static rpmOf(rpm: number, throttle: number, idle: boolean): number {
+    return idle ? 4000 + throttle * 6000 : 5500 + 6500 * Math.max(0, Math.min(1, rpm));
+  }
+
+  /**
+   * `rpm` de 0 a 1 (dentro da marcha), `throttle` de 0 a 1, `silent` (menu, pausa, fim) e `idle` (parado: o acelerador só
+   * sobe o giro).
+   */
+  update(rpm: number, throttle: number, silent = false, idle = false) {
     const kit = audioKit();
     const n = this.nodes;
     if (!n) return;
     const t = n.ctx.currentTime;
-    const freq = 55 + rpm * 150 + (turbo ? 25 : 0);
-    n.a.frequency.setTargetAtTime(freq, t, 0.04);
-    n.b.frequency.setTargetAtTime(freq * 1.012, t, 0.04);
-    n.f.frequency.setTargetAtTime(380 + rpm * 1500 + load * 500, t, 0.05);
-    const vol = kit && !kit.muted() ? 0.03 + load * 0.035 + rpm * 0.02 : 0.0001;
-    n.g.gain.setTargetAtTime(vol, t, 0.06);
+    const r = Engine.rpmOf(rpm, throttle, idle);
+    n.a.frequency.setTargetAtTime((r / 60) * 1.5, t, 0.03);
+    n.b.frequency.setTargetAtTime((r / 60) * 0.75, t, 0.03);
+    const vol = kit && !kit.muted() && !silent ? 0.025 + throttle * 0.035 : 0.0001;
+    n.g.gain.setTargetAtTime(vol, t, 0.05);
   }
 
   stop() {
@@ -109,6 +124,8 @@ class Engine {
     n.b.stop(t + 0.3);
   }
 }
+
+export { Engine as GpEngineVoice };
 
 let lastBump = 0;
 let lastWall = 0;
@@ -126,15 +143,10 @@ export const gpSfx = {
   count(n: number) {
     tone('triangle', n === 0 ? 880 : 520, n === 0 ? 880 : 520, n === 0 ? 0.3 : 0.12, 0.18);
   },
-  /** a barra do turbo encheu */
-  ready() {
-    tone('triangle', 660, 990, 0.12, 0.14);
-    tone('triangle', 990, 1320, 0.12, 0.12, 0.09);
-  },
-  /** turbo da cauda solto */
-  turbo() {
-    noise(400, 3200, 1.4, 0.5, 0.3);
-    tone('sawtooth', 120, 260, 0.45, 0.08);
+  /** o DRS ficou disponível: bipe curto */
+  drs() {
+    tone('triangle', 1320, 1320, 0.07, 0.12);
+    tone('triangle', 1760, 1760, 0.07, 0.1, 0.08);
   },
   bump(you: boolean) {
     const now = performance.now();
@@ -165,12 +177,10 @@ export const gpSfx = {
   pitOut() {
     tone('triangle', 660, 990, 0.2, 0.16);
   },
-  pass() {
-    tone('triangle', 880, 1320, 0.14, 0.12);
-  },
   /** cruzou a linha de chegada */
   finish(place: number) {
-    const notes = place === 1 ? [523, 659, 784, 1047, 1319] : place <= 3 ? [523, 659, 784] : [440, 523];
+    const notes =
+      place === 1 ? [523, 659, 784, 1047, 1319] : place <= 3 ? [523, 659, 784] : [440, 523];
     notes.forEach((f, i) => tone('triangle', f, f, 0.2, 0.2, 0.1 * i));
   },
 };

@@ -1,10 +1,16 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
 import {
   GP_DNF_SEC,
   GP_DT,
+  GP_GO_SEC,
   GP_LAPS,
   GP_LIGHTS,
-  GP_LIGHTS_HOLD,
   GP_LIGHT_SEC,
   GP_PIT_STOP_SEC,
   GP_QUALI_MAX_SEC,
@@ -14,13 +20,17 @@ import {
   GpWorld,
   createRng,
   gpBotInput,
-  gpGear,
+  gpBotProfile,
   gpKmh,
+  gpLightsHold,
+  gpSnapshotFor,
   newGpBotMemory,
   type GpBotMemory,
   type GpCar,
   type GpEvent,
   type GpInput,
+  type GpPaint,
+  type GpPhysicsMode,
   type GpPlayerInfo,
 } from '@nocap/games';
 import { GameChat } from '@/components/GameChat';
@@ -31,19 +41,67 @@ import { RotateHint } from '@/components/RotateHint';
 import { gameChatOpen } from '@/lib/game-chat-state';
 import { gpSfx } from '@/lib/foxgp-audio';
 import { GpHostLink, GpPeerLink } from '@/lib/foxgp-net';
-import { currentRtt, gameNow, sendRoom, sendRoomQuiet, serverNow, subscribeRoom } from '@/lib/rooms';
+import {
+  currentRtt,
+  gameNow,
+  sendRoom,
+  sendRoomQuiet,
+  serverNow,
+  subscribeRoom,
+} from '@/lib/rooms';
 import { GpFinal, type GpFinalRow } from './GpFinal';
 import { GpControls } from './gp-controls';
 import { GpScene, type GpCamMode, type GpPose, type GpQuality } from './GpScene';
 import { GpWipe } from './GpWipe';
-import { css, gapText, lapClock, raceClock } from './format';
+import { GpCommands } from './GpCommands';
+import { css, gapText, lapClock } from './format';
 import { drawMinimap } from './minimap';
+import { GpNoticeQueue, NOTICE_FADE_MS, type GpNotice, type GpNoticeKind } from './notices';
+import { PHYSICS_NAME, saveBest } from './gp-best';
+import { gpActionOf, gpKeyName, useGpControls, type GpBinds } from './gp-settings';
 import './theme.css';
 import './foxgp.css';
+import './gp-hud.css';
 
 /** Cores das raposas no treino (a primeira é a sua, se você não escolher outra). */
-export const GP_FURS = [0xff7d26, 0xb98cff, 0x4fc3f7, 0x7be07b, 0xffd23f, 0xff6f91, 0xf5f5f5, 0x8d6e63];
-const BOT_NAMES = ['Faísca', 'Pipoca', 'Trufa', 'Ruivo', 'Brisa', 'Nuvem', 'Cacau'];
+export const GP_FURS = [
+  0xff7d26, 0xb98cff, 0x4fc3f7, 0x7be07b, 0xffd23f, 0xff6f91, 0xf5f5f5, 0x8d6e63, 0x8b93a3,
+  0xe5303a,
+];
+/** Os 19 adversários do treino (spec 080: você mais 19 bots). */
+const BOT_NAMES = [
+  'Faísca',
+  'Pipoca',
+  'Trufa',
+  'Ruivo',
+  'Brisa',
+  'Nuvem',
+  'Cacau',
+  'Pimenta',
+  'Gengibre',
+  'Raposão',
+  'Ventania',
+  'Canela',
+  'Bolota',
+  'Tufo',
+  'Cometa',
+  'Chama',
+  'Amora',
+  'Paçoca',
+  'Granizo',
+];
+/** Pinturas dos bots (cada um com a sua: no grid de 20 os carros não ficam iguais). */
+const BOT_BODIES = [
+  0x2f5bff, 0xe5303a, 0x33c27f, 0xffd23f, 0x7a3cff, 0x25c7e8, 0xf1ede4, 0x1a1a1a, 0xff9ecf,
+  0x0c7a5a,
+];
+const BOT_PATTERNS: GpPaint['pattern'][] = ['faixa', 'listras', 'chevron', 'solida'];
+const botPaint = (i: number): GpPaint => ({
+  body: BOT_BODIES[i % BOT_BODIES.length]!,
+  accent: BOT_BODIES[(i * 3 + 4) % BOT_BODIES.length]!,
+  pattern: BOT_PATTERNS[i % BOT_PATTERNS.length]!,
+  number: i + 2,
+});
 const COUNT_SEC = 3.2;
 const GRID_SEC = 3.6;
 const TIPS_KEY = 'nocap-gp-tips';
@@ -51,7 +109,11 @@ const CAM_KEY = 'nocap-gp-cam';
 const QUALITY_KEY = 'nocap-gp-quality';
 const SMOOTH = 12;
 const CAMS: GpCamMode[] = ['far', 'chase', 'cockpit'];
-const CAM_NAME: Record<GpCamMode, string> = { far: 'Distante', chase: 'Atrás do carro', cockpit: 'Cockpit' };
+const CAM_NAME: Record<GpCamMode, string> = {
+  far: 'Distante',
+  chase: 'Atrás do carro',
+  cockpit: 'Cockpit',
+};
 const QUALITY_NAME: Record<GpQuality, string> = { low: 'Baixa', medium: 'Média', high: 'Alta' };
 
 const read = <T extends string>(key: string, ok: readonly T[], fallback: T): T => {
@@ -70,40 +132,70 @@ const save = (key: string, v: string) => {
   }
 };
 
-const tipRows = (touch: boolean): TipRow[] =>
+const tipRows = (touch: boolean, b: GpBinds): TipRow[] =>
   touch
     ? [
         { keys: <b className="gm-tag">‹ ›</b>, text: 'Botões da esquerda: virar' },
-        { keys: <b className="gm-tag">Acelera</b>, text: 'Botão grande da direita; o Freio fica ao lado (parado, dá ré)' },
-        { keys: <b className="gm-tag">Turbo</b>, text: 'Ande no vácuo de outro carro até a barra encher e toque em Turbo' },
-        { keys: <b className="gm-tag">Volta</b>, text: 'Classificação: toque em Iniciar volta quando estiver pronto' },
-        { keys: <b className="gm-tag">Câmera</b>, text: 'Troca entre distante, atrás do carro e cockpit' },
-        { keys: <b className="gm-tag">Box</b>, text: 'Entre na faixa do box e pare na vaga amarela: pneus novos em 3 s' },
+        {
+          keys: <b className="gm-tag">Acelera</b>,
+          text: 'Botão grande da direita; o Freio fica ao lado (parado, dá ré)',
+        },
+        {
+          keys: <b className="gm-tag">DRS</b>,
+          text: 'Na zona verde da reta, abre a asa (fecha ao frear). Atrás de outro carro, o vácuo ajuda',
+        },
+        {
+          keys: <b className="gm-tag">Volta</b>,
+          text: 'Classificação: o botão grande leva você para a largada da volta lançada',
+        },
+        {
+          keys: <b className="gm-tag">Câmera</b>,
+          text: 'Troca entre distante, atrás do carro e cockpit',
+        },
+        {
+          keys: <b className="gm-tag">Box</b>,
+          text: 'Entre na faixa do box e pare na vaga amarela: pneus novos em 3 s',
+        },
       ]
     : [
         {
           keys: (
             <>
-              <Keycap k="W" touchHide={false} />
-              <Keycap k="S" touchHide={false} />
+              <Keycap k={gpKeyName('gas', b)} touchHide={false} />
+              <Keycap k={gpKeyName('brake', b)} touchHide={false} />
             </>
           ),
-          text: 'Acelerar e frear (parado, S dá ré). Setas também valem',
+          text: 'Acelerar e frear (parado, dá ré)',
         },
         {
           keys: (
             <>
-              <Keycap k="A" touchHide={false} />
-              <Keycap k="D" touchHide={false} />
+              <Keycap k={gpKeyName('left', b)} touchHide={false} />
+              <Keycap k={gpKeyName('right', b)} touchHide={false} />
             </>
           ),
           text: 'Virar',
         },
-        { keys: <Keycap k="Espaço" wide touchHide={false} />, text: 'Turbo da cauda: enche no vácuo de outro carro' },
-        { keys: <Keycap k="L" touchHide={false} />, text: 'Classificação: iniciar a volta lançada' },
-        { keys: <Keycap k="C" touchHide={false} />, text: 'Câmera: distante, atrás do carro ou cockpit' },
-        { keys: <b className="gm-tag">Box</b>, text: 'Pare na vaga amarela do box: pneus novos em 3 s' },
-        { keys: <Keycap k="Esc" touchHide={false} />, text: 'Menu: câmera, qualidade, som e sair' },
+        {
+          keys: <Keycap k={gpKeyName('drs', b)} touchHide={false} />,
+          text: 'DRS: abre a asa na zona verde da reta (fecha ao frear)',
+        },
+        {
+          keys: <Keycap k={gpKeyName('lap', b)} touchHide={false} />,
+          text: 'Classificação: ir para a largada da volta lançada',
+        },
+        {
+          keys: <Keycap k={gpKeyName('cam', b)} touchHide={false} />,
+          text: 'Câmera: distante, atrás do carro ou cockpit',
+        },
+        {
+          keys: <b className="gm-tag">Box</b>,
+          text: 'Pare na vaga amarela do box: pneus novos em 3 s',
+        },
+        {
+          keys: <Keycap k="Esc" touchHide={false} />,
+          text: 'Menu: câmera, qualidade, comandos, som e sair',
+        },
         { keys: <Keycap k="T" touchHide={false} />, text: 'Chat da sala (em sala)' },
       ];
 
@@ -115,6 +207,8 @@ export interface GpOnline {
   meId: string;
   hostId: string;
   infos: GpPlayerInfo[];
+  /** Modo de física da sala (todos correm no mesmo: quem simula é o líder). */
+  physics: GpPhysicsMode;
 }
 
 /** O que a sala diz agora (muda a cada estado novo). */
@@ -122,6 +216,8 @@ export interface GpRoomLive {
   stage: 'quali' | 'grid' | 'race' | null;
   qualiAt: number | null;
   raceAt: number | null;
+  /** Espera sorteada pela sala com as luzes acesas (ms). */
+  holdMs: number | null;
   grid: string[];
   quali: Record<string, number | null>;
   finish: Record<string, number>;
@@ -131,6 +227,7 @@ export interface GpRoomLive {
 
 interface Row {
   id: string;
+  pos: number;
   name: string;
   color: string;
   gap: string;
@@ -152,19 +249,25 @@ interface Hud {
   kmh: number;
   gear: number;
   rpm: number;
-  bar: number;
-  turbo: boolean;
+  /** DRS: 'off' indisponível, 'avail' liberado, 'open' aberto. */
+  drs: 'off' | 'avail' | 'open';
+  slip: number;
   wear: number;
   pit: number;
   inPitLane: boolean;
   rows: Row[];
-  note: string;
+  /** Tempo da volta de agora (ms) na corrida. */
+  lapMs: number;
   qualiLeft: number;
+  /** Contagem parado na largada antes da volta lançada (s; 0 = nenhuma). */
+  qualiHold: number;
   qualiMs: number | null;
   qualiRun: number | null;
   qualiStarted: boolean;
   pole: number | null;
   sectors: { ms: number; kind: 'best' | 'pb' | 'slow' }[];
+  /** As luzes acabaram de apagar: "Vai!" na tela. */
+  go: boolean;
   done: number | null;
   dnfLeft: number | null;
   watching: string;
@@ -179,6 +282,7 @@ export function GpPlay({
   bots = 0,
   color = GP_FURS[0]!,
   paint,
+  physics = 'arcade',
   online,
   live,
   onExit,
@@ -189,6 +293,8 @@ export function GpPlay({
   /** Cor do seu pelo no treino. */
   color?: number;
   paint?: GpPlayerInfo['paint'];
+  /** Modo de física no treino (online vem da sala). */
+  physics?: GpPhysicsMode;
   online?: GpOnline;
   live?: GpRoomLive;
   onExit: () => void;
@@ -202,12 +308,18 @@ export function GpPlay({
   const controls = useMemo(() => new GpControls(), []);
   const [hud, setHud] = useState<Hud | null>(null);
   const [result, setResult] = useState<GpFinalRow[] | null>(null);
-  const [extra, setExtra] = useState<{ fastest: string; passes: string } | null>(null);
+  const [extra, setExtra] = useState<{ fastest: string } | null>(null);
   const [menu, setMenu] = useState(false);
+  const [commands, setCommands] = useState(false);
+  const binds = useGpControls((st) => st.binds);
+  const [notice, setNotice] = useState<GpNotice | null>(null);
+  const mode: GpPhysicsMode = online?.physics ?? physics;
   const menuRef = useRef(false);
   menuRef.current = menu;
   const [cam, setCam] = useState<GpCamMode>(() => read(CAM_KEY, CAMS, 'far'));
-  const [quality, setQuality] = useState<GpQuality>(() => read(QUALITY_KEY, ['low', 'medium', 'high'], 'medium'));
+  const [quality, setQuality] = useState<GpQuality>(() =>
+    read(QUALITY_KEY, ['low', 'medium', 'high'], 'medium'),
+  );
   const qualityRef = useRef(quality);
   qualityRef.current = quality;
   const [wipe, setWipe] = useState<{ key: number; text: string }>({ key: 1, text: 'Fox GP' });
@@ -230,7 +342,10 @@ export function GpPlay({
   const linkRef = useRef<{ rtt: () => number } | null>(null);
   useEffect(() => {
     if (!online || !showNet) return undefined;
-    const t = window.setInterval(() => setPing(Math.round(linkRef.current?.rtt() ?? currentRtt())), 1000);
+    const t = window.setInterval(
+      () => setPing(Math.round(linkRef.current?.rtt() ?? currentRtt())),
+      1000,
+    );
     return () => window.clearInterval(t);
   }, [online, showNet]);
   const cycleCam = () =>
@@ -242,9 +357,14 @@ export function GpPlay({
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if (gameChatOpen()) return;
-      if (e.code === 'Escape' && !menuRef.current) setMenu(true);
-      else if (e.code === 'KeyC' && !e.repeat && !menuRef.current) cycleCam();
-      else if (e.code === 'KeyL' && !e.repeat) api.current?.startLap();
+      if (e.code === 'Escape' && !menuRef.current) {
+        setMenu(true);
+        return;
+      }
+      if (e.repeat || menuRef.current) return;
+      const a = gpActionOf(e.code);
+      if (a === 'cam') cycleCam();
+      else if (a === 'lap') api.current?.startLap();
     };
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
@@ -272,11 +392,14 @@ export function GpPlay({
         id: `bot${i}`,
         name: BOT_NAMES[i] ?? `Raposa ${i + 1}`,
         color: GP_FURS.filter((c) => c !== color)[i % (GP_FURS.length - 1)]!,
+        paint: botPaint(i),
         bot: true,
       })),
     ];
     const seed = online?.seed ?? seedOf();
-    const world = new GpWorld(seed, infos);
+    const world = new GpWorld(seed, infos, undefined, mode);
+    // a espera com as luzes acesas: sorteada pela seed no treino (na sala, quem sorteia é o servidor)
+    const holdSec = gpLightsHold(createRng(`${seed}:lights`)());
     const isHost = !!online && !!online.meId && online.hostId === meId;
     const isClient = !!online && !isHost && !!world.car(meId);
     const spectator = !!online && !world.car(meId);
@@ -284,8 +407,9 @@ export function GpPlay({
     if (isHost) world.autoEnd = false;
     if (import.meta.env.DEV) (window as unknown as { __gp?: GpWorld }).__gp = world;
     const rng = createRng(`${seed}:bots`);
+    // cada bot com o seu perfil (Agressivo, Consistente, Defensivo, Rápido e errático, Novato), pela seed
     const mem = new Map<string, GpBotMemory>(
-      world.cars.filter((c) => c.bot).map((c, i) => [c.id, newGpBotMemory(0.83 + ((i * 37) % 13) / 100)]),
+      world.cars.filter((c) => c.bot).map((c, i) => [c.id, newGpBotMemory(gpBotProfile(seed, i))]),
     );
 
     // ---- a cena (refeita quando a qualidade muda) ----
@@ -335,9 +459,9 @@ export function GpPlay({
     let miniAt = 0;
     let posAt = 0;
     let raf = 0;
-    let note = '';
-    let noteUntil = 0;
+    const notices = new GpNoticeQueue();
     let lastCount = 9;
+    let goAt = 0;
     let started = false;
     let qstartShown = false;
     let wantLap = false;
@@ -347,10 +471,9 @@ export function GpPlay({
     let lastPose: GpPose | null = null;
     if (import.meta.env.DEV) (window as unknown as { __gpStats?: typeof stats }).__gpStats = stats;
     const sectorRow: Hud['sectors'] = [];
-    const say = (text: string, ms = 2600) => {
-      note = text;
-      noteUntil = performance.now() + ms;
-    };
+    /** Todo aviso passa pela fila (um não atropela o outro). */
+    const say = (text: string, ms = 2600, kind: GpNoticeKind = 'info', sub?: string) =>
+      notices.push(kind, text, ms, sub);
     const others = () => world.cars.filter((c) => !c.gone && c.id !== meId);
     api.current = {
       next: (d) => {
@@ -360,7 +483,15 @@ export function GpPlay({
         focus = list[(i + d + list.length) % list.length]!.id;
       },
       startLap: () => {
-        if (stage === 'quali') wantLap = true;
+        const c = me();
+        if (
+          stage === 'quali' &&
+          c &&
+          c.qualiStartT === null &&
+          c.qualiMs === null &&
+          c.qualiHold <= 0
+        )
+          wantLap = true;
       },
     };
 
@@ -398,7 +529,10 @@ export function GpPlay({
     };
 
     // ---- assistindo (quem entrou com a corrida andando): posições pelo fluxo da sala ----
-    const targets = new Map<string, { x: number; z: number; h: number; speed: number; prog: number; at: number }>();
+    const targets = new Map<
+      string,
+      { x: number; z: number; h: number; speed: number; prog: number; at: number }
+    >();
     const unsubs: (() => void)[] = [];
     if (spectator && online) {
       const idOfSlot = new Map(infos.map((p, i) => [i, p.id]));
@@ -408,7 +542,14 @@ export function GpPlay({
           for (const row of m as number[][]) {
             const id = idOfSlot.get(row[0] as number);
             if (!id) continue;
-            targets.set(id, { x: row[1]!, z: row[2]!, h: row[3]!, speed: row[4]!, prog: row[5]!, at: performance.now() });
+            targets.set(id, {
+              x: row[1]!,
+              z: row[2]!,
+              h: row[3]!,
+              speed: row[4]!,
+              prog: row[5]!,
+              at: performance.now(),
+            });
           }
         }),
       );
@@ -430,7 +571,7 @@ export function GpPlay({
           h: c.h + dh * f,
           speed: t.speed,
           prog: t.prog,
-          turbo: false,
+          drs: false,
           pit: false,
           slip: 0,
           wear: 0,
@@ -449,24 +590,38 @@ export function GpPlay({
         }
         if (stage === 'lights') {
           const e = (now - lightsAt) / 1000;
-          if (e >= GP_LIGHTS * GP_LIGHT_SEC + GP_LIGHTS_HOLD) return { st: 'race', target: 0, count: 0, lit: 0 };
-          return { st: 'lights', target: 0, count: 0, lit: Math.min(GP_LIGHTS, Math.floor(e / GP_LIGHT_SEC) + 1) };
+          if (e >= GP_LIGHTS * GP_LIGHT_SEC + holdSec)
+            return { st: 'race', target: 0, count: 0, lit: 0 };
+          return {
+            st: 'lights',
+            target: 0,
+            count: 0,
+            lit: Math.min(GP_LIGHTS, Math.floor(e / GP_LIGHT_SEC) + 1),
+          };
         }
         return { st: stage, target: 0, count: 0, lit: 0 };
       }
       const l = liveRef.current;
       const gn = gameNow();
-      if (!l || l.stage === null || l.qualiAt === null) return { st: 'count', target: 0, count: 3, lit: 0 };
+      if (!l || l.stage === null || l.qualiAt === null)
+        return { st: 'count', target: 0, count: 3, lit: 0 };
       if (l.stage === 'quali') {
         const left = (l.qualiAt - serverNow()) / 1000;
         if (left > 0) return { st: 'count', target: 0, count: Math.ceil(left - 0.2), lit: 0 };
         return { st: 'quali', target: (gn - l.qualiAt) / 1000, count: 0, lit: 0 };
       }
       const raceAt = l.raceAt ?? gn;
-      if (gn < raceAt - GP_ROOM_LIGHTS_MS) return { st: 'grid', target: 0, count: 0, lit: 0 };
+      // as luzes começam a acender antes da espera sorteada pela sala
+      const lightsFrom = raceAt - (l.holdMs ?? 0) - GP_ROOM_LIGHTS_MS;
+      if (gn < lightsFrom) return { st: 'grid', target: 0, count: 0, lit: 0 };
       if (gn < raceAt) {
-        const e = (gn - (raceAt - GP_ROOM_LIGHTS_MS)) / 1000;
-        return { st: 'lights', target: 0, count: 0, lit: Math.min(GP_LIGHTS, Math.floor(e / GP_LIGHT_SEC) + 1) };
+        const e = (gn - lightsFrom) / 1000;
+        return {
+          st: 'lights',
+          target: 0,
+          count: 0,
+          lit: Math.min(GP_LIGHTS, Math.floor(e / GP_LIGHT_SEC) + 1),
+        };
       }
       return { st: 'race', target: (gn - raceAt) / 1000, count: 0, lit: 0 };
     };
@@ -479,7 +634,7 @@ export function GpPlay({
         return {
           id,
           name: c?.name ?? '',
-          color: css(c?.color ?? 0xff7d26),
+          color: css(c?.paint?.body ?? c?.color ?? 0xff7d26),
           ms: (online && l ? l.quali[id] : c?.qualiMs) ?? null,
           you: id === meId,
         };
@@ -503,7 +658,11 @@ export function GpPlay({
       sceneRef.current?.handle(events);
       for (const e of events) {
         const mine = 'id' in e && e.id === meId;
-        if (e.type === 'qstart' && mine) {
+        if (e.type === 'qready' && mine) {
+          // o carro foi levado para a largada: a faixa de transição cobre o salto
+          setWipe({ key: Date.now(), text: 'Volta lançada' });
+          gpSfx.light();
+        } else if (e.type === 'qstart' && mine) {
           if (!qstartShown) {
             qstartShown = true;
             gpSfx.go();
@@ -511,42 +670,57 @@ export function GpPlay({
           }
         } else if (e.type === 'qtime' && mine) {
           gpSfx.lap(true);
-          say(`Seu tempo: ${lapClock(e.ms)}`, 4000);
+          if (saveBest(mode, e.ms))
+            say(lapClock(e.ms), 4000, 'result', `Recorde do aparelho no ${PHYSICS_NAME[mode]}`);
+          else say(lapClock(e.ms), 4000, 'result', 'Seu tempo da volta lançada');
+        } else if (e.type === 'drsready' && mine) {
+          gpSfx.drs();
+          say(
+            'DRS disponível',
+            2000,
+            'drs',
+            touchDevice ? 'Toque em DRS' : `Aperte ${gpKeyName('drs')}`,
+          );
         } else if (e.type === 'sector' && e.id === focus) {
-          const overall = world.cars.every((c) => c.id === e.id || (c.bestSectors[e.sector] ?? Infinity) >= e.ms);
+          const overall = world.cars.every(
+            (c) => c.id === e.id || (c.bestSectors[e.sector] ?? Infinity) >= e.ms,
+          );
           if (e.sector === 0) sectorRow.length = 0;
-          sectorRow[e.sector] = { ms: e.ms, kind: overall && e.best ? 'best' : e.best ? 'pb' : 'slow' };
+          sectorRow[e.sector] = {
+            ms: e.ms,
+            kind: overall && e.best ? 'best' : e.best ? 'pb' : 'slow',
+          };
         } else if (e.type === 'lap' && mine) {
           const c = me();
           gpSfx.lap(c?.bestLap === e.ms);
-          if (e.lap < GP_LAPS) say(`Volta ${e.lap}: ${lapClock(e.ms)}${c?.bestLap === e.ms ? ' · melhor volta' : ''}`);
+          saveBest(mode, e.ms);
+          const fastest = world.fastest?.id === meId && world.fastest.ms === e.ms;
+          if (fastest) say('Volta mais rápida', 2600, 'highlight', lapClock(e.ms));
+          if (e.lap === GP_LAPS - 1) say('Última volta', 2400, 'highlight');
+          else if (e.lap < GP_LAPS)
+            say(`Volta ${e.lap + 1}/${GP_LAPS}`, 2000, 'info', lapClock(e.ms));
         } else if (e.type === 'finish' && mine) {
           gpSfx.finish(e.place);
-          say(`Você terminou em ${e.place}º! Agora assista os outros.`, 5000);
+          say(`Você terminou em ${e.place}º`, 5000, 'result', 'Agora assista os outros');
           controls.enabled = false;
           const list = others().filter((o) => !o.finished);
           if (list[0]) focus = list[0].id;
-        } else if (e.type === 'turbo' && mine) gpSfx.turbo();
-        else if (e.type === 'ready' && mine) {
-          gpSfx.ready();
-          say(touchDevice ? 'Turbo pronto: toque em Turbo' : 'Turbo pronto: aperte Espaço');
         } else if (e.type === 'pitin' && mine) gpSfx.pitIn();
         else if (e.type === 'pitout' && mine) {
           gpSfx.pitOut();
-          say('Pneus novos!', 2000);
+          say('Pneus novos', 2000, 'info');
         } else if (e.type === 'cut' && e.id === focus && import.meta.env.DEV && !mine) {
           lastPose = null;
         } else if (e.type === 'cut' && mine) {
           // a volta ao último ponto válido é um salto de verdade: não conta como tranco do desenho
           lastPose = null;
           gpSfx.cut();
-          say('Cortou caminho: de volta ao último ponto válido');
-        } else if (e.type === 'wall' && mine && !fromHost) gpSfx.wall();
-        else if (e.type === 'bump' && (e.a === meId || e.b === meId) && !fromHost) gpSfx.bump(true);
-        else if (e.type === 'pass' && mine) {
-          gpSfx.pass();
-          say('Ultrapassagem com o turbo!', 1800);
-        }
+          say('Cortou caminho', 2600, 'alert', 'De volta ao último ponto válido');
+        } else if (e.type === 'wall' && mine && !fromHost) {
+          gpSfx.wall();
+          if (e.speed > 14) say('Batida', 2000, 'alert');
+        } else if (e.type === 'bump' && (e.a === meId || e.b === meId) && !fromHost)
+          gpSfx.bump(true);
       }
     };
     if (peerLink && client) {
@@ -562,10 +736,7 @@ export function GpPlay({
         else if (e.type === 'lap') sendRoom('glap', { id: e.id, lap: e.lap, ms: e.ms });
         else if (e.type === 'finish') {
           const c = world.car(e.id);
-          if (c) sendRoom('gfin', { id: e.id, ms: e.ms, laps: c.laps, passes: c.passes });
-        } else if (e.type === 'pass') {
-          const c = world.car(e.id);
-          if (c) sendRoomQuiet('gstat', { id: e.id, passes: c.passes });
+          if (c) sendRoom('gfin', { id: e.id, ms: e.ms, laps: c.laps });
         }
       }
     };
@@ -580,19 +751,17 @@ export function GpPlay({
       const enter = (next: Stage) => {
         if (next === 'quali') {
           gpSfx.go();
-          say(
-            touchDevice
-              ? 'Aqueça os pneus e toque em Iniciar volta quando estiver pronto.'
-              : 'Aqueça os pneus e aperte L (ou cruze a linha) para começar a volta lançada.',
-            5000,
-          );
+          say('Classificação', 2600, 'info', `3 minutos · 1 volta · ${PHYSICS_NAME[mode]}`);
           setWipe({ key: Date.now(), text: 'Classificação' });
         }
         if ((next === 'grid' || next === 'lights' || next === 'race') && world.phase !== 'race') {
           startRace();
           setWipe({ key: Date.now(), text: 'Grid de largada' });
         }
-        if (next === 'grid') gridUntil = now + GRID_SEC * 1000;
+        if (next === 'grid') {
+          gridUntil = now + GRID_SEC * 1000;
+          say('Prepare-se para a largada', 2600, 'info');
+        }
         if (next === 'lights') {
           lightsAt = now;
           litShown = -1;
@@ -600,7 +769,7 @@ export function GpPlay({
         if (next === 'race') {
           sceneRef.current?.setLights(GP_LIGHTS, true);
           gpSfx.go();
-          say('Valendo!', 1400);
+          goAt = now;
           started = true;
         }
         stage = next;
@@ -629,7 +798,8 @@ export function GpPlay({
         if (online && l) {
           for (const id of l.gone) world.markGone(id);
           if (!isHost && world.phase === 'race')
-            for (const [id, ms] of Object.entries(l.finish)) if (id !== meId) world.applyFinish(id, ms);
+            for (const [id, ms] of Object.entries(l.finish))
+              if (id !== meId) world.applyFinish(id, ms);
         }
         if (spectator) driveSpectator(dt, now);
         // líder: o relógio é o da sala; treino e convidado: o do aparelho
@@ -637,35 +807,37 @@ export function GpPlay({
         else if (!menuRef.current || online) acc += dt;
         const mine = me();
         let input: GpInput =
-          mine && (!menuRef.current || online) ? controls.read(dt) : { throttle: 0, brake: 0, steer: 0, turbo: false };
+          mine && (!menuRef.current || online)
+            ? controls.read(dt)
+            : { throttle: 0, brake: 0, steer: 0 };
         // só no desenvolvimento: piloto automático no seu carro (os testes de tela medem a fluidez com ele)
         if (import.meta.env.DEV && mine && (window as unknown as { __gpAuto?: boolean }).__gpAuto) {
           if (!autoMem) autoMem = newGpBotMemory(0.9);
           input = gpBotInput(world, mine, autoMem, rng);
-          if (stage === 'quali' && mine.qualiStartT === null && mine.surface !== 'pit') input.lap = true;
         }
-        if (wantLap) {
-          input.lap = true;
-          wantLap = false;
-        }
+        // pedido de um toque só (iniciar a volta, DRS de toque): fica guardado até um passo da simulação usar (num
+        // quadro sem passo, com a tela mais rápida que 60/s, ele não se perde)
+        if (wantLap) input.lap = true;
+        if (acc >= GP_DT) wantLap = false;
+        else if (input.drs) controls.keepDrs();
         let first = true;
         while (acc >= GP_DT) {
           acc -= GP_DT;
-          const stepIn: GpInput = first ? input : { ...input, turbo: false, lap: false };
+          const stepIn: GpInput = first ? input : { ...input, lap: false };
           first = false;
           if (isHost && host) {
             host.step(stepIn);
-            if (host.snapDue) hostLink?.sendSnapshot(host.snapshot());
+            if (host.snapDue) hostLink?.sendSnapshot(host.snapshot(), gpSnapshotFor);
           } else if (client) {
             peerLink?.sendInput(client.local(stepIn));
           } else if (!online) {
             const inputs: Record<string, GpInput> = { me: stepIn };
-            for (const c of world.cars) if (c.bot) inputs[c.id] = gpBotInput(world, c, mem.get(c.id)!, rng);
+            for (const c of world.cars)
+              if (c.bot) inputs[c.id] = gpBotInput(world, c, mem.get(c.id)!, rng);
             world.step(GP_DT, inputs);
           }
           remember();
         }
-        if (input.turbo) controls.takeTurbo();
         alpha = Math.max(0, Math.min(1, acc / GP_DT));
         client?.frame(dt, now);
         // eventos
@@ -690,7 +862,7 @@ export function GpPlay({
                   c.h,
                   c.speed,
                   c.prog,
-                  (c.turbo > 0 ? 1 : 0) + (c.surface === 'pit' ? 2 : 0),
+                  (c.drsOpen ? 1 : 0) + (c.surface === 'pit' ? 2 : 0),
                   c.slip,
                   c.wear,
                   c.steer,
@@ -701,19 +873,43 @@ export function GpPlay({
           // da previsão do próprio carro só vale o visual; a verdade dos tempos vem do líder
           const ev = world
             .drainEvents()
-            .filter((e) => e.type === 'qstart' || e.type === 'wall' || e.type === 'bump');
+            .filter(
+              (e) =>
+                e.type === 'qready' ||
+                e.type === 'qstart' ||
+                e.type === 'wall' ||
+                e.type === 'bump',
+            );
           if (ev.length) onEvents(ev);
         } else {
           const ev = world.drainEvents();
           if (ev.length) onEvents(ev);
         }
       }
-      // o motor do seu carro (ou de quem você assiste)
+      // o motor do seu carro (ou de quem você assiste); no grid e nas luzes o acelerador só sobe o giro
       const heard = world.car(focus);
-      if (heard) {
+      const silent = menuRef.current && !online;
+      if (heard && (stage === 'grid' || stage === 'lights') && focus === meId) {
+        const thr = controls.throttle();
+        gpSfx.engine.update(0, thr, silent, true);
+      } else if (heard) {
         const v = Math.abs(heard.speed);
-        gpSfx.engine.update(Math.max(0, Math.min(1, heard.rpm)), heard.braking ? 0 : Math.min(1, v / 8), heard.turbo > 0);
+        const load = heard.braking
+          ? 0
+          : heard.id === meId
+            ? controls.throttle()
+            : Math.min(1, v / 8);
+        gpSfx.engine.update(
+          Math.max(0, Math.min(1, heard.rpm)),
+          load,
+          silent || stage === 'over',
+          v < 0.3,
+        );
       }
+      // "Vai!" no meio da tela logo que as luzes apagam
+      if (goAt && now - goAt > GP_GO_SEC * 1000) goAt = 0;
+      // fila de avisos
+      if (notices.tick(now)) setNotice(notices.current);
       sceneRef.current?.render(dt, focus, pose);
       if (import.meta.env.DEV && (stage === 'quali' || stage === 'race')) {
         const fc = world.car(focus);
@@ -743,10 +939,8 @@ export function GpPlay({
         setWipe({ key: Date.now(), text: 'Bandeirada' });
         const st = world.standings();
         const fastest = world.fastest;
-        const topPass = [...world.cars].sort((a, b) => b.passes - a.passes)[0];
         setExtra({
           fastest: fastest ? `${world.car(fastest.id)?.name ?? ''} · ${lapClock(fastest.ms)}` : '—',
-          passes: topPass && topPass.passes > 0 ? `${topPass.name} · ${topPass.passes}` : 'ninguém',
         });
         window.setTimeout(
           () =>
@@ -761,7 +955,6 @@ export function GpPlay({
                 bot: r.car.bot,
                 ms: r.car.finishMs,
                 best: r.car.bestLap,
-                passes: r.car.passes,
                 dnf: !r.car.finished,
               })),
             ),
@@ -778,7 +971,6 @@ export function GpPlay({
       // ---- HUD ----
       if (now - hudAt > 110) {
         hudAt = now;
-        if (note && now > noteUntil) note = '';
         const c = me();
         const seen = world.car(focus) ?? c;
         const st = world.standings();
@@ -822,37 +1014,61 @@ export function GpPlay({
           best: seen?.bestLap ?? null,
           last: seen?.laps.length ? seen.laps[seen.laps.length - 1]! : null,
           kmh: gpKmh(seen?.speed ?? 0),
-          gear: gpGear(seen?.speed ?? 0),
+          gear: seen ? (seen.speed < -0.3 ? 0 : Math.max(1, seen.gear)) : 1,
           rpm: seen?.rpm ?? 0,
-          bar: c?.bar ?? 0,
-          turbo: (c?.turbo ?? 0) > 0,
+          drs: c?.drsOpen ? 'open' : c?.drsAvail ? 'avail' : 'off',
+          slip: c?.slip ?? 0,
           wear: c?.wear ?? 0,
           pit: c?.pitHold ?? 0,
           inPitLane: c?.surface === 'pit',
-          rows: st.map((r) => ({
-            id: r.car.id,
-            name: r.car.name,
-            color: css(r.car.color),
-            gap: r.car.gone
-              ? 'fora'
-              : world.phase === 'quali'
-                ? r.car.qualiMs !== null
-                  ? lapClock(r.car.qualiMs)
-                  : 'sem tempo'
-                : r.pos === 1
-                  ? 'Líder'
-                  : gapText(r.gap),
-            you: r.car.id === meId,
-            done: r.car.finished,
-            out: r.car.gone || r.car.dnf,
-          })),
-          note,
+          rows: st.map((r, i) => {
+            const ahead = st[i - 1];
+            const L = world.track.length;
+            const behind =
+              ahead && !r.car.finished ? Math.floor((st[0]!.car.prog - r.car.prog) / L) : 0;
+            return {
+              id: r.car.id,
+              pos: r.pos,
+              name: r.car.name,
+              color: css(r.car.paint?.body ?? r.car.color),
+              // diferença para o carro da frente (não para o líder): é o que se disputa na pista
+              gap: r.car.gone
+                ? 'fora'
+                : world.phase === 'quali'
+                  ? r.car.qualiMs !== null
+                    ? lapClock(r.car.qualiMs)
+                    : r.car.qualiStartT !== null
+                      ? 'na volta'
+                      : 'sem tempo'
+                  : r.pos === 1
+                    ? 'Líder'
+                    : behind >= 1
+                      ? `+${behind} ${behind === 1 ? 'volta' : 'voltas'}`
+                      : gapText(
+                          r.gap !== null && ahead?.gap != null
+                            ? Math.max(0, r.gap - ahead.gap)
+                            : r.gap,
+                        ).replace('.', ','),
+              you: r.car.id === meId,
+              done: r.car.finished,
+              out: r.car.gone || r.car.dnf,
+            };
+          }),
+          lapMs:
+            world.phase === 'race' && started && seen && !seen.finished
+              ? Math.max(0, (world.t - seen.lapStartT) * 1000)
+              : 0,
           qualiLeft: Math.max(0, GP_QUALI_MAX_SEC - (world.phase === 'quali' ? world.t : 0)),
+          qualiHold: c?.qualiHold ?? 0,
           qualiMs: c?.qualiMs ?? null,
-          qualiRun: c?.qualiStartT != null && c.qualiMs === null ? Math.max(0, (world.t - c.qualiStartT) * 1000) : null,
+          qualiRun:
+            c?.qualiStartT != null && c.qualiMs === null
+              ? Math.max(0, (world.t - c.qualiStartT) * 1000)
+              : null,
           qualiStarted: c?.qualiStartT != null,
           pole,
           sectors: [...sectorRow],
+          go: goAt > 0,
           done: c?.finished ? (st.find((r) => r.car.id === meId)?.pos ?? null) : null,
           dnfLeft,
           watching: focus !== meId ? (world.car(focus)?.name ?? '') : '',
@@ -876,9 +1092,9 @@ export function GpPlay({
       sceneRef.current = null;
       remakeScene.current = null;
     };
-  }, [bots, color, paint, controls, online, touchDevice]);
+  }, [bots, color, paint, controls, online, touchDevice, mode]);
 
-  const pad = (k: 'gas' | 'brake' | 'left' | 'right') => ({
+  const pad = (k: 'gas' | 'brake' | 'left' | 'right' | 'drs') => ({
     onPointerDown: (e: ReactPointerEvent<HTMLButtonElement>) => {
       e.preventDefault();
       e.currentTarget.setPointerCapture?.(e.pointerId);
@@ -895,100 +1111,61 @@ export function GpPlay({
   const driving = h && (h.stage === 'quali' || h.stage === 'race') && h.done === null && !result;
   const segs = 9;
   const rpmLit = h ? Math.round(h.rpm * segs) : 0;
-  const turboSegs = 8;
-  const turboLit = h ? (h.turbo ? turboSegs : Math.floor(h.bar * turboSegs)) : 0;
+  const myIdx = h ? h.rows.findIndex((r) => r.you) : -1;
+  // celular deitado: não cabem 20 linhas; fica o líder e uma janela de cinco em volta de você
+  const mid = h ? Math.max(2, Math.min(h.rows.length - 3, myIdx < 0 ? 2 : myIdx)) : 0;
+  const boardRows = h
+    ? touchDevice && h.rows.length > 6
+      ? h.rows.filter((_, i) => i === 0 || Math.abs(i - mid) <= 2)
+      : h.rows
+    : [];
+  const lapKey = gpKeyName('lap', binds);
+  const drsKey = gpKeyName('drs', binds);
+  const camKey = gpKeyName('cam', binds);
+  const clock = (sec: number) =>
+    `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
   return (
-    <div className="gp-play" data-testid="gp-play" data-touch={touchDevice ? '1' : '0'} data-cam={cam}>
+    <div
+      className="gp-play"
+      data-testid="gp-play"
+      data-touch={touchDevice ? '1' : '0'}
+      data-cam={cam}
+      data-physics={mode}
+    >
       <canvas ref={canvas} className="gp-canvas" aria-label="Pista do Fox GP" />
       {h && (
         <>
-          {/* posição, volta e tempo (em cima, à esquerda) */}
-          <div className="gpx-tl">
-            {racing || h.stage === 'grid' || h.stage === 'lights' ? (
-              <>
-                <div className="gpx-box gpx-pos" role="status" data-testid="gp-pos">
-                  <b>P{h.pos || '-'}</b>
-                  <span>/{h.total}</span>
-                </div>
-                <div className="gpx-box gpx-cell" data-testid="gp-lap">
-                  <small>Volta</small>
-                  <b>
-                    {h.lap}
-                    <span>/{GP_LAPS}</span>
-                  </b>
-                </div>
-                <div className="gpx-box gpx-cell">
-                  <small>Tempo</small>
-                  <b className="gpn">{raceClock(h.raceMs)}</b>
-                </div>
-                <div className="gpx-box gpx-cell is-wide">
-                  <small>Melhor · Δ última</small>
-                  <b className="gpn is-small">
-                    {h.best !== null ? lapClock(h.best) : '--:--.---'}
-                    <span>
-                      {' · '}
-                      {h.last !== null && h.best !== null ? (h.last === h.best ? 'melhor' : gapText((h.last - h.best) / 1000)) : '--'}
-                    </span>
-                  </b>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="gpx-box gpx-cell" role="status">
-                  <small>Classificação</small>
-                  <b className="gpn">{Math.ceil(h.qualiLeft)}s</b>
-                </div>
-                <div className={`gpx-box gpx-cell is-wide${h.qualiRun !== null ? ' is-live' : ''}`} data-testid="gp-qtime">
-                  <small>{h.qualiMs !== null ? 'Seu tempo' : h.qualiStarted ? 'Volta lançada' : 'Aquecendo'}</small>
-                  <b className="gpn">
-                    {h.qualiMs !== null ? lapClock(h.qualiMs) : h.qualiRun !== null ? lapClock(h.qualiRun) : '--:--.---'}
-                  </b>
-                </div>
-                {h.qualiMs !== null && h.pole !== null && (
-                  <div className="gpx-box gpx-cell">
-                    <small>Δ pole</small>
-                    <b className="gpn is-small">{h.qualiMs === h.pole ? 'Pole' : gapText((h.qualiMs - h.pole) / 1000)}</b>
-                  </div>
+          {/* em cima à esquerda: a classificação (volta no cabeçalho; diferença para o carro da frente) */}
+          {h.rows.length > 0 && h.stage !== 'count' && (
+            <ol
+              className="gpx-board"
+              aria-label={quali ? 'Tempos da classificação' : 'Classificação ao vivo'}
+              data-testid="gp-board"
+              data-compact={touchDevice ? '1' : '0'}
+            >
+              <li className="gpx-board-h">
+                {quali ? (
+                  <>
+                    <span>Classificação</span>
+                    <b className="gpn" data-testid="gp-qleft">
+                      {clock(h.qualiLeft)}
+                    </b>
+                  </>
+                ) : (
+                  <>
+                    <span>Volta</span>
+                    <b className="gpn" data-testid="gp-lap">
+                      {h.lap}/{GP_LAPS}
+                    </b>
+                  </>
                 )}
-              </>
-            )}
-            {h.sectors.length > 0 && (
-              <div className="gpx-sectors" aria-label="Setores da volta">
-                {[0, 1, 2].map((i) => {
-                  const s = h.sectors[i];
-                  return (
-                    <span key={i} className={`gpx-sector${s ? ` is-${s.kind}` : ''}`}>
-                      S{i + 1}
-                      {s && <b className="gpn">{(s.ms / 1000).toFixed(2)}</b>}
-                    </span>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          <div className="gpx-tools">
-            <button type="button" className="gpx-tool" onClick={cycleCam} data-testid="gp-cam" aria-label={`Câmera: ${CAM_NAME[cam]}`}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
-                <path d="M3 7h4l2-3h6l2 3h4v13H3z" />
-                <circle cx="12" cy="13" r="4" />
-              </svg>
-              <span>{CAM_NAME[cam]}</span>
-            </button>
-            <button type="button" className="gpx-tool" onClick={() => setMenu(true)} data-testid="gp-menu-btn" aria-label="Abrir o menu">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
-                <path d="M4 7h16M4 12h16M4 17h16" />
-              </svg>
-              <span>Menu</span>
-            </button>
-          </div>
-
-          {(racing || quali) && h.rows.length > 1 && (
-            <ol className="gpx-board" aria-label="Classificação ao vivo" data-testid="gp-board">
-              <li className="gpx-board-h">{quali ? 'Tempos' : 'Classificação'}</li>
-              {h.rows.map((r, i) => (
-                <li key={r.id} className={`${r.you ? 'is-you' : ''}${r.out ? ' is-out' : ''}`}>
-                  <span className="gpx-board-pos">{i + 1}</span>
+              </li>
+              {boardRows.map((r, i) => (
+                <li
+                  key={r.id}
+                  className={`${r.you ? 'is-you' : ''}${r.out ? ' is-out' : ''}${i > 0 && boardRows[i - 1]!.pos < r.pos - 1 ? ' is-skip' : ''}`}
+                >
+                  <span className="gpx-board-pos">{r.pos}</span>
                   <i style={{ background: r.color }} aria-hidden="true" />
                   <span className="gpx-board-name">{r.you ? 'Você' : r.name}</span>
                   <span className="gpx-board-gap gpn">{r.done ? 'chegou' : r.gap}</span>
@@ -997,30 +1174,200 @@ export function GpPlay({
             </ol>
           )}
 
-          <div className="gpx-mini">
-            <canvas ref={mini} width={300} height={240} role="img" aria-label="Minimapa do circuito com a posição dos carros" />
+          {/* em cima à direita: botões (com a tecla) e os seus dados */}
+          <div className="gpx-tr">
+            <div className="gpx-tools">
+              <button
+                type="button"
+                className="gpx-tool"
+                onClick={cycleCam}
+                data-testid="gp-cam"
+                aria-label={`Câmera: ${CAM_NAME[cam]}`}
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="M3 7h4l2-3h6l2 3h4v13H3z" />
+                  <circle cx="12" cy="13" r="4" />
+                </svg>
+                <span>{CAM_NAME[cam]}</span>
+                {!touchDevice && <kbd>{camKey}</kbd>}
+              </button>
+              <button
+                type="button"
+                className="gpx-tool"
+                onClick={() => setMenu(true)}
+                data-testid="gp-menu-btn"
+                aria-label="Abrir o menu"
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="M4 7h16M4 12h16M4 17h16" />
+                </svg>
+                <span>Menu</span>
+                {!touchDevice && <kbd>Esc</kbd>}
+              </button>
+            </div>
+            {h.stage !== 'count' && (
+              <div className="gpx-me" data-testid="gp-me">
+                {quali ? (
+                  <div
+                    className={`gpx-me-times${h.qualiRun !== null ? ' is-live' : ''}`}
+                    data-testid="gp-qtime"
+                  >
+                    <small>
+                      {h.qualiMs !== null
+                        ? 'Seu tempo'
+                        : h.qualiRun !== null
+                          ? 'Volta lançada'
+                          : 'Andando livre'}
+                    </small>
+                    <b className="gpn">
+                      {h.qualiMs !== null
+                        ? lapClock(h.qualiMs)
+                        : h.qualiRun !== null
+                          ? lapClock(h.qualiRun)
+                          : '-:--.---'}
+                    </b>
+                    {h.qualiMs !== null && h.pole !== null && (
+                      <span className="gpx-me-sub">
+                        Pole{' '}
+                        <b className="gpn">
+                          {h.qualiMs === h.pole
+                            ? 'é sua'
+                            : gapText((h.qualiMs - h.pole) / 1000).replace('.', ',')}
+                        </b>
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    <div className="gpx-me-pos" data-testid="gp-pos">
+                      <b>P{h.pos || '-'}</b>
+                      <span>/{h.total}</span>
+                    </div>
+                    <div className="gpx-me-times">
+                      <small>Volta atual</small>
+                      <b className="gpn">{lapClock(h.lapMs)}</b>
+                      <span className="gpx-me-sub">
+                        <span>
+                          Última{' '}
+                          <b className="gpn">{h.last !== null ? lapClock(h.last) : '-:--.---'}</b>
+                        </span>
+                        <span>
+                          Melhor{' '}
+                          <b className="gpn">{h.best !== null ? lapClock(h.best) : '-:--.---'}</b>
+                        </span>
+                      </span>
+                    </div>
+                  </>
+                )}
+                {h.sectors.length > 0 && (
+                  <div className="gpx-sectors" aria-label="Setores da volta">
+                    {[0, 1, 2].map((i) => {
+                      const sc = h.sectors[i];
+                      return (
+                        <span key={i} className={`gpx-sector${sc ? ` is-${sc.kind}` : ''}`}>
+                          S{i + 1}
+                          {sc && (
+                            <b className="gpn">{(sc.ms / 1000).toFixed(2).replace('.', ',')}</b>
+                          )}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          {driving && (
-            <div className="gpx-turbo" data-full={h.bar >= 1 ? '1' : '0'} data-on={h.turbo ? '1' : '0'} data-testid="gp-dash">
-              <div className="gpx-turbo-badge">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M13 2L4 14h7l-1 8 9-12h-7z" />
-                </svg>
-                {h.turbo ? 'Turbo!' : h.bar >= 1 ? 'Turbo da cauda pronto' : 'Turbo da cauda'}
-              </div>
-              <div className="gpx-segs" aria-hidden="true">
-                {Array.from({ length: turboSegs }, (_, i) => (
-                  <i key={i} className={i < turboLit ? 'is-on' : ''} />
-                ))}
+          {/* em cima no meio: os avisos, um por vez */}
+          {notice && (
+            <div
+              key={notice.id}
+              className="gpx-notice"
+              data-kind={notice.kind}
+              style={{
+                ['--dur' as string]: `${notice.ms}ms`,
+                ['--fade' as string]: `${NOTICE_FADE_MS}ms`,
+              }}
+              role="status"
+              aria-live="polite"
+              data-testid="gp-notice"
+            >
+              <NoticeIcon kind={notice.kind} />
+              <div>
+                <b>{notice.text}</b>
+                {notice.sub && <small>{notice.sub}</small>}
               </div>
             </div>
           )}
 
+          <div className="gpx-mini">
+            <canvas
+              ref={mini}
+              width={300}
+              height={240}
+              role="img"
+              aria-label="Minimapa do circuito com os carros e as zonas de DRS"
+            />
+          </div>
+
+          {/* embaixo no meio: o indicador do DRS */}
           {driving && (
-            <div className="gpx-speed">
+            <div className="gpx-drs" data-state={h.drs} data-testid="gp-drs" role="status">
+              <b>DRS</b>
+              <span>
+                {h.drs === 'open'
+                  ? 'Aberto'
+                  : h.drs === 'avail'
+                    ? touchDevice
+                      ? 'Liberado'
+                      : `Aperte ${drsKey}`
+                    : 'Fechado'}
+              </span>
+            </div>
+          )}
+          {driving && h.slip > 0.15 && (
+            <div
+              className="gpx-wind"
+              aria-hidden="true"
+              style={{ opacity: Math.min(1, h.slip * 1.4) }}
+            >
+              <i />
+              <i />
+              <i />
+              <i />
+            </div>
+          )}
+
+          {driving && (
+            <div className="gpx-speed" data-testid="gp-dash">
               <div className="gpx-speed-top">
                 <small>Velocidade</small>
+                <span className="gpx-mode" data-testid="gp-mode">
+                  {PHYSICS_NAME[mode]}
+                </span>
+                {h.slip > 0.15 && (
+                  <span className="gpx-slip" data-testid="gp-slip">
+                    Vácuo
+                  </span>
+                )}
                 <div className="gpx-gear">
                   <small>Marcha</small>
                   <b>{h.gear === 0 ? 'R' : h.gear}</b>
@@ -1046,10 +1393,28 @@ export function GpPlay({
             </div>
           )}
 
-          {quali && !h.qualiStarted && h.qualiMs === null && !h.inPitLane && (
-            <button type="button" className="gpx-startlap gp-tbtn is-primary" onClick={() => api.current?.startLap()} data-testid="gp-startlap">
-              Iniciar volta {!touchDevice && <kbd>L</kbd>}
+          {/* classificação: a chamada da volta lançada (fixa, embaixo no meio) e a contagem na largada */}
+          {quali && !h.qualiStarted && h.qualiMs === null && h.qualiHold <= 0 && driving && (
+            <button
+              type="button"
+              className="gpx-lapcall"
+              onClick={() => api.current?.startLap()}
+              data-testid="gp-startlap"
+            >
+              {touchDevice ? (
+                'Iniciar a volta lançada'
+              ) : (
+                <>
+                  Aperte <kbd>{lapKey}</kbd> para iniciar a volta lançada
+                </>
+              )}
             </button>
+          )}
+          {quali && h.qualiHold > 0 && (
+            <div className="gpx-center" aria-live="assertive" data-testid="gp-lapcount">
+              <small>Volta lançada</small>
+              <b>{Math.ceil(h.qualiHold)}</b>
+            </div>
           )}
 
           {h.stage === 'count' && (
@@ -1061,7 +1426,7 @@ export function GpPlay({
           {h.stage === 'grid' && (
             <div className="gpx-grid" data-testid="gp-grid">
               <div className="gpx-grid-h">
-                <small>Circuito da Marina</small>
+                <small>Circuito da Marina · {PHYSICS_NAME[mode]}</small>
                 <h2>Grid de largada</h2>
               </div>
               <ol>
@@ -1076,22 +1441,39 @@ export function GpPlay({
               </ol>
             </div>
           )}
-          {h.stage === 'lights' && (
-            <div className="gpx-lights" aria-label={`${h.lit} luzes acesas`} data-testid="gp-lights">
+          {(h.stage === 'lights' || h.go) && (
+            <div
+              className="gpx-lights"
+              aria-label={h.go ? 'Luzes apagadas: vai' : `${h.lit} luzes acesas`}
+              data-testid="gp-lights"
+              data-go={h.go ? '1' : '0'}
+            >
               {Array.from({ length: GP_LIGHTS }, (_, i) => (
-                <i key={i} className={i < h.lit ? 'is-on' : ''} />
+                <span key={i} className="gpx-light-col">
+                  <i className={!h.go && i < h.lit ? 'is-on' : ''} />
+                  <i className={!h.go && i < h.lit ? 'is-on' : ''} />
+                </span>
               ))}
             </div>
           )}
+          {h.go && (
+            <div className="gpx-go" aria-live="assertive" data-testid="gp-go">
+              Vai!
+            </div>
+          )}
           {lapFlash > 0 && (
-            <div className="gpx-lapflash" key={lapFlash} aria-live="polite" data-testid="gp-lapflash">
+            <div
+              className="gpx-lapflash"
+              key={lapFlash}
+              aria-live="polite"
+              data-testid="gp-lapflash"
+            >
               <span className="gpx-lapflash-bar gp-checker" />
               <small>Classificação</small>
               <b>Volta lançada</b>
               <span className="gpx-lapflash-go">Valendo o tempo</span>
             </div>
           )}
-          {h.note && h.stage !== 'count' && <div className="gpx-note">{h.note}</div>}
           {h.dnfLeft !== null && h.done === null && racing && (
             <div className="gpx-dnf" role="status">
               O primeiro já chegou: <b>{Math.ceil(h.dnfLeft)}s</b> para cruzar a linha
@@ -1107,15 +1489,22 @@ export function GpPlay({
               <span className="gpx-pit-text">Trocando os pneus · {h.pit.toFixed(1)}s</span>
             </div>
           )}
-          {h.inPitLane && h.pit <= 0 && driving && <div className="gpx-pitlane">Faixa do box · velocidade limitada</div>}
+          {h.inPitLane && h.pit <= 0 && driving && (
+            <div className="gpx-pitlane">Faixa do box · velocidade limitada</div>
+          )}
 
           {(h.done !== null || h.watching) && !result && (
             <div className="gpx-spec">
-              <button type="button" onClick={() => api.current?.next(-1)} aria-label="Carro anterior">
+              <button
+                type="button"
+                onClick={() => api.current?.next(-1)}
+                aria-label="Carro anterior"
+              >
                 ‹
               </button>
               <span>
-                {h.done !== null ? `Você chegou em ${h.done}º · ` : ''}Assistindo <b>{h.watching || '...'}</b>
+                {h.done !== null ? `Você chegou em ${h.done}º · ` : ''}Assistindo{' '}
+                <b>{h.watching || '...'}</b>
               </span>
               <button type="button" onClick={() => api.current?.next(1)} aria-label="Próximo carro">
                 ›
@@ -1126,42 +1515,66 @@ export function GpPlay({
           {touchDevice && driving && (
             <div className="gp-pads">
               <div className="gp-pads-l">
-                <button type="button" className="gp-pad" aria-label="Virar para a esquerda" {...pad('left')}>
+                <button
+                  type="button"
+                  className="gp-pad"
+                  aria-label="Virar para a esquerda"
+                  {...pad('left')}
+                >
                   ‹
                 </button>
-                <button type="button" className="gp-pad" aria-label="Virar para a direita" {...pad('right')}>
+                <button
+                  type="button"
+                  className="gp-pad"
+                  aria-label="Virar para a direita"
+                  {...pad('right')}
+                >
                   ›
                 </button>
               </div>
               <div className="gp-pads-r">
                 <button
                   type="button"
-                  className="gp-pad is-turbo"
-                  data-ready={h.bar >= 1 ? '1' : '0'}
-                  aria-label="Turbo"
-                  onPointerDown={(e) => {
-                    e.preventDefault();
-                    controls.pressTurbo();
-                  }}
+                  className="gp-pad is-drs"
+                  data-state={h.drs}
+                  aria-label="DRS"
+                  {...pad('drs')}
                 >
-                  Turbo
+                  DRS
                 </button>
-                <button type="button" className="gp-pad is-brake" aria-label="Frear" {...pad('brake')}>
+                <button
+                  type="button"
+                  className="gp-pad is-brake"
+                  aria-label="Frear"
+                  {...pad('brake')}
+                >
                   Freio
                 </button>
-                <button type="button" className="gp-pad is-gas" aria-label="Acelerar" {...pad('gas')}>
+                <button
+                  type="button"
+                  className="gp-pad is-gas"
+                  aria-label="Acelerar"
+                  {...pad('gas')}
+                >
                   Acelera
                 </button>
               </div>
             </div>
           )}
-          {online && showNet && !result && <NetBadge mode={h.net} items={[{ text: `${ping} ms`, title: 'ida e volta' }]} />}
+          {online && showNet && !result && (
+            <NetBadge mode={h.net} items={[{ text: `${ping} ms`, title: 'ida e volta' }]} />
+          )}
         </>
       )}
       <GpWipe key={wipe.key} text={wipe.text} />
       {!result && <RotateHint />}
       {h?.stage === 'count' && !result && (
-        <GameTips storageKey={TIPS_KEY} rows={tipRows(touchDevice)} testId="gp-tips" markOnShow />
+        <GameTips
+          storageKey={TIPS_KEY}
+          rows={tipRows(touchDevice, binds)}
+          testId="gp-tips"
+          markOnShow
+        />
       )}
       <GameChat enabled={!!online && !result} />
       {online && !result && <PauseOverlay />}
@@ -1170,7 +1583,7 @@ export function GpPlay({
           title="Menu"
           testPrefix="gp-menu"
           tipsKey={TIPS_KEY}
-          tips={tipRows(touchDevice)}
+          tips={tipRows(touchDevice, binds)}
           online={!!online}
           net={
             online
@@ -1187,7 +1600,11 @@ export function GpPlay({
           onClose={() => setMenu(false)}
           onExit={onExit}
           onOfflineInvite={onOfflineInvite}
-          endMatch={{ label: 'Encerrar a partida', onClick: () => sendRoom('gend'), testId: 'gp-menu-end' }}
+          endMatch={{
+            label: 'Encerrar a partida',
+            onClick: () => sendRoom('gend'),
+            testId: 'gp-menu-end',
+          }}
           actions={[
             {
               id: 'cam',
@@ -1210,11 +1627,25 @@ export function GpPlay({
                 }),
               testId: 'gp-menu-quality',
             },
+            {
+              id: 'commands',
+              icon: <span aria-hidden="true">K</span>,
+              label: 'Comandos',
+              hint: touchDevice ? 'Botões de toque' : 'Trocar as teclas',
+              onClick: () => setCommands(true),
+              testId: 'gp-menu-commands',
+            },
           ]}
         />
       )}
+      {commands && <GpCommands touch={touchDevice} onClose={() => setCommands(false)} />}
       {result && !online && (
-        <GpFinal rows={result} fastest={extra?.fastest ?? '—'} passes={extra?.passes ?? '—'} mode={{ kind: 'training', onAgain, onExit }} />
+        <GpFinal
+          rows={result}
+          fastest={extra?.fastest ?? '—'}
+          physics={PHYSICS_NAME[mode]}
+          mode={{ kind: 'training', onAgain, onExit }}
+        />
       )}
     </div>
   );
@@ -1234,23 +1665,70 @@ function initialHud(): Hud {
     kmh: 0,
     gear: 1,
     rpm: 0,
-    bar: 0,
-    turbo: false,
+    drs: 'off',
+    slip: 0,
     wear: 0,
     pit: 0,
     inPitLane: false,
     rows: [],
-    note: '',
+    lapMs: 0,
     qualiLeft: GP_QUALI_MAX_SEC,
+    qualiHold: 0,
     qualiMs: null,
     qualiRun: null,
     qualiStarted: false,
     pole: null,
     sectors: [],
+    go: false,
     done: null,
     dnfLeft: null,
     watching: '',
     grid: [],
     net: '',
   };
+}
+
+/** Ícone pequeno de cada tipo de aviso (SVG, sem emoji). */
+function NoticeIcon({ kind }: { kind: GpNoticeKind }) {
+  const common = {
+    width: 20,
+    height: 20,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 2.4,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+    'aria-hidden': true,
+  };
+  if (kind === 'drs')
+    return (
+      <svg {...common}>
+        <path d="M3 9h18M5 9l2 6h10l2-6M9 15v4M15 15v4" />
+      </svg>
+    );
+  if (kind === 'alert')
+    return (
+      <svg {...common}>
+        <path d="M12 3l10 18H2zM12 10v5M12 18v.5" />
+      </svg>
+    );
+  if (kind === 'highlight')
+    return (
+      <svg {...common}>
+        <path d="M12 3l2.8 5.8 6.2.9-4.5 4.4 1 6.2L12 17.4 6.5 20.3l1-6.2L3 9.7l6.2-.9z" />
+      </svg>
+    );
+  if (kind === 'result')
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="13" r="8" />
+        <path d="M12 9v4l3 2M9 2h6" />
+      </svg>
+    );
+  return (
+    <svg {...common}>
+      <path d="M5 21V4M5 4h11l-2 4 2 4H5" />
+    </svg>
+  );
 }

@@ -1,12 +1,22 @@
 import { useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { closeRoom, leaveRoom, sendRoom, useRoom, useMeId, at, type RoomSnapshot } from '@/lib/rooms';
+import {
+  closeRoom,
+  leaveRoom,
+  sendRoom,
+  useRoom,
+  useMeId,
+  at,
+  type RoomSnapshot,
+} from '@/lib/rooms';
 import { GpFinal, type GpFinalRow } from './GpFinal';
 import { hexNum, lapClock } from './format';
 import { paintFromRoom } from './garage';
+import { PHYSICS_NAME } from './gp-best';
 import './foxgp.css';
 
-const nameOf = (id: string, username: string) => (id.startsWith('guest:') ? username : at(username));
+const nameOf = (id: string, username: string) =>
+  id.startsWith('guest:') ? username : at(username);
 
 /** O pódio do Fox GP em sala: a ordem final da sala com a votação de revanche. */
 export function GpRoomFinal({ snapshot }: { snapshot: RoomSnapshot }) {
@@ -16,7 +26,7 @@ export function GpRoomFinal({ snapshot }: { snapshot: RoomSnapshot }) {
   const info = snapshot.foxgp;
   const colorOf = (id: string) => info?.colors[id] ?? '#ff7d26';
 
-  const { rows, fastest, passes } = useMemo(() => {
+  const { rows, fastest } = useMemo(() => {
     const final = [...(snapshot.final ?? [])].sort((a, b) => a.placement - b.placement);
     const names = new Map(final.map((r) => [r.userId, nameOf(r.userId, r.username)]));
     const out: GpFinalRow[] = final.map((r) => ({
@@ -28,15 +38,12 @@ export function GpRoomFinal({ snapshot }: { snapshot: RoomSnapshot }) {
       you: r.userId === me,
       ms: info?.finish[r.userId] ?? null,
       best: info?.best[r.userId] ?? null,
-      passes: info?.passes[r.userId] ?? 0,
       dnf: info?.finish[r.userId] === undefined,
     }));
     const f = info?.fastest;
-    const top = [...out].sort((a, b) => b.passes - a.passes)[0];
     return {
       rows: out,
       fastest: f ? `${names.get(f.id) ?? ''} · ${lapClock(f.ms)}` : '—',
-      passes: top && top.passes > 0 ? `${top.name} · ${top.passes}` : 'ninguém',
     };
   }, [snapshot.final, info, me]);
 
@@ -48,7 +55,7 @@ export function GpRoomFinal({ snapshot }: { snapshot: RoomSnapshot }) {
     <GpFinal
       rows={rows}
       fastest={fastest}
-      passes={passes}
+      physics={PHYSICS_NAME[info?.physics ?? 'arcade']}
       mode={{
         kind: 'room',
         room: {

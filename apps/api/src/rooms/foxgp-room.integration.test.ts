@@ -78,8 +78,11 @@ function watch(room: ClientRoom): Seen {
 }
 
 const saved = { ...FoxGpRoomEngine.timing };
+const savedRand = FoxGpRoomEngine.rand;
 
 beforeAll(async () => {
+  // espera das luzes no mínimo, para o teste não esperar à toa
+  FoxGpRoomEngine.rand = () => 0;
   Object.assign(FoxGpRoomEngine.timing, {
     countMs: 300,
     qualiMaxMs: 60_000,
@@ -102,6 +105,7 @@ beforeEach(() => {
 
 afterAll(async () => {
   Object.assign(FoxGpRoomEngine.timing, saved);
+  FoxGpRoomEngine.rand = savedRand;
   for (const r of open) r.connection.close();
   await Promise.race([game.gracefullyShutdown(false).catch(() => undefined), wait(1500)]);
   http.closeAllConnections();
@@ -135,7 +139,7 @@ describe('sala do Fox GP com servidor de verdade', () => {
 
     // a bia cruza a linha; a ana não termina em tempo e fica DNF
     await wait(400);
-    bia.room.send('gfin', { ms: 330, laps: [110, 110, 110], passes: 1 });
+    bia.room.send('gfin', { ms: 330, laps: [110, 110, 110] });
     ana.room.send('gpos', gpos(500));
     await until(() => ana.snap?.foxgp.finish.bia === 330);
     await until(() => ana.snap?.phase === 'final', 8000);

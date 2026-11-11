@@ -10,6 +10,8 @@ import {
   GP_CUT_OFF,
   GP_DNF_SEC,
   GP_DRAG,
+  GP_DRS_DRAG,
+  GP_DRS_FROM_LAP,
   GP_ENGINE,
   GP_GEARS,
   GP_GEAR_TOP,
@@ -24,16 +26,39 @@ import {
   GP_LAPS,
   GP_OVER_DECEL,
   GP_PIT_STOP_SEC,
+  GP_QUALI_HOLD_SEC,
   GP_QUALI_MAX_SEC,
-  GP_QUALI_WARMUP,
+  GP_QUALI_START_S,
+  GP_REAL_ACC_MAX,
+  GP_REAL_BRK_RATE,
+  GP_REAL_CAR_LEN,
+  GP_REAL_CAR_WID,
+  GP_REAL_DRAG,
+  GP_REAL_POWER,
+  GP_REAL_REAR_LOSS,
+  GP_REAL_REVERSE_OUT,
+  GP_REAL_REVERSE_OUT0,
+  GP_REAL_ROLL,
+  GP_REAL_SCRUB,
+  GP_REAL_SIDE_PUSH,
+  GP_REAL_STEER_CENTER,
+  GP_REAL_STEER_FADE,
+  GP_REAL_STEER_FLIP,
+  GP_REAL_STEER_MAX,
+  GP_REAL_STEER_RISE,
+  GP_REAL_THR_FALL,
+  GP_REAL_THR_RISE,
+  GP_REAL_WALL_ALIGN,
+  GP_REAL_WALL_CD,
+  GP_REAL_WALL_KEEP,
+  GP_REAL_WHEELBASE,
   GP_REVERSE_ACCEL,
   GP_REVERSE_MAX,
   GP_ROLL,
   GP_ROLL0,
   GP_SLIDE_DRAG,
   GP_SLIP_DAMP,
-  GP_SLIP_FILL_FAR,
-  GP_SLIP_FILL_NEAR,
+  GP_SLIP_DRAG,
   GP_SLIP_LEN,
   GP_SLIP_MIN_V,
   GP_SLIP_W,
@@ -42,9 +67,6 @@ import {
   GP_STEER_FULL_V,
   GP_STEER_RATE,
   GP_SURFACE,
-  GP_TURBO_GAIN,
-  GP_TURBO_PASS_GRACE,
-  GP_TURBO_SEC,
   GP_VALID_EVERY,
   GP_VMAX,
   GP_WALL_E,
@@ -54,6 +76,9 @@ import {
   GP_WEAR_DIST,
   GP_WEAR_OFF,
   GP_WEAR_SLIP,
+  gpRealBrake,
+  gpRealLatMax,
+  type GpPhysicsMode,
   type GpSurface,
 } from './constants';
 import { gpTrack, type GpTrack, type GpTrackDef } from './track';
@@ -76,17 +101,18 @@ export interface GpPaint {
   number: number;
 }
 
-/** O que o piloto aperta: acelerar e frear de 0 a 1, volante de −1 (esquerda) a 1 (direita), turbo e "iniciar volta". */
+/** O que o piloto aperta: acelerar e frear de 0 a 1, volante de −1 (esquerda) a 1 (direita), DRS e "iniciar volta". */
 export interface GpInput {
   throttle: number;
   brake: number;
   steer: number;
-  turbo: boolean;
-  /** Classificação: começa a volta lançada agora (fora do box). */
+  /** Abre a asa (só dentro da zona, quando liberado). Fecha sozinha ao frear ou sair da zona. */
+  drs?: boolean;
+  /** Classificação: começa a volta lançada (o carro vai para a largada). */
   lap?: boolean;
 }
 
-export const GP_IDLE: GpInput = { throttle: 0, brake: 0, steer: 0, turbo: false };
+export const GP_IDLE: GpInput = { throttle: 0, brake: 0, steer: 0 };
 
 export type GpPhase = 'quali' | 'race';
 
@@ -123,13 +149,16 @@ export interface GpCar {
   surface: GpSurface;
   /** Desgaste do pneu, de 0 (novo) a 1 (gasto). */
   wear: number;
-  /** Barra do turbo da cauda, de 0 a 1. */
-  bar: number;
-  /** Tempo de turbo que ainda resta (s). */
-  turbo: number;
-  turboEndT: number;
-  /** Quanto está no vácuo agora (0 a 1): a cauda balança mais forte. */
+  /** Quanto está no vácuo agora (0 a 1): menos arrasto, a cauda balança mais forte. */
   slip: number;
+  /** DRS liberado agora (dentro da zona e pelas regras) e asa aberta. */
+  drsAvail: boolean;
+  drsOpen: boolean;
+  /** Realista: acelerador, freio e volante suavizados (o que o carro sente) e a espera entre batidas na barreira (s). */
+  rThr: number;
+  rBrk: number;
+  rSteer: number;
+  wallCd: number;
   /** Parado na vaga do box: tempo que falta (s). */
   pitHold: number;
   /** Já parou nesta passagem pelo box (zera quando sai da faixa). */
@@ -146,8 +175,8 @@ export interface GpCar {
   sectorT: number[];
   sectorStartT: number;
   bestSectors: (number | null)[];
-  /** Classificação: quanto já andou aquecendo, quando começou a volta (e de onde), o tempo e quando o marcou. */
-  warm: number;
+  /** Classificação: contagem na largada antes da volta lançada (s), quando começou a volta (e de onde), o tempo e quando. */
+  qualiHold: number;
   qualiStartT: number | null;
   qualiStartProg: number;
   qualiMs: number | null;
@@ -157,8 +186,6 @@ export interface GpCar {
   dnf: boolean;
   /** Saiu (desconectou): some da pista. */
   gone: boolean;
-  /** Ultrapassagens feitas com o turbo. */
-  passes: number;
   /** Tempo (s) em que chegou a cada 10 m de corrida (para a diferença ao líder). */
   marks: number[];
   /** Fantasma: sem colisão com ninguém (classificação). */
@@ -174,16 +201,15 @@ export type GpEvent =
   | { type: 'lap'; id: string; lap: number; ms: number }
   | { type: 'sector'; id: string; sector: number; ms: number; best: boolean }
   | { type: 'finish'; id: string; place: number; ms: number }
+  | { type: 'qready'; id: string }
   | { type: 'qstart'; id: string }
   | { type: 'qtime'; id: string; ms: number }
-  | { type: 'turbo'; id: string }
-  | { type: 'ready'; id: string }
+  | { type: 'drsready'; id: string }
   | { type: 'pitin'; id: string }
   | { type: 'pitout'; id: string }
   | { type: 'cut'; id: string }
   | { type: 'wall'; id: string; speed: number; x: number; z: number }
   | { type: 'bump'; a: string; b: string; force: number; x: number; z: number }
-  | { type: 'pass'; id: string; turbo: boolean }
   | { type: 'dnf'; id: string };
 
 export interface GpStanding {
@@ -200,7 +226,7 @@ export interface GpRemoteState {
   h: number;
   speed: number;
   prog: number;
-  turbo: boolean;
+  drs: boolean;
   slip: number;
   wear: number;
   steer: number;
@@ -213,6 +239,8 @@ export interface GpRemoteState {
 }
 
 const MARK = 10;
+/** Quantos números tem o estado físico de um carro (`pack`). */
+export const GP_PACK_LEN = 30;
 
 /**
  * Grid de largada pela classificação: do menor para o maior tempo; empate, larga na frente quem marcou primeiro; quem não
@@ -282,6 +310,8 @@ export class GpWorld {
     readonly seed: string,
     infos: readonly GpPlayerInfo[],
     def?: GpTrackDef,
+    /** Modo de física (spec 080): o mesmo para todos os carros da partida. */
+    readonly mode: GpPhysicsMode = 'arcade',
   ) {
     this.track = gpTrack(def);
     this.cars = infos.map((p, slot) => this.newCar(p, slot));
@@ -313,10 +343,13 @@ export class GpWorld {
       prog: 0,
       surface: 'asphalt',
       wear: 0,
-      bar: 0,
-      turbo: 0,
-      turboEndT: -99,
       slip: 0,
+      drsAvail: false,
+      drsOpen: false,
+      rThr: 0,
+      rBrk: 0,
+      rSteer: 0,
+      wallCd: 0,
       pitHold: 0,
       pitServed: false,
       pitStops: 0,
@@ -328,7 +361,7 @@ export class GpWorld {
       sectorT: [],
       sectorStartT: 0,
       bestSectors: [null, null, null],
-      warm: 0,
+      qualiHold: 0,
       qualiStartT: null,
       qualiStartProg: 0,
       qualiMs: null,
@@ -337,7 +370,6 @@ export class GpWorld {
       finishMs: null,
       dnf: false,
       gone: false,
-      passes: 0,
       marks: [],
       ghost: true,
       remote: false,
@@ -369,6 +401,12 @@ export class GpWorld {
     c.speed = 0;
     c.gear = 1;
     c.brakeLevel = 0;
+    c.rThr = 0;
+    c.rBrk = 0;
+    c.rSteer = 0;
+    c.wallCd = 0;
+    c.drsAvail = false;
+    c.drsOpen = false;
     const pr = this.track.projectGlobal(c.x, c.z);
     c.idx = pr.i;
     c.s = pr.s;
@@ -381,10 +419,9 @@ export class GpWorld {
 
   private resetRun(c: GpCar) {
     c.wear = 0;
-    c.bar = 0;
-    c.turbo = 0;
-    c.turboEndT = -99;
     c.slip = 0;
+    c.drsAvail = false;
+    c.drsOpen = false;
     c.pitHold = 0;
     c.pitServed = false;
     c.pitStops = 0;
@@ -397,15 +434,15 @@ export class GpWorld {
     c.finished = false;
     c.finishMs = null;
     c.dnf = false;
-    c.passes = 0;
     c.marks = [];
     c.stepN = 0;
     c.skid = 0;
   }
 
   /**
-   * Classificação (decisão de 10/11/2026): todos saem do box ao mesmo tempo, como fantasmas, aquecem à vontade e começam a
-   * própria volta lançada quando quiserem (pelo botão, ou cruzando a linha depois do aquecimento). Vale uma volta.
+   * Classificação (decisões de 10 e 11/11/2026): todos saem do box ao mesmo tempo, como fantasmas, andam à vontade e
+   * começam a própria volta lançada quando quiserem, pelo botão: o carro vai para a largada, espera a contagem e o tempo
+   * começa. Vale uma volta.
    */
   beginQuali() {
     this.phase = 'quali';
@@ -415,7 +452,7 @@ export class GpWorld {
     const pit = this.track.pit;
     for (const c of this.cars) {
       this.resetRun(c);
-      c.warm = 0;
+      c.qualiHold = 0;
       c.qualiStartT = null;
       c.qualiStartProg = 0;
       c.qualiMs = null;
@@ -483,9 +520,10 @@ export class GpWorld {
       this.stepCar(c, inputs[c.id] ?? GP_IDLE, dt);
     }
     if (this.phase === 'race') {
-      this.collide(only);
+      if (this.mode === 'real') this.collideReal(only);
+      else this.collide(only);
       if (!only) {
-        this.slipstream(dt);
+        this.slipstream();
         this.ranks();
         this.checkEnd();
       }
@@ -497,16 +535,67 @@ export class GpWorld {
     return GP_SURFACE[c.surface].grip * (1 - c.wear * (1 - GP_GRIP_MIN));
   }
 
-  /** Velocidade máxima agora (superfície, turbo). */
+  /** Velocidade máxima agora (pela superfície). */
   vmaxOf(c: GpCar): number {
-    const base = GP_VMAX * GP_SURFACE[c.surface].vmax;
-    return c.turbo > 0 && c.surface !== 'pit' ? base * (1 + GP_TURBO_GAIN) : base;
+    return GP_VMAX * GP_SURFACE[c.surface].vmax;
+  }
+
+  /** Quanto do arrasto vale agora: DRS aberto e vácuo tiram uma parte (multiplicam). */
+  dragOf(c: GpCar): number {
+    return (c.drsOpen ? 1 - GP_DRS_DRAG : 1) * (1 - GP_SLIP_DRAG * c.slip);
+  }
+
+  /** Posição na corrida agora (contando quem já terminou e quem está mais adiante). */
+  private placeOf(c: GpCar): number {
+    let p = 1;
+    for (const o of this.cars) {
+      if (o === c || o.gone) continue;
+      if (o.finished && !c.finished) p++;
+      else if (o.finished === c.finished && o.prog > c.prog) p++;
+    }
+    return p;
+  }
+
+  /**
+   * DRS (spec 080): só dentro da zona; na classificação liberado para todos; na corrida só depois da 1ª volta e nunca para
+   * quem está em 1º. Abre quando pede; fecha ao frear, ao sair da zona ou quando deixa de valer.
+   */
+  private drsRules(c: GpCar, input: GpInput) {
+    const tr = this.track;
+    let ok = tr.drsAt[c.idx] === 1 && c.surface !== 'pit' && c.pitHold <= 0 && c.qualiHold <= 0;
+    if (this.phase === 'race')
+      ok = ok && !c.finished && c.laps.length >= GP_DRS_FROM_LAP && this.placeOf(c) > 1;
+    if (ok && !c.drsAvail) this.events.push({ type: 'drsready', id: c.id });
+    c.drsAvail = ok;
+    if (!ok || input.brake > 0.1) c.drsOpen = false;
+    else if (input.drs) c.drsOpen = true;
+  }
+
+  /** Para o carro no lugar (box, contagem da volta lançada). */
+  private freeze(c: GpCar) {
+    c.vx = 0;
+    c.vz = 0;
+    c.spin = 0;
+    c.speed = 0;
+    c.rThr = 0;
+    c.rBrk = 0;
+    c.drsOpen = false;
   }
 
   private stepCar(c: GpCar, inp: GpInput, dt: number) {
     c.stepN += 1;
     const racing = this.phase === 'race';
     const done = racing && c.finished;
+    // ---- classificação: contagem parado na largada antes da volta lançada ----
+    if (c.qualiHold > 0) {
+      c.qualiHold -= dt;
+      this.freeze(c);
+      if (c.qualiHold <= 0) {
+        c.qualiHold = 0;
+        this.startQualiLap(c, this.t, c.prog);
+      }
+      return;
+    }
     // ---- box: parado na vaga ----
     if (c.pitHold > 0) {
       c.pitHold -= dt;
@@ -526,36 +615,31 @@ export class GpWorld {
     }
     // quem já terminou só desacelera e segue a pista sozinho (a volta de desaceleração)
     const input: GpInput = done ? this.cruise(c) : inp;
-    // classificação: "iniciar volta" pelo botão (fora do box)
-    if (
-      this.phase === 'quali' &&
-      input.lap &&
-      c.qualiStartT === null &&
-      c.qualiMs === null &&
-      c.surface !== 'pit'
-    )
-      this.startQualiLap(c, this.t, c.prog);
+    // classificação: "iniciar volta" leva o carro para a largada, parado e alinhado, e começa a contagem
+    if (this.phase === 'quali' && input.lap && c.qualiStartT === null && c.qualiMs === null) {
+      this.place(c, GP_QUALI_START_S, 0);
+      c.pitServed = false;
+      c.qualiHold = GP_QUALI_HOLD_SEC;
+      this.events.push({ type: 'qready', id: c.id });
+      return;
+    }
+    this.drsRules(c, input);
+    if (this.mode === 'real') this.stepReal(c, input, dt);
+    else this.stepArcade(c, input, dt);
+    this.trackCar(c, dt, racing);
+  }
 
+  /** O passo do Arcade: a física da spec 079, sem mudar o cálculo (o teste de regressão confere). */
+  private stepArcade(c: GpCar, input: GpInput, dt: number) {
+    const racing = this.phase === 'race';
+    const done = racing && c.finished;
     // velocidade para a frente (antes de virar o nariz): só para o volante saber quanto pode girar
     const vf0 = c.vx * Math.sin(c.h) - c.vz * Math.cos(c.h);
     const grip = this.gripOf(c);
     const total = GP_GRIP_TOTAL * grip;
     const brakeK = 1 - c.wear * (1 - GP_BRAKE_MIN);
     const vmax = this.vmaxOf(c);
-
-    // ---- turbo ----
-    if (input.turbo && c.bar >= 1 && c.turbo <= 0 && racing && !done) {
-      c.turbo = GP_TURBO_SEC;
-      c.bar = 0;
-      this.events.push({ type: 'turbo', id: c.id });
-    }
-    if (c.turbo > 0) {
-      c.turbo -= dt;
-      if (c.turbo <= 0) {
-        c.turbo = 0;
-        c.turboEndT = this.t;
-      }
-    }
+    void done;
 
     // ---- volante: gira mais devagar parado e em alta velocidade; o giro solto das batidas soma e some com a aderência ----
     const steer = clamp(input.steer, -1, 1);
@@ -581,8 +665,7 @@ export class GpWorld {
     const g = Math.max(1, c.gear);
     const top = GP_GEAR_TOP[g - 1]!;
     c.rpm = clamp(Math.max(0, vf) / top, 0.12, 1);
-    const turboK = c.turbo > 0 ? 1.4 : 1;
-    let engine = throttle * GP_ENGINE * GP_GEARS[g - 1]! * gpTorque(c.rpm) * turboK;
+    let engine = throttle * GP_ENGINE * GP_GEARS[g - 1]! * gpTorque(c.rpm);
     // limitador: na última marcha o motor corta no giro máximo
     if (g === GP_GEARS.length && Math.max(0, vf) >= top) engine = 0;
     // pedal de freio progressivo
@@ -600,8 +683,8 @@ export class GpWorld {
     } else if (throttle > 0.05) {
       along = vf < 0 ? GP_BRAKE : Math.min(engine, total);
     }
-    // arrasto do ar (menor no turbo: é o vácuo da cauda) e resistência de rolagem
-    const drag = (c.turbo > 0 ? GP_DRAG * 0.78 : GP_DRAG) * vf * Math.abs(vf) + GP_ROLL * vf + GP_ROLL0 * Math.sign(vf);
+    // arrasto do ar (menor com DRS e no vácuo) e resistência de rolagem
+    const drag = GP_DRAG * this.dragOf(c) * vf * Math.abs(vf) + GP_ROLL * vf + GP_ROLL0 * Math.sign(vf);
     const nvf = vf + (along - drag) * dt;
     // a rolagem não inverte o sentido sozinha
     vf = Math.sign(nvf) !== Math.sign(vf) && Math.abs(along) < 1e-6 && vf !== 0 ? 0 : nvf;
@@ -632,8 +715,74 @@ export class GpWorld {
     c.wear += GP_WEAR_DIST * Math.abs(vf) * dt;
     if (c.surface === 'grass' || c.surface === 'gravel') c.wear += GP_WEAR_OFF * dt;
     c.wear = Math.min(1, c.wear);
+  }
 
-    this.trackCar(c, dt, racing);
+  /**
+   * O passo do Realista (spec 080, modelo do repositório de referência): a velocidade é um número, sempre alinhado com o
+   * nariz. A curva é limitada pela aderência lateral (`GRIP0 + DF·v²`): pedir mais do que o pneu aguenta faz o carro abrir
+   * a trajetória e perder velocidade, sem ficar de lado. Sem escorregão (`skid` 0).
+   */
+  private stepReal(c: GpCar, input: GpInput, dt: number) {
+    // entradas suavizadas: o pedal e o volante não pulam
+    const thrIn = clamp(input.throttle, 0, 1);
+    const brkIn = clamp(input.brake, 0, 1);
+    const stIn = clamp(input.steer, -1, 1);
+    c.rThr += clamp(thrIn - c.rThr, -GP_REAL_THR_FALL * dt, GP_REAL_THR_RISE * dt);
+    c.rBrk += clamp(brkIn - c.rBrk, -GP_REAL_BRK_RATE * dt, GP_REAL_BRK_RATE * dt);
+    const rate = stIn === 0 ? GP_REAL_STEER_CENTER : c.rSteer * stIn < 0 ? GP_REAL_STEER_FLIP : GP_REAL_STEER_RISE;
+    c.rSteer += clamp(stIn - c.rSteer, -rate * dt, rate * dt);
+    c.steer = c.rSteer;
+    c.wallCd -= dt;
+    c.spin = 0;
+    c.skid = 0;
+
+    let v = c.speed;
+    const av = Math.abs(v);
+    const grip = this.gripOf(c);
+    // ---- curva: o que o volante pede, limitado pelo que o pneu aguenta ----
+    const sa = (c.rSteer * GP_REAL_STEER_MAX) / (1 + av / GP_REAL_STEER_FADE);
+    const yawD = (v * Math.tan(sa)) / GP_REAL_WHEELBASE;
+    const yawM = (gpRealLatMax(av) * grip) / Math.max(av, 1);
+    const yaw = clamp(yawD, -yawM, yawM);
+    if (Math.abs(yawD) > yawM && av > 5) {
+      const over = Math.min(1, (Math.abs(yawD) - yawM) / yawM);
+      v -= Math.sign(v) * over * GP_REAL_SCRUB * dt;
+      c.wear += GP_WEAR_SLIP * over * av * 0.25 * dt;
+    }
+    c.h += yaw * dt;
+
+    // ---- motor, freio e ré ----
+    const brakeK = 1 - c.wear * (1 - GP_BRAKE_MIN);
+    if (v <= 0.5 && c.rBrk > 0.5 && c.rThr < 0.1) v = Math.max(-GP_REVERSE_MAX, v - GP_REVERSE_ACCEL * dt);
+    else if (v < 0) v = Math.min(0, v + (c.rThr * GP_REAL_REVERSE_OUT + GP_REAL_REVERSE_OUT0) * dt);
+    else {
+      const engine = c.rThr * Math.min(GP_REAL_ACC_MAX, GP_REAL_POWER / Math.max(v, 1));
+      const a =
+        engine -
+        this.dragOf(c) * GP_REAL_DRAG * v * v -
+        (v > 0 ? GP_REAL_ROLL : 0) -
+        c.rBrk * brakeK * gpRealBrake(v);
+      v = Math.max(0, v + a * dt);
+      if (c.rBrk > 0.05 && v > 12) c.wear += GP_WEAR_BRAKE * c.rBrk * dt;
+    }
+    // fora do asfalto (grama, brita, box) a máxima cai: perde velocidade até ela
+    const vmax = this.vmaxOf(c);
+    if (GP_SURFACE[c.surface].vmax < 1 && v > vmax) v = Math.max(vmax, v - GP_OVER_DECEL * dt);
+    c.brakeLevel = c.rBrk;
+    c.braking = c.rBrk > 0.1 && v > 1;
+
+    // câmbio e giro (só desenho e som)
+    c.gear = v < -0.3 ? 0 : gpAutoGear(c.gear, Math.max(0, v));
+    c.rpm = clamp(Math.max(0, v) / GP_GEAR_TOP[Math.max(1, c.gear) - 1]!, 0.12, 1);
+
+    c.speed = v;
+    c.vx = Math.sin(c.h) * v;
+    c.vz = -Math.cos(c.h) * v;
+    c.x += c.vx * dt;
+    c.z += c.vz * dt;
+    c.wear += GP_WEAR_DIST * Math.abs(v) * dt;
+    if (c.surface === 'grass' || c.surface === 'gravel') c.wear += GP_WEAR_OFF * dt;
+    c.wear = Math.min(1, c.wear);
   }
 
   /** Volta de desaceleração: segue o meio da pista devagar. */
@@ -645,7 +794,6 @@ export class GpWorld {
       throttle: c.speed < 14 ? 0.6 : 0,
       brake: c.speed > 18 ? 0.4 : 0,
       steer: clamp(diff * 2.5, -1, 1),
-      turbo: false,
     };
   }
 
@@ -655,6 +803,26 @@ export class GpWorld {
     c.sectorStartT = t;
     c.sectorT = [];
     this.events.push({ type: 'qstart', id: c.id });
+  }
+
+  /**
+   * Realista: a barreira empurra o carro para dentro, alinha parte da direção com a pista e corta a velocidade (com uma
+   * espera curta entre uma batida e a próxima, como na referência).
+   */
+  private hitWallReal(c: GpCar, nx: number, nz: number, back: number, i: number) {
+    c.x -= nx * back;
+    c.z -= nz * back;
+    const th = this.track.heading(i);
+    const along = Math.cos(c.h - th) >= 0 ? th : th + Math.PI;
+    c.h += Math.atan2(Math.sin(along - c.h), Math.cos(along - c.h)) * GP_REAL_WALL_ALIGN;
+    if (c.wallCd <= 0) {
+      const hit = Math.abs(c.speed);
+      c.speed *= GP_REAL_WALL_KEEP;
+      c.wallCd = GP_REAL_WALL_CD;
+      if (hit > 4) this.events.push({ type: 'wall', id: c.id, speed: hit, x: c.x + nx, z: c.z + nz });
+    }
+    c.vx = Math.sin(c.h) * c.speed;
+    c.vz = -Math.cos(c.h) * c.speed;
   }
 
   /** Bate na barreira: impulso com restituição e atrito no ponto de contato (o carro pode girar), e perde velocidade. */
@@ -708,7 +876,8 @@ export class GpWorld {
     if (Math.abs(p.d) > lim) {
       const nx = -tr.tz[p.i]! * Math.sign(p.d);
       const nz = tr.tx[p.i]! * Math.sign(p.d);
-      this.hitWall(c, nx, nz, Math.abs(p.d) - lim, dt);
+      if (this.mode === 'real') this.hitWallReal(c, nx, nz, Math.abs(p.d) - lim, p.i);
+      else this.hitWall(c, nx, nz, Math.abs(p.d) - lim, dt);
       p = tr.project(c.x, c.z, p.i);
     }
     c.idx = p.i;
@@ -717,7 +886,6 @@ export class GpWorld {
     c.surface = tr.surface(p);
     const prev = c.prog;
     c.prog += tr.delta(before, p.s);
-    if (this.phase === 'quali' && c.prog > prev) c.warm += c.prog - prev;
 
     // ---- corte de caminho ----
     let cut = false;
@@ -733,10 +901,7 @@ export class GpWorld {
       c.x = v.x;
       c.z = v.z;
       c.h = v.h;
-      c.vx = 0;
-      c.vz = 0;
-      c.spin = 0;
-      c.speed = 0;
+      this.freeze(c);
       c.idx = v.idx;
       const q = tr.project(c.x, c.z, v.idx);
       c.s = q.s;
@@ -784,14 +949,8 @@ export class GpWorld {
       }
     };
     if (this.phase === 'quali') {
-      if (c.qualiMs !== null) return;
-      if (c.qualiStartT === null) {
-        // depois do aquecimento, cruzar a linha começa a volta
-        const lineNow = Math.floor(prev / L + 1) * L;
-        if (c.warm >= GP_QUALI_WARMUP && crossed(lineNow) && c.surface !== 'pit')
-          this.startQualiLap(c, at(lineNow), lineNow);
-        return;
-      }
+      // sem volta lançada em andamento o carro só anda (sem tempo correndo)
+      if (c.qualiMs !== null || c.qualiStartT === null) return;
       const startLine = c.qualiStartProg;
       // setores só quando a volta começou na linha (do contrário eles não fecham na ordem)
       if (Math.abs(startLine / L - Math.round(startLine / L)) < 1e-9) sectors(startLine);
@@ -874,7 +1033,7 @@ export class GpWorld {
     c.gear = st.gear ?? c.gear;
     c.skid = st.skid ?? 0;
     c.prog = st.prog;
-    c.turbo = st.turbo ? 1 : 0;
+    c.drsOpen = st.drs;
     c.slip = st.slip;
     c.wear = st.wear;
     c.steer = st.steer;
@@ -990,13 +1149,78 @@ export class GpWorld {
     }
   }
 
-  /** Vácuo: logo atrás de outro carro e alinhado, a barra do turbo enche. O líder nunca enche. */
-  private slipstream(dt: number) {
+  /**
+   * Realista (spec 080, `collidePlayer` da referência): caixa do tamanho do carro. Batida de lado empurra para o lado;
+   * batida de traseira separa e troca velocidade (quem bate perde, quem é batido ganha). Sem giro solto. Carro de outra
+   * pessoa (online) é obstáculo: quem decide a batida dele é o líder.
+   */
+  private collideReal(only?: string) {
+    const live = this.cars.filter((c) => !c.gone && !c.ghost && c.pitHold <= 0);
+    for (let i = 0; i < live.length; i++) {
+      for (let j = i + 1; j < live.length; j++) {
+        const a = live[i]!;
+        const b = live[j]!;
+        const movA = only ? a.id === only : !a.remote;
+        const movB = only ? b.id === only : !b.remote;
+        if (!movA && !movB) continue;
+        const dx = a.x - b.x;
+        const dz = a.z - b.z;
+        if (dx * dx + dz * dz > GP_REAL_CAR_LEN * GP_REAL_CAR_LEN * 1.6) continue;
+        // no referencial de b: ao longo (a frente de b) e de lado
+        const fx = Math.sin(b.h);
+        const fz = -Math.cos(b.h);
+        const along = dx * fx + dz * fz;
+        const side = dx * Math.cos(b.h) + dz * Math.sin(b.h);
+        const pa = GP_REAL_CAR_LEN - Math.abs(along);
+        const ps = GP_REAL_CAR_WID - Math.abs(side);
+        if (pa <= 0 || ps <= 0) continue;
+        const wa = movA ? (movB ? 0.5 : 1) : 0;
+        const wb = movB ? (movA ? 0.5 : 1) : 0;
+        let force = 0;
+        if (ps < pa) {
+          // de lado: cada um vai para o seu lado
+          const sg = Math.sign(side) || 1;
+          const rx = Math.cos(b.h) * sg * ps * GP_REAL_SIDE_PUSH;
+          const rz = Math.sin(b.h) * sg * ps * GP_REAL_SIDE_PUSH;
+          a.x += rx * wa * 2;
+          a.z += rz * wa * 2;
+          b.x -= rx * wb * 2;
+          b.z -= rz * wb * 2;
+          force = Math.abs(a.speed - b.speed) * 0.2 + ps;
+        } else {
+          // de frente ou de traseira: separa ao longo e troca velocidade
+          const sg = Math.sign(along) || 1;
+          a.x += fx * sg * pa * wa;
+          a.z += fz * sg * pa * wa;
+          b.x -= fx * sg * pa * wb;
+          b.z -= fz * sg * pa * wb;
+          const behind = sg < 0 ? a : b;
+          const front = sg < 0 ? b : a;
+          if (behind.speed > front.speed) {
+            const vv = (behind.speed + front.speed) / 2;
+            force = behind.speed - front.speed;
+            const mb = behind === a ? movA : movB;
+            const mf = front === a ? movA : movB;
+            if (mb) behind.speed = vv * GP_REAL_REAR_LOSS;
+            if (mf) front.speed = Math.min(GP_VMAX * 1.1, front.speed + (vv - front.speed) * 0.5);
+          }
+        }
+        for (const c of [a, b]) {
+          c.vx = Math.sin(c.h) * c.speed;
+          c.vz = -Math.cos(c.h) * c.speed;
+        }
+        if (force > 0.8)
+          this.events.push({ type: 'bump', a: a.id, b: b.id, force, x: (a.x + b.x) / 2, z: (a.z + b.z) / 2 });
+      }
+    }
+  }
+
+  /** Vácuo passivo: logo atrás de outro carro e alinhado, o arrasto cai (mais perto, mais). Vale para todos. */
+  private slipstream() {
     for (const c of this.cars) {
       if (c.remote || c.gone || c.finished) continue;
       c.slip = 0;
-      if (c.turbo > 0 || c.bar >= 1 || c.speed < GP_SLIP_MIN_V) continue;
-      if ((this.order.get(c.id) ?? 1) <= 1) continue;
+      if (c.speed < GP_SLIP_MIN_V) continue;
       const fx = Math.sin(c.h);
       const fz = -Math.cos(c.h);
       let best = 0;
@@ -1011,32 +1235,13 @@ export class GpWorld {
         if (Math.cos(o.h - c.h) < 0.85) continue;
         best = Math.max(best, 1 - (along - 2.5) / (GP_SLIP_LEN - 2.5));
       }
-      if (best <= 0) continue;
-      c.slip = best;
-      const rate = GP_SLIP_FILL_FAR + (GP_SLIP_FILL_NEAR - GP_SLIP_FILL_FAR) * best;
-      c.bar = Math.min(1, c.bar + rate * dt);
-      if (c.bar >= 1) this.events.push({ type: 'ready', id: c.id });
+      c.slip = Math.max(0, best);
     }
   }
 
-  /** Posições e ultrapassagens com o turbo. */
+  /** Posições de agora. */
   private ranks() {
-    const st = this.standings();
-    for (const r of st) {
-      const was = this.order.get(r.car.id);
-      const c = r.car;
-      if (
-        was !== undefined &&
-        r.pos < was &&
-        !c.finished &&
-        !c.remote &&
-        (c.turbo > 0 || this.t - c.turboEndT < GP_TURBO_PASS_GRACE)
-      ) {
-        c.passes += was - r.pos;
-        this.events.push({ type: 'pass', id: c.id, turbo: true });
-      }
-      this.order.set(c.id, r.pos);
-    }
+    for (const r of this.standings()) this.order.set(r.car.id, r.pos);
   }
 
   /** A corrida acaba quando todos cruzam a linha, ou 30 s depois do primeiro (o resto é DNF). */
@@ -1112,13 +1317,13 @@ export class GpWorld {
       c.prog,
       c.idx,
       c.wear,
-      c.bar,
-      c.turbo,
+      c.drsAvail ? 1 : 0,
+      c.drsOpen ? 1 : 0,
       c.pitHold,
       c.pitServed ? 1 : 0,
       c.gear,
       c.brakeLevel,
-      c.warm,
+      c.qualiHold,
       c.qualiStartT ?? -1,
       c.qualiStartProg,
       c.lastValid.x,
@@ -1129,12 +1334,16 @@ export class GpWorld {
       c.slip,
       c.steer,
       c.skid,
+      c.rThr,
+      c.rBrk,
+      c.rSteer,
+      c.wallCd,
     ];
   }
 
   /** Põe o carro no estado recebido (o que não está no pacote, como as voltas, segue o que o carro já tem). */
   unpack(c: GpCar, v: readonly number[]) {
-    if (v.length < 26) return;
+    if (v.length < GP_PACK_LEN) return;
     c.x = v[0]!;
     c.z = v[1]!;
     c.h = v[2]!;
@@ -1144,19 +1353,24 @@ export class GpWorld {
     c.prog = v[6]!;
     c.idx = Math.max(0, Math.min(this.track.n - 1, Math.trunc(v[7]!)));
     c.wear = v[8]!;
-    c.bar = v[9]!;
-    c.turbo = v[10]!;
+    c.drsAvail = v[9] === 1;
+    c.drsOpen = v[10] === 1;
     c.pitHold = v[11]!;
     c.pitServed = v[12] === 1;
     c.gear = v[13]!;
     c.brakeLevel = v[14]!;
-    c.warm = v[15]!;
+    c.qualiHold = v[15]!;
     c.qualiStartT = v[16]! < 0 ? null : v[16]!;
     c.qualiStartProg = v[17]!;
     c.lastValid = { x: v[18]!, z: v[19]!, h: v[20]!, prog: v[21]!, idx: Math.trunc(v[22]!) };
     c.slip = v[23]!;
     c.steer = v[24]!;
     c.skid = v[25]!;
+    c.rThr = v[26]!;
+    c.rBrk = v[27]!;
+    c.rSteer = v[28]!;
+    c.wallCd = v[29]!;
+    // no Realista a velocidade é sempre para o nariz; no Arcade vem do vetor
     c.speed = c.vx * Math.sin(c.h) - c.vz * Math.cos(c.h);
     const p = this.track.project(c.x, c.z, c.idx);
     c.idx = p.i;

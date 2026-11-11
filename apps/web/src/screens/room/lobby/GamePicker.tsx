@@ -70,8 +70,8 @@ export const GAME_CATEGORIES: { id: string; title: string; games: PickGame[] }[]
       {
         id: 'foxgp',
         name: 'Fox GP',
-        note: 'Corrida de F1 das raposas: classificação, 3 voltas, turbo e box.',
-        cap: 'até 8',
+        note: 'Corrida de F1 das raposas: classificação, 3 voltas, DRS, vácuo e box. Física Arcade ou Realista.',
+        cap: 'até 20',
       },
       {
         id: 'atravessa',

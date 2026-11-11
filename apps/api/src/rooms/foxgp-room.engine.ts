@@ -1,17 +1,21 @@
 import {
-  ATR_ROOM_COLORS,
   GP_DNF_SEC,
   GP_LAPS,
   GP_MAX_PLAYERS,
   GP_MIN_LAP_SEC,
+  GP_PHYSICS_DEFAULT,
   GP_QUALI_MAX_SEC,
+  GP_ROOM_COLORS,
   GP_ROOM_GRID_MS,
   GP_ROOM_LIGHTS_MS,
   GP_ROOM_MAX_RACE_SEC,
   GP_ROOM_QUALI_COUNT_MS,
   GP_ROOM_STALL_MS,
   gpGridOrder,
+  gpIsPhysicsMode,
+  gpLightsHold,
   gpTrack,
+  type GpPhysicsMode,
 } from '@nocap/games';
 import { ColorRoomEngine, RoomError, type EngineOptions, type FinalRow } from './color-room.engine';
 
@@ -42,7 +46,6 @@ interface Racer {
   laps: number[];
   best: number | null;
   finishMs: number | null;
-  passes: number;
   prog: number;
   gone: boolean;
   lastPosAt: number;
@@ -55,7 +58,8 @@ const r2 = (n: number) => Math.round(n * 100) / 100;
 const HEX = /^#[0-9a-f]{6}$/i;
 
 /**
- * O Fox GP em sala (specs 078 e 079). O aparelho do LÍDER simula todos os carros (autoridade: batidas iguais para todos),
+ * O Fox GP em sala (specs 078, 079 e 080). A regra "Física" (Arcade ou Realista) é da sala inteira e só o líder muda:
+ * todos correm no mesmo modo, porque o aparelho do líder simula todos os carros. O aparelho do LÍDER simula todos os carros (autoridade: batidas iguais para todos),
  * conectado aos outros por WebRTC; quando a conexão direta não sai, a sala só repassa as entradas (`grin`) e os estados
  * (`grsnap`, `grev`) entre eles. A sala é o relógio e o juiz: hora da classificação e da largada, tempos de classificação
  * e grid, voltas e chegada (que o líder relata por todos), regra dos 30 s, quem saiu (DNF) e o fim. Sem ranking nem
@@ -70,6 +74,8 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
     minLapMs: GP_MIN_LAP_SEC * 1000,
     dnfMs: GP_DNF_SEC * 1000,
   };
+  /** Sorteio da espera das luzes (os testes trocam por um fixo). */
+  static rand: () => number = Math.random;
   override readonly game = 'foxgp' as const;
   override readonly persistable = false;
   protected override readonly answerPhase = 'play' as const;
@@ -83,6 +89,8 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
   private qualiAt = 0;
   private raceAt = 0;
   private grid: string[] = [];
+  /** Espera sorteada com as 5 luzes acesas antes de apagar (ms): todos largam juntos. */
+  private holdMs = 0;
   /** Hora (relógio do jogo, ms) em que o primeiro cruzou a linha. */
   private firstFinishAt: number | null = null;
   /** Quem simula a partida (o líder quando ela começou). */
@@ -93,19 +101,28 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
   constructor(opts: EngineOptions) {
     super({ ...opts, maxPlayers: GP_MAX_PLAYERS });
     this.mode = 'classico';
-    this.settings = { rounds: 1 };
+    this.settings = { rounds: 1, physics: GP_PHYSICS_DEFAULT } as unknown as typeof this.settings;
   }
 
-  protected override validSettings(_merged: Record<string, unknown>, mode: string): boolean {
-    return mode === 'classico';
+  protected override validSettings(merged: Record<string, unknown>, mode: string): boolean {
+    return mode === 'classico' && gpIsPhysicsMode(merged.physics);
+  }
+
+  /** O modo de física da sala. */
+  get physics(): GpPhysicsMode {
+    const v = (this.settings as unknown as { physics?: unknown }).physics;
+    return gpIsPhysicsMode(v) ? v : GP_PHYSICS_DEFAULT;
   }
 
   // ---- pessoas, cores e pintura (a garagem) ----
 
+  /** Uma cor livre; sem cor livre (mais de 10 na sala), a menos usada. */
   private giveColor(id: string) {
     if (this.colors.has(id)) return;
-    const taken = new Set(this.colors.values());
-    this.colors.set(id, (ATR_ROOM_COLORS.find((c) => !taken.has(c.hex)) ?? ATR_ROOM_COLORS[0]!).hex);
+    const used = new Map<string, number>();
+    for (const hex of this.colors.values()) used.set(hex, (used.get(hex) ?? 0) + 1);
+    const best = [...GP_ROOM_COLORS].sort((a, b) => (used.get(a.hex) ?? 0) - (used.get(b.hex) ?? 0))[0]!;
+    this.colors.set(id, best.hex);
   }
 
   /** Quem entra com a corrida andando entra como espectador e joga a próxima (decisão de 10/11/2026). */
@@ -132,14 +149,14 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
     for (const id of [...this.members.keys()]) this.giveColor(id);
   }
 
-  /** Escolhe a cor do pelo no lobby: nenhuma cor é de duas pessoas. */
+  /** Escolhe a cor do pelo no lobby: enquanto houver cor livre, nenhuma cor é de duas pessoas. */
   setColor(id: string, hex: string) {
     this.requirePhase('lobby');
     if (!this.members.has(id)) throw new RoomError('Você não está na sala');
-    if (!ATR_ROOM_COLORS.some((c) => c.hex === hex)) throw new RoomError('Cor inválida');
-    for (const [other, taken] of this.colors) {
-      if (other !== id && taken === hex) throw new RoomError('Essa cor já é de outra pessoa');
-    }
+    if (!GP_ROOM_COLORS.some((c) => c.hex === hex)) throw new RoomError('Cor inválida');
+    const others = [...this.colors].filter(([other]) => other !== id).map(([, taken]) => taken);
+    const free = GP_ROOM_COLORS.some((c) => !others.includes(c.hex));
+    if (free && others.includes(hex)) throw new RoomError('Essa cor já é de outra pessoa');
     this.colors.set(id, hex);
     this.members.get(id)!.ready = false;
   }
@@ -225,7 +242,6 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
         laps: [],
         best: null,
         finishMs: null,
-        passes: 0,
         prog: 0,
         gone: false,
         lastPosAt: this.qualiAt,
@@ -328,11 +344,11 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
     this.dirty = true;
   }
 
-  /** Cruzou a linha de chegada: hora (ms desde as luzes), as voltas e as ultrapassagens com o turbo. */
+  /** Cruzou a linha de chegada: hora (ms desde as luzes) e as voltas. */
   finishLine(sender: string, v: unknown): void {
     if (!this.driving || this.stage !== 'race') return;
     const r = this.target(sender, v);
-    const m = v as { ms?: unknown; laps?: unknown; passes?: unknown } | null;
+    const m = v as { ms?: unknown; laps?: unknown } | null;
     if (!r || r.finishMs !== null || !m || !finite(m.ms) || !Array.isArray(m.laps)) return;
     const laps = m.laps as unknown[];
     if (laps.length !== GP_LAPS || !laps.every((l) => finite(l) && l >= FoxGpRoomEngine.timing.minLapMs))
@@ -343,17 +359,8 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
     r.best = Math.min(...r.laps);
     r.finishMs = Math.round(m.ms);
     r.prog = GP_LAPS * this.lapLength;
-    r.passes = finite(m.passes) ? Math.max(0, Math.min(40, Math.trunc(m.passes))) : 0;
     if (this.firstFinishAt === null) this.firstFinishAt = this.gnow();
     this.dirty = true;
-  }
-
-  /** Ultrapassagens com o turbo de quem ainda corre (o pódio mostra mesmo para quem não terminou). */
-  stats(sender: string, v: unknown): void {
-    const r = this.target(sender, v);
-    const passes = (v as { passes?: unknown } | null)?.passes;
-    if (!r || r.finishMs !== null || !finite(passes)) return;
-    r.passes = Math.max(0, Math.min(40, Math.trunc(passes)));
   }
 
   private kill(id: string) {
@@ -422,7 +429,9 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
             .map((r) => ({ id: r.id, slot: r.slot, ms: r.qualiMs, at: r.qualiAt })),
         );
         this.stage = 'grid';
-        this.raceAt = t + FoxGpRoomEngine.timing.gridMs;
+        // a espera com as luzes acesas é sorteada aqui, uma vez, para todos largarem juntos
+        this.holdMs = Math.round(gpLightsHold(FoxGpRoomEngine.rand()) * 1000);
+        this.raceAt = t + FoxGpRoomEngine.timing.gridMs + this.holdMs;
         for (const r of this.racers.values()) r.lastPosAt = this.raceAt;
         return true;
       }
@@ -505,7 +514,6 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
     const quali: Record<string, number | null> = {};
     const finish: Record<string, number> = {};
     const best: Record<string, number> = {};
-    const passes: Record<string, number> = {};
     const gone: string[] = [];
     let fastest: { id: string; ms: number } | null = null;
     for (const r of this.racers.values()) {
@@ -516,7 +524,6 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
         best[r.id] = r.best;
         if (!fastest || r.best < fastest.ms) fastest = { id: r.id, ms: r.best };
       }
-      if (r.passes > 0) passes[r.id] = r.passes;
       if (r.gone) gone.push(r.id);
     }
     const final = this.phase === 'final';
@@ -527,6 +534,8 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
         stage: started ? this.stage : null,
         qualiAt: started ? this.qualiAt : null,
         raceAt: started && this.stage !== 'quali' ? this.raceAt : null,
+        holdMs: started && this.stage !== 'quali' ? this.holdMs : null,
+        physics: this.physics,
         slots: started ? slots : {},
         colors: Object.fromEntries(this.colors),
         paints: Object.fromEntries(this.paints),
@@ -534,7 +543,6 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
         grid: this.grid,
         finish,
         best,
-        passes,
         gone,
         fastest,
         firstFinishAt: this.firstFinishAt,
