@@ -110,8 +110,9 @@ class Engine {
     const r = Engine.rpmOf(rpm, throttle, idle);
     n.a.frequency.setTargetAtTime((r / 60) * 1.5, t, 0.03);
     n.b.frequency.setTargetAtTime((r / 60) * 0.75, t, 0.03);
-    const vol = kit && !kit.muted() && !silent ? 0.025 + throttle * 0.035 : 0.0001;
-    n.g.gain.setTargetAtTime(vol, t, 0.05);
+    const isQuiet = idle && throttle < 0.02;
+    const vol = kit && !kit.muted() && !silent && !isQuiet ? 0.025 + throttle * 0.035 : 0.0001;
+    n.g.gain.setTargetAtTime(vol, t, 0.03);
   }
 
   stop() {

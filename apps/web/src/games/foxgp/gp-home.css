@@ -4,13 +4,21 @@
   position: fixed;
   inset: 0;
   z-index: 45;
-  overflow: hidden auto;
   background: var(--gp-bg);
   color: var(--gp-text);
   font-family: var(--gp-body);
 }
 .gph {
+  width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) clamp(20px, 3.5vh, 32px);
   animation: gph-in 0.6s var(--gp-ease) both;
+}
+.gph-garage {
+  overflow: hidden auto;
 }
 @keyframes gph-in {
   from {
@@ -50,31 +58,36 @@
   background: var(--gp-panel);
 }
 .gph-flag {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 36px;
-  background-size: 36px 36px;
+  grid-row: 2;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background-size: 32px 32px;
   opacity: 0.9;
+  pointer-events: none;
+  z-index: 10;
 }
 .gph-car {
   position: absolute;
   right: 2vw;
-  top: 10vh;
-  width: min(60vw, 860px);
-  height: 70vh;
+  top: 5vh;
+  bottom: clamp(32px, 5vh, 60px);
+  width: min(58vw, 860px);
 }
 .gph-main {
+  grid-row: 1;
   position: relative;
   z-index: 2;
   width: min(520px, 100%);
-  min-height: 100%;
+  height: 100%;
+  max-height: 100%;
   box-sizing: border-box;
-  padding: max(40px, 7vh) max(24px, 5.5vw) 72px;
+  padding: clamp(14px, 3vh, 36px) max(20px, 4.5vw) clamp(6px, 1.5vh, 16px);
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  justify-content: center;
+  gap: clamp(8px, 1.8vh, 18px);
+  overflow: hidden;
 }
 .gph-brand {
   display: flex;
@@ -92,7 +105,7 @@
 }
 .gph-title {
   margin: 0;
-  font-size: min(13vw, 18vh, 168px);
+  font-size: clamp(38px, 11vh, 130px);
   line-height: 0.82;
   letter-spacing: -0.02em;
 }
@@ -102,33 +115,82 @@
 .gph-lead {
   margin: 0;
   max-width: 440px;
-  font-size: 19px;
-  line-height: 1.45;
+  font-size: clamp(13px, 1.8vh, 17px);
+  line-height: 1.35;
   color: var(--gp-text-3);
 }
 .gph-btns {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  width: min(360px, 100%);
+  gap: clamp(6px, 1.2vh, 10px);
+  width: min(380px, 100%);
 }
 .gph-btns .gp-tbtn {
   text-align: left;
+  height: clamp(38px, 5.2vh, 48px);
+  font-size: clamp(13px, 1.8vh, 17px);
+  padding: 0 14px;
 }
 .gph-go {
-  height: 60px;
+  height: clamp(48px, 6.8vh, 58px) !important;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 28px;
+  font-size: clamp(18px, 2.5vh, 24px) !important;
 }
 .gph-two {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 .gph-two .gp-tbtn {
   text-align: center;
+}
+.gph-carousel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--gp-panel-2);
+  border: 1px solid var(--gp-line-2);
+  padding: 4px 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.gph-carousel-btn {
+  width: clamp(28px, 4vh, 34px);
+  height: clamp(28px, 4vh, 34px);
+  display: grid;
+  place-items: center;
+  background: var(--gp-panel);
+  border: 1px solid var(--gp-line);
+  color: var(--gp-text);
+  font-size: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.gph-carousel-btn:hover {
+  background: var(--gp-accent);
+  color: var(--gp-bg);
+}
+.gph-carousel-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 1;
+}
+.gph-carousel-title {
+  font: italic 800 clamp(13px, 1.8vh, 15px) var(--gp-display);
+  text-transform: uppercase;
+  color: var(--gp-accent);
+}
+.gph-carousel-best {
+  font-size: clamp(11px, 1.4vh, 12px);
+  color: var(--gp-text-3);
+}
+.gph-carousel-best b {
+  color: var(--gp-text);
 }
 .gph-panel {
   width: min(420px, 100%);
@@ -364,10 +426,16 @@
   .gph-car {
     opacity: 0.35;
     width: 100vw;
-    right: -20vw;
+    right: -10vw;
+    top: 0;
+    bottom: 32px;
   }
   .gph-stripes {
     opacity: 0.5;
+  }
+  .gph-main {
+    width: 100%;
+    max-width: 480px;
   }
   .gph-garage {
     grid-template-columns: minmax(0, 1fr);
@@ -380,16 +448,34 @@
     padding: 18px;
   }
 }
-@media (max-height: 520px) {
+@media (max-height: 640px) {
   .gph-main {
-    padding-top: 28px;
-    gap: 14px;
+    padding-top: 14px;
+    padding-bottom: 8px;
+    gap: 8px;
   }
   .gph-title {
-    font-size: 72px;
+    font-size: clamp(32px, 8vh, 52px);
   }
   .gph-lead {
     display: none;
+  }
+}
+@media (max-height: 480px) and (orientation: landscape) {
+  .gph-main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    max-width: 100%;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 20px 6px;
+  }
+  .gph-lead {
+    display: none;
+  }
+  .gph-btns {
+    width: 100%;
   }
 }
 @media (prefers-reduced-motion: reduce) {

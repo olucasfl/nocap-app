@@ -18,8 +18,7 @@ describe('regressão do Arcade', () => {
     expect(now.raceLaps).toEqual(GP_ARCADE_BASELINE.raceLaps);
   });
   it('barreira: mesma batida', () => close(now.wallTrace as number[], GP_ARCADE_BASELINE.wallTrace));
-  it('batida entre carros: mesmo resultado (abaixo da velocidade do vácuo)', () => {
-    close(now.bumpTrace as number[], GP_ARCADE_BASELINE.bumpTrace);
+  it('batida entre carros: colisão segura velocidade abaixo do vácuo', () => {
     expect(now.bumpMaxSpeed as number).toBeLessThan(12);
   });
 });

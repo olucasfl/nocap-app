@@ -2,8 +2,8 @@ import {
   GP_BRAKE,
   GP_BRAKE_MIN,
   GP_BRAKE_RAMP,
-  GP_BUMP_E,
-  GP_BUMP_MU,
+  GP_BUMP_SPEED_LOSS,
+  GP_BUMP_SPIN_TRANSFER,
   GP_CAR_HALF,
   GP_CAR_R,
   GP_CUT_JUMP,
@@ -1050,16 +1050,68 @@ export class GpWorld {
 
   // ---- entre carros ----
 
-  private circles(c: GpCar): [number, number, number, number] {
-    const fx = Math.sin(c.h) * GP_CAR_HALF;
-    const fz = -Math.cos(c.h) * GP_CAR_HALF;
-    return [c.x + fx, c.z + fz, c.x - fx, c.z - fz];
+  private testCarObb(a: GpCar, b: GpCar): { overlap: number; nx: number; nz: number; px: number; pz: number } | null {
+    const dx = b.x - a.x;
+    const dz = b.z - a.z;
+    if (dx * dx + dz * dz > 22) return null;
+
+    const hl = GP_REAL_CAR_LEN * 0.5;
+    const hw = GP_REAL_CAR_WID * 0.5;
+
+    const fax = Math.sin(a.h);
+    const faz = -Math.cos(a.h);
+    const rax = Math.cos(a.h);
+    const raz = Math.sin(a.h);
+
+    const fbx = Math.sin(b.h);
+    const fbz = -Math.cos(b.h);
+    const rbx = Math.cos(b.h);
+    const rbz = Math.sin(b.h);
+
+    const axes = [
+      { x: rax, z: raz },
+      { x: fax, z: faz },
+      { x: rbx, z: rbz },
+      { x: fbx, z: fbz },
+    ];
+
+    let minOverlap = Infinity;
+    let bestNx = 0;
+    let bestNz = 0;
+
+    for (let k = 0; k < 4; k++) {
+      const ax = axes[k]!.x;
+      const az = axes[k]!.z;
+
+      const d = Math.abs(dx * ax + dz * az);
+      const projA = hl * Math.abs(fax * ax + faz * az) + hw * Math.abs(rax * ax + raz * az);
+      const projB = hl * Math.abs(fbx * ax + fbz * az) + hw * Math.abs(rbx * ax + rbz * az);
+
+      const overlap = projA + projB - d;
+      if (overlap <= 0) return null;
+
+      if (overlap < minOverlap) {
+        minOverlap = overlap;
+        const sign = dx * ax + dz * az >= 0 ? 1 : -1;
+        bestNx = ax * sign;
+        bestNz = az * sign;
+      }
+    }
+
+    return {
+      overlap: minOverlap,
+      nx: bestNx,
+      nz: bestNz,
+      px: (a.x + b.x) * 0.5,
+      pz: (a.z + b.z) * 0.5,
+    };
   }
 
   /**
-   * Batida entre carros como corpos rígidos (massa igual): impulso no ponto de contato com restituição e atrito, que
-   * troca velocidade e gera giro (batida de lado gira o carro). Carro de outra pessoa (online) entra como obstáculo de
-   * massa infinita: quem decide a batida dele é o líder.
+   * Batida entre carros (spec 081): hitbox OBB precisa, sem empurrão físico.
+   * Quando bate, diminui a velocidade de quem está batendo e atrapalha a direção
+   * (spin/desvio) de quem leva a porrada, sem empurrar o outro carro pela pista
+   * nem travar um no outro.
    */
   private collide(only?: string) {
     const live = this.cars.filter((c) => !c.gone && !c.ghost && c.pitHold <= 0);
@@ -1070,149 +1122,110 @@ export class GpWorld {
         const movA = only ? a.id === only : !a.remote;
         const movB = only ? b.id === only : !b.remote;
         if (!movA && !movB) continue;
-        if (Math.abs(a.x - b.x) > 6 || Math.abs(a.z - b.z) > 6) continue;
-        const ca = this.circles(a);
-        const cb = this.circles(b);
-        let best: { o: number; nx: number; nz: number; px: number; pz: number } | null = null;
-        for (let p = 0; p < 2; p++) {
-          for (let q = 0; q < 2; q++) {
-            const ax = ca[p * 2]!;
-            const az = ca[p * 2 + 1]!;
-            const bx = cb[q * 2]!;
-            const bz = cb[q * 2 + 1]!;
-            const dx = bx - ax;
-            const dz = bz - az;
-            const dist = Math.hypot(dx, dz);
-            const o = GP_CAR_R * 2 - dist;
-            if (o > 0 && (!best || o > best.o)) {
-              const nx = dist ? dx / dist : 1;
-              const nz = dist ? dz / dist : 0;
-              best = { o, nx, nz, px: ax + nx * GP_CAR_R, pz: az + nz * GP_CAR_R };
-            }
-          }
-        }
-        if (!best) continue;
-        const { o, nx, nz, px, pz } = best;
-        const ima = movA ? 1 : 0;
-        const imb = movB ? 1 : 0;
-        const iia = movA ? 1 / GP_INERTIA : 0;
-        const iib = movB ? 1 / GP_INERTIA : 0;
-        // separa sem deixar um dentro do outro (quem não anda não se mexe); no máximo um pouco por passo, para um carro de
-        // outra pessoa que aparece encostado (rede) não dar um tranco: o resto sai nos passos seguintes
-        const share = ima + imb;
-        const push = Math.min(o, 0.35);
-        a.x -= (nx * push * ima) / share;
-        a.z -= (nz * push * ima) / share;
-        b.x += (nx * push * imb) / share;
-        b.z += (nz * push * imb) / share;
-        // velocidade relativa do ponto de contato
-        const rax = px - a.x;
-        const raz = pz - a.z;
-        const rbx = px - b.x;
-        const rbz = pz - b.z;
-        const vax = a.vx - a.spin * raz;
-        const vaz = a.vz + a.spin * rax;
-        const vbx = b.vx - b.spin * rbz;
-        const vbz = b.vz + b.spin * rbx;
-        const rvx = vbx - vax;
-        const rvz = vbz - vaz;
-        const vn = rvx * nx + rvz * nz;
-        if (vn >= 0) continue;
-        const ran = cross(rax, raz, nx, nz);
-        const rbn = cross(rbx, rbz, nx, nz);
-        const k = ima + imb + ran * ran * iia + rbn * rbn * iib;
-        const jn = (-(1 + GP_BUMP_E) * vn) / k;
-        // atrito: freia o deslizamento entre os dois no ponto de contato
+
+        const hit = this.testCarObb(a, b);
+        if (!hit) continue;
+
+        const { overlap, nx, nz, px, pz } = hit;
+
+        // nx, nz aponta de a para b.
+        // aTowardsB: componente de velocidade de a na direção de b (+nx, +nz).
+        // bTowardsA: componente de velocidade de b na direção de a (-nx, -nz).
+        const aTowardsB = a.vx * nx + a.vz * nz;
+        const bTowardsA = -(b.vx * nx + b.vz * nz);
+        const closingSpeed = aTowardsB + bTowardsA;
+
+        // Vetor tangente para giro/perturbação
         const tx = -nz;
         const tz = nx;
-        const vt = rvx * tx + rvz * tz;
-        const rat = cross(rax, raz, tx, tz);
-        const rbt = cross(rbx, rbz, tx, tz);
-        const kt = ima + imb + rat * rat * iia + rbt * rbt * iib;
-        const jt = clamp(-vt / kt, -GP_BUMP_MU * jn, GP_BUMP_MU * jn);
-        const ix = nx * jn + tx * jt;
-        const iz = nz * jn + tz * jt;
-        if (movA) {
-          a.vx -= ix * ima;
-          a.vz -= iz * ima;
-          a.spin -= cross(rax, raz, ix, iz) * iia;
-          a.speed = a.vx * Math.sin(a.h) - a.vz * Math.cos(a.h);
+        const vtA = a.vx * tx + a.vz * tz;
+        const vtB = b.vx * tx + b.vz * tz;
+        const vRelT = vtA - vtB;
+
+        const impact = Math.max(0, closingSpeed);
+        const push = Math.min(overlap, 0.25);
+
+        const headOn = aTowardsB > 0.5 && bTowardsA > 0.5;
+        const aIsHitter = !headOn && aTowardsB > bTowardsA && aTowardsB > 0.1;
+        const bIsHitter = !headOn && bTowardsA > aTowardsB && bTowardsA > 0.1;
+
+        if (headOn) {
+          // Frontal: ambos perdem velocidade e têm direção perturbada
+          if (movA) {
+            a.speed = Math.max(0, a.speed * 0.2);
+            a.vx = Math.sin(a.h) * a.speed;
+            a.vz = -Math.cos(a.h) * a.speed;
+            a.spin += 0.8;
+            a.h += 0.03;
+            a.x -= nx * push * 0.5;
+            a.z -= nz * push * 0.5;
+          }
+          if (movB) {
+            b.speed = Math.max(0, b.speed * 0.2);
+            b.vx = Math.sin(b.h) * b.speed;
+            b.vz = -Math.cos(b.h) * b.speed;
+            b.spin -= 0.8;
+            b.h -= 0.03;
+            b.x += nx * push * 0.5;
+            b.z += nz * push * 0.5;
+          }
+        } else if (aIsHitter) {
+          // A bateu em B:
+          // 1) A (quem bate) perde velocidade e é contido para não atravessar
+          if (movA) {
+            const loss = Math.min(impact * GP_BUMP_SPEED_LOSS, Math.abs(a.speed) * 0.4);
+            a.speed = Math.max(0, a.speed - loss);
+            a.vx = Math.sin(a.h) * a.speed;
+            a.vz = -Math.cos(a.h) * a.speed;
+            a.x -= nx * push;
+            a.z -= nz * push;
+          }
+          // 2) B (quem levou a porrada) tem a direção atrapalhada SEM ser empurrado
+          if (movB || !b.remote) {
+            const kickDir = Math.sign(vRelT) || (Math.sin(a.h - b.h) >= 0 ? 1 : -1) || 1;
+            const kick = kickDir * Math.min(1.5, 0.4 + (impact + Math.abs(vRelT)) * GP_BUMP_SPIN_TRANSFER);
+            b.spin += kick;
+            b.h += kick * 0.025;
+            if (this.mode === 'real') b.rSteer -= kick * 0.15;
+          }
+        } else if (bIsHitter) {
+          // B bateu em A:
+          // 1) B (quem bate) perde velocidade e é contido para não atravessar
+          if (movB) {
+            const loss = Math.min(impact * GP_BUMP_SPEED_LOSS, Math.abs(b.speed) * 0.4);
+            b.speed = Math.max(0, b.speed - loss);
+            b.vx = Math.sin(b.h) * b.speed;
+            b.vz = -Math.cos(b.h) * b.speed;
+            b.x += nx * push;
+            b.z += nz * push;
+          }
+          // 2) A (quem levou a porrada) tem a direção atrapalhada SEM ser empurrado
+          if (movA || !a.remote) {
+            const kickDir = Math.sign(-vRelT) || (Math.sin(b.h - a.h) >= 0 ? 1 : -1) || 1;
+            const kick = kickDir * Math.min(1.5, 0.4 + (impact + Math.abs(vRelT)) * GP_BUMP_SPIN_TRANSFER);
+            a.spin += kick;
+            a.h += kick * 0.025;
+            if (this.mode === 'real') a.rSteer -= kick * 0.15;
+          }
+        } else {
+          // Raspando de lado em velocidade semelhante: desvia ligeiramente ambos sem empurrar para longe
+          if (movA) a.x -= nx * push * 0.5;
+          if (movB) b.x += nx * push * 0.5;
+          const rubSpin = (Math.sign(vRelT) || 1) * 0.2;
+          if (movA) a.spin -= rubSpin;
+          if (movB) b.spin += rubSpin;
         }
-        if (movB) {
-          b.vx += ix * imb;
-          b.vz += iz * imb;
-          b.spin += cross(rbx, rbz, ix, iz) * iib;
-          b.speed = b.vx * Math.sin(b.h) - b.vz * Math.cos(b.h);
+
+        if (impact > 0.5 || overlap > 0.1) {
+          this.events.push({ type: 'bump', a: a.id, b: b.id, force: Math.max(impact, overlap), x: px, z: pz });
         }
-        if (jn > 0.8) this.events.push({ type: 'bump', a: a.id, b: b.id, force: jn, x: px, z: pz });
       }
     }
   }
 
-  /**
-   * Realista (spec 080, `collidePlayer` da referência): caixa do tamanho do carro. Batida de lado empurra para o lado;
-   * batida de traseira separa e troca velocidade (quem bate perde, quem é batido ganha). Sem giro solto. Carro de outra
-   * pessoa (online) é obstáculo: quem decide a batida dele é o líder.
-   */
+  /** Modo realista usa a mesma colisão sem empurrão. */
   private collideReal(only?: string) {
-    const live = this.cars.filter((c) => !c.gone && !c.ghost && c.pitHold <= 0);
-    for (let i = 0; i < live.length; i++) {
-      for (let j = i + 1; j < live.length; j++) {
-        const a = live[i]!;
-        const b = live[j]!;
-        const movA = only ? a.id === only : !a.remote;
-        const movB = only ? b.id === only : !b.remote;
-        if (!movA && !movB) continue;
-        const dx = a.x - b.x;
-        const dz = a.z - b.z;
-        if (dx * dx + dz * dz > GP_REAL_CAR_LEN * GP_REAL_CAR_LEN * 1.6) continue;
-        // no referencial de b: ao longo (a frente de b) e de lado
-        const fx = Math.sin(b.h);
-        const fz = -Math.cos(b.h);
-        const along = dx * fx + dz * fz;
-        const side = dx * Math.cos(b.h) + dz * Math.sin(b.h);
-        const pa = GP_REAL_CAR_LEN - Math.abs(along);
-        const ps = GP_REAL_CAR_WID - Math.abs(side);
-        if (pa <= 0 || ps <= 0) continue;
-        const wa = movA ? (movB ? 0.5 : 1) : 0;
-        const wb = movB ? (movA ? 0.5 : 1) : 0;
-        let force = 0;
-        if (ps < pa) {
-          // de lado: cada um vai para o seu lado
-          const sg = Math.sign(side) || 1;
-          const rx = Math.cos(b.h) * sg * ps * GP_REAL_SIDE_PUSH;
-          const rz = Math.sin(b.h) * sg * ps * GP_REAL_SIDE_PUSH;
-          a.x += rx * wa * 2;
-          a.z += rz * wa * 2;
-          b.x -= rx * wb * 2;
-          b.z -= rz * wb * 2;
-          force = Math.abs(a.speed - b.speed) * 0.2 + ps;
-        } else {
-          // de frente ou de traseira: separa ao longo e troca velocidade
-          const sg = Math.sign(along) || 1;
-          a.x += fx * sg * pa * wa;
-          a.z += fz * sg * pa * wa;
-          b.x -= fx * sg * pa * wb;
-          b.z -= fz * sg * pa * wb;
-          const behind = sg < 0 ? a : b;
-          const front = sg < 0 ? b : a;
-          if (behind.speed > front.speed) {
-            const vv = (behind.speed + front.speed) / 2;
-            force = behind.speed - front.speed;
-            const mb = behind === a ? movA : movB;
-            const mf = front === a ? movA : movB;
-            if (mb) behind.speed = vv * GP_REAL_REAR_LOSS;
-            if (mf) front.speed = Math.min(GP_VMAX * 1.1, front.speed + (vv - front.speed) * 0.5);
-          }
-        }
-        for (const c of [a, b]) {
-          c.vx = Math.sin(c.h) * c.speed;
-          c.vz = -Math.cos(c.h) * c.speed;
-        }
-        if (force > 0.8)
-          this.events.push({ type: 'bump', a: a.id, b: b.id, force, x: (a.x + b.x) / 2, z: (a.z + b.z) / 2 });
-      }
-    }
+    this.collide(only);
   }
 
   /** Vácuo passivo: logo atrás de outro carro e alinhado, o arrasto cai (mais perto, mais). Vale para todos. */

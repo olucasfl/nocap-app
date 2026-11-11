@@ -47,7 +47,6 @@ interface CarView {
   flapA: number;
   shadow: boolean;
   tag: THREE.Sprite;
-  you: THREE.Sprite | null;
   ghost: boolean;
   wag: number;
   shake: number;
@@ -601,10 +600,10 @@ export class GpScene {
     for (const s of tr.sectorS) {
       const p = tr.pointAt(s, 0);
       const m = new THREE.Mesh(
-        new THREE.BoxGeometry(H * 2, 0.03, 0.35),
-        new THREE.MeshBasicMaterial({ color: 0xffd23a }),
+        new THREE.BoxGeometry(H * 2, 0.02, 0.35),
+        new THREE.MeshBasicMaterial({ color: 0xffffff }),
       );
-      m.position.set(p.x, 0.04, p.z);
+      m.position.set(p.x, 0.035, p.z);
       m.rotation.y = -p.h;
       this.scene.add(m);
     }
@@ -1313,27 +1312,33 @@ export class GpScene {
 
   // ---- carros ----
 
-  private textSprite(text: string, bg: string, w = 2.8, h = 0.7): THREE.Sprite {
+  private textSprite(text: string, bg: string, w = 1.3, h = 0.35): THREE.Sprite {
     const cv = document.createElement('canvas');
     cv.width = 256;
     cv.height = 64;
     const g = cv.getContext('2d');
     if (g) {
-      g.font = 'italic 800 32px "Saira Condensed", Inter, system-ui, sans-serif';
+      g.font = '700 24px "Saira Condensed", Inter, system-ui, sans-serif';
       g.textAlign = 'center';
       g.textBaseline = 'middle';
       const shown = text.length > 14 ? `${text.slice(0, 13)}…` : text;
-      const tw = Math.min(244, g.measureText(shown).width + 28);
+      const tw = Math.min(240, g.measureText(shown).width + 24);
       g.fillStyle = bg;
-      g.fillRect(128 - tw / 2, 8, tw, 48);
+      if (typeof g.roundRect === 'function') {
+        g.beginPath();
+        g.roundRect(128 - tw / 2, 14, tw, 36, 8);
+        g.fill();
+      } else {
+        g.fillRect(128 - tw / 2, 14, tw, 36);
+      }
       g.fillStyle = '#ffffff';
-      g.fillText(shown.toUpperCase(), 128, 34);
+      g.fillText(shown.toUpperCase(), 128, 32);
     }
     const tex = new THREE.CanvasTexture(cv);
     tex.colorSpace = THREE.SRGBColorSpace;
     this.textures.push(tex);
     const s = new THREE.Sprite(
-      new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }),
+      new THREE.SpriteMaterial({ map: tex, depthTest: true, depthWrite: false, transparent: true }),
     );
     s.scale.set(w, h, 1);
     s.renderOrder = 10;
@@ -1345,14 +1350,8 @@ export class GpScene {
     const own = c.id === this.meId;
     const tag = this.textSprite(c.name, 'rgba(11,14,23,0.88)');
     tag.position.y = 2.6;
+    tag.visible = !own;
     m.group.add(tag);
-    let you: THREE.Sprite | null = null;
-    if (own) {
-      tag.visible = false;
-      you = this.textSprite('VOCÊ', '#ff7d26', 1.9, 0.62);
-      you.position.y = 2.7;
-      m.group.add(you);
-    }
     m.group.traverse((o) => {
       const mesh = o as THREE.Mesh;
       if (mesh.isMesh) mesh.castShadow = this.quality !== 'low';
@@ -1375,7 +1374,6 @@ export class GpScene {
       id: c.id,
       m,
       tag,
-      you,
       ghost: false,
       wag: 0,
       shake: 0,
@@ -1540,8 +1538,6 @@ export class GpScene {
       // no cockpit o próprio carro some (a câmera está dentro dele); o volante e as bordas ficam
       const inside = cockpit && c.id === focusId && this.camMix >= 1;
       v.m.body.visible = !inside;
-      v.tag.visible = !inside && c.id !== this.meId;
-      if (v.you) v.you.visible = !inside;
       // fumaça e marcas de pneu quando escorrega
       const moved = Math.hypot(p.x - v.lastX, p.z - v.lastZ);
       v.lastX = p.x;
@@ -1621,6 +1617,51 @@ export class GpScene {
       const damp = sp > 24 ? Math.min(0.55, (sp - 24) / 20) : 0;
       (this.afterimage.uniforms as unknown as { damp: { value: number } }).damp.value = damp;
     }
+
+    // Atualiza as etiquetas com o nome dos outros pilotos (pequenas, discretas, nunca tapam a câmera)
+    const insideCockpit = this.mode === 'cockpit' && this.camMix >= 1;
+    const camPos = this.camera.position;
+    const camDirX = this.camLook.x - camPos.x;
+    const camDirZ = this.camLook.z - camPos.z;
+    const camDirLen = Math.hypot(camDirX, camDirZ) || 1;
+    const cdx = camDirX / camDirLen;
+    const cdz = camDirZ / camDirLen;
+
+    for (const c of w.cars) {
+      const v = this.cars.get(c.id);
+      if (!v || c.gone) continue;
+
+      // O próprio carro nunca mostra etiqueta; se assistindo no cockpit também não
+      if (c.id === this.meId || (c.id === focusId && insideCockpit)) {
+        v.tag.visible = false;
+        continue;
+      }
+
+      // Posição no mundo do carro
+      const dx = v.m.group.position.x - camPos.x;
+      const dz = v.m.group.position.z - camPos.z;
+      const distToCam = Math.hypot(dx, dz);
+
+      // Projeção na direção que a câmera olha (> 0 significa à frente da câmera)
+      const forwardDist = dx * cdx + dz * cdz;
+
+      // Se estiver atrás da câmera ou muito perto (<= 4.5m, ex: carro colado atrás em 3ª pessoa):
+      // NUNCA mostra para não tapar a visão!
+      if (forwardDist <= 0.5 || distToCam < 4.5) {
+        v.tag.visible = false;
+      } else {
+        v.tag.visible = true;
+        // Escala discreta e controlada:
+        // Em 3ª pessoa ou cockpit, limita o tamanho aparente na tela para NUNCA ficar gigante
+        if (this.mode !== 'far') {
+          const scale = Math.max(0.35, Math.min(1.0, distToCam / 14));
+          v.tag.scale.set(1.3 * scale, 0.35 * scale, 1);
+        } else {
+          v.tag.scale.set(1.3, 0.35, 1);
+        }
+      }
+    }
+
     if (this.composer) this.composer.render(dt);
     else this.renderer.render(this.scene, this.camera);
   }

@@ -170,9 +170,9 @@ export function FoxCapPage() {
     else if (g === 'foxgp') setFlow('gp-pick');
   };
 
-  return (
-    <Page>
-      {hub === 'foxgp' && (!flow || flow.endsWith('-pick')) && (
+  if (hub === 'foxgp' && (!flow || flow.endsWith('-pick'))) {
+    return (
+      <>
         <GpHome
           onRace={offline}
           onHelp={() => setHelp('foxgp')}
@@ -193,7 +193,21 @@ export function FoxCapPage() {
             join: (c) => void entry.join(c),
           }}
         />
-      )}
+        {help && <HowToPlay game={help} onClose={() => setHelp(null)} />}
+        {flow === 'gp-pick' && (
+          <GpPicker
+            bots={gpBots}
+            onBots={setGpBots}
+            onStart={() => setFlow('gp-play')}
+            onCancel={() => setFlow(null)}
+          />
+        )}
+      </>
+    );
+  }
+
+  return (
+    <Page>
       {hub && hub !== 'foxgp' && (!flow || flow.endsWith('-pick')) && (
         <GameLanding
           game={hub}
@@ -381,14 +395,6 @@ export function FoxCapPage() {
           level={pingLevel}
           onChange={setPingLevel}
           onStart={() => setFlow('png-play')}
-          onCancel={() => setFlow(null)}
-        />
-      )}
-      {flow === 'gp-pick' && (
-        <GpPicker
-          bots={gpBots}
-          onBots={setGpBots}
-          onStart={() => setFlow('gp-play')}
           onCancel={() => setFlow(null)}
         />
       )}

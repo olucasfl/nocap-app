@@ -23,8 +23,8 @@ export const GP_ROOM_COLORS: readonly { name: string; hex: string }[] = [
   { name: 'Branco', hex: '#f1ede4' },
   { name: 'Prata', hex: '#8b93a3' },
 ];
-/** Até 20 carros (spec 080): na sala e no jogo contra bots (você mais 19). */
-export const GP_MAX_PLAYERS = 20;
+/** Até 12 carros (spec 081): na sala e no jogo contra bots (você mais 11). */
+export const GP_MAX_PLAYERS = 12;
 
 /**
  * Os dois modos de física (spec 080). Arcade é a física da spec 079 (velocidade em vetor, escorrega de lado); Realista é
@@ -114,6 +114,14 @@ export const GP_CAR_R = 0.95;
 export const GP_CAR_HALF = 0.8;
 /** Quanto do choque volta (0 = gruda, 1 = quica). */
 export const GP_BUMP_E = 0.25;
+/**
+ * Colisão entre carros (spec 081): sem empurrão. Quem bate perde velocidade (fração do impacto) e quem leva recebe
+ * perturbação de direção (spin). Assim os carros não ficam travados se empurrando.
+ */
+/** Fração da velocidade de impacto que se perde ao bater em outro carro. */
+export const GP_BUMP_SPEED_LOSS = 0.45;
+/** Quanto do componente tangencial da velocidade de quem bate vira giro (spin) em quem leva. */
+export const GP_BUMP_SPIN_TRANSFER = 0.08;
 /** Na barreira o carro perde quase toda a velocidade. */
 export const GP_WALL_KEEP = 0.25;
 
@@ -162,8 +170,8 @@ export const GP_VALID_EVERY = 0.25;
 
 // ---- classificação, largada e chegada ----
 
-/** Tempo máximo da classificação (s): cada um aquece e começa a volta quando quiser (decisão de 10/11/2026: 3 min, 1 volta). */
-export const GP_QUALI_MAX_SEC = 180;
+/** Tempo máximo da classificação (s): cada um aquece e começa a volta quando quiser (spec 081: 5 min, 1 volta). */
+export const GP_QUALI_MAX_SEC = 300;
 /**
  * Volta lançada manual (spec 080, Fase 11): ao apertar, o carro vai para a linha de largada (distância do traçado),
  * parado e alinhado, e espera esta contagem (s); o tempo começa quando ela acaba. Não há mais início automático.
@@ -179,8 +187,8 @@ export const GP_GRID_FIRST = -12;
 /** 6 m entre um lugar e o seguinte (lados alternados): 20 carros cabem em ~126 m antes da linha. */
 export const GP_GRID_GAP = 6;
 export const GP_GRID_SIDE = 3;
-/** [AJUSTAR] Depois que o primeiro cruza a linha, os outros têm este tempo (s); depois é DNF. */
-export const GP_DNF_SEC = 30;
+/** [AJUSTAR] Depois que o primeiro cruza a linha, os outros têm este tempo (s); depois é DNF (spec 081: 2 min). */
+export const GP_DNF_SEC = 120;
 /** Semáforo: 5 luzes acendendo uma por segundo e a espera antes de apagar (s). */
 export const GP_LIGHTS = 5;
 export const GP_LIGHT_SEC = 0.9;

@@ -43,6 +43,7 @@ export function GpHome({
   const [car, setCar] = useState(() => loadGarage());
   const [code, setCode] = useState('');
   const [physics, setPhysics] = useState<GpPhysicsMode>(() => loadPhysics());
+  const [previewMode, setPreviewMode] = useState<GpPhysicsMode>(() => loadPhysics());
   const [commands, setCommands] = useState(false);
   const touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
   const pickPhysics = (m: GpPhysicsMode) => {
@@ -50,6 +51,7 @@ export function GpHome({
     savePhysics(m);
   };
   const best = loadBest(physics);
+  const previewBest = loadBest(previewMode);
   useEffect(() => {
     const html = document.documentElement;
     const prev = html.style.overflow;
@@ -103,26 +105,33 @@ export function GpHome({
               toda.
             </p>
             <div className="gph-btns">
-              <div className="gph-phys" role="radiogroup" aria-label="Física" data-testid="gp-physics">
-                <span className="gp-kicker">Física</span>
-                {(['arcade', 'real'] as const).map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    role="radio"
-                    aria-checked={physics === m}
-                    className={physics === m ? 'gph-phys-btn is-on' : 'gph-phys-btn'}
-                    onClick={() => pickPhysics(m)}
-                    data-testid={'gp-physics-' + m}
-                  >
-                    {PHYSICS_NAME[m]}
-                  </button>
-                ))}
+              <div className="gph-carousel" data-testid="gp-best">
+                <button
+                  type="button"
+                  className="gph-carousel-btn"
+                  aria-label="Modo anterior"
+                  onClick={() => setPreviewMode((m) => (m === 'arcade' ? 'real' : 'arcade'))}
+                >
+                  ‹
+                </button>
+                <div className="gph-carousel-info">
+                  <span className="gph-carousel-title">
+                    {previewMode === 'arcade' ? 'Kart · Arcade' : 'F1 · Realista'}
+                  </span>
+                  <span className="gph-carousel-best">
+                    Melhor volta:{' '}
+                    <b className="gpn">{previewBest !== null ? lapClock(previewBest) : 'sem tempo'}</b>
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="gph-carousel-btn"
+                  aria-label="Próximo modo"
+                  onClick={() => setPreviewMode((m) => (m === 'arcade' ? 'real' : 'arcade'))}
+                >
+                  ›
+                </button>
               </div>
-              <p className="gph-best" data-testid="gp-best">
-                Sua melhor volta ({PHYSICS_NAME[physics]}):{' '}
-                <b className="gpn">{best !== null ? lapClock(best) : 'ainda sem tempo'}</b>
-              </p>
               <button type="button" className="gp-tbtn is-primary gph-go" onClick={onRace} data-testid="gl-offline">
                 Correr agora
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -141,17 +150,17 @@ export function GpHome({
                   Pistas
                 </button>
               </div>
-              <button type="button" className="gp-tbtn" onClick={() => setCommands(true)} data-testid="gp-open-commands">
-                Comandos
-              </button>
               <div className="gph-two">
-                <button type="button" className="gp-tbtn is-ghost" onClick={onHelp} data-testid="gl-help">
+                <button type="button" className="gp-tbtn" onClick={() => setCommands(true)} data-testid="gp-open-commands">
+                  Comandos
+                </button>
+                <button type="button" className="gp-tbtn" onClick={onHelp} data-testid="gl-help">
                   Como jogar
                 </button>
-                <button type="button" className="gp-tbtn is-ghost" onClick={onExit} data-testid="gl-exit">
-                  Voltar
-                </button>
               </div>
+              <button type="button" className="gp-tbtn is-ghost" onClick={onExit} data-testid="gl-exit">
+                Voltar
+              </button>
             </div>
           </>
         )}

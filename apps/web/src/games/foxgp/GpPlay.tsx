@@ -316,7 +316,7 @@ export function GpPlay({
   const mode: GpPhysicsMode = online?.physics ?? physics;
   const menuRef = useRef(false);
   menuRef.current = menu;
-  const [cam, setCam] = useState<GpCamMode>(() => read(CAM_KEY, CAMS, 'far'));
+  const [cam, setCam] = useState<GpCamMode>(() => read(CAM_KEY, CAMS, 'chase'));
   const [quality, setQuality] = useState<GpQuality>(() =>
     read(QUALITY_KEY, ['low', 'medium', 'high'], 'medium'),
   );
@@ -420,7 +420,7 @@ export function GpPlay({
       const reduced =
         typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
       const scene = new GpScene(el, world, meId, { reduced, quality: qualityRef.current });
-      scene.setCamMode(read(CAM_KEY, CAMS, 'far'));
+      scene.setCamMode(read(CAM_KEY, CAMS, 'chase'));
       sceneRef.current = scene;
       const resize = () => {
         const r = el.getBoundingClientRect();

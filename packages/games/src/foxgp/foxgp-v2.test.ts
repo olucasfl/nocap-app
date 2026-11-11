@@ -160,17 +160,17 @@ describe('dois modos de física', () => {
     expect(c.speed).toBeLessThan(GP_VMAX + 1);
   });
 
-  it('Realista: batida de traseira troca velocidade sem giro solto', () => {
+  it('Realista: batida de traseira segura quem bate sem empurrar o da frente', () => {
     const w = new GpWorld('b', info(2), GP_TRACK_TOCA, 'real');
     w.beginRace(['p0', 'p1']);
     const [a, b] = w.cars as [GpCar, GpCar];
     put(w, a, -300, 0, 10);
     put(w, b, -303.5, 0, 22);
     for (let k = 0; k < 20; k++) w.step(GP_DT, { p0: { ...full, throttle: 0.3 }, p1: full });
-    expect(a.speed).toBeGreaterThan(12);
-    expect(a.spin).toBe(0);
+    expect(b.speed).toBeLessThan(20);
+    expect(Math.abs(a.spin)).toBeGreaterThan(0);
     expect(b.spin).toBe(0);
-    expect(Math.hypot(a.x - b.x, a.z - b.z)).toBeGreaterThan(GP_CAR_R * 2);
+    expect(Math.hypot(a.x - b.x, a.z - b.z)).toBeGreaterThan(GP_CAR_R * 1.5);
   });
 
   it('pack/unpack devolve o mesmo estado no Realista (com as entradas suavizadas)', () => {
