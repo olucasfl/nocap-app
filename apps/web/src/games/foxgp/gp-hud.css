@@ -1,0 +1,599 @@
+/* Fox GP v2 (spec 080): HUD no layout da referência (classificação à esquerda, seus dados à direita), DRS, vácuo,
+   avisos em fila, volta lançada e menu Comandos. Tema do Fox GP (theme.css). Só transform e opacity animam. */
+.gp-play .gpx-board {
+  top: max(var(--hud-pad), env(safe-area-inset-top));
+  left: max(var(--hud-pad), env(safe-area-inset-left));
+  right: auto;
+  width: 250px;
+  padding: 0 0 6px;
+}
+.gp-play .gpx-board li {
+  height: 22px;
+  gap: 8px;
+  padding: 0 10px;
+}
+.gp-play .gpx-board li:nth-child(odd):not(.gpx-board-h) {
+  background: rgba(18, 22, 34, 0.6);
+}
+.gp-play .gpx-board li.gpx-board-h {
+  height: 28px;
+  display: flex;
+  justify-content: space-between;
+  background: var(--gp-text);
+  color: var(--gp-bg);
+  font-weight: 800;
+}
+.gp-play .gpx-board li.gpx-board-h b {
+  font: italic 900 17px var(--gp-display);
+  letter-spacing: 0;
+}
+/* a sua linha ganha da listra (mesma força de seletor, vem depois) */
+.gp-play .gpx-board li.is-you:not(.gpx-board-h) {
+  background: var(--gp-text);
+  color: var(--gp-bg);
+}
+.gp-play .gpx-board li.is-you .gpx-board-name,
+.gp-play .gpx-board li.is-you .gpx-board-pos,
+.gp-play .gpx-board li.is-you .gpx-board-gap {
+  color: var(--gp-bg);
+}
+.gp-play .gpx-board li.is-skip {
+  border-top: 2px dashed var(--gp-line-2);
+}
+.gp-play .gpx-board-pos {
+  width: 20px;
+  font-size: 14px;
+  text-align: right;
+}
+.gp-play .gpx-board i {
+  width: 4px;
+  height: 14px;
+}
+.gp-play .gpx-board-name {
+  font-size: 13px;
+}
+.gp-play .gpx-board-gap {
+  font-size: 12px;
+}
+
+.gpx-tr {
+  position: absolute;
+  top: max(var(--hud-pad), env(safe-area-inset-top));
+  right: max(var(--hud-pad), env(safe-area-inset-right));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+.gp-play .gpx-tools {
+  position: static;
+}
+.gpx-tool kbd,
+.gpx-lapcall kbd {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border: 1px solid var(--gp-line-2);
+  background: var(--gp-panel-2);
+  color: var(--gp-text);
+  font: 700 12px var(--gp-body);
+}
+.gpx-me {
+  display: grid;
+  grid-template-columns: auto auto;
+  min-width: 260px;
+  background: var(--gp-hud);
+  pointer-events: none;
+}
+.gpx-me-pos {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  background: var(--gp-text);
+  color: var(--gp-bg);
+  border-right: 4px solid var(--gp-accent);
+}
+.gpx-me-pos b {
+  font: italic 900 40px/1 var(--gp-display);
+}
+.gpx-me-pos span {
+  font-weight: 700;
+  font-size: 12px;
+}
+.gpx-me-times {
+  display: grid;
+  gap: 2px;
+  padding: 8px 14px;
+}
+.gpx-me-times small {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gp-muted);
+}
+.gpx-me-times > b {
+  font: 800 28px/1.1 var(--gp-display);
+}
+.gpx-me-times.is-live > b {
+  color: var(--gp-live);
+}
+.gpx-me-sub {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--gp-text-3);
+}
+.gpx-me-sub b {
+  color: var(--gp-text);
+}
+.gpx-me .gpx-sectors {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 0 10px 8px;
+}
+
+/* avisos: faixa inclinada no centro, em cima; entra e sai só com transform e opacity */
+.gpx-notice {
+  position: absolute;
+  left: 50%;
+  top: calc(max(var(--hud-pad), env(safe-area-inset-top)) + 4px);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: min(440px, calc(100% - 640px));
+  min-width: 220px;
+  padding: 10px 22px 10px 18px;
+  background: var(--gp-hud);
+  border-left: 6px solid var(--gp-accent);
+  transform: translateX(-50%) skewX(-10deg);
+  pointer-events: none;
+  animation:
+    gpx-notice-in var(--fade) var(--gp-ease) both,
+    gpx-notice-out var(--fade) var(--gp-ease) calc(var(--dur) - var(--fade)) forwards;
+}
+.gpx-notice > * {
+  transform: skewX(10deg);
+}
+.gpx-notice b {
+  display: block;
+  font: italic 900 24px/1.05 var(--gp-display);
+  text-transform: uppercase;
+}
+.gpx-notice small {
+  display: block;
+  font-size: 13px;
+  color: var(--gp-text-3);
+}
+.gpx-notice[data-kind='highlight'] {
+  border-color: var(--gp-yellow);
+  color: var(--gp-yellow);
+}
+.gpx-notice[data-kind='drs'] {
+  border-color: #1fd05a;
+  color: #1fd05a;
+}
+.gpx-notice[data-kind='alert'] {
+  border-color: var(--gp-red);
+  color: #ff8a8a;
+}
+.gpx-notice[data-kind='result'] {
+  border-color: var(--gp-blue);
+  color: var(--gp-text);
+}
+@keyframes gpx-notice-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -14px) skewX(-10deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) skewX(-10deg);
+  }
+}
+@keyframes gpx-notice-out {
+  to {
+    opacity: 0;
+    transform: translate(-50%, -14px) skewX(-10deg);
+  }
+}
+
+/* DRS: cinza = fechado, verde com contorno pulsando = liberado, verde cheio = aberto */
+.gpx-drs {
+  position: absolute;
+  left: 50%;
+  bottom: max(var(--hud-pad), env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px;
+  border: 2px solid #444b5e;
+  background: var(--gp-hud);
+  color: #7d8597;
+  pointer-events: none;
+}
+.gpx-drs b {
+  font: italic 900 20px var(--gp-display);
+}
+.gpx-drs span {
+  font-size: 13px;
+  font-weight: 600;
+}
+.gpx-drs[data-state='avail'] {
+  border-color: #1fd05a;
+  color: #1fd05a;
+}
+.gpx-drs[data-state='avail']::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border: 2px solid #1fd05a;
+  opacity: 0;
+  animation: gpx-drs-pulse 0.9s ease-out infinite;
+}
+.gpx-drs[data-state='open'] {
+  border-color: #1fd05a;
+  background: #1fd05a;
+  color: #062;
+}
+@keyframes gpx-drs-pulse {
+  from {
+    opacity: 0.9;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.08);
+  }
+}
+.gp-pad.is-drs {
+  grid-area: drs;
+  justify-self: center;
+  width: 64px;
+  height: 64px;
+  font-size: 15px;
+  font-style: italic;
+  color: #7d8597;
+}
+.gp-pad.is-drs[data-state='avail'] {
+  border-color: #1fd05a;
+  color: #1fd05a;
+}
+.gp-pad.is-drs[data-state='open'] {
+  background: #1fd05a;
+  color: #062;
+}
+
+/* botões de toque: direção à esquerda; acelerar, frear e DRS à direita (o DRS logo acima do acelerador) */
+.gp-pads {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 0 max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom))
+    max(14px, env(safe-area-inset-left));
+  pointer-events: none;
+}
+
+/* vácuo: linhas de vento e o selo perto do velocímetro */
+.gpx-wind {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.gpx-wind i {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  height: 22%;
+  background: linear-gradient(transparent, rgba(255, 255, 255, 0.6), transparent);
+  animation: gpx-wind 0.5s linear infinite;
+}
+.gpx-wind i:nth-child(1) {
+  left: 18%;
+}
+.gpx-wind i:nth-child(2) {
+  left: 30%;
+  animation-delay: -0.2s;
+}
+.gpx-wind i:nth-child(3) {
+  right: 30%;
+  animation-delay: -0.35s;
+}
+.gpx-wind i:nth-child(4) {
+  right: 18%;
+  animation-delay: -0.1s;
+}
+@keyframes gpx-wind {
+  from {
+    transform: translateY(-30vh);
+  }
+  to {
+    transform: translateY(120vh);
+  }
+}
+.gpx-mode,
+.gpx-slip {
+  padding: 1px 6px;
+  border: 1px solid var(--gp-line-2);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gp-muted);
+}
+.gpx-slip {
+  border-color: var(--gp-blue);
+  color: #9fb4ff;
+}
+
+/* a chamada da volta lançada: bem evidente, embaixo no meio, pulsando de leve */
+.gpx-lapcall {
+  position: absolute;
+  left: 50%;
+  bottom: calc(max(var(--hud-pad), env(safe-area-inset-bottom)) + 64px);
+  transform: translateX(-50%);
+  padding: 14px 26px;
+  border: 0;
+  background: var(--gp-accent);
+  color: var(--gp-bg);
+  font: italic 900 24px var(--gp-display);
+  text-transform: uppercase;
+  cursor: pointer;
+  animation: gpx-lapcall 1.4s ease-in-out infinite alternate;
+}
+.gpx-lapcall:focus-visible {
+  outline: 3px solid var(--gp-accent-soft);
+  outline-offset: 3px;
+}
+@keyframes gpx-lapcall {
+  from {
+    transform: translateX(-50%) scale(1);
+  }
+  to {
+    transform: translateX(-50%) scale(1.04);
+  }
+}
+
+/* semáforo: 5 colunas de 2 luzes (como o pórtico) e o "Vai!" */
+.gp-play .gpx-lights {
+  top: calc(max(var(--hud-pad), env(safe-area-inset-top)) + 70px);
+}
+.gpx-light-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.gpx-go {
+  position: absolute;
+  left: 50%;
+  top: 34%;
+  transform: translate(-50%, -50%);
+  font: italic 900 96px/1 var(--gp-display);
+  color: #1fd05a;
+  text-transform: uppercase;
+  pointer-events: none;
+  animation: gpx-go 0.35s var(--gp-ease) both;
+}
+@keyframes gpx-go {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.3);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* menu Comandos */
+.gpc {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(11, 14, 23, 0.72);
+  color: var(--gp-text);
+  font-family: var(--gp-body);
+}
+.gpc-card {
+  width: min(560px, 100%);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  padding: 22px 24px;
+  display: grid;
+  gap: 12px;
+  background: var(--gp-panel);
+  border: 1px solid var(--gp-line);
+}
+.gpc-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.gpc-card h2 {
+  margin: 0;
+  font: italic 900 30px var(--gp-display);
+  text-transform: uppercase;
+}
+.gpc-hint {
+  margin: 0;
+  color: var(--gp-muted);
+  font-size: 14px;
+}
+.gpc-head,
+.gpc-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 130px 130px;
+  gap: 8px;
+  align-items: center;
+}
+.gpc-head {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gp-muted);
+}
+.gpc-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+.gpc-key {
+  height: 38px;
+  border: 2px solid var(--gp-line-2);
+  background: var(--gp-panel-2);
+  color: var(--gp-text);
+  font: 700 14px var(--gp-body);
+  cursor: pointer;
+}
+.gpc-key.is-listen {
+  border-color: var(--gp-accent);
+  color: var(--gp-accent-soft);
+}
+.gpc-key:focus-visible,
+.gpc-reset:focus-visible {
+  outline: 3px solid var(--gp-accent-soft);
+  outline-offset: 2px;
+}
+.gpc-list li.is-fixed b {
+  text-align: center;
+  color: var(--gp-muted);
+}
+.gpc-clash {
+  padding: 12px 14px;
+  border-left: 4px solid var(--gp-yellow);
+  background: var(--gp-panel-2);
+  display: grid;
+  gap: 10px;
+}
+.gpc-clash p {
+  margin: 0;
+}
+.gpc-clash div {
+  display: flex;
+  gap: 10px;
+}
+.gpc-reset {
+  justify-self: start;
+  border: 0;
+  background: none;
+  color: var(--gp-accent-soft);
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.gpc-touch {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+  color: var(--gp-text-2);
+}
+.gpc-touch b {
+  color: var(--gp-accent-soft);
+}
+
+/* celular deitado: a classificação fica compacta (o líder e cinco em volta de você), os dados à direita encolhem */
+.gp-play[data-touch='1'] .gpx-board {
+  display: block;
+  width: 200px;
+}
+.gp-play[data-touch='1'] .gpx-me {
+  min-width: 0;
+}
+.gp-play[data-touch='1'] .gpx-me-pos b {
+  font-size: 28px;
+}
+.gp-play[data-touch='1'] .gpx-me-times > b {
+  font-size: 20px;
+}
+.gp-play[data-touch='1'] .gpx-me-sub {
+  display: none;
+}
+/* os polegares ficam nos cantos de baixo: o minimapa sobe para baixo da classificação e a velocidade vai para o meio */
+.gp-play[data-touch='1'] .gpx-mini {
+  top: calc(max(var(--hud-pad), env(safe-area-inset-top)) + 168px);
+  bottom: auto;
+  width: 140px;
+  height: 112px;
+}
+.gp-play[data-touch='1'] .gpx-speed {
+  top: auto;
+  right: auto;
+  bottom: max(10px, env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  width: 230px;
+  padding: 8px 12px;
+  gap: 4px;
+}
+.gp-play[data-touch='1'] .gpx-speed-top > small {
+  display: none;
+}
+.gp-play[data-touch='1'] .gpx-speed-num b {
+  font-size: 34px;
+}
+.gp-play[data-touch='1'] .gpx-drs {
+  bottom: calc(max(10px, env(safe-area-inset-bottom)) + 128px);
+}
+.gp-play[data-touch='1'] .gpx-lapcall {
+  bottom: auto;
+  top: 34%;
+  font-size: 20px;
+}
+.gp-play[data-touch='1'] .gpx-notice {
+  max-width: 46%;
+  min-width: 0;
+}
+@media (max-height: 520px) {
+  .gp-play .gpx-board li {
+    height: 18px;
+  }
+  .gp-play:not([data-touch='1']) .gpx-board li:nth-child(n + 12) {
+    display: none;
+  }
+  .gpx-me-pos b {
+    font-size: 28px;
+  }
+  .gpx-me-times > b {
+    font-size: 20px;
+  }
+  .gpx-go {
+    font-size: 64px;
+  }
+}
+@media (max-width: 760px) {
+  .gp-play .gpx-board {
+    display: block;
+    width: 190px;
+  }
+  .gpx-notice {
+    max-width: 52%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gpx-notice {
+    animation: gpx-blink var(--dur) both;
+    transform: translateX(-50%) skewX(-10deg);
+  }
+  .gpx-drs[data-state='avail']::after,
+  .gpx-lapcall,
+  .gpx-go {
+    animation: none;
+  }
+  .gpx-wind {
+    display: none;
+  }
+}

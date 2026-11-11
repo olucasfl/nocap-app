@@ -461,3 +461,71 @@
     mask-image: linear-gradient(90deg, transparent 40%, #000 58%);
   }
 }
+
+/* Fox GP: três carros dando volta numa pista oval vista de cima */
+.fd-gp {
+  position: relative;
+  width: 300px;
+  height: 200px;
+}
+.fd-gp i {
+  position: absolute;
+  display: block;
+}
+.fd-gp .track {
+  left: 70px;
+  top: 20px;
+  width: 160px;
+  height: 160px;
+  box-sizing: border-box;
+  border: 22px solid #3b3d4a;
+  border-radius: 50%;
+  outline: 4px dashed #e8322e;
+  outline-offset: -2px;
+}
+.fd-gp .line {
+  left: 146px;
+  top: 20px;
+  width: 8px;
+  height: 22px;
+  background: #fff;
+}
+.fd-gp .car {
+  left: 0;
+  top: 0;
+  width: 300px;
+  height: 200px;
+  animation: fd-lap 4s linear infinite;
+}
+.fd-gp .car::after {
+  content: '';
+  position: absolute;
+  left: 140px;
+  top: 25px;
+  width: 22px;
+  height: 12px;
+  border-radius: 4px;
+  background: var(--c, #ff7d26);
+  border: 2px solid #1b1535;
+}
+.fd-gp .car.a {
+  --c: #ff7d26;
+}
+.fd-gp .car.b {
+  --c: #4fc3f7;
+  animation-delay: -0.5s;
+}
+.fd-gp .car.c {
+  --c: #ffd23f;
+  animation-delay: -1.1s;
+}
+@keyframes fd-lap {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fd-gp .car {
+    animation: none;
+  }
+}

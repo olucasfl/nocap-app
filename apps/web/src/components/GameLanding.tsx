@@ -53,6 +53,16 @@ export const GAME_LANDING: Record<
     sym: 'P',
     friends: true,
   },
+  foxgp: {
+    name: 'Fox GP',
+    line1: 'FOX',
+    line2: 'GP',
+    tag: 'A FÓRMULA 1 DAS RAPOSAS',
+    a: '#ff4d6d',
+    b: '#5a0f24',
+    sym: 'G',
+    friends: true,
+  },
   desmorona: {
     name: 'Desmorona!',
     line1: 'DESMORONA!',

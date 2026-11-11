@@ -103,6 +103,7 @@ const roomRoute = createRoute({
       | 'eco'
       | 'atravessa'
       | 'desmorona'
+      | 'foxgp'
       | 'bola'
       | 'pingpong'
       | 'foxcap';
@@ -113,6 +114,7 @@ const roomRoute = createRoute({
     search.jogo === 'eco' ||
     search.jogo === 'atravessa' ||
     search.jogo === 'desmorona' ||
+    search.jogo === 'foxgp' ||
     search.jogo === 'pingpong' ||
     search.jogo === 'bola' ||
     search.jogo === 'foxcap'
@@ -183,14 +185,15 @@ const foxCapRoute = createRoute({
     search: Record<string, unknown>,
   ): {
     aba?: 'amigos';
-    jogo?: 'atravessa' | 'bola' | 'pingpong' | 'desmorona';
+    jogo?: 'atravessa' | 'bola' | 'pingpong' | 'desmorona' | 'foxgp';
     tela?: 'amigos';
   } => ({
     ...(search.aba === 'amigos' ? { aba: 'amigos' as const } : {}),
     ...(search.jogo === 'atravessa' ||
     search.jogo === 'bola' ||
     search.jogo === 'pingpong' ||
-    search.jogo === 'desmorona'
+    search.jogo === 'desmorona' ||
+    search.jogo === 'foxgp'
       ? { jogo: search.jogo }
       : {}),
     ...(search.tela === 'amigos' ? { tela: 'amigos' as const } : {}),

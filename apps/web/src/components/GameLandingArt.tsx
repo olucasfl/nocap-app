@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react';
 
 /** Jogos com tela própria no Fox Cap! (spec 058, seção 10). */
-export type LandingGame = 'atravessa' | 'bola' | 'pingpong' | 'desmorona';
+export type LandingGame = 'atravessa' | 'bola' | 'pingpong' | 'desmorona' | 'foxgp';
 /** O Fox Cap! sem jogo escolhido (sala nova) também tem tema. */
 export type ThemeGame = LandingGame | 'foxcap';
 
@@ -69,6 +69,17 @@ export function Emblem({ game }: { game: ThemeGame }) {
           strokeLinecap="round"
         />
         <circle cx="82" cy="20" r="9" fill="#fff" />
+      </>
+    ),
+    // bandeira quadriculada e o capacete-boné
+    foxgp: (
+      <>
+        <circle cx="50" cy="50" r="44" fill="#ff4d6d" />
+        <path d="M26 26h48v36H26Z" fill="#fff" />
+        <path d="M26 26h12v12H26ZM50 26h12v12H50ZM38 38h12v12H38ZM62 38h12v12H62ZM26 50h12v12H26ZM50 50h12v12H50Z" fill="#0b0d1c" />
+        <path d="M24 22v60" stroke="#0b0d1c" strokeWidth="6" strokeLinecap="round" />
+        <path d="M54 70q14-14 28 0v8H54Z" fill="#2f5bff" />
+        <path d="M80 74h10" stroke="#2f5bff" strokeWidth="5" strokeLinecap="round" />
       </>
     ),
     // chão de ladrilhos que racha e cai
@@ -163,6 +174,25 @@ export function Backdrop({ game }: { game: ThemeGame }) {
       </div>
     );
   }
+  if (game === 'foxgp') {
+    return (
+      <div className="glb glb-gp" aria-hidden="true">
+        <div className="glb-sun" />
+        <svg className="glb-stands" viewBox="0 0 1200 160" preserveAspectRatio="none">
+          <path d="M0 160V60h1200v100Z" fill="#3a0d1c" />
+          <path d="M0 60h1200v14H0Z" fill="#ffd23f" opacity=".5" />
+        </svg>
+        <div className="glb-asphalt">
+          <i className="kerb" />
+          <i className="dash" />
+          <b className="car k1" />
+          <b className="car k2" />
+          <b className="car k3" />
+        </div>
+        <div className="glb-vig" />
+      </div>
+    );
+  }
   if (game === 'pingpong') {
     return (
       <div className="glb glb-png" aria-hidden="true">
@@ -218,6 +248,10 @@ export function Showcase({ game }: { game: LandingGame }) {
     pingpong: [
       'Pingue-pongue 1 contra 1',
       'A raquete bate de verdade: força, lob e efeito. Treine contra bots ou chame um amigo.',
+    ],
+    foxgp: [
+      'A Fórmula 1 das raposas',
+      'Classificação, grid, 3 voltas e pódio. Ande no vácuo para encher o turbo da cauda e escolha se para no box.',
     ],
     desmorona: [
       'O chão some a cada passo',
@@ -283,6 +317,17 @@ function FoxDemo({ game }: { game: LandingGame }): ReactNode {
         <i className="pl c" />
         <i className="ball" />
         <i className="goal" />
+      </div>
+    );
+  }
+  if (game === 'foxgp') {
+    return (
+      <div className="fd-gp">
+        <i className="track" />
+        <i className="line" />
+        <i className="car a" />
+        <i className="car b" />
+        <i className="car c" />
       </div>
     );
   }

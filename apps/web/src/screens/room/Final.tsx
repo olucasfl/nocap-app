@@ -48,6 +48,7 @@ export function Final({ snapshot }: { snapshot: RoomSnapshot }) {
     snapshot.game === 'impostor' || (snapshot.game === 'eco' && snapshot.mode === 'leader');
   const eco = snapshot.game === 'eco';
   const desmorona = snapshot.game === 'desmorona';
+  const foxgp = snapshot.game === 'foxgp';
   const bola = snapshot.game === 'bola';
   const atravessa = snapshot.game === 'atravessa' ? snapshot.atravessa : undefined;
   /** Siga o Líder: no pódio entra a porcentagem (média das rodadas) e a soma de acertos; as notas de cada rodada não aparecem antes. */
@@ -67,7 +68,9 @@ export function Final({ snapshot }: { snapshot: RoomSnapshot }) {
 
   /** O resultado de cada um, no formato do jogo. */
   const score = (r: (typeof rows)[number]) =>
-    desmorona ? (
+    foxgp ? (
+      <small className="mono">{snapshot.foxgp?.finish[r.userId] !== undefined ? `${r.placement}º` : 'DNF'}</small>
+    ) : desmorona ? (
       <small className="mono">{r.placement === 1 ? 'VENCEU' : 'CAIU'}</small>
     ) : bola ? (
       <small className="mono">

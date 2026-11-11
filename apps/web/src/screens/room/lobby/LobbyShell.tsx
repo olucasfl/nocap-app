@@ -225,7 +225,7 @@ export function LobbyShell({
 const WORDS_ROOM: Record<string, WordsGame | undefined> = { color: 'color', impostor: 'color', time: 'time', eco: 'eco' };
 
 /** Jogos que pertencem ao Fox Cap! (e a sala sem jogo escolhido). */
-const FOX_CAP_GAMES: string[] = ['foxcap', 'atravessa', 'desmorona', 'bola', 'pingpong', 'foxshot'];
+const FOX_CAP_GAMES: string[] = ['foxcap', 'atravessa', 'desmorona', 'foxgp', 'bola', 'pingpong', 'foxshot'];
 
 const FC_THEME = { line1: 'FOX', line2: 'CAP!', a: '#ffb347', b: '#3a1f45' };
 const FONTS = 'https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Saira+Stencil+One&display=swap';
