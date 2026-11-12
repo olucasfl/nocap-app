@@ -41,7 +41,7 @@ export function drawMinimap(cv: HTMLCanvasElement, world: GpWorld, meId: string,
   // faixa do box
   const pit = tr.pit;
   g.beginPath();
-  for (let s = pit.inStart; s <= pit.outEnd; s += 2) {
+  for (let s = pit?.inStart ?? 0; pit && s <= pit.outEnd; s += 2) {
     const p = tr.pointAt(s, tr.pitCenter(s) ?? 0);
     if (s === pit.inStart) g.moveTo(X(p.x), Z(p.z));
     else g.lineTo(X(p.x), Z(p.z));
@@ -59,7 +59,7 @@ export function drawMinimap(cv: HTMLCanvasElement, world: GpWorld, meId: string,
   g.lineWidth = 3.5;
   g.stroke();
   // zonas de DRS (verde, por cima do traçado)
-  for (const zn of tr.drsZones) {
+  for (const zn of world.mode === 'real' ? tr.drsZones : []) {
     g.beginPath();
     for (let q = zn.from; q <= zn.to; q += 2) {
       const i = tr.index(q);
@@ -70,17 +70,30 @@ export function drawMinimap(cv: HTMLCanvasElement, world: GpWorld, meId: string,
     g.lineWidth = 5;
     g.stroke();
   }
-  // marcas dos setores (amarelo) e entrada do box
+  // limites dos setores: só um ponto pequeno no traçado (spec 081, 12.1: nada de traço cruzando a pista)
   for (const s of tr.sectorS) {
     const i = tr.index(s);
-    const nx = -tr.tz[i]!;
-    const nz = tr.tx[i]!;
     g.beginPath();
-    g.moveTo(X(tr.x[i]! - nx * 18), Z(tr.z[i]! - nz * 18));
-    g.lineTo(X(tr.x[i]! + nx * 18), Z(tr.z[i]! + nz * 18));
-    g.strokeStyle = GP_THEME.yellow;
-    g.lineWidth = 3;
-    g.stroke();
+    g.arc(X(tr.x[i]!), Z(tr.z[i]!), 3, 0, Math.PI * 2);
+    g.fillStyle = GP_THEME.text;
+    g.fill();
+  }
+  // placas de turbo (Bala Track): seta dupla azul
+  for (const pd of tr.pads) {
+    const a = tr.pointAt(pd.s, 0);
+    const fx = Math.sin(a.h);
+    const fz = -Math.cos(a.h);
+    g.strokeStyle = '#3aa0ff';
+    g.lineWidth = 2.5;
+    for (const o of [0, 5]) {
+      const cx = X(a.x) + fx * o;
+      const cz = Z(a.z) + fz * o;
+      g.beginPath();
+      g.moveTo(cx - fz * 4 - fx * 3, cz + fx * 4 - fz * 3);
+      g.lineTo(cx, cz);
+      g.lineTo(cx + fz * 4 - fx * 3, cz - fx * 4 - fz * 3);
+      g.stroke();
+    }
   }
   // linha de chegada quadriculada
   {
@@ -91,10 +104,20 @@ export function drawMinimap(cv: HTMLCanvasElement, world: GpWorld, meId: string,
       g.fillRect(X(tr.x[0]! + nx * q * 6) - 2.5, Z(tr.z[0]! + nz * q * 6) - 2.5, 5, 5);
     }
   }
-  const entry = tr.pointAt(pit.inStart, 0);
-  g.fillStyle = GP_THEME.yellow;
-  g.font = `italic 800 13px ${GP_THEME.display}`;
-  g.fillText('BOX', X(entry.x) + 8, Z(entry.z) + 4);
+  if (pit) {
+    const entry = tr.pointAt(pit.inStart, 0);
+    // pneu gasto no Realista: a entrada do box pisca
+    const mine = world.car(meId);
+    if (world.mode === 'real' && mine && mine.wear >= 0.55 && Math.floor(performance.now() / 400) % 2 === 0) {
+      g.beginPath();
+      g.arc(X(entry.x), Z(entry.z), 9, 0, Math.PI * 2);
+      g.fillStyle = GP_THEME.yellow;
+      g.fill();
+    }
+    g.fillStyle = GP_THEME.yellow;
+    g.font = `italic 800 13px ${GP_THEME.display}`;
+    g.fillText('BOX', X(entry.x) + 8, Z(entry.z) + 4);
+  }
   // carros (o seu por último, por cima)
   const order = [...world.cars].sort((a, b) => (a.id === meId ? 1 : 0) - (b.id === meId ? 1 : 0));
   for (const c of order) {

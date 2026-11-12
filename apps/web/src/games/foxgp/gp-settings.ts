@@ -11,7 +11,8 @@ export const GP_ACTIONS = [
   { id: 'brake', label: 'Frear (parado, ré)' },
   { id: 'left', label: 'Virar à esquerda' },
   { id: 'right', label: 'Virar à direita' },
-  { id: 'drs', label: 'Abrir a asa (DRS)' },
+  { id: 'drs', label: 'DRS (Realista) / turbo (Arcade)' },
+  { id: 'drift', label: 'Derrapar (Arcade, segurar)' },
   { id: 'cam', label: 'Trocar a câmera' },
   { id: 'lap', label: 'Iniciar a volta lançada' },
 ] as const;
@@ -24,6 +25,7 @@ export const GP_DEFAULT_BINDS: GpBinds = {
   left: ['KeyA', 'ArrowLeft'],
   right: ['KeyD', 'ArrowRight'],
   drs: ['KeyE', ''],
+  drift: ['Space', ''],
   cam: ['KeyC', ''],
   lap: ['KeyL', ''],
 };
@@ -113,3 +115,26 @@ export function gpKeyName(action: GpAction, binds: GpBinds = gpBinds()): string 
 }
 
 export { bindLabel };
+
+const SHAKE_KEY = 'nocap-gp-shake';
+/**
+ * Tremida da tela no turbo e na zebra do kart (spec 081, 5.5 e 6B.4): ligada por padrão, com opção de desligar no menu
+ * Comandos. Com movimento reduzido no sistema ela nunca liga.
+ */
+export const useGpShake = create<{ on: boolean; set: (on: boolean) => void }>((set) => ({
+  on: (() => {
+    try {
+      return localStorage.getItem(SHAKE_KEY) !== '0';
+    } catch {
+      return true;
+    }
+  })(),
+  set: (on) => {
+    try {
+      localStorage.setItem(SHAKE_KEY, on ? '1' : '0');
+    } catch {
+      /* sem armazenamento: vale só nesta sessão */
+    }
+    set({ on });
+  },
+}));

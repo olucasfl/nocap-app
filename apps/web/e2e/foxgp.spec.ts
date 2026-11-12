@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 /**
  * Fox GP (specs 078 a 080): tela inicial (física, comandos, carro que gira), garagem com prévia ao vivo, treino
- * (classificação com a volta lançada manual, grid, luzes, corrida com DRS, box, pódio), 20 carros, as três câmeras, a
+ * (classificação com a volta lançada manual, grid, luzes, corrida com DRS, box, pódio), 12 carros, as três câmeras, a
  * qualidade gráfica e a fluidez do desenho com o piloto automático (só existe no desenvolvimento). A classificação e a
  * chegada são encurtadas pelo mundo exposto em `window.__gp`.
  */
@@ -27,6 +27,14 @@ interface GpCarLike {
   wear: number;
   drsAvail: boolean;
   drsOpen: boolean;
+  bar: number;
+  boostT: number;
+  boostLevel: number;
+  driftDir: number;
+  speed: number;
+  x: number;
+  z: number;
+  h: number;
 }
 interface GpWorldLike {
   phase: string;
@@ -63,9 +71,10 @@ async function openHome(page: Page) {
   await expect(page.getByTestId('gp-home')).toBeVisible();
 }
 
-async function openTraining(page: Page, bots: number) {
+async function openTraining(page: Page, bots: number, mode: 'arcade' | 'real' = 'arcade') {
   await openHome(page);
   await page.getByTestId('gl-offline').click();
+  await page.getByTestId(`gp-physics-${mode}`).click();
   await page.getByRole('radio', { name: String(bots), exact: true }).click();
   await page.getByTestId('gp-start').click();
   await expect(page.getByTestId('gp-play')).toBeVisible({ timeout: 30_000 });
@@ -96,17 +105,37 @@ test.describe('Fox GP', () => {
     test.skip(info.project.name !== 'desktop', 'um projeto basta');
   });
 
-  test('tela inicial: física guardada, carro que gira, pistas e garagem com prévia ao vivo', async ({ page }) => {
+  test('tela inicial: sem seletor de física, carrossel embaixo do carro, pistas e garagem com prévia ao vivo', async ({ page }) => {
     const errors = watchErrors(page);
     await page.setViewportSize({ width: 1440, height: 810 });
     await openHome(page);
     await expect(page.getByRole('heading', { name: /Fox\s*GP/i })).toBeVisible();
     await expect(page.getByRole('img', { name: /O seu carro/ })).toBeVisible();
-    // seletor de física: Arcade por padrão, a escolha fica no aparelho
+    // a física não fica na tela inicial (spec 081, 13.2): só em "Antes de correr"
+    await expect(page.getByTestId('gp-physics-arcade')).toHaveCount(0);
+    // o carrossel fica embaixo do carro e mostra o modo do carro (kart e F1; as setas trocam o carro de verdade)
+    const carBox = (await page.getByTestId('gp-car-preview').boundingBox())!;
+    const carousel = (await page.getByTestId('gp-home-carousel').boundingBox())!;
+    expect(carousel.y).toBeGreaterThan(carBox.y + carBox.height * 0.8);
+    expect(Math.abs(carousel.x + carousel.width / 2 - (carBox.x + carBox.width / 2))).toBeLessThan(4);
+    await expect(page.getByTestId('gp-best')).toContainText('Arcade · Kart');
+    await page.getByRole('button', { name: 'Próximo carro' }).click();
+    await expect(page.getByTestId('gp-best')).toContainText('Realista · F1');
+    // a caixa do carro é a da main (13.1): top 10vh, 70vh de altura, min(60vw, 860px) de largura
+    expect(Math.abs(carBox.y - 81)).toBeLessThan(2);
+    expect(Math.abs(carBox.height - 567)).toBeLessThan(2);
+    expect(Math.abs(carBox.width - 860)).toBeLessThan(2);
+    // "Antes de correr": os dois modos, Arcade por padrão, a escolha fica no aparelho; sem "Kart" e "Bala Track" ainda
+    await page.getByTestId('gl-offline').click();
     await expect(page.getByTestId('gp-physics-arcade')).toHaveAttribute('aria-checked', 'true');
+    await expect(page.getByTestId('gp-physics-arcade')).toContainText('Kart');
+    await expect(page.getByTestId('gp-physics-arcade')).toContainText('Bala Track');
     await page.getByTestId('gp-physics-real').click();
     expect(await page.evaluate(() => localStorage.getItem('nocap-gp-physics'))).toBe('real');
-    await expect(page.getByTestId('gp-best')).toContainText('Realista');
+    await expect(page.getByTestId('gp-pick-best-real')).toContainText('Melhor volta');
+    await page.getByRole('dialog', { name: 'Antes de correr' }).getByRole('button', { name: 'Voltar' }).click();
+    // trocar o modo não mexe no carrossel (ele só mostra os carros)
+    await expect(page.getByTestId('gp-best')).toContainText('Realista · F1');
     // arrastar o carro não dispara os botões do menu
     const car = (await page.getByTestId('gp-car-preview').boundingBox())!;
     await page.mouse.move(car.x + car.width * 0.7, car.y + car.height * 0.5);
@@ -115,11 +144,14 @@ test.describe('Fox GP', () => {
     await page.mouse.up();
     await expect(page.getByTestId('gp-home')).toBeVisible();
     await page.getByTestId('gp-open-track').click();
-    await expect(page.getByRole('img', { name: 'Traçado do Circuito da Marina' })).toBeVisible();
+    await expect(page.getByRole('img', { name: 'Traçado: Circuito da Marina' })).toBeVisible();
     await page.getByRole('button', { name: 'Voltar' }).first().click();
     await page.getByTestId('gp-open-garage').click();
     await expect(page.getByTestId('gp-garage')).toBeVisible();
+    // a garagem abre no veículo do carrossel (o F1) e tem sub-abas
+    await page.getByTestId('garage-veh-f1').click();
     await page.getByTestId('garage-body-e8343c').click();
+    await page.getByTestId('garage-tab-desenho').click();
     await page.getByTestId('garage-pattern-chevron').click();
     await page.getByRole('button', { name: 'Número maior' }).click();
     if (process.env.E2E_SHOTS) await page.screenshot({ path: `${process.env.E2E_SHOTS}/gp-garage.png` });
@@ -204,7 +236,7 @@ test.describe('Fox GP', () => {
   test('DRS: liberado na zona depois da 1ª volta, E abre, frear fecha; a asa e a HUD acompanham', async ({ page }) => {
     const errors = watchErrors(page);
     await page.setViewportSize({ width: 1280, height: 720 });
-    await openTraining(page, 1);
+    await openTraining(page, 1, 'real');
     await qualiOn(page);
     await skipQuali(page);
     await raceOn(page);
@@ -236,6 +268,72 @@ test.describe('Fox GP', () => {
     expect(errors).toEqual([]);
   });
 
+  test('sair da partida vai direto para a tela do Fox GP, sem nenhum quadro da lista do Fox Cap!', async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await openTraining(page, 1);
+    await qualiOn(page);
+    await page.getByTestId('gp-menu-btn').click();
+    // olha o DOM a cada quadro entre o clique em sair e a tela do Fox GP (spec 081, Fase 1.5)
+    await page.evaluate(() => {
+      const w = window as Window & { __sawList?: boolean; __watch?: boolean };
+      w.__sawList = false;
+      w.__watch = true;
+      const tick = () => {
+        if (document.querySelector('[data-testid="foxcap-foxgp"]')) w.__sawList = true;
+        if (w.__watch) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    await page.getByTestId('gp-menu-exit').click();
+    await page.getByTestId('gp-menu-exit').click();
+    await expect(page.getByTestId('gp-home')).toBeVisible();
+    await expect(page.getByTestId('gp-home')).toHaveAttribute('data-back', '1');
+    await page.waitForTimeout(600);
+    const saw = await page.evaluate(() => {
+      const w = window as Window & { __sawList?: boolean; __watch?: boolean };
+      w.__watch = false;
+      return w.__sawList;
+    });
+    expect(saw).toBe(false);
+    expect(errors).toEqual([]);
+  });
+
+  test('kart: segurar o drift virando entra em drift, a barra enche e o turbo gasta a barra', async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await openTraining(page, 1, 'arcade');
+    await qualiOn(page);
+    await skipQuali(page);
+    await raceOn(page);
+    await expect(page.getByTestId('gp-play')).toHaveAttribute('data-physics', 'arcade');
+    await expect(page.getByTestId('gp-kart-hud')).toBeVisible();
+    await expect(page.getByTestId('gp-drs')).toHaveCount(0);
+    // embalado numa reta, com a barra quase cheia
+    await page.evaluate(() => {
+      const w = (window as Win).__gp!;
+      const me = w.cars.find((c) => c.id === 'me')!;
+      me.speed = 22;
+      me.bar = 2.6;
+    });
+    await page.keyboard.down('KeyW');
+    await page.keyboard.down('KeyD');
+    await page.keyboard.down('Space');
+    await expect(page.getByTestId('gp-drift')).toHaveAttribute('data-state', 'on', { timeout: 3000 });
+    await page.waitForTimeout(500);
+    if (process.env.E2E_SHOTS) await page.screenshot({ path: `${process.env.E2E_SHOTS}/gp-kart-drift.png` });
+    await page.keyboard.up('Space');
+    await page.keyboard.up('KeyD');
+    await expect(page.getByTestId('gp-drift')).not.toHaveAttribute('data-state', 'on');
+    // a barra passou do 2º terço: o turbo é de nível 2 e gasta a barra toda
+    await page.keyboard.press('KeyE');
+    await expect(page.getByTestId('gp-turbo')).toHaveAttribute('data-boost', '2', { timeout: 2000 });
+    if (process.env.E2E_SHOTS) await page.screenshot({ path: `${process.env.E2E_SHOTS}/gp-kart-turbo.png` });
+    expect(await page.evaluate(() => (window as Win).__gp!.cars.find((c) => c.id === 'me')!.bar)).toBeLessThan(0.2);
+    await page.keyboard.up('KeyW');
+    expect(errors).toEqual([]);
+  });
+
   test('três câmeras com troca suave e a qualidade gráfica sem erro', async ({ page }) => {
     const errors = watchErrors(page);
     await page.setViewportSize({ width: 1280, height: 720 });
@@ -243,14 +341,16 @@ test.describe('Fox GP', () => {
     await qualiOn(page);
     await page.evaluate(() => ((window as Win).__gpAuto = true));
     await page.waitForTimeout(2500);
-    for (const cam of ['chase', 'cockpit', 'far']) {
+    // a câmera padrão é "Atrás do carro" (spec 081, 12.5)
+    await expect(page.getByTestId('gp-play')).toHaveAttribute('data-cam', 'chase');
+    for (const cam of ['cockpit', 'far', 'chase']) {
       await page.keyboard.press('KeyC');
       await expect(page.getByTestId('gp-play')).toHaveAttribute('data-cam', cam);
       await page.waitForTimeout(900);
       if (process.env.E2E_SHOTS) await page.screenshot({ path: `${process.env.E2E_SHOTS}/gp-cam-${cam}.png` });
     }
     // a câmera fica salva
-    expect(await page.evaluate(() => localStorage.getItem('nocap-gp-cam'))).toBe('far');
+    expect(await page.evaluate(() => localStorage.getItem('nocap-gp-cam'))).toBe('chase');
     for (const q of ['Alta', 'Baixa', 'Média']) {
       await page.getByTestId('gp-menu-btn').click();
       await page.getByTestId('gp-menu-quality').click();
@@ -264,18 +364,18 @@ test.describe('Fox GP', () => {
     expect(errors).toEqual([]);
   });
 
-  test('20 carros contra bots no Realista: corrida lisa, classificação com 20 linhas', async ({ page }) => {
+  test('12 carros contra bots no Realista: corrida lisa, classificação com 12 linhas', async ({ page }) => {
     test.setTimeout(180_000);
     const errors = watchErrors(page);
     await page.setViewportSize({ width: 1280, height: 720 });
     await openHome(page);
-    await page.getByTestId('gp-physics-real').click();
     await page.getByTestId('gl-offline').click();
-    await page.getByRole('radio', { name: '19', exact: true }).click();
+    await page.getByTestId('gp-physics-real').click();
+    await page.getByRole('radio', { name: '11', exact: true }).click();
     await page.getByTestId('gp-start').click();
     await expect(page.getByTestId('gp-play')).toHaveAttribute('data-physics', 'real', { timeout: 30_000 });
     await qualiOn(page);
-    expect(await page.evaluate(() => (window as Win).__gp!.cars.length)).toBe(20);
+    expect(await page.evaluate(() => (window as Win).__gp!.cars.length)).toBe(12);
     expect(await page.evaluate(() => (window as Win).__gp!.mode)).toBe('real');
     await page.evaluate(() => ((window as Win).__gpAuto = true));
     await skipQuali(page);
@@ -286,13 +386,46 @@ test.describe('Fox GP', () => {
       Object.assign(s, { frames: 0, slow: 0, maxDt: 0, backs: 0, maxJump: 0 });
     });
     await page.waitForTimeout(20_000);
-    await expect(page.getByTestId('gp-board').locator('li')).toHaveCount(21);
-    if (process.env.E2E_SHOTS) await page.screenshot({ path: `${process.env.E2E_SHOTS}/gp-20.png` });
+    await expect(page.getByTestId('gp-board').locator('li')).toHaveCount(13);
+    if (process.env.E2E_SHOTS) await page.screenshot({ path: `${process.env.E2E_SHOTS}/gp-12.png` });
     const st = await page.evaluate(() => (window as Win).__gpStats!);
-    test.info().annotations.push({ type: 'fluidez com 20 carros', description: JSON.stringify(st) });
+    test.info().annotations.push({ type: 'fluidez com 12 carros', description: JSON.stringify(st) });
     expect(st.frames).toBeGreaterThan(200);
     expect(st.backs).toBe(0);
     expect(st.maxJump).toBeLessThan(2.5);
+    expect(errors).toEqual([]);
+  });
+
+  test('12 carros juntos desde a largada: 60 s sem quadro acima de 33 ms (painel de desempenho)', async ({ page }) => {
+    test.setTimeout(240_000);
+    const errors = watchErrors(page);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.addInitScript(() => ((window as Window & { __gpPerfOn?: boolean }).__gpPerfOn = true));
+    await openHome(page);
+    await page.getByTestId('gl-offline').click();
+    await page.getByTestId('gp-physics-real').click();
+    await page.getByRole('radio', { name: '11', exact: true }).click();
+    await page.getByTestId('gp-start').click();
+    await qualiOn(page);
+    await page.evaluate(() => ((window as Win).__gpAuto = true));
+    await skipQuali(page);
+    await raceOn(page);
+    // da largada (todos colados no grid) até a primeira curva e além
+    await page.evaluate(() => (window as unknown as { __gpPerf: { reset(): void } }).__gpPerf.reset());
+    await page.waitForTimeout(60_000);
+    const perf = await page.evaluate(() => {
+      const p = (window as unknown as {
+        __gpPerf: { frames: number; over33: number; maxGap: number; avg(): Record<string, number>; max: Record<string, number> };
+      }).__gpPerf;
+      return { frames: p.frames, over33: p.over33, maxGap: p.maxGap, avg: p.avg(), max: p.max };
+    });
+    test.info().annotations.push({ type: 'desempenho com 12 carros juntos', description: JSON.stringify(perf) });
+    await expect(page.getByTestId('gp-perf')).toBeVisible();
+    expect(perf.frames).toBeGreaterThan(60 * 50);
+    // nenhum quadro do jogo (simulação, bots, desenho e HUD) passa de 33 ms; o intervalo entre quadros ainda pode ter um
+    // quadro de tela perdido pelo sistema (sem trabalho do jogo por trás): no máximo 2 em 3600
+    expect(perf.max.frame).toBeLessThan(33);
+    expect(perf.over33).toBeLessThanOrEqual(2);
     expect(errors).toEqual([]);
   });
 
@@ -325,7 +458,7 @@ test.describe('Fox GP', () => {
   test('box animado: parar na vaga mostra o pit stop e troca o pneu', async ({ page }) => {
     const errors = watchErrors(page);
     await page.setViewportSize({ width: 1280, height: 720 });
-    await openTraining(page, 1);
+    await openTraining(page, 1, 'real');
     await qualiOn(page);
     await skipQuali(page);
     await raceOn(page);
@@ -377,14 +510,16 @@ test.describe('Fox GP', () => {
     expect(errors).toEqual([]);
   });
 
-  test('celular deitado: botões de toque (DRS no lugar do antigo), HUD sem estourar a tela', async ({ browser }) => {
+  test('celular deitado: botões de toque (kart: Drift e Turbo; F1: DRS), HUD sem estourar a tela', async ({ browser }) => {
     const ctx = await browser.newContext({ viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true, locale: 'pt-BR' });
     const page = await ctx.newPage();
     const errors = watchErrors(page);
     await openTraining(page, 9);
     await qualiOn(page);
     await expect(page.getByRole('button', { name: 'Acelerar' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'DRS' })).toBeVisible();
+    // o treino padrão é o kart: Drift (segurar) e Turbo no lugar do DRS
+    await expect(page.getByTestId('gp-pad-drift')).toBeVisible();
+    await expect(page.getByTestId('gp-pad-turbo')).toBeVisible();
     await expect(page.getByTestId('gp-startlap')).toBeVisible({ timeout: 15_000 });
     const gas = (await page.getByRole('button', { name: 'Acelerar' }).boundingBox())!;
     await page.mouse.move(gas.x + gas.width / 2, gas.y + gas.height / 2);

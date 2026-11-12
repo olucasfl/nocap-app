@@ -75,5 +75,6 @@
 | 078 | [Fox GP](078-fox-gp.md) | 5 | implementada na branch `feat/fox-gp` (10/11/2026); falta calibrar jogando |
 | 079 | [Fox GP, atualização](079-fox-gp-atualizacao.md) | 5 | implementada na `feat/fox-gp`; teste online com duas janelas verde (11/11/2026) |
 | 080 | [Fox GP v2](080-fox-gp-v2.md) | 5 | implementada na `feat/fox-gp` (11/11/2026); falta medir celular como líder com 20 carros |
+| 081 | [Fox GP v3](081-fox-gp-v3.md) | 5 | implementada na `feat/fox-gp-v3` (12/11/2026); falta calibrar jogando e medir celular como líder |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.

@@ -4,13 +4,27 @@
   position: fixed;
   inset: 0;
   z-index: 45;
-  overflow: hidden auto;
   background: var(--gp-bg);
   color: var(--gp-text);
   font-family: var(--gp-body);
 }
 .gph {
+  width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  /* clip e não hidden: as faixas do fundo passam da tela e, com hidden, o foco de um botão rolava a tela inteira
+     (a faixa quadriculada subia e os botões saíam pela esquerda) */
+  overflow: hidden;
+  overflow: clip;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) clamp(20px, 3.5vh, 32px);
   animation: gph-in 0.6s var(--gp-ease) both;
+}
+.gph-garage {
+  overflow: hidden auto;
+}
+.gph.is-back {
+  animation: none;
 }
 @keyframes gph-in {
   from {
@@ -50,14 +64,16 @@
   background: var(--gp-panel);
 }
 .gph-flag {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 36px;
-  background-size: 36px 36px;
+  grid-row: 2;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background-size: 32px 32px;
   opacity: 0.9;
+  pointer-events: none;
+  z-index: 10;
 }
+/* a caixa do carro é a da main (spec 081, 13.1): fora da grade, mesmo tamanho e mesmo enquadramento */
 .gph-car {
   position: absolute;
   right: 2vw;
@@ -65,16 +81,27 @@
   width: min(60vw, 860px);
   height: 70vh;
 }
+.gph-main:not([data-screen='main']) .gph-title {
+  font-size: clamp(38px, 7vh, 96px);
+}
 .gph-main {
+  grid-row: 1;
   position: relative;
   z-index: 2;
   width: min(520px, 100%);
-  min-height: 100%;
+  height: 100%;
+  max-height: 100%;
   box-sizing: border-box;
-  padding: max(40px, 7vh) max(24px, 5.5vw) 72px;
+  padding: clamp(14px, 3vh, 36px) max(20px, 4.5vw) clamp(6px, 1.5vh, 16px);
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  justify-content: center;
+  gap: clamp(8px, 1.8vh, 18px);
+}
+.gph-head {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1.8vh, 18px);
 }
 .gph-brand {
   display: flex;
@@ -92,7 +119,7 @@
 }
 .gph-title {
   margin: 0;
-  font-size: min(13vw, 18vh, 168px);
+  font-size: clamp(38px, 11vh, 130px);
   line-height: 0.82;
   letter-spacing: -0.02em;
 }
@@ -102,33 +129,95 @@
 .gph-lead {
   margin: 0;
   max-width: 440px;
-  font-size: 19px;
-  line-height: 1.45;
+  font-size: clamp(13px, 1.8vh, 17px);
+  line-height: 1.35;
   color: var(--gp-text-3);
 }
 .gph-btns {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  width: min(360px, 100%);
+  gap: clamp(6px, 1.2vh, 10px);
+  width: min(380px, 100%);
 }
 .gph-btns .gp-tbtn {
   text-align: left;
+  height: clamp(38px, 5.2vh, 48px);
+  font-size: clamp(13px, 1.8vh, 17px);
+  padding: 0 14px;
 }
 .gph-go {
-  height: 60px;
+  height: clamp(48px, 6.8vh, 58px) !important;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 28px;
+  font-size: clamp(18px, 2.5vh, 24px) !important;
 }
 .gph-two {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 .gph-two .gp-tbtn {
   text-align: center;
+}
+/* carrossel embaixo do carro, centrado sob a caixa dele, sem empurrá-la */
+.gph-carousel {
+  position: absolute;
+  z-index: 3;
+  right: calc(2vw + min(60vw, 860px) / 2);
+  top: calc(80vh - clamp(8px, 2vh, 20px));
+  transform: translateX(50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  background: var(--gp-panel);
+  border: 1px solid var(--gp-line-2);
+  box-shadow: 4px 4px 0 var(--gp-accent);
+  touch-action: pan-y;
+}
+.gph-carousel-btn {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  background: var(--gp-panel-2);
+  border: 1px solid var(--gp-line);
+  color: var(--gp-text);
+  font-size: 20px;
+  cursor: pointer;
+}
+.gph-carousel-btn:hover,
+.gph-carousel-btn:focus-visible {
+  background: var(--gp-accent);
+  color: var(--gp-bg);
+}
+.gph-carousel-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 180px;
+  text-align: center;
+  animation: gph-car-in 0.35s var(--gp-ease) both;
+}
+@keyframes gph-car-in {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+.gph-carousel-title {
+  font: italic 800 15px var(--gp-display);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--gp-accent);
+}
+.gph-carousel-best {
+  font-size: 12px;
+  color: var(--gp-text-3);
+}
+.gph-carousel-best b {
+  color: var(--gp-text);
 }
 .gph-panel {
   width: min(420px, 100%);
@@ -160,10 +249,14 @@
 }
 .gph-join label {
   flex: 1;
+  min-width: 0;
   display: grid;
   gap: 6px;
 }
 .gph-join input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   height: 52px;
   padding: 0 14px;
   border: 2px solid var(--gp-line-2);
@@ -179,6 +272,7 @@
 .gph-map {
   width: 100%;
   height: auto;
+  max-height: 34vh;
 }
 
 /* ---- garagem ---- */
@@ -360,14 +454,50 @@
   color: var(--gp-text);
 }
 
-@media (max-width: 900px) {
+/* ---- tela estreita (tablet ou celular em pé): título em cima, carro no meio, menu embaixo, sem rolagem ---- */
+@media (max-width: 900px) and (orientation: portrait) {
   .gph-car {
-    opacity: 0.35;
+    right: 0;
+    left: 0;
+    top: 11vh;
     width: 100vw;
-    right: -20vw;
+    height: 33vh;
   }
   .gph-stripes {
     opacity: 0.5;
+  }
+  .gph-main {
+    width: 100%;
+    max-width: 560px;
+    margin: 0 auto;
+    justify-content: space-between;
+    padding: clamp(12px, 2.4vh, 28px) 16px clamp(8px, 1.6vh, 16px);
+  }
+  .gph-title {
+    font-size: clamp(40px, 6.6vh, 84px);
+  }
+  .gph-title br {
+    display: none;
+  }
+  .gph-title span {
+    margin-left: 0.18em;
+  }
+  .gph-lead {
+    display: none;
+  }
+  .gph-btns {
+    width: 100%;
+  }
+  /* o carrossel logo embaixo do carro, centrado */
+  .gph-carousel {
+    top: calc(44vh - 4px);
+    right: 50%;
+    transform: translateX(50%);
+  }
+  /* nos painéis o carro dá lugar ao painel */
+  .gph-main:not([data-screen='main']) ~ .gph-car,
+  .gph:has(.gph-main:not([data-screen='main'])) .gph-car {
+    opacity: 0.25;
   }
   .gph-garage {
     grid-template-columns: minmax(0, 1fr);
@@ -380,21 +510,338 @@
     padding: 18px;
   }
 }
-@media (max-height: 520px) {
+/* ---- tela larga mas estreita para o carro ao lado (tablet deitado pequeno): o carro vira fundo ---- */
+@media (max-width: 900px) and (orientation: landscape) and (min-height: 521px) {
+  .gph-car {
+    opacity: 0.35;
+    width: 100vw;
+    right: -10vw;
+  }
+  .gph-carousel {
+    top: auto;
+    bottom: calc(clamp(20px, 3.5vh, 32px) + 10px);
+    right: 12px;
+    transform: none;
+  }
+}
+/* ---- tela baixa deitada (celular deitado): duas colunas, título e botões à esquerda, carro à direita ---- */
+@media (max-height: 520px) and (orientation: landscape) {
+  .gph {
+    grid-template-rows: minmax(0, 1fr) 18px;
+  }
+  .gph-car {
+    opacity: 1;
+    left: auto;
+    right: 0;
+    top: 2vh;
+    width: 44vw;
+    height: calc(100dvh - 18px - 64px);
+  }
   .gph-main {
-    padding-top: 28px;
-    gap: 14px;
+    width: 56vw;
+    max-width: 560px;
+    padding: 8px 12px 6px max(14px, env(safe-area-inset-left));
+    gap: 6px;
+    justify-content: center;
+  }
+  .gph-head {
+    gap: 4px;
+  }
+  .gph-brand .gp-kicker {
+    display: none;
+  }
+  .gph-tag {
+    padding: 3px 8px;
+    font-size: 11px;
   }
   .gph-title {
-    font-size: 72px;
+    font-size: clamp(26px, 9vh, 40px);
+  }
+  .gph-title br {
+    display: none;
+  }
+  .gph-title span {
+    margin-left: 0.18em;
   }
   .gph-lead {
     display: none;
   }
+  /* botões em grade de 2 colunas */
+  .gph-btns {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .gph-two {
+    display: contents;
+  }
+  .gph-btns .gp-tbtn {
+    height: clamp(30px, 9vh, 40px);
+    font-size: 13px;
+    text-align: center;
+  }
+  .gph-go {
+    grid-column: 1 / -1;
+    height: clamp(36px, 11vh, 46px) !important;
+    font-size: 18px !important;
+  }
+  .gph-go svg {
+    width: 20px;
+    height: 20px;
+  }
+  .gph-btns > .gp-tbtn:not(.gph-go):not(.gph-exit) {
+    grid-column: 1 / -1;
+  }
+  .gph-carousel {
+    top: auto;
+    bottom: calc(18px + 8px);
+    right: calc(22vw);
+    transform: translateX(50%);
+    padding: 3px 8px;
+  }
+  .gph-carousel-info {
+    min-width: 140px;
+  }
+  .gph-carousel-title {
+    font-size: 12px;
+  }
+  .gph-carousel-best {
+    font-size: 10px;
+  }
+  /* painéis compactos */
+  .gph-panel {
+    width: 100%;
+    padding: 10px 12px;
+    gap: 6px;
+  }
+  .gph-panel h2 {
+    font-size: 20px;
+  }
+  .gph-panel p {
+    font-size: 12px;
+    line-height: 1.3;
+  }
+  .gph-panel .gp-tbtn {
+    height: 34px;
+    font-size: 15px;
+  }
+  .gph-join input {
+    height: 34px;
+    font-size: 20px;
+  }
+  .gph-join .gp-kicker {
+    font-size: 10px;
+  }
+  .gph-map {
+    max-height: 32vh;
+  }
+  /* o painel ocupa a coluna da esquerda: o título fica numa linha só, em cima */
+  .gph-main:not([data-screen='main']) .gph-title {
+    font-size: 22px;
+  }
+}
+@media (max-height: 640px) and (min-height: 521px) {
+  .gph-lead {
+    display: none;
+  }
+  .gph-title {
+    font-size: clamp(32px, 8vh, 52px);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .gph,
-  .gph-garage {
+  .gph-garage,
+  .gph-carousel-info {
     animation: none;
+  }
+}
+
+/* painel das pistas: as duas lado a lado */
+.gph-tracks {
+  width: min(640px, 100%);
+}
+.gph-track-two {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.gph-track-two p {
+  font-size: 13px;
+  line-height: 1.35;
+}
+.gph-track-two .gph-map {
+  max-height: 26vh;
+}
+
+/* ---- garagem por veículo (spec 081, Fase 8): abas e opções que cabem sem rolagem ---- */
+.gpg {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  overflow: hidden;
+}
+.gpg-veh,
+.gpg-tabs {
+  display: flex;
+  gap: 6px;
+}
+.gpg-veh button,
+.gpg-tabs button {
+  flex: 1;
+  padding: 8px 6px;
+  border: 2px solid var(--gp-line-2);
+  background: var(--gp-panel-2);
+  color: var(--gp-text-3);
+  font: italic 800 14px var(--gp-display);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.gpg-tabs button {
+  padding: 5px 4px;
+  font-size: 12px;
+}
+.gpg-veh button[aria-selected='true'] {
+  border-color: var(--gp-accent);
+  background: var(--gp-accent);
+  color: var(--gp-bg);
+}
+.gpg-tabs button[aria-selected='true'] {
+  border-color: var(--gp-accent);
+  color: var(--gp-text);
+}
+.gpg-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+.gpg-row h3 {
+  margin: 0 0 4px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gp-muted);
+}
+.gpg-sw {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 4px;
+}
+.gpg-sw button {
+  aspect-ratio: 1;
+  min-width: 0;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  padding: 0;
+}
+.gpg-sw button[aria-checked='true'] {
+  border-color: #fff;
+  outline: 2px solid var(--gp-accent);
+  outline-offset: 1px;
+}
+.gpg-sw button.is-none {
+  background: repeating-linear-gradient(45deg, #2b3348 0 4px, #141a2b 4px 8px) !important;
+}
+.gpg-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.gpg-chips button {
+  padding: 4px 8px;
+  border: 2px solid var(--gp-line-2);
+  background: var(--gp-panel-2);
+  color: var(--gp-text);
+  font-size: 12px;
+  cursor: pointer;
+}
+.gpg-chips button[aria-checked='true'] {
+  border-color: var(--gp-accent);
+  background: var(--gp-panel-on, #23304d);
+}
+@media (max-height: 520px) {
+  .gpg-sw {
+    grid-template-columns: repeat(24, minmax(0, 1fr));
+  }
+  .gpg-row h3 {
+    margin-bottom: 2px;
+  }
+}
+
+/* a garagem nova cabe na tela: o painel não cresce além da coluna e a página não rola */
+.gph-garage {
+  overflow: hidden;
+  height: 100dvh;
+  box-sizing: border-box;
+  padding-top: max(24px, 4vh) !important;
+  padding-bottom: max(16px, 3vh) !important;
+}
+.gph-garage-panel.gpg {
+  min-width: 0;
+  min-height: 0;
+  padding: 16px 18px;
+  overflow: hidden;
+}
+.gpg .gph-garage-btns {
+  margin-top: auto;
+}
+
+.gpg .gph-garage-btns .gp-tbtn {
+  white-space: nowrap;
+  min-width: 0;
+  padding: 0 10px;
+  font-size: clamp(13px, 1.8vh, 18px);
+}
+/* garagem no celular deitado: prévia menor, painel mais largo e compacto */
+@media (max-height: 520px) and (orientation: landscape) {
+  .gph-garage {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.25fr) !important;
+    gap: 8px 14px !important;
+    padding: 8px 12px !important;
+  }
+  .gph-garage-head .gp-title {
+    font-size: 22px;
+  }
+  .gph-garage-panel.gpg {
+    padding: 8px 10px;
+    gap: 5px;
+  }
+  .gpg-veh button,
+  .gpg-tabs button {
+    padding: 3px 4px;
+    font-size: 11px;
+  }
+  .gpg-body {
+    gap: 3px;
+  }
+  .gpg-row h3 {
+    font-size: 9px;
+    margin: 0 0 2px;
+  }
+  .gpg-sw {
+    gap: 2px;
+  }
+  .gpg-chips button {
+    padding: 2px 6px;
+    font-size: 11px;
+  }
+  .gpg .gph-number button {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    font-size: 16px;
+    line-height: 1;
+  }
+  .gpg .gph-garage-btns .gp-tbtn {
+    height: 32px;
+    font-size: 13px;
+  }
+}
+/* garagem em pé (tela estreita): o botão principal cabe */
+@media (max-width: 480px) {
+  .gpg .gph-garage-btns .gp-tbtn {
+    font-size: 14px;
   }
 }

@@ -42,3 +42,28 @@ export function savePhysics(mode: GpPhysicsMode) {
 }
 
 export const PHYSICS_NAME: Record<GpPhysicsMode, string> = { arcade: 'Arcade', real: 'Realista' };
+
+const BACK_KEY = 'nocap-gp-back';
+
+/**
+ * Saída de uma partida (spec 081, Fase 1.5): marca que a tela do Fox GP vai aparecer de volta, para ela abrir já pronta,
+ * sem a animação de entrada.
+ */
+export function gpMarkBack() {
+  try {
+    sessionStorage.setItem(BACK_KEY, '1');
+  } catch {
+    /* sem armazenamento: só mostra a animação */
+  }
+}
+
+/** Leu e apagou o sinal de volta de uma partida. */
+export function gpTakeBack(): boolean {
+  try {
+    const v = sessionStorage.getItem(BACK_KEY) === '1';
+    sessionStorage.removeItem(BACK_KEY);
+    return v;
+  } catch {
+    return false;
+  }
+}

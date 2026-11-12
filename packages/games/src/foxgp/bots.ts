@@ -1,17 +1,22 @@
 import { createRng } from '../core/rng';
 import {
-  GP_BRAKE,
+  GP_ARC_BRAKE,
+  GP_ARC_YAW_HIGH,
+  GP_ARC_YAW_LOW,
   GP_BRAKE_MIN,
+  GP_CAR_LEN,
+  GP_CAR_SIDE_GAP,
+  GP_CAR_WID,
   GP_GRIP_MIN,
   GP_HALF_WIDTH,
   GP_LAPS,
-  GP_LAT_ACC,
   GP_PIT_LIMIT,
   GP_REAL_BRAKE0,
+  GP_REAL_BRAKE_V2,
   GP_REAL_DOWNFORCE,
   GP_REAL_GRIP0,
   GP_SURFACE,
-  GP_VMAX,
+  gpVmaxOf,
 } from './constants';
 import type { GpCar, GpInput, GpWorld } from './world';
 
@@ -54,6 +59,9 @@ export interface GpBotProfile {
   topSpeedFactor: number;
   /** Distância mínima que aceita atrás de outro carro (m). */
   followGap: number;
+  /** Kart (spec 081, 5.6): vontade de derrapar nas curvas (0 a 1) e a partir de qual terço da barra usa o turbo. */
+  driftLove: number;
+  turboAt: number;
 }
 
 /** O que cada bot lembra entre um passo e outro. */
@@ -95,6 +103,8 @@ const RANGES: Record<GpBotArchetype, Record<Exclude<keyof GpBotProfile, 'archety
     mistakeRate: [0.03, 0.05],
     topSpeedFactor: [1, 1.02],
     followGap: [1.5, 2.5],
+    driftLove: [0.85, 1],
+    turboAt: [1, 1.4],
   },
   consistente: {
     skill: [0.91, 0.94],
@@ -107,6 +117,8 @@ const RANGES: Record<GpBotArchetype, Record<Exclude<keyof GpBotProfile, 'archety
     mistakeRate: [0, 0.01],
     topSpeedFactor: [0.995, 1.01],
     followGap: [3.5, 4.5],
+    driftLove: [0.6, 0.75],
+    turboAt: [2, 2.4],
   },
   defensivo: {
     skill: [0.89, 0.93],
@@ -119,6 +131,8 @@ const RANGES: Record<GpBotArchetype, Record<Exclude<keyof GpBotProfile, 'archety
     mistakeRate: [0.005, 0.015],
     topSpeedFactor: [0.99, 1],
     followGap: [5, 7],
+    driftLove: [0.35, 0.5],
+    turboAt: [2.6, 3],
   },
   erratico: {
     skill: [0.94, 0.98],
@@ -131,6 +145,8 @@ const RANGES: Record<GpBotArchetype, Record<Exclude<keyof GpBotProfile, 'archety
     mistakeRate: [0.07, 0.1],
     topSpeedFactor: [1.005, 1.02],
     followGap: [2, 3.5],
+    driftLove: [0.6, 0.9],
+    turboAt: [1, 2.6],
   },
   novato: {
     skill: [0.82, 0.88],
@@ -143,6 +159,8 @@ const RANGES: Record<GpBotArchetype, Record<Exclude<keyof GpBotProfile, 'archety
     mistakeRate: [0.04, 0.07],
     topSpeedFactor: [0.98, 0.995],
     followGap: [5, 8],
+    driftLove: [0.05, 0.2],
+    turboAt: [2, 3],
   },
 };
 
@@ -166,6 +184,9 @@ export function gpBotProfile(seed: string, index: number): GpBotProfile {
     mistakeRate: pick('mistakeRate'),
     topSpeedFactor: pick('topSpeedFactor'),
     followGap: pick('followGap'),
+    // sorteados por último: os números de antes continuam os mesmos para a mesma seed
+    driftLove: pick('driftLove'),
+    turboAt: Math.min(3, Math.max(1, Math.round(pick('turboAt')))),
   };
 }
 
@@ -185,6 +206,8 @@ export function newGpBotMemory(p: number | GpBotProfile): GpBotMemory {
           mistakeRate: 0,
           topSpeedFactor: 1,
           followGap: 4,
+          driftLove: 0.6,
+          turboAt: 2,
         }
       : p;
   return {
@@ -212,9 +235,15 @@ const angleTo = (c: GpCar, x: number, z: number) => {
 function cornerSpeed(world: GpWorld, k: number, g: number): number {
   if (world.mode === 'real') {
     const df = GP_REAL_DOWNFORCE * g;
-    return k <= df ? GP_VMAX * 1.2 : Math.sqrt((GP_REAL_GRIP0 * g) / (k - df));
+    return k <= df ? gpVmaxOf('real') * 1.2 : Math.sqrt((GP_REAL_GRIP0 * g) / (k - df));
   }
-  return Math.sqrt((GP_LAT_ACC * g) / k);
+  // kart: o raio que ele faz é a velocidade sobre o giro máximo (que cai com a velocidade); sem escorregar
+  const vmax = gpVmaxOf('arcade');
+  for (let v = vmax * 1.1; v > 3; v -= 0.25) {
+    const yaw = (GP_ARC_YAW_LOW + (GP_ARC_YAW_HIGH - GP_ARC_YAW_LOW) * Math.min(1, v / vmax)) * g;
+    if (v * k <= yaw) return v;
+  }
+  return 3;
 }
 
 /**
@@ -248,7 +277,7 @@ export function gpBotInput(world: GpWorld, c: GpCar, mem: GpBotMemory, rng: () =
 
   // ---- box: decide uma vez, ao entrar na última volta, pelo desgaste ----
   const lapsDone = c.laps.length;
-  if (race && !mem.pitDecided && lapsDone === GP_LAPS - 1) {
+  if (race && !mem.pitDecided && lapsDone === GP_LAPS - 1 && world.mode === 'real') {
     mem.pitDecided = true;
     mem.pit = c.wear > 0.45 && rng() < 0.45;
   }
@@ -267,9 +296,11 @@ export function gpBotInput(world: GpWorld, c: GpCar, mem: GpBotMemory, rng: () =
   const ts = c.s + ahead;
   const rel = tr.rel(ts);
   const pc = tr.pitCenter(rel);
-  const goingToPit = mem.pit && pc !== null && tr.rel(c.s) < tr.pit.box + 2;
+  const pit = tr.pit;
+  const goingToPit = !!pit && mem.pit && pc !== null && tr.rel(c.s) < pit.box + 2;
   const leavingPit = c.surface === 'pit' && !mem.pit;
-  const edge = GP_HALF_WIDTH - 1.6;
+  // o carro inteiro no asfalto: o centro fica a meia largura (e um pouco) da borda
+  const edge = GP_HALF_WIDTH - GP_CAR_WID / 2 - 0.3;
   let lat: number;
   if (goingToPit) lat = pc!;
   else if (leavingPit && pc !== null) lat = pc;
@@ -287,9 +318,11 @@ export function gpBotInput(world: GpWorld, c: GpCar, mem: GpBotMemory, rng: () =
   const tyre = GP_SURFACE.asphalt.grip * (1 - c.wear * (1 - GP_GRIP_MIN));
   const g = tyre * P.skill * (1 + mem.cornerNoise);
   const brakeK = 1 - c.wear * (1 - GP_BRAKE_MIN);
-  const brakeBase = world.mode === 'real' ? GP_REAL_BRAKE0 * 0.8 : GP_BRAKE * 0.82;
+  // o freio que ele conta ter (o do Realista sobe um pouco com a velocidade)
+  const brakeBase = world.mode === 'real' ? (GP_REAL_BRAKE0 + GP_REAL_BRAKE_V2 * v * v) * 0.92 : GP_ARC_BRAKE * 0.82;
+  const vmax = gpVmaxOf(world.mode);
   const brake = brakeBase * brakeK * P.brakeBias * (mem.mistake ? 1.3 : 1);
-  let want = GP_VMAX * 1.05 * P.topSpeedFactor;
+  let want = vmax * 1.05 * P.topSpeedFactor;
   const look = (v * v) / (2 * brake) + 25;
   for (let dd = 4; dd < look; dd += 4) {
     const k = Math.abs(tr.curv[tr.index(c.s + dd)]!);
@@ -297,13 +330,13 @@ export function gpBotInput(world: GpWorld, c: GpCar, mem: GpBotMemory, rng: () =
     const vc = cornerSpeed(world, k, g);
     want = Math.min(want, Math.sqrt(vc * vc + 2 * brake * Math.max(0, dd - 3)));
   }
-  if (P.topSpeedFactor < 1) want = Math.min(want, GP_VMAX * P.topSpeedFactor);
-  if (goingToPit || (mem.pit && tr.rel(c.s) > tr.pit.inStart - 60 && tr.rel(c.s) < tr.pit.box)) {
-    const toPit = Math.max(0, tr.pit.inStart - tr.rel(c.s));
+  if (P.topSpeedFactor < 1) want = Math.min(want, vmax * P.topSpeedFactor);
+  if (pit && (goingToPit || (mem.pit && tr.rel(c.s) > pit.inStart - 60 && tr.rel(c.s) < pit.box))) {
+    const toPit = Math.max(0, pit.inStart - tr.rel(c.s));
     want = Math.min(want, Math.sqrt(GP_PIT_LIMIT ** 2 + 2 * brake * toPit));
   }
   // fora da pista: volta para o asfalto sem afundar o pé
-  if (c.surface === 'grass' || c.surface === 'gravel') want = Math.min(want, GP_VMAX * 0.5);
+  if (c.surface === 'grass' || c.surface === 'gravel') want = Math.min(want, vmax * 0.5);
 
   // ---- tráfego: ultrapassa por uma faixa livre ou segue a distância dele ----
   if (race && !goingToPit) {
@@ -314,12 +347,13 @@ export function gpBotInput(world: GpWorld, c: GpCar, mem: GpBotMemory, rng: () =
       const dx = o.x - c.x;
       const dz = o.z - c.z;
       const along = dx * fx + dz * fz;
-      if (along < 0 || along > 30) continue;
+      if (along < 0 || along > 30 + GP_CAR_LEN) continue;
       const side = -dx * fz + dz * fx;
-      if (Math.abs(side) > 2.4) continue;
+      if (Math.abs(side) > GP_CAR_WID * 0.7) continue;
       // mais rápido que o da frente: tenta passar (o agressivo tenta com menos diferença)
       if (t > mem.laneUntil && v > o.speed + 1.5 - P.aggression * 1.5 && along < 10 + P.aggression * 12) {
-        const opts = [o.d + 3.1, o.d - 3.1]
+        // faixa ao lado do outro carro: uma largura de carro e a folga
+        const opts = [o.d + GP_CAR_WID + GP_CAR_SIDE_GAP, o.d - GP_CAR_WID - GP_CAR_SIDE_GAP]
           .filter((x) => Math.abs(x) < edge)
           .sort((a, b) => Math.abs(a - c.d) - Math.abs(b - c.d));
         for (const lane of opts) {
@@ -330,8 +364,8 @@ export function gpBotInput(world: GpWorld, c: GpCar, mem: GpBotMemory, rng: () =
           }
         }
       }
-      const gap = 3.4 + P.followGap;
-      if (along < gap && Math.abs(side) < 2) want = Math.min(want, o.speed - (gap - along) * 0.7);
+      const gap = GP_CAR_LEN + P.followGap;
+      if (along < gap && Math.abs(side) < GP_CAR_WID * 0.6) want = Math.min(want, o.speed - (gap - along) * 0.7);
     }
   }
   want = Math.max(0, want);
@@ -343,6 +377,21 @@ export function gpBotInput(world: GpWorld, c: GpCar, mem: GpBotMemory, rng: () =
     for (let dd = 0; dd < 60; dd += 6) if (Math.abs(tr.curv[tr.index(c.s + dd)]!) > 1 / 150) drs = false;
   }
 
+  // ---- kart: derrapa nas curvas fechadas (o volante continua mirando a linha) e usa o turbo numa reta ----
+  let drift = false;
+  let turbo = false;
+  if (world.mode === 'arcade' && (race || world.phase === 'quali') && !c.finished) {
+    const kNear = Math.abs(tr.curv[tr.index(c.s + 6 + Math.abs(v) * 0.3)]!);
+    const tight = 1 / (25 + (1 - P.driftLove) * 40);
+    if (c.driftDir !== 0) drift = kNear > tight * 0.5;
+    else drift = P.driftLove > 0.15 && kNear > tight && c.driftAvail;
+    if (c.bar >= P.turboAt && c.boostT <= 0) {
+      let straightAhead = true;
+      for (let dd = 0; dd < 70; dd += 7) if (Math.abs(tr.curv[tr.index(c.s + dd)]!) > 1 / 150) straightAhead = false;
+      turbo = straightAhead || (race && t < mem.laneUntil);
+    }
+  }
+
   const err = want - v;
   // classificação: fora do box, já na pista, começa a volta lançada
   const lap =
@@ -351,22 +400,24 @@ export function gpBotInput(world: GpWorld, c: GpCar, mem: GpBotMemory, rng: () =
     c.qualiMs === null &&
     c.qualiHold <= 0 &&
     c.surface !== 'pit' &&
-    c.prog > tr.pit.outEnd;
+    c.prog > (pit ? pit.outEnd : -20);
   return {
     throttle: err > 0.4 ? 1 : err > -0.5 ? 0.35 : 0,
     brake: err < -1.2 ? clamp(-err / 6, 0.3, 1) : 0,
     steer,
     drs,
     lap,
+    drift,
+    turbo,
   };
 }
 
-/** A faixa `lat` está livre perto deste carro (ninguém ali de 7 m atrás a 10 m à frente)? */
+/** A faixa `lat` está livre perto deste carro (ninguém ali de um carro e meio atrás a dois à frente)? */
 function laneFree(world: GpWorld, c: GpCar, lat: number): boolean {
   for (const o of world.cars) {
     if (o === c || o.gone || o.ghost) continue;
     const ds = world.track.delta(c.s, o.s);
-    if (ds > -7 && ds < 10 && Math.abs(o.d - lat) < 2.3) return false;
+    if (ds > -GP_CAR_LEN * 1.5 && ds < GP_CAR_LEN * 2 && Math.abs(o.d - lat) < GP_CAR_WID + 0.4) return false;
   }
   return true;
 }

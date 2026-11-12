@@ -167,10 +167,15 @@ export interface DesmoronaRoomState {
 /** O Fox GP em sala (spec 078): fases, horas, vagas, cores, grid, chegadas e quem saiu. As posições vêm no fluxo "pos". */
 export interface FoxGpRoomState {
   me: string | null;
+  /** Bots da sala (spec 081, 12.4): vaga, nome; o total escolhido (0 = só gente) e a dificuldade. */
+  bots?: { id: string; name: string }[];
+  fill?: number;
+  botLevel?: 'facil' | 'medio' | 'dificil';
   /** Quem simula a partida (o líder quando ela começou). */
   host: string | null;
   /** A pintura de cada um (garagem). */
-  paints: Record<string, { body: string; accent: string; pattern: string; number: number }>;
+  /** O carro de cada um (spec 081): pelo e as pinturas do F1 e do kart (a sala usa a do veículo do modo). */
+  paints: Record<string, unknown>;
   stage: 'quali' | 'grid' | 'race' | null;
   qualiAt: number | null;
   raceAt: number | null;

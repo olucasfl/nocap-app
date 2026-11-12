@@ -162,12 +162,12 @@ describe('rede do Fox GP (líder simula, aparelhos preveem)', () => {
 
   it('entrada repetida, velha ou quebrada não entra duas vezes na fila', () => {
     const s = setup(0, 0);
-    const pkt: GpInputPacket = { v: GP_NET_VERSION, rows: [[1, 1, 0, 0, 0, 0], [2, 1, 0, 0, 0, 0]] };
+    const pkt: GpInputPacket = { v: GP_NET_VERSION, rows: [[1, 1, 0, 0, 0, 0, 0, 0], [2, 1, 0, 0, 0, 0, 0, 0]] };
     s.host.receive('a', pkt);
     s.host.receive('a', pkt);
-    s.host.receive('a', { v: GP_NET_VERSION, rows: [[3, 1, 0, 0, Number.NaN, 0] as never, [0, 1, 0, 0, 0, 0]] });
+    s.host.receive('a', { v: GP_NET_VERSION, rows: [[3, 1, 0, 0, Number.NaN, 0, 0, 0] as never, [0, 1, 0, 0, 0, 0, 0, 0]] });
     // versão antiga do protocolo: ignorado
-    s.host.receive('a', { v: GP_NET_VERSION - 1, rows: [[9, 1, 0, 0, 0, 0]] });
+    s.host.receive('a', { v: GP_NET_VERSION - 1, rows: [[9, 1, 0, 0, 0, 0, 0, 0]] });
     s.host.step({ throttle: 0, brake: 0, steer: 0 });
     s.host.step({ throttle: 0, brake: 0, steer: 0 });
     const snap = s.host.snapshot();

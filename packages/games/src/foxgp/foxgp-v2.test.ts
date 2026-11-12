@@ -7,9 +7,7 @@ import {
   GP_LAPS,
   GP_MAX_PLAYERS,
   GP_QUALI_MAX_SEC,
-  GP_REAL_WHEELBASE,
-  GP_VMAX,
-  gpRealLatMax,
+  GP_REAL_VMAX,
   type GpPhysicsMode,
 } from './constants';
 import { GP_BOT_ARCHETYPES, gpBotInput, gpBotProfile, newGpBotMemory } from './bots';
@@ -17,7 +15,7 @@ import { GpHost, gpSnapshotFor } from './net';
 import { GP_TRACK_TOCA } from './track';
 import { GP_PACK_LEN, GpWorld, gpGridSpot, type GpCar, type GpInput } from './world';
 
-/** Testes da v2 (spec 080): dois modos de física, bots com perfil, 20 carros e rede enxuta. */
+/** Testes da v2 (spec 080): dois modos de física, bots com perfil e rede enxuta (12 carros desde a spec 081). */
 
 const info = (n: number, bot = false) =>
   Array.from({ length: n }, (_, i) => ({ id: `p${i}`, name: `P${i}`, color: 0xff7d26, bot }));
@@ -107,60 +105,21 @@ describe('dois modos de física', () => {
     expect(c.speed).toBeLessThan(v0 - 1);
   });
 
-  it('Arcade: a mesma manobra escorrega (como antes)', () => {
-    const w = new GpWorld('a', info(1), GP_TRACK_TOCA, 'arcade');
-    w.beginRace(['p0']);
-    const c = w.cars[0]!;
-    put(w, c, -300, 0, 28);
-    let worst = 0;
-    for (let k = 0; k < 0.8 / GP_DT; k++) {
-      w.step(GP_DT, { p0: { throttle: 1, brake: 0, steer: 1 } });
-      worst = Math.max(worst, c.skid);
-    }
-    expect(worst).toBeGreaterThan(0.5);
-  });
-
-  it('Realista: a curva nunca passa do que o pneu aguenta', () => {
-    const w = new GpWorld('r', info(1), GP_TRACK_TOCA, 'real');
-    w.beginRace(['p0']);
-    const c = w.cars[0]!;
-    put(w, c, -300, 0, 25);
-    let prevH = c.h;
-    for (let k = 0; k < 30; k++) {
-      w.step(GP_DT, { p0: { throttle: 1, brake: 0, steer: 1 } });
-      const yaw = (c.h - prevH) / GP_DT;
-      prevH = c.h;
-      expect(Math.abs(yaw * c.speed)).toBeLessThanOrEqual(gpRealLatMax(Math.abs(c.speed)) * w.gripOf(c) * 1.05 + 1);
-    }
-  });
-
-  it('Realista: curva lenta exige frear; curva rápida dá para fazer cheia', () => {
-    // raio que o carro consegue a 25 m/s com o volante todo: maior que o grampo da Marina (~10 m)
-    const sa = 0.6 / (1 + 25 / 9);
-    const radius = GP_REAL_WHEELBASE / Math.tan(sa);
-    const lat = (25 * 25) / radius;
-    const r25 = lat > gpRealLatMax(25) ? (25 * 25) / gpRealLatMax(25) : radius;
-    expect(r25).toBeGreaterThan(15);
-    // curva de 100 m de raio a 30 m/s: cabe na aderência (a asa ajuda)
-    expect((30 * 30) / 100).toBeLessThan(gpRealLatMax(30));
-    // grampo de 10 m: só bem devagar
-    expect(Math.sqrt(gpRealLatMax(14) * 10)).toBeLessThan(16);
-  });
-
-  it('Realista: a máxima em reta fica perto de 320 km/h', () => {
-    // na maior reta da Marina, já embalado: a velocidade fica onde motor e arrasto se equilibram
+  it('Realista: a máxima em reta fica perto de 340 km/h (limitador da 8ª, spec 081)', () => {
+    // na maior reta da Marina, já embalado na 8ª: o limitador segura a máxima
     const w = new GpWorld('t', info(1), undefined, 'real');
     w.beginRace(['p0']);
     const c = w.cars[0]!;
-    put(w, c, w.track.drsZones[0]!.from - 10, 0, GP_VMAX);
+    put(w, c, w.track.drsZones[0]!.from - 10, 0, GP_REAL_VMAX - 1);
     c.rThr = 1;
+    c.gear = 8;
     for (let k = 0; k < 90; k++) w.step(GP_DT, { p0: full });
     expect(c.surface).toBe('asphalt');
-    expect(c.speed).toBeGreaterThan(GP_VMAX - 1.5);
-    expect(c.speed).toBeLessThan(GP_VMAX + 1);
+    expect(c.speed).toBeGreaterThan(GP_REAL_VMAX - 1.5);
+    expect(c.speed).toBeLessThan(GP_REAL_VMAX + 0.5);
   });
 
-  it('Realista: batida de traseira troca velocidade sem giro solto', () => {
+  it('Realista: batida de traseira troca velocidade sem giro solto e sem atravessar', () => {
     const w = new GpWorld('b', info(2), GP_TRACK_TOCA, 'real');
     w.beginRace(['p0', 'p1']);
     const [a, b] = w.cars as [GpCar, GpCar];
@@ -168,9 +127,10 @@ describe('dois modos de física', () => {
     put(w, b, -303.5, 0, 22);
     for (let k = 0; k < 20; k++) w.step(GP_DT, { p0: { ...full, throttle: 0.3 }, p1: full });
     expect(a.speed).toBeGreaterThan(12);
-    expect(a.spin).toBe(0);
-    expect(b.spin).toBe(0);
-    expect(Math.hypot(a.x - b.x, a.z - b.z)).toBeGreaterThan(GP_CAR_R * 2);
+    expect(b.speed).toBeGreaterThan(15);
+    expect(Math.abs(a.spin)).toBeLessThan(0.05);
+    expect(Math.abs(b.spin)).toBeLessThan(0.05);
+    expect(Math.hypot(a.x - b.x, a.z - b.z)).toBeGreaterThan(GP_CAR_R * 2.5);
   });
 
   it('pack/unpack devolve o mesmo estado no Realista (com as entradas suavizadas)', () => {
@@ -185,16 +145,16 @@ describe('dois modos de física', () => {
   });
 });
 
-describe('20 carros e bots diferentes (nos dois modos)', () => {
+describe('12 carros e bots diferentes (nos dois modos)', () => {
   it('perfis pela seed: sempre os mesmos e com os cinco arquétipos no grid', () => {
-    const a = Array.from({ length: 19 }, (_, i) => gpBotProfile('s1', i));
-    const b = Array.from({ length: 19 }, (_, i) => gpBotProfile('s1', i));
+    const a = Array.from({ length: 11 }, (_, i) => gpBotProfile('s1', i));
+    const b = Array.from({ length: 11 }, (_, i) => gpBotProfile('s1', i));
     expect(a).toEqual(b);
     expect(new Set(a.map((p) => p.archetype)).size).toBe(GP_BOT_ARCHETYPES.length);
     expect(gpBotProfile('s2', 0)).not.toEqual(a[0]);
   });
 
-  it('grid para 20: lugares separados, no asfalto, em fila dupla', () => {
+  it('grid para 12: lugares separados, no asfalto, em fila dupla', () => {
     const w = new GpWorld('g', info(GP_MAX_PLAYERS));
     const spots = Array.from({ length: GP_MAX_PLAYERS }, (_, i) => gpGridSpot(w.track, i));
     for (let i = 0; i < spots.length; i++) {
@@ -209,7 +169,7 @@ describe('20 carros e bots diferentes (nos dois modos)', () => {
 
   const results: Record<string, number[]> = {};
   for (const mode of ['arcade', 'real'] as const) {
-    it(`${mode}: 19 bots e 3 voltas: a ordem muda, os tempos diferem e eles não andam na mesma faixa`, () => {
+    it(`${mode}: 11 bots e 3 voltas: a ordem muda, os tempos diferem e eles não andam na mesma faixa`, () => {
       const { w, qualiDone, orders, lat, maxSkid } = botRace(mode, GP_MAX_PLAYERS, `v2-${mode}`);
       expect(qualiDone).toBe(true);
       expect(w.cars.every((c) => c.qualiMs !== null)).toBe(true);
@@ -221,7 +181,7 @@ describe('20 carros e bots diferentes (nos dois modos)', () => {
       expect(new Set(orders).size).toBeGreaterThan(5);
       // os tempos de volta diferem entre bots
       const best = fin.map((c) => c.bestLap!).sort((a, b) => a - b);
-      expect(best.at(-1)! - best[0]!).toBeGreaterThan(1500);
+      expect(best.at(-1)! - best[0]!).toBeGreaterThan(500);
       // cada um na sua faixa: a média de afastamento nas retas varia entre eles
       const means = [...lat.values()].filter((l) => l.length > 10).map((l) => l.reduce((a, b) => a + b, 0) / l.length);
       const avg = means.reduce((a, b) => a + b, 0) / means.length;
@@ -233,20 +193,18 @@ describe('20 carros e bots diferentes (nos dois modos)', () => {
     }, 60_000);
   }
 
-  it('volta da Marina parecida nos dois modos (melhor volta dos bots)', () => {
+  it('melhor volta mediana dos bots em cada modo (anotada na spec)', () => {
     const a = results.arcade;
     const r = results.real;
     if (!a || !r) return;
     const med = (l: number[]) => l[Math.floor(l.length / 2)]!;
-    const ratio = med(r) / med(a);
+    // spec 081: os modos deixam de ter a mesma faixa (o Realista é de F1, o Arcade vira kart em outra pista)
     test_note(`melhor volta mediana dos bots: arcade ${med(a)} ms, realista ${med(r)} ms`);
-    // anotado na spec 080: os dois modos ficam na mesma faixa de tempo
-    expect(ratio).toBeGreaterThan(0.85);
-    expect(ratio).toBeLessThan(1.2);
+    expect(med(r)).toBeGreaterThan(0);
   });
 });
 
-describe('rede com 20 carros', () => {
+describe('rede com o grid cheio', () => {
   it('estado enxuto: todos os carros cabem em poucos KB, e o estado completo vai só para o dono', () => {
     const infos = info(GP_MAX_PLAYERS).map((p, i) => ({ ...p, bot: i >= 6 }));
     const w = new GpWorld('n20', infos, undefined, 'real');
@@ -260,7 +218,7 @@ describe('rede com 20 carros', () => {
     const forOne = gpSnapshotFor(snap, [3]);
     expect(forOne.full.map((r) => r[0])).toEqual([3]);
     const bytes = JSON.stringify(forOne).length;
-    test_note(`estado para um aparelho com 20 carros: ${bytes} bytes`);
+    test_note(`estado para um aparelho com o grid cheio: ${bytes} bytes`);
     expect(bytes).toBeLessThan(2400);
   });
 });

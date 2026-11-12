@@ -117,7 +117,7 @@ export const MODES: Record<RoomGame, { id: string; label: string; note: string }
     {
       id: 'classico',
       label: 'Grande Prêmio',
-      note: 'Classificação de 3 minutos (cada um faz a sua volta lançada quando quiser), grid pelos tempos e corrida de 3 voltas no Circuito da Marina, com até 20 carros. DRS nas zonas verdes das retas e vácuo atrás de outro carro; os pneus gastam e o box troca em 3 s. Depois que o primeiro chega, os outros têm 30 s. Sem ranking.',
+      note: 'Classificação de 5 minutos (cada um faz a sua volta lançada quando quiser), grid pelos tempos e corrida de 3 voltas com até 12 carros (bots podem completar a sala). Arcade: kart na Bala Track, com drift, turbo e placas de turbo. Realista: F1 no Circuito da Marina, com DRS, vácuo, pneus que gastam e box de 3 s. Depois que o primeiro chega, os outros têm 2 minutos. Sem ranking.',
     },
   ],
   desmorona: [
@@ -198,7 +198,9 @@ export function rulesSummary(s: RoomSnapshot): string {
   if (s.game === 'foxcap') return 'Fox Cap! · sem jogo escolhido';
   if (s.game === 'desmorona') return 'Desmorona! · Último de pé';
   if (s.game === 'foxgp')
-    return `Fox GP · Circuito da Marina · 3 voltas · ${s.foxgp?.physics === 'real' ? 'Realista' : 'Arcade'}`;
+    return s.foxgp?.physics === 'real'
+      ? 'Fox GP · Circuito da Marina · 3 voltas · Realista'
+      : 'Fox GP · Bala Track · 3 voltas · Arcade';
   if (s.game === 'pingpong') return 'Ping Fox! · 1 contra 1 · 11 pontos';
   if (s.game === 'foxshot') return `Counter Fox · Mata-mata · ${s.foxshot?.minutes ?? 5} min`;
   if (s.game === 'bola' && s.bola) {
@@ -225,6 +227,10 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
   // Fox GP: a física é da sala inteira (o líder simula todos os carros) e só o líder muda
   if (s.game === 'foxgp') {
     const cur = (s.settings as unknown as { physics?: string }).physics === 'real' ? 'real' : 'arcade';
+    const fill = (s.settings as unknown as { fill?: number }).fill ?? 0;
+    const level = (s.settings as unknown as { botLevel?: string }).botLevel ?? 'medio';
+    const people = s.members.length;
+    const bots = fill === 0 ? 0 : Math.max(0, Math.min(12, fill) - people);
     return [
       {
         id: 'physics',
@@ -236,8 +242,33 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
         note:
           cur === 'real'
             ? 'Realista: a curva tem limite; pediu demais, o carro abre e perde velocidade (sem escorregar de lado).'
-            : 'Arcade: o carro escorrega de lado e perdoa mais.',
+            : 'Arcade: kart com drift e turbo de 3 níveis; sem pneu, vácuo, box nem DRS.',
       },
+      {
+        id: 'fill',
+        label: 'BOTS',
+        values: ['0', '4', '6', '8', '10', '12'],
+        current: String(fill),
+        format: (v) => (v === '0' ? 'Sem bots' : `${v} carros`),
+        patch: (v) => ({ fill: Number(v) }),
+        note:
+          fill === 0
+            ? 'Só gente. Escolha um total para os bots completarem a sala.'
+            : `${people} ${people === 1 ? 'pessoa' : 'pessoas'} + ${bots} ${bots === 1 ? 'bot' : 'bots'} = ${people + bots}. Quando entra mais gente, sai um bot.`,
+      },
+      ...(fill === 0
+        ? []
+        : [
+            {
+              id: 'botLevel',
+              label: 'DIFICULDADE',
+              values: ['facil', 'medio', 'dificil'],
+              current: level,
+              format: (v: string) => (v === 'facil' ? 'Fácil' : v === 'dificil' ? 'Difícil' : 'Médio'),
+              patch: (v: string) => ({ botLevel: v }),
+              note: 'Os bots largam junto e o líder simula cada um; não entram em ranking.',
+            } as RuleDef,
+          ]),
     ];
   }
   if (s.game === 'desmorona' || s.game === 'bola' || s.game === 'pingpong' || s.game === 'foxshot' || s.game === 'foxcap')

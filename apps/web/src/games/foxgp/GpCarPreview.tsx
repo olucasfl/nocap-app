@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
-import type { GpPaint } from '@nocap/games';
+import type { GpKartPaint, GpPaint } from '@nocap/games';
 import { buildCar, type CarModel } from './car-model';
+import { buildKart, kartReady, preloadKart, type KartModel } from './kart-model';
 
 /**
  * Prévia 3D do carro em tempo real (garagem, tela inicial e lobby): luz de estúdio com reflexo na pintura, chão, o carro
@@ -15,15 +16,23 @@ export function GpCarPreview({
   className,
   label = 'Prévia do carro',
   interactive = true,
+  vehicle = 'f1',
+  kart,
 }: {
   fur: number;
   paint: GpPaint;
+  /** A pintura do kart (quando o veículo é o kart). */
+  kart?: GpKartPaint | null;
   className?: string;
   label?: string;
   interactive?: boolean;
+  /** Qual veículo mostrar (o kart baixa na hora, se preciso). */
+  vehicle?: 'f1' | 'kart';
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
-  const live = useRef<{ setCar: (fur: number, paint: GpPaint) => void } | null>(null);
+  const live = useRef<{
+    setCar: (fur: number, paint: GpPaint, vehicle: 'f1' | 'kart', kart?: GpKartPaint | null) => void;
+  } | null>(null);
   useEffect(() => {
     const cv = ref.current;
     if (!cv) return undefined;
@@ -54,16 +63,23 @@ export function GpCarPreview({
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     scene.add(floor);
-    let car: CarModel | null = null;
-    const setCar = (f: number, p: GpPaint) => {
-      if (car) {
-        scene.remove(car.group);
-        car.dispose();
-      }
-      car = buildCar({ fur: f, paint: p });
-      scene.add(car.group);
+    let car: CarModel | KartModel | null = null;
+    let want = 0;
+    const setCar = (f: number, p: GpPaint, v: 'f1' | 'kart', k?: GpKartPaint | null) => {
+      const n = ++want;
+      const put = () => {
+        if (n !== want) return;
+        if (car) {
+          scene.remove(car.group);
+          car.dispose();
+        }
+        car = v === 'kart' && kartReady() ? buildKart({ fur: f, paint: p, kart: k }) : buildCar({ fur: f, paint: p });
+        scene.add(car.group);
+      };
+      if (v === 'kart' && !kartReady()) void preloadKart().then(put, put);
+      else put();
     };
-    setCar(fur, paint);
+    setCar(fur, paint, vehicle, kart);
     live.current = { setCar };
     let yaw = 0.7;
     let pitch = 0.32;
@@ -123,7 +139,9 @@ export function GpCarPreview({
         spin *= Math.exp(-dt * 2.5);
         if (idle > 3 && !reduced) yaw += dt * 0.35;
       }
-      if (car) car.tail.rotation.y = reduced ? 0 : Math.sin(t * 5) * 0.25;
+      if (car && 'kart' in car)
+        (car as KartModel).update(dt, { steer: reduced ? 0 : Math.sin(t * 0.8) * 0.5, throttle: 0, brake: 0, speed: 0, boost: 0 });
+      else if (car) car.tail.rotation.y = reduced ? 0 : Math.sin(t * 5) * 0.25;
       const dist = 9;
       camera.position.set(Math.sin(yaw) * Math.cos(pitch) * dist, 0.8 + Math.sin(pitch) * dist, Math.cos(yaw) * Math.cos(pitch) * dist);
       camera.lookAt(0, 0.55, 0);
@@ -151,8 +169,8 @@ export function GpCarPreview({
     // o carro muda pelo efeito de baixo, sem recriar a cena
   }, [interactive]);
   useEffect(() => {
-    live.current?.setCar(fur, paint);
-  }, [fur, paint]);
+    live.current?.setCar(fur, paint, vehicle, kart);
+  }, [fur, paint, vehicle, kart]);
   return (
     <canvas
       ref={ref}

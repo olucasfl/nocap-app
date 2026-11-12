@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ATR_ROOM_COLORS, GP_ROOM_COLORS } from '@nocap/games';
+import { ATR_ROOM_COLORS } from '@nocap/games';
+import { GpRoomCars } from '@/games/foxgp/GpLobbyGarage';
 import { acceptRequest, fetchFriends, sendRequest, type RelationState } from '@/lib/friends';
 import { Check, Crown } from '@/components/icons';
 import { FoxAvatar } from '@/components/HubArt';
@@ -170,9 +171,9 @@ function ColorPicker({ snapshot, me }: { snapshot: RoomSnapshot; me: string | un
   const owner = (hex: string) => Object.entries(colors).find(([id, h]) => h === hex && id !== me)?.[0];
   const nameOf = (id?: string) => snapshot.members.find((m) => m.id === id)?.username;
   const mine = me ? colors[me] : undefined;
-  // Fox GP: 10 cores; com todas usadas (mais de 10 na sala) a cor pode repetir
-  const palette = snapshot.game === 'foxgp' ? GP_ROOM_COLORS : ATR_ROOM_COLORS;
-  const full = snapshot.game === 'foxgp' && palette.every((c) => owner(c.hex));
+  // (o Fox GP não escolhe cor: cada um entra com o carro da garagem)
+  const palette = ATR_ROOM_COLORS;
+  const full = false;
   return (
     <section className="lb3-colors" aria-label="Cor da sua raposa">
       <div className="lb3-colors-head">
@@ -259,7 +260,8 @@ export function MembersPanel({
       {free > emptyShown && (
         <p className="mono lb3-more-slots">+{free - emptyShown} vagas livres</p>
       )}
-      {colored && <ColorPicker snapshot={snapshot} me={me} />}
+      {colored && snapshot.game !== 'foxgp' && <ColorPicker snapshot={snapshot} me={me} />}
+      {snapshot.game === 'foxgp' && <GpRoomCars snapshot={snapshot} />}
     </div>
   );
 }

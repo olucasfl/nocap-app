@@ -149,4 +149,28 @@ test('duas janelas: classificação, grid, corrida pela sala e pódio', async ({
   await expect(A.getByTestId('gp-final')).toBeVisible({ timeout: 15_000 });
   await expect(B.getByTestId('gp-final')).toBeVisible({ timeout: 15_000 });
   await expect(A.getByTestId('gp-final-row-0')).toContainText('DNF');
+
+  // a Bia sai do pódio: vai direto para a tela do Fox GP, sem nenhum quadro da sala ou da lista do Fox Cap! (Fase 1.5)
+  await B.evaluate(() => {
+    const w = window as Window & { __saw?: string[]; __watch?: boolean };
+    w.__saw = [];
+    w.__watch = true;
+    const tick = () => {
+      if (document.querySelector('[data-testid="foxcap-foxgp"]')) w.__saw!.push('lista');
+      if (!document.querySelector('[data-testid="gp-final"]') && !document.querySelector('[data-testid="gp-home"]'))
+        w.__saw!.push(location.pathname);
+      if (w.__watch) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+  await B.getByTestId('final-leave').click();
+  await expect(B.getByTestId('gp-home')).toBeVisible({ timeout: 15_000 });
+  await expect(B.getByTestId('gp-home')).toHaveAttribute('data-back', '1');
+  await B.waitForTimeout(800);
+  const saw = await B.evaluate(() => {
+    const w = window as Window & { __saw?: string[]; __watch?: boolean };
+    w.__watch = false;
+    return w.__saw;
+  });
+  expect(saw).toEqual([]);
 });

@@ -2,7 +2,7 @@ import type { GpInput } from '@nocap/games';
 import { isTyping } from '@/lib/game-chat-state';
 import { gpActionOf } from './gp-settings';
 
-type Key = 'gas' | 'brake' | 'left' | 'right' | 'drs';
+type Key = 'gas' | 'brake' | 'left' | 'right' | 'drs' | 'drift';
 
 /** Quão rápido o volante vai de reto a todo virado (por segundo) com tecla ou botão (que são tudo ou nada). */
 const STEER_IN = 5.5;
@@ -25,6 +25,7 @@ const none = (): Record<Key, boolean> => ({
   left: false,
   right: false,
   drs: false,
+  drift: false,
 });
 
 /**
@@ -54,7 +55,7 @@ export class GpControls {
   private keyDown = (e: KeyboardEvent) => {
     if (isTyping(e)) return;
     const a = gpActionOf(e.code);
-    if (a === 'gas' || a === 'brake' || a === 'left' || a === 'right' || a === 'drs') {
+    if (a === 'gas' || a === 'brake' || a === 'left' || a === 'right' || a === 'drs' || a === 'drift') {
       this.keys[a] = true;
       if (a === 'drs') this.drsQueued = true;
       e.preventDefault();
@@ -63,7 +64,7 @@ export class GpControls {
 
   private keyUp = (e: KeyboardEvent) => {
     const a = gpActionOf(e.code);
-    if (a === 'gas' || a === 'brake' || a === 'left' || a === 'right' || a === 'drs')
+    if (a === 'gas' || a === 'brake' || a === 'left' || a === 'right' || a === 'drs' || a === 'drift')
       this.keys[a] = false;
   };
 
@@ -97,6 +98,7 @@ export class GpControls {
       brake: on('brake') ? 1 : 0,
       steer: this.steer,
       drs,
+      drift: on('drift'),
     };
   }
 

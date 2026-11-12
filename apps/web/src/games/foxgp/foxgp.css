@@ -245,10 +245,22 @@
   background: var(--gp-hud);
   pointer-events: none;
 }
+/* rótulo em cima, selos (modo, vácuo) embaixo dele e a marcha à direita: com o selo do vácuo nada sai do painel */
 .gpx-speed-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 8px;
+  row-gap: 4px;
+  align-items: start;
+}
+.gpx-speed-top > .gpx-gear {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+.gpx-tags {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 .gpx-speed-top > small {
   font-size: 12px;
@@ -873,9 +885,84 @@
   margin: 0;
   color: var(--gp-muted);
 }
+.gp-pick-modes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.gp-pick-mode-card {
+  padding: 12px;
+  border: 2px solid var(--gp-line-2);
+  background: var(--gp-panel-2);
+  color: var(--gp-text);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s, transform 0.1s;
+}
+.gp-pick-mode-card:hover {
+  border-color: var(--gp-accent-soft);
+}
+.gp-pick-mode-card.is-on {
+  border-color: var(--gp-accent);
+  background: var(--gp-panel-on);
+  box-shadow: 0 0 10px rgba(255, 125, 38, 0.2);
+}
+.gp-pick-mode-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.gp-pick-mode-title {
+  font-family: var(--gp-display);
+  font-weight: 800;
+  font-style: italic;
+  font-size: 17px;
+  text-transform: uppercase;
+  color: var(--gp-text);
+}
+.gp-pick-mode-card.is-on .gp-pick-mode-title {
+  color: var(--gp-accent);
+}
+.gp-pick-mode-tag {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 6px;
+  background: var(--gp-panel);
+  border: 1px solid var(--gp-line);
+  color: var(--gp-text-3);
+  border-radius: 2px;
+}
+.gp-pick-mode-desc {
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--gp-text-3);
+  margin: 0;
+  flex: 1;
+}
+.gp-pick-mode-best {
+  font-size: 11px;
+  color: var(--gp-muted);
+  border-top: 1px solid var(--gp-line);
+  padding-top: 4px;
+  margin-top: 2px;
+}
+.gp-pick-mode-best b {
+  color: var(--gp-text);
+}
+.gp-pick-bots-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 .gp-chips {
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 6px;
 }
 .gp-chip {
@@ -901,6 +988,72 @@
 }
 .gp-pick-btns .gp-tbtn {
   flex: 1;
+  min-width: 0;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+@media (max-width: 420px) {
+  .gp-pick-btns .gp-tbtn {
+    font-size: 17px;
+  }
+}
+/* Antes de correr na tela baixa (celular deitado): modos à esquerda, adversários e botões à direita, sem rolagem */
+@media (max-height: 520px) and (orientation: landscape) {
+  .gp-pick {
+    padding: 8px;
+  }
+  .gp-pick-card {
+    width: min(860px, 100%);
+    max-height: calc(100dvh - 16px);
+    padding: 12px 14px;
+    gap: 8px 14px;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    grid-template-areas:
+      'k k'
+      'h h'
+      'm b'
+      'm g'
+      'm x';
+    align-content: start;
+  }
+  .gp-pick-card > .gp-kicker {
+    grid-area: k;
+  }
+  .gp-pick-card h2 {
+    grid-area: h;
+    font-size: 22px;
+  }
+  .gp-pick-modes {
+    grid-area: m;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+  .gp-pick-mode-card {
+    padding: 8px 10px;
+    gap: 3px;
+  }
+  .gp-pick-mode-desc {
+    display: none;
+  }
+  .gp-pick-bots-section {
+    grid-area: b;
+  }
+  .gp-pick-card > [data-testid='gp-pick-garage'] {
+    grid-area: g;
+  }
+  .gp-pick-btns {
+    grid-area: x;
+  }
+  .gp-pick-card .gp-tbtn {
+    height: 36px;
+    padding: 0 10px;
+    font-size: 15px;
+    white-space: nowrap;
+  }
+  .gp-chip {
+    min-height: 34px;
+    font-size: 16px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -931,5 +1084,200 @@
   }
   100% {
     opacity: 0;
+  }
+}
+
+/* opção de tremida no menu Comandos */
+.gpc-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 4px;
+  font-size: 14px;
+  color: var(--gp-text-2, #c9cfdd);
+  cursor: pointer;
+}
+.gpc-toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--gp-accent);
+}
+
+/* ---- sala: os carros de cada um e "Ver carro" (spec 081, Fase 8) ---- */
+.gp-room-cars {
+  margin-top: 12px;
+}
+.gp-room-cars h3 {
+  margin: 0 0 6px;
+  font-size: 13px;
+}
+.gp-room-cars ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.gp-room-cars li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.gp-car-badge {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 22px;
+  border: 3px solid;
+  color: #fff;
+  font: italic 800 12px var(--gp-display, sans-serif);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+.gp-car-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gp-room-cars button {
+  font-size: 12px;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+.gp-see {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  background: rgba(11, 14, 23, 0.75);
+}
+.gp-see-card {
+  width: min(560px, calc(100vw - 32px));
+  padding: 16px;
+  background: var(--gp-panel, #141a2b);
+  border: 1px solid var(--gp-line, #2b3348);
+  color: var(--gp-text, #fff);
+  display: grid;
+  gap: 10px;
+}
+.gp-see-car {
+  width: 100%;
+  height: min(46vh, 320px);
+}
+
+/* DNF: a contagem esquenta nos últimos 30 s (spec 081, 9.2) */
+.gpx-dnf[data-hot='1'] {
+  background: #ff3b30;
+  animation: gpx-dnf-hot 0.9s ease-in-out infinite;
+}
+@keyframes gpx-dnf-hot {
+  50% {
+    opacity: 0.75;
+  }
+}
+/* lembrete da volta lançada: mais forte depois de 30 s e no último minuto */
+.gpx-lapcall[data-urgent] {
+  border-color: #ff3b30;
+  box-shadow: 0 0 0 3px rgba(255, 59, 48, 0.4);
+}
+.gpx-lapcall-last {
+  color: #ff3b30;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gpx-dnf[data-hot='1'] {
+    animation: none;
+  }
+}
+
+/* ---- pneus e box (spec 081, Fase 10): barra por faixa, ícone piscando, faixa do box ---- */
+.gpx-tyre[data-level='1'] i {
+  background: #ffb020;
+}
+.gpx-tyre[data-level='2'] i,
+.gpx-tyre[data-level='3'] i {
+  background: var(--gp-red);
+}
+.gpx-tyre[data-level='2'] span,
+.gpx-tyre[data-level='3'] span {
+  outline: 2px solid var(--gp-red);
+}
+.gpx-tyre small {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.gpx-tyre-icon {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: var(--gp-red);
+  stroke-width: 3;
+  animation: gpx-blink 0.7s steps(2, start) infinite;
+}
+@keyframes gpx-blink {
+  to {
+    opacity: 0.2;
+  }
+}
+.gpx-box {
+  position: absolute;
+  right: max(var(--hud-pad), env(safe-area-inset-right));
+  top: 36%;
+  display: grid;
+  gap: 4px;
+  min-width: 210px;
+  padding: 8px 14px 10px 34px;
+  background: #ffd23a;
+  color: #0b0e17;
+  transform: skewX(-8deg);
+  pointer-events: none;
+}
+.gpx-box b {
+  font: italic 900 18px var(--gp-display);
+  text-transform: uppercase;
+}
+.gpx-box small {
+  font-weight: 700;
+  font-size: 12px;
+}
+.gpx-box-arrow {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font: 900 26px var(--gp-display);
+}
+.gpx-box-bar {
+  position: relative;
+  height: 5px;
+  background: rgba(11, 14, 23, 0.25);
+  overflow: hidden;
+}
+.gpx-box-bar i {
+  position: absolute;
+  inset: 0;
+  transform-origin: left;
+  background: #0b0e17;
+}
+.gpx-box[data-near='1'] {
+  background: #ff3b30;
+  color: #fff;
+  animation: gpx-box-in 0.4s var(--gp-ease);
+}
+@keyframes gpx-box-in {
+  from {
+    transform: skewX(-8deg) scale(1.15);
+  }
+}
+.gp-play[data-touch='1'] .gpx-box {
+  top: 22%;
+  min-width: 160px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gpx-tyre-icon,
+  .gpx-box[data-near='1'] {
+    animation: none;
   }
 }

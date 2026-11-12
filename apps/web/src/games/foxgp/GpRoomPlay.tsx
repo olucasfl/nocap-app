@@ -1,10 +1,11 @@
+import { gpMarkBack } from './gp-best';
 import { useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import type { GpPlayerInfo } from '@nocap/games';
 import { at, leaveRoom, type RoomSnapshot } from '@/lib/rooms';
 import { GpPlay, type GpOnline, type GpRoomLive } from './GpPlay';
 import { hexNum } from './format';
-import { paintFromRoom } from './garage';
+import { carFromRoom } from './garage';
 import './foxgp.css';
 
 const nameOf = (id: string, username: string | undefined) =>
@@ -25,9 +26,14 @@ export function GpRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       .sort((a, b) => a[1] - b[1])
       .map(([id]) => ({
         id,
-        name: nameOf(id, members.find((m) => m.id === id)?.username),
-        color: hexNum(info.colors[id]),
-        paint: paintFromRoom(info.paints?.[id]) ?? undefined,
+        // bots da sala (12.4): o nome vem da sala; quem simula é o líder
+        bot: id.startsWith('bot:'),
+        name: id.startsWith('bot:')
+          ? (info.bots?.find((b) => b.id === id)?.name ?? 'Bot')
+          : nameOf(id, members.find((m) => m.id === id)?.username),
+        color: carFromRoom(info.paints?.[id])?.fur ?? hexNum(info.colors[id]),
+        paint: carFromRoom(info.paints?.[id])?.f1,
+        kart: carFromRoom(info.paints?.[id])?.kart,
       }));
     // quem entrou com a corrida andando não está nas vagas: só assiste
     return {
@@ -36,6 +42,7 @@ export function GpRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       hostId,
       infos: list,
       physics: info.physics ?? 'arcade',
+      botLevel: info.botLevel ?? 'medio',
     };
     // a lista só muda se mudarem as vagas: nomes novos no meio da partida não recriam a cena
   }, [seed, meId, hostId, slotKey, info?.physics]);
@@ -59,7 +66,10 @@ export function GpRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         online={online}
         live={live}
         onExit={() => {
-          void leaveRoom().then(() => navigate({ to: '/fox-cap', search: { jogo: 'foxgp' } }));
+          // a tela do Fox GP primeiro, a saída da sala depois: sair antes fecha a sala na hora e a tela da sala aparece no
+          // meio (spec 081, Fase 1.5)
+          gpMarkBack();
+          void navigate({ to: '/fox-cap', search: { jogo: 'foxgp' } }).then(() => leaveRoom());
         }}
       />
     </div>

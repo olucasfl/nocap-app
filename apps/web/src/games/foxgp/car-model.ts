@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { GpPaint } from '@nocap/games';
 import { bluish } from './format';
+import { buildFoxHead } from './fox-head';
 
 /** Pintura padrão: o corpo segue o pelo e o detalhe é o azul do boné. */
 export function defaultPaint(fur: number): GpPaint {
@@ -284,7 +285,10 @@ function geos(): Geos {
 
 const hex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
 
-/** A pintura vista de cima: a cor da carroceria com o desenho escolhido e o número no bico e na tampa do motor. */
+/**
+ * A pintura vista de cima (spec 081, 7.2): a cor da carroceria com um dos 12 desenhos (detalhe e terceira cor). O número
+ * não fica mais na textura (lia espelhado em alguma vista): vira adesivo (`numberDecal`).
+ */
 function paintTexture(paint: GpPaint): THREE.CanvasTexture {
   const W = 256;
   const H = 512;
@@ -295,55 +299,150 @@ function paintTexture(paint: GpPaint): THREE.CanvasTexture {
   // v = 0 é a traseira e v = 1 o nariz; no canvas y = 0 é o topo: y = (1 − v) · H
   const yOf = (z: number) => (1 - (z - TAIL_Z) / (NOSE_Z - TAIL_Z)) * H;
   const xOf = (x: number) => ((x + 1) / 2) * W;
+  const A = hex(paint.accent);
+  const T = hex(paint.third ?? 0xf4f6fb);
   if (g) {
     g.fillStyle = hex(paint.body);
     g.fillRect(0, 0, W, H);
-    g.fillStyle = hex(paint.accent);
-    if (paint.pattern === 'faixa') {
-      g.fillRect(xOf(-0.09), 0, xOf(0.09) - xOf(-0.09), H);
-    } else if (paint.pattern === 'listras') {
-      for (const x of [-0.62, 0.5])
-        g.fillRect(xOf(x), yOf(0.5), xOf(x + 0.12) - xOf(x), yOf(-1.8) - yOf(0.5));
-      g.fillStyle = '#fff3e2';
-      for (const x of [-0.07, 0.04]) g.fillRect(xOf(x), 0, xOf(x + 0.03) - xOf(x), H);
-    } else if (paint.pattern === 'chevron') {
-      g.lineWidth = 14;
-      g.strokeStyle = hex(paint.accent);
-      for (const z of [2.5, 1.9, 1.3]) {
+    g.fillStyle = A;
+    g.strokeStyle = A;
+    switch (paint.pattern) {
+      case 'faixa':
+        g.fillRect(xOf(-0.09), 0, xOf(0.09) - xOf(-0.09), H);
+        break;
+      case 'listras':
+        for (const x of [-0.62, 0.5]) g.fillRect(xOf(x), yOf(0.5), xOf(x + 0.12) - xOf(x), yOf(-1.8) - yOf(0.5));
+        g.fillStyle = T;
+        for (const x of [-0.07, 0.04]) g.fillRect(xOf(x), 0, xOf(x + 0.03) - xOf(x), H);
+        break;
+      case 'chevron':
+        g.lineWidth = 14;
+        for (const z of [2.5, 1.9, 1.3]) {
+          g.beginPath();
+          g.moveTo(xOf(-0.45), yOf(z - 0.35));
+          g.lineTo(xOf(0), yOf(z));
+          g.lineTo(xOf(0.45), yOf(z - 0.35));
+          g.stroke();
+        }
+        break;
+      case 'duas':
+        for (const x of [-0.26, 0.14]) g.fillRect(xOf(x), 0, xOf(x + 0.12) - xOf(x), H);
+        g.fillStyle = T;
+        for (const x of [-0.14, 0.11]) g.fillRect(xOf(x), 0, xOf(x + 0.03) - xOf(x), H);
+        break;
+      case 'diagonal':
+        g.lineWidth = 26;
+        for (let k = -3; k < 6; k++) {
+          g.beginPath();
+          g.moveTo(0, k * 110);
+          g.lineTo(W, k * 110 + 160);
+          g.stroke();
+        }
+        break;
+      case 'flecha':
         g.beginPath();
-        g.moveTo(xOf(-0.45), yOf(z - 0.35));
-        g.lineTo(xOf(0), yOf(z));
-        g.lineTo(xOf(0.45), yOf(z - 0.35));
-        g.stroke();
+        g.moveTo(xOf(0), yOf(2.9));
+        g.lineTo(xOf(0.55), yOf(1.2));
+        g.lineTo(xOf(0.2), yOf(1.2));
+        g.lineTo(xOf(0.2), yOf(-2.4));
+        g.lineTo(xOf(-0.2), yOf(-2.4));
+        g.lineTo(xOf(-0.2), yOf(1.2));
+        g.lineTo(xOf(-0.55), yOf(1.2));
+        g.closePath();
+        g.fill();
+        break;
+      case 'metades':
+        g.fillRect(xOf(0), 0, W / 2, H);
+        g.fillStyle = T;
+        g.fillRect(xOf(-0.02), 0, xOf(0.02) - xOf(-0.02), H);
+        break;
+      case 'xadrez': {
+        const c = 18;
+        for (let y = yOf(2.95); y < yOf(1.7); y += c)
+          for (let x = 0; x < W; x += c) if ((Math.round(x / c) + Math.round(y / c)) % 2 === 0) g.fillRect(x, y, c, c);
+        break;
       }
-    }
-    // o número: círculo claro com o número na cor do carro
-    for (const [z, r] of [
-      [1.55, 30],
-      [-1.05, 36],
-    ] as const) {
-      const cx = xOf(0);
-      const cy = yOf(z);
-      g.save();
-      g.translate(cx, cy);
-      g.fillStyle = '#fff3e2';
-      g.beginPath();
-      g.ellipse(0, 0, r * 0.62, r, 0, 0, Math.PI * 2);
-      g.fill();
-      // vista de cima com o nariz para cima no canvas: o número fica de pé para quem olha de trás
-      g.rotate(Math.PI);
-      g.scale(0.55, 1);
-      g.fillStyle = hex(paint.body);
-      g.font = `italic 900 ${Math.round(r * 1.25)}px "Saira Condensed", Inter, system-ui, sans-serif`;
-      g.textAlign = 'center';
-      g.textBaseline = 'middle';
-      g.fillText(String(paint.number), 0, 2);
-      g.restore();
+      case 'ondas':
+        g.lineWidth = 16;
+        for (const off of [-0.45, 0.45]) {
+          g.beginPath();
+          for (let y = 0; y <= H; y += 8) {
+            const x = xOf(off + Math.sin(y / 40) * 0.12);
+            if (y === 0) g.moveTo(x, y);
+            else g.lineTo(x, y);
+          }
+          g.stroke();
+        }
+        break;
+      case 'raio':
+        g.beginPath();
+        g.moveTo(xOf(0.15), yOf(2.6));
+        g.lineTo(xOf(-0.25), yOf(0.6));
+        g.lineTo(xOf(0.05), yOf(0.6));
+        g.lineTo(xOf(-0.2), yOf(-1.8));
+        g.lineTo(xOf(0.3), yOf(0.9));
+        g.lineTo(xOf(0.0), yOf(0.9));
+        g.closePath();
+        g.fill();
+        break;
+      case 'pegadas':
+        g.fillStyle = T;
+        for (let k = 0; k < 9; k++) {
+          const x = xOf(k % 2 ? 0.32 : -0.32);
+          const y = 30 + k * 54;
+          g.beginPath();
+          g.ellipse(x, y, 11, 13, 0, 0, Math.PI * 2);
+          g.fill();
+          for (const [dx, dy] of [
+            [-12, -16],
+            [-4, -21],
+            [4, -21],
+            [12, -16],
+          ] as const)
+            g.fillRect(x + dx - 3, y + dy - 3, 6, 6);
+        }
+        break;
+      default:
+        break;
     }
   }
   const t = new THREE.CanvasTexture(cv);
   t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = 4;
+  return t;
+}
+
+/**
+ * O número do carro num adesivo (spec 081, 7.2): desenhado de frente (nunca espelhado), no estilo escolhido (cheio,
+ * contorno ou dentro de um círculo). O adesivo é um plano posto na superfície e virado para quem lê de fora.
+ */
+export function numberTexture(n: number, style: GpPaint['numStyle'], fg: number, bg: number): THREE.CanvasTexture {
+  const cv = document.createElement('canvas');
+  cv.width = 128;
+  cv.height = 128;
+  const g = cv.getContext('2d');
+  if (g) {
+    g.clearRect(0, 0, 128, 128);
+    if (style === 'circulo' || style === undefined) {
+      g.fillStyle = hex(bg);
+      g.beginPath();
+      g.arc(64, 64, 58, 0, Math.PI * 2);
+      g.fill();
+    }
+    g.font = 'italic 900 84px "Saira Condensed", Inter, system-ui, sans-serif';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    if (style === 'contorno') {
+      g.lineWidth = 7;
+      g.strokeStyle = hex(fg);
+      g.strokeText(String(n), 64, 68);
+    } else {
+      g.fillStyle = hex(fg);
+      g.fillText(String(n), 64, 68);
+    }
+  }
+  const t = new THREE.CanvasTexture(cv);
+  t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
 
@@ -400,17 +499,25 @@ export function buildCar(opts: { fur: number; paint?: GpPaint | null; pbr?: bool
   };
   const tex = paintTexture(paint);
   textures.push(tex);
-  const body = mat({ color: 0xffffff, map: tex, clear: true });
-  const accent = mat({ color: paint.accent, clear: true });
+  // acabamento (7.1): brilho com verniz, fosco, metálico, perolado
+  const fin = paint.finish ?? 'brilho';
+  const finish = {
+    clear: fin !== 'fosco',
+    rough: fin === 'fosco' ? 0.85 : fin === 'metal' ? 0.32 : 0.45,
+    metal: fin === 'metal' ? 0.75 : 0.05,
+  };
+  const body = mat({ color: 0xffffff, map: tex, ...finish });
+  if (fin === 'perola' && body instanceof THREE.MeshPhysicalMaterial) {
+    body.iridescence = 0.7;
+    body.iridescenceIOR = 1.6;
+  }
+  const accent = mat({ color: paint.wing ?? paint.accent, ...finish });
   const carbon = mat({ color: 0x141518, rough: 0.42, metal: 0.35 });
   const tail = mat({ color: 0x400000, emissive: 0xff1010 });
   const tyre = mat({ color: 0x161618, rough: 0.85 });
-  const rimM = mat({ color: 0x2c2c30, metal: 0.85, rough: 0.35 });
-  const band = mat({ color: 0xffd400, rough: 0.6 });
-  const fur = mat({ color: opts.fur, rough: 0.9 });
-  const white = mat({ color: 0xfff3e2, rough: 0.8 });
-  const dark = mat({ color: 0x15100c, rough: 0.4 });
-  const helmetM = mat({ color: paint.body, clear: true, rough: 0.3 });
+  const rimM = mat({ color: paint.rim ?? 0x2c2c30, metal: 0.85, rough: 0.35 });
+  // faixa do pneu (−1 = nenhuma: a cor do pneu)
+  const band = mat({ color: paint.band === -1 ? 0x161618 : (paint.band ?? 0xffd400), rough: 0.6 });
 
   const group = new THREE.Group();
   // o carro na escala e no sentido do jogo
@@ -435,21 +542,15 @@ export function buildCar(opts: { fur: number; paint?: GpPaint | null; pbr?: bool
   add(G.light, tail);
   const flap = add(G.flap, accent);
   flap.position.set(0, 1.02, -2.1);
-  // a raposa e o capacete
-  const fox = new THREE.Group();
-  add(G.foxFur, fur, fox);
-  add(G.foxWhite, white, fox);
-  add(G.foxDark, dark, fox);
-  add(G.helmet, helmetM, fox);
+  // a raposa (spec 081, 7.3): cabeça arredondada, capacete aberto na cor escolhida, sem cauda para fora
+  const head = buildFoxHead({ fur: opts.fur, helmet: paint.helmet ?? paint.body, collar: paint.accent, pbr });
+  mats.push(...head.mats);
+  const fox = head.group;
+  fox.position.set(0, 0.6, 0.16);
+  fox.rotation.y = Math.PI;
+  fox.scale.setScalar(1.35);
   car.add(fox);
   const tailG = new THREE.Group();
-  // gira em torno da base da cauda (atrás do santo antônio)
-  tailG.position.set(0, 0.98, -0.82);
-  const tf = add(G.tailFur, fur, tailG);
-  const tw = add(G.tailWhite, white, tailG);
-  tf.position.set(0, -0.98, 0.82);
-  tw.position.set(0, -0.98, 0.82);
-  car.add(tailG);
   // rodas: o pivô vira (frente) e a roda gira
   const wheels: THREE.Object3D[] = [];
   const wheelsF: THREE.Object3D[] = [];
@@ -464,10 +565,24 @@ export function buildCar(opts: { fur: number; paint?: GpPaint | null; pbr?: bool
       const w = new THREE.Mesh(geo, [tyre, rimM, band]);
       w.castShadow = true;
       piv.add(w);
+      addRimStyle(w, paint.rimStyle ?? 'raios', rimM, front ? 0.36 : 0.42);
       wheels.push(w);
       if (front) wheelsF.push(piv);
     }
   }
+  // o número em adesivos (bico, tampa do motor e as duas laterais), postos na superfície da pintura
+  const numTex = numberTexture(paint.number, paint.numStyle, paint.numStyle === 'circulo' || !paint.numStyle ? paint.body : 0xfff3e2, 0xfff3e2);
+  textures.push(numTex);
+  const numMat = new THREE.MeshBasicMaterial({
+    map: numTex,
+    transparent: true,
+    depthWrite: false,
+    polygonOffset: true,
+    polygonOffsetFactor: -2,
+    polygonOffsetUnits: -4,
+  });
+  mats.push(numMat);
+  placeNumbers(car, numMat);
   return {
     group,
     body: car,
@@ -483,4 +598,87 @@ export function buildCar(opts: { fur: number; paint?: GpPaint | null; pbr?: bool
       for (const t of textures) t.dispose();
     },
   };
+}
+
+/** Estilo do aro (7.1): liso (só o disco), 5 raios, furado ou turbina (peças pequenas na cor do aro). */
+function addRimStyle(wheel: THREE.Object3D, style: string, m: THREE.Material, w: number) {
+  if (style === 'liso') {
+    // tira os raios do desenho base: um disco liso por cima
+    for (const sg of [1, -1]) {
+      const d = new THREE.Mesh(new THREE.CylinderGeometry(0.245, 0.245, 0.01, 22).rotateZ(Math.PI / 2), m);
+      d.position.x = sg * (w / 2 + 0.02);
+      wheel.add(d);
+    }
+    return;
+  }
+  if (style === 'raios') return;
+  for (const sg of [1, -1]) {
+    const g = new THREE.Group();
+    g.position.x = sg * (w / 2 + 0.02);
+    if (style === 'furado') {
+      g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.245, 0.245, 0.01, 22).rotateZ(Math.PI / 2), m));
+      const holeM = new THREE.MeshBasicMaterial({ color: 0x0b0b0e });
+      for (let k = 0; k < 6; k++) {
+        const h = new THREE.Mesh(new THREE.CircleGeometry(0.04, 10), holeM);
+        h.rotation.y = (sg * Math.PI) / 2;
+        const a = (k * Math.PI) / 3;
+        h.position.set(sg * 0.007, Math.sin(a) * 0.15, Math.cos(a) * 0.15);
+        g.add(h);
+      }
+    } else {
+      for (let k = 0; k < 8; k++) {
+        const b = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.21, 0.05), m);
+        const a = (k * Math.PI) / 4;
+        b.position.set(0, Math.sin(a) * 0.12, Math.cos(a) * 0.12);
+        b.rotation.x = -a;
+        b.rotation.y = 0.5;
+        g.add(b);
+      }
+    }
+    wheel.add(g);
+  }
+}
+
+/**
+ * Põe os adesivos do número na superfície do carro (coordenadas da referência: nariz em +Z): acha a altura com um raio
+ * de cima para baixo (topo do bico e tampa do motor) e de fora para dentro (laterais). Cada um virado para ser lido de
+ * fora: o de cima com o topo do número para o nariz (de pé para quem vem atrás), cada lateral lida do seu lado.
+ */
+function placeNumbers(car: THREE.Group, m: THREE.Material) {
+  car.updateMatrixWorld(true);
+  const meshes: THREE.Mesh[] = [];
+  car.traverse((o) => {
+    if ((o as THREE.Mesh).isMesh) meshes.push(o as THREE.Mesh);
+  });
+  const ray = new THREE.Raycaster();
+  const toLocal = (p: THREE.Vector3) => car.worldToLocal(p.clone());
+  const hit = (from: THREE.Vector3, dir: THREE.Vector3) => {
+    ray.set(car.localToWorld(from.clone()), dir.clone().transformDirection(car.matrixWorld));
+    const h = ray.intersectObjects(meshes, false)[0];
+    return h ? toLocal(h.point) : null;
+  };
+  const plane = (size: number) => new THREE.PlaneGeometry(size, size);
+  // de cima: bico e tampa do motor
+  for (const [z, size] of [
+    [1.55, 0.5],
+    [-1.05, 0.6],
+  ] as const) {
+    const p = hit(new THREE.Vector3(0, 3, z), new THREE.Vector3(0, -1, 0));
+    if (!p) continue;
+    const d = new THREE.Mesh(plane(size), m);
+    d.rotation.set(-Math.PI / 2, 0, Math.PI);
+    d.position.set(p.x, p.y + 0.012, p.z);
+    d.userData.tag = 'number';
+    car.add(d);
+  }
+  // laterais (cada uma lida de fora)
+  for (const sg of [1, -1]) {
+    const p = hit(new THREE.Vector3(sg * 2, 0.42, -0.4), new THREE.Vector3(-sg, 0, 0));
+    if (!p) continue;
+    const d = new THREE.Mesh(plane(0.42), m);
+    d.rotation.y = (sg * Math.PI) / 2;
+    d.position.set(p.x + sg * 0.012, p.y, p.z);
+    d.userData.tag = 'number';
+    car.add(d);
+  }
 }
