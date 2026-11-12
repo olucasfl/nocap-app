@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { GP_ACTIONS, bindLabel, gpBindOwner, useGpControls, type GpAction } from './gp-settings';
+import { GP_ACTIONS, bindLabel, gpBindOwner, useGpControls, useGpShake, type GpAction } from './gp-settings';
 import './theme.css';
 import './gp-hud.css';
 
@@ -163,6 +163,7 @@ export function GpCommands({ touch, onClose }: { touch: boolean; onClose: () => 
                 </div>
               </div>
             )}
+            <ShakeToggle />
             <button type="button" className="gpc-reset" onClick={reset} data-testid="gp-bind-reset">
               Restaurar padrão
             </button>
@@ -170,5 +171,17 @@ export function GpCommands({ touch, onClose }: { touch: boolean; onClose: () => 
         )}
       </div>
     </div>
+  );
+}
+
+/** Tremida da tela no turbo e na zebra do kart: ligada por padrão; sempre desligada com movimento reduzido. */
+function ShakeToggle() {
+  const on = useGpShake((st) => st.on);
+  const set = useGpShake((st) => st.set);
+  return (
+    <label className="gpc-toggle">
+      <input type="checkbox" checked={on} onChange={(e) => set(e.target.checked)} data-testid="gp-shake" />
+      <span>Tremida da tela no turbo e na zebra (Arcade)</span>
+    </label>
   );
 }

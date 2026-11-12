@@ -12,7 +12,8 @@ import { GP_IDLE, type GpCar, type GpEvent, type GpInput, type GpWorld } from '.
  */
 
 /** Entrada empacotada: [seq, acelerar, frear, volante, DRS(0/1), iniciar volta(0/1)]. */
-export type GpInputRow = [number, number, number, number, number, number];
+/** [seq, acelerador, freio, volante, DRS, volta, drift, turbo] (spec 081: drift e turbo do kart). */
+export type GpInputRow = [number, number, number, number, number, number, number, number];
 
 /** O pacote de entrada leva as últimas entradas (o canal não garante entrega: a repetição cobre a perda). */
 export interface GpInputPacket {
@@ -23,10 +24,11 @@ export interface GpInputPacket {
 
 /**
  * Estado enxuto de um carro para o desenho: [vaga, x, z, direção, velocidade, volante, progresso, marcha, flags, pneu,
- * escorregão, vácuo]. Flags: 1 = no box, 2 = DRS aberto.
+ * escorregão, vácuo, nível do turbo, barra]. Flags: 1 = no box, 2 = DRS aberto, 4 = drift à esquerda, 8 = drift à
+ * direita, 16 = pulinho do drift (spec 081: os outros veem as faíscas e as chamas da cor certa).
  */
 export type GpLeanRow = number[];
-export const GP_LEAN_LEN = 12;
+export const GP_LEAN_LEN = 14;
 
 /** O estado do líder. */
 export interface GpSnapshot {
@@ -62,6 +64,8 @@ const packInput = (seq: number, i: GpInput): GpInputRow => [
   r(i.steer, 1000),
   i.drs ? 1 : 0,
   i.lap ? 1 : 0,
+  i.drift ? 1 : 0,
+  i.turbo ? 1 : 0,
 ];
 const unpackInput = (row: GpInputRow): GpInput => ({
   throttle: row[1],
@@ -69,6 +73,8 @@ const unpackInput = (row: GpInputRow): GpInput => ({
   steer: row[3],
   drs: row[4] === 1,
   lap: row[5] === 1,
+  drift: row[6] === 1,
+  turbo: row[7] === 1,
 });
 
 /** O estado enxuto de um carro. */
@@ -82,10 +88,16 @@ export function gpLean(c: GpCar): GpLeanRow {
     r(c.steer, 100),
     r(c.prog, 10),
     c.gear,
-    (c.pitHold > 0 || c.surface === 'pit' ? 1 : 0) | (c.drsOpen ? 2 : 0),
+    (c.pitHold > 0 || c.surface === 'pit' ? 1 : 0) |
+      (c.drsOpen ? 2 : 0) |
+      (c.driftDir < 0 ? 4 : 0) |
+      (c.driftDir > 0 ? 8 : 0) |
+      (c.hop > 0 ? 16 : 0),
     r(c.wear, 1000),
     r(c.skid, 10),
     r(c.slip, 100),
+    c.boostT > 0 ? c.boostLevel : 0,
+    r(c.bar, 100),
   ];
 }
 
@@ -120,7 +132,7 @@ export class GpHost {
     const q = this.queues.get(id) ?? [];
     const top = Math.max(this.acks.get(id) ?? -1, q.length ? q[q.length - 1]![0] : -1);
     for (const row of p.rows) {
-      if (!Array.isArray(row) || row.length !== 6 || !row.every((v) => typeof v === 'number' && Number.isFinite(v)))
+      if (!Array.isArray(row) || row.length !== 8 || !row.every((v) => typeof v === 'number' && Number.isFinite(v)))
         continue;
       if (row[0] > top) q.push(row);
     }
@@ -142,8 +154,8 @@ export class GpHost {
       }
       if (q && row !== this.last.get(c.id)) {
         this.acks.set(c.id, row[0]);
-        // repete pedal, volante e DRS; "iniciar volta" só vale uma vez
-        this.last.set(c.id, [row[0], row[1], row[2], row[3], row[4], 0]);
+        // repete pedal, volante, DRS e drift (segurar); "iniciar volta" e turbo (toque) só valem uma vez
+        this.last.set(c.id, [row[0], row[1], row[2], row[3], row[4], 0, row[6], 0]);
       }
       inputs[c.id] = unpackInput(row);
     }
@@ -369,6 +381,10 @@ export class GpClient {
         wear: s[8]!,
         skid: s[9]!,
         slip: s[10]!,
+        driftDir: (flags & 4) === 4 ? -1 : (flags & 8) === 8 ? 1 : 0,
+        hop: (flags & 16) === 16 ? 0.1 : 0,
+        boostLevel: s[11]!,
+        bar: s[12]!,
       });
       // estados velhos demais saem do buffer
       while (buf.length > 2 && buf[1]!.at < when - 200) buf.shift();

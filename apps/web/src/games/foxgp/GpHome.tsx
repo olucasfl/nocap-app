@@ -89,6 +89,7 @@ export function GpHome({
       <GpCarPreview
         fur={car.fur}
         paint={car.paint}
+        vehicle={(GP_HOME_VEHICLES[shown] ?? GP_HOME_VEHICLES[0]!).vehicle}
         className="gph-car"
         label="O seu carro, com a raposa no cockpit. Arraste para girar."
       />

@@ -9,10 +9,13 @@ import {
   GP_KERB_W,
   GP_LIMIT,
   GP_PIT_BOX_LEN,
+  GP_PAD_HALF,
+  GP_PAD_LEN,
   GP_PIT_HALF,
   GP_SAMPLE,
   type GpSurface,
 } from './constants';
+import { GP_TRACK_BALA } from './track-bala';
 
 /** A faixa do box: de que lado fica, a que distância do centro, onde abre, onde fica paralela, onde volta e a vaga. */
 export interface GpPitDef {
@@ -40,14 +43,30 @@ export interface GpTrackDef {
   noCut: readonly (readonly [number, number])[];
   /** Distância máxima do centro até a barreira (m). Onde outro trecho passa perto, a barreira fica no meio do caminho. */
   limit?: number;
-  pit?: GpPitDef;
+  /** A faixa do box; `null` = pista sem box (a do kart). Sem o campo, o box padrão (pistas antigas). */
+  pit?: GpPitDef | null;
+  /**
+   * Distância mínima da barreira ao centro onde outro trecho passa perto (m). Padrão: asfalto, zebra e uma folga; numa
+   * pista de kart com faixas paralelas a barreira pode ficar mais perto (só o asfalto e uma folga).
+   */
+  wallMin?: number;
+  /** Placas de turbo (spec 081, 6B.4): distância do traçado do começo da placa e o afastamento do centro (m). */
+  pads?: readonly { s: number; d: number }[];
   /** Onde começam o setor 2 e o setor 3 (índices de pontos de controle). */
   sectors?: readonly [number, number];
   /** Arquibancadas: de um ponto de controle a outro, do lado indicado (só desenho). */
   stands?: readonly { from: number; to: number; side: 1 | -1; name: string }[];
   /** Área verde de público (só desenho): polígono nos mesmos pontos do traçado. */
   park?: readonly (readonly [number, number])[];
+  /**
+   * Trechos de barreira de pilha de pneus (o kart quica para trás, spec 081, 6B.4), de um ponto de controle a outro, do
+   * lado indicado. No resto a barreira é muro (batida normal).
+   */
+  tyreWalls?: readonly { from: number; to: number; side: 1 | -1 }[];
 }
+
+/** O tipo da barreira: muro (batida normal) ou pilha de pneus (rebate o kart para trás). */
+export type GpWallKind = 'metal' | 'tyres';
 
 const PIT_DEFAULT: GpPitDef = { side: 1, offset: 13, inStart: -95, inEnd: -65, outStart: 20, outEnd: 50, box: -18 };
 
@@ -290,7 +309,9 @@ export class GpTrack {
   readonly wallR: Float64Array;
   readonly noCut: Uint8Array;
   readonly limit: number;
-  readonly pit: GpPitDef;
+  /** A faixa do box (null = pista sem box). */
+  readonly pit: GpPitDef | null;
+  readonly pads: readonly { s: number; d: number }[];
   /** Distância do traçado onde começam os setores 2 e 3. */
   readonly sectorS: readonly [number, number];
   /** Distância do traçado de cada ponto de controle. */
@@ -299,11 +320,14 @@ export class GpTrack {
   readonly drsZones: readonly { from: number; to: number }[];
   /** 1 nas amostras dentro de uma zona de DRS. */
   readonly drsAt: Uint8Array;
+  /** Barreira de pilha de pneus em cada amostra: 1 à esquerda, 2 à direita (bits). */
+  readonly tyreAt: Uint8Array;
 
   constructor(def: GpTrackDef) {
     this.def = def;
     this.limit = def.limit ?? GP_LIMIT;
-    this.pit = def.pit ?? PIT_DEFAULT;
+    this.pit = def.pit === null ? null : (def.pit ?? PIT_DEFAULT);
+    this.pads = def.pads ?? [];
     const k = def.scale ?? 1;
     const [ox, oz] = def.origin ?? [0, 0];
     const pts = def.points.map(([px, pz]) => [(px - ox) * k, (pz - oz) * k] as const);
@@ -424,6 +448,15 @@ export class GpTrack {
         if (s0 <= s1 ? s >= s0 && s <= s1 : s >= s0 || s <= s1) this.noCut[i] = 1;
       }
     }
+    this.tyreAt = new Uint8Array(n);
+    for (const tw of def.tyreWalls ?? []) {
+      const s0 = cp[tw.from] ?? 0;
+      const s1 = cp[tw.to] ?? 0;
+      for (let i = 0; i < n; i++) {
+        const s = i * this.ds;
+        if (s0 <= s1 ? s >= s0 && s <= s1 : s >= s0 || s <= s1) this.tyreAt[i]! |= tw.side > 0 ? 2 : 1;
+      }
+    }
     const sec = def.sectors ?? [Math.floor(def.points.length / 3), Math.floor((def.points.length * 2) / 3)];
     this.sectorS = [cp[sec[0]] ?? this.length / 3, cp[sec[1]] ?? (this.length * 2) / 3];
   }
@@ -455,8 +488,9 @@ export class GpTrack {
       const kk = this.curv[i]!;
       const rr = 1 / Math.max(1e-6, Math.abs(kk));
       const fold = rr < this.limit + 4;
+      const wallMin = this.def.wallMin ?? GP_HALF_WIDTH + GP_KERB_W + 0.6;
       const wall = (room: number, inside: boolean) => {
-        if (room < Infinity) return Math.max(GP_HALF_WIDTH + GP_KERB_W + 0.6, Math.min(this.limit, room / 2 - 0.4));
+        if (room < Infinity) return Math.max(wallMin, Math.min(this.limit, room / 2 - 0.4));
         return inside ? Infinity : this.limit;
       };
       this.wallR[i] = wall(right, fold && kk > 0);
@@ -605,6 +639,7 @@ export class GpTrack {
   /** Centro da faixa do box nesta distância (relativa à linha), ou null fora do box. */
   pitCenter(rel: number): number | null {
     const p = this.pit;
+    if (!p) return null;
     const edge = GP_HALF_WIDTH - GP_PIT_HALF + 1;
     if (rel < p.inStart || rel > p.outEnd) return null;
     let off = p.offset;
@@ -628,7 +663,7 @@ export class GpTrack {
   /** Está na vaga do box? */
   inBox(s: number, d: number): boolean {
     const r = this.rel(s);
-    return this.inPit(s, d) && Math.abs(r - this.pit.box) <= GP_PIT_BOX_LEN / 2;
+    return !!this.pit && this.inPit(s, d) && Math.abs(r - this.pit.box) <= GP_PIT_BOX_LEN / 2;
   }
 
   /** A superfície no ponto (a barreira é tratada à parte). */
@@ -647,9 +682,24 @@ export class GpTrack {
     return d > 0 ? this.wallR[i]! : this.wallL[i]!;
   }
 
+  /** O tipo da barreira deste lado nesta amostra. */
+  wallKind(i: number, d: number): GpWallKind {
+    return (this.tyreAt[i]! & (d > 0 ? 2 : 1)) !== 0 ? 'tyres' : 'metal';
+  }
+
   /** Tem barreira deste lado nesta amostra? */
   wallOn(i: number, d: number): boolean {
     return this.wallAt(i, d) < Infinity;
+  }
+
+  /** Está em cima de uma placa de turbo? Devolve o índice dela ou −1. */
+  padAt(s: number, d: number): number {
+    for (let k = 0; k < this.pads.length; k++) {
+      const pd = this.pads[k]!;
+      const ds = this.delta(pd.s, s);
+      if (ds >= 0 && ds <= GP_PAD_LEN && Math.abs(d - pd.d) <= GP_PAD_HALF) return k;
+    }
+    return -1;
   }
 
   /** Ponto do desenho original (pixels) em metros da pista (minimapa, cenário). */
@@ -658,6 +708,11 @@ export class GpTrack {
     const [ox, oz] = this.def.origin ?? [0, 0];
     return { x: (px - ox) * k, z: (pz - oz) * k };
   }
+}
+
+/** A pista de cada modo (spec 081): o kart corre na Bala Track; o F1 na Marina. */
+export function gpTrackDefFor(mode: 'arcade' | 'real'): GpTrackDef {
+  return mode === 'arcade' ? GP_TRACK_BALA : GP_TRACK_MARINA;
 }
 
 const cache = new Map<string, GpTrack>();

@@ -27,6 +27,14 @@ interface GpCarLike {
   wear: number;
   drsAvail: boolean;
   drsOpen: boolean;
+  bar: number;
+  boostT: number;
+  boostLevel: number;
+  driftDir: number;
+  speed: number;
+  x: number;
+  z: number;
+  h: number;
 }
 interface GpWorldLike {
   phase: string;
@@ -63,9 +71,10 @@ async function openHome(page: Page) {
   await expect(page.getByTestId('gp-home')).toBeVisible();
 }
 
-async function openTraining(page: Page, bots: number) {
+async function openTraining(page: Page, bots: number, mode: 'arcade' | 'real' = 'arcade') {
   await openHome(page);
   await page.getByTestId('gl-offline').click();
+  await page.getByTestId(`gp-physics-${mode}`).click();
   await page.getByRole('radio', { name: String(bots), exact: true }).click();
   await page.getByTestId('gp-start').click();
   await expect(page.getByTestId('gp-play')).toBeVisible({ timeout: 30_000 });
@@ -223,7 +232,7 @@ test.describe('Fox GP', () => {
   test('DRS: liberado na zona depois da 1ª volta, E abre, frear fecha; a asa e a HUD acompanham', async ({ page }) => {
     const errors = watchErrors(page);
     await page.setViewportSize({ width: 1280, height: 720 });
-    await openTraining(page, 1);
+    await openTraining(page, 1, 'real');
     await qualiOn(page);
     await skipQuali(page);
     await raceOn(page);
@@ -283,6 +292,41 @@ test.describe('Fox GP', () => {
       return w.__sawList;
     });
     expect(saw).toBe(false);
+    expect(errors).toEqual([]);
+  });
+
+  test('kart: segurar o drift virando entra em drift, a barra enche e o turbo gasta a barra', async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await openTraining(page, 1, 'arcade');
+    await qualiOn(page);
+    await skipQuali(page);
+    await raceOn(page);
+    await expect(page.getByTestId('gp-play')).toHaveAttribute('data-physics', 'arcade');
+    await expect(page.getByTestId('gp-kart-hud')).toBeVisible();
+    await expect(page.getByTestId('gp-drs')).toHaveCount(0);
+    // embalado numa reta, com a barra quase cheia
+    await page.evaluate(() => {
+      const w = (window as Win).__gp!;
+      const me = w.cars.find((c) => c.id === 'me')!;
+      me.speed = 22;
+      me.bar = 2.6;
+    });
+    await page.keyboard.down('KeyW');
+    await page.keyboard.down('KeyD');
+    await page.keyboard.down('Space');
+    await expect(page.getByTestId('gp-drift')).toHaveAttribute('data-state', 'on', { timeout: 3000 });
+    await page.waitForTimeout(500);
+    if (process.env.E2E_SHOTS) await page.screenshot({ path: `${process.env.E2E_SHOTS}/gp-kart-drift.png` });
+    await page.keyboard.up('Space');
+    await page.keyboard.up('KeyD');
+    await expect(page.getByTestId('gp-drift')).not.toHaveAttribute('data-state', 'on');
+    // a barra passou do 2º terço: o turbo é de nível 2 e gasta a barra toda
+    await page.keyboard.press('KeyE');
+    await expect(page.getByTestId('gp-turbo')).toHaveAttribute('data-boost', '2', { timeout: 2000 });
+    if (process.env.E2E_SHOTS) await page.screenshot({ path: `${process.env.E2E_SHOTS}/gp-kart-turbo.png` });
+    expect(await page.evaluate(() => (window as Win).__gp!.cars.find((c) => c.id === 'me')!.bar)).toBeLessThan(0.2);
+    await page.keyboard.up('KeyW');
     expect(errors).toEqual([]);
   });
 
@@ -410,7 +454,7 @@ test.describe('Fox GP', () => {
   test('box animado: parar na vaga mostra o pit stop e troca o pneu', async ({ page }) => {
     const errors = watchErrors(page);
     await page.setViewportSize({ width: 1280, height: 720 });
-    await openTraining(page, 1);
+    await openTraining(page, 1, 'real');
     await qualiOn(page);
     await skipQuali(page);
     await raceOn(page);

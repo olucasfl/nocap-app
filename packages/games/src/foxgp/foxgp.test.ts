@@ -9,7 +9,10 @@ import {
   GP_HALF_WIDTH,
   GP_KERB_W,
   GP_LAPS,
+  GP_ARC_VMAX,
+  GP_PIT_LIMIT,
   GP_PIT_STOP_SEC,
+  GP_REAL_VMAX,
   GP_DRS_DRAG,
   GP_QUALI_HOLD_SEC,
   GP_QUALI_MAX_SEC,
@@ -27,7 +30,8 @@ const info = (n: number, bot = false) =>
 const full: GpInput = { throttle: 1, brake: 0, steer: 0 };
 
 /** A maior parte dos testes de física usa a pista antiga (reta longa e conhecida); a pista do jogo tem os seus. */
-const toca = (seed: string, n: number, bot = false) => new GpWorld(seed, info(n, bot), GP_TRACK_TOCA);
+const toca = (seed: string, n: number, bot = false, mode: 'arcade' | 'real' = 'arcade') =>
+  new GpWorld(seed, info(n, bot), GP_TRACK_TOCA, mode);
 
 /** Põe o carro num ponto da pista, olhando para a frente, na velocidade dada. */
 function put(w: GpWorld, c: GpCar, s: number, d = 0, speed = 0) {
@@ -118,12 +122,12 @@ describe('pistas', () => {
           [...t.kerb].findIndex((_, i) => [...Array(20).keys()].every((o) => t.kerb[i + o] === 1)) + 10;
         expect(at(curvy * t.ds, -(GP_HALF_WIDTH + GP_KERB_W / 2))).toBe('kerb');
         expect([...t.gravel].some((g) => g !== 0)).toBe(true);
-        const box = t.pitCenter(t.pit.box)!;
+        const box = t.pitCenter(t.pit!.box)!;
         expect(Math.abs(box)).toBeGreaterThan(GP_HALF_WIDTH);
-        expect(at(t.pit.box, box)).toBe('pit');
-        expect(t.inBox(t.wrap(t.pit.box), box)).toBe(true);
+        expect(at(t.pit!.box, box)).toBe('pit');
+        expect(t.inBox(t.wrap(t.pit!.box), box)).toBe(true);
         // a faixa do box fica dentro da barreira
-        expect(t.wallAt(t.index(t.pit.box), box)).toBeGreaterThan(Math.abs(box) + 2);
+        expect(t.wallAt(t.index(t.pit!.box), box)).toBeGreaterThan(Math.abs(box) + 2);
       });
 
       it('tem um trecho sem corte (a chicane)', () => {
@@ -156,96 +160,67 @@ describe('motor, câmbio e freio', () => {
     expect(gpAutoGear(up, 16)).toBe(up);
   });
 
-  it('acelera trocando marchas até perto da máxima', () => {
-    const w = toca('a', 1);
+  // spec 081: o Arcade virou kart (kart.test.ts); os testes de F1 daqui valem para o Realista (aceleração e freada de
+  // F1 em realista.test.ts)
+  it('Realista: o freio para o carro e depois vira ré', () => {
+    const w = toca('a', 1, false, 'real');
     w.beginRace(['p0']);
     const c = w.cars[0]!;
-    put(w, c, -150, 0);
-    const gears = new Set<number>();
-    let t25 = 0;
-    for (let i = 0; i < 8 / GP_DT; i++) {
-      w.step(GP_DT, { p0: full });
-      gears.add(c.gear);
-      if (!t25 && c.speed > 25) t25 = i * GP_DT;
-    }
-    expect(gears.size).toBeGreaterThanOrEqual(5);
-    expect(t25).toBeGreaterThan(2);
-    expect(t25).toBeLessThan(7);
-    expect(c.speed).toBeGreaterThan(GP_VMAX * 0.82);
-    expect(c.speed).toBeLessThan(GP_VMAX * 1.08);
-    expect(c.rpm).toBeGreaterThan(0.5);
-  });
-
-  it('o freio é progressivo e para o carro em menos de 2 s (depois vira ré)', () => {
-    const w = toca('a', 1);
-    w.beginRace(['p0']);
-    const c = w.cars[0]!;
-    put(w, c, -150, 0, 28);
-    w.step(GP_DT, { p0: { ...GP_IDLE, brake: 1 } });
-    expect(c.brakeLevel).toBeLessThan(0.5);
+    put(w, c, -150, 0, 20);
     let t = 0;
-    while (c.speed > 0.6 && t < 3) {
+    while (c.speed > 0.6 && t < 6) {
       w.step(GP_DT, { p0: { ...GP_IDLE, brake: 1 } });
       t += GP_DT;
     }
-    expect(t).toBeLessThan(2);
-    for (let i = 0; i < 2 / GP_DT; i++) w.step(GP_DT, { p0: { ...GP_IDLE, brake: 1 } });
+    expect(t).toBeLessThan(4);
+    for (let i = 0; i < 3 / GP_DT; i++) w.step(GP_DT, { p0: { ...GP_IDLE, brake: 1 } });
     expect(c.speed).toBeLessThan(-1);
     expect(gpGear(c.speed)).toBe(0);
   });
 
-  it('sem acelerar o carro perde velocidade aos poucos (arrasto e rolagem) e para', () => {
-    const w = toca('a', 1);
+  it('Realista: sem acelerar o carro perde velocidade aos poucos (arrasto e rolagem) e para', () => {
+    const w = toca('a', 1, false, 'real');
     w.beginRace(['p0']);
     const c = w.cars[0]!;
     put(w, c, -150, 0, 20);
     w.step(GP_DT, { p0: GP_IDLE });
     expect(c.speed).toBeLessThan(20);
     expect(c.speed).toBeGreaterThan(19.9);
-    for (let i = 0; i < 90 / GP_DT && c.speed !== 0; i++) w.step(GP_DT, { p0: GP_IDLE });
+    for (let i = 0; i < 120 / GP_DT && c.speed !== 0; i++) w.step(GP_DT, { p0: GP_IDLE });
     expect(c.speed).toBe(0);
   });
 
-  it('na grama a máxima cai para 60 % e na brita para 40 %', () => {
-    const w = toca('a', 1);
+  it('superfícies: no Realista grama 60 % e brita 40 %; no kart zebra 88 %, grama 55 % e brita 40 %', () => {
+    const w = toca('a', 1, false, 'real');
     const c = w.cars[0]!;
     c.surface = 'grass';
-    expect(w.vmaxOf(c)).toBeCloseTo(GP_VMAX * 0.6);
+    expect(w.vmaxOf(c)).toBeCloseTo(GP_REAL_VMAX * 0.6);
     c.surface = 'gravel';
-    expect(w.vmaxOf(c)).toBeCloseTo(GP_VMAX * 0.4);
+    expect(w.vmaxOf(c)).toBeCloseTo(GP_REAL_VMAX * 0.4);
     c.surface = 'kerb';
-    expect(w.vmaxOf(c)).toBeCloseTo(GP_VMAX);
+    expect(w.vmaxOf(c)).toBeCloseTo(GP_REAL_VMAX);
+    const k = toca('a', 1);
+    const kc = k.cars[0]!;
+    kc.surface = 'kerb';
+    expect(k.vmaxOf(kc)).toBeCloseTo(GP_ARC_VMAX * 0.88);
+    kc.surface = 'grass';
+    expect(k.vmaxOf(kc)).toBeCloseTo(GP_ARC_VMAX * 0.55);
+    kc.surface = 'gravel';
+    expect(k.vmaxOf(kc)).toBeCloseTo(GP_ARC_VMAX * 0.4);
   });
 
-  it('pneu gasta andando e a aderência cai, sem nunca chegar a zero', () => {
-    const w = toca('a', 1);
+  it('Realista: pneu gasta andando e a aderência cai, sem nunca chegar a zero', () => {
+    const w = toca('a', 1, false, 'real');
     const c = w.cars[0]!;
     const fresh = w.gripOf(c);
     c.wear = 1;
     const worn = w.gripOf(c);
     expect(worn).toBeLessThan(fresh);
     expect(worn).toBeGreaterThan(0.3);
-    const w2 = toca('b', 1);
+    const w2 = toca('b', 1, false, 'real');
     w2.beginRace(['p0']);
     for (let i = 0; i < 5 / GP_DT; i++) w2.step(GP_DT, { p0: full });
     expect(w2.cars[0]!.wear).toBeGreaterThan(0);
-  });
-
-  it('pneu gasto escorrega mais na mesma curva', () => {
-    const slide = (wear: number) => {
-      const w = toca('a', 1);
-      w.beginRace(['p0']);
-      const c = w.cars[0]!;
-      put(w, c, -150, 0, 30);
-      c.wear = wear;
-      let worst = 0;
-      for (let i = 0; i < 40; i++) {
-        w.step(GP_DT, { p0: { ...full, steer: 1 } });
-        worst = Math.max(worst, c.skid);
-      }
-      return worst;
-    };
-    expect(slide(1)).toBeGreaterThan(slide(0));
   });
 });
 
@@ -265,23 +240,6 @@ describe('barreira e corte', () => {
       if (w.drainEvents().some((e) => e.type === 'wall')) wall = true;
     }
     expect(wall).toBe(true);
-  });
-
-  it('de raspão na barreira o carro gira e não atravessa', () => {
-    const g = toca('b', 1);
-    g.beginRace(['p0']);
-    const d = g.cars[0]!;
-    put(g, d, -200, -12, 26);
-    d.h -= 0.45;
-    d.vx = Math.sin(d.h) * 26;
-    d.vz = -Math.cos(d.h) * 26;
-    let spun = 0;
-    for (let i = 0; i < 90; i++) {
-      g.step(GP_DT, { p0: full });
-      spun = Math.max(spun, Math.abs(d.spin));
-      expect(Math.abs(d.d)).toBeLessThanOrEqual(g.track.wallAt(d.idx, d.d) + 0.2);
-    }
-    expect(spun).toBeGreaterThan(0.15);
   });
 
   it('cortar a chicane devolve o carro ao último ponto válido', () => {
@@ -446,12 +404,12 @@ describe('batida entre carros (spec 081, Fase 13.3: impulso uma vez por contato)
 });
 
 describe('box', () => {
-  it('parar na vaga segura o carro 3 s e devolve pneu novo', () => {
-    const w = toca('a', 1);
+  it('Realista: parar na vaga segura o carro 3 s e devolve pneu novo', () => {
+    const w = toca('a', 1, false, 'real');
     w.beginRace(['p0']);
     const c = w.cars[0]!;
     const t = w.track;
-    put(w, c, t.pit.box - 8, t.pitCenter(t.pit.box - 8)!);
+    put(w, c, t.pit!.box - 8, t.pitCenter(t.pit!.box - 8)!);
     c.wear = 0.9;
     let held = 0;
     for (let i = 0; i < 6 / GP_DT; i++) {
@@ -467,16 +425,17 @@ describe('box', () => {
     expect(c.pitStops).toBe(1);
   });
 
-  it('na faixa do box a velocidade é limitada', () => {
-    const w = toca('a', 1);
+  it('Realista: na faixa do box a velocidade é limitada (170 km/h na tela)', () => {
+    const w = toca('a', 1, false, 'real');
     const c = w.cars[0]!;
     c.surface = 'pit';
-    expect(w.vmaxOf(c)).toBeLessThan(GP_VMAX * 0.7);
+    expect(w.vmaxOf(c)).toBe(GP_PIT_LIMIT);
+    expect(gpKmh(GP_PIT_LIMIT)).toBe(170);
   });
 });
 
 describe('vácuo e DRS', () => {
-  function pair(mode: 'arcade' | 'real' = 'arcade') {
+  function pair(mode: 'arcade' | 'real' = 'real') {
     const w = new GpWorld('a', info(2), GP_TRACK_TOCA, mode);
     w.beginRace(['p0', 'p1']);
     const [a, b] = w.cars as [GpCar, GpCar];
@@ -506,7 +465,7 @@ describe('vácuo e DRS', () => {
     expect(near.b.slip).toBeGreaterThan(far.b.slip);
   });
 
-  for (const mode of ['arcade', 'real'] as const) {
+  for (const mode of ['real'] as const) {
     it(`${mode}: atrás de outro carro na reta o ganho de velocidade é perceptível`, () => {
       // dois carros na reta longa: um sozinho, outro colado no vácuo de um carro mais lento
       const solo = new GpWorld('v', info(1), GP_TRACK_TOCA, mode);
@@ -524,17 +483,18 @@ describe('vácuo e DRS', () => {
     });
   }
 
-  it('não existe mais turbo: nem na entrada, nem no carro', () => {
-    const { a } = pair();
-    expect('turbo' in a).toBe(false);
-    expect('bar' in a).toBe(false);
+  it('kart: sem vácuo (o arrasto nunca muda)', () => {
+    const { w, a, b } = pair('arcade');
+    for (let i = 0; i < 30; i++) w.step(GP_DT, { p0: full, p1: full });
+    expect(b.slip).toBe(0);
+    expect(a.slip).toBe(0);
   });
 });
 
 describe('DRS', () => {
   const zoneS = (w: GpWorld) => w.track.drsZones[0]!.from + 30;
-  function racer(mode: 'arcade' | 'real' = 'arcade', n = 2) {
-    const w = new GpWorld('drs', info(n), undefined, mode);
+  function racer(mode: 'arcade' | 'real' = 'real', n = 2) {
+    const w = new GpWorld('drs', info(n), GP_TRACK_MARINA, mode);
     w.beginRace(info(n).map((i) => i.id));
     return w;
   }
@@ -592,7 +552,7 @@ describe('DRS', () => {
   });
 
   it('na classificação o DRS fica liberado nas zonas para todos', () => {
-    const w = new GpWorld('drsq', info(1));
+    const w = new GpWorld('drsq', info(1), undefined, 'real');
     const c = w.cars[0]!;
     put(w, c, zoneS(w), 0, 25);
     w.step(GP_DT, { p0: { ...full, drs: true } });
@@ -600,7 +560,19 @@ describe('DRS', () => {
     expect(c.drsOpen).toBe(true);
   });
 
-  for (const mode of ['arcade', 'real'] as const) {
+  it('kart: o DRS é ignorado', () => {
+    const w = racer('arcade');
+    const [a, b] = w.cars as [GpCar, GpCar];
+    a.laps = [60_000];
+    b.laps = [60_000];
+    put(w, a, w.track.length + zoneS(w) + 30, 0, 25);
+    put(w, b, w.track.length + zoneS(w), 0, 25);
+    w.step(GP_DT, { p1: { ...full, drs: true } });
+    expect(b.drsAvail).toBe(false);
+    expect(b.drsOpen).toBe(false);
+  });
+
+  for (const mode of ['real'] as const) {
     it(`${mode}: a asa aberta dá mais velocidade na reta`, () => {
       const go = (drs: boolean) => {
         const w = new GpWorld('drsv', info(1), undefined, mode);
@@ -702,17 +674,17 @@ describe('corrida e chegada', () => {
     expect(c.laps.length).toBe(0);
   });
 
-  it('corrida completa com bots na pista do jogo: 3 voltas em ~3 min e pneu perto do fim', () => {
-    const w = new GpWorld('r', info(6, true));
+  it('Realista: corrida completa com bots na pista do jogo: 3 voltas em ~4 min e pneu perto do fim', () => {
+    const w = new GpWorld('r', info(6, true), undefined, 'real');
     runBots(w, GP_QUALI_MAX_SEC + 5, () => w.qualiDone(), 'r');
     w.beginRace(w.gridOrder());
-    runBots(w, 400, () => w.ended, 'r');
+    runBots(w, 500, () => w.ended, 'r');
     expect(w.ended).toBe(true);
     const st = w.standings();
     expect(st.filter((r) => r.car.finished).length).toBeGreaterThanOrEqual(5);
     for (const r of st) if (r.car.finished) expect(r.car.laps.length).toBe(GP_LAPS);
-    expect(w.firstFinishT!).toBeGreaterThan(130);
-    expect(w.firstFinishT!).toBeLessThan(240);
+    expect(w.firstFinishT!).toBeGreaterThan(180);
+    expect(w.firstFinishT!).toBeLessThan(280);
     const fin = st.filter((r) => r.car.finished).map((r) => r.car.finishMs!);
     expect([...fin].sort((a, b) => a - b)).toEqual(fin);
     expect(w.fastest).not.toBeNull();

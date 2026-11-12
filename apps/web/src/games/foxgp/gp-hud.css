@@ -613,3 +613,231 @@
   pointer-events: none;
   white-space: pre;
 }
+
+/* ---- kart (spec 081, Fase 5): drift e barra de turbo em 3 terços (azul, laranja, rosa), embaixo no meio ---- */
+.gpx-kart {
+  position: absolute;
+  left: 50%;
+  bottom: max(var(--hud-pad), env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+}
+.gpx-drift {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 2px solid #444b5e;
+  background: var(--gp-hud);
+  color: #7d8597;
+  font: italic 800 13px var(--gp-display);
+  text-transform: uppercase;
+}
+.gpx-drift svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+.gpx-drift[data-state='avail'] {
+  border-color: #ffd23a;
+  color: #ffd23a;
+}
+.gpx-drift[data-state='on'] {
+  border-color: #ffd23a;
+  background: #ffd23a;
+  color: #2a2100;
+}
+.gpx-turbo {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border: 2px solid #444b5e;
+  background: var(--gp-hud);
+}
+.gpx-third {
+  position: relative;
+  width: 64px;
+  height: 14px;
+  overflow: hidden;
+  background: #1b2233;
+  border: 1px solid #2b3348;
+}
+.gpx-third b {
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  transition: transform 0.12s linear;
+}
+.gpx-third.is-1 b {
+  background: #3aa0ff;
+}
+.gpx-third.is-2 b {
+  background: #ff8a1f;
+}
+.gpx-third.is-3 b {
+  background: #ff4fd8;
+}
+.gpx-third[data-full='1'] {
+  border-color: #fff;
+}
+.gpx-turbo-key {
+  margin-left: 6px;
+  font: italic 800 13px var(--gp-display);
+  color: var(--gp-text);
+  text-transform: uppercase;
+  animation: gpx-turbo-pop 0.4s var(--gp-ease);
+}
+@keyframes gpx-turbo-pop {
+  from {
+    transform: scale(1.4);
+    opacity: 0.4;
+  }
+}
+/* sem turbo: a barra balança */
+.gpx-turbo[data-no='1'] {
+  animation: gpx-turbo-no 0.35s ease;
+}
+@keyframes gpx-turbo-no {
+  25% {
+    transform: translateX(-5px);
+  }
+  50% {
+    transform: translateX(5px);
+  }
+  75% {
+    transform: translateX(-3px);
+  }
+}
+.gpx-turbo[data-boost='1'] {
+  border-color: #3aa0ff;
+}
+.gpx-turbo[data-boost='2'] {
+  border-color: #ff8a1f;
+}
+.gpx-turbo[data-boost='3'] {
+  border-color: #ff4fd8;
+}
+/* linhas de velocidade nas bordas durante o turbo (cor do nível) */
+.gpx-boost {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.gpx-boost i {
+  position: absolute;
+  height: 3px;
+  width: 30vw;
+  opacity: 0;
+  background: linear-gradient(90deg, transparent, var(--boost, #3aa0ff));
+  animation: gpx-boost-line 0.45s linear infinite;
+}
+.gpx-boost[data-level='1'] {
+  --boost: #3aa0ff;
+}
+.gpx-boost[data-level='2'] {
+  --boost: #ff8a1f;
+}
+.gpx-boost[data-level='3'] {
+  --boost: #ff4fd8;
+}
+.gpx-boost i:nth-child(1) {
+  top: 18%;
+  left: -30vw;
+}
+.gpx-boost i:nth-child(2) {
+  top: 34%;
+  right: -30vw;
+  animation-delay: 0.15s;
+  animation-direction: reverse;
+}
+.gpx-boost i:nth-child(3) {
+  top: 52%;
+  left: -30vw;
+  animation-delay: 0.3s;
+}
+.gpx-boost i:nth-child(4) {
+  top: 66%;
+  right: -30vw;
+  animation-delay: 0.08s;
+  animation-direction: reverse;
+}
+.gpx-boost i:nth-child(5) {
+  top: 78%;
+  left: -30vw;
+  animation-delay: 0.22s;
+}
+.gpx-boost i:nth-child(6) {
+  top: 26%;
+  right: -30vw;
+  animation-delay: 0.37s;
+  animation-direction: reverse;
+}
+@keyframes gpx-boost-line {
+  0% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateX(60vw);
+    opacity: 0;
+  }
+}
+/* toque: drift (segurar) e turbo no lugar do DRS */
+.gp-pad.is-drift {
+  grid-area: drs;
+  justify-self: start;
+  width: 70px;
+  height: 70px;
+  font-size: 15px;
+  font-style: italic;
+  color: #ffd23a;
+}
+.gp-pad.is-drift[data-state='on'] {
+  background: #ffd23a;
+  color: #2a2100;
+}
+.gp-pad.is-turbo {
+  grid-area: turbo;
+  width: 70px;
+  height: 70px;
+  font-size: 15px;
+  font-style: italic;
+  color: #7d8597;
+}
+.gp-pad.is-turbo[data-ready='1'] {
+  border-color: #3aa0ff;
+  color: #3aa0ff;
+}
+.gp-play[data-physics='arcade'] .gp-pads-r {
+  grid-template-columns: auto auto;
+  grid-template-areas:
+    'drs turbo'
+    'brake gas';
+}
+@media (prefers-reduced-motion: reduce) {
+  .gpx-boost,
+  .gpx-turbo[data-no='1'],
+  .gpx-turbo-key {
+    animation: none;
+  }
+  .gpx-boost {
+    display: none;
+  }
+}
+
+/* o kart não tem marcha nem pneu (spec 081) */
+.gpx-gear[hidden],
+.gpx-tyre[hidden] {
+  display: none;
+}

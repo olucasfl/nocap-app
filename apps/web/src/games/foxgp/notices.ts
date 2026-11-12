@@ -2,7 +2,7 @@
  * Avisos do Fox GP (spec 080, Fase 10): uma fila só, no centro em cima. Um aviso não atropela o outro: cada um fica pelo
  * menos 2 s (texto de leitura), entra e sai em 350 ms. Pura, com teste.
  */
-export type GpNoticeKind = 'info' | 'highlight' | 'drs' | 'alert' | 'result';
+export type GpNoticeKind = 'info' | 'highlight' | 'drs' | 'turbo' | 'alert' | 'result';
 
 export interface GpNotice {
   id: number;

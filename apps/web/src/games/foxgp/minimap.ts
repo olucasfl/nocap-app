@@ -41,7 +41,7 @@ export function drawMinimap(cv: HTMLCanvasElement, world: GpWorld, meId: string,
   // faixa do box
   const pit = tr.pit;
   g.beginPath();
-  for (let s = pit.inStart; s <= pit.outEnd; s += 2) {
+  for (let s = pit?.inStart ?? 0; pit && s <= pit.outEnd; s += 2) {
     const p = tr.pointAt(s, tr.pitCenter(s) ?? 0);
     if (s === pit.inStart) g.moveTo(X(p.x), Z(p.z));
     else g.lineTo(X(p.x), Z(p.z));
@@ -59,7 +59,7 @@ export function drawMinimap(cv: HTMLCanvasElement, world: GpWorld, meId: string,
   g.lineWidth = 3.5;
   g.stroke();
   // zonas de DRS (verde, por cima do traçado)
-  for (const zn of tr.drsZones) {
+  for (const zn of world.mode === 'real' ? tr.drsZones : []) {
     g.beginPath();
     for (let q = zn.from; q <= zn.to; q += 2) {
       const i = tr.index(q);
@@ -87,10 +87,12 @@ export function drawMinimap(cv: HTMLCanvasElement, world: GpWorld, meId: string,
       g.fillRect(X(tr.x[0]! + nx * q * 6) - 2.5, Z(tr.z[0]! + nz * q * 6) - 2.5, 5, 5);
     }
   }
-  const entry = tr.pointAt(pit.inStart, 0);
-  g.fillStyle = GP_THEME.yellow;
-  g.font = `italic 800 13px ${GP_THEME.display}`;
-  g.fillText('BOX', X(entry.x) + 8, Z(entry.z) + 4);
+  if (pit) {
+    const entry = tr.pointAt(pit.inStart, 0);
+    g.fillStyle = GP_THEME.yellow;
+    g.font = `italic 800 13px ${GP_THEME.display}`;
+    g.fillText('BOX', X(entry.x) + 8, Z(entry.z) + 4);
+  }
   // carros (o seu por último, por cima)
   const order = [...world.cars].sort((a, b) => (a.id === meId ? 1 : 0) - (b.id === meId ? 1 : 0));
   for (const c of order) {

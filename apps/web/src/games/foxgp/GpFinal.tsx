@@ -114,6 +114,7 @@ export function GpFinal({
         </div>
         <div className="gpf-podium">
           <GpPodium3D
+            kart={physics === 'Arcade'}
             top={rows
               .slice(0, 3)
               .map((r) => ({ name: r.name, fur: r.fur ?? 0xff7d26, paint: r.paint ?? null }))}

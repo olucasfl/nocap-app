@@ -2,9 +2,17 @@ import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import type { GpPaint } from '@nocap/games';
 import { buildCar } from './car-model';
+import { buildKart, kartReady } from './kart-model';
 
 /** O pódio em 3D: três degraus (1º no meio, mais alto), o carro e a raposa de cada um e o troféu do campeão. */
-export function GpPodium3D({ top }: { top: { name: string; fur: number; paint: GpPaint | null }[] }) {
+export function GpPodium3D({
+  top,
+  kart = false,
+}: {
+  top: { name: string; fur: number; paint: GpPaint | null }[];
+  /** Arcade: os karts no pódio (o arquivo já foi baixado na partida). */
+  kart?: boolean;
+}) {
   const ref = useRef<HTMLCanvasElement>(null);
   const key = JSON.stringify(top);
   useEffect(() => {
@@ -42,7 +50,8 @@ export function GpPodium3D({ top }: { top: { name: string; fur: number; paint: G
       group.add(block);
       const who = top[st.place - 1];
       if (!who) continue;
-      const car = buildCar({ fur: who.fur, paint: who.paint });
+      const car =
+        kart && kartReady() ? buildKart({ fur: who.fur, paint: who.paint }) : buildCar({ fur: who.fur, paint: who.paint });
       car.group.position.set(st.x, st.h, 0);
       car.group.rotation.y = Math.PI * 0.85;
       car.group.scale.setScalar(0.8);

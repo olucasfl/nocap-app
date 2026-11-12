@@ -7,9 +7,7 @@ import {
   GP_LAPS,
   GP_MAX_PLAYERS,
   GP_QUALI_MAX_SEC,
-  GP_REAL_WHEELBASE,
   GP_REAL_VMAX,
-  gpRealLatMax,
   type GpPhysicsMode,
 } from './constants';
 import { GP_BOT_ARCHETYPES, gpBotInput, gpBotProfile, newGpBotMemory } from './bots';
@@ -105,46 +103,6 @@ describe('dois modos de física', () => {
     }
     expect(worst).toBeLessThan(1e-9);
     expect(c.speed).toBeLessThan(v0 - 1);
-  });
-
-  it('Arcade: a mesma manobra escorrega (como antes)', () => {
-    const w = new GpWorld('a', info(1), GP_TRACK_TOCA, 'arcade');
-    w.beginRace(['p0']);
-    const c = w.cars[0]!;
-    put(w, c, -300, 0, 28);
-    let worst = 0;
-    for (let k = 0; k < 0.8 / GP_DT; k++) {
-      w.step(GP_DT, { p0: { throttle: 1, brake: 0, steer: 1 } });
-      worst = Math.max(worst, c.skid);
-    }
-    expect(worst).toBeGreaterThan(0.5);
-  });
-
-  it('Realista: a curva nunca passa do que o pneu aguenta', () => {
-    const w = new GpWorld('r', info(1), GP_TRACK_TOCA, 'real');
-    w.beginRace(['p0']);
-    const c = w.cars[0]!;
-    put(w, c, -300, 0, 25);
-    let prevH = c.h;
-    for (let k = 0; k < 30; k++) {
-      w.step(GP_DT, { p0: { throttle: 1, brake: 0, steer: 1 } });
-      const yaw = (c.h - prevH) / GP_DT;
-      prevH = c.h;
-      expect(Math.abs(yaw * c.speed)).toBeLessThanOrEqual(gpRealLatMax(Math.abs(c.speed)) * w.gripOf(c) * 1.05 + 1);
-    }
-  });
-
-  it('Realista: curva lenta exige frear; curva rápida dá para fazer cheia', () => {
-    // raio que o carro consegue a 25 m/s com o volante todo: maior que o grampo da Marina (~10 m)
-    const sa = 0.6 / (1 + 25 / 9);
-    const radius = GP_REAL_WHEELBASE / Math.tan(sa);
-    const lat = (25 * 25) / radius;
-    const r25 = lat > gpRealLatMax(25) ? (25 * 25) / gpRealLatMax(25) : radius;
-    expect(r25).toBeGreaterThan(15);
-    // curva de 100 m de raio a 30 m/s: cabe na aderência (a asa ajuda)
-    expect((30 * 30) / 100).toBeLessThan(gpRealLatMax(30));
-    // grampo de 10 m: só bem devagar
-    expect(Math.sqrt(gpRealLatMax(14) * 10)).toBeLessThan(16);
   });
 
   it('Realista: a máxima em reta fica perto de 340 km/h (limitador da 8ª, spec 081)', () => {

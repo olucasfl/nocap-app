@@ -27,16 +27,16 @@ export const GP_ROOM_COLORS: readonly { name: string; hex: string }[] = [
 export const GP_MAX_PLAYERS = 12;
 
 /**
- * Os dois modos de física (spec 080). Arcade é a física da spec 079 (velocidade em vetor, escorrega de lado); Realista é
- * o modelo do repositório de referência (a velocidade sempre aponta para o nariz e a curva é limitada pela aderência).
- * Só a física muda: pista, carros, regras e tela são os mesmos.
+ * Os dois modos de física. Arcade (spec 081, Fase 5) é o kart estilo Mario Kart: direção rápida, drift que enche a barra
+ * de turbo e turbo de 3 níveis; sem vácuo, desgaste de pneu, box nem DRS. Realista (specs 080 e 081, Fase 4) é o F1: a
+ * velocidade sempre para o nariz, a curva limitada pela aderência, câmbio, freio, DRS, vácuo, pneu e box.
  */
 export type GpPhysicsMode = 'arcade' | 'real';
 export const GP_PHYSICS_MODES: readonly GpPhysicsMode[] = ['arcade', 'real'];
 export const GP_PHYSICS_DEFAULT: GpPhysicsMode = 'arcade';
 export const gpIsPhysicsMode = (v: unknown): v is GpPhysicsMode => v === 'arcade' || v === 'real';
 /** Versão do protocolo da rede: sobe quando o formato da entrada ou do estado muda (aparelho antigo não entra). */
-export const GP_NET_VERSION = 2;
+export const GP_NET_VERSION = 3;
 export const GP_LAPS = 3;
 
 // ---- pista ----
@@ -175,8 +175,8 @@ export const GP_WALL_KEEP = 0.25;
 
 /** [AJUSTAR] Desgaste por metro andado, por escorregão (por m/s de lado, por s), por freada forte (por s) e fora da pista (por s). */
 export const GP_WEAR_DIST = 0.00015;
-export const GP_WEAR_SLIP = 0.0011;
-export const GP_WEAR_BRAKE = 0.0024;
+export const GP_WEAR_SLIP = 0.0008;
+export const GP_WEAR_BRAKE = 0.0016;
 export const GP_WEAR_OFF = 0.006;
 /** [AJUSTAR] Pneu totalmente gasto: aderência mínima (parte da do pneu novo). Freio idem. */
 export const GP_GRIP_MIN = 0.4;
@@ -372,6 +372,88 @@ export const GP_REAL_WALL_CD = 0.3;
 /** Aderência lateral máxima do Realista na velocidade dada (m/s²), com pneu novo no asfalto. */
 export const gpRealLatMax = (v: number) => GP_REAL_GRIP0 + GP_REAL_DOWNFORCE * v * v;
 /** Máxima no asfalto (m/s) de cada modo. */
-export const gpVmaxOf = (mode: GpPhysicsMode) => (mode === 'real' ? GP_REAL_VMAX : GP_VMAX);
+export const gpVmaxOf = (mode: GpPhysicsMode) => (mode === 'real' ? GP_REAL_VMAX : GP_ARC_VMAX);
 /** Freio do Realista na velocidade dada (m/s²). */
 export const gpRealBrake = (v: number) => GP_REAL_BRAKE0 + GP_REAL_BRAKE_V2 * v * v;
+
+// ---- Arcade: o kart (spec 081, Fase 5). Valores iniciais [AJUSTAR], para calibrar jogando ----
+
+/** Máxima normal do kart (m/s): ~220 km/h na tela (×8,5); calibrada pela volta de 50 a 65 s na Bala Track. */
+export const GP_ARC_VMAX = 26;
+/** Aceleração sem marchas: `K × (máxima − v)`, chega a 90 % da máxima em ~3,5 s (ln 10 / K). */
+export const GP_ARC_ACC_K = 0.66;
+/** Freio forte e curto (m/s²), ré e o quanto perde sem acelerar (por segundo, proporcional à velocidade). */
+export const GP_ARC_BRAKE = 30;
+export const GP_ARC_REVERSE_MAX = 7;
+export const GP_ARC_REVERSE_ACCEL = 9;
+export const GP_ARC_COAST = 0.35;
+/** Acima da máxima da hora (zebra, grama, fim do turbo) perde velocidade até ela com esta força (m/s²). */
+export const GP_ARC_OVER_DECEL = 14;
+/**
+ * Direção muito rápida: giro máximo (rad/s) em baixa e na máxima; abaixo de `YAW_FULL_V` o giro cresce com a velocidade
+ * (não gira parado). Curvando, quase não perde velocidade (`TURN_LOSS` por segundo com o volante todo virado).
+ */
+export const GP_ARC_YAW_LOW = 2.2;
+export const GP_ARC_YAW_HIGH = 1.1;
+export const GP_ARC_YAW_FULL_V = 4;
+export const GP_ARC_TURN_LOSS = 0.005;
+/** Máxima em cada superfície (parte da normal): zebra tira um pouco, grama e brita bem mais. */
+export const GP_ARC_KERB_VMAX = 0.88;
+export const GP_ARC_GRASS_VMAX = 0.55;
+export const GP_ARC_GRAVEL_VMAX = 0.4;
+/** Muro de metal: batida normal, guarda esta parte da velocidade (espera entre batidas, s). */
+export const GP_ARC_WALL_KEEP = 0.65;
+export const GP_ARC_WALL_CD = 0.3;
+/** Pilha de pneus: a velocidade para a frente vira de volta (esta parte da de chegada). */
+export const GP_ARC_TYRE_REBOUND = 0.5;
+
+/**
+ * Drift: liberado a partir desta parte da máxima, com o volante virado (|volante| acima de `DRIFT_STEER`), no asfalto ou
+ * na zebra, fora da largada. Ao apertar: pulinho e drift para o lado do volante, travado até soltar.
+ */
+export const GP_ARC_DRIFT_MIN = 0.4;
+export const GP_ARC_DRIFT_STEER = 0.1;
+/** Depois de apertar o drift, ele ainda entra se ficar liberado neste tempo (s): apertar e virar juntos funciona. */
+export const GP_ARC_DRIFT_GRACE = 0.3;
+/** Pulinho do drift (s) e altura (m, só desenho). */
+export const GP_ARC_HOP_SEC = 0.18;
+export const GP_ARC_HOP_H = 0.25;
+/**
+ * No drift o kart gira pelo raio médio (`DRIFT_BASE` do giro máximo) e o volante muda o raio: para dentro fecha (até
+ * ×`DRIFT_IN`), para fora abre (até ×`DRIFT_OUT`).
+ */
+export const GP_ARC_DRIFT_BASE = 0.8;
+export const GP_ARC_DRIFT_IN = 1.4;
+export const GP_ARC_DRIFT_OUT = 0.65;
+/** Um pouco mais de velocidade enquanto derrapa (decisão 2 do Lucas: pouco). */
+export const GP_ARC_DRIFT_SPEED = 1.06;
+/** Ângulo do corpo do kart para fora durante o drift (rad, só desenho): ~25°. */
+export const GP_ARC_DRIFT_YAW = 0.44;
+
+/**
+ * Barra de turbo de 0 a 3 (três terços: azul, laranja, rosa). Enche sozinha andando (cheia em `BAR_FULL_SEC` na
+ * máxima) e `DRIFT_FILL`× mais rápido derrapando, com bônus de até ×`DRIFT_FILL_IN` com o volante todo para dentro.
+ */
+export const GP_ARC_BAR_MAX = 3;
+export const GP_ARC_BAR_FULL_SEC = 45;
+export const GP_ARC_DRIFT_FILL = 3.5;
+export const GP_ARC_DRIFT_FILL_IN = 1.4;
+/**
+ * Turbo: gasta a barra toda e o nível é o terço atingido. Duração (s) e quanto a máxima sobe em cada nível; chega à
+ * velocidade do turbo em ~`BOOST_RISE` s e volta à normal numa rampa de `BOOST_FADE` s. Fora do asfalto, metade do ganho.
+ */
+export const GP_ARC_BOOST: readonly { sec: number; extra: number }[] = [
+  { sec: 0.9, extra: 0.35 },
+  { sec: 1.8, extra: 0.45 },
+  { sec: 3, extra: 0.55 },
+];
+export const GP_ARC_BOOST_RISE = 0.35;
+export const GP_ARC_BOOST_FADE = 0.4;
+export const GP_ARC_BOOST_OFFROAD = 0.5;
+
+/**
+ * Placas de turbo da Bala Track (spec 081, 6B.4): passar por cima dá o turbo de nível 1 na hora, sem gastar a barra
+ * (passar de novo só renova a duração). Comprimento e meia largura da placa (m).
+ */
+export const GP_PAD_LEN = 9;
+export const GP_PAD_HALF = 2.6;

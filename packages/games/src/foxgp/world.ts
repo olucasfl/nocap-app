@@ -1,7 +1,38 @@
 import {
-  GP_BRAKE,
+  GP_ARC_ACC_K,
+  GP_ARC_BAR_FULL_SEC,
+  GP_ARC_BAR_MAX,
+  GP_ARC_BOOST,
+  GP_ARC_BOOST_FADE,
+  GP_ARC_BOOST_OFFROAD,
+  GP_ARC_BOOST_RISE,
+  GP_ARC_BRAKE,
+  GP_ARC_COAST,
+  GP_ARC_DRIFT_BASE,
+  GP_ARC_DRIFT_FILL,
+  GP_ARC_DRIFT_FILL_IN,
+  GP_ARC_DRIFT_GRACE,
+  GP_ARC_DRIFT_IN,
+  GP_ARC_DRIFT_MIN,
+  GP_ARC_DRIFT_OUT,
+  GP_ARC_DRIFT_SPEED,
+  GP_ARC_DRIFT_STEER,
+  GP_ARC_GRASS_VMAX,
+  GP_ARC_GRAVEL_VMAX,
+  GP_ARC_HOP_SEC,
+  GP_ARC_KERB_VMAX,
+  GP_ARC_OVER_DECEL,
+  GP_ARC_REVERSE_ACCEL,
+  GP_ARC_REVERSE_MAX,
+  GP_ARC_TURN_LOSS,
+  GP_ARC_TYRE_REBOUND,
+  GP_ARC_VMAX,
+  GP_ARC_WALL_CD,
+  GP_ARC_WALL_KEEP,
+  GP_ARC_YAW_FULL_V,
+  GP_ARC_YAW_HIGH,
+  GP_ARC_YAW_LOW,
   GP_BRAKE_MIN,
-  GP_BRAKE_RAMP,
   GP_BUMP_E,
   GP_BUMP_KNOCK_DAMP,
   GP_BUMP_MU,
@@ -10,7 +41,6 @@ import {
   GP_BUMP_SOFT,
   GP_BUMP_SPIN_DAMP,
   GP_BUMP_SPIN_MAX,
-  GP_CAR_HALF,
   GP_CAR_LEN,
   GP_CAR_R,
   GP_CAR_WALL_IN,
@@ -18,22 +48,16 @@ import {
   GP_CUT_JUMP,
   GP_CUT_OFF,
   GP_DNF_SEC,
-  GP_DRAG,
   GP_DRS_DRAG,
   GP_DRS_FROM_LAP,
-  GP_ENGINE,
-  GP_GEARS,
-  GP_GEAR_TOP,
   GP_GRID_FIRST,
   GP_GRID_GAP,
   GP_GRID_SIDE,
   GP_GRIP_MIN,
-  GP_GRIP_TOTAL,
   GP_HALF_WIDTH,
   GP_INERTIA,
   GP_KERB_W,
   GP_LAPS,
-  GP_OVER_DECEL,
   GP_PIT_LIMIT,
   GP_PIT_STOP_SEC,
   GP_QUALI_HOLD_SEC,
@@ -43,6 +67,8 @@ import {
   GP_REAL_ENGINE,
   GP_REAL_GEAR_TOP,
   GP_REAL_SCRUB_MAX,
+  GP_GEAR_TOP,
+  GP_GEARS,
   GP_REAL_SHIFT_CUT,
   GP_REAL_SHIFT_DOWN,
   GP_REAL_SHIFT_UP,
@@ -59,30 +85,20 @@ import {
   GP_REAL_STEER_RISE,
   GP_REAL_THR_FALL,
   GP_REAL_THR_RISE,
+  GP_REVERSE_ACCEL,
+  GP_REVERSE_MAX,
+  GP_OVER_DECEL,
   GP_REAL_WALL_ALIGN,
   GP_REAL_WALL_CD,
   GP_REAL_WALL_KEEP,
   GP_REAL_WHEELBASE,
-  GP_REVERSE_ACCEL,
-  GP_REVERSE_MAX,
-  GP_ROLL,
-  GP_ROLL0,
-  GP_SLIDE_DRAG,
-  GP_SLIP_DAMP,
   GP_SLIP_DRAG,
   GP_SLIP_LEN,
   GP_SLIP_MIN,
   GP_SLIP_MIN_V,
   GP_SLIP_W,
-  GP_SPIN_DAMP,
-  GP_STEER_FALL,
-  GP_STEER_FULL_V,
-  GP_STEER_RATE,
   GP_SURFACE,
   GP_VALID_EVERY,
-  GP_WALL_E,
-  GP_WALL_KEEP,
-  GP_WALL_MU,
   GP_WEAR_BRAKE,
   GP_WEAR_DIST,
   GP_WEAR_OFF,
@@ -93,7 +109,7 @@ import {
   type GpPhysicsMode,
   type GpSurface,
 } from './constants';
-import { gpTrack, type GpTrack, type GpTrackDef } from './track';
+import { gpTrack, gpTrackDefFor, type GpTrack, type GpTrackDef } from './track';
 
 /** Quem corre: id, nome na tela, cor do pelo, pintura do carro (opcional) e se é bot. */
 export interface GpPlayerInfo {
@@ -122,6 +138,10 @@ export interface GpInput {
   drs?: boolean;
   /** Classificação: começa a volta lançada (o carro vai para a largada). */
   lap?: boolean;
+  /** Arcade: segurar para derrapar (só entra no drift quando liberado). */
+  drift?: boolean;
+  /** Arcade: usar o turbo (toque: gasta a barra toda). */
+  turbo?: boolean;
 }
 
 export const GP_IDLE: GpInput = { throttle: 0, brake: 0, steer: 0 };
@@ -156,6 +176,21 @@ export interface GpCar {
   rpm: number;
   /** Realista: corte de força da troca de marcha que ainda falta (s). */
   shiftT: number;
+  /** Arcade (kart): drift liberado agora, lado do drift (−1, 0, 1), há quanto tempo derrapa (s) e o pulinho (s). */
+  driftAvail: boolean;
+  driftDir: number;
+  driftT: number;
+  hop: number;
+  /** Arcade: barra de turbo (0 a 3), nível do turbo em uso (0 a 3), quanto falta dele (s) e o ganho de agora (0 a ~0,55). */
+  bar: number;
+  boostLevel: number;
+  boostT: number;
+  boostX: number;
+  /** Arcade: o botão de drift e o de turbo estavam apertados no passo anterior (o drift e o turbo valem ao apertar). */
+  driftHeld: boolean;
+  turboHeld: boolean;
+  /** Arcade: tempo que o aperto do drift ainda vale para entrar (s). */
+  driftPress: number;
   /** Quanto do freio está aplicado (sobe aos poucos até o pedido). */
   brakeLevel: number;
   /** Escorregão de lado agora (m/s): marcas e fumaça de pneu. */
@@ -228,9 +263,14 @@ export type GpEvent =
   | { type: 'pitin'; id: string }
   | { type: 'pitout'; id: string }
   | { type: 'cut'; id: string }
-  | { type: 'wall'; id: string; speed: number; x: number; z: number }
+  | { type: 'wall'; id: string; speed: number; x: number; z: number; kind?: 'metal' | 'tyres' }
   | { type: 'bump'; a: string; b: string; force: number; x: number; z: number }
-  | { type: 'dnf'; id: string };
+  | { type: 'dnf'; id: string }
+  | { type: 'drift'; id: string; dir: number }
+  | { type: 'bar'; id: string; level: number }
+  | { type: 'turbo'; id: string; level: number }
+  | { type: 'noturbo'; id: string }
+  | { type: 'pad'; id: string; x: number; z: number };
 
 export interface GpStanding {
   car: GpCar;
@@ -256,11 +296,16 @@ export interface GpRemoteState {
   spin?: number;
   gear?: number;
   skid?: number;
+  /** Arcade: lado do drift, pulinho, nível do turbo em uso e a barra. */
+  driftDir?: number;
+  hop?: number;
+  boostLevel?: number;
+  bar?: number;
 }
 
 const MARK = 10;
 /** Quantos números tem o estado físico de um carro (`pack`). */
-export const GP_PACK_LEN = 33;
+export const GP_PACK_LEN = 45;
 
 /**
  * Grid de largada pela classificação: do menor para o maior tempo; empate, larga na frente quem marcou primeiro; quem não
@@ -335,7 +380,8 @@ export class GpWorld {
     /** Modo de física (spec 080): o mesmo para todos os carros da partida. */
     readonly mode: GpPhysicsMode = 'arcade',
   ) {
-    this.track = gpTrack(def);
+    // sem pista dada, a do modo (o kart na Bala Track, o F1 na Marina)
+    this.track = gpTrack(def ?? gpTrackDefFor(mode));
     this.cars = infos.map((p, slot) => this.newCar(p, slot));
     this.beginQuali();
   }
@@ -360,6 +406,17 @@ export class GpWorld {
       gear: 1,
       rpm: 0,
       shiftT: 0,
+      driftAvail: false,
+      driftDir: 0,
+      driftT: 0,
+      hop: 0,
+      bar: 0,
+      boostLevel: 0,
+      boostT: 0,
+      boostX: 0,
+      driftHeld: false,
+      turboHeld: false,
+      driftPress: 0,
       brakeLevel: 0,
       skid: 0,
       idx: 0,
@@ -428,6 +485,12 @@ export class GpWorld {
     c.speed = 0;
     c.gear = 1;
     c.shiftT = 0;
+    c.driftDir = 0;
+    c.driftT = 0;
+    c.hop = 0;
+    c.boostLevel = 0;
+    c.boostT = 0;
+    c.boostX = 0;
     c.brakeLevel = 0;
     c.rThr = 0;
     c.rBrk = 0;
@@ -447,6 +510,7 @@ export class GpWorld {
 
   private resetRun(c: GpCar) {
     c.wear = 0;
+    c.bar = 0;
     c.slip = 0;
     c.drsAvail = false;
     c.drsOpen = false;
@@ -478,7 +542,7 @@ export class GpWorld {
     this.ended = false;
     this.events = [];
     const pit = this.track.pit;
-    for (const c of this.cars) {
+    for (const [k, c] of this.cars.entries()) {
       this.resetRun(c);
       c.qualiHold = 0;
       c.qualiStartT = null;
@@ -486,10 +550,15 @@ export class GpWorld {
       c.qualiMs = null;
       c.qualiAt = null;
       c.ghost = true;
-      // saindo da vaga do box: já serviu o box nesta passagem (não para de novo)
-      const s = pit.box + 4;
-      this.place(c, s, this.track.pitCenter(s) ?? 0);
-      c.pitServed = true;
+      if (pit) {
+        // saindo da vaga do box: já serviu o box nesta passagem (não para de novo)
+        const s = pit.box + 4;
+        this.place(c, s, this.track.pitCenter(s) ?? 0);
+        c.pitServed = true;
+      } else {
+        // pista sem box (kart): todos começam na pista, antes da linha (fantasmas)
+        this.place(c, GP_QUALI_START_S - 30 - (k % 6) * 2, 0);
+      }
     }
   }
 
@@ -551,7 +620,7 @@ export class GpWorld {
     if (this.phase === 'race') {
       this.collide(only);
       if (!only) {
-        this.slipstream();
+        if (this.mode === 'real') this.slipstream();
         this.ranks();
         this.checkEnd();
       }
@@ -565,6 +634,17 @@ export class GpWorld {
 
   /** Velocidade máxima agora (pela superfície e pelo modo; na faixa do box, o limitador). */
   vmaxOf(c: GpCar): number {
+    if (this.mode === 'arcade') {
+      const f =
+        c.surface === 'kerb'
+          ? GP_ARC_KERB_VMAX
+          : c.surface === 'grass'
+            ? GP_ARC_GRASS_VMAX
+            : c.surface === 'gravel'
+              ? GP_ARC_GRAVEL_VMAX
+              : 1;
+      return GP_ARC_VMAX * f;
+    }
     if (c.surface === 'pit') return GP_PIT_LIMIT;
     return gpVmaxOf(this.mode) * GP_SURFACE[c.surface].vmax;
   }
@@ -654,98 +734,147 @@ export class GpWorld {
       this.events.push({ type: 'qready', id: c.id });
       return;
     }
-    this.drsRules(c, input);
-    if (this.mode === 'real') this.stepReal(c, input, dt);
-    else this.stepArcade(c, input, dt);
+    if (this.mode === 'real') {
+      this.drsRules(c, input);
+      this.stepReal(c, input, dt);
+    } else this.stepKart(c, input, dt);
     this.trackCar(c, dt, racing);
   }
 
-  /** O passo do Arcade: a física da spec 079, sem mudar o cálculo (o teste de regressão confere). */
-  private stepArcade(c: GpCar, input: GpInput, dt: number) {
-    const racing = this.phase === 'race';
-    const done = racing && c.finished;
-    // velocidade para a frente (antes de virar o nariz): só para o volante saber quanto pode girar
-    const vf0 = c.vx * Math.sin(c.h) - c.vz * Math.cos(c.h);
-    const grip = this.gripOf(c);
-    const total = GP_GRIP_TOTAL * grip;
-    const brakeK = 1 - c.wear * (1 - GP_BRAKE_MIN);
-    const vmax = this.vmaxOf(c);
-    void done;
+  /**
+   * O passo do kart (Arcade, spec 081, Fase 5): a velocidade sempre para o nariz (não escorrega de lado), direção muito
+   * rápida que quase não perde velocidade, sem marchas. Drift (liberado por regras) muda o raio pelo volante, dá um pouco
+   * de velocidade e enche a barra de turbo mais rápido; o turbo gasta a barra e dá o impulso do nível atingido. Sem
+   * desgaste de pneu, vácuo, box nem DRS.
+   */
+  private stepKart(c: GpCar, input: GpInput, dt: number) {
+    const thr = clamp(input.throttle, 0, 1);
+    const brk = clamp(input.brake, 0, 1);
+    const st = clamp(input.steer, -1, 1);
+    c.steer = st;
+    c.wallCd -= dt;
+    let v = c.speed;
+    const av = Math.abs(v);
+    const road = c.surface === 'asphalt' || c.surface === 'kerb' || c.surface === 'pit';
 
-    // ---- volante: gira mais devagar parado e em alta velocidade; o giro solto das batidas soma e some com a aderência ----
-    const steer = clamp(input.steer, -1, 1);
-    const sv = Math.abs(vf0);
-    const steerK =
-      sv < GP_STEER_FULL_V ? sv / GP_STEER_FULL_V : 1 / (1 + (sv - GP_STEER_FULL_V) / GP_STEER_FALL);
-    c.h += (steer * GP_STEER_RATE * steerK * Math.sign(vf0 || 1) + c.spin) * dt;
-    c.spin *= Math.exp(-GP_SPIN_DAMP * Math.max(0.2, grip) * dt);
-    if (Math.abs(c.spin) < 1e-3) c.spin = 0;
-    c.steer = steer;
-    // o nariz já virou; a velocidade ainda aponta para onde ia: o pneu é que a traz para o nariz (até o limite dele)
-    const fx = Math.sin(c.h);
-    const fz = -Math.cos(c.h);
-    const rx = Math.cos(c.h);
-    const rz = Math.sin(c.h);
-    let vf = c.vx * fx + c.vz * fz;
-    let vl = c.vx * rx + c.vz * rz;
-
-    // ---- motor e câmbio automático ----
-    const throttle = clamp(input.throttle, 0, 1);
-    const brake = clamp(input.brake, 0, 1);
-    c.gear = vf < -0.3 ? 0 : gpAutoGear(c.gear, Math.max(0, vf));
-    const g = Math.max(1, c.gear);
-    const top = GP_GEAR_TOP[g - 1]!;
-    c.rpm = clamp(Math.max(0, vf) / top, 0.12, 1);
-    let engine = throttle * GP_ENGINE * GP_GEARS[g - 1]! * gpTorque(c.rpm);
-    // limitador: na última marcha o motor corta no giro máximo
-    if (g === GP_GEARS.length && Math.max(0, vf) >= top) engine = 0;
-    // pedal de freio progressivo
-    const want = brake > 0.05 ? brake : 0;
-    c.brakeLevel += clamp(want - c.brakeLevel, -GP_BRAKE_RAMP * 2 * dt, GP_BRAKE_RAMP * dt);
-    c.braking = c.brakeLevel > 0.1 && vf > 1;
-
-    // ---- força para a frente (limitada pelo pneu) ----
-    let along = 0;
-    if (c.brakeLevel > 0.05 && vf > 0.5) {
-      along = -Math.min(GP_BRAKE * brakeK * c.brakeLevel, total);
-      if (vf > 12) c.wear += GP_WEAR_BRAKE * c.brakeLevel * dt;
-    } else if (brake > 0.1 && vf <= 0.5) {
-      along = vf > -GP_REVERSE_MAX ? -GP_REVERSE_ACCEL * brake : 0;
-    } else if (throttle > 0.05) {
-      along = vf < 0 ? GP_BRAKE : Math.min(engine, total);
+    // ---- drift: liberado, entra ao apertar (para o lado do volante), sai ao soltar ou fora da pista ----
+    const held = !!input.drift;
+    c.driftAvail = v >= GP_ARC_DRIFT_MIN * GP_ARC_VMAX && Math.abs(st) > GP_ARC_DRIFT_STEER && road;
+    if (held && !c.driftHeld) c.driftPress = GP_ARC_DRIFT_GRACE;
+    if (!held) c.driftPress = 0;
+    if (held && c.driftPress > 0 && c.driftAvail && c.driftDir === 0) {
+      c.driftPress = 0;
+      c.driftDir = Math.sign(st);
+      c.driftT = 0;
+      c.hop = GP_ARC_HOP_SEC;
+      this.events.push({ type: 'drift', id: c.id, dir: c.driftDir });
     }
-    // arrasto do ar (menor com DRS e no vácuo) e resistência de rolagem
-    const drag = GP_DRAG * this.dragOf(c) * vf * Math.abs(vf) + GP_ROLL * vf + GP_ROLL0 * Math.sign(vf);
-    const nvf = vf + (along - drag) * dt;
-    // a rolagem não inverte o sentido sozinha
-    vf = Math.sign(nvf) !== Math.sign(vf) && Math.abs(along) < 1e-6 && vf !== 0 ? 0 : nvf;
-    if (Math.abs(vf) < 0.03 && Math.abs(along) < 1e-6) vf = 0;
-    // fora do asfalto (grama, brita, box) a máxima cai: perde velocidade até ela
-    if (GP_SURFACE[c.surface].vmax < 1 && vf > vmax) vf = Math.max(vmax, vf - GP_OVER_DECEL * dt);
+    if (c.driftDir !== 0 && (!held || !road || v < GP_ARC_DRIFT_MIN * GP_ARC_VMAX * 0.7)) c.driftDir = 0;
+    c.driftHeld = held;
+    c.driftPress = Math.max(0, c.driftPress - dt);
+    c.hop = Math.max(0, c.hop - dt);
+    const drifting = c.driftDir !== 0;
+    if (drifting) c.driftT += dt;
+    else c.driftT = 0;
 
-    // ---- de lado: o que sobra do pneu (círculo de atrito) corrige o escorregão; o resto vira derrapagem ----
-    const latAvail = Math.sqrt(Math.max(0, total * total - along * along));
-    const fix = latAvail * dt;
-    vl = Math.abs(vl) <= fix ? 0 : vl - Math.sign(vl) * fix;
-    vl -= vl * GP_SLIP_DAMP * dt;
-    c.skid = Math.abs(vl);
-    if (Math.abs(vl) > 0.3) {
-      vf -= Math.sign(vf) * Math.min(Math.abs(vf), GP_SLIDE_DRAG * Math.abs(vl) * dt * 10);
-      c.wear += GP_WEAR_SLIP * Math.abs(vl) * dt;
+    // ---- placa de turbo (Bala Track): turbo de nível 1 sem gastar a barra; passar de novo renova ----
+    if (this.track.pads.length && road) {
+      const k = this.track.padAt(c.s, c.d);
+      if (k >= 0 && (c.boostT <= 0 || c.boostLevel <= 1)) {
+        const fresh = c.boostT <= 0;
+        c.boostLevel = 1;
+        c.boostT = GP_ARC_BOOST[0]!.sec;
+        if (fresh) this.events.push({ type: 'pad', id: c.id, x: c.x, z: c.z });
+      }
+    }
+    // ---- turbo: gasta a barra toda; o nível é o terço atingido ----
+    const tap = !!input.turbo;
+    if (tap && !c.turboHeld) {
+      if (c.bar < 1) this.events.push({ type: 'noturbo', id: c.id });
+      else {
+        const level = Math.min(GP_ARC_BOOST.length, Math.floor(c.bar));
+        c.bar = 0;
+        c.boostLevel = level;
+        c.boostT = GP_ARC_BOOST[level - 1]!.sec;
+        this.events.push({ type: 'turbo', id: c.id, level });
+      }
+    }
+    c.turboHeld = tap;
+
+    // ---- direção ----
+    const yawMax = GP_ARC_YAW_LOW + (GP_ARC_YAW_HIGH - GP_ARC_YAW_LOW) * Math.min(1, av / GP_ARC_VMAX);
+    const slowK = Math.min(1, av / GP_ARC_YAW_FULL_V);
+    let yaw: number;
+    let rel = 0;
+    if (drifting) {
+      // o volante para dentro fecha a curva, para fora abre
+      rel = st * c.driftDir;
+      const f = rel >= 0 ? 1 + (GP_ARC_DRIFT_IN - 1) * rel : 1 + (1 - GP_ARC_DRIFT_OUT) * rel;
+      yaw = c.driftDir * yawMax * GP_ARC_DRIFT_BASE * f;
+    } else yaw = st * yawMax;
+    c.h += yaw * slowK * Math.sign(v || 1) * dt;
+    // giro e empurrão de uma batida: somem sozinhos
+    if (c.spin !== 0) {
+      c.h += c.spin * dt;
+      c.spin *= Math.exp(-GP_BUMP_SPIN_DAMP * dt);
+      if (Math.abs(c.spin) < 1e-3) c.spin = 0;
+    }
+    const knockKeep = Math.exp(-GP_BUMP_KNOCK_DAMP * dt);
+    c.kx *= knockKeep;
+    c.kz *= knockKeep;
+
+    // ---- velocidade: alvo pela superfície, drift e turbo ----
+    if (c.boostT > 0) {
+      const lv = GP_ARC_BOOST[c.boostLevel - 1]!;
+      c.boostX = lv.extra * (road ? 1 : GP_ARC_BOOST_OFFROAD);
+      c.boostT = Math.max(0, c.boostT - dt);
+    } else if (c.boostX > 0) {
+      // fim do turbo: volta à máxima normal numa rampa curta
+      const lv = GP_ARC_BOOST[Math.max(0, c.boostLevel - 1)]!;
+      c.boostX = Math.max(0, c.boostX - (lv.extra / GP_ARC_BOOST_FADE) * dt);
+      if (c.boostX === 0) c.boostLevel = 0;
+    }
+    const boosting = c.boostT > 0;
+    const target = this.vmaxOf(c) * (drifting ? GP_ARC_DRIFT_SPEED : 1) * (1 + c.boostX);
+    if (brk > 0.05 && v > 0.5) v = Math.max(0, v - GP_ARC_BRAKE * brk * dt);
+    else if (brk > 0.1 && v <= 0.5 && !boosting) v = Math.max(-GP_ARC_REVERSE_MAX, v - GP_ARC_REVERSE_ACCEL * brk * dt);
+    else if (v < 0) v = Math.min(0, v + GP_ARC_BRAKE * Math.max(thr, 0.3) * dt);
+    else if (boosting && v < target) v = Math.min(target, v + ((target - v) / GP_ARC_BOOST_RISE) * dt + 2 * dt);
+    else if (thr > 0.05 && v < target) v = Math.min(target, v + thr * GP_ARC_ACC_K * (target - v) * dt + 0.5 * dt);
+    else if (thr <= 0.05) v -= GP_ARC_COAST * v * dt;
+    // acima da máxima da hora (zebra, grama, fim do turbo): perde até ela, sem corte brusco
+    if (v > target) v = Math.max(target, v - GP_ARC_OVER_DECEL * dt);
+    if (Math.abs(v) < 0.03 && thr <= 0.05 && brk <= 0.05) v = 0;
+    // curvando quase não perde velocidade
+    v -= v * GP_ARC_TURN_LOSS * Math.min(1, Math.abs(yaw) / yawMax) * dt;
+
+    // ---- barra: enche andando; derrapando, bem mais rápido ----
+    if (v > 1 && !boosting) {
+      let rate = (GP_ARC_BAR_MAX / GP_ARC_BAR_FULL_SEC) * Math.min(1, v / GP_ARC_VMAX);
+      if (drifting) rate *= GP_ARC_DRIFT_FILL * (1 + (GP_ARC_DRIFT_FILL_IN - 1) * Math.max(0, rel));
+      const before = Math.floor(c.bar);
+      c.bar = Math.min(GP_ARC_BAR_MAX, c.bar + rate * dt);
+      const now = Math.floor(c.bar);
+      if (now > before) this.events.push({ type: 'bar', id: c.id, level: now });
     }
 
-    const nfx = Math.sin(c.h);
-    const nfz = -Math.cos(c.h);
-    const nrx = Math.cos(c.h);
-    const nrz = Math.sin(c.h);
-    c.vx = nfx * vf + nrx * vl;
-    c.vz = nfz * vf + nrz * vl;
-    c.speed = vf;
+    c.speed = v;
+    // som e desenho: um giro contínuo (sem marchas) e as marcas de pneu no drift
+    c.gear = v < -0.3 ? 0 : 1;
+    c.rpm = clamp(0.15 + 0.85 * (Math.abs(v) / (GP_ARC_VMAX * 1.55)) + thr * 0.08, 0.1, 1);
+    c.skid = drifting ? 3 : 0;
+    c.brakeLevel = brk;
+    c.braking = brk > 0.1 && v > 1;
+    c.vx = Math.sin(c.h) * v + c.kx;
+    c.vz = -Math.cos(c.h) * v + c.kz;
     c.x += c.vx * dt;
     c.z += c.vz * dt;
-    c.wear += GP_WEAR_DIST * Math.abs(vf) * dt;
-    if (c.surface === 'grass' || c.surface === 'gravel') c.wear += GP_WEAR_OFF * dt;
-    c.wear = Math.min(1, c.wear);
+  }
+
+  /** Cancela o drift (batida, muro). */
+  private stopDrift(c: GpCar) {
+    c.driftDir = 0;
+    c.driftT = 0;
   }
 
   /**
@@ -885,45 +1014,34 @@ export class GpWorld {
     c.vz = -Math.cos(c.h) * c.speed;
   }
 
-  /** Bate na barreira: impulso com restituição e atrito no ponto de contato (o carro pode girar), e perde velocidade. */
-  private hitWall(c: GpCar, nx: number, nz: number, back: number, dt: number) {
+  /**
+   * Kart na barreira (spec 081, 6B.4): no muro, batida normal (perde ~35 % e é empurrado para dentro, alinhando um pouco
+   * com a pista); na pilha de pneus, quica para trás (a velocidade vira de volta, metade). Cancela o drift.
+   */
+  private hitWallKart(c: GpCar, nx: number, nz: number, back: number, i: number, kind: 'metal' | 'tyres') {
     c.x -= nx * back;
     c.z -= nz * back;
-    // ponto de contato: a ponta do carro (frente ou trás) mais perto da barreira
-    const fx = Math.sin(c.h) * GP_CAR_HALF;
-    const fz = -Math.cos(c.h) * GP_CAR_HALF;
-    const front = fx * nx + fz * nz >= 0;
-    const rxp = (front ? fx : -fx) + nx * GP_CAR_R;
-    const rzp = (front ? fz : -fz) + nz * GP_CAR_R;
-    // velocidade do ponto de contato (translação + giro)
-    const w = c.spin;
-    const pvx = c.vx - w * rzp;
-    const pvz = c.vz + w * rxp;
-    const vn = pvx * nx + pvz * nz;
-    const hit = Math.hypot(c.vx, c.vz);
-    if (vn > 0) {
-      const rn = cross(rxp, rzp, nx, nz);
-      const j = ((1 + GP_WALL_E) * vn) / (1 + (rn * rn) / GP_INERTIA);
-      c.vx -= nx * j;
-      c.vz -= nz * j;
-      c.spin -= (rn * j) / GP_INERTIA;
-      // atrito de raspar na barreira: freia o deslizamento ao longo dela e gira o carro
-      const tx = -nz;
-      const tz = nx;
-      const vt = pvx * tx + pvz * tz;
-      const rt = cross(rxp, rzp, tx, tz);
-      const jt = clamp(-vt / (1 + (rt * rt) / GP_INERTIA), -GP_WALL_MU * j, GP_WALL_MU * j);
-      c.vx += tx * jt;
-      c.vz += tz * jt;
-      c.spin += (rt * jt) / GP_INERTIA;
+    c.kx = 0;
+    c.kz = 0;
+    this.stopDrift(c);
+    const fx = Math.sin(c.h);
+    const fz = -Math.cos(c.h);
+    // só conta a batida quando o carro vai de encontro à barreira
+    const into = (fx * nx + fz * nz) * c.speed;
+    if (c.wallCd <= 0 && into > 0.5) {
+      const hit = Math.abs(c.speed);
+      if (kind === 'tyres') c.speed = -GP_ARC_TYRE_REBOUND * c.speed;
+      else {
+        c.speed *= GP_ARC_WALL_KEEP;
+        const th = this.track.heading(i);
+        const along = Math.cos(c.h - th) >= 0 ? th : th + Math.PI;
+        c.h += Math.atan2(Math.sin(along - c.h), Math.cos(along - c.h)) * GP_REAL_WALL_ALIGN;
+      }
+      c.wallCd = GP_ARC_WALL_CD;
+      if (hit > 4) this.events.push({ type: 'wall', id: c.id, speed: hit, x: c.x + nx, z: c.z + nz, kind });
     }
-    // barreira de pneus: amortece muito (o carro para no lugar e pode voltar)
-    const keep = GP_WALL_KEEP ** (dt * 6);
-    c.vx *= keep;
-    c.vz *= keep;
-    c.speed = c.vx * Math.sin(c.h) - c.vz * Math.cos(c.h);
-    if (hit > 4 && vn > 2)
-      this.events.push({ type: 'wall', id: c.id, speed: hit, x: c.x + rxp, z: c.z + rzp });
+    c.vx = Math.sin(c.h) * c.speed;
+    c.vz = -Math.cos(c.h) * c.speed;
   }
 
   /** Atualiza onde o carro está na pista: superfície, barreira, corte, box, setores, voltas. */
@@ -937,7 +1055,7 @@ export class GpWorld {
       const nx = -tr.tz[p.i]! * Math.sign(p.d);
       const nz = tr.tx[p.i]! * Math.sign(p.d);
       if (this.mode === 'real') this.hitWallReal(c, nx, nz, Math.abs(p.d) - lim, p.i);
-      else this.hitWall(c, nx, nz, Math.abs(p.d) - lim, dt);
+      else this.hitWallKart(c, nx, nz, Math.abs(p.d) - lim, p.i, tr.wallKind(p.i, p.d));
       p = tr.project(c.x, c.z, p.i);
     }
     c.idx = p.i;
@@ -985,7 +1103,7 @@ export class GpWorld {
 
     // ---- box ----
     if (c.surface !== 'pit') c.pitServed = false;
-    else if (!c.pitServed && c.pitHold <= 0 && tr.inBox(c.s, c.d)) {
+    else if (this.mode === 'real' && !c.pitServed && c.pitHold <= 0 && tr.inBox(c.s, c.d)) {
       c.pitHold = GP_PIT_STOP_SEC;
       c.vx = 0;
       c.vz = 0;
@@ -1092,6 +1210,11 @@ export class GpWorld {
     c.spin = st.spin ?? 0;
     c.gear = st.gear ?? c.gear;
     c.skid = st.skid ?? 0;
+    c.driftDir = st.driftDir ?? 0;
+    c.hop = st.hop ?? 0;
+    c.boostLevel = st.boostLevel ?? 0;
+    c.boostT = c.boostLevel > 0 ? 1 : 0;
+    c.bar = st.bar ?? c.bar;
     c.prog = st.prog;
     c.drsOpen = st.drs;
     c.slip = st.slip;
@@ -1234,26 +1357,21 @@ export class GpWorld {
   }
 
   /**
-   * Aplica a mudança de velocidade de uma batida. No Arcade a velocidade é um vetor (o carro pode escorregar); no Realista
-   * ela sempre aponta para o nariz: a parte para a frente muda a velocidade e a de lado vira o empurrão que some sozinho.
-   * O giro de uma batida é limitado.
+   * Aplica a mudança de velocidade de uma batida. Nos dois modos a velocidade sempre aponta para o nariz: a parte para a
+   * frente muda a velocidade e a de lado vira o empurrão que some sozinho. O giro de uma batida é limitado. No kart, uma
+   * batida de verdade cancela o drift.
    */
   private kick(c: GpCar, dvx: number, dvz: number, dspin: number) {
     c.spin += clamp(dspin, -GP_BUMP_SPIN_MAX, GP_BUMP_SPIN_MAX);
-    if (this.mode === 'real') {
-      const fx = Math.sin(c.h);
-      const fz = -Math.cos(c.h);
-      const along = dvx * fx + dvz * fz;
-      c.speed += along;
-      c.kx += dvx - fx * along;
-      c.kz += dvz - fz * along;
-      c.vx = fx * c.speed + c.kx;
-      c.vz = fz * c.speed + c.kz;
-      return;
-    }
-    c.vx += dvx;
-    c.vz += dvz;
-    c.speed = c.vx * Math.sin(c.h) - c.vz * Math.cos(c.h);
+    const fx = Math.sin(c.h);
+    const fz = -Math.cos(c.h);
+    const along = dvx * fx + dvz * fz;
+    c.speed += along;
+    c.kx += dvx - fx * along;
+    c.kz += dvz - fz * along;
+    c.vx = fx * c.speed + c.kx;
+    c.vz = fz * c.speed + c.kz;
+    if (this.mode === 'arcade' && Math.hypot(dvx, dvz) > 1) this.stopDrift(c);
   }
 
   /** Vácuo passivo: logo atrás de outro carro e alinhado, o arrasto cai (mais perto, mais). Vale para todos. */
@@ -1382,6 +1500,18 @@ export class GpWorld {
       c.kx,
       c.kz,
       c.shiftT,
+      c.driftDir,
+      c.driftT,
+      c.hop,
+      c.bar,
+      c.boostLevel,
+      c.boostT,
+      c.boostX,
+      c.driftHeld ? 1 : 0,
+      c.turboHeld ? 1 : 0,
+      c.driftAvail ? 1 : 0,
+      c.spin,
+      c.driftPress,
     ];
   }
 
@@ -1417,7 +1547,19 @@ export class GpWorld {
     c.kx = v[30]!;
     c.kz = v[31]!;
     c.shiftT = v[32]!;
-    // no Realista a velocidade é sempre para o nariz (sem o empurrão de lado); no Arcade vem do vetor
+    c.driftDir = v[33]!;
+    c.driftT = v[34]!;
+    c.hop = v[35]!;
+    c.bar = v[36]!;
+    c.boostLevel = v[37]!;
+    c.boostT = v[38]!;
+    c.boostX = v[39]!;
+    c.driftHeld = v[40] === 1;
+    c.turboHeld = v[41] === 1;
+    c.driftAvail = v[42] === 1;
+    c.spin = v[43]!;
+    c.driftPress = v[44]!;
+    // a velocidade é sempre para o nariz (sem o empurrão de lado)
     c.speed = (c.vx - c.kx) * Math.sin(c.h) - (c.vz - c.kz) * Math.cos(c.h);
     const p = this.track.project(c.x, c.z, c.idx);
     c.idx = p.i;

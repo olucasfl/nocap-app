@@ -5,7 +5,9 @@ import type { GpPhysicsMode } from '@nocap/games';
  * tela quando existirem de verdade (`GP_KART_READY`): até lá o Arcade é a física antiga, com o F1 na Marina, e a tela diz
  * isso, sem prometer o que ainda não há.
  */
-export const GP_KART_READY = false;
+export const GP_KART_READY = true;
+/** A pista do kart (Fase 6B): até existir, o kart corre na Marina. */
+export const GP_BALA_READY = true;
 
 export interface GpVehicleInfo {
   mode: GpPhysicsMode;
@@ -25,7 +27,7 @@ const KART: GpVehicleInfo = {
   vehicle: 'kart',
   modeName: 'Arcade',
   vehicleName: 'Kart',
-  track: 'Bala Track',
+  track: GP_BALA_READY ? 'Bala Track' : 'Circuito da Marina',
   desc: 'Drift e turbo, estilo kart.',
 };
 const ARCADE_F1: GpVehicleInfo = {
@@ -34,7 +36,7 @@ const ARCADE_F1: GpVehicleInfo = {
   modeName: 'Arcade',
   vehicleName: 'F1',
   track: 'Circuito da Marina',
-  desc: 'Física solta: o carro escorrega de lado.',
+  desc: 'Drift e turbo, estilo kart.',
 };
 const REAL_F1: GpVehicleInfo = {
   mode: 'real',

@@ -8,6 +8,9 @@ import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import {
+  GP_ARC_DRIFT_YAW,
+  GP_ARC_HOP_H,
+  GP_ARC_HOP_SEC,
   GP_CAR_LEN,
   GP_CAR_WID,
   GP_HALF_WIDTH,
@@ -36,6 +39,7 @@ import {
 } from '@nocap/games';
 import { mapEdge } from '../atravessa/models';
 import { buildCar, type CarModel } from './car-model';
+import { buildKart, kartReady, type KartModel } from './kart-model';
 
 export type GpCamMode = 'far' | 'chase' | 'cockpit';
 export type GpQuality = 'low' | 'medium' | 'high';
@@ -58,9 +62,15 @@ const GRAVEL = 0xe6cf92;
 const WATER = 0x2a7fd4;
 const STAND = 0xf2c230;
 
+/** Cores dos 3 níveis do turbo do kart (azul, laranja, rosa) e da faísca antes do 1º terço. */
+const BOOST_COLORS = [0xfff1c8, 0x3aa0ff, 0xff8a1f, 0xff4fd8] as const;
+
 interface CarView {
   id: string;
   m: CarModel;
+  /** Kart: o ângulo do corpo no drift (suavizado) e a chama do escape do turbo. */
+  driftYaw: number;
+  flame: THREE.Mesh;
   /** Giro das rodas e abertura da asa (suavizada). */
   wheelA: number;
   flapA: number;
@@ -93,6 +103,7 @@ interface Spark {
   vy: number;
   vz: number;
   age: number;
+  color: number;
 }
 
 const tmpM = new THREE.Matrix4();
@@ -230,6 +241,12 @@ export class GpScene {
   private lead = new THREE.Vector3();
   private chasePos = new THREE.Vector3();
   private chaseWant = new THREE.Vector3();
+  private sparkColor = new THREE.Color();
+  /** Tremida da tela no turbo e na zebra do kart (opção do menu Comandos; desligada com movimento reduzido). */
+  shakeOn = true;
+  /** Tremida da câmera de agora (some sozinha) e o campo de visão extra do turbo (suavizado). */
+  private camShake = 0;
+  private boostFov = 0;
   private chaseInit = false;
   private farDist = 82;
   /** Objetos do cockpit (volante e bordas): só aparecem na câmera de dentro do carro. */
@@ -249,7 +266,7 @@ export class GpScene {
   private markNext = 0;
   private crew: { g: THREE.Group; home: THREE.Vector3; to: THREE.Vector3; gun: THREE.Object3D }[] =
     [];
-  private boxSpot: { x: number; z: number; h: number };
+  private boxSpot: { x: number; z: number; h: number } = { x: 0, z: 0, h: 0 };
   private quality: GpQuality;
   private reduced: boolean;
   private meId: string;
@@ -306,13 +323,15 @@ export class GpScene {
     this.puffTex = this.makePuffTexture();
     this.buildGround();
     this.buildTrack();
-    this.buildPit();
+    if (world.track.pit) this.buildPit();
     this.buildGantry();
     this.buildBarriers();
     this.buildScenery();
     const tr = world.track;
-    this.boxSpot = tr.pointAt(tr.pit.box, tr.pitCenter(tr.pit.box) ?? 0);
-    this.buildCrew();
+    if (tr.pit) {
+      this.boxSpot = tr.pointAt(tr.pit.box, tr.pitCenter(tr.pit.box) ?? 0);
+      this.buildCrew();
+    }
     // marcas de pneu e faíscas (malhas instanciadas: uma chamada de desenho cada)
     const markGeo = new THREE.PlaneGeometry(0.28 * CAR_VIS, 0.9 * CAR_VIS);
     markGeo.rotateX(-Math.PI / 2);
@@ -332,9 +351,11 @@ export class GpScene {
     this.scene.add(this.marks);
     this.sparkMesh = new THREE.InstancedMesh(
       new THREE.BoxGeometry(0.08, 0.08, 0.08),
-      new THREE.MeshBasicMaterial({ color: 0xffb347, toneMapped: false }),
-      120,
+      new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false }),
+      160,
     );
+    // cor por faísca: batida em laranja; no drift do kart, a cor do nível da barra
+    this.sparkMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(160 * 3), 3);
     this.sparkMesh.count = 0;
     this.scene.add(this.sparkMesh);
     // o cockpit (filho da câmera): volante com o visor da marcha e as bordas
@@ -639,7 +660,7 @@ export class GpScene {
     this.ribbon((i) => (tr.kerb[i] ? { a: -H - GP_KERB_W, b: -H } : null), kerb, 0.045, painted());
     this.ribbon((i) => (tr.kerb[i] ? { a: H, b: H + GP_KERB_W } : null), kerb, 0.045, painted());
     // zonas de DRS: faixa verde na largada da zona, "DRS" pintado no chão e placa na margem
-    this.buildDrsZones();
+    if (this.world.mode === 'real') this.buildDrsZones();
     // a linha de chegada quadriculada e as linhas dos setores
     const cells = 14;
     const size = (H * 2) / cells;
@@ -691,8 +712,9 @@ export class GpScene {
       0.025,
     );
     // a vaga do box (amarela) e as garagens atrás da faixa
-    const pc = tr.pitCenter(tr.pit.box) ?? 0;
-    const p = tr.pointAt(tr.pit.box, pc);
+    const pitDef = tr.pit!;
+    const pc = tr.pitCenter(pitDef.box) ?? 0;
+    const p = tr.pointAt(pitDef.box, pc);
     const box = new THREE.Mesh(
       new THREE.BoxGeometry(GP_PIT_HALF * 2 - 0.6, 0.04, GP_PIT_BOX_LEN),
       this.std(0xffd23a, 0.7),
@@ -1250,7 +1272,7 @@ export class GpScene {
     const fz = -Math.cos(b.h);
     const rx = Math.cos(b.h);
     const rz = Math.sin(b.h);
-    const sideSign = this.world.track.pit.side;
+    const sideSign = this.world.track.pit?.side ?? 1;
     for (const [lx, lz] of [
       [-1, -1],
       [1, -1],
@@ -1381,11 +1403,23 @@ export class GpScene {
   }
 
   private addCar(c: GpCar) {
-    const m = buildCar({ fur: c.color, paint: c.paint, pbr: this.quality !== 'low' });
+    const kart = this.world.mode === 'arcade' && kartReady();
+    const m: CarModel | KartModel = kart
+      ? buildKart({ fur: c.color, paint: c.paint, pbr: this.quality !== 'low' })
+      : buildCar({ fur: c.color, paint: c.paint, pbr: this.quality !== 'low' });
     const own = c.id === this.meId;
     const tag = this.textSprite(c.name, 'rgba(11,14,23,0.88)');
     tag.position.y = 2.6;
     m.group.scale.setScalar(CAR_VIS);
+    // a chama do turbo (kart): atrás do carro, brilhante, sem luz real
+    const flame = new THREE.Mesh(
+      new THREE.ConeGeometry(0.22, 1.1, 10),
+      new THREE.MeshBasicMaterial({ color: BOOST_COLORS[1], transparent: true, opacity: 0.85, toneMapped: false }),
+    );
+    flame.rotation.x = Math.PI / 2;
+    flame.position.set(0, 0.45, 1.95);
+    flame.visible = false;
+    m.group.add(flame);
     tag.visible = !own;
     m.group.add(tag);
     m.group.traverse((o) => {
@@ -1410,6 +1444,8 @@ export class GpScene {
       id: c.id,
       m,
       tag,
+      driftYaw: 0,
+      flame,
       ghost: false,
       wag: 0,
       shake: 0,
@@ -1483,19 +1519,20 @@ export class GpScene {
     }
   }
 
-  private spark(x: number, z: number, n: number) {
+  private spark(x: number, z: number, n: number, color = 0xffb347, power = 1) {
     if (this.quality === 'low' || this.reduced) return;
-    for (let i = 0; i < n && this.sparks.length < 120; i++) {
+    for (let i = 0; i < n && this.sparks.length < 160; i++) {
       const a = Math.random() * Math.PI * 2;
       const sp = 3 + Math.random() * 6;
       this.sparks.push({
         x,
         y: 0.4,
         z,
-        vx: Math.cos(a) * sp,
-        vy: 2 + Math.random() * 4,
-        vz: Math.sin(a) * sp,
+        vx: Math.cos(a) * sp * power,
+        vy: (2 + Math.random() * 4) * power,
+        vz: Math.sin(a) * sp * power,
         age: 0,
+        color,
       });
     }
   }
@@ -1560,6 +1597,14 @@ export class GpScene {
       // as rodas giram com a velocidade; a asa de trás abre com o DRS (suave)
       v.wheelA += (c.speed * dt) / (v.m.wheelR * CAR_VIS);
       for (const wh of v.m.wheels) wh.rotation.x = v.wheelA;
+      if ('kart' in v.m)
+        (v.m as KartModel).update(dt, {
+          steer: c.steer,
+          throttle: c.braking ? 0 : Math.abs(c.speed) > 0.5 ? 1 : 0,
+          brake: c.brakeLevel,
+          speed: c.speed,
+          boost: c.boostT > 0 ? c.boostLevel : 0,
+        });
       v.flapA += ((c.drsOpen ? -0.75 : 0) - v.flapA) * Math.min(1, dt * 10);
       v.m.flap.rotation.x = v.flapA;
       // a cauda: balanço calmo andando; forte no vácuo
@@ -1568,6 +1613,33 @@ export class GpScene {
       const amp = this.reduced ? 0.08 : 0.16 + fast * 0.12 + c.slip * 0.55;
       v.m.tail.rotation.y = Math.sin(v.wag) * amp;
       v.shake = Math.max(0, v.shake - dt * 3);
+      // kart (spec 081, 5.4 e 5.5): o corpo vira para fora no drift, pula ao entrar, estica no turbo e a chama acende
+      if (w.mode === 'arcade') {
+        const want = c.driftDir * GP_ARC_DRIFT_YAW;
+        v.driftYaw += (want - v.driftYaw) * Math.min(1, dt * 9);
+        v.m.body.rotation.y = v.driftYaw;
+        const hop = c.hop > 0 ? Math.sin(Math.PI * (1 - c.hop / GP_ARC_HOP_SEC)) * GP_ARC_HOP_H : 0;
+        v.m.group.position.y = hop * CAR_VIS;
+        const boost = c.boostT > 0 && c.boostLevel > 0;
+        v.m.body.scale.z = boost && !this.reduced ? 1.04 : 1;
+        v.flame.visible = boost;
+        if (boost) {
+          const mat = v.flame.material as THREE.MeshBasicMaterial;
+          mat.color.setHex(BOOST_COLORS[c.boostLevel]!);
+          const f = this.reduced ? 1 : 0.8 + Math.random() * 0.45;
+          v.flame.scale.set(1, 1, f * (0.7 + c.boostLevel * 0.3));
+        }
+        // faíscas nas rodas de trás no drift, da cor do nível da barra
+        if (c.driftDir !== 0 && Math.random() < 0.6) {
+          const rx = Math.cos(p.h);
+          const rz = Math.sin(p.h);
+          const bx = p.x - Math.sin(p.h) * GP_CAR_LEN * 0.3;
+          const bz = p.z + Math.cos(p.h) * GP_CAR_LEN * 0.3;
+          const lv = Math.min(3, Math.floor(c.bar));
+          const side = Math.random() < 0.5 ? 1 : -1;
+          this.spark(bx + rx * side * GP_CAR_WID * 0.4, bz + rz * side * GP_CAR_WID * 0.4, 2, BOOST_COLORS[lv], 0.35);
+        }
+      }
       v.m.body.position.x = this.reduced ? 0 : Math.sin(this.t * 60) * v.shake * 0.08;
       v.m.body.rotation.z = -c.steer * Math.min(1, fast * 1.2) * 0.05;
       this.setGhost(v, w.phase === 'quali' && c.id !== focusId);
@@ -1628,10 +1700,24 @@ export class GpScene {
       s.y = Math.max(0.05, s.y + s.vy * dt);
       s.z += s.vz * dt;
       tmpM.makeTranslation(s.x, s.y, s.z);
+      this.sparkColor.setHex(s.color);
+      this.sparkMesh.setColorAt(sn, this.sparkColor);
       this.sparkMesh.setMatrixAt(sn++, tmpM);
     }
     this.sparkMesh.count = sn;
     this.sparkMesh.instanceMatrix.needsUpdate = true;
+    if (this.sparkMesh.instanceColor) this.sparkMesh.instanceColor.needsUpdate = true;
+    // kart: o turbo abre o campo de visão (+6°, +10°, +14°) e treme a câmera; a zebra vibra (opção e movimento reduzido)
+    if (w.mode === 'arcade' && focusCar) {
+      const lv = focusCar.boostT > 0 ? focusCar.boostLevel : 0;
+      const fovWant = [0, 6, 10, 14][lv] ?? 0;
+      this.boostFov += (fovWant - this.boostFov) * Math.min(1, dt * (lv ? 6 : 3));
+      const shakeWant = lv ? lv * 0.35 : focusCar.surface === 'kerb' && Math.abs(focusCar.speed) > 8 ? 0.25 : 0;
+      this.camShake = this.shakeOn && !this.reduced ? Math.max(shakeWant, this.camShake - dt * 2) : 0;
+    } else {
+      this.boostFov = 0;
+      this.camShake = 0;
+    }
     this.updateCamera(dt, focusPose, focusCar);
     // sombra só dos carros perto do foco (12 carros projetando sombra pesa no celular)
     if (focusPose && this.quality !== 'low') {
@@ -1784,8 +1870,12 @@ export class GpScene {
       cam.quaternion.slerpQuaternions(this.camFrom.q, q, e);
       fov = this.camFrom.fov + (fov - this.camFrom.fov) * e;
     }
+    if (this.camShake > 0 && this.mode !== 'far') {
+      cam.position.x += Math.sin(this.t * 83) * this.camShake * 0.12;
+      cam.position.y += Math.cos(this.t * 71) * this.camShake * 0.09;
+    }
     cam.near = this.mode === 'cockpit' ? 0.04 : this.mode === 'chase' ? 0.2 : 2;
-    cam.fov = fov;
+    cam.fov = fov + (this.mode === 'far' ? 0 : this.boostFov);
     cam.updateProjectionMatrix();
     // volante e visor da marcha
     const inside = this.mode === 'cockpit' && this.camMix >= 1;
