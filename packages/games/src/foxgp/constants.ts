@@ -254,9 +254,9 @@ export const GP_ROOM_MAX_RACE_SEC = 600;
 export const GP_ROOM_STALL_MS = 12_000;
 
 /**
- * Velocidade na tela (spec 081, seção 4): ×8,5, como na F1 (40 m/s do Realista = 340 km/h; 28 m/s do kart ≈ 240).
+ * Velocidade na tela (spec 081, seção 4): ×7 (52 m/s do Realista ≈ 364 km/h; 34 m/s do kart ≈ 238). Mais rápido desde que os carros dobraram de tamanho (pedido do Italo, 12/11/2026).
  */
-export const GP_KMH_PER_MS = 8.5;
+export const GP_KMH_PER_MS = 7;
 export const gpKmh = (v: number) => Math.round(Math.abs(v) * GP_KMH_PER_MS);
 /** Marcha de 1 a 8 pela velocidade (só desenho). */
 export function gpGear(v: number): number {
@@ -316,16 +316,16 @@ export const GP_REAL_SCRUB = 7;
 export const GP_REAL_SCRUB_MAX = 2;
 /**
  * Motor com câmbio de verdade (spec 081, Fase 4): a força é `ENGINE × torque(giro) / máxima da marcha` (marcha curta
- * empurra mais), limitada a `ACC_MAX` (o pneu). Alvos: 0→15 m/s em ~1,9 s, 15→30 em ~3,6 s, 30→39 em ~7,6 s e a máxima
- * de ~40,5 m/s no limitador da 8ª. Arrasto (por (m/s)²) e rolagem (m/s²).
+ * empurra mais), limitada a `ACC_MAX` (o pneu). Alvos: 0→15 m/s em ~1,9 s, subindo até a máxima
+ * de ~52 m/s no limitador da 8ª. Arrasto (por (m/s)²) e rolagem (m/s²).
  */
-export const GP_REAL_ENGINE = 210;
-export const GP_REAL_ACC_MAX = 10;
-export const GP_REAL_DRAG = 0.002;
+export const GP_REAL_ENGINE = 270;
+export const GP_REAL_ACC_MAX = 12;
+export const GP_REAL_DRAG = 0.0012;
 export const GP_REAL_ROLL = 0.3;
 /** Velocidade (m/s) em que cada marcha chega ao giro máximo; a 8ª corta no limitador (a máxima do Realista). */
-export const GP_REAL_VMAX = 40.5;
-export const GP_REAL_GEAR_TOP = [10.5, 15, 19.5, 24, 28.5, 33, 37, GP_REAL_VMAX] as const;
+export const GP_REAL_VMAX = 52;
+export const GP_REAL_GEAR_TOP = [13.5, 19.3, 25, 30.8, 36.6, 42.4, 47.5, GP_REAL_VMAX] as const;
 /** Troca para cima perto do giro máximo e reduz com folga; na troca, a força corta por este tempo (s). */
 export const GP_REAL_SHIFT_UP = 0.97;
 export const GP_REAL_SHIFT_DOWN = 0.62;
@@ -362,10 +362,10 @@ export const gpRealBrake = (v: number) => GP_REAL_BRAKE0 + GP_REAL_BRAKE_V2 * v 
 
 // ---- Arcade: o kart (spec 081, Fase 5). Valores iniciais [AJUSTAR], para calibrar jogando ----
 
-/** Máxima normal do kart (m/s): ~220 km/h na tela (×8,5); calibrada pela volta de 50 a 65 s na Bala Track. */
-export const GP_ARC_VMAX = 26;
+/** Máxima normal do kart (m/s): ~238 km/h na tela (×7); calibrada pela volta de 50 a 65 s na Bala Track. */
+export const GP_ARC_VMAX = 34;
 /** Aceleração sem marchas: `K × (máxima − v)`, chega a 90 % da máxima em ~3,5 s (ln 10 / K). */
-export const GP_ARC_ACC_K = 0.66;
+export const GP_ARC_ACC_K = 0.75;
 /** Freio forte e curto (m/s²), ré e o quanto perde sem acelerar (por segundo, proporcional à velocidade). */
 export const GP_ARC_BRAKE = 30;
 export const GP_ARC_REVERSE_MAX = 7;
@@ -378,7 +378,7 @@ export const GP_ARC_OVER_DECEL = 14;
  * (não gira parado). Curvando, quase não perde velocidade (`TURN_LOSS` por segundo com o volante todo virado).
  */
 export const GP_ARC_YAW_LOW = 2.2;
-export const GP_ARC_YAW_HIGH = 1.1;
+export const GP_ARC_YAW_HIGH = 1.25;
 export const GP_ARC_YAW_FULL_V = 4;
 export const GP_ARC_TURN_LOSS = 0.005;
 /** Máxima em cada superfície (parte da normal): zebra tira um pouco, grama e brita bem mais. */
