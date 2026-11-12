@@ -348,6 +348,36 @@ test.describe('Fox GP', () => {
     expect(errors).toEqual([]);
   });
 
+  test('12 carros juntos desde a largada: 60 s sem quadro acima de 33 ms (painel de desempenho)', async ({ page }) => {
+    test.setTimeout(240_000);
+    const errors = watchErrors(page);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.addInitScript(() => ((window as Window & { __gpPerfOn?: boolean }).__gpPerfOn = true));
+    await openHome(page);
+    await page.getByTestId('gl-offline').click();
+    await page.getByTestId('gp-physics-real').click();
+    await page.getByRole('radio', { name: '11', exact: true }).click();
+    await page.getByTestId('gp-start').click();
+    await qualiOn(page);
+    await page.evaluate(() => ((window as Win).__gpAuto = true));
+    await skipQuali(page);
+    await raceOn(page);
+    // da largada (todos colados no grid) até a primeira curva e além
+    await page.evaluate(() => (window as unknown as { __gpPerf: { reset(): void } }).__gpPerf.reset());
+    await page.waitForTimeout(60_000);
+    const perf = await page.evaluate(() => {
+      const p = (window as unknown as {
+        __gpPerf: { frames: number; over33: number; maxGap: number; avg(): Record<string, number>; max: Record<string, number> };
+      }).__gpPerf;
+      return { frames: p.frames, over33: p.over33, maxGap: p.maxGap, avg: p.avg(), max: p.max };
+    });
+    test.info().annotations.push({ type: 'desempenho com 12 carros juntos', description: JSON.stringify(perf) });
+    await expect(page.getByTestId('gp-perf')).toBeVisible();
+    expect(perf.frames).toBeGreaterThan(60 * 50);
+    expect(perf.over33).toBe(0);
+    expect(errors).toEqual([]);
+  });
+
   test('desenho liso: com o piloto automático, nada de vai-e-volta nem salto', async ({ page }) => {
     test.setTimeout(180_000);
     const errors = watchErrors(page);

@@ -597,3 +597,19 @@
     display: none;
   }
 }
+
+/* painel de desempenho (só no desenvolvimento, ?perf=1) */
+.gp-perf {
+  position: absolute;
+  z-index: 60;
+  left: 50%;
+  bottom: 120px;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 8px 10px;
+  background: rgba(11, 14, 23, 0.85);
+  color: #b8ffcc;
+  font: 11px/1.35 ui-monospace, monospace;
+  pointer-events: none;
+  white-space: pre;
+}

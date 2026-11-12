@@ -62,6 +62,7 @@ import { gpActionOf, gpKeyName, useGpControls, type GpBinds } from './gp-setting
 import './theme.css';
 import './foxgp.css';
 import './gp-hud.css';
+import { gpPerfOn, gpPerfText, newGpPerf } from './perf';
 
 /** Cores das raposas no treino (a primeira é a sua, se você não escolher outra). */
 export const GP_FURS = [
@@ -307,6 +308,7 @@ export function GpPlay({
   const mini = useRef<HTMLCanvasElement>(null);
   const controls = useMemo(() => new GpControls(), []);
   const [hud, setHud] = useState<Hud | null>(null);
+  const [perfText, setPerfText] = useState('');
   const [result, setResult] = useState<GpFinalRow[] | null>(null);
   const [extra, setExtra] = useState<{ fastest: string } | null>(null);
   const [menu, setMenu] = useState(false);
@@ -422,6 +424,7 @@ export function GpPlay({
       const scene = new GpScene(el, world, meId, { reduced, quality: qualityRef.current });
       scene.setCamMode(read(CAM_KEY, CAMS, 'chase'));
       sceneRef.current = scene;
+      if (import.meta.env.DEV) (window as unknown as { __gpScene?: GpScene }).__gpScene = scene;
       const resize = () => {
         const r = el.getBoundingClientRect();
         scene.resize(Math.max(1, Math.round(r.width)), Math.max(1, Math.round(r.height)));
@@ -470,6 +473,11 @@ export function GpPlay({
     const stats = { frames: 0, slow: 0, maxDt: 0, backs: 0, maxJump: 0, laps: 0 };
     let lastPose: GpPose | null = null;
     if (import.meta.env.DEV) (window as unknown as { __gpStats?: typeof stats }).__gpStats = stats;
+    // painel de desempenho (spec 081, Fase 2.2): só no desenvolvimento, com ?perf=1 (ou ligado pelo teste)
+    const perf = import.meta.env.DEV ? newGpPerf() : null;
+    if (perf) (window as unknown as { __gpPerf?: typeof perf }).__gpPerf = perf;
+    let perfAt = 0;
+    const clock = () => (perf ? performance.now() : 0);
     const sectorRow: Hud['sectors'] = [];
     /** Todo aviso passa pela fila (um não atropela o outro). */
     const say = (text: string, ms = 2600, kind: GpNoticeKind = 'info', sub?: string) =>
@@ -744,8 +752,10 @@ export function GpPlay({
     setHud(initialHud());
 
     const frame = (now: number) => {
-      const dt = Math.min(0.05, (now - last) / 1000);
+      const gapMs = now - last;
+      const dt = Math.min(0.05, gapMs / 1000);
       last = now;
+      const f0 = clock();
       const w = where(now);
       // ---- troca de fase ----
       const enter = (next: Stage) => {
@@ -826,15 +836,27 @@ export function GpPlay({
           const stepIn: GpInput = first ? input : { ...input, lap: false };
           first = false;
           if (isHost && host) {
+            const s0 = clock();
             host.step(stepIn);
+            const n0 = clock();
             if (host.snapDue) hostLink?.sendSnapshot(host.snapshot(), gpSnapshotFor);
+            if (perf) {
+              perf.add('sim', n0 - s0);
+              perf.add('net', clock() - n0);
+            }
           } else if (client) {
             peerLink?.sendInput(client.local(stepIn));
           } else if (!online) {
             const inputs: Record<string, GpInput> = { me: stepIn };
+            const b0 = clock();
             for (const c of world.cars)
               if (c.bot) inputs[c.id] = gpBotInput(world, c, mem.get(c.id)!, rng);
+            const s0 = clock();
             world.step(GP_DT, inputs);
+            if (perf) {
+              perf.add('bots', s0 - b0);
+              perf.add('sim', clock() - s0);
+            }
           }
           remember();
         }
@@ -910,7 +932,9 @@ export function GpPlay({
       if (goAt && now - goAt > GP_GO_SEC * 1000) goAt = 0;
       // fila de avisos
       if (notices.tick(now)) setNotice(notices.current);
+      const r0 = clock();
       sceneRef.current?.render(dt, focus, pose);
+      if (perf) perf.add('render', clock() - r0);
       if (import.meta.env.DEV && (stage === 'quali' || stage === 'race')) {
         const fc = world.car(focus);
         if (fc) {
@@ -969,6 +993,7 @@ export function GpPlay({
       }
 
       // ---- HUD ----
+      const h0 = clock();
       if (now - hudAt > 110) {
         hudAt = now;
         const c = me();
@@ -1076,6 +1101,15 @@ export function GpPlay({
           net,
         });
       }
+      if (perf) {
+        perf.add('hud', clock() - h0);
+        perf.add('frame', clock() - f0);
+        if (stage === 'quali' || stage === 'race') perf.tick(gapMs);
+        if (now - perfAt > 500 && gpPerfOn()) {
+          perfAt = now;
+          setPerfText(gpPerfText(perf));
+        }
+      }
       raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
@@ -1133,6 +1167,11 @@ export function GpPlay({
       data-physics={mode}
     >
       <canvas ref={canvas} className="gp-canvas" aria-label="Pista do Fox GP" />
+      {perfText && (
+        <pre className="gp-perf" data-testid="gp-perf">
+          {perfText}
+        </pre>
+      )}
       {h && (
         <>
           {/* em cima à esquerda: a classificação (volta no cabeçalho; diferença para o carro da frente) */}

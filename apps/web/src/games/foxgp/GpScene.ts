@@ -339,6 +339,45 @@ export class GpScene {
     this.scene.add(this.camera);
     for (const c of world.cars) this.addCar(c);
     this.setupPost();
+    this.warmUp();
+  }
+
+  /**
+   * Aquecimento (spec 081, Fase 2.2): sobe para a placa de vídeo, antes da corrida, tudo o que só subiria quando
+   * aparecesse pela primeira vez (geometria de cada trecho da pista, texturas, o shader das faíscas e da fumaça). Sem
+   * isso, a primeira batida da largada ou a primeira curva com arquibancada davam um quadro de 40 a 150 ms.
+   */
+  private warmUp() {
+    const culled: THREE.Object3D[] = [];
+    this.scene.traverse((o) => {
+      if (o.frustumCulled) {
+        o.frustumCulled = false;
+        culled.push(o);
+      }
+    });
+    // uma faísca e uma fumaça visíveis por um quadro (o shader delas compila agora)
+    this.sparkMesh.count = 1;
+    tmpM.makeTranslation(0, -50, 0);
+    this.sparkMesh.setMatrixAt(0, tmpM);
+    this.puff(0, -50, 0, 0xffffff, 1);
+    const p = this.puffs[0];
+    if (p) p.s.material.opacity = 0;
+    const tex = new Set<THREE.Texture>();
+    this.scene.traverse((o) => {
+      const mat = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
+      for (const m of Array.isArray(mat) ? mat : mat ? [mat] : [])
+        for (const v of Object.values(m)) if (v instanceof THREE.Texture) tex.add(v);
+    });
+    for (const t of tex) this.renderer.initTexture(t);
+    this.renderer.compile(this.scene, this.camera);
+    if (this.composer) this.composer.render(0);
+    else this.renderer.render(this.scene, this.camera);
+    for (const o of culled) o.frustumCulled = true;
+    this.sparkMesh.count = 0;
+    if (p) {
+      p.age = p.life;
+      p.s.visible = false;
+    }
   }
 
   // ---- céu e luz de ambiente (referência: Sky + mapa de ambiente gerado do céu) ----
@@ -1656,8 +1695,23 @@ export class GpScene {
       }
     }
 
+    const t0 = import.meta.env.DEV ? performance.now() : 0;
     if (this.composer) this.composer.render(dt);
     else this.renderer.render(this.scene, this.camera);
+    if (import.meta.env.DEV) this.drawMs = performance.now() - t0;
+  }
+
+  /** Só no desenvolvimento: quanto custou o último desenho na GPU (ms) e o que a cena tem (painel de desempenho). */
+  drawMs = 0;
+  info() {
+    const r = this.renderer.info;
+    return {
+      calls: r.render.calls,
+      triangles: r.render.triangles,
+      programs: r.programs?.length ?? 0,
+      textures: r.memory.textures,
+      geometries: r.memory.geometries,
+    };
   }
 
   private updateCamera(dt: number, p: GpPose | null, car: GpCar | null) {

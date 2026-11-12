@@ -116,3 +116,29 @@ Ferramenta: `measure_laps.cjs` (só trabalho) roda classificação e corrida int
   pistas: nada rolado nem rolando, todo botão inteiro dentro da janela, nenhum encostando na faixa quadriculada, texto
   sem estourar o botão. A **garagem** entra nesse teste na Fase 8, quando é refeita (hoje ela rola por dentro em
   telas pequenas; `E2E_GARAGE=1` já roda a conferência dela).
+
+## 6. Fase 2: limite de 12 e fim das travadas (12/11/2026)
+
+- **Limite de 12** em todo lugar (motor, sala, lobby, treino, textos e testes; a 13ª vaga é recusada pelo servidor):
+  feito na Fase 13.
+- **Painel de desempenho** (`perf.ts`, só no desenvolvimento, `?perf=1`): tempo médio e máximo por quadro da simulação,
+  dos bots, do desenho, do HUD e da rede, e os quadros acima de 33 ms; o teste lê `window.__gpPerf`.
+- **Medida** (Intel UHD integrada, Chrome, 1280×720, qualidade média, 12 carros juntos desde a largada, 60 s):
+
+  | | Antes | Depois |
+  |---|---|---|
+  | Quadros acima de 33 ms | 166 (com outra aba 3D aberta) / 1 pico de 46 ms (sozinho) | **0** |
+  | Maior intervalo entre quadros | 299 ms | **17 ms** |
+  | Desenho (média / máximo) | 7,8 / 145 ms (com a outra aba) e 3,3 / 46 ms | **3,1 / 9,7 ms** |
+  | Simulação + bots (média) | 0,30 ms | 0,11 ms |
+
+- **Causa das travadas:** o que aparecia pela primeira vez na câmera subia para a placa de vídeo naquele quadro:
+  geometria dos trechos da pista ainda não vistos, texturas e, principalmente, o shader das faíscas e da fumaça, que
+  compilava na **primeira batida da largada** (justo quando estão todos juntos). Agora a cena faz um aquecimento
+  (`warmUp`) antes da corrida: desliga o recorte por câmera, mostra uma faísca e uma fumaça escondidas, sobe todas as
+  texturas, compila e desenha uma vez.
+- Suspeitas conferidas e que não pesavam: HUD (já a ~9 Hz; 0,01 ms), simulação (66 pares de colisão, 0,08 ms),
+  pós-processamento (só na qualidade alta), sombras (só dos carros a menos de 70 m do foco), partículas (fumaça em
+  piscina de 80, faíscas numa malha instanciada de 120).
+- **Pendente (precisa de aparelho):** 30 quadros/s no celular na qualidade baixa e o líder com 11 conexões num celular.
+- e2e novo: "12 carros juntos desde a largada: 60 s sem quadro acima de 33 ms".
