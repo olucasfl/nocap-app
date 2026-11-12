@@ -34,14 +34,20 @@ import {
   GP_KERB_W,
   GP_LAPS,
   GP_OVER_DECEL,
+  GP_PIT_LIMIT,
   GP_PIT_STOP_SEC,
   GP_QUALI_HOLD_SEC,
   GP_QUALI_MAX_SEC,
   GP_QUALI_START_S,
   GP_REAL_ACC_MAX,
+  GP_REAL_ENGINE,
+  GP_REAL_GEAR_TOP,
+  GP_REAL_SCRUB_MAX,
+  GP_REAL_SHIFT_CUT,
+  GP_REAL_SHIFT_DOWN,
+  GP_REAL_SHIFT_UP,
   GP_REAL_BRK_RATE,
   GP_REAL_DRAG,
-  GP_REAL_POWER,
   GP_REAL_REVERSE_OUT,
   GP_REAL_REVERSE_OUT0,
   GP_REAL_ROLL,
@@ -74,7 +80,6 @@ import {
   GP_STEER_RATE,
   GP_SURFACE,
   GP_VALID_EVERY,
-  GP_VMAX,
   GP_WALL_E,
   GP_WALL_KEEP,
   GP_WALL_MU,
@@ -84,6 +89,7 @@ import {
   GP_WEAR_SLIP,
   gpRealBrake,
   gpRealLatMax,
+  gpVmaxOf,
   type GpPhysicsMode,
   type GpSurface,
 } from './constants';
@@ -145,9 +151,11 @@ export interface GpCar {
   kz: number;
   /** Velocidade para a frente (com sinal: negativa de ré). */
   speed: number;
-  /** Marcha (1 a 8; 0 = ré) e giro do motor (0 a 1). */
+  /** Marcha (1 a 8; 0 = ré) e giro do motor (0 a 1). No Realista são os que movem o carro (não só desenho). */
   gear: number;
   rpm: number;
+  /** Realista: corte de força da troca de marcha que ainda falta (s). */
+  shiftT: number;
   /** Quanto do freio está aplicado (sobe aos poucos até o pedido). */
   brakeLevel: number;
   /** Escorregão de lado agora (m/s): marcas e fumaça de pneu. */
@@ -252,7 +260,7 @@ export interface GpRemoteState {
 
 const MARK = 10;
 /** Quantos números tem o estado físico de um carro (`pack`). */
-export const GP_PACK_LEN = 32;
+export const GP_PACK_LEN = 33;
 
 /**
  * Grid de largada pela classificação: do menor para o maior tempo; empate, larga na frente quem marcou primeiro; quem não
@@ -351,6 +359,7 @@ export class GpWorld {
       speed: 0,
       gear: 1,
       rpm: 0,
+      shiftT: 0,
       brakeLevel: 0,
       skid: 0,
       idx: 0,
@@ -418,6 +427,7 @@ export class GpWorld {
     c.kz = 0;
     c.speed = 0;
     c.gear = 1;
+    c.shiftT = 0;
     c.brakeLevel = 0;
     c.rThr = 0;
     c.rBrk = 0;
@@ -553,9 +563,10 @@ export class GpWorld {
     return GP_SURFACE[c.surface].grip * (1 - c.wear * (1 - GP_GRIP_MIN));
   }
 
-  /** Velocidade máxima agora (pela superfície). */
+  /** Velocidade máxima agora (pela superfície e pelo modo; na faixa do box, o limitador). */
   vmaxOf(c: GpCar): number {
-    return GP_VMAX * GP_SURFACE[c.surface].vmax;
+    if (c.surface === 'pit') return GP_PIT_LIMIT;
+    return gpVmaxOf(this.mode) * GP_SURFACE[c.surface].vmax;
   }
 
   /** Quanto do arrasto vale agora: DRS aberto e vácuo tiram uma parte (multiplicam). */
@@ -777,7 +788,7 @@ export class GpWorld {
     const yawM = (gpRealLatMax(av) * grip) / Math.max(av, 1);
     const yaw = clamp(yawD, -yawM, yawM);
     if (Math.abs(yawD) > yawM && av > 5) {
-      const over = Math.min(1, (Math.abs(yawD) - yawM) / yawM);
+      const over = Math.min(GP_REAL_SCRUB_MAX, (Math.abs(yawD) - yawM) / yawM);
       v -= Math.sign(v) * over * GP_REAL_SCRUB * dt;
       c.wear += GP_WEAR_SLIP * over * av * 0.25 * dt;
     }
@@ -788,7 +799,21 @@ export class GpWorld {
     if (v <= 0.5 && c.rBrk > 0.5 && c.rThr < 0.1) v = Math.max(-GP_REVERSE_MAX, v - GP_REVERSE_ACCEL * dt);
     else if (v < 0) v = Math.min(0, v + (c.rThr * GP_REAL_REVERSE_OUT + GP_REAL_REVERSE_OUT0) * dt);
     else {
-      const engine = c.rThr * Math.min(GP_REAL_ACC_MAX, GP_REAL_POWER / Math.max(v, 1));
+      // câmbio automático de verdade: a marcha decide a força; na troca para cima a força corta um instante
+      const tops = GP_REAL_GEAR_TOP;
+      let g = Math.max(1, Math.min(tops.length, c.gear || 1));
+      if (g < tops.length && v > tops[g - 1]! * GP_REAL_SHIFT_UP) {
+        g += 1;
+        c.shiftT = GP_REAL_SHIFT_CUT;
+      }
+      while (g > 1 && v < tops[g - 2]! * GP_REAL_SHIFT_DOWN) g -= 1;
+      c.gear = g;
+      const top = tops[g - 1]!;
+      c.rpm = clamp(v / top, 0.1, 1);
+      const limiter = g === tops.length && v >= top;
+      const engine =
+        c.shiftT > 0 || limiter ? 0 : c.rThr * Math.min(GP_REAL_ACC_MAX, (GP_REAL_ENGINE * gpTorque(c.rpm)) / top);
+      c.shiftT = Math.max(0, c.shiftT - dt);
       const a =
         engine -
         this.dragOf(c) * GP_REAL_DRAG * v * v -
@@ -803,9 +828,10 @@ export class GpWorld {
     c.brakeLevel = c.rBrk;
     c.braking = c.rBrk > 0.1 && v > 1;
 
-    // câmbio e giro (só desenho e som)
-    c.gear = v < -0.3 ? 0 : gpAutoGear(c.gear, Math.max(0, v));
-    c.rpm = clamp(Math.max(0, v) / GP_GEAR_TOP[Math.max(1, c.gear) - 1]!, 0.12, 1);
+    // de ré ou parado: marcha à ré ou 1ª, giro baixo
+    if (v < -0.3) c.gear = 0;
+    else if (c.gear === 0) c.gear = 1;
+    if (v <= 0.5) c.rpm = Math.max(0.1, c.rThr * 0.5);
 
     c.speed = v;
     c.vx = Math.sin(c.h) * v + c.kx;
@@ -1355,6 +1381,7 @@ export class GpWorld {
       c.wallCd,
       c.kx,
       c.kz,
+      c.shiftT,
     ];
   }
 
@@ -1389,6 +1416,7 @@ export class GpWorld {
     c.wallCd = v[29]!;
     c.kx = v[30]!;
     c.kz = v[31]!;
+    c.shiftT = v[32]!;
     // no Realista a velocidade é sempre para o nariz (sem o empurrão de lado); no Arcade vem do vetor
     c.speed = (c.vx - c.kx) * Math.sin(c.h) - (c.vz - c.kz) * Math.cos(c.h);
     const p = this.track.project(c.x, c.z, c.idx);

@@ -514,7 +514,7 @@ describe('vácuo e DRS', () => {
       const s0 = solo.cars[0]!;
       put(solo, s0, -300, 0, 26);
       const duo = pair(mode);
-      put(duo.w, duo.a, -292, 0, 26);
+      put(duo.w, duo.a, -286, 0, 26);
       put(duo.w, duo.b, -300, 0, 26);
       for (let i = 0; i < 2.5 / GP_DT; i++) {
         solo.step(GP_DT, { p0: full });
@@ -780,7 +780,8 @@ describe('corrida e chegada', () => {
 
 describe('tela', () => {
   it('km/h e marcha', () => {
-    expect(gpKmh(32)).toBe(320);
+    // ×8,5 na tela (spec 081): 40 m/s do Realista = 340 km/h
+    expect(gpKmh(40)).toBe(340);
     expect(gpGear(0)).toBe(1);
     expect(gpGear(GP_VMAX)).toBeGreaterThanOrEqual(7);
     expect(GP_GEARS.length).toBe(8);

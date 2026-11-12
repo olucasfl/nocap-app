@@ -8,7 +8,7 @@ import {
   GP_MAX_PLAYERS,
   GP_QUALI_MAX_SEC,
   GP_REAL_WHEELBASE,
-  GP_VMAX,
+  GP_REAL_VMAX,
   gpRealLatMax,
   type GpPhysicsMode,
 } from './constants';
@@ -147,17 +147,18 @@ describe('dois modos de física', () => {
     expect(Math.sqrt(gpRealLatMax(14) * 10)).toBeLessThan(16);
   });
 
-  it('Realista: a máxima em reta fica perto de 320 km/h', () => {
-    // na maior reta da Marina, já embalado: a velocidade fica onde motor e arrasto se equilibram
+  it('Realista: a máxima em reta fica perto de 340 km/h (limitador da 8ª, spec 081)', () => {
+    // na maior reta da Marina, já embalado na 8ª: o limitador segura a máxima
     const w = new GpWorld('t', info(1), undefined, 'real');
     w.beginRace(['p0']);
     const c = w.cars[0]!;
-    put(w, c, w.track.drsZones[0]!.from - 10, 0, GP_VMAX);
+    put(w, c, w.track.drsZones[0]!.from - 10, 0, GP_REAL_VMAX - 1);
     c.rThr = 1;
+    c.gear = 8;
     for (let k = 0; k < 90; k++) w.step(GP_DT, { p0: full });
     expect(c.surface).toBe('asphalt');
-    expect(c.speed).toBeGreaterThan(GP_VMAX - 1.5);
-    expect(c.speed).toBeLessThan(GP_VMAX + 1);
+    expect(c.speed).toBeGreaterThan(GP_REAL_VMAX - 1.5);
+    expect(c.speed).toBeLessThan(GP_REAL_VMAX + 0.5);
   });
 
   it('Realista: batida de traseira troca velocidade sem giro solto e sem atravessar', () => {
@@ -234,16 +235,14 @@ describe('12 carros e bots diferentes (nos dois modos)', () => {
     }, 60_000);
   }
 
-  it('volta da Marina parecida nos dois modos (melhor volta dos bots)', () => {
+  it('melhor volta mediana dos bots em cada modo (anotada na spec)', () => {
     const a = results.arcade;
     const r = results.real;
     if (!a || !r) return;
     const med = (l: number[]) => l[Math.floor(l.length / 2)]!;
-    const ratio = med(r) / med(a);
+    // spec 081: os modos deixam de ter a mesma faixa (o Realista é de F1, o Arcade vira kart em outra pista)
     test_note(`melhor volta mediana dos bots: arcade ${med(a)} ms, realista ${med(r)} ms`);
-    // anotado na spec 080: os dois modos ficam na mesma faixa de tempo
-    expect(ratio).toBeGreaterThan(0.85);
-    expect(ratio).toBeLessThan(1.2);
+    expect(med(r)).toBeGreaterThan(0);
   });
 });
 

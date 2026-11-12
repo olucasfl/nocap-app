@@ -91,8 +91,8 @@ export const GP_PIT_OUT_END = 50;
 /** A vaga do box (distância do traçado) e o tamanho dela (m). */
 export const GP_PIT_BOX = -18;
 export const GP_PIT_BOX_LEN = 9;
-/** [AJUSTAR] Velocidade limitada na faixa do box (m/s). */
-export const GP_PIT_LIMIT = 17;
+/** [AJUSTAR] Velocidade limitada na faixa do box (m/s): 170 km/h na tela (spec 081). */
+export const GP_PIT_LIMIT = 20;
 /** [AJUSTAR] Tempo parado na vaga (s). */
 export const GP_PIT_STOP_SEC = 3;
 
@@ -269,8 +269,11 @@ export const GP_ROOM_MAX_RACE_SEC = 600;
 /** Sem relatar posição por tanto tempo conta como desconectado (ms). */
 export const GP_ROOM_STALL_MS = 12_000;
 
-/** Velocidade na tela: km/h de mentira, como num jogo de F1 (32 m/s = 320). */
-export const gpKmh = (v: number) => Math.round(Math.abs(v) * 10);
+/**
+ * Velocidade na tela (spec 081, seção 4): ×8,5, como na F1 (40 m/s do Realista = 340 km/h; 28 m/s do kart ≈ 240).
+ */
+export const GP_KMH_PER_MS = 8.5;
+export const gpKmh = (v: number) => Math.round(Math.abs(v) * GP_KMH_PER_MS);
 /** Marcha de 1 a 8 pela velocidade (só desenho). */
 export function gpGear(v: number): number {
   if (v < -0.5) return 0;
@@ -315,21 +318,41 @@ export const GP_REAL_WHEELBASE = 2.4;
 export const GP_REAL_STEER_MAX = 0.6;
 export const GP_REAL_STEER_FADE = 9;
 /**
- * Aderência lateral máxima: `GRIP0 + DOWNFORCE * v²` (m/s²). Embaixo vale o pneu (curva lenta exige frear); em alta o
- * ganho da asa deixa fazer curva rápida cheia (~30 m/s² a 32 m/s).
+ * Aderência lateral máxima: `GRIP0 + DOWNFORCE * v²` (m/s²). Spec 081, Fase 4: a curva lenta fica limitada pelo pneu e a
+ * asa ajuda só em alta. Máxima sem escorregar: grampo de 15 m ~11,9 m/s (≈100 km/h na tela), curva fechada de 25 m
+ * ~15,5 m/s, curva média de 60 m ~25 m/s, curva rápida de 120 m ~40 m/s.
  */
-export const GP_REAL_GRIP0 = 18;
-export const GP_REAL_DOWNFORCE = 0.012;
-/** Pedir mais curva do que o pneu aguenta: o carro abre e perde velocidade até este tanto por segundo (m/s²). */
+export const GP_REAL_GRIP0 = 9;
+export const GP_REAL_DOWNFORCE = 0.0023;
+/**
+ * Pedir mais curva do que o pneu aguenta: o carro abre e perde velocidade, esta força (m/s²) vezes o excesso (até
+ * `GP_REAL_SCRUB_MAX` vezes o que o pneu aguenta): quanto mais passa do ponto, mais perde.
+ */
 export const GP_REAL_SCRUB = 7;
-/** Motor: aceleração máxima embaixo (m/s²) e potência por massa (m²/s³); arrasto (por (m/s)²) e rolagem (m/s²). */
-export const GP_REAL_ACC_MAX = 9;
-export const GP_REAL_POWER = 120;
-export const GP_REAL_DRAG = 0.0034;
-export const GP_REAL_ROLL = 0.25;
-/** Freio: `BRAKE0 + BRAKE_V2 * v²` (m/s²): o carro freia mais em alta (asa). */
-export const GP_REAL_BRAKE0 = 22;
-export const GP_REAL_BRAKE_V2 = 0.008;
+export const GP_REAL_SCRUB_MAX = 2;
+/**
+ * Motor com câmbio de verdade (spec 081, Fase 4): a força é `ENGINE × torque(giro) / máxima da marcha` (marcha curta
+ * empurra mais), limitada a `ACC_MAX` (o pneu). Alvos: 0→15 m/s em ~1,9 s, 15→30 em ~3,6 s, 30→39 em ~7,6 s e a máxima
+ * de ~40,5 m/s no limitador da 8ª. Arrasto (por (m/s)²) e rolagem (m/s²).
+ */
+export const GP_REAL_ENGINE = 210;
+export const GP_REAL_ACC_MAX = 10;
+export const GP_REAL_DRAG = 0.002;
+export const GP_REAL_ROLL = 0.3;
+/** Velocidade (m/s) em que cada marcha chega ao giro máximo; a 8ª corta no limitador (a máxima do Realista). */
+export const GP_REAL_VMAX = 40.5;
+export const GP_REAL_GEAR_TOP = [10.5, 15, 19.5, 24, 28.5, 33, 37, GP_REAL_VMAX] as const;
+/** Troca para cima perto do giro máximo e reduz com folga; na troca, a força corta por este tempo (s). */
+export const GP_REAL_SHIFT_UP = 0.97;
+export const GP_REAL_SHIFT_DOWN = 0.62;
+export const GP_REAL_SHIFT_CUT = 0.12;
+/**
+ * Freio: `BRAKE0 + BRAKE_V2 * v²` (m/s²), um pouco mais em alta (asa). Calibrado pelos alvos da Fase 4 (40→12 m/s em
+ * ~80 m e menos de 4,2 s; 25→12 em menos de 35 m): a freada dura o bastante para dar para errar o ponto. (As ordens
+ * sugeriam `BRAKE0` 14 a 15, mas com ele a freada de 40 a 12 levaria ~1,5 s e ~38 m, longe do próprio alvo.)
+ */
+export const GP_REAL_BRAKE0 = 6;
+export const GP_REAL_BRAKE_V2 = 0.0015;
 /** Ré: força para sair dela acelerando (m/s² por acelerador) e o mínimo, como na referência. */
 export const GP_REAL_REVERSE_OUT = 10;
 export const GP_REAL_REVERSE_OUT0 = 4;
@@ -348,5 +371,7 @@ export const GP_REAL_WALL_CD = 0.3;
 
 /** Aderência lateral máxima do Realista na velocidade dada (m/s²), com pneu novo no asfalto. */
 export const gpRealLatMax = (v: number) => GP_REAL_GRIP0 + GP_REAL_DOWNFORCE * v * v;
+/** Máxima no asfalto (m/s) de cada modo. */
+export const gpVmaxOf = (mode: GpPhysicsMode) => (mode === 'real' ? GP_REAL_VMAX : GP_VMAX);
 /** Freio do Realista na velocidade dada (m/s²). */
 export const gpRealBrake = (v: number) => GP_REAL_BRAKE0 + GP_REAL_BRAKE_V2 * v * v;

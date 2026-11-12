@@ -15,7 +15,7 @@ import {
   GP_KERB_W,
   GP_PIT_BOX_LEN,
   GP_PIT_HALF,
-  GP_VMAX,
+  gpVmaxOf,
   GP_STAND_LEN,
   GP_STAND_ROW0,
   GP_STAND_ROW_DEPTH,
@@ -1563,7 +1563,7 @@ export class GpScene {
       v.flapA += ((c.drsOpen ? -0.75 : 0) - v.flapA) * Math.min(1, dt * 10);
       v.m.flap.rotation.x = v.flapA;
       // a cauda: balanço calmo andando; forte no vácuo
-      const fast = Math.min(1, Math.abs(c.speed) / GP_VMAX);
+      const fast = Math.min(1, Math.abs(c.speed) / gpVmaxOf(this.world.mode));
       v.wag += dt * (5 + fast * 4 + c.slip * 12);
       const amp = this.reduced ? 0.08 : 0.16 + fast * 0.12 + c.slip * 0.55;
       v.m.tail.rotation.y = Math.sin(v.wag) * amp;
@@ -1742,7 +1742,7 @@ export class GpScene {
         this.lead.z += (car.vz * 0.38 - this.lead.z) * k;
         const tx = p.x + this.lead.x;
         const tz = p.z + this.lead.z;
-        const dist = this.farDist * (1 + Math.min(1, speed / GP_VMAX) * 0.25);
+        const dist = this.farDist * (1 + Math.min(1, speed / gpVmaxOf(this.world.mode)) * 0.25);
         this.camLook.set(tx, 0, tz);
         this.camPos.copy(this.camLook).addScaledVector(FAR_DIR, dist);
       } else if (this.mode === 'chase') {
@@ -1755,12 +1755,12 @@ export class GpScene {
         this.chasePos.lerp(want, 1 - Math.exp(-dt * 7));
         this.camPos.copy(this.chasePos);
         this.camLook.set(p.x + fx * 4 * CAR_VIS, 0.9 * CAR_VIS, p.z + fz * 4 * CAR_VIS);
-        fov = 60 + Math.min(1, speed / GP_VMAX) * 14;
+        fov = 60 + Math.min(1, speed / gpVmaxOf(this.world.mode)) * 14;
       } else {
         // cockpit: o olho do piloto (atrás do halo), olhando para a frente e um pouco para baixo
         this.camPos.set(p.x + fx * 0.05 * CAR_VIS, 1.05 * CAR_VIS, p.z + fz * 0.05 * CAR_VIS);
         this.camLook.set(p.x + fx * 20, 0.55, p.z + fz * 20);
-        fov = 74 + Math.min(1, speed / GP_VMAX) * 6;
+        fov = 74 + Math.min(1, speed / gpVmaxOf(this.world.mode)) * 6;
       }
     }
     cam.position.copy(this.camPos);

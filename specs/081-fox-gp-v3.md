@@ -162,3 +162,32 @@ Ferramenta: `measure_laps.cjs` (só trabalho) roda classificação e corrida int
   acima de 33 ms. Para isso: faíscas sem lista nova por quadro, vetor da câmera reaproveitado, sombra só dos carros a
   até 45 m. O teste aceita até 2 quadros de tela perdidos pelo sistema em 3600 (sem trabalho do jogo por trás).
 - HUD: com o selo "Vácuo" a marcha saía do painel; agora os selos ficam embaixo do rótulo.
+
+## 8. Fase 4: Realista com física de F1 (12/11/2026)
+
+Números escolhidos por uma busca em grade nos alvos das ordens e conferidos pelos testes do motor (`realista.test.ts`):
+
+| O quê | Antes | Agora |
+|---|---|---|
+| Aderência lateral `GRIP0 + DF·v²` | 18 + 0,012·v² | **9 + 0,0023·v²** |
+| Máxima sem escorregar: grampo 15 m / fechada 25 m / média 60 m / rápida 120 m | 17 / 22 / 32 / cheia | **11,9 / 15,5 / 25 / ~40 m/s** |
+| Freio `B0 + B2·v²` | 22 + 0,008·v² | **6 + 0,0015·v²** |
+| Freada 40→12 m/s (freio cheio) | — | **~3,8 s e ~80 m** (alvo ≤ 4,2 s e ~85 m) |
+| Freada 25→12 m/s | — | **≤ 35 m** |
+| Motor | `min(9, 120/v)`, câmbio só desenhado | **câmbio de verdade**: `210 × torque(giro) / máxima da marcha`, até 10 m/s²; 8 marchas até 40,5 m/s; corte de 0,12 s na troca |
+| 0→15 / 15→30 / 30→39 m/s | — | **1,9 / 3,6 / 7,6 s** |
+| Máxima | 32 m/s (320 na tela, ×10) | **40,5 m/s no limitador da 8ª (≈ 344 na tela, ×8,5)** |
+| Arrasto / rolagem | 0,0034 / 0,25 | 0,002 / 0,3 |
+| Perda ao pedir curva demais | até 7 m/s² | 7 m/s² × excesso, até 2× (passar mais do ponto custa mais) |
+| Limitador do box | 17 m/s | 20 m/s (170 km/h na tela) |
+| Melhor volta dos bots, Marina, 12 carros (mediana) | 60,4 s | **78,3 s** (classificação, pista livre: 73,5 s) |
+
+- O giro (`rpm`) e a marcha que a HUD e o som usam agora são os que movem o carro (`GP_REAL_GEAR_TOP`, campo
+  `shiftT` no carro e no pacote, que passou a ter 33 números).
+- **Freio diferente do sugerido:** as ordens sugeriam `BRAKE0` 14 a 15 e `BRAKE_V2` ~0,006, mas com isso a freada de 40 a
+  12 m/s levaria ~1,5 s e ~38 m, longe do alvo das próprias ordens (~85 m). Valem os alvos.
+- Velocidade na tela ×8,5 nos dois modos (`GP_KMH_PER_MS`); a máxima de cada modo em `gpVmaxOf`.
+- Bots: velocidade de curva pela aderência nova, freio que eles contam ter = 92 % do real, máxima do modo.
+- Testes que presumiam a escala antiga (máxima de 320, km/h ×10, vácuo, voltas iguais nos dois modos) foram atualizados;
+  "voltas parecidas nos dois modos" saiu (os modos agora são carros diferentes).
+- **Falta jogando:** confirmar que dá para terminar uma volta sem sair da pista depois de 3 voltas de prática.

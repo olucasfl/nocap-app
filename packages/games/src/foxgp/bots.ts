@@ -11,10 +11,11 @@ import {
   GP_LAT_ACC,
   GP_PIT_LIMIT,
   GP_REAL_BRAKE0,
+  GP_REAL_BRAKE_V2,
   GP_REAL_DOWNFORCE,
   GP_REAL_GRIP0,
   GP_SURFACE,
-  GP_VMAX,
+  gpVmaxOf,
 } from './constants';
 import type { GpCar, GpInput, GpWorld } from './world';
 
@@ -215,7 +216,7 @@ const angleTo = (c: GpCar, x: number, z: number) => {
 function cornerSpeed(world: GpWorld, k: number, g: number): number {
   if (world.mode === 'real') {
     const df = GP_REAL_DOWNFORCE * g;
-    return k <= df ? GP_VMAX * 1.2 : Math.sqrt((GP_REAL_GRIP0 * g) / (k - df));
+    return k <= df ? gpVmaxOf('real') * 1.2 : Math.sqrt((GP_REAL_GRIP0 * g) / (k - df));
   }
   return Math.sqrt((GP_LAT_ACC * g) / k);
 }
@@ -291,9 +292,11 @@ export function gpBotInput(world: GpWorld, c: GpCar, mem: GpBotMemory, rng: () =
   const tyre = GP_SURFACE.asphalt.grip * (1 - c.wear * (1 - GP_GRIP_MIN));
   const g = tyre * P.skill * (1 + mem.cornerNoise);
   const brakeK = 1 - c.wear * (1 - GP_BRAKE_MIN);
-  const brakeBase = world.mode === 'real' ? GP_REAL_BRAKE0 * 0.8 : GP_BRAKE * 0.82;
+  // o freio que ele conta ter (o do Realista sobe um pouco com a velocidade)
+  const brakeBase = world.mode === 'real' ? (GP_REAL_BRAKE0 + GP_REAL_BRAKE_V2 * v * v) * 0.92 : GP_BRAKE * 0.82;
+  const vmax = gpVmaxOf(world.mode);
   const brake = brakeBase * brakeK * P.brakeBias * (mem.mistake ? 1.3 : 1);
-  let want = GP_VMAX * 1.05 * P.topSpeedFactor;
+  let want = vmax * 1.05 * P.topSpeedFactor;
   const look = (v * v) / (2 * brake) + 25;
   for (let dd = 4; dd < look; dd += 4) {
     const k = Math.abs(tr.curv[tr.index(c.s + dd)]!);
@@ -301,13 +304,13 @@ export function gpBotInput(world: GpWorld, c: GpCar, mem: GpBotMemory, rng: () =
     const vc = cornerSpeed(world, k, g);
     want = Math.min(want, Math.sqrt(vc * vc + 2 * brake * Math.max(0, dd - 3)));
   }
-  if (P.topSpeedFactor < 1) want = Math.min(want, GP_VMAX * P.topSpeedFactor);
+  if (P.topSpeedFactor < 1) want = Math.min(want, vmax * P.topSpeedFactor);
   if (goingToPit || (mem.pit && tr.rel(c.s) > tr.pit.inStart - 60 && tr.rel(c.s) < tr.pit.box)) {
     const toPit = Math.max(0, tr.pit.inStart - tr.rel(c.s));
     want = Math.min(want, Math.sqrt(GP_PIT_LIMIT ** 2 + 2 * brake * toPit));
   }
   // fora da pista: volta para o asfalto sem afundar o pé
-  if (c.surface === 'grass' || c.surface === 'gravel') want = Math.min(want, GP_VMAX * 0.5);
+  if (c.surface === 'grass' || c.surface === 'gravel') want = Math.min(want, vmax * 0.5);
 
   // ---- tráfego: ultrapassa por uma faixa livre ou segue a distância dele ----
   if (race && !goingToPit) {
