@@ -3,18 +3,24 @@ import {
   GP_LIGHTS_HOLD_MAX,
   GP_LIGHTS_HOLD_MIN,
   GP_MAX_PLAYERS,
-  GP_ROOM_COLORS,
   GP_QUALI_MAX_SEC,
   GP_ROOM_GRID_MS,
   GP_ROOM_LIGHTS_MS,
   GP_ROOM_QUALI_COUNT_MS,
   GP_ROOM_STALL_MS,
+  gpDefaultKartPaint,
 } from '@nocap/games';
 import { describe, expect, it } from 'vitest';
 import { ColorRoomEngine, RoomError } from './color-room.engine';
 import { FoxGpRoomEngine } from './foxgp-room.engine';
 
 const T0 = 1_000_000;
+/** Um carro válido (pelo, F1 e kart da garagem). */
+const CAR = {
+  fur: 0xff7d26,
+  f1: { body: 0xff7d26, accent: 0x2f5bff, pattern: 'faixa', number: 7 },
+  kart: gpDefaultKartPaint(),
+};
 
 interface GpSnap {
   stage: string | null;
@@ -78,31 +84,12 @@ function racing(times: Record<string, number> = { ana: 41_000, bia: 40_000, caio
 }
 
 describe('sala do Fox GP', () => {
-  it('cada pessoa ganha uma cor diferente ao entrar e troca no lobby sem repetir', () => {
-    const room = new FoxGpRoomEngine({ code: 'ABCD', now: () => T0, newSeed: () => 's' });
-    room.join('ana', 'ana');
-    room.join('bia', 'bia');
-    const c = snap(room).colors;
-    expect(c.ana).toBeTruthy();
-    expect(c.ana).not.toBe(c.bia);
-    expect(() => room.setColor('bia', c.ana!)).toThrow(RoomError);
-    const free = GP_ROOM_COLORS.find((x) => x.hex !== c.ana && x.hex !== c.bia)!.hex;
-    room.setColor('bia', free);
-    expect(snap(room).colors.bia).toBe(free);
-    room.clearColor('bia');
-    expect(() => room.setReady('bia', true)).toThrow(RoomError);
-  });
-
-  it('quem chega por troca de jogo (sala do Fox Cap!) já ganha cor e pode ficar pronto', () => {
+  it('sem escolher cor: dá para ficar pronto e começar; quem chega por troca de jogo também', () => {
     const before = new ColorRoomEngine({ code: 'ABCD', now: () => T0, newSeed: () => 's' });
     before.join('ana', 'ana');
     before.join('bia', 'bia');
     const room = new FoxGpRoomEngine({ code: 'ABCD', now: () => T0, newSeed: () => 's' });
     room.adoptFrom(before);
-    const c = snap(room).colors;
-    expect(c.ana).toBeTruthy();
-    expect(c.bia).toBeTruthy();
-    expect(c.ana).not.toBe(c.bia);
     room.setReady('bia', true);
     room.start('ana');
     expect(room.currentPhase).toBe('show');
@@ -120,16 +107,13 @@ describe('sala do Fox GP', () => {
     expect(room.physics).toBe('real');
   });
 
-  it('até 12 na sala (a 13ª vaga é recusada); com mais de 10 a cor do pelo pode repetir (enquanto houver livre, não)', () => {
+  it('até 12 na sala (a 13ª vaga é recusada); 12 pessoas com o mesmo carro entram sem erro', () => {
     const room = new FoxGpRoomEngine({ code: 'ABCD', now: () => T0, newSeed: () => 's' });
     const ids = Array.from({ length: GP_MAX_PLAYERS }, (_, i) => `p${i}`);
     for (const id of ids) room.join(id, id);
     expect(() => room.join('extra', 'extra')).toThrow(RoomError);
-    const c = snap(room, 'p0').colors;
-    expect(new Set(ids.slice(0, GP_ROOM_COLORS.length).map((id) => c[id])).size).toBe(GP_ROOM_COLORS.length);
-    // sala cheia de cores: o 11º pode escolher uma já usada
-    room.setColor('p11', c.p0!);
-    expect(snap(room).colors.p11).toBe(c.p0);
+    for (const id of ids) room.setPaint(id, CAR);
+    expect(new Set(Object.values(snap(room).colors)).size).toBe(1);
     for (const id of ids.slice(1)) room.setReady(id, true);
     room.start('p0');
     expect(Object.keys(snap(room).slots).length).toBe(GP_MAX_PLAYERS);
@@ -332,18 +316,58 @@ describe('sala do Fox GP', () => {
     expect(room.currentPhase).toBe('final');
   });
 
-  it('pintura do carro: validada, vai para todos e some com quem sai', () => {
+  it('o carro de cada um (pelo, F1 e kart): validado pelas listas, vai para todos e some com quem sai', () => {
     const room = new FoxGpRoomEngine({ code: 'ABCD', now: () => T0, newSeed: () => 's' });
     room.join('ana', 'ana');
     room.join('bia', 'bia');
-    room.setPaint('ana', { body: '#FF7D26', accent: '#2f5bff', pattern: 'faixa', number: 7 });
-    expect(() => room.setPaint('ana', { body: 'red', accent: '#2f5bff', pattern: 'faixa', number: 7 })).toThrow(RoomError);
-    expect(() => room.setPaint('ana', { body: '#ff0000', accent: '#2f5bff', pattern: 'xadrez', number: 7 })).toThrow(RoomError);
-    expect(() => room.setPaint('ana', { body: '#ff0000', accent: '#2f5bff', pattern: 'faixa', number: 120 })).toThrow(RoomError);
+    room.setPaint('ana', CAR);
+    expect(() => room.setPaint('ana', { ...CAR, fur: 0x123456 })).toThrow(RoomError);
+    expect(() => room.setPaint('ana', { ...CAR, f1: { ...CAR.f1, body: 0x123456 } })).toThrow(RoomError);
+    expect(() => room.setPaint('ana', { ...CAR, f1: { ...CAR.f1, pattern: 'xis' } })).toThrow(RoomError);
+    expect(() => room.setPaint('ana', { ...CAR, f1: { ...CAR.f1, number: 120 } })).toThrow(RoomError);
+    expect(() => room.setPaint('ana', { ...CAR, kart: { ...CAR.kart, finish: 'cromado' } })).toThrow(RoomError);
+    expect(() => room.setPaint('ana', { fur: CAR.fur, f1: CAR.f1 })).toThrow(RoomError);
     const paints = (room.snapshot('bia') as unknown as { foxgp: { paints: Record<string, unknown> } }).foxgp.paints;
-    expect(paints.ana).toEqual({ body: '#ff7d26', accent: '#2f5bff', pattern: 'faixa', number: 7 });
+    expect(paints.ana).toEqual(CAR);
+    expect(snap(room, 'bia').colors.ana).toBe('#ff7d26');
     room.leave('ana');
     expect((room.snapshot('bia') as unknown as { foxgp: { paints: Record<string, unknown> } }).foxgp.paints.ana).toBeUndefined();
+  });
+
+  it('bots completam a sala (12.4): até o total escolhido, nunca mais que 12, com nome e carro; não seguram o fim', () => {
+    let t = T0;
+    const room = new FoxGpRoomEngine({ code: 'ABCD', now: () => t, newSeed: () => 'seed' });
+    room.join('ana', 'ana');
+    room.join('bia', 'bia');
+    expect(() => room.configure('bia', { fill: 6 } as never)).toThrow(RoomError);
+    expect(() => room.configure('ana', { fill: 13 } as never)).toThrow(RoomError);
+    expect(() => room.configure('ana', { botLevel: 'insano' } as never)).toThrow(RoomError);
+    room.configure('ana', { fill: 6, botLevel: 'dificil' } as never);
+    room.setReady('bia', true);
+    room.start('ana');
+    const st = (room.snapshot('ana') as unknown as { foxgp: { slots: Record<string, number>; bots: { id: string; name: string }[]; paints: Record<string, unknown>; botLevel: string } }).foxgp;
+    expect(Object.keys(st.slots).length).toBe(6);
+    expect(st.bots.length).toBe(4);
+    expect(st.botLevel).toBe('dificil');
+    for (const b of st.bots) expect(st.paints[b.id]).toBeTruthy();
+    // a classificação não espera os bots: as duas pessoas marcam e o grid sai
+    t += GP_ROOM_QUALI_COUNT_MS + 10;
+    room.tick();
+    t += 30_000;
+    room.qualiTime('ana', { ms: 29_000 });
+    room.qualiTime('bia', { ms: 29_500 });
+    room.tick();
+    expect((room.snapshot('ana') as unknown as { foxgp: { stage: string } }).foxgp.stage).toBe('grid');
+  });
+
+  it('com 12 pessoas e total 12, nenhum bot entra', () => {
+    const room = new FoxGpRoomEngine({ code: 'ABCD', now: () => T0, newSeed: () => 's' });
+    const ids = Array.from({ length: GP_MAX_PLAYERS }, (_, i) => `p${i}`);
+    for (const id of ids) room.join(id, id);
+    room.configure('p0', { fill: 12 } as never);
+    for (const id of ids.slice(1)) room.setReady(id, true);
+    room.start('p0');
+    expect(Object.keys(snap(room).slots).length).toBe(GP_MAX_PLAYERS);
   });
 
   it('não grava ranking nem histórico', () => {

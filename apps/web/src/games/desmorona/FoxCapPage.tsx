@@ -126,6 +126,7 @@ export function FoxCapPage() {
             bots={gpBots}
             color={loadGarage().fur}
             paint={loadGarage().paint}
+            kart={loadGarage().kart}
             physics={loadPhysics()}
             onExit={() => {
               gpMarkBack();

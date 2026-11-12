@@ -191,3 +191,75 @@ Números escolhidos por uma busca em grade nos alvos das ordens e conferidos pel
 - Testes que presumiam a escala antiga (máxima de 320, km/h ×10, vácuo, voltas iguais nos dois modos) foram atualizados;
   "voltas parecidas nos dois modos" saiu (os modos agora são carros diferentes).
 - **Falta jogando:** confirmar que dá para terminar uma volta sem sair da pista depois de 3 voltas de prática.
+
+## 9. Fases 5 a 12 (12/11/2026; um commit só no fim, a pedido do Italo)
+
+### Fase 5: o Arcade é o kart
+- `stepKart` no lugar do Arcade antigo (`GP_ARC_*`): velocidade para o nariz (não escorrega), direção rápida
+  (2,2 → 1,1 rad/s), quase sem perda curvando, sem marchas. Máxima 26 m/s (~220 km/h na tela; 28 deixava a volta de bot
+  abaixo de 50 s na Bala Track).
+- Drift liberado acima de 40 % da máxima, com volante, no asfalto ou na zebra; entra ao apertar (com 0,3 s de folga se
+  o volante ainda não passou do mínimo), pulinho, lado travado; volante para dentro fecha (×1,4) e para fora abre
+  (×0,65); +6 % de máxima; enche a barra ×3,5 (até ×1,4 com o volante todo para dentro). Muro, grama e batida cancelam.
+- Barra de 0 a 3 (azul, laranja, rosa), cheia em 45 s andando; turbo gasta a barra toda, nível = terço atingido
+  (0,9 s +35 %, 1,8 s +45 %, 3 s +55 %), rampa de 0,4 s no fim; sem barra: evento `noturbo`.
+- Sem vácuo, desgaste, box nem DRS no Arcade. Zebra 88 %, grama 55 %, brita 40 %; muro de metal guarda 65 %; pilha de
+  pneus rebate para trás (metade). Bots com `driftLove` e `turboAt` por arquétipo.
+- Rede v3: entrada com drift e turbo (8 números), estado enxuto com nível do turbo, barra e drift (14), pacote completo
+  com 45 números. HUD do kart (drift, barra em 3 terços, linhas de velocidade), botões de toque Drift e Turbo, tecla de
+  drift no Espaço (a tecla do DRS é o turbo no Arcade), opção de desligar a tremida no menu Comandos.
+- Testes: `kart.test.ts` (drift, raio, enchimento, 3 níveis, sem barra, sem pneu/vácuo/box/DRS, zebra, muro, pneus,
+  volta de bot com drift e turbo, pacote).
+
+### Fase 6: o kart 3D
+- `tools/art/kart/build_kart.py` (sem Blender): separa peças por objeto e o piloto por região (corpo, braço e antebraço
+  de cada lado, mãos, capacete), corta a cabeça no pescoço (y 0,80), separa aro e coluna do volante (eixo pela
+  dispersão do anel), recentraliza rodas, um material por peça, simplifica por agrupamento em grade. Resultado:
+  `kart.glb` com ~9,9 mil triângulos visíveis (piloto ~4,2 mil com braços e mãos), 238 KB; `kart-lod.glb` 5,3 mil;
+  `kart-rig.json` com ombros, cotovelos, punhos e o eixo do aro.
+- `kart-model.ts`: carrega só no Arcade; mesma interface do F1; mãos presas ao aro (giram com ele), braços por IK de
+  dois ossos, rodas que giram e esterçam, pedais, cabeça que inclina, orelhas, motor vibrando. Cabeça de raposa em
+  código (`fox-head.ts`); capacete do arquivo como plano B (opção na garagem).
+- Na pista o kart tem a largura da caixa de colisão (3,6 m).
+
+### Fase 6B: Bala Track
+- `tools/art/track/extract_track.py` (usd-core): rasteriza o asfalto visto de cima; o complexo tem vários traçados e o
+  circuito de corrida é o das marcas de borracha (`rgroove_t1..t11`), seguido por pontos-guia, recentrados no asfalto e
+  suavizados. Escala pela largura (12,5 m): 0,203 m por unidade, 1,27 km de linha central (pela regra de ~1,2 km a pista
+  ficaria com 10 m). Pilhas de pneus do arquivo viram trechos de barreira de pneus.
+- `track-bala.ts` (gerado), box opcional de verdade (`pit: null`), barreira por tipo (`wallKind`), 4 placas de turbo
+  (início das 4 retas sem zebra), pista pelo modo (`gpTrackDefFor`). Volta de bot: 50,4 s (alvo 50 a 65).
+- Cena: guard-rail azul onde é muro e pilhas de pneus onde o arquivo tem pneus (o mesmo tipo que o motor usa), placas
+  de setas azuis com pulso que varre (sem varredura na baixa e com movimento reduzido), céu mais claro, minimapa com as
+  placas. O que se vê é o que se bate: a cena é gerada do mesmo `GpTrack`.
+
+### Fase 7: F1
+- `paint.ts` no motor: 24 cores (vivas, escuras, metálicas), 12 desenhos, 4 acabamentos, 3 estilos de número, aro (12
+  cores, 4 estilos), faixa do pneu, capacete, luva, asa; validação por lista fechada (campos novos opcionais: pinturas
+  antigas valem).
+- Número em adesivos (bico, tampa do motor, laterais) postos na superfície por raio e virados para quem lê de fora: não
+  há mais número espelhado.
+- Raposa sem cauda (cabeça nova com capacete aberto). Volante do cockpit de F1: corpo com bisel, empunhaduras, botões,
+  10 luzes de troca que acendem com o giro, luvas com polegar, punho e pata.
+
+### Fase 8: garagem e sala
+- Garagem v2 (`{ v: 2, fur, paint, kart }`, migra a antiga): abas Kart e F1, sub-abas que cabem sem rolagem; abre no
+  veículo do modo. Sala: sai a escolha de cor; cada um manda o carro (`gpaint`: pelo, F1 e kart) e o servidor valida
+  pelas listas; o veículo segue a física da sala; lista "Carros" com selo e "Ver carro" (uma prévia por vez).
+
+### Fases 9 a 12
+- Lembrete forte da volta lançada aos 30 s e "Última chance" no último minuto (tecla do mapa de Comandos); DNF de 2 min
+  em m:ss para quem corre, quem terminou e quem assiste (esquenta nos últimos 30 s); quem assiste vê a posição do piloto
+  assistido e troca com ← →.
+- Pneu (só Realista): evento `tyre` por faixa (55, 75, 90 %; o crítico repete a cada volta), avisos na fila, barra por
+  faixa com o ícone piscando, "Box à frente" com distância e barra a até 350 m, "Entre no box!" a 60 m com o limite de
+  170 km/h, "Box perdido", placa BOX a 150 m e linha de guia que acende, entrada do box piscando no minimapa.
+- Som: F1 V6 em camadas com assobio, estalo na troca e estouros; kart duas-tempos; vento, chiado no drift, nota por
+  terço, whoosh por nível, pulinho, pancada de plástico. Pausa offline (menu, aba, foco) cala na hora; online não.
+- Bots na sala: regras "Bots" (total de 4 a 12) e "Dificuldade"; o servidor cria as vagas com nome e carro; o líder
+  simula; a classificação e o fim não esperam bots.
+
+### Pendente
+- Jogar com aparelhos reais e calibrar os [AJUSTAR] (`GP_ARC_*`, `GP_REAL_*`, pneu); medir celular como líder com 12.
+- Não feitos por custo: página de QA dos números (`?qa=numbers`) e o modo `?debug=track` (a pista do kart é gerada do
+  próprio `GpTrack`, então desenho e física coincidem por construção); estilo do aro e faixa do pneu no kart.

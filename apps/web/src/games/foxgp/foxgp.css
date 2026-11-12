@@ -1102,3 +1102,182 @@
   height: 18px;
   accent-color: var(--gp-accent);
 }
+
+/* ---- sala: os carros de cada um e "Ver carro" (spec 081, Fase 8) ---- */
+.gp-room-cars {
+  margin-top: 12px;
+}
+.gp-room-cars h3 {
+  margin: 0 0 6px;
+  font-size: 13px;
+}
+.gp-room-cars ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.gp-room-cars li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.gp-car-badge {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 22px;
+  border: 3px solid;
+  color: #fff;
+  font: italic 800 12px var(--gp-display, sans-serif);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+.gp-car-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gp-room-cars button {
+  font-size: 12px;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+.gp-see {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  background: rgba(11, 14, 23, 0.75);
+}
+.gp-see-card {
+  width: min(560px, calc(100vw - 32px));
+  padding: 16px;
+  background: var(--gp-panel, #141a2b);
+  border: 1px solid var(--gp-line, #2b3348);
+  color: var(--gp-text, #fff);
+  display: grid;
+  gap: 10px;
+}
+.gp-see-car {
+  width: 100%;
+  height: min(46vh, 320px);
+}
+
+/* DNF: a contagem esquenta nos últimos 30 s (spec 081, 9.2) */
+.gpx-dnf[data-hot='1'] {
+  background: #ff3b30;
+  animation: gpx-dnf-hot 0.9s ease-in-out infinite;
+}
+@keyframes gpx-dnf-hot {
+  50% {
+    opacity: 0.75;
+  }
+}
+/* lembrete da volta lançada: mais forte depois de 30 s e no último minuto */
+.gpx-lapcall[data-urgent] {
+  border-color: #ff3b30;
+  box-shadow: 0 0 0 3px rgba(255, 59, 48, 0.4);
+}
+.gpx-lapcall-last {
+  color: #ff3b30;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gpx-dnf[data-hot='1'] {
+    animation: none;
+  }
+}
+
+/* ---- pneus e box (spec 081, Fase 10): barra por faixa, ícone piscando, faixa do box ---- */
+.gpx-tyre[data-level='1'] i {
+  background: #ffb020;
+}
+.gpx-tyre[data-level='2'] i,
+.gpx-tyre[data-level='3'] i {
+  background: var(--gp-red);
+}
+.gpx-tyre[data-level='2'] span,
+.gpx-tyre[data-level='3'] span {
+  outline: 2px solid var(--gp-red);
+}
+.gpx-tyre small {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.gpx-tyre-icon {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: var(--gp-red);
+  stroke-width: 3;
+  animation: gpx-blink 0.7s steps(2, start) infinite;
+}
+@keyframes gpx-blink {
+  to {
+    opacity: 0.2;
+  }
+}
+.gpx-box {
+  position: absolute;
+  right: max(var(--hud-pad), env(safe-area-inset-right));
+  top: 36%;
+  display: grid;
+  gap: 4px;
+  min-width: 210px;
+  padding: 8px 14px 10px 34px;
+  background: #ffd23a;
+  color: #0b0e17;
+  transform: skewX(-8deg);
+  pointer-events: none;
+}
+.gpx-box b {
+  font: italic 900 18px var(--gp-display);
+  text-transform: uppercase;
+}
+.gpx-box small {
+  font-weight: 700;
+  font-size: 12px;
+}
+.gpx-box-arrow {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font: 900 26px var(--gp-display);
+}
+.gpx-box-bar {
+  position: relative;
+  height: 5px;
+  background: rgba(11, 14, 23, 0.25);
+  overflow: hidden;
+}
+.gpx-box-bar i {
+  position: absolute;
+  inset: 0;
+  transform-origin: left;
+  background: #0b0e17;
+}
+.gpx-box[data-near='1'] {
+  background: #ff3b30;
+  color: #fff;
+  animation: gpx-box-in 0.4s var(--gp-ease);
+}
+@keyframes gpx-box-in {
+  from {
+    transform: skewX(-8deg) scale(1.15);
+  }
+}
+.gp-play[data-touch='1'] .gpx-box {
+  top: 22%;
+  min-width: 160px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gpx-tyre-icon,
+  .gpx-box[data-near='1'] {
+    animation: none;
+  }
+}

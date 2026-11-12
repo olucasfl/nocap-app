@@ -140,4 +140,30 @@ describe('Realista de F1 (spec 081, Fase 4)', () => {
       expect(b).toBeLessThan(80);
     }
   }, 60_000);
+
+  it('avisos de pneu: 55 %, 75 % e 90 % uma vez cada; o crítico repete na volta seguinte; o kart não tem', () => {
+    const { w, c, from } = straight();
+    put(w, c, from, 20);
+    const levels = () =>
+      w
+        .drainEvents()
+        .filter((e) => e.type === 'tyre')
+        .map((e) => (e as { level: number }).level);
+    w.drainEvents();
+    for (const wear of [0.5, 0.56, 0.6, 0.76, 0.8, 0.91, 0.95]) {
+      c.wear = wear;
+      w.step(GP_DT, { p0: { throttle: 0.5, brake: 0, steer: 0 } });
+    }
+    expect(levels()).toEqual([1, 2, 3]);
+    // nova volta: o crítico volta a avisar
+    c.tyreWarn = 0;
+    c.wear = 0.95;
+    w.step(GP_DT, { p0: { throttle: 0.5, brake: 0, steer: 0 } });
+    expect(levels()).toEqual([3]);
+    const k = new GpWorld('k', info(1), GP_TRACK_MARINA, 'arcade');
+    k.beginRace(['p0']);
+    k.cars[0]!.wear = 0.95;
+    k.step(GP_DT, { p0: { throttle: 1, brake: 0, steer: 0 } });
+    expect(k.drainEvents().some((e) => e.type === 'tyre')).toBe(false);
+  });
 });

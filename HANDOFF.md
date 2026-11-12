@@ -170,6 +170,8 @@ Fut Fox fluidez online (26/10/2026): mortal com impulso 6,4 (`Math.max` com a ve
 
 **Fox GP v2 (11/11/2026, spec 080, branch `feat/fox-gp`):** física Arcade ou Realista (offline na tela inicial; na sala, regra do líder), DRS e vácuo no lugar do turbo, bots com perfil, 20 carros, gráficos e carro novos, HUD da referência, menu Comandos, avisos em fila, volta lançada manual, som do motor. Testes de motor, sala e e2e verdes (o e2e online precisa de `rooms-only.ts` recompilado: um servidor de teste antigo na porta 3340 faz a troca de jogo parecer quebrada). **Pendente:** medir um celular como líder com 20 carros (envio de ~700 KB/s), jogar com aparelhos reais e calibrar os [AJUSTAR] e os `GP_REAL_*`.
 
+**Fox GP v3 (12/11/2026, spec 081, branch `feat/fox-gp-v3`):** kart no Arcade (drift, turbo, kart 3D, Bala Track), F1 mais real no Realista, 12 carros, garagem por veículo, sala sem cor e com bots, avisos de pneu e box, sons novos. Ferramentas de arte em `tools/art/kart` e `tools/art/track` (Python com numpy e `usd-core`, fora do `package.json`). **Pendente:** calibrar os [AJUSTAR] jogando, medir um celular como líder com 12 carros; os 28 erros de lint de outros jogos que já estavam na `main`.
+
 ## Conexão das salas (01/11/2026)
 
 - Bug "RECONECTANDO À SALA..." travado: depois de uma queda a referência da conexão morta continuava em `room` e a reconexão achava que já estava conectada (nunca tentava). Agora `onLeave` zera `room` antes de reconectar; só uma reconexão por vez; tentativas logo de cara, pausas crescentes, acordadas ao voltar para o app/internet; sala que não existe mais encerra rápido com aviso.

@@ -5,7 +5,6 @@ import {
   GP_MIN_LAP_SEC,
   GP_PHYSICS_DEFAULT,
   GP_QUALI_MAX_SEC,
-  GP_ROOM_COLORS,
   GP_ROOM_GRID_MS,
   GP_ROOM_LIGHTS_MS,
   GP_ROOM_MAX_RACE_SEC,
@@ -15,7 +14,14 @@ import {
   gpIsPhysicsMode,
   gpLightsHold,
   gpTrack,
+  gpValidRoomCar,
+  gpBotCar,
+  GP_BOT_NAMES,
+  GP_BOT_LEVELS,
+  GP_FILL_OPTIONS,
+  type GpBotLevel,
   type GpPhysicsMode,
+  type GpRoomCar,
 } from '@nocap/games';
 import { ColorRoomEngine, RoomError, type EngineOptions, type FinalRow } from './color-room.engine';
 
@@ -23,22 +29,14 @@ import { ColorRoomEngine, RoomError, type EngineOptions, type FinalRow } from '.
 const MIN_POS_GAP_MS = 25;
 /** Folga entre a soma das voltas relatadas e o tempo de chegada (ms). */
 const FINISH_SLACK_MS = 1500;
-/** Desenhos de pintura aceitos na garagem. */
-const PATTERNS = ['solida', 'faixa', 'listras', 'chevron'] as const;
 
 export type FoxGpStage = 'quali' | 'grid' | 'race';
-
-/** Pintura do carro (garagem): cores e desenho. Só visual. */
-export interface FoxGpPaint {
-  body: string;
-  accent: string;
-  pattern: (typeof PATTERNS)[number];
-  number: number;
-}
 
 interface Racer {
   id: string;
   username: string;
+  /** Bot da sala (12.4): simulado pelo líder, não segura o fim da corrida. */
+  bot?: boolean;
   slot: number;
   qualiMs: number | null;
   /** Hora (ms de jogo da classificação) em que marcou o tempo: desempata o grid. */
@@ -55,7 +53,6 @@ interface Racer {
 
 const finite = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n);
 const r2 = (n: number) => Math.round(n * 100) / 100;
-const HEX = /^#[0-9a-f]{6}$/i;
 
 /**
  * O Fox GP em sala (specs 078, 079 e 080). A regra "Física" (Arcade ou Realista) é da sala inteira e só o líder muda:
@@ -65,6 +62,8 @@ const HEX = /^#[0-9a-f]{6}$/i;
  * e grid, voltas e chegada (que o líder relata por todos), regra dos 30 s, quem saiu (DNF) e o fim. Sem ranking nem
  * histórico. Quem entra com a corrida andando espera a próxima, assistindo pelo fluxo `pos`.
  */
+const hex6 = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
+
 export class FoxGpRoomEngine extends ColorRoomEngine {
   /** Tempos da partida (ms). Os testes com servidor de verdade encurtam para não esperar uma corrida inteira. */
   static timing = {
@@ -81,8 +80,8 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
   protected override readonly answerPhase = 'play' as const;
   protected override readonly modes: readonly string[] = ['classico'];
 
-  private colors = new Map<string, string>();
-  private paints = new Map<string, FoxGpPaint>();
+  /** O carro de cada um (pelo e as pinturas do F1 e do kart), da garagem do aparelho. Cores repetidas são normais. */
+  private paints = new Map<string, GpRoomCar>();
   private racers = new Map<string, Racer>();
   private stage: FoxGpStage = 'quali';
   /** Hora (relógio do jogo da sala, ms) em que a classificação começa e em que as luzes apagam. */
@@ -101,11 +100,18 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
   constructor(opts: EngineOptions) {
     super({ ...opts, maxPlayers: GP_MAX_PLAYERS });
     this.mode = 'classico';
-    this.settings = { rounds: 1, physics: GP_PHYSICS_DEFAULT } as unknown as typeof this.settings;
+    this.settings = { rounds: 1, physics: GP_PHYSICS_DEFAULT, fill: 0, botLevel: 'medio' } as unknown as typeof this.settings;
   }
 
   protected override validSettings(merged: Record<string, unknown>, mode: string): boolean {
-    return mode === 'classico' && gpIsPhysicsMode(merged.physics);
+    const fill = merged.fill ?? 0;
+    const level = merged.botLevel ?? 'medio';
+    return (
+      mode === 'classico' &&
+      gpIsPhysicsMode(merged.physics) &&
+      GP_FILL_OPTIONS.includes(fill as number) &&
+      GP_BOT_LEVELS.includes(level as GpBotLevel)
+    );
   }
 
   /** O modo de física da sala. */
@@ -114,16 +120,21 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
     return gpIsPhysicsMode(v) ? v : GP_PHYSICS_DEFAULT;
   }
 
-  // ---- pessoas, cores e pintura (a garagem) ----
-
-  /** Uma cor livre; sem cor livre (mais de 10 na sala), a menos usada. */
-  private giveColor(id: string) {
-    if (this.colors.has(id)) return;
-    const used = new Map<string, number>();
-    for (const hex of this.colors.values()) used.set(hex, (used.get(hex) ?? 0) + 1);
-    const best = [...GP_ROOM_COLORS].sort((a, b) => (used.get(a.hex) ?? 0) - (used.get(b.hex) ?? 0))[0]!;
-    this.colors.set(id, best.hex);
+  /** Total de carros com bots (0 = só gente) e a dificuldade (spec 081, 12.4). */
+  get fill(): number {
+    const v = (this.settings as unknown as { fill?: unknown }).fill;
+    return GP_FILL_OPTIONS.includes(v as number) ? (v as number) : 0;
   }
+  get botLevel(): GpBotLevel {
+    const v = (this.settings as unknown as { botLevel?: unknown }).botLevel;
+    return GP_BOT_LEVELS.includes(v as GpBotLevel) ? (v as GpBotLevel) : 'medio';
+  }
+  /** Quantos bots entram agora: o total escolhido menos as pessoas, nunca passando de 12. */
+  private botCount(people: number): number {
+    return this.fill === 0 ? 0 : Math.max(0, Math.min(GP_MAX_PLAYERS, this.fill) - people);
+  }
+
+  // ---- pessoas, cores e pintura (a garagem) ----
 
   /** Quem entra com a corrida andando entra como espectador e joga a próxima (decisão de 10/11/2026). */
   override get joinableInPlay(): boolean {
@@ -139,77 +150,28 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
       this.members.set(id, { id, username, connected: true, ready: false, joinedAt: this.now() });
       this.ensureHost();
     }
-    this.giveColor(id);
     this.dirty = true;
   }
 
-  /** Trocou para o Fox GP numa sala do Fox Cap!: cada um já chega com uma cor livre (dá para trocar no lobby). */
-  override adoptFrom(other: ColorRoomEngine) {
-    super.adoptFrom(other);
-    for (const id of [...this.members.keys()]) this.giveColor(id);
+  /**
+   * Não há mais escolha de cor (spec 081, Fase 8): cada um entra com o carro da própria garagem. A mensagem `color`
+   * de aparelhos antigos é ignorada.
+   */
+  setColor(_id: string, _hex: string) {
+    /* sem cor no Fox GP */
   }
 
-  /** Escolhe a cor do pelo no lobby: enquanto houver cor livre, nenhuma cor é de duas pessoas. */
-  setColor(id: string, hex: string) {
-    this.requirePhase('lobby');
-    if (!this.members.has(id)) throw new RoomError('Você não está na sala');
-    if (!GP_ROOM_COLORS.some((c) => c.hex === hex)) throw new RoomError('Cor inválida');
-    const others = [...this.colors].filter(([other]) => other !== id).map(([, taken]) => taken);
-    const free = GP_ROOM_COLORS.some((c) => !others.includes(c.hex));
-    if (free && others.includes(hex)) throw new RoomError('Essa cor já é de outra pessoa');
-    this.colors.set(id, hex);
-    this.members.get(id)!.ready = false;
+  clearColor(_id: string) {
+    /* sem cor no Fox GP */
   }
 
-  clearColor(id: string) {
-    this.requirePhase('lobby');
-    const m = this.members.get(id);
-    if (!m) throw new RoomError('Você não está na sala');
-    this.colors.delete(id);
-    m.ready = false;
-  }
-
-  /** A pintura do carro (garagem): cores, desenho e número. Só visual; os outros veem igual. */
+  /** O carro de quem está na sala: pelo e as duas pinturas, só das listas fechadas (o resto é recusado). */
   setPaint(id: string, v: unknown) {
     if (!this.members.has(id)) throw new RoomError('Você não está na sala');
-    const p = v as Partial<FoxGpPaint> | null;
-    if (
-      !p ||
-      typeof p.body !== 'string' ||
-      !HEX.test(p.body) ||
-      typeof p.accent !== 'string' ||
-      !HEX.test(p.accent) ||
-      !PATTERNS.includes(p.pattern as FoxGpPaint['pattern']) ||
-      !Number.isInteger(p.number) ||
-      (p.number as number) < 1 ||
-      (p.number as number) > 99
-    )
-      throw new RoomError('Pintura inválida');
-    this.paints.set(id, {
-      body: p.body.toLowerCase(),
-      accent: p.accent.toLowerCase(),
-      pattern: p.pattern as FoxGpPaint['pattern'],
-      number: p.number as number,
-    });
+    const car = gpValidRoomCar(v);
+    if (!car) throw new RoomError('Pintura inválida');
+    this.paints.set(id, car);
     this.dirty = true;
-  }
-
-  override setReady(id: string, ready: boolean) {
-    if (ready && this.members.has(id) && !this.colors.has(id))
-      throw new RoomError('Escolha a sua cor');
-    super.setReady(id, ready);
-  }
-
-  override start(id: string) {
-    const without = [...this.members.values()].filter((m) => m.connected && !this.colors.has(m.id));
-    if (this.phase === 'lobby' && without.length > 0) {
-      throw new RoomError(
-        without.length === 1
-          ? `${without[0]!.username} ainda não escolheu a cor`
-          : 'Todo mundo precisa escolher uma cor',
-      );
-    }
-    super.start(id);
   }
 
   // ---- partida ----
@@ -248,6 +210,25 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
         pos: null,
       }),
     );
+    // os bots completam a sala até o total escolhido (o líder simula; aqui só têm vaga, nome e pintura)
+    for (let k = 0; k < this.botCount(ordered.length); k++) {
+      const id = `bot:${k}`;
+      this.racers.set(id, {
+        id,
+        username: GP_BOT_NAMES[k % GP_BOT_NAMES.length]!,
+        bot: true,
+        slot: ordered.length + k,
+        qualiMs: null,
+        qualiAt: null,
+        laps: [],
+        best: null,
+        finishMs: null,
+        prog: 0,
+        gone: false,
+        lastPosAt: this.qualiAt,
+        pos: null,
+      });
+    }
     this.phase = 'show';
     this.phaseEndsAt = this.qualiAt;
   }
@@ -371,7 +352,7 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
   }
 
   override leave(id: string) {
-    this.colors.delete(id);
+
     this.paints.delete(id);
     if (this.phase === 'show' || this.phase === 'play') this.kill(id);
     super.leave(id);
@@ -421,7 +402,7 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
     if (this.stage === 'quali') {
       const done =
         t - this.qualiAt >= FoxGpRoomEngine.timing.qualiMaxMs ||
-        live.every((r) => r.qualiMs !== null || !this.members.get(r.id)?.connected);
+        live.every((r) => r.qualiMs !== null || r.bot || !this.members.get(r.id)?.connected);
       if (done) {
         this.grid = gpGridOrder(
           [...this.racers.values()]
@@ -448,7 +429,8 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
       if ((m && !m.connected) || (r.finishMs === null && t - r.lastPosAt > GP_ROOM_STALL_MS))
         this.kill(r.id);
     }
-    const still = [...this.racers.values()].filter((r) => !r.gone);
+    // bots não seguram o fim: termina quando todas as pessoas terminam (ou saem)
+    const still = [...this.racers.values()].filter((r) => !r.gone && !r.bot);
     if (
       still.length === 0 ||
       still.every((r) => r.finishMs !== null) ||
@@ -537,8 +519,19 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
         holdMs: started && this.stage !== 'quali' ? this.holdMs : null,
         physics: this.physics,
         slots: started ? slots : {},
-        colors: Object.fromEntries(this.colors),
-        paints: Object.fromEntries(this.paints),
+        // a cor de cada um (o pelo), para a barra da classificação e a lista; sem carro ainda, laranja
+        colors: Object.fromEntries(
+          [...this.members.keys()].map((id) => [id, hex6(this.paints.get(id)?.fur ?? 0xff7d26)]),
+        ),
+        paints: {
+          ...Object.fromEntries(this.paints),
+          ...Object.fromEntries(
+            [...this.racers.values()].filter((r) => r.bot).map((r) => [r.id, gpBotCar(Number(r.id.slice(4)))]),
+          ),
+        },
+        bots: [...this.racers.values()].filter((r) => r.bot).map((r) => ({ id: r.id, name: r.username })),
+        fill: this.fill,
+        botLevel: this.botLevel,
         quali: started ? quali : {},
         grid: this.grid,
         finish,

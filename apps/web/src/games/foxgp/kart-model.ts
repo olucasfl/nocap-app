@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { GP_CAR_LEN, GP_CAR_WID, type GpPaint } from '@nocap/games';
+import { GP_CAR_LEN, GP_CAR_WID, gpDefaultKartPaint, type GpKartPaint, type GpPaint } from '@nocap/games';
 import type { CarModel } from './car-model';
 import { buildFoxHead } from './fox-head';
 
@@ -68,9 +68,12 @@ const v3 = (a: number[]) => new THREE.Vector3(a[0], a[1], a[2]);
 
 export function buildKart(opts: {
   fur: number;
+  /** A pintura do F1 (só para um kart sem pintura própria: as cores dela viram a pintura padrão do kart). */
   paint?: GpPaint | null;
+  /** A pintura do kart (garagem, spec 081, 6.4). */
+  kart?: GpKartPaint | null;
   pbr?: boolean;
-  /** Plano B: o capacete do arquivo no lugar da cabeça de raposa. */
+  /** Plano B: o capacete do arquivo no lugar da cabeça de raposa (sem o campo, o da pintura). */
   helmet?: boolean;
   /** Versão simples para longe (sem pedais nem capacete). */
   lod?: boolean;
@@ -88,16 +91,33 @@ export function buildKart(opts: {
   body.add(root);
 
   // ---- materiais por peça (cada carro tem os seus: a pintura muda por código) ----
-  const paint = opts.paint;
+  const kp = opts.kart ?? gpDefaultKartPaint(opts.paint?.body ?? opts.fur, opts.paint?.accent ?? 0x2f5bff);
+  const helmetOn = opts.helmet ?? kp.helmet;
   const mats: THREE.Material[] = [];
-  const colorOf = (name: string, now: THREE.Color) => {
-    if (!paint) return now.getHex();
-    if (name === 'Body' || name === 'Hub_wheel') return paint.body;
-    if (name === 'Lines2') return paint.accent;
-    if (name === 'Glove') return paint.body;
-    if (name === 'Mono1') return paint.accent;
-    return now.getHex();
+  // cada material do arquivo (duplicado por peça no script) muda uma parte só
+  const COLOR: Record<string, number> = {
+    Body: kp.body,
+    Hub_wheel: kp.body,
+    Lines2: kp.stripe,
+    Chassis: kp.chassis,
+    Rims_chassis: kp.chassis,
+    Engine: kp.engine,
+    Rims_engine: kp.engine,
+    Deposit: kp.tank,
+    Rims_wheel: kp.rim,
+    Rims_steer: kp.steer,
+    Tires_grip: kp.steer,
+    Rims_pedal: kp.pedal,
+    Mono1: kp.suit,
+    Mono2: kp.suit2,
+    Glove: kp.glove,
+    Cuff: 0xf4f6fb,
+    Casco: kp.helmetColor,
+    Casco2: kp.helmetColor,
   };
+  const colorOf = (name: string, now: THREE.Color) => COLOR[name] ?? now.getHex();
+  const fin = kp.finish;
+  const painted = (name: string) => name === 'Body' || name === 'Lines2' || name === 'Hub_wheel';
   const node = (n: string) => root.getObjectByName(n);
   root.traverse((o) => {
     const m = o as THREE.Mesh;
@@ -112,8 +132,8 @@ export function buildKart(opts: {
         : new THREE.MeshStandardMaterial({
             color,
             name: src.name,
-            roughness: src.name === 'Body' || src.name === 'Lines2' ? 0.35 : src.roughness,
-            metalness: src.metalness,
+            roughness: painted(src.name) ? (fin === 'fosco' ? 0.85 : fin === 'metal' ? 0.3 : 0.35) : src.roughness,
+            metalness: painted(src.name) && fin === 'metal' ? 0.7 : src.metalness,
           });
     mats.push(mm);
     m.material = mm;
@@ -121,13 +141,13 @@ export function buildKart(opts: {
 
   // ---- cabeça de raposa ou capacete (plano B) ----
   const helmet = node('helmet');
-  if (helmet) helmet.visible = !!opts.helmet;
+  if (helmet) helmet.visible = helmetOn;
   const head = buildFoxHead({
     fur: opts.fur,
-    collar: paint?.accent ?? 0x2b3a7a,
+    collar: kp.suit,
     pbr: opts.pbr,
   });
-  head.group.visible = !opts.helmet;
+  head.group.visible = !helmetOn;
   head.group.position.copy(v3(rig.head.neck));
   head.group.scale.setScalar(((rig.head.top - rig.head.neck[1]!) / 0.39) * 1.1);
   root.add(head.group);

@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { gpTrack } from '@nocap/games';
+import { GP_TRACK_BALA, GP_TRACK_MARINA, gpTrack, type GpTrackDef } from '@nocap/games';
 import { GpCarPreview } from './GpCarPreview';
 import { GpCommands } from './GpCommands';
 import { GpGarage } from './GpGarage';
@@ -89,6 +89,7 @@ export function GpHome({
       <GpCarPreview
         fur={car.fur}
         paint={car.paint}
+        kart={car.kart}
         vehicle={(GP_HOME_VEHICLES[shown] ?? GP_HOME_VEHICLES[0]!).vehicle}
         className="gph-car"
         label="O seu carro, com a raposa no cockpit. Arraste para girar."
@@ -189,13 +190,24 @@ export function GpHome({
           </div>
         )}
         {screen === 'track' && (
-          <div className="gph-panel gp-tpanel" data-testid="gp-track-panel">
-            <h2>Circuito da Marina</h2>
-            <TrackMap />
-            <p>
-              {(gpTrack().length / 1000).toFixed(2).replace('.', ',')} km · 3 voltas · reta norte, grampo, marina e o miolo
-              de curvas. Boxes do lado de dentro da reta principal.
-            </p>
+          <div className="gph-panel gp-tpanel gph-tracks" data-testid="gp-track-panel">
+            <h2>Pistas</h2>
+            <div className="gph-track-two">
+              <div>
+                <TrackMap def={GP_TRACK_MARINA} />
+                <p>
+                  <b>Circuito da Marina</b> · Realista · {(gpTrack(GP_TRACK_MARINA).length / 1000).toFixed(2).replace('.', ',')} km.
+                  Reta norte, grampo, marina e boxes na reta principal.
+                </p>
+              </div>
+              <div>
+                <TrackMap def={GP_TRACK_BALA} />
+                <p>
+                  <b>Bala Track</b> · Arcade · {(gpTrack(GP_TRACK_BALA).length / 1000).toFixed(2).replace('.', ',')} km.
+                  Curvas de kart, placas de turbo e pilhas de pneus.
+                </p>
+              </div>
+            </div>
             <button type="button" className="gp-tbtn is-ghost" onClick={() => setScreen('main')}>
               Voltar
             </button>
@@ -205,6 +217,7 @@ export function GpHome({
       {commands && <GpCommands touch={touch} onClose={() => setCommands(false)} />}
       {garage && (
         <GpGarage
+          vehicle={(GP_HOME_VEHICLES[shown] ?? GP_HOME_VEHICLES[0]!).vehicle}
           onClose={() => setGarage(false)}
           onSave={(g) => setCar(g)}
           primary="Salvar e voltar"
@@ -258,8 +271,8 @@ function HomeCarousel({ shown, onTurn }: { shown: number; onTurn: (by: number) =
 }
 
 /** O desenho do circuito (o mesmo traçado da pista do jogo). */
-function TrackMap() {
-  const t = gpTrack();
+function TrackMap({ def }: { def: GpTrackDef }) {
+  const t = gpTrack(def);
   let minX = Infinity;
   let maxX = -Infinity;
   let minZ = Infinity;
@@ -281,7 +294,7 @@ function TrackMap() {
   const sx = 15 + (t.x[0]! - minX) * k;
   const sz = 15 + (t.z[0]! - minZ) * k;
   return (
-    <svg className="gph-map" viewBox={`0 0 ${w} ${h.toFixed(0)}`} role="img" aria-label="Traçado do Circuito da Marina">
+    <svg className="gph-map" viewBox={`0 0 ${w} ${h.toFixed(0)}`} role="img" aria-label={`Traçado: ${def.name}`}>
       <path d={`${d}Z`} fill="none" stroke={GP_THEME.line2} strokeWidth="12" strokeLinejoin="round" />
       <path d={`${d}Z`} fill="none" stroke={GP_THEME.text2} strokeWidth="4" strokeLinejoin="round" />
       <rect x={sx - 6} y={sz - 6} width="12" height="12" fill={GP_THEME.accent} />

@@ -98,6 +98,9 @@ import {
   GP_SLIP_MIN_V,
   GP_SLIP_W,
   GP_SURFACE,
+  GP_TYRE_ALERT,
+  GP_TYRE_CRIT,
+  GP_TYRE_WARN,
   GP_VALID_EVERY,
   GP_WEAR_BRAKE,
   GP_WEAR_DIST,
@@ -110,6 +113,7 @@ import {
   type GpSurface,
 } from './constants';
 import { gpTrack, gpTrackDefFor, type GpTrack, type GpTrackDef } from './track';
+import type { GpKartPaint } from './paint';
 
 /** Quem corre: id, nome na tela, cor do pelo, pintura do carro (opcional) e se é bot. */
 export interface GpPlayerInfo {
@@ -118,6 +122,8 @@ export interface GpPlayerInfo {
   color: number;
   /** Customização do carro (garagem). Sem ela, a pintura segue o pelo. */
   paint?: GpPaint;
+  /** A pintura do kart (Arcade), separada da do F1 (spec 081, Fase 8). */
+  kart?: GpKartPaint;
   bot?: boolean;
 }
 
@@ -125,8 +131,32 @@ export interface GpPlayerInfo {
 export interface GpPaint {
   body: number;
   accent: number;
-  pattern: 'solida' | 'faixa' | 'listras' | 'chevron';
+  /** Os 12 desenhos (spec 081, 7.2). */
+  pattern:
+    | 'solida'
+    | 'faixa'
+    | 'listras'
+    | 'chevron'
+    | 'duas'
+    | 'diagonal'
+    | 'flecha'
+    | 'metades'
+    | 'xadrez'
+    | 'ondas'
+    | 'raio'
+    | 'pegadas';
   number: number;
+  /** Spec 081, 7.1 (opcionais: pinturas antigas continuam valendo). Terceira cor dos desenhos de 3 cores. */
+  third?: number;
+  finish?: 'brilho' | 'fosco' | 'metal' | 'perola';
+  numStyle?: 'cheio' | 'contorno' | 'circulo';
+  rim?: number;
+  rimStyle?: 'liso' | 'raios' | 'furado' | 'turbina';
+  /** Faixa colorida do pneu (−1 = nenhuma). */
+  band?: number;
+  helmet?: number;
+  glove?: number;
+  wing?: number;
 }
 
 /** O que o piloto aperta: acelerar e frear de 0 a 1, volante de −1 (esquerda) a 1 (direita), DRS e "iniciar volta". */
@@ -153,6 +183,7 @@ export interface GpCar {
   name: string;
   color: number;
   paint: GpPaint | null;
+  kart: GpKartPaint | null;
   bot: boolean;
   slot: number;
   x: number;
@@ -191,6 +222,8 @@ export interface GpCar {
   turboHeld: boolean;
   /** Arcade: tempo que o aperto do drift ainda vale para entrar (s). */
   driftPress: number;
+  /** Realista: o maior aviso de pneu já dado nesta volta (0 a 3; zera a cada volta e na troca de pneus). */
+  tyreWarn: number;
   /** Quanto do freio está aplicado (sobe aos poucos até o pedido). */
   brakeLevel: number;
   /** Escorregão de lado agora (m/s): marcas e fumaça de pneu. */
@@ -270,7 +303,8 @@ export type GpEvent =
   | { type: 'bar'; id: string; level: number }
   | { type: 'turbo'; id: string; level: number }
   | { type: 'noturbo'; id: string }
-  | { type: 'pad'; id: string; x: number; z: number };
+  | { type: 'pad'; id: string; x: number; z: number }
+  | { type: 'tyre'; id: string; level: 1 | 2 | 3 };
 
 export interface GpStanding {
   car: GpCar;
@@ -392,6 +426,7 @@ export class GpWorld {
       name: p.name,
       color: p.color,
       paint: p.paint ?? null,
+      kart: p.kart ?? null,
       bot: !!p.bot,
       slot,
       x: 0,
@@ -417,6 +452,7 @@ export class GpWorld {
       driftHeld: false,
       turboHeld: false,
       driftPress: 0,
+      tyreWarn: 0,
       brakeLevel: 0,
       skid: 0,
       idx: 0,
@@ -717,6 +753,7 @@ export class GpWorld {
       if (c.pitHold <= 0) {
         c.pitHold = 0;
         c.wear = 0;
+        c.tyreWarn = 0;
         c.pitServed = true;
         c.pitStops += 1;
         this.events.push({ type: 'pitout', id: c.id });
@@ -739,6 +776,16 @@ export class GpWorld {
       this.stepReal(c, input, dt);
     } else this.stepKart(c, input, dt);
     this.trackCar(c, dt, racing);
+    if (this.mode === 'real' && racing) this.tyreWarnings(c);
+  }
+
+  /** Avisos de pneu (spec 081, Fase 10): cada faixa de desgaste uma vez por volta (o crítico repete a cada volta). */
+  private tyreWarnings(c: GpCar) {
+    const level = c.wear >= GP_TYRE_CRIT ? 3 : c.wear >= GP_TYRE_ALERT ? 2 : c.wear >= GP_TYRE_WARN ? 1 : 0;
+    if (level > c.tyreWarn) {
+      c.tyreWarn = level;
+      this.events.push({ type: 'tyre', id: c.id, level: level as 1 | 2 | 3 });
+    }
   }
 
   /**
@@ -1156,6 +1203,8 @@ export class GpWorld {
       c.sectorStartT = tt;
       const ms = Math.round((tt - c.lapStartT) * 1000);
       c.laps.push(ms);
+      // avisos de pneu: o primeiro nível vale uma vez por volta; o crítico repete a cada volta
+      c.tyreWarn = 0;
       c.lapStartT = tt;
       if (c.bestLap === null || ms < c.bestLap) c.bestLap = ms;
       if (this.fastest === null || ms < this.fastest.ms) this.fastest = { id: c.id, ms };

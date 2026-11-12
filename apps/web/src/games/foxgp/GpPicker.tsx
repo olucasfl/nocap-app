@@ -101,7 +101,9 @@ export function GpPicker({
           </button>
         </div>
       </div>
-      {garage && <GpGarage onClose={() => setGarage(false)} primary="Salvar" />}
+      {garage && (
+        <GpGarage vehicle={gpVehicleFor(physics).vehicle} onClose={() => setGarage(false)} primary="Salvar" />
+      )}
     </div>,
     document.body,
   );

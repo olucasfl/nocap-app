@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
-import type { GpPaint } from '@nocap/games';
+import type { GpKartPaint, GpPaint } from '@nocap/games';
 import { buildCar, type CarModel } from './car-model';
 import { buildKart, kartReady, preloadKart, type KartModel } from './kart-model';
 
@@ -17,9 +17,12 @@ export function GpCarPreview({
   label = 'Prévia do carro',
   interactive = true,
   vehicle = 'f1',
+  kart,
 }: {
   fur: number;
   paint: GpPaint;
+  /** A pintura do kart (quando o veículo é o kart). */
+  kart?: GpKartPaint | null;
   className?: string;
   label?: string;
   interactive?: boolean;
@@ -27,7 +30,9 @@ export function GpCarPreview({
   vehicle?: 'f1' | 'kart';
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
-  const live = useRef<{ setCar: (fur: number, paint: GpPaint, vehicle: 'f1' | 'kart') => void } | null>(null);
+  const live = useRef<{
+    setCar: (fur: number, paint: GpPaint, vehicle: 'f1' | 'kart', kart?: GpKartPaint | null) => void;
+  } | null>(null);
   useEffect(() => {
     const cv = ref.current;
     if (!cv) return undefined;
@@ -60,7 +65,7 @@ export function GpCarPreview({
     scene.add(floor);
     let car: CarModel | KartModel | null = null;
     let want = 0;
-    const setCar = (f: number, p: GpPaint, v: 'f1' | 'kart') => {
+    const setCar = (f: number, p: GpPaint, v: 'f1' | 'kart', k?: GpKartPaint | null) => {
       const n = ++want;
       const put = () => {
         if (n !== want) return;
@@ -68,13 +73,13 @@ export function GpCarPreview({
           scene.remove(car.group);
           car.dispose();
         }
-        car = v === 'kart' && kartReady() ? buildKart({ fur: f, paint: p }) : buildCar({ fur: f, paint: p });
+        car = v === 'kart' && kartReady() ? buildKart({ fur: f, paint: p, kart: k }) : buildCar({ fur: f, paint: p });
         scene.add(car.group);
       };
       if (v === 'kart' && !kartReady()) void preloadKart().then(put, put);
       else put();
     };
-    setCar(fur, paint, vehicle);
+    setCar(fur, paint, vehicle, kart);
     live.current = { setCar };
     let yaw = 0.7;
     let pitch = 0.32;
@@ -164,8 +169,8 @@ export function GpCarPreview({
     // o carro muda pelo efeito de baixo, sem recriar a cena
   }, [interactive]);
   useEffect(() => {
-    live.current?.setCar(fur, paint, vehicle);
-  }, [fur, paint, vehicle]);
+    live.current?.setCar(fur, paint, vehicle, kart);
+  }, [fur, paint, vehicle, kart]);
   return (
     <canvas
       ref={ref}

@@ -16,6 +16,8 @@ import {
   GP_HALF_WIDTH,
   GP_MAX_PLAYERS,
   GP_KERB_W,
+  GP_PAD_HALF,
+  GP_PAD_LEN,
   GP_PIT_BOX_LEN,
   GP_PIT_HALF,
   gpVmaxOf,
@@ -241,6 +243,12 @@ export class GpScene {
   private lead = new THREE.Vector3();
   private chasePos = new THREE.Vector3();
   private chaseWant = new THREE.Vector3();
+  /** A pista do kart (sem box): barreiras pelo tipo do arquivo, placas de turbo, visual mais alegre. */
+  private get kartTrack() {
+    return !this.world.track.pit;
+  }
+  private padTex: THREE.Texture | null = null;
+  private padMats: THREE.MeshBasicMaterial[] = [];
   private sparkColor = new THREE.Color();
   /** Tremida da tela no turbo e na zebra do kart (opção do menu Comandos; desligada com movimento reduzido). */
   shakeOn = true;
@@ -297,7 +305,7 @@ export class GpScene {
     this.renderer.toneMappingExposure = 0.9;
     this.renderer.shadowMap.enabled = q !== 'low';
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    this.scene.background = new THREE.Color(0x9fc8ea);
+    this.scene.background = new THREE.Color(world.track.pit ? 0x9fc8ea : 0x8fd0ff);
     this.scene.fog = new THREE.Fog(0xbfd0e0, 260, 1500);
     this.buildSky();
     // o escurecimento lateral é do Atravessa e vale para os materiais das raposas: aqui é tudo sol
@@ -318,7 +326,10 @@ export class GpScene {
     this.sun.shadow.bias = -0.0006;
     this.sun.shadow.normalBias = 0.03;
     this.scene.add(this.sun, this.sun.target);
-    this.scene.add(new THREE.HemisphereLight(0xdfeaff, 0x4f6d3c, q === 'low' ? 1.3 : 0.6));
+    // o Arcade é mais alegre: mais luz do céu e grama mais viva
+    this.scene.add(
+      new THREE.HemisphereLight(0xdfeaff, world.track.pit ? 0x4f6d3c : 0x5f9a3a, (q === 'low' ? 1.3 : 0.6) * (world.track.pit ? 1 : 1.25)),
+    );
 
     this.puffTex = this.makePuffTexture();
     this.buildGround();
@@ -327,6 +338,7 @@ export class GpScene {
     this.buildGantry();
     this.buildBarriers();
     this.buildScenery();
+    if (this.kartTrack) this.buildPads();
     const tr = world.track;
     if (tr.pit) {
       this.boxSpot = tr.pointAt(tr.pit.box, tr.pitCenter(tr.pit.box) ?? 0);
@@ -700,8 +712,42 @@ export class GpScene {
     }
   }
 
+  /** Linha de guia amarela da entrada do box (acende quando o pneu do carro em foco está gasto, spec 081, Fase 10). */
+  private pitGuide: THREE.Mesh | null = null;
+
   private buildPit() {
     const tr = this.world.track;
+    {
+      // placa "BOX" com seta, na margem do lado do box, 150 m antes da entrada (fora do asfalto)
+      const pd = tr.pit!;
+      const t = labelTexture('BOX ›', '#0b0e17', '#ffd23a', 256, 128, 84);
+      this.textures.push(t);
+      const s0 = pd.inStart - 150;
+      const i = tr.index(s0);
+      const off = Math.min(tr.wallAt(i, pd.side), tr.limit) - 0.6;
+      const q = tr.pointAt(s0, pd.side * Math.max(GP_HALF_WIDTH + GP_KERB_W + 1, off));
+      const sign = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 1.6), new THREE.MeshBasicMaterial({ map: t, side: THREE.DoubleSide }));
+      sign.position.set(q.x, 2.4, q.z);
+      sign.rotation.y = -q.h + Math.PI;
+      this.scene.add(sign);
+      // a linha de guia: do começo da entrada até a faixa paralela, no meio da faixa do box
+      const pts: THREE.Vector3[] = [];
+      for (let s = pd.inStart; s <= pd.inEnd + 20; s += 2) {
+        const c = tr.pitCenter(tr.rel(s));
+        if (c === null) continue;
+        const p = tr.pointAt(s, c);
+        pts.push(new THREE.Vector3(p.x, 0.07, p.z));
+      }
+      if (pts.length > 1) {
+        const guide = new THREE.Mesh(
+          new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), pts.length * 2, 0.18, 4, false),
+          new THREE.MeshBasicMaterial({ color: 0xffd23a, toneMapped: false, transparent: true, opacity: 0.9 }),
+        );
+        guide.visible = false;
+        this.scene.add(guide);
+        this.pitGuide = guide;
+      }
+    }
     this.ribbon(
       (i) => {
         const c = tr.pitCenter(tr.rel(i * tr.ds));
@@ -787,6 +833,68 @@ export class GpScene {
   setLights(n: number, out = false) {
     for (const l of this.lights)
       l.material = !out && (l.userData.col as number) < n ? this.lightOn : this.lightOff;
+  }
+
+  /**
+   * Placas de turbo (spec 081, 6B.4): setas para a frente pintadas no asfalto em azul-elétrico com bordas brancas e
+   * linhas de velocidade atrás; um pulso de luz varre as setas para a frente (só o deslocamento da textura). Sem luz real
+   * (material que brilha sozinho); na qualidade baixa e com movimento reduzido, sem a varredura.
+   */
+  private buildPads() {
+    const tr = this.world.track;
+    const t = tex(128, 512, (g, w, h) => {
+      g.clearRect(0, 0, w, h);
+      // fundo azul gasto, bordas brancas da largura das marcações da pista
+      g.fillStyle = 'rgba(30,110,255,0.82)';
+      g.fillRect(8, 0, w - 16, h);
+      g.fillStyle = '#ffffff';
+      g.fillRect(0, 0, 8, h);
+      g.fillRect(w - 8, 0, 8, h);
+      // três chevrons apontando para a frente (topo da textura) e linhas de velocidade atrás
+      for (let k = 0; k < 3; k++) {
+        const y = 40 + k * 120;
+        g.fillStyle = '#e8f4ff';
+        g.beginPath();
+        g.moveTo(w / 2, y);
+        g.lineTo(w - 18, y + 60);
+        g.lineTo(w - 18, y + 92);
+        g.lineTo(w / 2, y + 32);
+        g.lineTo(18, y + 92);
+        g.lineTo(18, y + 60);
+        g.closePath();
+        g.fill();
+      }
+      g.fillStyle = 'rgba(232,244,255,0.6)';
+      for (const x of [30, 52, 76, 98]) g.fillRect(x - 2, 400, 4, 90);
+      // a tinta gasta: pontinhos do asfalto aparecendo
+      for (let i = 0; i < 900; i++) {
+        g.fillStyle = 'rgba(40,44,52,0.35)';
+        g.fillRect(Math.random() * w, Math.random() * h, 2, 2);
+      }
+    });
+    t.wrapT = THREE.RepeatWrapping;
+    this.textures.push(t);
+    this.padTex = t;
+    for (const pd of tr.pads) {
+      const mid = tr.pointAt(pd.s + GP_PAD_LEN / 2, pd.d);
+      const m = new THREE.MeshBasicMaterial({
+        map: t,
+        transparent: true,
+        depthWrite: false,
+        toneMapped: false,
+        polygonOffset: true,
+        polygonOffsetFactor: -4,
+        polygonOffsetUnits: -8,
+        color: 0xbfd8ff,
+      });
+      this.padMats.push(m);
+      const plane = new THREE.Mesh(new THREE.PlaneGeometry(GP_PAD_HALF * 2, GP_PAD_LEN), m);
+      plane.rotation.x = -Math.PI / 2;
+      plane.rotation.z = -mid.h;
+      plane.position.set(mid.x, 0.06, mid.z);
+      plane.userData.tag = 'pad';
+      this.scene.add(plane);
+    }
   }
 
   /** Zonas de DRS: faixa de detecção verde, "DRS" no chão e placas na margem (começo e fim). */
@@ -915,8 +1023,10 @@ export class GpScene {
         const d = (w + 0.6) * sd;
         const x = tr.x[i]! + s.x * d;
         const z = tr.z[i]! + s.z * d;
-        // onde dois trechos passam perto, um muro de concreto; senão, pneus
-        if (w < tr.limit - 0.5) walls.push({ x, z, h: tr.heading(i) });
+        // pista do kart (Bala Track): pilha de pneus onde o arquivo tem pneus, muro de metal no resto (o que se vê é o
+        // que se bate: o motor usa o mesmo tipo). Na Marina: muro onde dois trechos passam perto, senão pneus
+        const metal = this.kartTrack ? tr.wallKind(i, sd) !== 'tyres' : w < tr.limit - 0.5;
+        if (metal) walls.push({ x, z, h: tr.heading(i) });
         else tyres.push({ x, z, k: (i / every) % 3 });
       }
     }
@@ -1002,7 +1112,8 @@ export class GpScene {
     if (walls.length) {
       const wm = new THREE.InstancedMesh(
         new THREE.BoxGeometry(0.5, 1.1, 2.4),
-        this.std(0xd7d9e0, 0.9),
+        // na pista do kart, o guard-rail de metal azul do arquivo
+        this.kartTrack ? this.std(0x2f6fd6, 0.45, 0.6) : this.std(0xd7d9e0, 0.9),
         walls.length,
       );
       walls.forEach((p, i) => {
@@ -1312,16 +1423,91 @@ export class GpScene {
     });
     const grip = new THREE.MeshStandardMaterial({ color: 0x0b0e17, roughness: 0.9 });
     const accent = new THREE.MeshBasicMaterial({ color: 0xff7d26, toneMapped: false });
+    // volante de F1 (spec 081, 7.4): corpo de retângulo arredondado com bisel, empunhaduras em cápsula, botões e
+    // seletores coloridos, luzes de troca de marcha em fila em cima e as luvas da raposa segurando
     const wheel = new THREE.Group();
-    wheel.add(new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.09, 0.02), carbon));
+    const shape = new THREE.Shape();
+    const rr = (w: number, h: number, r: number) => {
+      shape.moveTo(-w / 2 + r, -h / 2);
+      shape.lineTo(w / 2 - r, -h / 2);
+      shape.quadraticCurveTo(w / 2, -h / 2, w / 2, -h / 2 + r);
+      shape.lineTo(w / 2, h / 2 - r);
+      shape.quadraticCurveTo(w / 2, h / 2, w / 2 - r, h / 2);
+      shape.lineTo(-w / 2 + r, h / 2);
+      shape.quadraticCurveTo(-w / 2, h / 2, -w / 2, h / 2 - r);
+      shape.lineTo(-w / 2, -h / 2 + r);
+      shape.quadraticCurveTo(-w / 2, -h / 2, -w / 2 + r, -h / 2);
+    };
+    rr(0.2, 0.095, 0.03);
+    const bodyG = new THREE.ExtrudeGeometry(shape, {
+      depth: 0.014,
+      bevelEnabled: true,
+      bevelThickness: 0.004,
+      bevelSize: 0.004,
+      bevelSegments: 2,
+    }).translate(0, 0, -0.007);
+    wheel.add(new THREE.Mesh(bodyG, carbon));
     for (const sx of [-1, 1]) {
-      const gp = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.12, 0.035), grip);
-      gp.position.set(sx * 0.125, -0.01, 0);
+      const gp = new THREE.Mesh(new THREE.CapsuleGeometry(0.022, 0.08, 4, 10), grip);
+      gp.position.set(sx * 0.118, -0.008, 0.004);
       wheel.add(gp);
     }
-    const top = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.012, 0.02), accent);
-    top.position.set(0, 0.05, 0);
+    const top = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.006, 0.012), accent);
+    top.position.set(0, 0.05, 0.004);
     wheel.add(top);
+    // botões e seletores
+    const btnCols = [0xe8343c, 0x2f5bff, 0xffd23a, 0x1fd05a, 0xf4f6fb, 0xff7d26];
+    btnCols.forEach((c, k) => {
+      const b = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.007, 0.007, 0.006, 10).rotateX(Math.PI / 2),
+        new THREE.MeshBasicMaterial({ color: c, toneMapped: false }),
+      );
+      b.position.set((k < 3 ? -1 : 1) * (0.062 + (k % 3) * 0.0) , 0.022 - (k % 3) * 0.018, 0.012);
+      wheel.add(b);
+    });
+    for (const sx of [-1, 1]) {
+      const knob = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.012, 12).rotateX(Math.PI / 2), grip);
+      knob.position.set(sx * 0.035, -0.033, 0.012);
+      wheel.add(knob);
+    }
+    // luzes de troca de marcha: 10 em fila (verde, amarelo, vermelho), acendem com o giro
+    this.shiftLights = [];
+    for (let k = 0; k < 10; k++) {
+      const m = new THREE.MeshBasicMaterial({ color: 0x1a1a1a, toneMapped: false });
+      const l = new THREE.Mesh(new THREE.SphereGeometry(0.0055, 8, 6), m);
+      l.position.set(-0.054 + k * 0.012, 0.04, 0.012);
+      wheel.add(l);
+      this.shiftLights.push(m);
+    }
+    // as luvas da raposa: dedos juntos em cápsulas, polegar separado, punho branco e uma pata no dorso
+    const me = this.world.car(this.meId);
+    const gloveCol = me?.paint?.glove ?? me?.paint?.accent ?? 0x2f5bff;
+    const gloveM = new THREE.MeshStandardMaterial({ color: gloveCol, roughness: 0.7 });
+    const cuffM = new THREE.MeshStandardMaterial({ color: 0xf4f6fb, roughness: 0.8 });
+    const pawM = new THREE.MeshBasicMaterial({ color: 0xf4f6fb });
+    for (const sx of [-1, 1]) {
+      const hand = new THREE.Group();
+      hand.position.set(sx * 0.118, -0.008, 0.02);
+      const palm = new THREE.Mesh(new THREE.SphereGeometry(0.028, 14, 10).scale(1, 1.25, 0.8), gloveM);
+      hand.add(palm);
+      for (let f = 0; f < 4; f++) {
+        const finger = new THREE.Mesh(new THREE.CapsuleGeometry(0.008, 0.022, 4, 8), gloveM);
+        finger.rotation.z = Math.PI / 2;
+        finger.position.set(-sx * 0.022, 0.022 - f * 0.014, 0.012);
+        hand.add(finger);
+      }
+      const thumb = new THREE.Mesh(new THREE.CapsuleGeometry(0.009, 0.02, 4, 8), gloveM);
+      thumb.rotation.z = sx * 0.7;
+      thumb.position.set(-sx * 0.012, 0.036, -0.004);
+      hand.add(thumb);
+      const cuff = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.029, 0.022, 14), cuffM);
+      cuff.position.set(sx * 0.008, -0.044, -0.006);
+      hand.add(cuff);
+      const paw = new THREE.Mesh(new THREE.CircleGeometry(0.008, 10), pawM);
+      paw.position.set(sx * 0.012, 0.004, 0.024);
+      hand.add(paw);
+      wheel.add(hand);
+    }
     // visor da marcha no meio do volante
     const cv = document.createElement('canvas');
     cv.width = 128;
@@ -1405,7 +1591,7 @@ export class GpScene {
   private addCar(c: GpCar) {
     const kart = this.world.mode === 'arcade' && kartReady();
     const m: CarModel | KartModel = kart
-      ? buildKart({ fur: c.color, paint: c.paint, pbr: this.quality !== 'low' })
+      ? buildKart({ fur: c.color, paint: c.paint, kart: c.kart, pbr: this.quality !== 'low' })
       : buildCar({ fur: c.color, paint: c.paint, pbr: this.quality !== 'low' });
     const own = c.id === this.meId;
     const tag = this.textSprite(c.name, 'rgba(11,14,23,0.88)');
@@ -1508,6 +1694,8 @@ export class GpScene {
         if (b) b.shake = Math.min(1, b.shake + e.force * 0.15);
         if (e.force > 2 && typeof e.x === 'number')
           this.spark(e.x, e.z, Math.min(16, Math.round(e.force * 2)));
+      } else if (e.type === 'pad') {
+        this.spark(e.x, e.z, 14, BOOST_COLORS[1], 0.6);
       } else if (e.type === 'wall') {
         const v = this.cars.get(e.id);
         if (v) v.shake = 1;
@@ -1707,6 +1895,22 @@ export class GpScene {
     this.sparkMesh.count = sn;
     this.sparkMesh.instanceMatrix.needsUpdate = true;
     if (this.sparkMesh.instanceColor) this.sparkMesh.instanceColor.needsUpdate = true;
+    // a linha de guia do box acende com o pneu gasto do carro em foco (Realista)
+    if (this.pitGuide) this.pitGuide.visible = w.mode === 'real' && !!focusCar && focusCar.wear >= 0.55;
+    // placas de turbo: o pulso varre para a frente; brilham mais com um kart chegando perto
+    if (this.padTex && this.padMats.length) {
+      if (this.quality !== 'low' && !this.reduced) this.padTex.offset.y = (this.padTex.offset.y - dt * 1.2) % 1;
+      const tr = w.track;
+      tr.pads.forEach((pd, k) => {
+        let near = 0;
+        for (const c of w.cars) {
+          if (c.gone) continue;
+          const ds = tr.delta(c.s, pd.s);
+          if (ds > -2 && ds < 40) near = Math.max(near, 1 - Math.max(0, ds) / 40);
+        }
+        this.padMats[k]!.color.setRGB(0.6 + near * 0.6, 0.75 + near * 0.45, 1);
+      });
+    }
     // kart: o turbo abre o campo de visão (+6°, +10°, +14°) e treme a câmera; a zebra vibra (opção e movimento reduzido)
     if (w.mode === 'arcade' && focusCar) {
       const lv = focusCar.boostT > 0 ? focusCar.boostLevel : 0;
@@ -1882,6 +2086,11 @@ export class GpScene {
     this.cockpit.visible = inside;
     if (inside && car) {
       this.cockpitWheel.rotation.z = -car.steer * 1.1;
+      // luzes de troca: acendem com o giro do motor (só no F1; o kart não tem marchas)
+      const lit = this.world.mode === 'real' ? Math.round(Math.max(0, (car.rpm - 0.55) / 0.42) * 10) : 0;
+      this.shiftLights.forEach((m, k) =>
+        m.color.setHex(k < lit ? (k < 4 ? 0x1fd05a : k < 7 ? 0xffd23a : 0xe8343c) : 0x1a1a1a),
+      );
       const text = car.gear === 0 ? 'R' : String(car.gear);
       const ck = this.cockpitGear;
       if (ck.ctx && ck.last !== text) {
@@ -1897,6 +2106,9 @@ export class GpScene {
       }
     }
   }
+
+  /** Luzes de troca de marcha do volante do cockpit (acendem com o giro). */
+  private shiftLights: THREE.MeshBasicMaterial[] = [];
 
   dispose() {
     for (const t of this.textures) t.dispose();

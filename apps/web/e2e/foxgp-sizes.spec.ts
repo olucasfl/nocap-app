@@ -88,8 +88,8 @@ test.describe('Fox GP: tamanhos de tela', () => {
       await expect(page.getByTestId('gp-track-panel')).toBeVisible();
       await add('pistas');
       await page.getByTestId('gp-track-panel').getByRole('button', { name: 'Voltar' }).click();
-      if (process.env.E2E_GARAGE) {
-        // a garagem é refeita na Fase 8 (uma por veículo); até lá fica fora desta conferência
+      {
+        // a garagem (uma por veículo, spec 081, Fase 8)
         await page.getByTestId('gp-open-garage').click();
         await expect(page.getByTestId('gp-garage')).toBeVisible();
         await add('garagem');

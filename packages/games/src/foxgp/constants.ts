@@ -7,22 +7,6 @@
 export const GP_DT = 1 / 60;
 
 export const GP_MIN_PLAYERS = 2;
-/**
- * Cores do pelo na sala (spec 080, decisão 8): as 8 do Fox Cap! mais 2 (raposa-do-ártico e raposa prateada). Com mais de
- * 10 pessoas a cor pode repetir; a barra de cor da classificação usa a carroceria.
- */
-export const GP_ROOM_COLORS: readonly { name: string; hex: string }[] = [
-  { name: 'Laranja', hex: '#ff6a2b' },
-  { name: 'Azul', hex: '#2f5bff' },
-  { name: 'Amarelo', hex: '#ffd23f' },
-  { name: 'Verde', hex: '#33c27f' },
-  { name: 'Rosa', hex: '#ff9ecf' },
-  { name: 'Roxo', hex: '#7a3cff' },
-  { name: 'Ciano', hex: '#25c7e8' },
-  { name: 'Vermelho', hex: '#e5303a' },
-  { name: 'Branco', hex: '#f1ede4' },
-  { name: 'Prata', hex: '#8b93a3' },
-];
 /** Até 12 carros (spec 081): na sala e no jogo contra bots (você mais 11). */
 export const GP_MAX_PLAYERS = 12;
 
@@ -457,3 +441,14 @@ export const GP_ARC_BOOST_OFFROAD = 0.5;
  */
 export const GP_PAD_LEN = 9;
 export const GP_PAD_HALF = 2.6;
+
+/**
+ * Avisos de pneu do Realista (spec 081, Fase 10) [AJUSTAR]: desgastado (aviso), no limite (entre no box) e acabando
+ * (crítico, repete a cada volta). E a sinalização do box pela distância até a entrada (m): à frente, placa e "entre".
+ */
+export const GP_TYRE_WARN = 0.55;
+export const GP_TYRE_ALERT = 0.75;
+export const GP_TYRE_CRIT = 0.9;
+export const GP_BOX_SIGN_FAR = 350;
+export const GP_BOX_SIGN_MID = 150;
+export const GP_BOX_SIGN_NEAR = 60;

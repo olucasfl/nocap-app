@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import type { GpPaint } from '@nocap/games';
+import type { GpKartPaint, GpPaint } from '@nocap/games';
 import type { RematchRoom } from '@/components/final/RematchPanel';
 import { GpPodium3D } from './GpPodium3D';
 import { lapClock } from './format';
@@ -15,6 +15,8 @@ export interface GpFinalRow {
   /** Cor do pelo (número) e pintura, para o carro no pódio. */
   fur?: number;
   paint?: GpPaint | null;
+  /** A pintura do kart (pódio do Arcade). */
+  kart?: GpKartPaint | null;
   you: boolean;
   bot?: boolean;
   /** Tempo total da corrida (ms); null = não terminou. */
@@ -106,7 +108,7 @@ export function GpFinal({
       )}
       <div className="gpf-left">
         <div className="gpf-head">
-          <span className="gp-kicker">Bandeirada · Circuito da Marina</span>
+          <span className="gp-kicker">Bandeirada · {physics === 'Arcade' ? 'Bala Track' : 'Circuito da Marina'}</span>
           <h1 className="gp-title gpf-title">
             {title}
             {won && <span>!</span>}
@@ -117,7 +119,7 @@ export function GpFinal({
             kart={physics === 'Arcade'}
             top={rows
               .slice(0, 3)
-              .map((r) => ({ name: r.name, fur: r.fur ?? 0xff7d26, paint: r.paint ?? null }))}
+              .map((r) => ({ name: r.name, fur: r.fur ?? 0xff7d26, paint: r.paint ?? null, kart: r.kart ?? null }))}
           />
           <ol className="gpf-podium-names" aria-label="Pódio">
             {rows.slice(0, 3).map((r, i) => (

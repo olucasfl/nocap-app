@@ -656,3 +656,192 @@
     animation: none;
   }
 }
+
+/* painel das pistas: as duas lado a lado */
+.gph-tracks {
+  width: min(640px, 100%);
+}
+.gph-track-two {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.gph-track-two p {
+  font-size: 13px;
+  line-height: 1.35;
+}
+.gph-track-two .gph-map {
+  max-height: 26vh;
+}
+
+/* ---- garagem por veículo (spec 081, Fase 8): abas e opções que cabem sem rolagem ---- */
+.gpg {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  overflow: hidden;
+}
+.gpg-veh,
+.gpg-tabs {
+  display: flex;
+  gap: 6px;
+}
+.gpg-veh button,
+.gpg-tabs button {
+  flex: 1;
+  padding: 8px 6px;
+  border: 2px solid var(--gp-line-2);
+  background: var(--gp-panel-2);
+  color: var(--gp-text-3);
+  font: italic 800 14px var(--gp-display);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.gpg-tabs button {
+  padding: 5px 4px;
+  font-size: 12px;
+}
+.gpg-veh button[aria-selected='true'] {
+  border-color: var(--gp-accent);
+  background: var(--gp-accent);
+  color: var(--gp-bg);
+}
+.gpg-tabs button[aria-selected='true'] {
+  border-color: var(--gp-accent);
+  color: var(--gp-text);
+}
+.gpg-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+.gpg-row h3 {
+  margin: 0 0 4px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gp-muted);
+}
+.gpg-sw {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 4px;
+}
+.gpg-sw button {
+  aspect-ratio: 1;
+  min-width: 0;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  padding: 0;
+}
+.gpg-sw button[aria-checked='true'] {
+  border-color: #fff;
+  outline: 2px solid var(--gp-accent);
+  outline-offset: 1px;
+}
+.gpg-sw button.is-none {
+  background: repeating-linear-gradient(45deg, #2b3348 0 4px, #141a2b 4px 8px) !important;
+}
+.gpg-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.gpg-chips button {
+  padding: 4px 8px;
+  border: 2px solid var(--gp-line-2);
+  background: var(--gp-panel-2);
+  color: var(--gp-text);
+  font-size: 12px;
+  cursor: pointer;
+}
+.gpg-chips button[aria-checked='true'] {
+  border-color: var(--gp-accent);
+  background: var(--gp-panel-on, #23304d);
+}
+@media (max-height: 520px) {
+  .gpg-sw {
+    grid-template-columns: repeat(24, minmax(0, 1fr));
+  }
+  .gpg-row h3 {
+    margin-bottom: 2px;
+  }
+}
+
+/* a garagem nova cabe na tela: o painel não cresce além da coluna e a página não rola */
+.gph-garage {
+  overflow: hidden;
+  height: 100dvh;
+  box-sizing: border-box;
+  padding-top: max(24px, 4vh) !important;
+  padding-bottom: max(16px, 3vh) !important;
+}
+.gph-garage-panel.gpg {
+  min-width: 0;
+  min-height: 0;
+  padding: 16px 18px;
+  overflow: hidden;
+}
+.gpg .gph-garage-btns {
+  margin-top: auto;
+}
+
+.gpg .gph-garage-btns .gp-tbtn {
+  white-space: nowrap;
+  min-width: 0;
+  padding: 0 10px;
+  font-size: clamp(13px, 1.8vh, 18px);
+}
+/* garagem no celular deitado: prévia menor, painel mais largo e compacto */
+@media (max-height: 520px) and (orientation: landscape) {
+  .gph-garage {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.25fr) !important;
+    gap: 8px 14px !important;
+    padding: 8px 12px !important;
+  }
+  .gph-garage-head .gp-title {
+    font-size: 22px;
+  }
+  .gph-garage-panel.gpg {
+    padding: 8px 10px;
+    gap: 5px;
+  }
+  .gpg-veh button,
+  .gpg-tabs button {
+    padding: 3px 4px;
+    font-size: 11px;
+  }
+  .gpg-body {
+    gap: 3px;
+  }
+  .gpg-row h3 {
+    font-size: 9px;
+    margin: 0 0 2px;
+  }
+  .gpg-sw {
+    gap: 2px;
+  }
+  .gpg-chips button {
+    padding: 2px 6px;
+    font-size: 11px;
+  }
+  .gpg .gph-number button {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    font-size: 16px;
+    line-height: 1;
+  }
+  .gpg .gph-garage-btns .gp-tbtn {
+    height: 32px;
+    font-size: 13px;
+  }
+}
+/* garagem em pé (tela estreita): o botão principal cabe */
+@media (max-width: 480px) {
+  .gpg .gph-garage-btns .gp-tbtn {
+    font-size: 14px;
+  }
+}

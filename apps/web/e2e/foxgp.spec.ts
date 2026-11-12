@@ -113,13 +113,14 @@ test.describe('Fox GP', () => {
     await expect(page.getByRole('img', { name: /O seu carro/ })).toBeVisible();
     // a física não fica na tela inicial (spec 081, 13.2): só em "Antes de correr"
     await expect(page.getByTestId('gp-physics-arcade')).toHaveCount(0);
-    // o carrossel fica embaixo do carro e mostra o modo do carro (o kart ainda não existe: só o F1, sem setas)
+    // o carrossel fica embaixo do carro e mostra o modo do carro (kart e F1; as setas trocam o carro de verdade)
     const carBox = (await page.getByTestId('gp-car-preview').boundingBox())!;
     const carousel = (await page.getByTestId('gp-home-carousel').boundingBox())!;
     expect(carousel.y).toBeGreaterThan(carBox.y + carBox.height * 0.8);
     expect(Math.abs(carousel.x + carousel.width / 2 - (carBox.x + carBox.width / 2))).toBeLessThan(4);
+    await expect(page.getByTestId('gp-best')).toContainText('Arcade · Kart');
+    await page.getByRole('button', { name: 'Próximo carro' }).click();
     await expect(page.getByTestId('gp-best')).toContainText('Realista · F1');
-    await expect(page.getByRole('button', { name: 'Próximo carro' })).toHaveCount(0);
     // a caixa do carro é a da main (13.1): top 10vh, 70vh de altura, min(60vw, 860px) de largura
     expect(Math.abs(carBox.y - 81)).toBeLessThan(2);
     expect(Math.abs(carBox.height - 567)).toBeLessThan(2);
@@ -127,8 +128,8 @@ test.describe('Fox GP', () => {
     // "Antes de correr": os dois modos, Arcade por padrão, a escolha fica no aparelho; sem "Kart" e "Bala Track" ainda
     await page.getByTestId('gl-offline').click();
     await expect(page.getByTestId('gp-physics-arcade')).toHaveAttribute('aria-checked', 'true');
-    await expect(page.getByTestId('gp-physics-arcade')).not.toContainText('Kart');
-    await expect(page.getByTestId('gp-physics-arcade')).not.toContainText('Bala Track');
+    await expect(page.getByTestId('gp-physics-arcade')).toContainText('Kart');
+    await expect(page.getByTestId('gp-physics-arcade')).toContainText('Bala Track');
     await page.getByTestId('gp-physics-real').click();
     expect(await page.evaluate(() => localStorage.getItem('nocap-gp-physics'))).toBe('real');
     await expect(page.getByTestId('gp-pick-best-real')).toContainText('Melhor volta');
@@ -143,11 +144,14 @@ test.describe('Fox GP', () => {
     await page.mouse.up();
     await expect(page.getByTestId('gp-home')).toBeVisible();
     await page.getByTestId('gp-open-track').click();
-    await expect(page.getByRole('img', { name: 'Traçado do Circuito da Marina' })).toBeVisible();
+    await expect(page.getByRole('img', { name: 'Traçado: Circuito da Marina' })).toBeVisible();
     await page.getByRole('button', { name: 'Voltar' }).first().click();
     await page.getByTestId('gp-open-garage').click();
     await expect(page.getByTestId('gp-garage')).toBeVisible();
+    // a garagem abre no veículo do carrossel (o F1) e tem sub-abas
+    await page.getByTestId('garage-veh-f1').click();
     await page.getByTestId('garage-body-e8343c').click();
+    await page.getByTestId('garage-tab-desenho').click();
     await page.getByTestId('garage-pattern-chevron').click();
     await page.getByRole('button', { name: 'Número maior' }).click();
     if (process.env.E2E_SHOTS) await page.screenshot({ path: `${process.env.E2E_SHOTS}/gp-garage.png` });
@@ -506,14 +510,16 @@ test.describe('Fox GP', () => {
     expect(errors).toEqual([]);
   });
 
-  test('celular deitado: botões de toque (DRS no lugar do antigo), HUD sem estourar a tela', async ({ browser }) => {
+  test('celular deitado: botões de toque (kart: Drift e Turbo; F1: DRS), HUD sem estourar a tela', async ({ browser }) => {
     const ctx = await browser.newContext({ viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true, locale: 'pt-BR' });
     const page = await ctx.newPage();
     const errors = watchErrors(page);
     await openTraining(page, 9);
     await qualiOn(page);
     await expect(page.getByRole('button', { name: 'Acelerar' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'DRS' })).toBeVisible();
+    // o treino padrão é o kart: Drift (segurar) e Turbo no lugar do DRS
+    await expect(page.getByTestId('gp-pad-drift')).toBeVisible();
+    await expect(page.getByTestId('gp-pad-turbo')).toBeVisible();
     await expect(page.getByTestId('gp-startlap')).toBeVisible({ timeout: 15_000 });
     const gas = (await page.getByRole('button', { name: 'Acelerar' }).boundingBox())!;
     await page.mouse.move(gas.x + gas.width / 2, gas.y + gas.height / 2);

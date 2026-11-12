@@ -78,6 +78,23 @@ export function drawMinimap(cv: HTMLCanvasElement, world: GpWorld, meId: string,
     g.fillStyle = GP_THEME.text;
     g.fill();
   }
+  // placas de turbo (Bala Track): seta dupla azul
+  for (const pd of tr.pads) {
+    const a = tr.pointAt(pd.s, 0);
+    const fx = Math.sin(a.h);
+    const fz = -Math.cos(a.h);
+    g.strokeStyle = '#3aa0ff';
+    g.lineWidth = 2.5;
+    for (const o of [0, 5]) {
+      const cx = X(a.x) + fx * o;
+      const cz = Z(a.z) + fz * o;
+      g.beginPath();
+      g.moveTo(cx - fz * 4 - fx * 3, cz + fx * 4 - fz * 3);
+      g.lineTo(cx, cz);
+      g.lineTo(cx + fz * 4 - fx * 3, cz - fx * 4 - fz * 3);
+      g.stroke();
+    }
+  }
   // linha de chegada quadriculada
   {
     const nx = -tr.tz[0]!;
@@ -89,6 +106,14 @@ export function drawMinimap(cv: HTMLCanvasElement, world: GpWorld, meId: string,
   }
   if (pit) {
     const entry = tr.pointAt(pit.inStart, 0);
+    // pneu gasto no Realista: a entrada do box pisca
+    const mine = world.car(meId);
+    if (world.mode === 'real' && mine && mine.wear >= 0.55 && Math.floor(performance.now() / 400) % 2 === 0) {
+      g.beginPath();
+      g.arc(X(entry.x), Z(entry.z), 9, 0, Math.PI * 2);
+      g.fillStyle = GP_THEME.yellow;
+      g.fill();
+    }
     g.fillStyle = GP_THEME.yellow;
     g.font = `italic 800 13px ${GP_THEME.display}`;
     g.fillText('BOX', X(entry.x) + 8, Z(entry.z) + 4);

@@ -11,7 +11,7 @@ import {
 } from '@/lib/rooms';
 import { GpFinal, type GpFinalRow } from './GpFinal';
 import { hexNum, lapClock } from './format';
-import { paintFromRoom } from './garage';
+import { carFromRoom } from './garage';
 import { PHYSICS_NAME, gpMarkBack } from './gp-best';
 import './foxgp.css';
 
@@ -33,8 +33,9 @@ export function GpRoomFinal({ snapshot }: { snapshot: RoomSnapshot }) {
       id: r.userId,
       name: nameOf(r.userId, r.username),
       color: info?.colors[r.userId] ?? '#ff7d26',
-      fur: hexNum(info?.colors[r.userId]),
-      paint: paintFromRoom(info?.paints?.[r.userId]),
+      fur: carFromRoom(info?.paints?.[r.userId])?.fur ?? hexNum(info?.colors[r.userId]),
+      paint: carFromRoom(info?.paints?.[r.userId])?.f1 ?? null,
+      kart: carFromRoom(info?.paints?.[r.userId])?.kart ?? null,
       you: r.userId === me,
       ms: info?.finish[r.userId] ?? null,
       best: info?.best[r.userId] ?? null,
