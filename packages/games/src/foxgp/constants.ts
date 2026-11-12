@@ -82,7 +82,7 @@ export const GP_GARAGE_STEP = 9;
 export const GP_PIT_SIDE = 1;
 /** Centro da faixa do box em relação ao centro da pista (m). */
 export const GP_PIT_OFFSET = 13;
-export const GP_PIT_HALF = 3;
+export const GP_PIT_HALF = 3.5;
 /** A faixa do box: começa a se abrir, fica paralela, e volta para a pista (distâncias do traçado, a linha de chegada é 0). */
 export const GP_PIT_IN_START = -95;
 export const GP_PIT_IN_END = -65;
@@ -90,7 +90,7 @@ export const GP_PIT_OUT_START = 20;
 export const GP_PIT_OUT_END = 50;
 /** A vaga do box (distância do traçado) e o tamanho dela (m). */
 export const GP_PIT_BOX = -18;
-export const GP_PIT_BOX_LEN = 7;
+export const GP_PIT_BOX_LEN = 9;
 /** [AJUSTAR] Velocidade limitada na faixa do box (m/s). */
 export const GP_PIT_LIMIT = 17;
 /** [AJUSTAR] Tempo parado na vaga (s). */
@@ -131,9 +131,19 @@ export const GP_SURFACE = {
 } as const;
 export type GpSurface = keyof typeof GP_SURFACE;
 
-/** Corpo do carro para colisão: dois círculos (frente e trás). */
-export const GP_CAR_R = 0.95;
-export const GP_CAR_HALF = 0.8;
+/**
+ * Tamanho do carro (spec 081, Fase 3): ~2× o de antes, o mesmo para o kart e o F1 (grid, box, batidas e bots são
+ * comuns). Na pista de 14 m cabem 3 lado a lado com 0,6 m entre eles (3 × 3,6 + 2 × 0,6 = 12 m) e 4 não (14,4 m).
+ */
+export const GP_CAR_LEN = 6.5;
+export const GP_CAR_WID = 3.6;
+/** Folga entre carros lado a lado que o teste "3 cabem" usa (m). */
+export const GP_CAR_SIDE_GAP = 0.6;
+/** Corpo do carro para a barreira do Arcade antigo: dois círculos (frente e trás) do tamanho da caixa. */
+export const GP_CAR_R = GP_CAR_WID / 2;
+export const GP_CAR_HALF = GP_CAR_LEN / 2 - GP_CAR_R;
+/** O carro encosta na barreira com esta parte da meia largura dentro do limite (o resto é a borracha da barreira). */
+export const GP_CAR_WALL_IN = 0.9;
 /**
  * Batida entre carros (spec 081, Fase 13.3): caixa do carro (OBB) e um impulso de corpo rígido com massas iguais **uma vez
  * por contato**. Nos passos seguintes do mesmo contato os carros só se separam pela posição (sem perder velocidade), e
@@ -175,8 +185,10 @@ export const GP_BRAKE_MIN = 0.55;
 // ---- vácuo e DRS (spec 080) ----
 
 /** O vácuo vale até esta distância atrás do outro carro (m) e nesta largura para cada lado (m). */
-export const GP_SLIP_LEN = 24;
-export const GP_SLIP_W = 2.8;
+export const GP_SLIP_LEN = 30;
+export const GP_SLIP_W = 3.2;
+/** Mais perto que isto (m, de centro a centro) já é encostar, não vácuo. */
+export const GP_SLIP_MIN = GP_CAR_LEN * 0.9;
 /** Só no vácuo com pelo menos esta velocidade (m/s). */
 export const GP_SLIP_MIN_V = 12;
 /** [AJUSTAR] Vácuo passivo: colado no outro carro o arrasto cai até 25 % (menos conforme a distância). */
@@ -219,10 +231,11 @@ export const GP_QUALI_FROM_BOX = true;
 /** Volta mais curta que isto é impossível (validação leve da sala). */
 export const GP_MIN_LAP_SEC = 22;
 /** Grid: o primeiro lugar a esta distância antes da linha; cada fila mais para trás; lados alternados. */
-export const GP_GRID_FIRST = -12;
-/** 6 m entre um lugar e o seguinte (lados alternados): os 12 carros cabem em ~78 m antes da linha. */
-export const GP_GRID_GAP = 6;
-export const GP_GRID_SIDE = 3;
+export const GP_GRID_FIRST = -14;
+/** 8 m entre um lugar e o seguinte (lados alternados, 16 m na mesma fila): os 12 carros cabem em ~102 m antes da linha. */
+export const GP_GRID_GAP = 8;
+/** Afastamento do centro de cada fila: os carros de 3,6 m ficam com 3 m entre eles e 1,9 m de asfalto para fora. */
+export const GP_GRID_SIDE = 3.3;
 /** [AJUSTAR] Depois que o primeiro cruza a linha, os outros têm este tempo (s); depois é DNF (spec 081: 2 min). */
 export const GP_DNF_SEC = 120;
 /** Semáforo: 5 luzes acendendo uma por segundo e a espera antes de apagar (s). */
@@ -280,8 +293,8 @@ export const GP_ROLL0 = 0.2;
 export const GP_GRIP_TOTAL = 26;
 /** O pedal de freio não é tudo ou nada: a força sobe até o pedido nesta taxa (por segundo). */
 export const GP_BRAKE_RAMP = 7;
-/** Corpo rígido do carro (massa 1): momento de inércia em torno do eixo vertical (comprimento 3,4 m, largura 1,8 m). */
-export const GP_INERTIA = (3.4 * 3.4 + 1.8 * 1.8) / 12;
+/** Corpo rígido do carro (massa 1): momento de inércia em torno do eixo vertical (caixa do carro). */
+export const GP_INERTIA = (GP_CAR_LEN * GP_CAR_LEN + GP_CAR_WID * GP_CAR_WID) / 12;
 /** Atrito entre carros e com a barreira (impulso tangente máximo, parte do normal). */
 export const GP_BUMP_MU = 0.15;
 export const GP_WALL_E = 0.2;
@@ -293,7 +306,10 @@ export const GP_SPIN_DAMP = 3.2;
 // A referência anda em escala real (96 m/s, entre-eixos 3,6 m num carro de 5,6 m); aqui a máxima é ~32 m/s e o carro tem
 // 3,4 m. Os números abaixo dão a mesma cara de pilotagem nesta escala e uma volta da Marina parecida com a do Arcade.
 
-/** Entre-eixos (m): 3,4 m de carro, a mesma proporção da referência. */
+/**
+ * Entre-eixos efetivo da pilotagem (m): com o esterço, dá o raio da curva pedida. É número de pilotagem, não a medida do
+ * desenho: o carro ficou 2× maior (spec 081, Fase 3) sem mudar a curva; a Fase 4 recalibra a pilotagem do Realista.
+ */
 export const GP_REAL_WHEELBASE = 2.4;
 /** Esterço máximo das rodas (rad) e quanto ele cai com a velocidade: `ângulo = volante * MAX / (1 + v / FADE)`. */
 export const GP_REAL_STEER_MAX = 0.6;
@@ -328,9 +344,7 @@ export const GP_REAL_STEER_CENTER = 5;
 export const GP_REAL_WALL_KEEP = 0.7;
 export const GP_REAL_WALL_ALIGN = 0.25;
 export const GP_REAL_WALL_CD = 0.3;
-/** Caixa do carro para a batida entre carros (comprimento e largura, m), a mesma nos dois modos. */
-export const GP_REAL_CAR_LEN = 3.4;
-export const GP_REAL_CAR_WID = 1.8;
+
 
 /** Aderência lateral máxima do Realista na velocidade dada (m/s²), com pneu novo no asfalto. */
 export const gpRealLatMax = (v: number) => GP_REAL_GRIP0 + GP_REAL_DOWNFORCE * v * v;

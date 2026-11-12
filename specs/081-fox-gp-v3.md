@@ -142,3 +142,23 @@ Ferramenta: `measure_laps.cjs` (só trabalho) roda classificação e corrida int
   piscina de 80, faíscas numa malha instanciada de 120).
 - **Pendente (precisa de aparelho):** 30 quadros/s no celular na qualidade baixa e o líder com 11 conexões num celular.
 - e2e novo: "12 carros juntos desde a largada: 60 s sem quadro acima de 33 ms".
+
+## 7. Fase 3: carros maiores (12/11/2026)
+
+- Caixa do carro **6,5 × 3,6 m** (`GP_CAR_LEN`, `GP_CAR_WID`), a mesma para os dois modos e para o kart que vem na Fase 6.
+  Na pista de 14 m cabem 3 lado a lado com 0,6 m entre eles e 4 não (teste `size.test.ts`, que também confere o grid
+  de 12 inteiro no asfalto e sem encostar).
+- Derivados do tamanho: círculos da barreira do Arcade antigo (`GP_CAR_R`, `GP_CAR_HALF`), encosto na barreira
+  (`GP_CAR_WALL_IN`), inércia, grid (`GP_GRID_FIRST −14`, `GP_GRID_GAP 8`, `GP_GRID_SIDE 3,3`), faixa e vaga do box
+  (`GP_PIT_HALF 3,5`, `GP_PIT_BOX_LEN 9`), vácuo (`GP_SLIP_MIN`, `GP_SLIP_LEN 30`, `GP_SLIP_W 3,2`), bots (borda,
+  faixa de ultrapassagem, distância de seguir e faixa livre pelo tamanho do carro).
+- O **entre-eixos do Realista** continua 2,4 m: é número de pilotagem (raio da curva), não medida do desenho; a Fase 4
+  refaz a pilotagem.
+- Cena: o modelo das prévias (~3,6 m) aparece na pista na escala `CAR_VIS` (6,5 / 3,56); rodas, câmeras (atrás do carro,
+  cockpit, distante), marcas de pneu, marcas do grid e equipe do box acompanham.
+- **Regressão do Arcade antigo aposentada** (decisão 6): `arcade-regression.test.ts`, `regression-scenario.ts` e
+  `regression.fixture.ts` saíram; o Arcade vira o kart na Fase 5.
+- Desempenho depois da mudança (12 carros juntos, 60 s): desenho 3,1 ms de média (11 ms no pior), nenhum quadro do jogo
+  acima de 33 ms. Para isso: faíscas sem lista nova por quadro, vetor da câmera reaproveitado, sombra só dos carros a
+  até 45 m. O teste aceita até 2 quadros de tela perdidos pelo sistema em 3600 (sem trabalho do jogo por trás).
+- HUD: com o selo "Vácuo" a marcha saía do painel; agora os selos ficam embaixo do rótulo.

@@ -1399,14 +1399,16 @@ export function GpPlay({
             <div className="gpx-speed" data-testid="gp-dash">
               <div className="gpx-speed-top">
                 <small>Velocidade</small>
-                <span className="gpx-mode" data-testid="gp-mode">
-                  {PHYSICS_NAME[mode]}
-                </span>
-                {h.slip > 0.15 && (
-                  <span className="gpx-slip" data-testid="gp-slip">
-                    Vácuo
+                <span className="gpx-tags">
+                  <span className="gpx-mode" data-testid="gp-mode">
+                    {PHYSICS_NAME[mode]}
                   </span>
-                )}
+                  {h.slip > 0.15 && (
+                    <span className="gpx-slip" data-testid="gp-slip">
+                      Vácuo
+                    </span>
+                  )}
+                </span>
                 <div className="gpx-gear">
                   <small>Marcha</small>
                   <b>{h.gear === 0 ? 'R' : h.gear}</b>

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { createRng } from '../core/rng';
 import {
+  GP_CAR_LEN,
+  GP_CAR_WID,
   GP_DNF_SEC,
   GP_DT,
   GP_GEARS,
@@ -337,7 +339,7 @@ describe('batida entre carros (spec 081, Fase 13.3: impulso uma vez por contato)
   for (const mode of ['arcade', 'real'] as const) {
     describe(mode, () => {
       it('traseira com 8 m/s de diferença: quem bate perde uma parte, o da frente é empurrado, ninguém atravessa', () => {
-        const { w, a, b } = pair(mode, 3.5, 0, 25, 17);
+        const { w, a, b } = pair(mode, GP_CAR_LEN + 0.15, 0, 25, 17);
         const keep = { throttle: 0.55, brake: 0, steer: 0 };
         let minDist = Infinity;
         let aMin = Infinity;
@@ -352,7 +354,7 @@ describe('batida entre carros (spec 081, Fase 13.3: impulso uma vez por contato)
         expect(25 - aMin).toBeGreaterThan(1.5);
         expect(25 - aMin).toBeLessThan(3.6);
         expect(bMax - 17).toBeGreaterThan(1.5);
-        expect(minDist).toBeGreaterThan(3);
+        expect(minDist).toBeGreaterThan(GP_CAR_LEN * 0.85);
         expect(a.prog).toBeLessThan(b.prog);
         // 1 s depois quem bateu já acelera de novo
         const v0 = a.speed;
@@ -362,7 +364,7 @@ describe('batida entre carros (spec 081, Fase 13.3: impulso uma vez por contato)
 
       it('a perda não se acumula: 3 ou 12 passos de contato dão a mesma velocidade', () => {
         const run = (n: number) => {
-          const { w, a, b } = pair(mode, 3.2, 0, 24, 16);
+          const { w, a, b } = pair(mode, GP_CAR_LEN - 0.2, 0, 24, 16);
           for (let i = 0; i < n; i++) collide(w);
           return [a.speed, b.speed];
         };
@@ -374,7 +376,7 @@ describe('batida entre carros (spec 081, Fase 13.3: impulso uma vez por contato)
       });
 
       it('raspada de lado a 30 m/s: nenhum carro cai abaixo de 85 %', () => {
-        const { w, a, b } = pair(mode, 0.5, 1.75, 30, 30, -0.04);
+        const { w, a, b } = pair(mode, 1, GP_CAR_WID - 0.05, 30, 30, -0.04);
         b.vx = Math.sin(b.h) * 30;
         b.vz = -Math.cos(b.h) * 30;
         let low = Infinity;
@@ -386,7 +388,7 @@ describe('batida entre carros (spec 081, Fase 13.3: impulso uma vez por contato)
       });
 
       it('de frente a 20 m/s cada: os dois perdem uma vez e não param sozinhos em 3 passos', () => {
-        const { w, a, b } = pair(mode, 3.45, 0, 20, 20, Math.PI);
+        const { w, a, b } = pair(mode, GP_CAR_LEN + 0.2, 0, 20, 20, Math.PI);
         w.drainEvents();
         for (let i = 0; i < 3; i++) w.step(GP_DT, {});
         expect(bumps(w)).toBe(1);
@@ -397,7 +399,7 @@ describe('batida entre carros (spec 081, Fase 13.3: impulso uma vez por contato)
       });
 
       it('a quantidade de movimento se conserva na batida (massas iguais)', () => {
-        const { w, a, b } = pair(mode, 3.3, 0.4, 22, 9, 0.3);
+        const { w, a, b } = pair(mode, GP_CAR_LEN - 0.1, 0.8, 22, 9, 0.3);
         const before = { x: a.vx + b.vx, z: a.vz + b.vz };
         collide(w);
         expect(a.vx + b.vx).toBeCloseTo(before.x, 5);
@@ -405,7 +407,7 @@ describe('batida entre carros (spec 081, Fase 13.3: impulso uma vez por contato)
       });
 
       it('batida de lado gira pouco (limitado) e o giro some', () => {
-        const { w, a, b } = pair(mode, 0.8, -2.6, 2, 12, Math.PI / 2);
+        const { w, a, b } = pair(mode, 1.5, -(GP_CAR_LEN + GP_CAR_WID) / 2 + 0.2, 2, 12, Math.PI / 2);
         let spin = 0;
         for (let i = 0; i < 12; i++) {
           w.step(GP_DT, {});

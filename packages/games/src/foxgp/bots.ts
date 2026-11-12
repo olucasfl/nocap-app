@@ -2,6 +2,9 @@ import { createRng } from '../core/rng';
 import {
   GP_BRAKE,
   GP_BRAKE_MIN,
+  GP_CAR_LEN,
+  GP_CAR_SIDE_GAP,
+  GP_CAR_WID,
   GP_GRIP_MIN,
   GP_HALF_WIDTH,
   GP_LAPS,
@@ -269,7 +272,8 @@ export function gpBotInput(world: GpWorld, c: GpCar, mem: GpBotMemory, rng: () =
   const pc = tr.pitCenter(rel);
   const goingToPit = mem.pit && pc !== null && tr.rel(c.s) < tr.pit.box + 2;
   const leavingPit = c.surface === 'pit' && !mem.pit;
-  const edge = GP_HALF_WIDTH - 1.6;
+  // o carro inteiro no asfalto: o centro fica a meia largura (e um pouco) da borda
+  const edge = GP_HALF_WIDTH - GP_CAR_WID / 2 - 0.3;
   let lat: number;
   if (goingToPit) lat = pc!;
   else if (leavingPit && pc !== null) lat = pc;
@@ -314,12 +318,13 @@ export function gpBotInput(world: GpWorld, c: GpCar, mem: GpBotMemory, rng: () =
       const dx = o.x - c.x;
       const dz = o.z - c.z;
       const along = dx * fx + dz * fz;
-      if (along < 0 || along > 30) continue;
+      if (along < 0 || along > 30 + GP_CAR_LEN) continue;
       const side = -dx * fz + dz * fx;
-      if (Math.abs(side) > 2.4) continue;
+      if (Math.abs(side) > GP_CAR_WID * 0.7) continue;
       // mais rápido que o da frente: tenta passar (o agressivo tenta com menos diferença)
       if (t > mem.laneUntil && v > o.speed + 1.5 - P.aggression * 1.5 && along < 10 + P.aggression * 12) {
-        const opts = [o.d + 3.1, o.d - 3.1]
+        // faixa ao lado do outro carro: uma largura de carro e a folga
+        const opts = [o.d + GP_CAR_WID + GP_CAR_SIDE_GAP, o.d - GP_CAR_WID - GP_CAR_SIDE_GAP]
           .filter((x) => Math.abs(x) < edge)
           .sort((a, b) => Math.abs(a - c.d) - Math.abs(b - c.d));
         for (const lane of opts) {
@@ -330,8 +335,8 @@ export function gpBotInput(world: GpWorld, c: GpCar, mem: GpBotMemory, rng: () =
           }
         }
       }
-      const gap = 3.4 + P.followGap;
-      if (along < gap && Math.abs(side) < 2) want = Math.min(want, o.speed - (gap - along) * 0.7);
+      const gap = GP_CAR_LEN + P.followGap;
+      if (along < gap && Math.abs(side) < GP_CAR_WID * 0.6) want = Math.min(want, o.speed - (gap - along) * 0.7);
     }
   }
   want = Math.max(0, want);
@@ -361,12 +366,12 @@ export function gpBotInput(world: GpWorld, c: GpCar, mem: GpBotMemory, rng: () =
   };
 }
 
-/** A faixa `lat` está livre perto deste carro (ninguém ali de 7 m atrás a 10 m à frente)? */
+/** A faixa `lat` está livre perto deste carro (ninguém ali de um carro e meio atrás a dois à frente)? */
 function laneFree(world: GpWorld, c: GpCar, lat: number): boolean {
   for (const o of world.cars) {
     if (o === c || o.gone || o.ghost) continue;
     const ds = world.track.delta(c.s, o.s);
-    if (ds > -7 && ds < 10 && Math.abs(o.d - lat) < 2.3) return false;
+    if (ds > -GP_CAR_LEN * 1.5 && ds < GP_CAR_LEN * 2 && Math.abs(o.d - lat) < GP_CAR_WID + 0.4) return false;
   }
   return true;
 }

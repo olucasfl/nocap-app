@@ -8,6 +8,8 @@ import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import {
+  GP_CAR_LEN,
+  GP_CAR_WID,
   GP_HALF_WIDTH,
   GP_MAX_PLAYERS,
   GP_KERB_W,
@@ -46,6 +48,11 @@ export interface GpPose {
 /** Direção da câmera distante (a diagonal do Atravessa!): para trás, para a direita e para cima. */
 const FAR_DIR = new THREE.Vector3(4.6, 9.4, 7.2).normalize();
 const FAR_FOV = 24;
+/**
+ * O modelo do carro é o das prévias (garagem, lobby, pódio: ~3,6 m); na pista ele aparece neste tamanho (spec 081,
+ * Fase 3), o da caixa de colisão do motor.
+ */
+const CAR_VIS = GP_CAR_LEN / 3.56;
 
 const GRAVEL = 0xe6cf92;
 const WATER = 0x2a7fd4;
@@ -222,8 +229,9 @@ export class GpScene {
   private camLook = new THREE.Vector3();
   private lead = new THREE.Vector3();
   private chasePos = new THREE.Vector3();
+  private chaseWant = new THREE.Vector3();
   private chaseInit = false;
-  private farDist = 70;
+  private farDist = 82;
   /** Objetos do cockpit (volante e bordas): só aparecem na câmera de dentro do carro. */
   private cockpit: THREE.Group;
   private cockpitWheel: THREE.Group;
@@ -306,7 +314,7 @@ export class GpScene {
     this.boxSpot = tr.pointAt(tr.pit.box, tr.pitCenter(tr.pit.box) ?? 0);
     this.buildCrew();
     // marcas de pneu e faíscas (malhas instanciadas: uma chamada de desenho cada)
-    const markGeo = new THREE.PlaneGeometry(0.28, 0.9);
+    const markGeo = new THREE.PlaneGeometry(0.28 * CAR_VIS, 0.9 * CAR_VIS);
     markGeo.rotateX(-Math.PI / 2);
     this.markCap = q === 'low' ? 0 : 900;
     this.marks = new THREE.InstancedMesh(
@@ -663,8 +671,8 @@ export class GpScene {
     const mark = this.std(0xffffff);
     for (let i = 0; i < GP_MAX_PLAYERS; i++) {
       const s = gpGridSpot(tr, i);
-      const m = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.03, 0.3), mark);
-      const p = tr.pointAt(s.s - 2, s.d);
+      const m = new THREE.Mesh(new THREE.BoxGeometry(GP_CAR_WID * 1.1, 0.03, 0.3), mark);
+      const p = tr.pointAt(s.s + GP_CAR_LEN / 2 + 0.4, s.d);
       m.position.set(p.x, 0.05, p.z);
       m.rotation.y = -p.h;
       this.scene.add(m);
@@ -1260,8 +1268,8 @@ export class GpScene {
       g.add(body, head, gun);
       g.traverse((o) => ((o as THREE.Mesh).castShadow = true));
       // em casa: encostados na garagem; na troca: ao lado de cada roda
-      const wx = b.x + rx * lx * 1.7 - fx * lz;
-      const wz = b.z + rz * lx * 1.7 - fz * lz;
+      const wx = b.x + rx * lx * (GP_CAR_WID / 2 + 0.5) - fx * lz * GP_CAR_LEN * 0.3;
+      const wz = b.z + rz * lx * (GP_CAR_WID / 2 + 0.5) - fz * lz * GP_CAR_LEN * 0.3;
       const hx = b.x + rx * sideSign * 4.2 + fx * lz * 1.5;
       const hz = b.z + rz * sideSign * 4.2 + fz * lz * 1.5;
       const home = new THREE.Vector3(hx, 0, hz);
@@ -1377,6 +1385,7 @@ export class GpScene {
     const own = c.id === this.meId;
     const tag = this.textSprite(c.name, 'rgba(11,14,23,0.88)');
     tag.position.y = 2.6;
+    m.group.scale.setScalar(CAR_VIS);
     tag.visible = !own;
     m.group.add(tag);
     m.group.traverse((o) => {
@@ -1433,7 +1442,7 @@ export class GpScene {
     this.camera.updateProjectionMatrix();
     this.composer?.setSize(w, h);
     // a câmera distante enquadra o mesmo pedaço de pista em pé e deitado
-    this.farDist = this.camera.aspect < 1 ? 70 / Math.max(0.5, this.camera.aspect) : 70;
+    this.farDist = this.camera.aspect < 1 ? 82 / Math.max(0.5, this.camera.aspect) : 82;
   }
 
   /** Troca de câmera com transição suave (a preferência fica com quem chama). */
@@ -1549,7 +1558,7 @@ export class GpScene {
       v.m.group.rotation.y = -p.h;
       for (const wh of v.m.wheelsF) wh.rotation.y = -c.steer * 0.45;
       // as rodas giram com a velocidade; a asa de trás abre com o DRS (suave)
-      v.wheelA += (c.speed * dt) / v.m.wheelR;
+      v.wheelA += (c.speed * dt) / (v.m.wheelR * CAR_VIS);
       for (const wh of v.m.wheels) wh.rotation.x = v.wheelA;
       v.flapA += ((c.drsOpen ? -0.75 : 0) - v.flapA) * Math.min(1, dt * 10);
       v.m.flap.rotation.x = v.flapA;
@@ -1575,10 +1584,12 @@ export class GpScene {
           v.markAcc = 0;
           const rx = Math.cos(p.h);
           const rz = Math.sin(p.h);
-          const bx = p.x - Math.sin(p.h) * 1.0;
-          const bz = p.z + Math.cos(p.h) * 1.0;
-          this.skidMark(bx + rx * 0.9, bz + rz * 0.9, p.h);
-          this.skidMark(bx - rx * 0.9, bz - rz * 0.9, p.h);
+          // as rodas de trás do carro em escala de pista
+          const bx = p.x - Math.sin(p.h) * GP_CAR_LEN * 0.28;
+          const bz = p.z + Math.cos(p.h) * GP_CAR_LEN * 0.28;
+          const half = GP_CAR_WID * 0.38;
+          this.skidMark(bx + rx * half, bz + rz * half, p.h);
+          this.skidMark(bx - rx * half, bz - rz * half, p.h);
           if (Math.random() < 0.5) this.puff(bx, 0.4, bz, 0xdedede, 1 + c.skid * 0.1);
         }
       }
@@ -1606,7 +1617,10 @@ export class GpScene {
       p.s.material.opacity = 0.55 * (1 - f);
     }
     let sn = 0;
-    this.sparks = this.sparks.filter((s) => s.age < 0.45);
+    // tira as faíscas apagadas sem criar uma lista nova por quadro (lixo por quadro dá pausas do coletor)
+    let keep = 0;
+    for (const s of this.sparks) if (s.age < 0.45) this.sparks[keep++] = s;
+    this.sparks.length = keep;
     for (const s of this.sparks) {
       s.age += dt;
       s.vy -= 18 * dt;
@@ -1624,7 +1638,8 @@ export class GpScene {
       for (const c of w.cars) {
         const v = this.cars.get(c.id);
         if (!v) continue;
-        const near = Math.hypot(c.x - focusPose.x, c.z - focusPose.z) < 70;
+        // carro de 6,5 m: a sombra pesa mais, então só os mais perto (spec 081, Fase 3)
+        const near = Math.hypot(c.x - focusPose.x, c.z - focusPose.z) < 45;
         if (near === v.shadow) continue;
         v.shadow = near;
         v.m.group.traverse((o) => {
@@ -1732,18 +1747,18 @@ export class GpScene {
         this.camPos.copy(this.camLook).addScaledVector(FAR_DIR, dist);
       } else if (this.mode === 'chase') {
         // atrás do carro, com atraso suave (a câmera "segura" na curva) e FOV que abre com a velocidade
-        const want = new THREE.Vector3(p.x - fx * 7.2, 2.7, p.z - fz * 7.2);
+        const want = this.chaseWant.set(p.x - fx * 7.2 * CAR_VIS, 2.7 * CAR_VIS, p.z - fz * 7.2 * CAR_VIS);
         if (!this.chaseInit) {
           this.chasePos.copy(want);
           this.chaseInit = true;
         }
         this.chasePos.lerp(want, 1 - Math.exp(-dt * 7));
         this.camPos.copy(this.chasePos);
-        this.camLook.set(p.x + fx * 4, 0.9, p.z + fz * 4);
+        this.camLook.set(p.x + fx * 4 * CAR_VIS, 0.9 * CAR_VIS, p.z + fz * 4 * CAR_VIS);
         fov = 60 + Math.min(1, speed / GP_VMAX) * 14;
       } else {
         // cockpit: o olho do piloto (atrás do halo), olhando para a frente e um pouco para baixo
-        this.camPos.set(p.x + fx * 0.05, 1.05, p.z + fz * 0.05);
+        this.camPos.set(p.x + fx * 0.05 * CAR_VIS, 1.05 * CAR_VIS, p.z + fz * 0.05 * CAR_VIS);
         this.camLook.set(p.x + fx * 20, 0.55, p.z + fz * 20);
         fov = 74 + Math.min(1, speed / GP_VMAX) * 6;
       }

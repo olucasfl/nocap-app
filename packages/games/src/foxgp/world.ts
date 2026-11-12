@@ -11,7 +11,10 @@ import {
   GP_BUMP_SPIN_DAMP,
   GP_BUMP_SPIN_MAX,
   GP_CAR_HALF,
+  GP_CAR_LEN,
   GP_CAR_R,
+  GP_CAR_WALL_IN,
+  GP_CAR_WID,
   GP_CUT_JUMP,
   GP_CUT_OFF,
   GP_DNF_SEC,
@@ -37,8 +40,6 @@ import {
   GP_QUALI_START_S,
   GP_REAL_ACC_MAX,
   GP_REAL_BRK_RATE,
-  GP_REAL_CAR_LEN,
-  GP_REAL_CAR_WID,
   GP_REAL_DRAG,
   GP_REAL_POWER,
   GP_REAL_REVERSE_OUT,
@@ -64,6 +65,7 @@ import {
   GP_SLIP_DAMP,
   GP_SLIP_DRAG,
   GP_SLIP_LEN,
+  GP_SLIP_MIN,
   GP_SLIP_MIN_V,
   GP_SLIP_W,
   GP_SPIN_DAMP,
@@ -904,7 +906,7 @@ export class GpWorld {
     const before = c.s;
     let p = tr.project(c.x, c.z, c.idx);
     // ---- barreira de pneus ----
-    const lim = tr.wallAt(p.i, p.d) - GP_CAR_R * 0.6;
+    const lim = tr.wallAt(p.i, p.d) - GP_CAR_R * GP_CAR_WALL_IN;
     if (Math.abs(p.d) > lim) {
       const nx = -tr.tz[p.i]! * Math.sign(p.d);
       const nz = tr.tx[p.i]! * Math.sign(p.d);
@@ -1085,10 +1087,10 @@ export class GpWorld {
   private testCarObb(a: GpCar, b: GpCar): { overlap: number; nx: number; nz: number; px: number; pz: number } | null {
     const dx = b.x - a.x;
     const dz = b.z - a.z;
-    if (dx * dx + dz * dz > 22) return null;
+    if (dx * dx + dz * dz > GP_CAR_LEN * GP_CAR_LEN + GP_CAR_WID * GP_CAR_WID) return null;
 
-    const hl = GP_REAL_CAR_LEN * 0.5;
-    const hw = GP_REAL_CAR_WID * 0.5;
+    const hl = GP_CAR_LEN * 0.5;
+    const hw = GP_CAR_WID * 0.5;
 
     const fax = Math.sin(a.h);
     const faz = -Math.cos(a.h);
@@ -1242,11 +1244,11 @@ export class GpWorld {
         const dx = o.x - c.x;
         const dz = o.z - c.z;
         const along = dx * fx + dz * fz;
-        if (along < 2.5 || along > GP_SLIP_LEN) continue;
+        if (along < GP_SLIP_MIN || along > GP_SLIP_LEN) continue;
         const lat = Math.abs(-dx * fz + dz * fx);
         if (lat > GP_SLIP_W) continue;
         if (Math.cos(o.h - c.h) < 0.85) continue;
-        best = Math.max(best, 1 - (along - 2.5) / (GP_SLIP_LEN - 2.5));
+        best = Math.max(best, 1 - (along - GP_SLIP_MIN) / (GP_SLIP_LEN - GP_SLIP_MIN));
       }
       c.slip = Math.max(0, best);
     }

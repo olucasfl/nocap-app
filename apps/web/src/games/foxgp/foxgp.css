@@ -245,10 +245,22 @@
   background: var(--gp-hud);
   pointer-events: none;
 }
+/* rótulo em cima, selos (modo, vácuo) embaixo dele e a marcha à direita: com o selo do vácuo nada sai do painel */
 .gpx-speed-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 8px;
+  row-gap: 4px;
+  align-items: start;
+}
+.gpx-speed-top > .gpx-gear {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+.gpx-tags {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 .gpx-speed-top > small {
   font-size: 12px;
