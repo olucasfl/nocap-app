@@ -976,6 +976,72 @@
 }
 .gp-pick-btns .gp-tbtn {
   flex: 1;
+  min-width: 0;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+@media (max-width: 420px) {
+  .gp-pick-btns .gp-tbtn {
+    font-size: 17px;
+  }
+}
+/* Antes de correr na tela baixa (celular deitado): modos à esquerda, adversários e botões à direita, sem rolagem */
+@media (max-height: 520px) and (orientation: landscape) {
+  .gp-pick {
+    padding: 8px;
+  }
+  .gp-pick-card {
+    width: min(860px, 100%);
+    max-height: calc(100dvh - 16px);
+    padding: 12px 14px;
+    gap: 8px 14px;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    grid-template-areas:
+      'k k'
+      'h h'
+      'm b'
+      'm g'
+      'm x';
+    align-content: start;
+  }
+  .gp-pick-card > .gp-kicker {
+    grid-area: k;
+  }
+  .gp-pick-card h2 {
+    grid-area: h;
+    font-size: 22px;
+  }
+  .gp-pick-modes {
+    grid-area: m;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+  .gp-pick-mode-card {
+    padding: 8px 10px;
+    gap: 3px;
+  }
+  .gp-pick-mode-desc {
+    display: none;
+  }
+  .gp-pick-bots-section {
+    grid-area: b;
+  }
+  .gp-pick-card > [data-testid='gp-pick-garage'] {
+    grid-area: g;
+  }
+  .gp-pick-btns {
+    grid-area: x;
+  }
+  .gp-pick-card .gp-tbtn {
+    height: 36px;
+    padding: 0 10px;
+    font-size: 15px;
+    white-space: nowrap;
+  }
+  .gp-chip {
+    min-height: 34px;
+    font-size: 16px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

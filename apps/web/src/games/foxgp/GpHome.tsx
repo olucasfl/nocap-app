@@ -95,22 +95,26 @@ export function GpHome({
       {screen === 'main' && (
         <HomeCarousel shown={shown} onTurn={turn} />
       )}
-      <div className="gph-main">
-        <div className="gph-brand">
-          <span className="gph-tag">Fox Cap</span>
-          <span className="gp-kicker">Um jogo da nocap</span>
-        </div>
-        <h1 className="gp-title gph-title">
-          Fox
-          <br />
-          <span>GP</span>
-        </h1>
-        {screen === 'main' && (
-          <>
+      <div className="gph-main" data-screen={screen}>
+        <div className="gph-head">
+          <div className="gph-brand">
+            <span className="gph-tag">Fox Cap</span>
+            <span className="gp-kicker">Um jogo da nocap</span>
+          </div>
+          <h1 className="gp-title gph-title">
+            Fox
+            <br />
+            <span>GP</span>
+          </h1>
+          {screen === 'main' && (
             <p className="gph-lead">
               A raposa do Atravessa trocou a travessia pela pista. Corrida com até 12 carros, sozinho ou com a sala
               toda.
             </p>
+          )}
+        </div>
+        {screen === 'main' && (
+          <>
             <div className="gph-btns">
               <button type="button" className="gp-tbtn is-primary gph-go" onClick={onRace} data-testid="gl-offline">
                 Correr agora
@@ -138,7 +142,7 @@ export function GpHome({
                   Como jogar
                 </button>
               </div>
-              <button type="button" className="gp-tbtn is-ghost" onClick={onExit} data-testid="gl-exit">
+              <button type="button" className="gp-tbtn is-ghost gph-exit" onClick={onExit} data-testid="gl-exit">
                 Voltar
               </button>
             </div>

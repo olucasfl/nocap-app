@@ -89,3 +89,30 @@ verificação final.
 
 **Lint:** sem erro novo. Os 28 erros que sobram em `pnpm lint` já estavam na `main` e são de outros jogos (Counter Fox,
 Ping Fox!, Atravessa!, scripts): variáveis sem uso e regras `react-hooks` sem o plugin. Ficaram de fora desta branch.
+
+## 4. Fase 0: medidas de antes (12/11/2026, depois da Fase 13)
+
+| Medida | Valor |
+|---|---|
+| Melhor volta dos bots, Marina, 12 carros (mediana, mín a máx) | Arcade 60,2 s (59,7 a 62,0); Realista 60,4 s (59,9 a 61,0) |
+| Custo do passo do motor com 12 carros (Node, este computador) | 0,03 ms |
+| Desenho com 12 carros juntos no Realista, 20 s (Chrome sem janela, qualidade média) | ~60 quadros/s (1195 quadros), 1 quadro lento, sem vai-e-volta |
+| Desenho liso, 1 carro no piloto automático, 60 s | 3581 quadros, 3 lentos, salto máximo 1,2 m |
+
+Ferramenta: `measure_laps.cjs` (só trabalho) roda classificação e corrida inteira com bots de perfil.
+
+## 5. Fase 1: tela inicial, Antes de correr e painéis (12/11/2026)
+
+- **Causa da faixa quadriculada em cima dos botões:** as faixas inclinadas do fundo passam 140 px da tela; com
+  `overflow: hidden`, o foco de um botão rolava a tela inteira (a faixa subia, os botões saíam pela esquerda). Agora
+  `overflow: clip`.
+- Marca e título num bloco (`.gph-head`); três arranjos sem rolagem: desktop (como antes), **celular deitado**
+  (≤ 520 px de altura: duas colunas, título numa linha e botões em grade de 2 à esquerda, carro à direita, carrossel
+  embaixo do carro) e **tela em pé** (título em cima, carro no meio com o carrossel, menu embaixo). Painéis online e
+  pistas compactos na tela baixa; o campo do código não estoura na tela estreita.
+- "Antes de correr" em duas colunas na tela baixa (modos à esquerda; adversários, garagem e botões à direita).
+- **Teste de tamanhos** (`e2e/foxgp-sizes.spec.ts`): 1920×1080, 1536×864, 1366×768, 1280×720, 1024×768, 844×390,
+  667×375, 390×844 e o zoom de 125 % (1024×576 e 1229×691). Em cada um, tela inicial, Antes de correr, online e
+  pistas: nada rolado nem rolando, todo botão inteiro dentro da janela, nenhum encostando na faixa quadriculada, texto
+  sem estourar o botão. A **garagem** entra nesse teste na Fase 8, quando é refeita (hoje ela rola por dentro em
+  telas pequenas; `E2E_GARAGE=1` já roda a conferência dela).
