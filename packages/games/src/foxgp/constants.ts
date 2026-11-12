@@ -54,6 +54,28 @@ export const GP_GRAVEL_RADIUS = 60;
 /** Distância entre amostras da linha central (m). */
 export const GP_SAMPLE = 1;
 
+// ---- cenário (spec 081, Fase 13.4): onde arquibancadas, garagens, torres e placas cabem (só desenho) ----
+
+/** Folga mínima (m) entre o cenário e o asfalto, a zebra, a faixa do box ou a barreira de qualquer trecho. */
+export const GP_SCENERY_PAD = 0.6;
+/** Trecho de arquibancada: comprimento, passo entre trechos e degraus (afastamento da barreira de cada degrau, m). */
+export const GP_STAND_LEN = 11.6;
+export const GP_STAND_STEP = 12;
+export const GP_STAND_ROWS = 3;
+export const GP_STAND_ROW0 = 3;
+export const GP_STAND_ROW_STEP = 2.2;
+export const GP_STAND_ROW_DEPTH = 2.2;
+/** O telhado cobre da barreira + `FROM` até a barreira + `TO` (m). */
+export const GP_STAND_ROOF_FROM = 1.5;
+export const GP_STAND_ROOF_TO = 8.9;
+/** Torres de luz: a cada tanto (m) nas retas, a esta distância atrás da barreira. */
+export const GP_TOWER_EVERY = 85;
+export const GP_TOWER_OFF = 2.5;
+/** Garagens do box (atrás da barreira do lado do box): comprimento, fundo e passo (m). */
+export const GP_GARAGE_LEN = 8.6;
+export const GP_GARAGE_DEPTH = 3.8;
+export const GP_GARAGE_STEP = 9;
+
 // ---- box ----
 
 /** O box fica do lado de dentro da reta (lado direito de quem corre). */
@@ -112,16 +134,30 @@ export type GpSurface = keyof typeof GP_SURFACE;
 /** Corpo do carro para colisão: dois círculos (frente e trás). */
 export const GP_CAR_R = 0.95;
 export const GP_CAR_HALF = 0.8;
-/** Quanto do choque volta (0 = gruda, 1 = quica). */
-export const GP_BUMP_E = 0.25;
 /**
- * Colisão entre carros (spec 081): sem empurrão. Quem bate perde velocidade (fração do impacto) e quem leva recebe
- * perturbação de direção (spin). Assim os carros não ficam travados se empurrando.
+ * Batida entre carros (spec 081, Fase 13.3): caixa do carro (OBB) e um impulso de corpo rígido com massas iguais **uma vez
+ * por contato**. Nos passos seguintes do mesmo contato os carros só se separam pela posição (sem perder velocidade), e
+ * um novo impulso só vem se a aproximação voltar a passar de `GP_BUMP_REARM`. Assim a perda não se acumula a 60 Hz.
  */
-/** Fração da velocidade de impacto que se perde ao bater em outro carro. */
-export const GP_BUMP_SPEED_LOSS = 0.45;
-/** Quanto do componente tangencial da velocidade de quem bate vira giro (spin) em quem leva. */
-export const GP_BUMP_SPIN_TRANSFER = 0.08;
+/** Quanto do choque volta (0 = gruda, 1 = quica). */
+export const GP_BUMP_E = 0.2;
+/**
+ * Parte do impulso de corpo rígido que vira velocidade (o resto sai como separação de posição): numa batida de traseira
+ * com 8 m/s de diferença quem bate perde ~3 m/s e o da frente ganha o mesmo (a quantidade de movimento se conserva).
+ */
+export const GP_BUMP_SOFT = 0.65;
+/** Aproximação (m/s) que, num contato que já existe, dá um impulso novo. */
+export const GP_BUMP_REARM = 10;
+/** Separação máxima por passo (m): um carro que aparece encostado (rede) não dá um tranco. */
+export const GP_BUMP_PUSH = 0.35;
+/** Giro solto máximo por batida (rad/s) e quanto dele some por segundo (some em ~0,5 s). */
+export const GP_BUMP_SPIN_MAX = 0.6;
+export const GP_BUMP_SPIN_DAMP = 6;
+/**
+ * Realista e kart (velocidade sempre para o nariz): a parte do impulso que é de lado vira um "empurrão" de lado (m/s) que
+ * some nesta taxa por segundo, sem fazer o carro escorregar.
+ */
+export const GP_BUMP_KNOCK_DAMP = 5;
 /** Na barreira o carro perde quase toda a velocidade. */
 export const GP_WALL_KEEP = 0.25;
 
@@ -184,7 +220,7 @@ export const GP_QUALI_FROM_BOX = true;
 export const GP_MIN_LAP_SEC = 22;
 /** Grid: o primeiro lugar a esta distância antes da linha; cada fila mais para trás; lados alternados. */
 export const GP_GRID_FIRST = -12;
-/** 6 m entre um lugar e o seguinte (lados alternados): 20 carros cabem em ~126 m antes da linha. */
+/** 6 m entre um lugar e o seguinte (lados alternados): os 12 carros cabem em ~78 m antes da linha. */
 export const GP_GRID_GAP = 6;
 export const GP_GRID_SIDE = 3;
 /** [AJUSTAR] Depois que o primeiro cruza a linha, os outros têm este tempo (s); depois é DNF (spec 081: 2 min). */
@@ -212,8 +248,11 @@ export const GP_ROOM_LIGHTS_MS = Math.round(GP_LIGHTS * GP_LIGHT_SEC * 1000);
 /** Espera sorteada com as luzes acesas (s), a partir de um número de 0 a 1 (seed da partida ou sorteio da sala). */
 export const gpLightsHold = (u: number) =>
   GP_LIGHTS_HOLD_MIN + (GP_LIGHTS_HOLD_MAX - GP_LIGHTS_HOLD_MIN) * Math.max(0, Math.min(1, u));
-/** Corrida mais longa que isto acaba sozinha (s). */
-export const GP_ROOM_MAX_RACE_SEC = 420;
+/**
+ * Corrida mais longa que isto acaba sozinha (s). Com 3 voltas (~3 min) e o DNF de 2 min depois do primeiro (spec 081),
+ * a corrida normal fica bem abaixo: o limite só corta a sala travada, nunca antes do DNF.
+ */
+export const GP_ROOM_MAX_RACE_SEC = 600;
 /** Sem relatar posição por tanto tempo conta como desconectado (ms). */
 export const GP_ROOM_STALL_MS = 12_000;
 
@@ -244,7 +283,7 @@ export const GP_BRAKE_RAMP = 7;
 /** Corpo rígido do carro (massa 1): momento de inércia em torno do eixo vertical (comprimento 3,4 m, largura 1,8 m). */
 export const GP_INERTIA = (3.4 * 3.4 + 1.8 * 1.8) / 12;
 /** Atrito entre carros e com a barreira (impulso tangente máximo, parte do normal). */
-export const GP_BUMP_MU = 0.35;
+export const GP_BUMP_MU = 0.15;
 export const GP_WALL_E = 0.2;
 export const GP_WALL_MU = 0.45;
 /** O giro solto (de uma batida) some com a aderência: por segundo, multiplicado pela aderência. */
@@ -289,11 +328,9 @@ export const GP_REAL_STEER_CENTER = 5;
 export const GP_REAL_WALL_KEEP = 0.7;
 export const GP_REAL_WALL_ALIGN = 0.25;
 export const GP_REAL_WALL_CD = 0.3;
-/** Batida entre carros: caixa do carro (comprimento e largura, m), empurrão de lado e perda na batida de traseira. */
+/** Caixa do carro para a batida entre carros (comprimento e largura, m), a mesma nos dois modos. */
 export const GP_REAL_CAR_LEN = 3.4;
 export const GP_REAL_CAR_WID = 1.8;
-export const GP_REAL_SIDE_PUSH = 0.6;
-export const GP_REAL_REAR_LOSS = 0.9;
 
 /** Aderência lateral máxima do Realista na velocidade dada (m/s²), com pneu novo no asfalto. */
 export const gpRealLatMax = (v: number) => GP_REAL_GRIP0 + GP_REAL_DOWNFORCE * v * v;

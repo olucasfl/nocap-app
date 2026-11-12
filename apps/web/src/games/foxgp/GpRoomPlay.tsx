@@ -1,3 +1,4 @@
+import { gpMarkBack } from './gp-best';
 import { useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import type { GpPlayerInfo } from '@nocap/games';
@@ -59,7 +60,10 @@ export function GpRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         online={online}
         live={live}
         onExit={() => {
-          void leaveRoom().then(() => navigate({ to: '/fox-cap', search: { jogo: 'foxgp' } }));
+          // a tela do Fox GP primeiro, a saída da sala depois: sair antes fecha a sala na hora e a tela da sala aparece no
+          // meio (spec 081, Fase 1.5)
+          gpMarkBack();
+          void navigate({ to: '/fox-cap', search: { jogo: 'foxgp' } }).then(() => leaveRoom());
         }}
       />
     </div>

@@ -70,17 +70,13 @@ export function drawMinimap(cv: HTMLCanvasElement, world: GpWorld, meId: string,
     g.lineWidth = 5;
     g.stroke();
   }
-  // marcas dos setores (amarelo) e entrada do box
+  // limites dos setores: só um ponto pequeno no traçado (spec 081, 12.1: nada de traço cruzando a pista)
   for (const s of tr.sectorS) {
     const i = tr.index(s);
-    const nx = -tr.tz[i]!;
-    const nz = tr.tx[i]!;
     g.beginPath();
-    g.moveTo(X(tr.x[i]! - nx * 18), Z(tr.z[i]! - nz * 18));
-    g.lineTo(X(tr.x[i]! + nx * 18), Z(tr.z[i]! + nz * 18));
-    g.strokeStyle = GP_THEME.yellow;
-    g.lineWidth = 3;
-    g.stroke();
+    g.arc(X(tr.x[i]!), Z(tr.z[i]!), 3, 0, Math.PI * 2);
+    g.fillStyle = GP_THEME.text;
+    g.fill();
   }
   // linha de chegada quadriculada
   {

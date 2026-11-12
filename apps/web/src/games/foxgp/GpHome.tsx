@@ -1,14 +1,14 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { gpTrack } from '@nocap/games';
-import type { GpPhysicsMode } from '@nocap/games';
 import { GpCarPreview } from './GpCarPreview';
 import { GpCommands } from './GpCommands';
 import { GpGarage } from './GpGarage';
 import { loadGarage } from './garage';
-import { PHYSICS_NAME, loadBest, loadPhysics, savePhysics } from './gp-best';
+import { gpTakeBack, loadBest } from './gp-best';
 import { lapClock } from './format';
 import { GP_THEME } from './theme';
+import { GP_HOME_VEHICLES } from './vehicles';
 import './theme.css';
 import './gp-home.css';
 
@@ -42,16 +42,15 @@ export function GpHome({
   const [garage, setGarage] = useState(false);
   const [car, setCar] = useState(() => loadGarage());
   const [code, setCode] = useState('');
-  const [physics, setPhysics] = useState<GpPhysicsMode>(() => loadPhysics());
-  const [previewMode, setPreviewMode] = useState<GpPhysicsMode>(() => loadPhysics());
   const [commands, setCommands] = useState(false);
+  /** Voltando de uma partida: a tela já aparece pronta, sem a animação de entrada. */
+  const [back] = useState(gpTakeBack);
+  /** Carro mostrado no carrossel (só para ver: não muda o modo que se joga, que é o de "Antes de correr"). */
+  const [shown, setShown] = useState(0);
   const touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
-  const pickPhysics = (m: GpPhysicsMode) => {
-    setPhysics(m);
-    savePhysics(m);
-  };
-  const best = loadBest(physics);
-  const previewBest = loadBest(previewMode);
+  const many = GP_HOME_VEHICLES.length > 1;
+  const turn = (by: number) =>
+    setShown((i) => (i + by + GP_HOME_VEHICLES.length) % GP_HOME_VEHICLES.length);
   useEffect(() => {
     const html = document.documentElement;
     const prev = html.style.overflow;
@@ -62,19 +61,24 @@ export function GpHome({
   }, []);
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
-      if (e.code !== 'Escape' || garage || commands) return;
+      if (garage || commands) return;
+      if (screen === 'main' && many && (e.code === 'ArrowLeft' || e.code === 'ArrowRight')) {
+        setShown((i) => (i + (e.code === 'ArrowLeft' ? -1 : 1) + GP_HOME_VEHICLES.length) % GP_HOME_VEHICLES.length);
+        return;
+      }
+      if (e.code !== 'Escape') return;
       if (screen === 'main') onExit();
       else setScreen('main');
     };
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
-  }, [screen, garage, commands, onExit]);
+  }, [screen, garage, commands, onExit, many]);
   const join = (e: FormEvent) => {
     e.preventDefault();
     room.join(code);
   };
   return createPortal(
-    <div className="gph" data-testid="gp-home">
+    <div className={back ? 'gph is-back' : 'gph'} data-testid="gp-home" data-back={back ? '1' : undefined}>
       <div className="gph-stripes" aria-hidden="true">
         <i />
         <i />
@@ -88,6 +92,9 @@ export function GpHome({
         className="gph-car"
         label="O seu carro, com a raposa no cockpit. Arraste para girar."
       />
+      {screen === 'main' && (
+        <HomeCarousel shown={shown} onTurn={turn} />
+      )}
       <div className="gph-main">
         <div className="gph-brand">
           <span className="gph-tag">Fox Cap</span>
@@ -101,37 +108,10 @@ export function GpHome({
         {screen === 'main' && (
           <>
             <p className="gph-lead">
-              A raposa do Atravessa trocou a travessia pela pista. Corrida de F1 com até 20 carros, sozinho ou com a sala
+              A raposa do Atravessa trocou a travessia pela pista. Corrida com até 12 carros, sozinho ou com a sala
               toda.
             </p>
             <div className="gph-btns">
-              <div className="gph-carousel" data-testid="gp-best">
-                <button
-                  type="button"
-                  className="gph-carousel-btn"
-                  aria-label="Modo anterior"
-                  onClick={() => setPreviewMode((m) => (m === 'arcade' ? 'real' : 'arcade'))}
-                >
-                  ‹
-                </button>
-                <div className="gph-carousel-info">
-                  <span className="gph-carousel-title">
-                    {previewMode === 'arcade' ? 'Kart · Arcade' : 'F1 · Realista'}
-                  </span>
-                  <span className="gph-carousel-best">
-                    Melhor volta:{' '}
-                    <b className="gpn">{previewBest !== null ? lapClock(previewBest) : 'sem tempo'}</b>
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  className="gph-carousel-btn"
-                  aria-label="Próximo modo"
-                  onClick={() => setPreviewMode((m) => (m === 'arcade' ? 'real' : 'arcade'))}
-                >
-                  ›
-                </button>
-              </div>
               <button type="button" className="gp-tbtn is-primary gph-go" onClick={onRace} data-testid="gl-offline">
                 Correr agora
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -168,7 +148,7 @@ export function GpHome({
           <div className="gph-panel gp-tpanel" data-testid="gl-friends-panel">
             <h2>Corrida online</h2>
             <p>
-              Crie a sala e mande o código, ou entre com o código de alguém. De 2 a 20 raposas; o líder escolhe a física
+              Crie a sala e mande o código, ou entre com o código de alguém. De 2 a 12 raposas; o líder escolhe a física
               no lobby.
             </p>
             {room.error && (
@@ -227,6 +207,48 @@ export function GpHome({
       )}
     </div>,
     document.body,
+  );
+}
+
+/**
+ * Carrossel embaixo do carro (spec 081, 13.2): nome do modo e do veículo e a melhor volta offline daquele modo. Setas,
+ * ← → e arrastar de lado trocam o carro; com um carro só (o kart ainda não existe) as setas somem. Só para ver os carros.
+ */
+function HomeCarousel({ shown, onTurn }: { shown: number; onTurn: (by: number) => void }) {
+  const v = GP_HOME_VEHICLES[shown] ?? GP_HOME_VEHICLES[0]!;
+  const best = loadBest(v.mode);
+  const many = GP_HOME_VEHICLES.length > 1;
+  const [x0, setX0] = useState<number | null>(null);
+  return (
+    <div
+      className="gph-carousel"
+      data-testid="gp-home-carousel"
+      data-vehicle={v.vehicle}
+      onPointerDown={(e) => setX0(e.clientX)}
+      onPointerUp={(e) => {
+        if (x0 !== null && many && Math.abs(e.clientX - x0) > 40) onTurn(e.clientX < x0 ? 1 : -1);
+        setX0(null);
+      }}
+    >
+      {many && (
+        <button type="button" className="gph-carousel-btn" aria-label="Carro anterior" onClick={() => onTurn(-1)}>
+          ‹
+        </button>
+      )}
+      <div className="gph-carousel-info" key={v.vehicle} data-testid="gp-best">
+        <span className="gph-carousel-title">
+          {v.modeName} · {v.vehicleName}
+        </span>
+        <span className="gph-carousel-best">
+          Melhor volta: <b className="gpn">{best !== null ? lapClock(best) : 'ainda sem tempo'}</b>
+        </span>
+      </div>
+      {many && (
+        <button type="button" className="gph-carousel-btn" aria-label="Próximo carro" onClick={() => onTurn(1)}>
+          ›
+        </button>
+      )}
+    </div>
   );
 }
 

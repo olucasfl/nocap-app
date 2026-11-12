@@ -12,7 +12,7 @@ import {
 import { GpFinal, type GpFinalRow } from './GpFinal';
 import { hexNum, lapClock } from './format';
 import { paintFromRoom } from './garage';
-import { PHYSICS_NAME } from './gp-best';
+import { PHYSICS_NAME, gpMarkBack } from './gp-best';
 import './foxgp.css';
 
 const nameOf = (id: string, username: string) =>
@@ -49,7 +49,8 @@ export function GpRoomFinal({ snapshot }: { snapshot: RoomSnapshot }) {
 
   const mine = snapshot.members.find((m) => m.id === me);
   const leave = () => {
-    void leaveRoom().then(() => navigate({ to: '/fox-cap', search: { jogo: 'foxgp' } }));
+    gpMarkBack();
+    void navigate({ to: '/fox-cap', search: { jogo: 'foxgp' } }).then(() => leaveRoom());
   };
   return (
     <GpFinal

@@ -27,7 +27,7 @@ export const HOW_TO_PLAY = {
     points: [
       'Física: Arcade (o carro escorrega de lado) ou Realista (a curva tem limite: pediu demais, o carro abre e perde velocidade). Na sala, o líder escolhe.',
       'Classificação: ande livre e, quando quiser, aperte L (ou o botão): o carro vai para a largada, conta 3 e a volta lançada começa. O melhor tempo larga na frente.',
-      'Corrida de 3 voltas com até 20 carros: na reta, a zona verde é de DRS (abre a asa e ganha velocidade; nunca para quem lidera, só depois da 1ª volta). Atrás de outro carro, o vácuo ajuda.',
+      'Corrida de 3 voltas com até 12 carros: na reta, a zona verde é de DRS (abre a asa e ganha velocidade; nunca para quem lidera, só depois da 1ª volta). Atrás de outro carro, o vácuo ajuda.',
       'Grama e brita deixam o carro lento; cortar caminho volta você. Os pneus gastam e escorregam mais: o box troca em 3 s.',
     ],
     keys: 'Computador: W/S aceleram e freiam, A/D viram, E abre o DRS, C troca a câmera, L começa a volta lançada (tudo muda no menu Comandos). Celular: direção à esquerda; acelerar, frear e DRS à direita.',

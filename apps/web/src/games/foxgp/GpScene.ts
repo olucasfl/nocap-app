@@ -14,8 +14,20 @@ import {
   GP_PIT_BOX_LEN,
   GP_PIT_HALF,
   GP_VMAX,
+  GP_STAND_LEN,
+  GP_STAND_ROW0,
+  GP_STAND_ROW_DEPTH,
+  GP_STAND_ROW_STEP,
+  GP_STAND_ROOF_FROM,
+  GP_STAND_ROOF_TO,
+  GP_GARAGE_LEN,
+  GP_GARAGE_DEPTH,
   createRng,
+  gpBoardSlots,
+  gpGarageSlots,
   gpGridSpot,
+  gpStandSlots,
+  gpTowerSlots,
   type GpCar,
   type GpEvent,
   type GpWorld,
@@ -597,17 +609,18 @@ export class GpScene {
         this.scene.add(m);
       }
     }
+    // fronteira dos setores: só um poste branco fino em cada borda, fora do asfalto e da zebra (nada atravessa a pista)
+    const sectorMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
     for (const s of tr.sectorS) {
-      const p = tr.pointAt(s, 0);
-      const m = new THREE.Mesh(
-        new THREE.BoxGeometry(H * 2, 0.02, 0.35),
-        new THREE.MeshBasicMaterial({ color: 0xffffff }),
-      );
-      m.position.set(p.x, 0.035, p.z);
-      m.rotation.y = -p.h;
-      this.scene.add(m);
+      for (const sd of [-1, 1]) {
+        const p = tr.pointAt(s, sd * (H + GP_KERB_W + 0.8));
+        const m = new THREE.Mesh(new THREE.BoxGeometry(0.18, 1.1, 0.18), sectorMat);
+        m.position.set(p.x, 0.55, p.z);
+        m.userData.tag = 'sector-post';
+        this.scene.add(m);
+      }
     }
-    // marcas do grid (20 lugares)
+    // marcas do grid (12 lugares)
     const mark = this.std(0xffffff);
     for (let i = 0; i < GP_MAX_PLAYERS; i++) {
       const s = gpGridSpot(tr, i);
@@ -642,28 +655,19 @@ export class GpScene {
     this.scene.add(box);
     const wall = this.std(0xf3efe6);
     const roof = this.std(0x2f5bff, 0.5, 0.2);
-    const sideSign = tr.pit.side;
-    for (let s = tr.pit.inEnd + 2; s < tr.pit.outStart - 2; s += 9) {
-      const q = tr.pointAt(s, sideSign * (tr.pit.offset + GP_PIT_HALF + 2.6));
-      const g = new THREE.Mesh(new THREE.BoxGeometry(8.4, 3.2, 3.4), wall);
+    for (const f of gpGarageSlots(tr)) {
+      const q = tr.pointAt(f.s, (f.from + f.to) / 2);
+      const g = new THREE.Mesh(new THREE.BoxGeometry(GP_GARAGE_LEN - 0.2, 3.2, GP_GARAGE_DEPTH - 0.4), wall);
       g.position.set(q.x, 1.6, q.z);
       g.rotation.y = -q.h;
       g.castShadow = true;
       g.receiveShadow = true;
-      const r = new THREE.Mesh(new THREE.BoxGeometry(8.6, 0.4, 3.8), roof);
+      const r = new THREE.Mesh(new THREE.BoxGeometry(GP_GARAGE_LEN, 0.4, GP_GARAGE_DEPTH), roof);
       r.position.set(q.x, 3.35, q.z);
       r.rotation.y = -q.h;
       r.castShadow = true;
+      g.userData.tag = 'garage';
       this.scene.add(g, r);
-    }
-    // setas no chão mostrando a entrada do box
-    const arrow = new THREE.MeshBasicMaterial({ color: 0xffd23a });
-    for (const s of [tr.pit.inStart - 30, tr.pit.inStart - 15]) {
-      const q = tr.pointAt(s, sideSign * (GP_HALF_WIDTH - 1.6));
-      const a = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.03, 2.2), arrow);
-      a.position.set(q.x, 0.05, q.z);
-      a.rotation.y = -q.h - sideSign * 0.45;
-      this.scene.add(a);
     }
   }
 
@@ -1032,71 +1036,65 @@ export class GpScene {
       this.quality === 'low'
         ? new THREE.MeshLambertMaterial({ map: crowdTex })
         : new THREE.MeshStandardMaterial({ map: crowdTex, roughness: 0.9 });
-    for (const st of def.stands ?? []) {
-      const s0 = tr.cpS[st.from] ?? 0;
-      let s1 = tr.cpS[st.to] ?? s0 + 40;
-      if (s1 < s0) s1 += tr.length;
-      let first = true;
-      for (let s = s0; s <= s1; s += 12) {
-        const i = tr.index(s);
-        const wall = Math.min(tr.wallAt(i, st.side), tr.limit);
-        for (let row = 0; row < 3; row++) {
-          const off = st.side * (wall + 3 + row * 2.2);
-          const q = tr.pointAt(s, off);
-          const hgt = 1 + row * 1.1;
-          const b = new THREE.Mesh(new THREE.BoxGeometry(11, hgt, 2.2), row === 2 ? stand : seat);
-          b.position.set(q.x, hgt / 2, q.z);
-          b.rotation.y = -q.h;
-          b.castShadow = true;
-          b.receiveShadow = true;
-          this.scene.add(b);
-          // a torcida sentada em cada degrau
-          const fq = tr.pointAt(s, off);
-          const fan = new THREE.Mesh(new THREE.PlaneGeometry(10.6, 0.9), crowdMat);
-          fan.position.set(fq.x, hgt + 0.45, fq.z);
-          fan.rotation.y = -fq.h + (st.side > 0 ? -Math.PI / 2 : Math.PI / 2) + Math.PI / 2;
-          this.scene.add(fan);
-        }
-        // o teto amarelo e a placa com o nome
-        const q = tr.pointAt(s, st.side * (wall + 5.2));
-        const r = new THREE.Mesh(new THREE.BoxGeometry(11.6, 0.3, 7.4), stand);
+    // os trechos que cabem atrás da barreira sem encostar em nenhum outro trecho da pista (`gpStandSlots`)
+    for (const sl of gpStandSlots(tr)) {
+      for (let row = 0; row < sl.rows; row++) {
+        const off = sl.side * (sl.wall + GP_STAND_ROW0 + row * GP_STAND_ROW_STEP);
+        const q = tr.pointAt(sl.s, off);
+        const hgt = 1 + row * 1.1;
+        const b = new THREE.Mesh(
+          new THREE.BoxGeometry(GP_STAND_LEN - 0.6, hgt, GP_STAND_ROW_DEPTH),
+          row === sl.rows - 1 ? stand : seat,
+        );
+        b.position.set(q.x, hgt / 2, q.z);
+        b.rotation.y = -q.h;
+        b.castShadow = true;
+        b.receiveShadow = true;
+        b.userData.tag = 'stand';
+        this.scene.add(b);
+        // a torcida sentada em cada degrau
+        const fan = new THREE.Mesh(new THREE.PlaneGeometry(GP_STAND_LEN - 1, 0.9), crowdMat);
+        fan.position.set(q.x, hgt + 0.45, q.z);
+        fan.rotation.y = -q.h + (sl.side > 0 ? -Math.PI / 2 : Math.PI / 2) + Math.PI / 2;
+        this.scene.add(fan);
+      }
+      if (sl.roof) {
+        const q = tr.pointAt(sl.s, sl.side * (sl.wall + (GP_STAND_ROOF_FROM + GP_STAND_ROOF_TO) / 2));
+        const r = new THREE.Mesh(
+          new THREE.BoxGeometry(GP_STAND_LEN, 0.3, GP_STAND_ROOF_TO - GP_STAND_ROOF_FROM),
+          stand,
+        );
         r.position.set(q.x, 5.4, q.z);
         r.rotation.y = -q.h;
         r.castShadow = true;
+        r.userData.tag = 'stand-roof';
         this.scene.add(r);
-        if (first) {
-          first = false;
-          const tex = labelTexture(st.name, '#0b0e17', '#ffd23a', 512, 96, 54);
-          this.textures.push(tex);
-          const sign = new THREE.Mesh(
-            new THREE.PlaneGeometry(9, 1.7),
-            new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide }),
-          );
-          const sq = tr.pointAt(s + 6, st.side * (wall + 2));
-          sign.position.set(sq.x, 6.6, sq.z);
-          sign.rotation.y = -sq.h + Math.PI;
-          this.scene.add(sign);
-        }
+      }
+      if (sl.name) {
+        const tex = labelTexture(sl.name, '#0b0e17', '#ffd23a', 512, 96, 54);
+        this.textures.push(tex);
+        const sign = new THREE.Mesh(
+          new THREE.PlaneGeometry(9, 1.7),
+          new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide }),
+        );
+        const sq = tr.pointAt(sl.s, sl.side * (sl.wall + GP_STAND_ROW0));
+        sign.position.set(sq.x, sl.roof ? 6.6 : 1.4 + sl.rows * 1.1, sq.z);
+        sign.rotation.y = -sq.h + Math.PI;
+        this.scene.add(sign);
       }
     }
     // torres de iluminação nas retas (a lâmpada brilha com o bloom)
     const pole = this.std(0x9aa3b5, 0.5, 0.6);
     const lamp = new THREE.MeshBasicMaterial({ color: 0xfff6d8, toneMapped: false });
-    for (let s = 20; s < tr.length; s += 85) {
-      const i = tr.index(s);
-      if (Math.abs(tr.curv[i]!) > 1 / 150) continue;
-      for (const sd of [-1, 1]) {
-        const w = tr.wallAt(i, sd);
-        if (w === Infinity || w < tr.limit - 0.5) continue;
-        const q = tr.pointAt(s, sd * (w + 2.5));
-        const p = new THREE.Mesh(new THREE.BoxGeometry(0.4, 12, 0.4), pole);
-        p.position.set(q.x, 6, q.z);
-        p.castShadow = true;
-        const l = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.8, 0.6), lamp);
-        l.position.set(q.x, 12, q.z);
-        l.rotation.y = -q.h;
-        this.scene.add(p, l);
-      }
+    for (const t of gpTowerSlots(tr)) {
+      const q = tr.pointAt(t.s, t.d);
+      const p = new THREE.Mesh(new THREE.BoxGeometry(0.4, 12, 0.4), pole);
+      p.position.set(q.x, 6, q.z);
+      p.castShadow = true;
+      const l = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.8, 0.6), lamp);
+      l.position.set(q.x, 12, q.z);
+      l.rotation.y = -q.h;
+      this.scene.add(p, l);
     }
     // placas de freada (100 e 50 m) antes das curvas fortes, do lado de fora
     const boards = [100, 50].map((n) => {
@@ -1104,22 +1102,12 @@ export class GpScene {
       this.textures.push(t);
       return new THREE.MeshBasicMaterial({ map: t, side: THREE.DoubleSide });
     });
-    let lastCorner = -999;
-    for (let i = 0; i < tr.n; i++) {
-      const k = tr.curv[i]!;
-      if (Math.abs(k) < 1 / 30 || i * tr.ds - lastCorner < 160) continue;
-      lastCorner = i * tr.ds;
-      const outside = k > 0 ? -1 : 1;
-      [100, 50].forEach((n, bi) => {
-        const s = i * tr.ds - n;
-        const j = tr.index(s);
-        const w = Math.min(tr.wallAt(j, outside), tr.limit);
-        const q = tr.pointAt(s, outside * Math.max(GP_HALF_WIDTH + GP_KERB_W + 1, w - 1.2));
-        const b = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 1.2), boards[bi]!);
-        b.position.set(q.x, 1.4, q.z);
-        b.rotation.y = -q.h;
-        this.scene.add(b);
-      });
+    for (const bd of gpBoardSlots(tr)) {
+      const q = tr.pointAt(bd.s, bd.d);
+      const b = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 1.2), boards[bd.label === 100 ? 0 : 1]!);
+      b.position.set(q.x, 1.4, q.z);
+      b.rotation.y = -q.h;
+      this.scene.add(b);
     }
     this.buildTrees(rng);
     this.buildMountains(rng);
@@ -1592,7 +1580,7 @@ export class GpScene {
     this.sparkMesh.count = sn;
     this.sparkMesh.instanceMatrix.needsUpdate = true;
     this.updateCamera(dt, focusPose, focusCar);
-    // sombra só dos carros perto do foco (20 carros projetando sombra pesa no celular)
+    // sombra só dos carros perto do foco (12 carros projetando sombra pesa no celular)
     if (focusPose && this.quality !== 'low') {
       for (const c of w.cars) {
         const v = this.cars.get(c.id);
@@ -1645,6 +1633,12 @@ export class GpScene {
       // Projeção na direção que a câmera olha (> 0 significa à frente da câmera)
       const forwardDist = dx * cdx + dz * cdz;
 
+      // quem assiste sempre vê o nome do piloto que segue (spec 081, 13.8), nas câmeras de fora
+      if (c.id === focusId) {
+        v.tag.visible = true;
+        v.tag.scale.set(1.3, 0.35, 1);
+        continue;
+      }
       // Se estiver atrás da câmera ou muito perto (<= 4.5m, ex: carro colado atrás em 3ª pessoa):
       // NUNCA mostra para não tapar a visão!
       if (forwardDist <= 0.5 || distToCam < 4.5) {

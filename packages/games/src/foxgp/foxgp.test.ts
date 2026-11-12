@@ -317,9 +317,9 @@ describe('barreira e corte', () => {
   });
 });
 
-describe('batida entre carros (corpo rígido)', () => {
-  function pair(gap: number, d2: number, va: number, vb: number, turnB = 0) {
-    const w = toca('a', 2);
+describe('batida entre carros (spec 081, Fase 13.3: impulso uma vez por contato)', () => {
+  function pair(mode: 'arcade' | 'real', gap: number, d2: number, va: number, vb: number, turnB = 0) {
+    const w = new GpWorld('a', info(2), GP_TRACK_TOCA, mode);
     w.beginRace(['p0', 'p1']);
     const [a, b] = w.cars as [GpCar, GpCar];
     put(w, a, -150, 0, va);
@@ -331,44 +331,95 @@ describe('batida entre carros (corpo rígido)', () => {
     }
     return { w, a, b };
   }
+  const collide = (w: GpWorld) => (w as unknown as { collide(): void }).collide();
+  const bumps = (w: GpWorld) => w.drainEvents().filter((e) => e.type === 'bump').length;
 
-  it('traseira: quem bate perde velocidade, perturba a direção do outro e ninguém atravessa', () => {
-    const { w, a, b } = pair(4, 0, 25, 0);
-    let minDist = Infinity;
-    for (let i = 0; i < 40; i++) {
-      w.step(GP_DT, {});
-      minDist = Math.min(minDist, Math.hypot(a.x - b.x, a.z - b.z));
-    }
-    expect(a.speed).toBeLessThan(20);
-    expect(minDist).toBeGreaterThan(1.0);
-    expect(a.prog).toBeLessThan(b.prog);
-  });
+  for (const mode of ['arcade', 'real'] as const) {
+    describe(mode, () => {
+      it('traseira com 8 m/s de diferença: quem bate perde uma parte, o da frente é empurrado, ninguém atravessa', () => {
+        const { w, a, b } = pair(mode, 3.5, 0, 25, 17);
+        const keep = { throttle: 0.55, brake: 0, steer: 0 };
+        let minDist = Infinity;
+        let aMin = Infinity;
+        let bMax = 0;
+        for (let i = 0; i < 20; i++) {
+          w.step(GP_DT, { p0: keep, p1: keep });
+          minDist = Math.min(minDist, Math.hypot(a.x - b.x, a.z - b.z));
+          aMin = Math.min(aMin, a.speed);
+          bMax = Math.max(bMax, b.speed);
+        }
+        // quem bate perde ~3 m/s uma vez (não "quase para"), o da frente ganha
+        expect(25 - aMin).toBeGreaterThan(1.5);
+        expect(25 - aMin).toBeLessThan(3.6);
+        expect(bMax - 17).toBeGreaterThan(1.5);
+        expect(minDist).toBeGreaterThan(3);
+        expect(a.prog).toBeLessThan(b.prog);
+        // 1 s depois quem bateu já acelera de novo
+        const v0 = a.speed;
+        for (let i = 0; i < 1 / GP_DT; i++) w.step(GP_DT, { p0: full, p1: keep });
+        expect(a.speed).toBeGreaterThan(v0);
+      });
 
-  it('frontal: os dois perdem quase toda a velocidade', () => {
-    const { w, a, b } = pair(6, 0, 15, 15, Math.PI);
-    for (let i = 0; i < 40; i++) w.step(GP_DT, {});
-    expect(Math.abs(a.speed)).toBeLessThan(8);
-    expect(Math.abs(b.speed)).toBeLessThan(8);
-    expect(Math.hypot(a.x - b.x, a.z - b.z)).toBeGreaterThan(1.0);
-  });
+      it('a perda não se acumula: 3 ou 12 passos de contato dão a mesma velocidade', () => {
+        const run = (n: number) => {
+          const { w, a, b } = pair(mode, 3.2, 0, 24, 16);
+          for (let i = 0; i < n; i++) collide(w);
+          return [a.speed, b.speed];
+        };
+        const [a3, b3] = run(3);
+        const [a12, b12] = run(12);
+        expect(a12).toBeCloseTo(a3!, 6);
+        expect(b12).toBeCloseTo(b3!, 6);
+        expect(a3).toBeGreaterThan(20);
+      });
 
-  it('lateral: a batida de lado faz girar', () => {
-    const { w, a, b } = pair(1.6, -2.5, 0, 12, Math.PI / 2);
-    let spin = 0;
-    for (let i = 0; i < 40; i++) {
-      w.step(GP_DT, {});
-      spin = Math.max(spin, Math.abs(a.spin), Math.abs(b.spin));
-    }
-    expect(spin).toBeGreaterThan(0.15);
-  });
+      it('raspada de lado a 30 m/s: nenhum carro cai abaixo de 85 %', () => {
+        const { w, a, b } = pair(mode, 0.5, 1.75, 30, 30, -0.04);
+        b.vx = Math.sin(b.h) * 30;
+        b.vz = -Math.cos(b.h) * 30;
+        let low = Infinity;
+        for (let i = 0; i < 30; i++) {
+          w.step(GP_DT, { p0: full, p1: full });
+          low = Math.min(low, a.speed, b.speed);
+        }
+        expect(low).toBeGreaterThan(30 * 0.85);
+      });
 
-  it('a colisão reduz velocidade de quem bate e perturba a direção de quem leva', () => {
-    const { w, a, b } = pair(1.7, 0, 20, 5);
-    const speedBefore = a.speed;
-    (w as unknown as { collide(): void }).collide();
-    expect(a.speed).toBeLessThan(speedBefore);
-    expect(Math.abs(b.spin)).toBeGreaterThan(0);
-  });
+      it('de frente a 20 m/s cada: os dois perdem uma vez e não param sozinhos em 3 passos', () => {
+        const { w, a, b } = pair(mode, 3.45, 0, 20, 20, Math.PI);
+        w.drainEvents();
+        for (let i = 0; i < 3; i++) w.step(GP_DT, {});
+        expect(bumps(w)).toBe(1);
+        expect(Math.abs(a.speed)).toBeLessThan(15);
+        expect(Math.abs(b.speed)).toBeLessThan(15);
+        expect(Math.abs(a.speed)).toBeGreaterThan(1);
+        expect(Math.abs(b.speed)).toBeGreaterThan(1);
+      });
+
+      it('a quantidade de movimento se conserva na batida (massas iguais)', () => {
+        const { w, a, b } = pair(mode, 3.3, 0.4, 22, 9, 0.3);
+        const before = { x: a.vx + b.vx, z: a.vz + b.vz };
+        collide(w);
+        expect(a.vx + b.vx).toBeCloseTo(before.x, 5);
+        expect(a.vz + b.vz).toBeCloseTo(before.z, 5);
+      });
+
+      it('batida de lado gira pouco (limitado) e o giro some', () => {
+        const { w, a, b } = pair(mode, 0.8, -2.6, 2, 12, Math.PI / 2);
+        let spin = 0;
+        for (let i = 0; i < 12; i++) {
+          w.step(GP_DT, {});
+          spin = Math.max(spin, Math.abs(a.spin), Math.abs(b.spin));
+        }
+        expect(spin).toBeGreaterThan(0.05);
+        expect(spin).toBeLessThanOrEqual(0.6 * 1.5);
+        if (mode === 'real') {
+          for (let i = 0; i < 0.8 / GP_DT; i++) w.step(GP_DT, {});
+          expect(Math.abs(a.spin) + Math.abs(b.spin)).toBeLessThan(0.05);
+        }
+      });
+    });
+  }
 
   it('na classificação os carros são fantasmas', () => {
     const w = toca('a', 2);
@@ -629,7 +680,7 @@ describe('classificação individual', () => {
     ).toEqual(['c', 'd', 'b', 'a', 'e']);
   });
 
-  it('o tempo da classificação esgota em 3 minutos', () => {
+  it('o tempo da classificação esgota em 5 minutos', () => {
     const w = toca('q', 2);
     for (let i = 0; i < (GP_QUALI_MAX_SEC + 1) / GP_DT; i++) w.step(GP_DT, {});
     expect(w.qualiDone()).toBe(true);

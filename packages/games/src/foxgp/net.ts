@@ -6,7 +6,7 @@ import { GP_IDLE, type GpCar, type GpEvent, type GpInput, type GpWorld } from '.
  * autoridade: batidas iguais para todos); os outros mandam só a entrada e recebem o estado. Cada aparelho prevê o próprio
  * carro na hora (sem esperar a rede) e, quando o estado do líder chega, refaz a previsão a partir dele, escondendo a
  * diferença aos poucos (sem teleporte). Os outros carros são desenhados ~100 ms atrás, interpolados entre dois estados.
- * Com até 20 carros o estado vai enxuto: cada carro manda só o que o desenho precisa; o estado físico completo vai só
+ * Com até 12 carros o estado vai enxuto: cada carro manda só o que o desenho precisa; o estado físico completo vai só
  * para o dono do carro (é o que ele usa para refazer a previsão).
  * Tudo aqui é lógica pura: o transporte (WebRTC ou repasse pela sala) fica no app.
  */

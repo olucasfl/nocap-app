@@ -93,7 +93,7 @@ const ENTRY_LEAD: Record<RoomGame, string> = {
   pingpong:
     'Ping Fox! com os amigos: pingue-pongue 1 contra 1 até 11 pontos, com a raquete batendo de verdade (força, lob e efeito). Os 2 primeiros da sala jogam e o resto assiste. Até 8 pessoas.',
   foxgp:
-    'Fox GP com os amigos: classificação de uma volta lançada, grid pelos tempos e corrida de 3 voltas, com DRS, vácuo e box. De 2 a 20 raposas; o líder escolhe a física (Arcade ou Realista).',
+    'Fox GP com os amigos: classificação de uma volta lançada, grid pelos tempos e corrida de 3 voltas, com DRS, vácuo e box. De 2 a 12 raposas; o líder escolhe a física (Arcade ou Realista).',
   desmorona:
     'Desmorona! com os amigos: todo mundo cai do céu, o chão some a cada passo e vence o último de pé. De 2 a 8 pessoas.',
   eco: 'Jogue o Ecooo com amigos: Corrida (todo mundo repete a mesma sequência e quem errar sai) ou Siga o Líder (um cria, os outros repetem). Você escolhe dentro da sala.',

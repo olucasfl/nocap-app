@@ -2,8 +2,14 @@ import {
   GP_BRAKE,
   GP_BRAKE_MIN,
   GP_BRAKE_RAMP,
-  GP_BUMP_SPEED_LOSS,
-  GP_BUMP_SPIN_TRANSFER,
+  GP_BUMP_E,
+  GP_BUMP_KNOCK_DAMP,
+  GP_BUMP_MU,
+  GP_BUMP_PUSH,
+  GP_BUMP_REARM,
+  GP_BUMP_SOFT,
+  GP_BUMP_SPIN_DAMP,
+  GP_BUMP_SPIN_MAX,
   GP_CAR_HALF,
   GP_CAR_R,
   GP_CUT_JUMP,
@@ -35,12 +41,10 @@ import {
   GP_REAL_CAR_WID,
   GP_REAL_DRAG,
   GP_REAL_POWER,
-  GP_REAL_REAR_LOSS,
   GP_REAL_REVERSE_OUT,
   GP_REAL_REVERSE_OUT0,
   GP_REAL_ROLL,
   GP_REAL_SCRUB,
-  GP_REAL_SIDE_PUSH,
   GP_REAL_STEER_CENTER,
   GP_REAL_STEER_FADE,
   GP_REAL_STEER_FLIP,
@@ -131,6 +135,12 @@ export interface GpCar {
   vz: number;
   /** Giro solto do corpo (rad/s), que vem das batidas e some com a aderência. */
   spin: number;
+  /**
+   * Realista: empurrão de lado de uma batida (m/s, no mundo), que some sozinho. A velocidade do carro continua para o
+   * nariz; isto só desloca o carro um pouco para o lado (`vx`/`vz` já o incluem).
+   */
+  kx: number;
+  kz: number;
   /** Velocidade para a frente (com sinal: negativa de ré). */
   speed: number;
   /** Marcha (1 a 8; 0 = ré) e giro do motor (0 a 1). */
@@ -240,7 +250,7 @@ export interface GpRemoteState {
 
 const MARK = 10;
 /** Quantos números tem o estado físico de um carro (`pack`). */
-export const GP_PACK_LEN = 30;
+export const GP_PACK_LEN = 32;
 
 /**
  * Grid de largada pela classificação: do menor para o maior tempo; empate, larga na frente quem marcou primeiro; quem não
@@ -303,6 +313,8 @@ export class GpWorld {
   autoEnd = true;
   private events: GpEvent[] = [];
   private order = new Map<string, number>();
+  /** Pares de carros encostados no passo anterior (a batida dá um impulso só quando o contato começa). */
+  private contacts = new Set<string>();
   private finishedCount = 0;
   meId: string | null = null;
 
@@ -332,6 +344,8 @@ export class GpWorld {
       vx: 0,
       vz: 0,
       spin: 0,
+      kx: 0,
+      kz: 0,
       speed: 0,
       gear: 1,
       rpm: 0,
@@ -398,6 +412,8 @@ export class GpWorld {
     c.vx = 0;
     c.vz = 0;
     c.spin = 0;
+    c.kx = 0;
+    c.kz = 0;
     c.speed = 0;
     c.gear = 1;
     c.brakeLevel = 0;
@@ -489,6 +505,7 @@ export class GpWorld {
     this.fastest = null;
     this.finishedCount = 0;
     this.events = [];
+    this.contacts.clear();
     const rest = this.cars.filter((c) => !order.includes(c.id)).map((c) => c.id);
     [...order, ...rest].forEach((id, place) => {
       const c = this.car(id);
@@ -520,8 +537,7 @@ export class GpWorld {
       this.stepCar(c, inputs[c.id] ?? GP_IDLE, dt);
     }
     if (this.phase === 'race') {
-      if (this.mode === 'real') this.collideReal(only);
-      else this.collide(only);
+      this.collide(only);
       if (!only) {
         this.slipstream();
         this.ranks();
@@ -576,6 +592,8 @@ export class GpWorld {
     c.vx = 0;
     c.vz = 0;
     c.spin = 0;
+    c.kx = 0;
+    c.kz = 0;
     c.speed = 0;
     c.rThr = 0;
     c.rBrk = 0;
@@ -733,8 +751,20 @@ export class GpWorld {
     c.rSteer += clamp(stIn - c.rSteer, -rate * dt, rate * dt);
     c.steer = c.rSteer;
     c.wallCd -= dt;
-    c.spin = 0;
     c.skid = 0;
+    // giro e empurrão de uma batida entre carros: somem sozinhos, sem escorregão
+    if (c.spin !== 0) {
+      c.h += c.spin * dt;
+      c.spin *= Math.exp(-GP_BUMP_SPIN_DAMP * dt);
+      if (Math.abs(c.spin) < 1e-3) c.spin = 0;
+    }
+    const knockKeep = Math.exp(-GP_BUMP_KNOCK_DAMP * dt);
+    c.kx *= knockKeep;
+    c.kz *= knockKeep;
+    if (Math.abs(c.kx) + Math.abs(c.kz) < 1e-3) {
+      c.kx = 0;
+      c.kz = 0;
+    }
 
     let v = c.speed;
     const av = Math.abs(v);
@@ -776,8 +806,8 @@ export class GpWorld {
     c.rpm = clamp(Math.max(0, v) / GP_GEAR_TOP[Math.max(1, c.gear) - 1]!, 0.12, 1);
 
     c.speed = v;
-    c.vx = Math.sin(c.h) * v;
-    c.vz = -Math.cos(c.h) * v;
+    c.vx = Math.sin(c.h) * v + c.kx;
+    c.vz = -Math.cos(c.h) * v + c.kz;
     c.x += c.vx * dt;
     c.z += c.vz * dt;
     c.wear += GP_WEAR_DIST * Math.abs(v) * dt;
@@ -821,6 +851,8 @@ export class GpWorld {
       c.wallCd = GP_REAL_WALL_CD;
       if (hit > 4) this.events.push({ type: 'wall', id: c.id, speed: hit, x: c.x + nx, z: c.z + nz });
     }
+    c.kx = 0;
+    c.kz = 0;
     c.vx = Math.sin(c.h) * c.speed;
     c.vz = -Math.cos(c.h) * c.speed;
   }
@@ -1108,13 +1140,16 @@ export class GpWorld {
   }
 
   /**
-   * Batida entre carros (spec 081): hitbox OBB precisa, sem empurrão físico.
-   * Quando bate, diminui a velocidade de quem está batendo e atrapalha a direção
-   * (spin/desvio) de quem leva a porrada, sem empurrar o outro carro pela pista
-   * nem travar um no outro.
+   * Batida entre carros (spec 081, Fase 13.3): caixa do carro (`testCarObb`) e impulso de corpo rígido com massas iguais
+   * na normal do contato, com restituição e atrito pequenos, **uma vez por contato**. Enquanto as caixas continuam se
+   * tocando os carros só se separam pela posição (sem perder velocidade); um impulso novo só vem se a aproximação voltar
+   * a passar de `GP_BUMP_REARM`. Assim a batida de traseira empurra o da frente, quem bate perde uma parte do impacto, e a
+   * perda não se acumula a cada passo. Carro de outra pessoa (online) entra como obstáculo de massa infinita: quem decide
+   * a batida dele é o líder. Vale para os dois modos.
    */
   private collide(only?: string) {
     const live = this.cars.filter((c) => !c.gone && !c.ghost && c.pitHold <= 0);
+    const touching = new Set<string>();
     for (let i = 0; i < live.length; i++) {
       for (let j = i + 1; j < live.length; j++) {
         const a = live[i]!;
@@ -1122,110 +1157,75 @@ export class GpWorld {
         const movA = only ? a.id === only : !a.remote;
         const movB = only ? b.id === only : !b.remote;
         if (!movA && !movB) continue;
-
         const hit = this.testCarObb(a, b);
         if (!hit) continue;
-
+        const key = a.id < b.id ? `${a.id}|${b.id}` : `${b.id}|${a.id}`;
+        touching.add(key);
         const { overlap, nx, nz, px, pz } = hit;
-
-        // nx, nz aponta de a para b.
-        // aTowardsB: componente de velocidade de a na direção de b (+nx, +nz).
-        // bTowardsA: componente de velocidade de b na direção de a (-nx, -nz).
-        const aTowardsB = a.vx * nx + a.vz * nz;
-        const bTowardsA = -(b.vx * nx + b.vz * nz);
-        const closingSpeed = aTowardsB + bTowardsA;
-
-        // Vetor tangente para giro/perturbação
+        const ima = movA ? 1 : 0;
+        const imb = movB ? 1 : 0;
+        const share = ima + imb;
+        // separa pela posição (sem tirar velocidade), no máximo um pouco por passo
+        const push = Math.min(overlap, GP_BUMP_PUSH);
+        a.x -= (nx * push * ima) / share;
+        a.z -= (nz * push * ima) / share;
+        b.x += (nx * push * imb) / share;
+        b.z += (nz * push * imb) / share;
+        // velocidade relativa do ponto de contato (translação + giro)
+        const rax = px - a.x;
+        const raz = pz - a.z;
+        const rbx = px - b.x;
+        const rbz = pz - b.z;
+        const rvx = b.vx - b.spin * rbz - (a.vx - a.spin * raz);
+        const rvz = b.vz + b.spin * rbx - (a.vz + a.spin * rax);
+        const vn = rvx * nx + rvz * nz;
+        if (vn >= 0) continue;
+        if (this.contacts.has(key) && -vn < GP_BUMP_REARM) continue;
+        const iia = ima / GP_INERTIA;
+        const iib = imb / GP_INERTIA;
+        const ran = cross(rax, raz, nx, nz);
+        const rbn = cross(rbx, rbz, nx, nz);
+        const k = ima + imb + ran * ran * iia + rbn * rbn * iib;
+        const jn = ((-(1 + GP_BUMP_E) * vn) / k) * GP_BUMP_SOFT;
+        // atrito pequeno: freia o deslizamento entre os dois no ponto de contato (raspada de lado quase não tira nada)
         const tx = -nz;
         const tz = nx;
-        const vtA = a.vx * tx + a.vz * tz;
-        const vtB = b.vx * tx + b.vz * tz;
-        const vRelT = vtA - vtB;
-
-        const impact = Math.max(0, closingSpeed);
-        const push = Math.min(overlap, 0.25);
-
-        const headOn = aTowardsB > 0.5 && bTowardsA > 0.5;
-        const aIsHitter = !headOn && aTowardsB > bTowardsA && aTowardsB > 0.1;
-        const bIsHitter = !headOn && bTowardsA > aTowardsB && bTowardsA > 0.1;
-
-        if (headOn) {
-          // Frontal: ambos perdem velocidade e têm direção perturbada
-          if (movA) {
-            a.speed = Math.max(0, a.speed * 0.2);
-            a.vx = Math.sin(a.h) * a.speed;
-            a.vz = -Math.cos(a.h) * a.speed;
-            a.spin += 0.8;
-            a.h += 0.03;
-            a.x -= nx * push * 0.5;
-            a.z -= nz * push * 0.5;
-          }
-          if (movB) {
-            b.speed = Math.max(0, b.speed * 0.2);
-            b.vx = Math.sin(b.h) * b.speed;
-            b.vz = -Math.cos(b.h) * b.speed;
-            b.spin -= 0.8;
-            b.h -= 0.03;
-            b.x += nx * push * 0.5;
-            b.z += nz * push * 0.5;
-          }
-        } else if (aIsHitter) {
-          // A bateu em B:
-          // 1) A (quem bate) perde velocidade e é contido para não atravessar
-          if (movA) {
-            const loss = Math.min(impact * GP_BUMP_SPEED_LOSS, Math.abs(a.speed) * 0.4);
-            a.speed = Math.max(0, a.speed - loss);
-            a.vx = Math.sin(a.h) * a.speed;
-            a.vz = -Math.cos(a.h) * a.speed;
-            a.x -= nx * push;
-            a.z -= nz * push;
-          }
-          // 2) B (quem levou a porrada) tem a direção atrapalhada SEM ser empurrado
-          if (movB || !b.remote) {
-            const kickDir = Math.sign(vRelT) || (Math.sin(a.h - b.h) >= 0 ? 1 : -1) || 1;
-            const kick = kickDir * Math.min(1.5, 0.4 + (impact + Math.abs(vRelT)) * GP_BUMP_SPIN_TRANSFER);
-            b.spin += kick;
-            b.h += kick * 0.025;
-            if (this.mode === 'real') b.rSteer -= kick * 0.15;
-          }
-        } else if (bIsHitter) {
-          // B bateu em A:
-          // 1) B (quem bate) perde velocidade e é contido para não atravessar
-          if (movB) {
-            const loss = Math.min(impact * GP_BUMP_SPEED_LOSS, Math.abs(b.speed) * 0.4);
-            b.speed = Math.max(0, b.speed - loss);
-            b.vx = Math.sin(b.h) * b.speed;
-            b.vz = -Math.cos(b.h) * b.speed;
-            b.x += nx * push;
-            b.z += nz * push;
-          }
-          // 2) A (quem levou a porrada) tem a direção atrapalhada SEM ser empurrado
-          if (movA || !a.remote) {
-            const kickDir = Math.sign(-vRelT) || (Math.sin(b.h - a.h) >= 0 ? 1 : -1) || 1;
-            const kick = kickDir * Math.min(1.5, 0.4 + (impact + Math.abs(vRelT)) * GP_BUMP_SPIN_TRANSFER);
-            a.spin += kick;
-            a.h += kick * 0.025;
-            if (this.mode === 'real') a.rSteer -= kick * 0.15;
-          }
-        } else {
-          // Raspando de lado em velocidade semelhante: desvia ligeiramente ambos sem empurrar para longe
-          if (movA) a.x -= nx * push * 0.5;
-          if (movB) b.x += nx * push * 0.5;
-          const rubSpin = (Math.sign(vRelT) || 1) * 0.2;
-          if (movA) a.spin -= rubSpin;
-          if (movB) b.spin += rubSpin;
-        }
-
-        if (impact > 0.5 || overlap > 0.1) {
-          this.events.push({ type: 'bump', a: a.id, b: b.id, force: Math.max(impact, overlap), x: px, z: pz });
-        }
+        const vt = rvx * tx + rvz * tz;
+        const rat = cross(rax, raz, tx, tz);
+        const rbt = cross(rbx, rbz, tx, tz);
+        const kt = ima + imb + rat * rat * iia + rbt * rbt * iib;
+        const jt = clamp(-vt / kt, -GP_BUMP_MU * jn, GP_BUMP_MU * jn);
+        const ix = nx * jn + tx * jt;
+        const iz = nz * jn + tz * jt;
+        if (movA) this.kick(a, -ix, -iz, -cross(rax, raz, ix, iz) * iia);
+        if (movB) this.kick(b, ix, iz, cross(rbx, rbz, ix, iz) * iib);
+        if (jn > 0.8) this.events.push({ type: 'bump', a: a.id, b: b.id, force: jn, x: px, z: pz });
       }
     }
+    this.contacts = touching;
   }
 
-  /** Modo realista usa a mesma colisão sem empurrão. */
-  private collideReal(only?: string) {
-    this.collide(only);
+  /**
+   * Aplica a mudança de velocidade de uma batida. No Arcade a velocidade é um vetor (o carro pode escorregar); no Realista
+   * ela sempre aponta para o nariz: a parte para a frente muda a velocidade e a de lado vira o empurrão que some sozinho.
+   * O giro de uma batida é limitado.
+   */
+  private kick(c: GpCar, dvx: number, dvz: number, dspin: number) {
+    c.spin += clamp(dspin, -GP_BUMP_SPIN_MAX, GP_BUMP_SPIN_MAX);
+    if (this.mode === 'real') {
+      const fx = Math.sin(c.h);
+      const fz = -Math.cos(c.h);
+      const along = dvx * fx + dvz * fz;
+      c.speed += along;
+      c.kx += dvx - fx * along;
+      c.kz += dvz - fz * along;
+      c.vx = fx * c.speed + c.kx;
+      c.vz = fz * c.speed + c.kz;
+      return;
+    }
+    c.vx += dvx;
+    c.vz += dvz;
+    c.speed = c.vx * Math.sin(c.h) - c.vz * Math.cos(c.h);
   }
 
   /** Vácuo passivo: logo atrás de outro carro e alinhado, o arrasto cai (mais perto, mais). Vale para todos. */
@@ -1351,6 +1351,8 @@ export class GpWorld {
       c.rBrk,
       c.rSteer,
       c.wallCd,
+      c.kx,
+      c.kz,
     ];
   }
 
@@ -1383,8 +1385,10 @@ export class GpWorld {
     c.rBrk = v[27]!;
     c.rSteer = v[28]!;
     c.wallCd = v[29]!;
-    // no Realista a velocidade é sempre para o nariz; no Arcade vem do vetor
-    c.speed = c.vx * Math.sin(c.h) - c.vz * Math.cos(c.h);
+    c.kx = v[30]!;
+    c.kz = v[31]!;
+    // no Realista a velocidade é sempre para o nariz (sem o empurrão de lado); no Arcade vem do vetor
+    c.speed = (c.vx - c.kx) * Math.sin(c.h) - (c.vz - c.kz) * Math.cos(c.h);
     const p = this.track.project(c.x, c.z, c.idx);
     c.idx = p.i;
     c.s = p.s;

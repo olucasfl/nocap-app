@@ -144,7 +144,7 @@ export class GpHostLink {
   }
 
   /**
-   * Estado do líder: direto para quem está conectado (cada um recebe o estado completo só do próprio carro: com 20 carros
+   * Estado do líder: direto para quem está conectado (cada um recebe o estado completo só do próprio carro: com 12 carros
    * o pacote fica enxuto); pela sala se alguém ainda não está (com o estado completo de quem depende dela).
    */
   sendSnapshot(s: GpSnapshot, only: (s: GpSnapshot, slots: number[]) => GpSnapshot) {

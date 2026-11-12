@@ -120,7 +120,7 @@ describe('sala do Fox GP', () => {
     expect(room.physics).toBe('real');
   });
 
-  it('até 20 na sala; com mais de 10 a cor do pelo pode repetir (enquanto houver livre, não)', () => {
+  it('até 12 na sala (a 13ª vaga é recusada); com mais de 10 a cor do pelo pode repetir (enquanto houver livre, não)', () => {
     const room = new FoxGpRoomEngine({ code: 'ABCD', now: () => T0, newSeed: () => 's' });
     const ids = Array.from({ length: GP_MAX_PLAYERS }, (_, i) => `p${i}`);
     for (const id of ids) room.join(id, id);
@@ -128,8 +128,8 @@ describe('sala do Fox GP', () => {
     const c = snap(room, 'p0').colors;
     expect(new Set(ids.slice(0, GP_ROOM_COLORS.length).map((id) => c[id])).size).toBe(GP_ROOM_COLORS.length);
     // sala cheia de cores: o 11º pode escolher uma já usada
-    room.setColor('p15', c.p0!);
-    expect(snap(room).colors.p15).toBe(c.p0);
+    room.setColor('p11', c.p0!);
+    expect(snap(room).colors.p11).toBe(c.p0);
     for (const id of ids.slice(1)) room.setReady(id, true);
     room.start('p0');
     expect(Object.keys(snap(room).slots).length).toBe(GP_MAX_PLAYERS);

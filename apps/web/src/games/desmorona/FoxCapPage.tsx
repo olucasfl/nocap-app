@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState, type FormEvent } from 'react';
-import { Link, useNavigate, useSearch } from '@tanstack/react-router';
+import { useNavigate, useSearch } from '@tanstack/react-router';
 import { BackButton } from '@/components/BackButton';
 import { Field } from '@/components/Field';
 import { HubHero, HubModeCard, HubNote, HubTabs } from '@/components/GameHub';
@@ -28,7 +28,7 @@ import { PingPicker } from '../pingpong/PingPicker';
 import { GpPicker } from '../foxgp/GpPicker';
 import { GpHome } from '../foxgp/GpHome';
 import { loadGarage } from '../foxgp/garage';
-import { loadPhysics } from '../foxgp/gp-best';
+import { gpMarkBack, loadPhysics } from '../foxgp/gp-best';
 import type { PpBotName } from '@nocap/games';
 import '@/screens/account.css';
 import '@/screens/room.css';
@@ -127,7 +127,10 @@ export function FoxCapPage() {
             color={loadGarage().fur}
             paint={loadGarage().paint}
             physics={loadPhysics()}
-            onExit={() => setFlow(null)}
+            onExit={() => {
+              gpMarkBack();
+              setFlow(null);
+            }}
             onAgain={() => setRound((r) => r + 1)}
             onOfflineInvite={goFriends}
           />
@@ -194,6 +197,15 @@ export function FoxCapPage() {
           }}
         />
         {help && <HowToPlay game={help} onClose={() => setHelp(null)} />}
+        {/* sem o <Page>, os diálogos de apelido e de sala aberta continuam aqui (criar ou entrar numa sala precisa deles) */}
+        <NicknameDialog nick={entry.nick} />
+        <RoomConflictDialog
+          open={!!entry.conflict}
+          code={entry.conflict?.code ?? null}
+          onBack={entry.backToCurrent}
+          onLeave={() => void entry.leaveAndContinue()}
+          onCancel={entry.dismissConflict}
+        />
         {flow === 'gp-pick' && (
           <GpPicker
             bots={gpBots}

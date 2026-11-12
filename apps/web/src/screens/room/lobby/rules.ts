@@ -117,7 +117,7 @@ export const MODES: Record<RoomGame, { id: string; label: string; note: string }
     {
       id: 'classico',
       label: 'Grande Prêmio',
-      note: 'Classificação de 3 minutos (cada um faz a sua volta lançada quando quiser), grid pelos tempos e corrida de 3 voltas no Circuito da Marina, com até 20 carros. DRS nas zonas verdes das retas e vácuo atrás de outro carro; os pneus gastam e o box troca em 3 s. Depois que o primeiro chega, os outros têm 30 s. Sem ranking.',
+      note: 'Classificação de 5 minutos (cada um faz a sua volta lançada quando quiser), grid pelos tempos e corrida de 3 voltas no Circuito da Marina, com até 12 carros. DRS nas zonas verdes das retas e vácuo atrás de outro carro; os pneus gastam e o box troca em 3 s. Depois que o primeiro chega, os outros têm 2 minutos. Sem ranking.',
     },
   ],
   desmorona: [

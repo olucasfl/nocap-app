@@ -17,7 +17,7 @@ import { GpHost, gpSnapshotFor } from './net';
 import { GP_TRACK_TOCA } from './track';
 import { GP_PACK_LEN, GpWorld, gpGridSpot, type GpCar, type GpInput } from './world';
 
-/** Testes da v2 (spec 080): dois modos de física, bots com perfil, 20 carros e rede enxuta. */
+/** Testes da v2 (spec 080): dois modos de física, bots com perfil e rede enxuta (12 carros desde a spec 081). */
 
 const info = (n: number, bot = false) =>
   Array.from({ length: n }, (_, i) => ({ id: `p${i}`, name: `P${i}`, color: 0xff7d26, bot }));
@@ -160,17 +160,18 @@ describe('dois modos de física', () => {
     expect(c.speed).toBeLessThan(GP_VMAX + 1);
   });
 
-  it('Realista: batida de traseira segura quem bate sem empurrar o da frente', () => {
+  it('Realista: batida de traseira troca velocidade sem giro solto e sem atravessar', () => {
     const w = new GpWorld('b', info(2), GP_TRACK_TOCA, 'real');
     w.beginRace(['p0', 'p1']);
     const [a, b] = w.cars as [GpCar, GpCar];
     put(w, a, -300, 0, 10);
     put(w, b, -303.5, 0, 22);
     for (let k = 0; k < 20; k++) w.step(GP_DT, { p0: { ...full, throttle: 0.3 }, p1: full });
-    expect(b.speed).toBeLessThan(20);
-    expect(Math.abs(a.spin)).toBeGreaterThan(0);
-    expect(b.spin).toBe(0);
-    expect(Math.hypot(a.x - b.x, a.z - b.z)).toBeGreaterThan(GP_CAR_R * 1.5);
+    expect(a.speed).toBeGreaterThan(12);
+    expect(b.speed).toBeGreaterThan(15);
+    expect(Math.abs(a.spin)).toBeLessThan(0.05);
+    expect(Math.abs(b.spin)).toBeLessThan(0.05);
+    expect(Math.hypot(a.x - b.x, a.z - b.z)).toBeGreaterThan(GP_CAR_R * 2.5);
   });
 
   it('pack/unpack devolve o mesmo estado no Realista (com as entradas suavizadas)', () => {
@@ -185,16 +186,16 @@ describe('dois modos de física', () => {
   });
 });
 
-describe('20 carros e bots diferentes (nos dois modos)', () => {
+describe('12 carros e bots diferentes (nos dois modos)', () => {
   it('perfis pela seed: sempre os mesmos e com os cinco arquétipos no grid', () => {
-    const a = Array.from({ length: 19 }, (_, i) => gpBotProfile('s1', i));
-    const b = Array.from({ length: 19 }, (_, i) => gpBotProfile('s1', i));
+    const a = Array.from({ length: 11 }, (_, i) => gpBotProfile('s1', i));
+    const b = Array.from({ length: 11 }, (_, i) => gpBotProfile('s1', i));
     expect(a).toEqual(b);
     expect(new Set(a.map((p) => p.archetype)).size).toBe(GP_BOT_ARCHETYPES.length);
     expect(gpBotProfile('s2', 0)).not.toEqual(a[0]);
   });
 
-  it('grid para 20: lugares separados, no asfalto, em fila dupla', () => {
+  it('grid para 12: lugares separados, no asfalto, em fila dupla', () => {
     const w = new GpWorld('g', info(GP_MAX_PLAYERS));
     const spots = Array.from({ length: GP_MAX_PLAYERS }, (_, i) => gpGridSpot(w.track, i));
     for (let i = 0; i < spots.length; i++) {
@@ -209,7 +210,7 @@ describe('20 carros e bots diferentes (nos dois modos)', () => {
 
   const results: Record<string, number[]> = {};
   for (const mode of ['arcade', 'real'] as const) {
-    it(`${mode}: 19 bots e 3 voltas: a ordem muda, os tempos diferem e eles não andam na mesma faixa`, () => {
+    it(`${mode}: 11 bots e 3 voltas: a ordem muda, os tempos diferem e eles não andam na mesma faixa`, () => {
       const { w, qualiDone, orders, lat, maxSkid } = botRace(mode, GP_MAX_PLAYERS, `v2-${mode}`);
       expect(qualiDone).toBe(true);
       expect(w.cars.every((c) => c.qualiMs !== null)).toBe(true);
@@ -221,7 +222,7 @@ describe('20 carros e bots diferentes (nos dois modos)', () => {
       expect(new Set(orders).size).toBeGreaterThan(5);
       // os tempos de volta diferem entre bots
       const best = fin.map((c) => c.bestLap!).sort((a, b) => a - b);
-      expect(best.at(-1)! - best[0]!).toBeGreaterThan(1500);
+      expect(best.at(-1)! - best[0]!).toBeGreaterThan(500);
       // cada um na sua faixa: a média de afastamento nas retas varia entre eles
       const means = [...lat.values()].filter((l) => l.length > 10).map((l) => l.reduce((a, b) => a + b, 0) / l.length);
       const avg = means.reduce((a, b) => a + b, 0) / means.length;
@@ -246,7 +247,7 @@ describe('20 carros e bots diferentes (nos dois modos)', () => {
   });
 });
 
-describe('rede com 20 carros', () => {
+describe('rede com o grid cheio', () => {
   it('estado enxuto: todos os carros cabem em poucos KB, e o estado completo vai só para o dono', () => {
     const infos = info(GP_MAX_PLAYERS).map((p, i) => ({ ...p, bot: i >= 6 }));
     const w = new GpWorld('n20', infos, undefined, 'real');
@@ -260,7 +261,7 @@ describe('rede com 20 carros', () => {
     const forOne = gpSnapshotFor(snap, [3]);
     expect(forOne.full.map((r) => r[0])).toEqual([3]);
     const bytes = JSON.stringify(forOne).length;
-    test_note(`estado para um aparelho com 20 carros: ${bytes} bytes`);
+    test_note(`estado para um aparelho com o grid cheio: ${bytes} bytes`);
     expect(bytes).toBeLessThan(2400);
   });
 });

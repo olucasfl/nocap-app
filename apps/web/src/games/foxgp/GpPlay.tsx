@@ -68,7 +68,7 @@ export const GP_FURS = [
   0xff7d26, 0xb98cff, 0x4fc3f7, 0x7be07b, 0xffd23f, 0xff6f91, 0xf5f5f5, 0x8d6e63, 0x8b93a3,
   0xe5303a,
 ];
-/** Os 19 adversários do treino (spec 080: você mais 19 bots). */
+/** Os 11 adversários do treino (spec 081: você mais 11 bots, 12 carros). */
 const BOT_NAMES = [
   'Faísca',
   'Pipoca',
@@ -751,7 +751,7 @@ export function GpPlay({
       const enter = (next: Stage) => {
         if (next === 'quali') {
           gpSfx.go();
-          say('Classificação', 2600, 'info', `3 minutos · 1 volta · ${PHYSICS_NAME[mode]}`);
+          say('Classificação', 2600, 'info', `5 minutos · 1 volta · ${PHYSICS_NAME[mode]}`);
           setWipe({ key: Date.now(), text: 'Classificação' });
         }
         if ((next === 'grid' || next === 'lights' || next === 'race') && world.phase !== 'race') {

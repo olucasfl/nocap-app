@@ -20,6 +20,9 @@
 .gph-garage {
   overflow: hidden auto;
 }
+.gph.is-back {
+  animation: none;
+}
 @keyframes gph-in {
   from {
     opacity: 0;
@@ -67,12 +70,13 @@
   pointer-events: none;
   z-index: 10;
 }
+/* a caixa do carro é a da main (spec 081, 13.1): fora da grade, mesmo tamanho e mesmo enquadramento */
 .gph-car {
   position: absolute;
   right: 2vw;
-  top: 5vh;
-  bottom: clamp(32px, 5vh, 60px);
-  width: min(58vw, 860px);
+  top: 10vh;
+  width: min(60vw, 860px);
+  height: 70vh;
 }
 .gph-main {
   grid-row: 1;
@@ -146,30 +150,35 @@
 .gph-two .gp-tbtn {
   text-align: center;
 }
+/* carrossel embaixo do carro, centrado sob a caixa dele, sem empurrá-la */
 .gph-carousel {
+  position: absolute;
+  z-index: 3;
+  right: calc(2vw + min(60vw, 860px) / 2);
+  top: calc(80vh - clamp(8px, 2vh, 20px));
+  transform: translateX(50%);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  background: var(--gp-panel-2);
+  gap: 10px;
+  padding: 6px 10px;
+  background: var(--gp-panel);
   border: 1px solid var(--gp-line-2);
-  padding: 4px 8px;
-  width: 100%;
-  box-sizing: border-box;
+  box-shadow: 4px 4px 0 var(--gp-accent);
+  touch-action: pan-y;
 }
 .gph-carousel-btn {
-  width: clamp(28px, 4vh, 34px);
-  height: clamp(28px, 4vh, 34px);
+  width: 34px;
+  height: 34px;
   display: grid;
   place-items: center;
-  background: var(--gp-panel);
+  background: var(--gp-panel-2);
   border: 1px solid var(--gp-line);
   color: var(--gp-text);
-  font-size: 18px;
+  font-size: 20px;
   cursor: pointer;
-  flex-shrink: 0;
 }
-.gph-carousel-btn:hover {
+.gph-carousel-btn:hover,
+.gph-carousel-btn:focus-visible {
   background: var(--gp-accent);
   color: var(--gp-bg);
 }
@@ -177,16 +186,24 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  min-width: 180px;
   text-align: center;
-  flex: 1;
+  animation: gph-car-in 0.35s var(--gp-ease) both;
+}
+@keyframes gph-car-in {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
 }
 .gph-carousel-title {
-  font: italic 800 clamp(13px, 1.8vh, 15px) var(--gp-display);
+  font: italic 800 15px var(--gp-display);
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--gp-accent);
 }
 .gph-carousel-best {
-  font-size: clamp(11px, 1.4vh, 12px);
+  font-size: 12px;
   color: var(--gp-text-3);
 }
 .gph-carousel-best b {
@@ -437,6 +454,12 @@
     width: 100%;
     max-width: 480px;
   }
+  /* o carro vira fundo: o carrossel vai para o canto de cima, fora da coluna de botões */
+  .gph-carousel {
+    top: 12px;
+    right: 12px;
+    transform: none;
+  }
   .gph-garage {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto 280px auto;
@@ -480,7 +503,8 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .gph,
-  .gph-garage {
+  .gph-garage,
+  .gph-carousel-info {
     animation: none;
   }
 }
