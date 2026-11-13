@@ -425,12 +425,12 @@ describe('box', () => {
     expect(c.pitStops).toBe(1);
   });
 
-  it('Realista: na faixa do box a velocidade é limitada (170 km/h na tela)', () => {
+  it('Realista: na faixa do box a velocidade é limitada (140 km/h na tela)', () => {
     const w = toca('a', 1, false, 'real');
     const c = w.cars[0]!;
     c.surface = 'pit';
     expect(w.vmaxOf(c)).toBe(GP_PIT_LIMIT);
-    expect(gpKmh(GP_PIT_LIMIT)).toBe(170);
+    expect(gpKmh(GP_PIT_LIMIT)).toBe(140);
   });
 });
 
@@ -475,7 +475,8 @@ describe('vácuo e DRS', () => {
       const duo = pair(mode);
       put(duo.w, duo.a, -286, 0, 26);
       put(duo.w, duo.b, -300, 0, 26);
-      for (let i = 0; i < 2.5 / GP_DT; i++) {
+      // 1,8 s: com o motor mais forte (13/11/2026), em 2,5 s os carros já chegavam ao fim da reta
+      for (let i = 0; i < 1.8 / GP_DT; i++) {
         solo.step(GP_DT, { p0: full });
         duo.w.step(GP_DT, { p0: { ...full, throttle: 0.8 }, p1: full });
       }
@@ -752,8 +753,8 @@ describe('corrida e chegada', () => {
 
 describe('tela', () => {
   it('km/h e marcha', () => {
-    // ×8,5 na tela (spec 081): 40 m/s do Realista = 340 km/h
-    expect(gpKmh(40)).toBe(340);
+    // ×7 na tela (13/11/2026): 52 m/s do Realista = 364 km/h
+    expect(gpKmh(52)).toBe(364);
     expect(gpGear(0)).toBe(1);
     expect(gpGear(GP_VMAX)).toBeGreaterThanOrEqual(7);
     expect(GP_GEARS.length).toBe(8);

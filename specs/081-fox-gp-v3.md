@@ -263,3 +263,36 @@ Números escolhidos por uma busca em grade nos alvos das ordens e conferidos pel
 - Jogar com aparelhos reais e calibrar os [AJUSTAR] (`GP_ARC_*`, `GP_REAL_*`, pneu); medir celular como líder com 12.
 - Não feitos por custo: página de QA dos números (`?qa=numbers`) e o modo `?debug=track` (a pista do kart é gerada do
   próprio `GpTrack`, então desenho e física coincidem por construção); estilo do aro e faixa do pneu no kart.
+
+## 10. Ajuste de pilotagem (13/11/2026, pedido do Italo)
+
+**Arcade (kart)**
+
+- O kart aparece ~30 % menor (`KART_VIS` em `GpScene.ts`); a colisão continua a mesma do F1.
+- O drift agora aponta o nariz para dentro da curva: drift para a direita, nariz para a direita. O sinal do corpo estava invertido.
+- A direção ficou mais rápida (`GP_ARC_YAW_LOW` 2,8 e `HIGH` 1,7; volante do teclado `STEER_IN` 8 e `STEER_OUT` 11).
+- Volta o escorregão de lado do arcade antigo: o nariz vira na hora e a velocidade vem atrás. O pneu corrige `GP_ARC_LAT_GRIP` m/s² (14 no drift). Numa virada brusca em alta o kart escorrega, solta fumaça das duas rodas de trás e perde só um pouco.
+- Mais controle no drift: o volante para dentro fecha até ×1,6 e para fora abre até ×0,4.
+- O kart inclina para o lado da curva.
+
+**Realista (F1)**
+
+- O volante é proporcional ao pneu: todo virado pede no máximo 1,3× o que o pneu aguenta (`GP_REAL_STEER_HEADROOM`). Um toque leve na reta não freia.
+- O arrasto só começa depois de uma folga de 15 % além do limite (`GP_REAL_SCRUB_FREE`). Dentro do pneu, a perda é natural: `CORNER_DRAG × carga²`.
+- No limite da curva sobra pouco pneu para acelerar (círculo de atrito).
+- Mais aderência (`GRIP0` 11, asa 0,0028) e direção mais rápida (`STEER_RISE` 4,5).
+- O vácuo e o DRS foram recalibrados para o arrasto menor (42 % e 25 %).
+- Sensação de velocidade:
+  - na câmera de perseguição, a câmera desce, chega perto e abre o FOV até +26° em alta;
+  - no cockpit, o FOV abre até +14°;
+  - o motion blur passa a valer por fração da máxima;
+  - riscos nas bordas da tela acima de 60 % da máxima (só opacidade; somem com movimento reduzido);
+  - a câmera de longe quase não se afasta com a velocidade.
+
+**Rede**
+
+- Ao refazer a previsão, o próprio carro não bate nos outros. Eles estão desenhados ~100 ms atrás e a batida de verdade vem do líder; bater neles ali inventava batidas e fazia o carro pular.
+
+**Pendente**
+
+- Calibrar jogando.

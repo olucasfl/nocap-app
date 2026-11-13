@@ -312,7 +312,8 @@ export function gpBotInput(world: GpWorld, c: GpCar, mem: GpBotMemory, rng: () =
   const target = tr.pointAt(ts, lat);
   mem.wobble += (rng() - 0.5) * 0.08 * (1.6 - P.consistency);
   mem.wobble *= 0.94;
-  const steer = clamp(angleTo(c, target.x, target.z) * 2.4 + mem.wobble, -1, 1);
+  // no Realista o volante é proporcional ao pneu (todo virado = 1,3× o limite): o bot vira mais o volante
+  const steer = clamp(angleTo(c, target.x, target.z) * (world.mode === 'real' ? 6 : 2.4) + mem.wobble, -1, 1);
 
   // ---- quanto correr: a curva mais exigente dentro da distância de frenagem ----
   const tyre = GP_SURFACE.asphalt.grip * (1 - c.wear * (1 - GP_GRIP_MIN));

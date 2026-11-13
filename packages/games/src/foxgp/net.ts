@@ -303,7 +303,7 @@ export class GpClient {
     const before = { x: car.x, z: car.z, h: car.h };
     w.unpack(car, state);
     this.history = this.history.filter((row) => row[0] > ack);
-    for (const row of this.history) w.step(GP_DT, { [this.meId]: unpackInput(row) }, this.meId);
+    for (const row of this.history) w.step(GP_DT, { [this.meId]: unpackInput(row) }, this.meId, true);
     // eventos da reprevisão não valem (os de verdade vêm do líder)
     w.drainEvents();
     const dx = before.x - car.x;

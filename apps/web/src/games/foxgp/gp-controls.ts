@@ -5,8 +5,8 @@ import { gpActionOf } from './gp-settings';
 type Key = 'gas' | 'brake' | 'left' | 'right' | 'drs' | 'drift';
 
 /** Quão rápido o volante vai de reto a todo virado (por segundo) com tecla ou botão (que são tudo ou nada). */
-const STEER_IN = 5.5;
-const STEER_OUT = 8;
+const STEER_IN = 8;
+const STEER_OUT = 11;
 
 /** Aproxima o volante do alvo sem pular (tecla e botão são tudo ou nada). Pura, com teste. */
 export function easeSteer(current: number, target: number, dt: number): number {
