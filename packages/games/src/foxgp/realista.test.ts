@@ -68,7 +68,7 @@ describe('Realista de F1 (spec 081, Fase 4)', () => {
     expect(slow.r).toBeLessThan(25.5);
   });
 
-  it('freada cheia de 40 a 12 m/s: no máximo 4,2 s e ~85 m; de 25 a 12 em até 35 m', () => {
+  it('freada cheia de 40 a 12 m/s: no máximo 2,6 s e ~50 m; de 25 a 12 em até 25 m', () => {
     const brake = (v0: number) => {
       const { w, c, from } = straight();
       put(w, c, from, v0);
@@ -82,10 +82,11 @@ describe('Realista de F1 (spec 081, Fase 4)', () => {
       return { t, d: c.prog - p0 };
     };
     const hi = brake(40);
-    expect(hi.t).toBeLessThanOrEqual(4.2);
-    expect(hi.d).toBeGreaterThan(65);
-    expect(hi.d).toBeLessThan(100);
-    expect(brake(25).d).toBeLessThanOrEqual(35);
+    // freio mais efetivo (13/11/2026), mas ainda com distância para errar o ponto
+    expect(hi.t).toBeLessThanOrEqual(2.6);
+    expect(hi.d).toBeGreaterThan(35);
+    expect(hi.d).toBeLessThan(65);
+    expect(brake(25).d).toBeLessThanOrEqual(25);
   });
 
   it('acelera com marchas: 0→15 m/s em até 2,4 s, 15→30 em até 4 s; a troca aparece no giro; máxima ~40 m/s', () => {

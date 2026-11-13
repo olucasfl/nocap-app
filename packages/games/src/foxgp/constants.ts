@@ -346,19 +346,18 @@ export const GP_REAL_SHIFT_UP = 0.97;
 export const GP_REAL_SHIFT_DOWN = 0.62;
 export const GP_REAL_SHIFT_CUT = 0.12;
 /**
- * Freio: `BRAKE0 + BRAKE_V2 * v²` (m/s²), um pouco mais em alta (asa). Calibrado pelos alvos da Fase 4 (40→12 m/s em
- * ~80 m e menos de 4,2 s; 25→12 em menos de 35 m): a freada dura o bastante para dar para errar o ponto. (As ordens
- * sugeriam `BRAKE0` 14 a 15, mas com ele a freada de 40 a 12 levaria ~1,5 s e ~38 m, longe do próprio alvo.)
+ * Freio: `BRAKE0 + BRAKE_V2 * v²` (m/s²), mais forte em alta (asa). Mais efetivo desde 13/11/2026 (pedido do Italo: a
+ * freada demorava demais): 52→20 m/s em ~2,3 s, 40→12 em ~2 s e ~50 m, 25→12 em ~20 m.
  */
-export const GP_REAL_BRAKE0 = 6;
-export const GP_REAL_BRAKE_V2 = 0.0015;
+export const GP_REAL_BRAKE0 = 10;
+export const GP_REAL_BRAKE_V2 = 0.0035;
 /** Ré: força para sair dela acelerando (m/s² por acelerador) e o mínimo, como na referência. */
 export const GP_REAL_REVERSE_OUT = 10;
 export const GP_REAL_REVERSE_OUT0 = 4;
 /** Entradas suavizadas (por segundo): acelerador sobe/desce, freio, volante (subir, inverter, voltar ao centro). */
 export const GP_REAL_THR_RISE = 6;
 export const GP_REAL_THR_FALL = 8;
-export const GP_REAL_BRK_RATE = 10;
+export const GP_REAL_BRK_RATE = 16;
 export const GP_REAL_STEER_RISE = 4.5;
 export const GP_REAL_STEER_FLIP = 10;
 export const GP_REAL_STEER_CENTER = 7;
