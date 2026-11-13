@@ -50,13 +50,14 @@ describe('Realista de F1 (spec 081, Fase 4)', () => {
       while (gpRealLatMax(v + 0.05) >= ((v + 0.05) * (v + 0.05)) / r) v += 0.05;
       return v;
     };
-    expect(vMax(15)).toBeGreaterThan(10.5);
-    expect(vMax(15)).toBeLessThan(12.5);
-    expect(vMax(25)).toBeGreaterThan(14);
-    expect(vMax(25)).toBeLessThan(16.5);
-    expect(vMax(60)).toBeGreaterThan(22.5);
-    expect(vMax(60)).toBeLessThan(26);
-    expect(vMax(130)).toBeGreaterThan(33);
+    // curvas mais rápidas desde 13/11/2026 (mais aderência e asa)
+    expect(vMax(15)).toBeGreaterThan(12);
+    expect(vMax(15)).toBeLessThan(14);
+    expect(vMax(25)).toBeGreaterThan(16);
+    expect(vMax(25)).toBeLessThan(18.5);
+    expect(vMax(60)).toBeGreaterThan(26.5);
+    expect(vMax(60)).toBeLessThan(30);
+    expect(vMax(130)).toBeGreaterThan(42);
   });
 
   it('uma curva de raio ~25 m não passa a 25 m/s (abre e perde velocidade) e passa a 15 m/s', () => {
@@ -67,7 +68,7 @@ describe('Realista de F1 (spec 081, Fase 4)', () => {
     expect(slow.r).toBeLessThan(25.5);
   });
 
-  it('freada cheia de 40 a 12 m/s: no máximo 4,2 s e ~85 m; de 25 a 12 em até 35 m', () => {
+  it('freada cheia de 40 a 12 m/s: no máximo 2,6 s e ~50 m; de 25 a 12 em até 25 m', () => {
     const brake = (v0: number) => {
       const { w, c, from } = straight();
       put(w, c, from, v0);
@@ -81,10 +82,11 @@ describe('Realista de F1 (spec 081, Fase 4)', () => {
       return { t, d: c.prog - p0 };
     };
     const hi = brake(40);
-    expect(hi.t).toBeLessThanOrEqual(4.2);
-    expect(hi.d).toBeGreaterThan(65);
-    expect(hi.d).toBeLessThan(100);
-    expect(brake(25).d).toBeLessThanOrEqual(35);
+    // freio mais efetivo (13/11/2026), mas ainda com distância para errar o ponto
+    expect(hi.t).toBeLessThanOrEqual(2.6);
+    expect(hi.d).toBeGreaterThan(35);
+    expect(hi.d).toBeLessThan(65);
+    expect(brake(25).d).toBeLessThanOrEqual(25);
   });
 
   it('acelera com marchas: 0→15 m/s em até 2,4 s, 15→30 em até 4 s; a troca aparece no giro; máxima ~40 m/s', () => {
@@ -113,9 +115,9 @@ describe('Realista de F1 (spec 081, Fase 4)', () => {
     // trocou de marcha várias vezes e o giro caiu em cada troca
     expect(maxGear).toBeGreaterThanOrEqual(5);
     expect(drops).toBeGreaterThanOrEqual(4);
-    // na tela, a máxima é ~340 km/h
-    expect(gpKmh(GP_REAL_VMAX)).toBeGreaterThan(330);
-    expect(gpKmh(GP_REAL_VMAX)).toBeLessThan(350);
+    // na tela, a máxima é ~364 km/h
+    expect(gpKmh(GP_REAL_VMAX)).toBeGreaterThan(350);
+    expect(gpKmh(GP_REAL_VMAX)).toBeLessThan(380);
   });
 
   it('volta de bot na Marina entre 60 e 80 s', () => {

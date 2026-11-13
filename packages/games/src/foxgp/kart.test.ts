@@ -50,16 +50,27 @@ describe('kart (spec 081, Fase 5)', () => {
     expect(c.gear).toBe(1);
   });
 
-  it('não escorrega de lado e quase não perde velocidade curvando', () => {
+  it('curva leve não escorrega; virada brusca em alta escorrega (fumaça) sem perder muito', () => {
     const { w, c, from } = kart();
     put(w, c, from, -3, GP_ARC_VMAX);
     let side = 0;
+    for (let k = 0; k < 0.3 / GP_DT; k++) {
+      w.step(GP_DT, { p0: { throttle: 1, brake: 0, steer: 0.3 } });
+      side = Math.max(side, c.skid);
+    }
+    expect(side).toBeLessThan(0.5);
+    put(w, c, from, -3, GP_ARC_VMAX);
+    side = 0;
+    let lat = 0;
     for (let k = 0; k < 0.4 / GP_DT; k++) {
       w.step(GP_DT, { p0: { throttle: 1, brake: 0, steer: 1 } });
-      side = Math.max(side, sideways(c));
+      side = Math.max(side, c.skid);
+      lat = Math.max(lat, sideways(c));
     }
-    expect(side).toBeLessThan(1e-6);
-    expect(c.speed).toBeGreaterThan(GP_ARC_VMAX * 0.99);
+    // escorrega o bastante para soltar fumaça (o desenho usa skid > 2,2), mas nunca mais que 40 % da velocidade
+    expect(side).toBeGreaterThan(2.2);
+    expect(lat).toBeLessThan(0.45 * GP_ARC_VMAX);
+    expect(c.speed).toBeGreaterThan(GP_ARC_VMAX * 0.93);
   });
 
   it('drift só liberado acima de 40 % da máxima, com o volante virado, no asfalto ou na zebra', () => {
@@ -239,7 +250,7 @@ describe('kart (spec 081, Fase 5)', () => {
     expect(back).toBeGreaterThan(-0.6 * hit);
   });
 
-  it('volta de bot do kart na Marina entre 50 e 65 s; os bots usam drift e turbo', () => {
+  it('volta de bot do kart na Marina entre 38 e 55 s; os bots usam drift e turbo', () => {
     const seed = 'v3-kart';
     const w = new GpWorld(seed, info(6, true), GP_TRACK_MARINA, 'arcade');
     const rng = createRng(`${seed}:bots`);
@@ -263,8 +274,8 @@ describe('kart (spec 081, Fase 5)', () => {
     const best = w.cars.filter((c) => c.bestLap !== null).map((c) => c.bestLap! / 1000);
     expect(best.length).toBeGreaterThanOrEqual(5);
     for (const b of best) {
-      expect(b).toBeGreaterThan(50);
-      expect(b).toBeLessThan(65);
+      expect(b).toBeGreaterThan(38);
+      expect(b).toBeLessThan(55);
     }
     expect(drifts).toBeGreaterThan(10);
     expect(turbos).toBeGreaterThan(5);

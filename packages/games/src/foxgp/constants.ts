@@ -175,10 +175,13 @@ export const GP_SLIP_W = 3.2;
 export const GP_SLIP_MIN = GP_CAR_LEN * 0.9;
 /** Só no vácuo com pelo menos esta velocidade (m/s). */
 export const GP_SLIP_MIN_V = 12;
-/** [AJUSTAR] Vácuo passivo: colado no outro carro o arrasto cai até 25 % (menos conforme a distância). */
-export const GP_SLIP_DRAG = 0.25;
-/** [AJUSTAR] DRS aberto: arrasto 15 % menor (sem ganho de aderência). Multiplica com o vácuo. */
-export const GP_DRS_DRAG = 0.15;
+/**
+ * [AJUSTAR] Vácuo passivo: colado no outro carro o arrasto cai até 42 % (menos conforme a distância). Subiu de 25 % em
+ * 13/11/2026 junto com o arrasto base menor (0,002 → 0,0012), para o ganho em m/s² continuar o mesmo.
+ */
+export const GP_SLIP_DRAG = 0.42;
+/** [AJUSTAR] DRS aberto: arrasto 25 % menor (sem ganho de aderência; era 15 % com o arrasto antigo). Multiplica com o vácuo. */
+export const GP_DRS_DRAG = 0.25;
 /**
  * Zonas de DRS, calculadas uma vez por pista: trecho com curvatura abaixo de `GP_DRS_CURV_MAX` (raio acima de 150 m) por
  * pelo menos `GP_DRS_MIN_STRAIGHT`; a zona começa um pouco depois da curva e acaba antes da freada. Calibrado na Marina
@@ -254,9 +257,9 @@ export const GP_ROOM_MAX_RACE_SEC = 600;
 export const GP_ROOM_STALL_MS = 12_000;
 
 /**
- * Velocidade na tela (spec 081, seção 4): ×8,5, como na F1 (40 m/s do Realista = 340 km/h; 28 m/s do kart ≈ 240).
+ * Velocidade na tela (spec 081, seção 4): ×7 (52 m/s do Realista ≈ 364 km/h; 34 m/s do kart ≈ 238). Mais rápido desde que os carros dobraram de tamanho (pedido do Italo, 12/11/2026).
  */
-export const GP_KMH_PER_MS = 8.5;
+export const GP_KMH_PER_MS = 7;
 export const gpKmh = (v: number) => Math.round(Math.abs(v) * GP_KMH_PER_MS);
 /** Marcha de 1 a 8 pela velocidade (só desenho). */
 export function gpGear(v: number): number {
@@ -300,53 +303,64 @@ export const GP_SPIN_DAMP = 3.2;
 export const GP_REAL_WHEELBASE = 2.4;
 /** Esterço máximo das rodas (rad) e quanto ele cai com a velocidade: `ângulo = volante * MAX / (1 + v / FADE)`. */
 export const GP_REAL_STEER_MAX = 0.6;
-export const GP_REAL_STEER_FADE = 9;
+export const GP_REAL_STEER_FADE = 11;
+/**
+ * Volante proporcional ao pneu (pedido do Italo, 13/11/2026): todo virado pede no máximo `HEADROOM` vezes o que o pneu
+ * aguenta naquela velocidade. Um toque leve na reta pede pouca curva e não freia; a curva rápida segura a velocidade.
+ */
+export const GP_REAL_STEER_HEADROOM = 1.3;
 /**
  * Aderência lateral máxima: `GRIP0 + DOWNFORCE * v²` (m/s²). Spec 081, Fase 4: a curva lenta fica limitada pelo pneu e a
  * asa ajuda só em alta. Máxima sem escorregar: grampo de 15 m ~11,9 m/s (≈100 km/h na tela), curva fechada de 25 m
  * ~15,5 m/s, curva média de 60 m ~25 m/s, curva rápida de 120 m ~40 m/s.
  */
-export const GP_REAL_GRIP0 = 9;
-export const GP_REAL_DOWNFORCE = 0.0023;
+export const GP_REAL_GRIP0 = 11;
+export const GP_REAL_DOWNFORCE = 0.0028;
 /**
  * Pedir mais curva do que o pneu aguenta: o carro abre e perde velocidade, esta força (m/s²) vezes o excesso (até
  * `GP_REAL_SCRUB_MAX` vezes o que o pneu aguenta): quanto mais passa do ponto, mais perde.
  */
-export const GP_REAL_SCRUB = 7;
+export const GP_REAL_SCRUB = 5;
 export const GP_REAL_SCRUB_MAX = 2;
+/** Folga antes de começar a arrastar: até `SCRUB_FREE` além do limite o carro só abre a trajetória. */
+export const GP_REAL_SCRUB_FREE = 0.15;
+/**
+ * Perda natural na curva (m/s²): `CORNER_DRAG × carga²`, com a carga = aceleração lateral usada / a que o pneu aguenta.
+ * Curva leve quase não perde; no limite perde `CORNER_DRAG`.
+ */
+export const GP_REAL_CORNER_DRAG = 1.6;
 /**
  * Motor com câmbio de verdade (spec 081, Fase 4): a força é `ENGINE × torque(giro) / máxima da marcha` (marcha curta
- * empurra mais), limitada a `ACC_MAX` (o pneu). Alvos: 0→15 m/s em ~1,9 s, 15→30 em ~3,6 s, 30→39 em ~7,6 s e a máxima
- * de ~40,5 m/s no limitador da 8ª. Arrasto (por (m/s)²) e rolagem (m/s²).
+ * empurra mais), limitada a `ACC_MAX` (o pneu). Alvos: 0→15 m/s em ~1,9 s, subindo até a máxima
+ * de ~52 m/s no limitador da 8ª. Arrasto (por (m/s)²) e rolagem (m/s²).
  */
-export const GP_REAL_ENGINE = 210;
-export const GP_REAL_ACC_MAX = 10;
-export const GP_REAL_DRAG = 0.002;
+export const GP_REAL_ENGINE = 270;
+export const GP_REAL_ACC_MAX = 12;
+export const GP_REAL_DRAG = 0.0012;
 export const GP_REAL_ROLL = 0.3;
 /** Velocidade (m/s) em que cada marcha chega ao giro máximo; a 8ª corta no limitador (a máxima do Realista). */
-export const GP_REAL_VMAX = 40.5;
-export const GP_REAL_GEAR_TOP = [10.5, 15, 19.5, 24, 28.5, 33, 37, GP_REAL_VMAX] as const;
+export const GP_REAL_VMAX = 52;
+export const GP_REAL_GEAR_TOP = [13.5, 19.3, 25, 30.8, 36.6, 42.4, 47.5, GP_REAL_VMAX] as const;
 /** Troca para cima perto do giro máximo e reduz com folga; na troca, a força corta por este tempo (s). */
 export const GP_REAL_SHIFT_UP = 0.97;
 export const GP_REAL_SHIFT_DOWN = 0.62;
 export const GP_REAL_SHIFT_CUT = 0.12;
 /**
- * Freio: `BRAKE0 + BRAKE_V2 * v²` (m/s²), um pouco mais em alta (asa). Calibrado pelos alvos da Fase 4 (40→12 m/s em
- * ~80 m e menos de 4,2 s; 25→12 em menos de 35 m): a freada dura o bastante para dar para errar o ponto. (As ordens
- * sugeriam `BRAKE0` 14 a 15, mas com ele a freada de 40 a 12 levaria ~1,5 s e ~38 m, longe do próprio alvo.)
+ * Freio: `BRAKE0 + BRAKE_V2 * v²` (m/s²), mais forte em alta (asa). Mais efetivo desde 13/11/2026 (pedido do Italo: a
+ * freada demorava demais): 52→20 m/s em ~2,3 s, 40→12 em ~2 s e ~50 m, 25→12 em ~20 m.
  */
-export const GP_REAL_BRAKE0 = 6;
-export const GP_REAL_BRAKE_V2 = 0.0015;
+export const GP_REAL_BRAKE0 = 10;
+export const GP_REAL_BRAKE_V2 = 0.0035;
 /** Ré: força para sair dela acelerando (m/s² por acelerador) e o mínimo, como na referência. */
 export const GP_REAL_REVERSE_OUT = 10;
 export const GP_REAL_REVERSE_OUT0 = 4;
 /** Entradas suavizadas (por segundo): acelerador sobe/desce, freio, volante (subir, inverter, voltar ao centro). */
 export const GP_REAL_THR_RISE = 6;
 export const GP_REAL_THR_FALL = 8;
-export const GP_REAL_BRK_RATE = 10;
-export const GP_REAL_STEER_RISE = 2.6;
-export const GP_REAL_STEER_FLIP = 7;
-export const GP_REAL_STEER_CENTER = 5;
+export const GP_REAL_BRK_RATE = 16;
+export const GP_REAL_STEER_RISE = 4.5;
+export const GP_REAL_STEER_FLIP = 10;
+export const GP_REAL_STEER_CENTER = 7;
 /** Barreira: guarda esta parte da velocidade, alinha esta parte da direção com a pista e espera este tempo (s). */
 export const GP_REAL_WALL_KEEP = 0.7;
 export const GP_REAL_WALL_ALIGN = 0.25;
@@ -362,10 +376,10 @@ export const gpRealBrake = (v: number) => GP_REAL_BRAKE0 + GP_REAL_BRAKE_V2 * v 
 
 // ---- Arcade: o kart (spec 081, Fase 5). Valores iniciais [AJUSTAR], para calibrar jogando ----
 
-/** Máxima normal do kart (m/s): ~220 km/h na tela (×8,5); calibrada pela volta de 50 a 65 s na Bala Track. */
-export const GP_ARC_VMAX = 26;
+/** Máxima normal do kart (m/s): ~238 km/h na tela (×7); calibrada pela volta de 50 a 65 s na Bala Track. */
+export const GP_ARC_VMAX = 34;
 /** Aceleração sem marchas: `K × (máxima − v)`, chega a 90 % da máxima em ~3,5 s (ln 10 / K). */
-export const GP_ARC_ACC_K = 0.66;
+export const GP_ARC_ACC_K = 0.75;
 /** Freio forte e curto (m/s²), ré e o quanto perde sem acelerar (por segundo, proporcional à velocidade). */
 export const GP_ARC_BRAKE = 30;
 export const GP_ARC_REVERSE_MAX = 7;
@@ -377,10 +391,21 @@ export const GP_ARC_OVER_DECEL = 14;
  * Direção muito rápida: giro máximo (rad/s) em baixa e na máxima; abaixo de `YAW_FULL_V` o giro cresce com a velocidade
  * (não gira parado). Curvando, quase não perde velocidade (`TURN_LOSS` por segundo com o volante todo virado).
  */
-export const GP_ARC_YAW_LOW = 2.2;
-export const GP_ARC_YAW_HIGH = 1.1;
+export const GP_ARC_YAW_LOW = 2.8;
+export const GP_ARC_YAW_HIGH = 1.7;
 export const GP_ARC_YAW_FULL_V = 4;
 export const GP_ARC_TURN_LOSS = 0.005;
+/**
+ * Escorregão de lado, como no arcade antigo (pedido do Italo, 13/11/2026): o nariz vira na hora e a velocidade vem
+ * atrás; o pneu corrige o lado com `LAT_GRIP` m/s² (`LAT_GRIP_DRIFT` no drift, que desliza mais) e o resto some aos
+ * poucos (`LAT_DAMP` por segundo). Virada brusca em alta passa do pneu: o kart escorrega, solta fumaça e perde
+ * `SLIDE_LOSS` × o escorregão (m/s²). O lado nunca passa de `LAT_MAX` da velocidade.
+ */
+export const GP_ARC_LAT_GRIP = 34;
+export const GP_ARC_LAT_GRIP_DRIFT = 14;
+export const GP_ARC_LAT_DAMP = 3;
+export const GP_ARC_LAT_MAX = 0.4;
+export const GP_ARC_SLIDE_LOSS = 0.15;
 /** Máxima em cada superfície (parte da normal): zebra tira um pouco, grama e brita bem mais. */
 export const GP_ARC_KERB_VMAX = 0.88;
 export const GP_ARC_GRASS_VMAX = 0.55;
@@ -407,12 +432,12 @@ export const GP_ARC_HOP_H = 0.25;
  * ×`DRIFT_IN`), para fora abre (até ×`DRIFT_OUT`).
  */
 export const GP_ARC_DRIFT_BASE = 0.8;
-export const GP_ARC_DRIFT_IN = 1.4;
-export const GP_ARC_DRIFT_OUT = 0.65;
+export const GP_ARC_DRIFT_IN = 1.6;
+export const GP_ARC_DRIFT_OUT = 0.4;
 /** Um pouco mais de velocidade enquanto derrapa (decisão 2 do Lucas: pouco). */
 export const GP_ARC_DRIFT_SPEED = 1.06;
-/** Ângulo do corpo do kart para fora durante o drift (rad, só desenho): ~25°. */
-export const GP_ARC_DRIFT_YAW = 0.44;
+/** Ângulo extra do corpo do kart no drift (rad, só desenho), com o nariz para dentro da curva: ~11°. */
+export const GP_ARC_DRIFT_YAW = 0.2;
 
 /**
  * Barra de turbo de 0 a 3 (três terços: azul, laranja, rosa). Enche sozinha andando (cheia em `BAR_FULL_SEC` na

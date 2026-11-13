@@ -59,6 +59,8 @@ const FAR_FOV = 24;
  * Fase 3), o da caixa de colisão do motor.
  */
 const CAR_VIS = GP_CAR_LEN / 3.56;
+/** O kart é ~30 % menor que o F1 na tela (pedido do Italo, 13/11/2026); a colisão segue a mesma. */
+const KART_VIS = 0.7;
 
 const GRAVEL = 0xe6cf92;
 const WATER = 0x2a7fd4;
@@ -70,6 +72,8 @@ const BOOST_COLORS = [0xfff1c8, 0x3aa0ff, 0xff8a1f, 0xff4fd8] as const;
 interface CarView {
   id: string;
   m: CarModel;
+  /** Escala do desenho em relação ao F1 (1 no F1, `KART_VIS` no kart). */
+  vis: number;
   /** Kart: o ângulo do corpo no drift (suavizado) e a chama do escape do turbo. */
   driftYaw: number;
   flame: THREE.Mesh;
@@ -1596,7 +1600,8 @@ export class GpScene {
     const own = c.id === this.meId;
     const tag = this.textSprite(c.name, 'rgba(11,14,23,0.88)');
     tag.position.y = 2.6;
-    m.group.scale.setScalar(CAR_VIS);
+    const vis = kart ? KART_VIS : 1;
+    m.group.scale.setScalar(CAR_VIS * vis);
     // a chama do turbo (kart): atrás do carro, brilhante, sem luz real
     const flame = new THREE.Mesh(
       new THREE.ConeGeometry(0.22, 1.1, 10),
@@ -1629,6 +1634,7 @@ export class GpScene {
     this.cars.set(c.id, {
       id: c.id,
       m,
+      vis,
       tag,
       driftYaw: 0,
       flame,
@@ -1801,13 +1807,14 @@ export class GpScene {
       const amp = this.reduced ? 0.08 : 0.16 + fast * 0.12 + c.slip * 0.55;
       v.m.tail.rotation.y = Math.sin(v.wag) * amp;
       v.shake = Math.max(0, v.shake - dt * 3);
-      // kart (spec 081, 5.4 e 5.5): o corpo vira para fora no drift, pula ao entrar, estica no turbo e a chama acende
+      // kart (spec 081, 5.4 e 5.5): no drift o nariz aponta para dentro da curva (drift para a direita, nariz para a
+      // direita; o rotation.y do three é anti-horário, por isso o sinal), pula ao entrar, estica no turbo e a chama acende
       if (w.mode === 'arcade') {
-        const want = c.driftDir * GP_ARC_DRIFT_YAW;
+        const want = -c.driftDir * GP_ARC_DRIFT_YAW;
         v.driftYaw += (want - v.driftYaw) * Math.min(1, dt * 9);
         v.m.body.rotation.y = v.driftYaw;
         const hop = c.hop > 0 ? Math.sin(Math.PI * (1 - c.hop / GP_ARC_HOP_SEC)) * GP_ARC_HOP_H : 0;
-        v.m.group.position.y = hop * CAR_VIS;
+        v.m.group.position.y = hop * CAR_VIS * v.vis;
         const boost = c.boostT > 0 && c.boostLevel > 0;
         v.m.body.scale.z = boost && !this.reduced ? 1.04 : 1;
         v.flame.visible = boost;
@@ -1821,15 +1828,21 @@ export class GpScene {
         if (c.driftDir !== 0 && Math.random() < 0.6) {
           const rx = Math.cos(p.h);
           const rz = Math.sin(p.h);
-          const bx = p.x - Math.sin(p.h) * GP_CAR_LEN * 0.3;
-          const bz = p.z + Math.cos(p.h) * GP_CAR_LEN * 0.3;
+          const bx = p.x - Math.sin(p.h) * GP_CAR_LEN * 0.3 * v.vis;
+          const bz = p.z + Math.cos(p.h) * GP_CAR_LEN * 0.3 * v.vis;
           const lv = Math.min(3, Math.floor(c.bar));
           const side = Math.random() < 0.5 ? 1 : -1;
-          this.spark(bx + rx * side * GP_CAR_WID * 0.4, bz + rz * side * GP_CAR_WID * 0.4, 2, BOOST_COLORS[lv], 0.35);
+          const sw = GP_CAR_WID * 0.4 * v.vis;
+          this.spark(bx + rx * side * sw, bz + rz * side * sw, 2, BOOST_COLORS[lv], 0.35);
         }
       }
       v.m.body.position.x = this.reduced ? 0 : Math.sin(this.t * 60) * v.shake * 0.08;
-      v.m.body.rotation.z = -c.steer * Math.min(1, fast * 1.2) * 0.05;
+      // o kart inclina para o lado da curva (mais no drift e no escorregão); o F1 quase não inclina
+      const lean =
+        w.mode === 'arcade'
+          ? (c.driftDir !== 0 ? c.driftDir * 0.09 : c.steer * 0.05) * Math.min(1, fast * 1.5) + Math.min(0.06, c.skid * 0.006) * Math.sign(c.steer)
+          : c.steer * Math.min(1, fast * 1.2) * 0.05;
+      v.m.body.rotation.z = this.reduced ? 0 : -lean;
       this.setGhost(v, w.phase === 'quali' && c.id !== focusId);
       // no cockpit o próprio carro some (a câmera está dentro dele); o volante e as bordas ficam
       const inside = cockpit && c.id === focusId && this.camMix >= 1;
@@ -1845,12 +1858,14 @@ export class GpScene {
           const rx = Math.cos(p.h);
           const rz = Math.sin(p.h);
           // as rodas de trás do carro em escala de pista
-          const bx = p.x - Math.sin(p.h) * GP_CAR_LEN * 0.28;
-          const bz = p.z + Math.cos(p.h) * GP_CAR_LEN * 0.28;
-          const half = GP_CAR_WID * 0.38;
+          const bx = p.x - Math.sin(p.h) * GP_CAR_LEN * 0.28 * v.vis;
+          const bz = p.z + Math.cos(p.h) * GP_CAR_LEN * 0.28 * v.vis;
+          const half = GP_CAR_WID * 0.38 * v.vis;
           this.skidMark(bx + rx * half, bz + rz * half, p.h);
           this.skidMark(bx - rx * half, bz - rz * half, p.h);
-          if (Math.random() < 0.5) this.puff(bx, 0.4, bz, 0xdedede, 1 + c.skid * 0.1);
+          // fumaça da traseira: no kart, sai das duas rodas e cresce com o escorregão
+          if (Math.random() < (w.mode === 'arcade' ? 0.85 : 0.5)) this.puff(bx + rx * half, 0.4, bz + rz * half, 0xdedede, 1 + c.skid * 0.1);
+          if (w.mode === 'arcade' && Math.random() < 0.85) this.puff(bx - rx * half, 0.4, bz - rz * half, 0xdedede, 1 + c.skid * 0.1);
         }
       }
     }
@@ -1945,8 +1960,9 @@ export class GpScene {
     }
     // motion blur sutil só em alta velocidade
     if (this.afterimage) {
-      const sp = focusCar ? Math.abs(focusCar.speed) : 0;
-      const damp = sp > 24 ? Math.min(0.55, (sp - 24) / 20) : 0;
+      // a partir de ~55 % da máxima do modo (o F1 passou a 52 m/s)
+      const sp = focusCar ? Math.abs(focusCar.speed) / gpVmaxOf(w.mode) : 0;
+      const damp = sp > 0.55 ? Math.min(0.6, (sp - 0.55) / 0.4) : 0;
       (this.afterimage.uniforms as unknown as { damp: { value: number } }).damp.value = damp;
     }
 
@@ -1993,9 +2009,9 @@ export class GpScene {
         // Em 3ª pessoa ou cockpit, limita o tamanho aparente na tela para NUNCA ficar gigante
         if (this.mode !== 'far') {
           const scale = Math.max(0.35, Math.min(1.0, distToCam / 14));
-          v.tag.scale.set(1.3 * scale, 0.35 * scale, 1);
+          v.tag.scale.set((1.3 * scale) / v.vis, (0.35 * scale) / v.vis, 1);
         } else {
-          v.tag.scale.set(1.3, 0.35, 1);
+          v.tag.scale.set(1.3 / v.vis, 0.35 / v.vis, 1);
         }
       }
     }
@@ -2032,12 +2048,18 @@ export class GpScene {
         this.lead.z += (car.vz * 0.38 - this.lead.z) * k;
         const tx = p.x + this.lead.x;
         const tz = p.z + this.lead.z;
-        const dist = this.farDist * (1 + Math.min(1, speed / gpVmaxOf(this.world.mode)) * 0.25);
+        // a câmera de longe quase não se afasta com a velocidade (afastar fazia o carro parecer mais lento)
+        const dist = this.farDist * (1 + Math.min(1, speed / gpVmaxOf(this.world.mode)) * 0.06);
         this.camLook.set(tx, 0, tz);
         this.camPos.copy(this.camLook).addScaledVector(FAR_DIR, dist);
       } else if (this.mode === 'chase') {
         // atrás do carro, com atraso suave (a câmera "segura" na curva) e FOV que abre com a velocidade
-        const want = this.chaseWant.set(p.x - fx * 7.2 * CAR_VIS, 2.7 * CAR_VIS, p.z - fz * 7.2 * CAR_VIS);
+        // no F1, a câmera desce e chega perto com a velocidade e o FOV abre mais: sensação de velocidade (13/11/2026)
+        const vk = Math.min(1, speed / gpVmaxOf(this.world.mode));
+        const real = this.world.mode === 'real';
+        const back = (real ? 7.2 - vk * 1.4 : 7.2) * CAR_VIS;
+        const up = (real ? 2.7 - vk * 0.6 : 2.7) * CAR_VIS;
+        const want = this.chaseWant.set(p.x - fx * back, up, p.z - fz * back);
         if (!this.chaseInit) {
           this.chasePos.copy(want);
           this.chaseInit = true;
@@ -2045,12 +2067,12 @@ export class GpScene {
         this.chasePos.lerp(want, 1 - Math.exp(-dt * 7));
         this.camPos.copy(this.chasePos);
         this.camLook.set(p.x + fx * 4 * CAR_VIS, 0.9 * CAR_VIS, p.z + fz * 4 * CAR_VIS);
-        fov = 60 + Math.min(1, speed / gpVmaxOf(this.world.mode)) * 14;
+        fov = 60 + vk * vk * (real ? 26 : 14);
       } else {
         // cockpit: o olho do piloto (atrás do halo), olhando para a frente e um pouco para baixo
         this.camPos.set(p.x + fx * 0.05 * CAR_VIS, 1.05 * CAR_VIS, p.z + fz * 0.05 * CAR_VIS);
         this.camLook.set(p.x + fx * 20, 0.55, p.z + fz * 20);
-        fov = 74 + Math.min(1, speed / gpVmaxOf(this.world.mode)) * 6;
+        fov = 74 + Math.min(1, speed / gpVmaxOf(this.world.mode)) ** 2 * (this.world.mode === 'real' ? 14 : 6);
       }
     }
     cam.position.copy(this.camPos);

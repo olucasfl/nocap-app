@@ -25,6 +25,11 @@ import {
   GP_ARC_REVERSE_ACCEL,
   GP_ARC_REVERSE_MAX,
   GP_ARC_TURN_LOSS,
+  GP_ARC_LAT_DAMP,
+  GP_ARC_LAT_GRIP,
+  GP_ARC_LAT_GRIP_DRIFT,
+  GP_ARC_LAT_MAX,
+  GP_ARC_SLIDE_LOSS,
   GP_ARC_TYRE_REBOUND,
   GP_ARC_VMAX,
   GP_ARC_WALL_CD,
@@ -82,6 +87,9 @@ import {
   GP_REAL_STEER_FADE,
   GP_REAL_STEER_FLIP,
   GP_REAL_STEER_MAX,
+  GP_REAL_STEER_HEADROOM,
+  GP_REAL_SCRUB_FREE,
+  GP_REAL_CORNER_DRAG,
   GP_REAL_STEER_RISE,
   GP_REAL_THR_FALL,
   GP_REAL_THR_RISE,
@@ -645,8 +653,10 @@ export class GpWorld {
   /**
    * Um passo da simulação. `inputs` só precisa ter os carros simulados aqui. Com `only`, só aquele carro anda (os outros
    * ficam parados no lugar, como obstáculos): é o que o aparelho usa para refazer a previsão do próprio carro.
+   * `replay` (refazer a previsão a partir do estado do líder) não bate nos outros: eles estão desenhados ~100 ms atrás e
+   * a batida de verdade já vem do líder; bater neles ali inventava batidas e fazia o carro pular.
    */
-  step(dt: number, inputs: Readonly<Record<string, GpInput>>, only?: string) {
+  step(dt: number, inputs: Readonly<Record<string, GpInput>>, only?: string, replay = false) {
     if (this.ended) return;
     if (!only) this.t += dt;
     for (const c of this.cars) {
@@ -654,7 +664,7 @@ export class GpWorld {
       this.stepCar(c, inputs[c.id] ?? GP_IDLE, dt);
     }
     if (this.phase === 'race') {
-      this.collide(only);
+      if (!replay) this.collide(only);
       if (!only) {
         if (this.mode === 'real') this.slipstream();
         this.ranks();
@@ -848,7 +858,9 @@ export class GpWorld {
     }
     c.turboHeld = tap;
 
-    // ---- direção ----
+    // ---- direção (a velocidade de antes de virar o nariz fica para o escorregão) ----
+    const wx = c.vx - c.kx;
+    const wz = c.vz - c.kz;
     const yawMax = GP_ARC_YAW_LOW + (GP_ARC_YAW_HIGH - GP_ARC_YAW_LOW) * Math.min(1, av / GP_ARC_VMAX);
     const slowK = Math.min(1, av / GP_ARC_YAW_FULL_V);
     let yaw: number;
@@ -905,15 +917,26 @@ export class GpWorld {
       if (now > before) this.events.push({ type: 'bar', id: c.id, level: now });
     }
 
+    // ---- de lado: o pneu traz a velocidade para o nariz; o que passa do pneu vira escorregão (e fumaça) ----
+    const rx = Math.cos(c.h);
+    const rz = Math.sin(c.h);
+    let vl = wx * rx + wz * rz;
+    const latGrip = (drifting ? GP_ARC_LAT_GRIP_DRIFT : GP_ARC_LAT_GRIP) * this.gripOf(c);
+    vl = Math.abs(vl) <= latGrip * dt ? 0 : vl - Math.sign(vl) * latGrip * dt;
+    vl *= Math.exp(-GP_ARC_LAT_DAMP * dt);
+    const latCap = GP_ARC_LAT_MAX * Math.abs(v);
+    vl = clamp(vl, -latCap, latCap);
+    if (Math.abs(vl) > 0.3) v -= Math.sign(v) * Math.min(Math.abs(v), GP_ARC_SLIDE_LOSS * Math.abs(vl) * dt);
+
     c.speed = v;
-    // som e desenho: um giro contínuo (sem marchas) e as marcas de pneu no drift
+    // som e desenho: um giro contínuo (sem marchas); fumaça e marcas de pneu no drift e no escorregão
     c.gear = v < -0.3 ? 0 : 1;
     c.rpm = clamp(0.15 + 0.85 * (Math.abs(v) / (GP_ARC_VMAX * 1.55)) + thr * 0.08, 0.1, 1);
-    c.skid = drifting ? 3 : 0;
+    c.skid = drifting ? Math.max(3, Math.abs(vl)) : Math.abs(vl);
     c.brakeLevel = brk;
     c.braking = brk > 0.1 && v > 1;
-    c.vx = Math.sin(c.h) * v + c.kx;
-    c.vz = -Math.cos(c.h) * v + c.kz;
+    c.vx = Math.sin(c.h) * v + rx * vl + c.kx;
+    c.vz = -Math.cos(c.h) * v + rz * vl + c.kz;
     c.x += c.vx * dt;
     c.z += c.vz * dt;
   }
@@ -959,14 +982,21 @@ export class GpWorld {
     const av = Math.abs(v);
     const grip = this.gripOf(c);
     // ---- curva: o que o volante pede, limitado pelo que o pneu aguenta ----
-    const sa = (c.rSteer * GP_REAL_STEER_MAX) / (1 + av / GP_REAL_STEER_FADE);
-    const yawD = (v * Math.tan(sa)) / GP_REAL_WHEELBASE;
+    // o volante todo virado pede no máximo HEADROOM × o pneu (em baixa, o esterço é o limite): toque leve, curva leve
     const yawM = (gpRealLatMax(av) * grip) / Math.max(av, 1);
+    const geo = (av * Math.tan(GP_REAL_STEER_MAX / (1 + av / GP_REAL_STEER_FADE))) / GP_REAL_WHEELBASE;
+    const yawD = c.rSteer * Math.sign(v) * Math.min(geo, yawM * GP_REAL_STEER_HEADROOM);
     const yaw = clamp(yawD, -yawM, yawM);
-    if (Math.abs(yawD) > yawM && av > 5) {
-      const over = Math.min(GP_REAL_SCRUB_MAX, (Math.abs(yawD) - yawM) / yawM);
-      v -= Math.sign(v) * over * GP_REAL_SCRUB * dt;
-      c.wear += GP_WEAR_SLIP * over * av * 0.25 * dt;
+    // carga lateral (0 a 1): o quanto do pneu a curva está usando
+    const load = Math.min(1, Math.abs(yaw) / Math.max(yawM, 1e-6));
+    if (av > 5) {
+      // passou da folga: arrasta (proporcional ao excesso); dentro do pneu, só a perda natural da carga lateral
+      const over = Math.min(GP_REAL_SCRUB_MAX, (Math.abs(yawD) - yawM * (1 + GP_REAL_SCRUB_FREE)) / yawM);
+      if (over > 0) {
+        v -= Math.sign(v) * over * GP_REAL_SCRUB * dt;
+        c.wear += GP_WEAR_SLIP * over * av * 0.25 * dt;
+      }
+      v -= Math.sign(v) * GP_REAL_CORNER_DRAG * load * load * dt;
     }
     c.h += yaw * dt;
 
@@ -987,8 +1017,12 @@ export class GpWorld {
       const top = tops[g - 1]!;
       c.rpm = clamp(v / top, 0.1, 1);
       const limiter = g === tops.length && v >= top;
+      // círculo de atrito: no limite da curva sobra pouco pneu para acelerar (nunca menos de 25 %)
+      const traction = Math.sqrt(Math.max(0.0625, 1 - load * load));
       const engine =
-        c.shiftT > 0 || limiter ? 0 : c.rThr * Math.min(GP_REAL_ACC_MAX, (GP_REAL_ENGINE * gpTorque(c.rpm)) / top);
+        c.shiftT > 0 || limiter
+          ? 0
+          : c.rThr * traction * Math.min(GP_REAL_ACC_MAX, (GP_REAL_ENGINE * gpTorque(c.rpm)) / top);
       c.shiftT = Math.max(0, c.shiftT - dt);
       const a =
         engine -

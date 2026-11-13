@@ -22,6 +22,7 @@ import {
   gpBotInput,
   gpBotProfile,
   gpKmh,
+  gpVmaxOf,
   GP_BOT_LEVEL_SKILL,
   type GpBotLevel,
   GP_BOX_SIGN_FAR,
@@ -293,6 +294,8 @@ interface Hud {
   best: number | null;
   last: number | null;
   kmh: number;
+  /** Linhas de velocidade nas bordas (0 a 1): só no Realista, acima de ~60 % da máxima. */
+  rush: number;
   gear: number;
   rpm: number;
   /** DRS: 'off' indisponível, 'avail' liberado, 'open' aberto. */
@@ -1212,6 +1215,7 @@ export function GpPlay({
           best: seen?.bestLap ?? null,
           last: seen?.laps.length ? seen.laps[seen.laps.length - 1]! : null,
           kmh: gpKmh(seen?.speed ?? 0),
+          rush: mode === 'real' ? Math.max(0, Math.min(1, (Math.abs(seen?.speed ?? 0) / gpVmaxOf('real') - 0.6) / 0.35)) : 0,
           gear: seen ? (seen.speed < -0.3 ? 0 : Math.max(1, seen.gear)) : 1,
           rpm: seen?.rpm ?? 0,
           drs: c?.drsOpen ? 'open' : c?.drsAvail ? 'avail' : 'off',
@@ -1362,6 +1366,16 @@ export function GpPlay({
       data-physics={mode}
     >
       <canvas ref={canvas} className="gp-canvas" aria-label="Pista do Fox GP" />
+      {/* sensação de velocidade do F1: riscos nas bordas que aparecem com a velocidade (só opacidade) */}
+      {mode === 'real' && cam !== 'far' && (
+        <div className="gpx-rush" aria-hidden="true" style={{ opacity: hud?.rush ?? 0 }}>
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+            {RUSH_LINES.map((l, i) => (
+              <line key={i} x1={l[0]} y1={l[1]} x2={l[2]} y2={l[3]} />
+            ))}
+          </svg>
+        </div>
+      )}
       {perfText && (
         <pre className="gp-perf" data-testid="gp-perf">
           {perfText}
@@ -2001,6 +2015,7 @@ function initialHud(): Hud {
     best: null,
     last: null,
     kmh: 0,
+    rush: 0,
     gear: 1,
     rpm: 0,
     drs: 'off',
@@ -2082,3 +2097,11 @@ function NoticeIcon({ kind }: { kind: GpNoticeKind }) {
     </svg>
   );
 }
+
+/** Riscos de velocidade (coordenadas 0 a 100): raios do centro, só perto das bordas da tela. */
+const RUSH_LINES: readonly [number, number, number, number][] = Array.from({ length: 28 }, (_, i) => {
+  const a = (i / 28) * Math.PI * 2 + (i % 2) * 0.07;
+  const r0 = 0.62 + (i % 3) * 0.06;
+  const r1 = 1.05;
+  return [50 + Math.cos(a) * 50 * r0, 50 + Math.sin(a) * 50 * r0, 50 + Math.cos(a) * 50 * r1, 50 + Math.sin(a) * 50 * r1];
+});

@@ -90,7 +90,7 @@ describe('dois modos de física', () => {
     expect(new GpWorld('m', info(1), undefined, 'real').mode).toBe('real');
   });
 
-  it('Realista: segurando a curva no máximo o carro nunca fica de lado; abre e perde velocidade', () => {
+  it('Realista: segurando a curva no máximo o carro nunca fica de lado; perde um pouco de velocidade', () => {
     const w = new GpWorld('r', info(1), GP_TRACK_TOCA, 'real');
     w.beginRace(['p0']);
     const c = w.cars[0]!;
@@ -102,10 +102,12 @@ describe('dois modos de física', () => {
       worst = Math.max(worst, sideways(c), c.skid);
     }
     expect(worst).toBeLessThan(1e-9);
-    expect(c.speed).toBeLessThan(v0 - 1);
+    // perde, mas pouco (13/11/2026): a curva rápida segura boa parte da velocidade
+    expect(c.speed).toBeLessThan(v0 - 0.3);
+    expect(c.speed).toBeGreaterThan(v0 - 4);
   });
 
-  it('Realista: a máxima em reta fica perto de 340 km/h (limitador da 8ª, spec 081)', () => {
+  it('Realista: a máxima em reta fica no limitador da 8ª (spec 081)', () => {
     // na maior reta da Marina, já embalado na 8ª: o limitador segura a máxima
     const w = new GpWorld('t', info(1), undefined, 'real');
     w.beginRace(['p0']);
