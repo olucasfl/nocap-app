@@ -5,6 +5,7 @@ import {
   GP_NUM_STYLES,
   GP_RIM_COLORS,
   GP_RIM_STYLES,
+  GP_THEMES,
   GP_TYRE_BANDS,
   type GpKartPaint,
   type GpPaint,
@@ -221,6 +222,32 @@ export function GpGarage({
             </button>
           ))}
         </div>
+        <section className="gpg-row gpg-themes" aria-label="Temas prontos">
+          <h3>Temas prontos</h3>
+          <div className="gpg-theme-list">
+            {GP_THEMES.map((t) => {
+              const c = veh === 'f1' ? t.f1 : t.kart;
+              const body = c.body;
+              const accent = veh === 'f1' ? t.f1.accent : t.kart.stripe;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  className="gpg-theme"
+                  title={t.name}
+                  aria-label={`Tema ${t.name}`}
+                  data-testid={`garage-theme-${t.id}`}
+                  style={{ background: `linear-gradient(135deg, ${hex6(body)} 0 55%, ${hex6(accent)} 55% 100%)` }}
+                  onClick={() =>
+                    setG((v) => ({ ...v, paint: { ...t.f1, number: v.paint.number }, kart: { ...t.kart, number: v.kart.number, helmet: v.kart.helmet } }))
+                  }
+                >
+                  <span>{t.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
         <div className="gpg-tabs" role="tablist" aria-label="Opções">
           {TABS[veh].map((t) => (
             <button

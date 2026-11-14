@@ -210,3 +210,80 @@ export type GpBotLevel = (typeof GP_BOT_LEVELS)[number];
 export const GP_BOT_LEVEL_SKILL: Record<GpBotLevel, number> = { facil: -0.08, medio: 0, dificil: 0.05 };
 /** Total de carros da sala com bots (0 = só gente). */
 export const GP_FILL_OPTIONS: readonly number[] = [0, 4, 6, 8, 10, 12];
+
+/**
+ * Temas prontos da garagem (14/11/2026): 8 combinações que casam o F1 (Realista) e o kart (Arcade). Cada tema traz a
+ * pintura inteira dos dois; o número do carro de cada pessoa é mantido ao aplicar.
+ */
+export interface GpTheme {
+  id: string;
+  name: string;
+  f1: GpPaint;
+  kart: GpKartPaint;
+}
+
+interface ThemeSpec {
+  id: string;
+  name: string;
+  body: number;
+  accent: number;
+  third: number;
+  pattern: GpPattern;
+  finish: GpFinish;
+  /** Aro e faixa do pneu do F1; chassi, motor e tanque do kart; macacão (detalhe) do piloto. */
+  rim: number;
+  band: number;
+  chassis: number;
+  engine: number;
+  tank: number;
+  suit2: number;
+}
+
+const themeOf = (t: ThemeSpec): GpTheme => ({
+  id: t.id,
+  name: t.name,
+  f1: {
+    body: t.body,
+    accent: t.accent,
+    pattern: t.pattern,
+    number: 7,
+    third: t.third,
+    finish: t.finish,
+    numStyle: 'circulo',
+    rim: t.rim,
+    rimStyle: 'raios',
+    band: t.band,
+    helmet: t.accent,
+    glove: t.accent,
+    wing: t.accent,
+  },
+  kart: {
+    body: t.body,
+    stripe: t.accent,
+    chassis: t.chassis,
+    engine: t.engine,
+    tank: t.tank,
+    rim: t.rim === 0x2c2c30 || t.rim === 0x15131c ? 0x3a3f4b : t.rim,
+    steer: 0x1b1535,
+    pedal: 0xa9b2c7,
+    suit: t.accent,
+    suit2: t.suit2,
+    glove: t.body,
+    helmet: false,
+    helmetColor: t.body,
+    finish: t.finish,
+    number: 7,
+  },
+});
+
+const THEME_SPECS: ThemeSpec[] = [
+  { id: 'fox', name: 'Raposa clássica', body: 0xff7d26, accent: 0x2f5bff, third: 0xf4f6fb, pattern: 'faixa', finish: 'brilho', rim: 0x2c2c30, band: 0xffd23a, chassis: 0x3a3f4b, engine: 0xa9b2c7, tank: 0xf4f6fb, suit2: 0xffd23a },
+  { id: 'noite', name: 'Noite', body: 0x1b1535, accent: 0x25c7e8, third: 0x3a3f4b, pattern: 'listras', finish: 'fosco', rim: 0xa9b2c7, band: 0xf4f6fb, chassis: 0x3a3f4b, engine: 0x5c6170, tank: 0x25c7e8, suit2: 0xf4f6fb },
+  { id: 'corsa', name: 'Vermelho corsa', body: 0xe8343c, accent: 0xf4f6fb, third: 0x1b1535, pattern: 'chevron', finish: 'brilho', rim: 0xf4f6fb, band: 0xe8343c, chassis: 0x1b1535, engine: 0xa9b2c7, tank: 0xf4f6fb, suit2: 0x1b1535 },
+  { id: 'ouro', name: 'Ouro real', body: 0xd4a93a, accent: 0x1b1535, third: 0xe6d3a8, pattern: 'duas', finish: 'metal', rim: 0xd4a93a, band: 0xf4f6fb, chassis: 0x1b1535, engine: 0xd4a93a, tank: 0xe6d3a8, suit2: 0xd4a93a },
+  { id: 'oceano', name: 'Oceano', body: 0x0f4650, accent: 0x25c7e8, third: 0xf4f6fb, pattern: 'ondas', finish: 'perola', rim: 0xf4f6fb, band: 0x2f5bff, chassis: 0x173d2b, engine: 0xa9b2c7, tank: 0x25c7e8, suit2: 0xf4f6fb },
+  { id: 'floresta', name: 'Floresta', body: 0x1f8a5a, accent: 0xffd23a, third: 0x173d2b, pattern: 'diagonal', finish: 'brilho', rim: 0xffd23a, band: 0x1f8a5a, chassis: 0x173d2b, engine: 0xa9b2c7, tank: 0xffd23a, suit2: 0xf4f6fb },
+  { id: 'neon', name: 'Neon', body: 0x8b5cff, accent: 0x8ee03a, third: 0xd94a8c, pattern: 'raio', finish: 'brilho', rim: 0x1f8a5a, band: 0xd94a8c, chassis: 0x3d1f4f, engine: 0xa9b2c7, tank: 0x8ee03a, suit2: 0xd94a8c },
+  { id: 'gelo', name: 'Gelo', body: 0xf4f6fb, accent: 0x5b7fc4, third: 0xa9b2c7, pattern: 'flecha', finish: 'metal', rim: 0xa9b2c7, band: 0x2f5bff, chassis: 0x5c6170, engine: 0xa9b2c7, tank: 0x5b7fc4, suit2: 0xa9b2c7 },
+];
+export const GP_THEMES: readonly GpTheme[] = THEME_SPECS.map(themeOf);

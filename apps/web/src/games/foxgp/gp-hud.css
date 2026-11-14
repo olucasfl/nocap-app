@@ -983,8 +983,7 @@
   .gp-play.gp-play[data-touch='1'] .gpx-speed {
     bottom: calc(max(10px, env(safe-area-inset-bottom)) + 84px);
   }
-  .gp-play.gp-play[data-touch='1'] .gpx-pitlane,
-  .gp-play.gp-play[data-touch='1'] .gpx-lapcall {
+  .gp-play.gp-play[data-touch='1'] .gpx-pitlane {
     left: auto;
     right: max(8px, env(safe-area-inset-right));
     transform: none;
@@ -992,9 +991,6 @@
     max-width: 52%;
     white-space: normal;
     text-align: center;
-  }
-  .gp-play.gp-play[data-touch='1'] .gpx-lapcall {
-    top: calc(max(8px, env(safe-area-inset-top)) + 150px);
   }
   .gp-play.gp-play[data-touch='1'] .gp-pads-r {
     gap: 8px;
@@ -1005,4 +1001,176 @@
     left: max(8px, env(safe-area-inset-left));
     transform: none;
   }
+}
+
+/* ---- celular, versão enxuta (14/11/2026): só o necessário ---- */
+/* velocidade: uma pílula pequena embaixo, só o número e a marcha; sem selos, giro, nem texto */
+.gp-play.gp-play[data-touch='1'] .gpx-speed {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  bottom: max(8px, env(safe-area-inset-bottom));
+  width: auto;
+  min-width: 0;
+  padding: 4px 12px;
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  gap: 10px;
+  border-radius: 999px;
+}
+.gp-play.gp-play[data-touch='1'] .gpx-speed-top > small,
+.gp-play.gp-play[data-touch='1'] .gpx-tags,
+.gp-play.gp-play[data-touch='1'] .gpx-rpm,
+.gp-play.gp-play[data-touch='1'] .gpx-gear small {
+  display: none;
+}
+.gp-play.gp-play[data-touch='1'] .gpx-speed-top {
+  display: block;
+  margin: 0;
+}
+.gp-play.gp-play[data-touch='1'] .gpx-gear {
+  min-width: 0;
+  padding: 0 8px;
+  border-width: 2px;
+}
+.gp-play.gp-play[data-touch='1'] .gpx-gear b {
+  font-size: 20px;
+  line-height: 1.2;
+}
+.gp-play.gp-play[data-touch='1'] .gpx-speed-num b {
+  font-size: 26px;
+}
+.gp-play.gp-play[data-touch='1'] .gpx-speed-num span {
+  font-size: 11px;
+}
+/* pneus: só aparecem quando pedem atenção, como um selo pequeno em cima da pílula */
+.gp-play.gp-play[data-touch='1'] .gpx-tyre {
+  display: none;
+}
+.gp-play.gp-play[data-touch='1'] .gpx-tyre:not([data-level='0']):not([data-level='1']) {
+  display: block;
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 4px);
+  transform: translateX(-50%);
+  padding: 2px 8px;
+  background: var(--gp-hud);
+  white-space: nowrap;
+}
+.gp-play.gp-play[data-touch='1'] .gpx-tyre span {
+  display: none;
+}
+/* classificação: o tempo cabe dentro do bloco */
+.gp-play.gp-play[data-touch='1'] .gpx-board {
+  width: 156px;
+}
+.gp-play.gp-play[data-touch='1'] .gpx-board li.gpx-board-h {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px;
+  padding: 3px 8px;
+  font-size: 10px;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+.gp-play.gp-play[data-touch='1'] .gpx-board li.gpx-board-h b {
+  font-size: 13px;
+}
+.gp-play.gp-play[data-touch='1'] .gpx-board-gap {
+  font-size: 10px;
+}
+/* botão de iniciar a volta lançada: parece botão (borda branca, sombra e a seta de tocar) */
+.gp-play.gp-play[data-touch='1'] .gpx-lapcall {
+  left: 50%;
+  top: 30%;
+  bottom: auto;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px 10px 14px;
+  border: 3px solid #fff;
+  border-radius: 999px;
+  background: var(--gp-accent);
+  color: #0b0e17;
+  font-size: 15px;
+  box-shadow: 0 4px 0 #0b0e17, 0 0 0 4px rgba(255, 125, 38, 0.35);
+  animation: gpx-lapcall-touch 1.2s ease-in-out infinite alternate;
+  pointer-events: auto;
+}
+.gp-play.gp-play[data-touch='1'] .gpx-lapcall::before {
+  content: '';
+  width: 0;
+  height: 0;
+  border-left: 12px solid #0b0e17;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+}
+@keyframes gpx-lapcall-touch {
+  from {
+    transform: translateX(-50%) scale(1);
+  }
+  to {
+    transform: translateX(-50%) scale(1.06);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gp-play.gp-play[data-touch='1'] .gpx-lapcall {
+    animation: none;
+  }
+}
+
+/* celular, kart: botões em ordem (turbo em cima, freio e drift embaixo) e a barra de turbo fininha sobre a pílula */
+.gp-play[data-physics] .gp-pads-r[data-auto='1'] {
+  grid-template-columns: auto auto;
+  grid-template-areas:
+    'auto auto'
+    'turbo turbo'
+    'brake drs';
+}
+.gp-play[data-physics='real'] .gp-pads-r[data-auto='1'] {
+  grid-template-areas:
+    'auto auto'
+    '. drs'
+    'brake brake';
+}
+.gp-play[data-physics] .gp-pads-r[data-auto='1'] .is-drift {
+  grid-area: drs;
+  justify-self: end;
+}
+.gp-play[data-physics] .gp-pads-r[data-auto='1'] .is-turbo {
+  grid-area: turbo;
+  justify-self: end;
+}
+.gp-play[data-physics] .gp-pads-r[data-auto='1'] .is-brake {
+  grid-area: brake;
+  justify-self: end;
+  width: 76px;
+  height: 76px;
+}
+.gp-play[data-physics='real'] .gp-pads-r[data-auto='1'] .is-brake {
+  width: 96px;
+  height: 96px;
+}
+.gp-play.gp-play[data-touch='1'] .gpx-kart {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  bottom: calc(max(8px, env(safe-area-inset-bottom)) + 50px);
+  gap: 0;
+}
+.gp-play.gp-play[data-touch='1'] .gpx-drift,
+.gp-play.gp-play[data-touch='1'] .gpx-turbo-key {
+  display: none;
+}
+.gp-play.gp-play[data-touch='1'] .gpx-turbo {
+  padding: 3px 6px;
+  gap: 3px;
+  border-radius: 999px;
+}
+.gp-play.gp-play[data-touch='1'] .gpx-third {
+  width: 38px;
+  height: 8px;
 }
