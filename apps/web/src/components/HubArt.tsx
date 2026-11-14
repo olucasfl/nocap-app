@@ -302,71 +302,6 @@ export function FoxBody() {
   );
 }
 
-/** Atravessa!: faixas em diagonal (grama, estrada, rio), uma tora e o bichinho de blocos pulando. */
-export function AtravessaArt() {
-  return (
-    <svg className="ha ha-atravessa" viewBox="0 0 200 150" aria-hidden="true">
-      {/* as faixas inclinadas passam do desenho: o recorte mantém tudo dentro do cartão */}
-      <defs>
-        <clipPath id="ha-atr-clip">
-          <rect x="0" y="0" width="200" height="150" rx="16" />
-        </clipPath>
-      </defs>
-      <g clipPath="url(#ha-atr-clip)">
-        <g transform="translate(0 -52) skewY(26)">
-          <rect x="-10" y="70" width="220" height="30" fill="#8dd252" {...stroke} strokeWidth={3} />
-          <rect
-            x="-10"
-            y="100"
-            width="220"
-            height="30"
-            fill="#3a3d4a"
-            {...stroke}
-            strokeWidth={3}
-          />
-          <path
-            d="M-10 115H210"
-            stroke="#f4f4ef"
-            strokeWidth="3"
-            strokeDasharray="12 10"
-            className="ha-road"
-          />
-          <rect
-            x="-10"
-            y="130"
-            width="220"
-            height="30"
-            fill="#58bdf2"
-            {...stroke}
-            strokeWidth={3}
-          />
-          <rect
-            x="120"
-            y="136"
-            width="52"
-            height="18"
-            rx="3"
-            fill="#8a5a34"
-            {...stroke}
-            strokeWidth={3}
-          />
-          <rect
-            x="-10"
-            y="160"
-            width="220"
-            height="40"
-            fill="#8dd252"
-            {...stroke}
-            strokeWidth={3}
-          />
-        </g>
-      </g>
-      <g className="ha-run">
-        <FoxBody />
-      </g>
-    </svg>
-  );
-}
 
 /** Block's: o tabuleiro com uma linha completa que estoura, a peça que vai cair e o selo dos pontos. */
 export function BlocksArt() {
@@ -516,55 +451,6 @@ export function BlocksArt() {
   );
 }
 
-/** Desmorona!: hexágonos coloridos em camadas, com um buraco onde o chão já caiu. */
-export function DesmoronaArt() {
-  const hex = (cx: number, cy: number, r: number, fill: string, key: string) => {
-    const pts = Array.from({ length: 6 }, (_, i) => {
-      const a = (Math.PI / 3) * i + Math.PI / 6;
-      return `${(cx + r * Math.cos(a)).toFixed(1)},${(cy + r * Math.sin(a)).toFixed(1)}`;
-    }).join(' ');
-    return <polygon key={key} points={pts} fill={fill} {...stroke} strokeWidth={3} />;
-  };
-  const top = [
-    [60, 52, '#9a5cff'],
-    [100, 52, '#a96bff'],
-    [140, 52, '#9a5cff'],
-    [80, 86, '#a96bff'],
-    [120, 86, '#9a5cff'],
-    [160, 86, '#a96bff'],
-  ] as const;
-  return (
-    <svg className="ha ha-desmorona" viewBox="0 0 200 150" aria-hidden="true">
-      <rect x="0" y="0" width="200" height="150" rx="16" fill="#7fd3ff" />
-      <ellipse cx="100" cy="132" rx="70" ry="10" fill="#ff5a1f" opacity="0.85" />
-      {hex(100, 112, 24, '#ffa24d', 'low')}
-      {top.map(([x, y, f], i) => hex(x, y, 21, f, `t${i}`))}
-      <g transform="translate(88 28)">
-        <ellipse cx="12" cy="30" rx="12" ry="4" fill="rgba(0,0,0,.25)" />
-        <rect
-          x="2"
-          y="12"
-          width="20"
-          height="16"
-          rx="5"
-          fill="#ff7d26"
-          {...stroke}
-          strokeWidth={3}
-        />
-        <rect
-          x="3"
-          y="2"
-          width="18"
-          height="12"
-          rx="4"
-          fill="#2f5bff"
-          {...stroke}
-          strokeWidth={3}
-        />
-      </g>
-    </svg>
-  );
-}
 
 /**
  * Fox Cap!: só a mascote, sem jogo nenhum (a área reúne vários). A raposa de boné faz graça: o boné salta, gira no ar e
@@ -830,122 +716,9 @@ export function DesmoronaTrainingArt() {
   );
 }
 
-/** Ping Fox!: a mesa azul vista de trás, a rede, a bola no ar e a raquete da raposa. */
-export function PingArt() {
-  return (
-    <svg className="ha ha-ping" viewBox="0 0 200 150" aria-hidden="true">
-      <rect width="200" height="150" fill="#cdd9ff" />
-      <ellipse cx="100" cy="132" rx="84" ry="10" fill="#1b1535" opacity="0.22" />
-      <g transform="translate(76 4) scale(0.34)">
-        <FoxBody />
-      </g>
-      <path d="M52 124 L148 124 L130 70 L70 70 Z" fill="#2f5bff" {...stroke} strokeWidth={3.5} />
-      <path
-        d="M56 118 L144 118 L127 74 L73 74 Z"
-        fill="none"
-        stroke="#fff"
-        strokeWidth="2"
-        opacity="0.9"
-      />
-      <line x1="100" y1="74" x2="100" y2="118" stroke="#fff" strokeWidth="2" opacity="0.9" />
-      <path d="M62 98 L138 98 L134 84 L66 84 Z" fill="#1b1535" opacity="0.18" />
-      <line x1="62" y1="98" x2="138" y2="98" stroke="#fff" strokeWidth="3" />
-      <line x1="64" y1="84" x2="136" y2="84" stroke="#fff" strokeWidth="1.5" opacity="0.8" />
-      <rect x="58" y="82" width="5" height="19" rx="2" fill="#1b1535" />
-      <rect x="137" y="82" width="5" height="19" rx="2" fill="#1b1535" />
-      <g className="ha-ball-ping">
-        <circle cx="120" cy="52" r="8" fill="#fff" {...stroke} strokeWidth={3} />
-        <path d="M113 51 Q120 56 127 51" fill="none" stroke="#ff7d26" strokeWidth="3" />
-      </g>
-      <g transform="translate(36 96) rotate(-18)">
-        <rect
-          x="-3"
-          y="14"
-          width="6"
-          height="22"
-          rx="2"
-          fill="#c58a4a"
-          {...stroke}
-          strokeWidth={2.5}
-        />
-        <circle cx="0" cy="0" r="17" fill="#e3262f" {...stroke} strokeWidth={3.5} />
-        <circle cx="0" cy="0" r="10" fill="#ff5a63" opacity="0.6" />
-      </g>
-    </svg>
-  );
-}
 
-/** Fox GP: um carro de F1 com a raposa no cockpit, na reta, com a bandeira quadriculada. */
-export function FoxGpArt() {
-  return (
-    <svg className="ha ha-foxgp" viewBox="0 0 200 150" aria-hidden="true">
-      <rect width="200" height="150" fill="#ffd0d8" />
-      <rect y="92" width="200" height="40" fill="#3b3d4a" />
-      <path d="M0 92h200v5H0ZM0 127h200v5H0Z" fill="#fff" />
-      <path d="M10 112h24M54 112h24M98 112h24M142 112h24" stroke="#ffd23f" strokeWidth="3" />
-      <g className="ha-gp-car">
-        <rect x="40" y="96" width="112" height="16" rx="5" fill="#ff7d26" {...stroke} strokeWidth={3} />
-        <rect x="140" y="88" width="10" height="28" fill="#1b1535" />
-        <rect x="30" y="100" width="12" height="8" fill="#1b1535" />
-        <circle cx="62" cy="116" r="9" fill="#15151a" {...stroke} strokeWidth={2.5} />
-        <circle cx="128" cy="116" r="10" fill="#15151a" {...stroke} strokeWidth={2.5} />
-        <rect x="82" y="80" width="22" height="18" rx="4" fill="#ff7d26" {...stroke} strokeWidth={3} />
-        <path d="M78 82q15-12 30 0Z" fill="#2f5bff" {...stroke} strokeWidth={2.5} />
-        <path d="M86 70l4 10M100 70l-4 10" stroke="#ff7d26" strokeWidth="5" strokeLinecap="round" />
-        <circle cx="90" cy="89" r="2" fill="#1b1535" />
-        <circle cx="98" cy="89" r="2" fill="#1b1535" />
-        <path className="ha-gp-tail" d="M110 92q22-24 34-8q-12 2-18 14Z" fill="#ff7d26" {...stroke} strokeWidth={2.5} />
-      </g>
-      <g transform="translate(160 22)">
-        <path d="M0 0v54" stroke="#1b1535" strokeWidth="4" />
-        <path d="M2 2h30v20H2Z" fill="#fff" {...stroke} strokeWidth={2.5} />
-        <path d="M2 2h10v10H2ZM22 2h10v10H22ZM12 12h10v10H12Z" fill="#1b1535" />
-      </g>
-    </svg>
-  );
-}
 
-/** Fut Fox: campo verde visto de cima, bola e uma raposa. */
-export function BolaArt() {
-  return (
-    <svg className="ha ha-bola" viewBox="0 0 200 150" aria-hidden="true">
-      <rect width="200" height="150" fill="#58c46a" />
-      <rect x="0" y="0" width="200" height="150" fill="#4aae5c" opacity="0.5" />
-      <g fill="none" stroke="#fff" strokeWidth="3" opacity="0.85">
-        <rect x="10" y="12" width="180" height="126" rx="10" />
-        <line x1="100" y1="12" x2="100" y2="138" />
-        <circle cx="100" cy="75" r="22" />
-      </g>
-      <rect x="2" y="55" width="12" height="40" fill="#e5484d" {...stroke} strokeWidth={3} />
-      <rect x="186" y="55" width="12" height="40" fill="#3e7bfa" {...stroke} strokeWidth={3} />
-      <g transform="translate(46 54) scale(0.5)">
-        <FoxBody />
-      </g>
-      <circle cx="116" cy="92" r="17" fill="#fff" {...stroke} strokeWidth={3} />
-      <path d="M116 80 l8 6 -3 10 h-10 l-3 -10z" fill="#1b1535" />
-    </svg>
-  );
-}
 
-/** Mini Golf: pista verde vista de cima, moinho, bola e bandeira no buraco. */
-export function MiniGolfArt() {
-  return (
-    <svg className="ha ha-golf" viewBox="0 0 200 150" aria-hidden="true">
-      <rect width="200" height="150" fill="#0f2e1c" />
-      <path d="M22 118 V50 Q22 28 44 28 H128 Q150 28 150 50 V62 H172 Q186 62 186 76 V118 Q186 132 172 132 H36 Q22 132 22 118Z" fill="#35a655" {...stroke} strokeWidth={4} />
-      <ellipse cx="96" cy="104" rx="20" ry="11" fill="#ecd9a0" {...stroke} strokeWidth={3} />
-      <g transform="translate(70 66)">
-        <rect x="-4" y="-2" width="8" height="30" rx="2" fill="#f4f4ef" {...stroke} strokeWidth={3} />
-        <rect x="-26" y="-4" width="52" height="7" rx="2" fill="#ff5a3c" transform="rotate(30)" {...stroke} strokeWidth={2.5} />
-        <rect x="-26" y="-4" width="52" height="7" rx="2" fill="#ffc83d" transform="rotate(120)" {...stroke} strokeWidth={2.5} />
-      </g>
-      <circle cx="160" cy="98" r="8" fill="#0a1510" {...stroke} strokeWidth={3} />
-      <rect x="159" y="62" width="3" height="36" fill="#f4f4ef" />
-      <path d="M162 62 l22 8 -22 8z" fill="#ff5a3c" {...stroke} strokeWidth={2.5} />
-      <circle cx="44" cy="112" r="9" fill="#ffc83d" {...stroke} strokeWidth={3} />
-    </svg>
-  );
-}
 
 /** Avatar de jogador: a cabeça da raposa de boné na cor escolhida (usado na sala). */
 export function FoxAvatar({ fur, cap = '#2f5bff' }: { fur: string; cap?: string }) {
@@ -956,28 +729,5 @@ export function FoxAvatar({ fur, cap = '#2f5bff' }: { fur: string; cap?: string 
   );
 }
 
-/** Counter Fox: noite no Duna, lua, dunas e a raposa com a mira em volta. */
-export function CounterFoxArt() {
-  return (
-    <svg className="ha ha-cfx" viewBox="0 0 200 150" aria-hidden="true">
-      <defs>
-        <linearGradient id="cfx-sky" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#0c1427" />
-          <stop offset="0.6" stopColor="#3a1f4a" />
-          <stop offset="1" stopColor="#ff7a3a" />
-        </linearGradient>
-      </defs>
-      <rect width="200" height="150" fill="url(#cfx-sky)" />
-      <circle cx="152" cy="40" r="17" fill="#ffd9a0" />
-      <path d="M0 104 Q50 78 100 100 T200 92 V150 H0Z" fill="#2a1630" />
-      <path d="M0 124 Q70 100 140 122 T200 116 V150 H0Z" fill="#120b1c" />
-      <g transform="translate(14 -23) scale(1)">
-        <FoxBody />
-      </g>
-      <g fill="none" stroke="#ff6a2b" strokeWidth="3.5" strokeLinecap="square">
-        <circle cx="100" cy="76" r="44" opacity="0.9" />
-        <path d="M100 22 V38 M100 114 V130 M46 76 H62 M138 76 H154" />
-      </g>
-    </svg>
-  );
-}
+// as capas dos jogos soltos moram em `FoxCapCovers.tsx` (as do Palavras, Cores e Mente ficam aqui)
+export { AtravessaArt, BolaArt, CounterFoxArt, DesmoronaArt, FoxGpArt, MiniGolfArt, PingArt } from './FoxCapCovers';
