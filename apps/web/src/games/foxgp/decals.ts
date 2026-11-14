@@ -26,7 +26,7 @@ export function stickDecal(opts: {
   if (!h || !h.face) return false;
   const hull = h.object as THREE.Mesh;
   const rayDir = ray.ray.direction.clone();
-  let normal = h.face.normal.clone().transformDirection(hull.matrixWorld).normalize();
+  const normal = h.face.normal.clone().transformDirection(hull.matrixWorld).normalize();
   // a malha pode ter as faces para dentro (o casco do F1 é desenhado dos dois lados): o adesivo olha para quem lança o raio,
   // senão ele sai espelhado e de cabeça para baixo
   if (normal.dot(rayDir) > 0) normal.negate();
