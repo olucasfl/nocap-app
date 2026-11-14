@@ -316,11 +316,11 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
       {
         id: 'holes',
         label: 'BURACOS',
-        values: ['3', '6', '9', '12', '18', '30'],
+        values: ['3', '6', '9', '12', '18', '30', '40'],
         current: String(g.holes ?? 9),
         format: (v) => `${v} buracos`,
         patch: (v) => ({ holes: Number(v) }),
-        note: 'Sorteados entre as 30 fases, sem repetir.',
+        note: 'Sorteados entre as 40 fases, sem repetir.',
       },
       {
         id: 'tier',

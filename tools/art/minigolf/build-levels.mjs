@@ -383,6 +383,46 @@ LEVELS.push(gridLevel(30, [
   '#H.ii..#',
 ]));
 
+
+// ---- 31 a 40: mais fases, em três dificuldades ----
+// 31 Degrau (fácil): uma rampa curta e o buraco no patamar.
+LEVELS.push(gridLevel(31, ['@..>.H']));
+
+// 32 Cotovelo duplo (fácil): duas curvas suaves.
+LEVELS.push(gridLevel(32, [
+  '@....',
+  '####.',
+  'H....',
+]));
+
+// 33 Areia e gelo (fácil): a areia segura a bola, o gelo a solta.
+LEVELS.push(gridLevel(33, ['@.ss...ii.H']));
+
+// 34 Ponte e gelo (média): uma tábua sobre a água e um trecho escorregadio antes do buraco.
+LEVELS.push(gridLevel(34, ['@..bb..ii.H']));
+
+// 35 Pinos em fila (média): quatro pinos no caminho; é preciso desviar ou usar o rebote.
+LEVELS.push(gridLevel(35, ['@.o.o.o.o.H']));
+
+// 36 Rampa e moinho (média): sobe e atravessa um giratório no patamar.
+LEVELS.push(gridLevel(36, ['@..>..H'], [{ kind: 'spinner', col: 5, row: 0, length: 3.5 }]));
+
+// 37 Escadaria (difícil): duas rampas em sequência e um pêndulo no primeiro patamar.
+LEVELS.push(gridLevel(37, ['@.>..>..H'], [{ kind: 'pendulum', col: 3, row: 0, along: 'x', t0: 0.4 }]));
+
+// 38 S com pinos (difícil): serpentina com um pino em cada faixa.
+LEVELS.push(gridLevel(38, [
+  '@..o..#',
+  '#####.#',
+  '#H.o..#',
+]));
+
+// 39 Gelo e pêndulo (difícil): um corredor de gelo com um pêndulo no meio.
+LEVELS.push(gridLevel(39, ['@..iiii..H'], [{ kind: 'pendulum', col: 4, row: 0, along: 'x', t0: 0 }]));
+
+// 40 Grande final 2 (difícil): rampa, giratório, ponte e gelo.
+LEVELS.push(gridLevel(40, ['@.>..bb.iH'], [{ kind: 'spinner', col: 3, row: 0, length: 3.5 }]));
+
 const holeModel = loadHole();
 fs.mkdirSync(out, { recursive: true });
 for (const L of LEVELS) {

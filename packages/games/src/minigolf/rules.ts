@@ -1,14 +1,14 @@
 /** Regras do Mini Golf (spec 082): par de cada fase, limite de tacadas, tempo e os nomes do golfe. */
 
 /** Par de cada fase (índice 0 = fase 1). As 20 primeiras são as do Open Golf; da 21 em diante são nossas (spec 082). */
-export const GOLF_PARS = [2, 2, 3, 3, 3, 3, 3, 4, 3, 4, 3, 4, 3, 4, 4, 4, 4, 5, 5, 5, 2, 3, 3, 3, 3, 4, 4, 5, 3, 5] as const;
+export const GOLF_PARS = [2, 2, 3, 3, 3, 3, 3, 4, 3, 4, 3, 4, 3, 4, 4, 4, 4, 5, 5, 5, 2, 3, 3, 3, 3, 4, 4, 5, 3, 5, 2, 4, 3, 3, 3, 3, 3, 5, 3, 3] as const;
 export const GOLF_LEVELS = GOLF_PARS.length;
 export type GolfTier = 'easy' | 'medium' | 'hard';
 /** As fases de cada dificuldade, na ordem em que se joga (a "próxima fase" segue esta ordem). */
 export const GOLF_TIERS: Record<GolfTier, readonly number[]> = {
-  easy: [1, 2, 3, 4, 5, 7, 21, 22, 23],
-  medium: [6, 8, 9, 10, 11, 12, 13, 24, 25, 26, 29],
-  hard: [14, 15, 16, 17, 18, 19, 20, 27, 28, 30],
+  easy: [1, 2, 3, 4, 5, 7, 21, 22, 23, 31, 32, 33],
+  medium: [6, 8, 9, 10, 11, 12, 13, 24, 25, 26, 29, 34, 35, 36],
+  hard: [14, 15, 16, 17, 18, 19, 20, 27, 28, 30, 37, 38, 39, 40],
 };
 export const GOLF_TIER_LABEL: Record<GolfTier, string> = { easy: 'Fácil', medium: 'Média', hard: 'Difícil' };
 export const GOLF_ORDER: readonly number[] = [...GOLF_TIERS.easy, ...GOLF_TIERS.medium, ...GOLF_TIERS.hard];

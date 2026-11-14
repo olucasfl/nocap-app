@@ -61,7 +61,7 @@ const Chevron = ({ dir }: { dir: 'l' | 'r' }) => (
   </svg>
 );
 
-/** Mini Golf offline (spec 082): 30 fases abertas, em três dificuldades; cai no buraco e escolhe próxima, repetir, escolher fase ou menu. */
+/** Mini Golf offline (spec 082): 40 fases abertas, em três dificuldades; cai no buraco e escolhe próxima, repetir, escolher fase ou menu. */
 export function MiniGolfPage() {
   useTouchGuard();
   const navigate = useNavigate();

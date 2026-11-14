@@ -1,7 +1,7 @@
-# Spec 082: Mini Golf (3D, offline com 20 fases e online com amigos)
+# Spec 082: Mini Golf (3D, offline com 40 fases e online com amigos)
 
 Pedido em 14/11/2026 (planos `PLANO_MINIGOLF_NOCAP.md` e telas no canvas "Mini Golf NoCap"). Base: Open Golf
-(github.com/mgerdes/Open-Golf, MIT), com as 20 fases, o formato de fase e a física portados para TypeScript.
+(github.com/mgerdes/Open-Golf, MIT), com as 40 fases, o formato de fase e a física portados para TypeScript.
 Status: **em andamento** (14/11/2026): conversor, física portada e a fase 1 jogável offline (`/minigolf`); falta o resto da lista da seção 4.
 
 ## 1. Decisões do Lucas
@@ -13,7 +13,7 @@ Status: **em andamento** (14/11/2026): conversor, física portada e a fase 1 jog
 3. Online **simultâneo, com colisão entre as bolas**. Quem encaçapa espeta a bandeira e espera; quando todos
    terminam, transição e o próximo buraco. TAB (PC) ou botão Placar (celular) mostra o placar, com primeiro e último.
 4. A sala escolhe a quantidade de buracos (3, 6, 9, 12, 18 ou 20, sorteados sem repetir).
-5. Offline: as 20 fases; cai no buraco e escolhe próxima fase, repetir, escolher fase ou menu.
+5. Offline: as 40 fases; cai no buraco e escolhe próxima fase, repetir, escolher fase ou menu.
 6. Letreiros ao encaçapar pelo par: ACE (1 tacada), Albatross (-3), Eagle (-2), Birdie (-1), Par, Bogey (+1) e
    adiante; animações, pódio e resumo ao fim.
 7. Sons feitos no navegador (Web Audio), **sem música**: tacada, quique, aro, queda, fundo do buraco, letreiros, pódio.
@@ -26,7 +26,7 @@ Status: **em andamento** (14/11/2026): conversor, física portada e a fase 1 jog
 
 - `packages/games/src/minigolf/`: física pura e determinística (passo fixo, 120 Hz), formato de fase, pares,
   nomes do golfe (`golfName(strokes, par)`), regras de sala e pontuação. Testes por trajetória.
-- `tools/art/minigolf/` (só ferramenta, fora do `package.json`): conversor `.level` → JSON/GLB das 20 fases.
+- `tools/art/minigolf/` (só ferramenta, fora do `package.json`): conversor `.level` → JSON/GLB das 40 fases.
 - API: `apps/api/src/rooms/golf-room.engine.ts` (servidor autoritativo: roda a mesma física, valida a tacada,
   empurra as bolas), mais `/me/prefs/golf`.
 - Web: `apps/web/src/games/minigolf/` (cena, HUD, telas do canvas, sons, garagem da bola).
@@ -43,7 +43,7 @@ Status: **em andamento** (14/11/2026): conversor, física portada e a fase 1 jog
 
 1. Spec, exceção e licenças (este commit).
 2. Conversor e física, com testes e trajetórias; **fase 1 jogável offline** (PC e celular) para o Lucas sentir.
-3. As 20 fases offline, letreiros, sons, garagem da bola.
+3. As 40 fases offline, letreiros, sons, garagem da bola.
 4. Sala online (servidor autoritativo, colisão entre bolas, placar, transição, pódio). **Feita em 14/11/2026**: `GolfRoomEngine` simula todas as bolas, a sala do Fox Cap! escolhe o jogo, quadros `gb` a ~31/s e eventos `ge`, teste com servidor de verdade e duas janelas.
 
 ## 5. Em aberto

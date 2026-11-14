@@ -8,7 +8,7 @@ export const GOLF_ROOM_MAX = 8;
 export const GOLF_INTRO_MS = 3500;
 export const GOLF_CLEARED_MS = 3800;
 /** Quantos buracos a sala aceita, quais dificuldades e quanto tempo cada buraco dura (s). */
-export const GOLF_ROOM_HOLES = [3, 6, 9, 12, 18, 30] as const;
+export const GOLF_ROOM_HOLES = [3, 6, 9, 12, 18, 30, 40] as const;
 export const GOLF_ROOM_TIERS = ['mix', 'easy', 'medium', 'hard'] as const;
 export type GolfRoomTier = (typeof GOLF_ROOM_TIERS)[number];
 export const GOLF_ROOM_DEFAULTS = { holes: 9, tier: 'mix' as GolfRoomTier, seconds: 180, collide: true };

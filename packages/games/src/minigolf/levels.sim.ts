@@ -58,6 +58,7 @@ export function solve(lv: GolfLevel, maxStrokes: number): number | null {
 const ONLY = (process.env.GOLF_ONLY ?? '').split(',').filter(Boolean).map(Number);
 const ALL: [number, number][] = [
   [21, 4], [22, 5], [23, 5], [24, 6], [25, 6], [26, 6], [27, 8], [28, 8], [29, 6], [30, 8],
+  [31, 4], [32, 5], [33, 5], [34, 6], [35, 6], [36, 6], [37, 8], [38, 8], [39, 8], [40, 8],
 ];
 const NEW_LEVELS = ONLY.length ? ALL.filter(([n]) => ONLY.includes(n)) : ALL;
 

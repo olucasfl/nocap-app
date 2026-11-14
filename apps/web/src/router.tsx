@@ -247,7 +247,7 @@ const miniGolfPlayRoute = createRoute({
   path: '/minigolf/jogar',
   validateSearch: (search: Record<string, unknown>): { fase?: number } => {
     const n = Number(search.fase);
-    return Number.isInteger(n) && n >= 1 && n <= 30 ? { fase: n } : {};
+    return Number.isInteger(n) && n >= 1 && n <= 40 ? { fase: n } : {};
   },
   component: lazyRouteComponent(() => import('@/games/minigolf/MiniGolfPage'), 'MiniGolfPage'),
 });
