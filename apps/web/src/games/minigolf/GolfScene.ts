@@ -1,25 +1,23 @@
 import * as THREE from 'three';
 import { GOLF_BALL_RADIUS, golfApplyMovement, type GolfBall, type GolfLevel } from '@nocap/games';
+import { ballNormal, buildGolfMaterials, type GolfMat } from './textures';
 
-/** A cor de cada material do Open Golf (sem as texturas: a cena é limpa e iluminada em tempo real). */
-const MAT_COLOR: Record<string, number> = {
-  'wall-top': 0xb07a45,
-  'wall-side': 0x8a5a32,
-  ground: 0x3aa85a,
-  default: 0x3aa85a,
-  grass: 0x4cbf64,
-  dirt: 0x7a5a3a,
-  metal: 0xb9c2c9,
-  border: 0xd9402f,
-  woodInner: 0xc89a62,
-  woodBarkDark: 0x6a4727,
-  ground_spinner_platform: 0x2f9650,
-  ground_mover_platform: 0x2f9650,
-  leafsDark: 0x2f7a3f,
-  leafsFall: 0xd98a2c,
-  woodBirch: 0xe8dfc9,
-};
-const colorOf = (n: string) => MAT_COLOR[n] ?? 0x5fae6a;
+/** UV por triângulo, projetando no plano dominante (chão: x,z; paredes: z,y ou x,y), em repetições de `tile` metros. */
+function triUv(pos: number[], tile: number): number[] {
+  const uv: number[] = [];
+  for (let i = 0; i < pos.length; i += 9) {
+    const ax = pos[i + 3]! - pos[i]!, ay = pos[i + 4]! - pos[i + 1]!, az = pos[i + 5]! - pos[i + 2]!;
+    const bx = pos[i + 6]! - pos[i]!, by = pos[i + 7]! - pos[i + 1]!, bz = pos[i + 8]! - pos[i + 2]!;
+    const nx = Math.abs(ay * bz - az * by), ny = Math.abs(az * bx - ax * bz), nz = Math.abs(ax * by - ay * bx);
+    for (let k = 0; k < 3; k++) {
+      const x = pos[i + 3 * k]!, y = pos[i + 3 * k + 1]!, z = pos[i + 3 * k + 2]!;
+      if (ny >= nx && ny >= nz) uv.push(x / tile, z / tile);
+      else if (nx >= nz) uv.push(z / tile, y / tile);
+      else uv.push(x / tile, y / tile);
+    }
+  }
+  return uv;
+}
 
 export interface AimView {
   /** Direção no plano (x, z), já normalizada. */
@@ -40,10 +38,11 @@ export class GolfScene {
   private dots: THREE.Mesh[] = [];
   private head: THREE.Mesh;
   private sun = new THREE.DirectionalLight(0xfff2d6, 2.2);
-  private movers: { mesh: THREE.Mesh; i: number }[] = [];
+  private movers: { mesh: THREE.Object3D; i: number }[] = [];
   private camPos = new THREE.Vector3();
   private camLook = new THREE.Vector3();
   private spin = new THREE.Quaternion();
+  private gm = buildGolfMaterials();
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -71,7 +70,7 @@ export class GolfScene {
 
     this.ballMesh = new THREE.Mesh(
       new THREE.SphereGeometry(GOLF_BALL_RADIUS, 32, 20),
-      new THREE.MeshStandardMaterial({ color: ballColor, roughness: 0.35, metalness: 0.05 }),
+      new THREE.MeshPhysicalMaterial({ color: ballColor, roughness: 0.32, metalness: 0.02, clearcoat: 0.7, clearcoatRoughness: 0.25, normalMap: ballNormal(), normalScale: new THREE.Vector2(0.9, 0.9) }),
     );
     this.ballMesh.castShadow = true;
     this.scene.add(this.ballMesh);
@@ -109,32 +108,39 @@ export class GolfScene {
         byMat.get(k)!.push(...tri);
       }
     }
-    const mk = (pos: number[], color: number, transparent = false, opacity = 1) => {
+    const mk = (pos: number[], gm: GolfMat | THREE.Material, tile = 2, shadow = true) => {
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
       g.computeVertexNormals();
-      const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.85, flatShading: true, side: THREE.DoubleSide, transparent, opacity });
-      const m = new THREE.Mesh(g, mat);
-      m.castShadow = !transparent;
+      g.setAttribute('uv', new THREE.Float32BufferAttribute(triUv(pos, 'mat' in gm ? gm.tile : tile), 2));
+      const m = new THREE.Mesh(g, 'mat' in gm ? gm.mat : gm);
+      m.castShadow = shadow;
       m.receiveShadow = true;
       return m;
     };
-    byMat.forEach((pos, k) => group.add(mk(pos, colorOf(d.materials[k]!.name))));
-    if (water.length) group.add(mk(water, 0x2a9fd6, true, 0.75));
+    byMat.forEach((pos, k) => group.add(mk(pos, this.gm.get(d.materials[k]!.name))));
+    if (water.length) group.add(mk(water, this.gm.water, 2, false));
     // peças móveis: a geometria local gira e anda por `golfApplyMovement` a cada quadro
     d.moving.forEach((mv, i) => {
-      const m = mk(mv.t, colorOf(d.materials[mv.m[0] ?? 0]?.name ?? 'default'));
-      m.matrixAutoUpdate = true;
-      this.movers.push({ mesh: m, i });
-      group.add(m);
+      const by = new Map<number, number[]>();
+      for (let j = 0; j < mv.m.length; j++) {
+        const k = mv.m[j]!;
+        if (!by.has(k)) by.set(k, []);
+        by.get(k)!.push(...mv.t.slice(j * 9, j * 9 + 9));
+      }
+      const holder = new THREE.Group();
+      by.forEach((pos, k) => holder.add(mk(pos, this.gm.get(d.materials[k]!.name))));
+      this.movers.push({ mesh: holder, i });
+      group.add(holder);
     });
     // copo: paredes do modelo e o fundo físico, e a bandeira
+    const cup = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.9, side: THREE.DoubleSide });
     d.holes.forEach((h, i) => {
-      group.add(mk(d.holeTris[i]!, 0x1a1a1a));
-      group.add(mk(this.level.holeFloors[i]!, 0x0c0c0c));
-      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 1.05, 8), new THREE.MeshStandardMaterial({ color: 0xf4f4ef }));
+      group.add(mk(d.holeTris[i]!, cup, 2, false));
+      group.add(mk(this.level.holeFloors[i]!, cup, 2, false));
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 1.05, 8), new THREE.MeshStandardMaterial({ color: 0xf4f4ef, metalness: 0.5, roughness: 0.3 }));
       pole.position.set(h.p[0], h.p[1] + 0.52, h.p[2]);
-      const flag = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.26), new THREE.MeshStandardMaterial({ color: 0xff5a3c, side: THREE.DoubleSide }));
+      const flag = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.26), new THREE.MeshStandardMaterial({ color: 0xff5a3c, roughness: 0.8, side: THREE.DoubleSide }));
       flag.position.set(h.p[0] + 0.2, h.p[1] + 0.92, h.p[2]);
       pole.castShadow = flag.castShadow = true;
       group.add(pole, flag);
@@ -183,6 +189,7 @@ export class GolfScene {
   /** Um quadro: posição da bola, peças móveis, câmera suave e luz de sombra seguindo a bola. */
   render(ball: GolfBall, time: number, dt: number, drawPos?: [number, number, number]) {
     const p = drawPos ?? ball.pos;
+    this.gm.tick(dt);
     this.ballMesh.position.set(p[0], p[1], p[2]);
     const sp = Math.hypot(ball.vel[0], ball.vel[2]);
     if (sp > 0.05) {
