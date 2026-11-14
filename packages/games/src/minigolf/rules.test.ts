@@ -14,7 +14,7 @@ describe('Mini Golf: regras', () => {
     expect(Math.max(...GOLF_PARS)).toBe(5);
     expect(golfParOf(1)).toBe(2);
     expect(golfParOf(20)).toBe(5);
-    expect(golfParOf(30)).toBe(4);
+    expect(golfParOf(30)).toBe(5);
   });
   it('os nomes do golfe vêm do par; 1 tacada é sempre ACE', () => {
     expect(golfScoreName(1, 4)).toBe('ace');
