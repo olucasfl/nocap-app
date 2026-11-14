@@ -183,6 +183,8 @@ export interface FoxGpRoomState {
   holdMs?: number | null;
   /** Modo de física da sala (regra que só o líder muda). */
   physics?: 'arcade' | 'real';
+  /** Pista da sala (id). */
+  track?: string;
   slots: Record<string, number>;
   colors: Record<string, string>;
   quali: Record<string, number | null>;

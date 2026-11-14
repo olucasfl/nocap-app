@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { decalMaterial, stickDecal } from './decals';
+import { numberTexture } from './car-model';
 import { GP_CAR_LEN, GP_CAR_WID, gpDefaultKartPaint, type GpKartPaint, type GpPaint } from '@nocap/games';
 import type { CarModel } from './car-model';
 import { buildFoxHead } from './fox-head';
@@ -32,6 +34,10 @@ export interface KartState {
 export interface KartModel extends CarModel {
   kart: true;
   update(dt: number, s: KartState): void;
+  /** Câmera de dentro: esconde a cabeça (ou o capacete) do piloto; o resto do kart, com o volante e as mãos, fica. */
+  setDriverHidden(hide: boolean): void;
+  /** Onde fica o olho do piloto, no espaço do grupo do kart. */
+  eye: THREE.Object3D;
 }
 
 const base = (import.meta.env.BASE_URL || '/').replace(/\/?$/, '/');
@@ -128,20 +134,44 @@ export function buildKart(opts: {
     const color = new THREE.Color(colorOf(src.name, src.color));
     const mm =
       opts.pbr === false
-        ? new THREE.MeshLambertMaterial({ color, name: src.name })
+        ? new THREE.MeshLambertMaterial({ color, name: src.name, side: THREE.DoubleSide })
         : new THREE.MeshStandardMaterial({
             color,
             name: src.name,
             roughness: painted(src.name) ? (fin === 'fosco' ? 0.85 : fin === 'metal' ? 0.3 : 0.35) : src.roughness,
             metalness: painted(src.name) && fin === 'metal' ? 0.7 : src.metalness,
+            // o macacão e as luvas foram recortados do corpo: os dois lados da malha aparecem (sem buracos)
+            side: THREE.DoubleSide,
           });
     mats.push(mm);
     m.material = mm;
   });
 
+  // ---- número em adesivo (o kart não tinha): nariz e as duas laterais, colado na carenagem ----
+  const numTex = numberTexture(kp.number, 'circulo', kp.body, 0xfff3e2);
+  mats.push(decalMaterial(numTex, opts.pbr !== false));
+  const numMat = mats[mats.length - 1]!;
+  if (!opts.lod) {
+    const hulls: THREE.Object3D[] = [];
+    root.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (m.isMesh && ((m.material as THREE.Material).name === 'Body' || (m.material as THREE.Material).name === 'Lines2')) hulls.push(m);
+    });
+    const put = (from: THREE.Vector3, dir: THREE.Vector3, up: THREE.Vector3, size: number) =>
+      stickDecal({ frame: root, targets: hulls, material: numMat, from, dir, up, size });
+    // o nariz (a frente do kart é −Z): lido de frente e de cima, topo do número para trás
+    put(new THREE.Vector3(0, 0.25, -2), new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, 1), 0.22);
+    // as laterais, lidas de fora com o topo para cima
+    for (const sg of [1, -1]) put(new THREE.Vector3(sg * 2, 0.2, 0.05), new THREE.Vector3(-sg, 0, 0), new THREE.Vector3(0, 1, 0), 0.26);
+  }
+
   // ---- cabeça de raposa ou capacete (plano B) ----
   const helmet = node('helmet');
-  if (helmet) helmet.visible = helmetOn;
+  // o capacete assenta na gola do macacão (no arquivo ele ficava um pouco acima, flutuando)
+  if (helmet) {
+    helmet.visible = helmetOn;
+    helmet.position.y -= 0.075;
+  }
   const head = buildFoxHead({
     fur: opts.fur,
     collar: kp.suit,
@@ -222,6 +252,10 @@ export function buildKart(opts: {
     a.fore.quaternion.setFromUnitVectors(a.restFore, tmpV.copy(tmpT).sub(tmpE).normalize());
   };
 
+  // o olho do piloto: o centro da cabeça, um pouco para a frente (a frente do kart é −Z)
+  const eye = new THREE.Object3D();
+  eye.position.set(rig.head.center[0]!, rig.head.center[1]!, rig.head.center[2]! - 0.06);
+  root.add(eye);
   const radius = rig.wheel_fl.radius * scale;
   return {
     kart: true,
@@ -234,11 +268,16 @@ export function buildKart(opts: {
     tail: new THREE.Group(),
     fox: head.group,
     mats,
+    eye,
+    setDriverHidden(hide) {
+      head.group.visible = !hide && !helmetOn;
+      if (helmet) helmet.visible = !hide && helmetOn;
+    },
     update(dt, s) {
       t += dt;
       // o volante segue o do jogador (±100°), suave
       steerShown += (s.steer - steerShown) * Math.min(1, dt * 14);
-      if (rim) rim.quaternion.setFromAxisAngle(rimAxis, -steerShown * THREE.MathUtils.degToRad(100));
+      if (rim) rim.quaternion.setFromAxisAngle(rimAxis, steerShown * THREE.MathUtils.degToRad(100));
       for (const a of arms) solveArm(a);
       // pedais: acelerador (direita) e freio (esquerda)
       if (pedals[1]) pedals[1].rotation.x = s.throttle * 0.45;

@@ -10,7 +10,7 @@ import {
   GP_REAL_VMAX,
   type GpPhysicsMode,
 } from './constants';
-import { GP_BOT_ARCHETYPES, gpBotInput, gpBotProfile, newGpBotMemory } from './bots';
+import { GP_BOT_ARCHETYPES, gpBotInput, gpBotWantsPit, gpBotProfile, newGpBotMemory } from './bots';
 import { GpHost, gpSnapshotFor } from './net';
 import { GP_TRACK_TOCA } from './track';
 import { GP_PACK_LEN, GpWorld, gpGridSpot, type GpCar, type GpInput } from './world';
@@ -60,7 +60,7 @@ function botRace(mode: GpPhysicsMode, n: number, seed: string) {
   const qualiDone = w.qualiDone();
   w.beginRace(w.gridOrder());
   for (const m of mem.values()) {
-    m.pitDecided = false;
+    m.pitLap = -1;
     m.pit = false;
   }
   const orders: string[] = [];
@@ -103,8 +103,8 @@ describe('dois modos de física', () => {
     }
     expect(worst).toBeLessThan(1e-9);
     // perde, mas pouco (13/11/2026): a curva rápida segura boa parte da velocidade
-    expect(c.speed).toBeLessThan(v0 - 0.3);
-    expect(c.speed).toBeGreaterThan(v0 - 4);
+    // com o pé no fundo a curva rápida quase não tira velocidade (pedido de 14/11/2026)
+    expect(c.speed).toBeGreaterThan(v0 - 1);
   });
 
   it('Realista: a máxima em reta fica no limitador da 8ª (spec 081)', () => {
@@ -126,7 +126,7 @@ describe('dois modos de física', () => {
     w.beginRace(['p0', 'p1']);
     const [a, b] = w.cars as [GpCar, GpCar];
     put(w, a, -300, 0, 10);
-    put(w, b, -303.5, 0, 22);
+    put(w, b, -306.4, 0, 22);
     for (let k = 0; k < 20; k++) w.step(GP_DT, { p0: { ...full, throttle: 0.3 }, p1: full });
     expect(a.speed).toBeGreaterThan(12);
     expect(b.speed).toBeGreaterThan(15);
@@ -229,3 +229,13 @@ describe('rede com o grid cheio', () => {
 function test_note(msg: string) {
   if (process.env.GP_NOTES) console.log(msg);
 }
+
+describe('bots e o box (14/11/2026)', () => {
+  it('na última volta ninguém para; com pouco desgaste também não', () => {
+    expect(gpBotWantsPit(0.9, GP_LAPS - 1, 80_000)).toBe(false);
+    expect(gpBotWantsPit(0.1, 1, 80_000)).toBe(false);
+  });
+  it('com muito desgaste cedo na corrida vale parar', () => {
+    expect(gpBotWantsPit(0.7, 1, 80_000)).toBe(true);
+  });
+});

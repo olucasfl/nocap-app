@@ -209,6 +209,74 @@ export const GP_TRACK_MARINA: GpTrackDef = {
   ],
 };
 
+/**
+ * Interlagos (pedido do Lucas, 14/11/2026): o desenho do circuito (reta de largada descendo pela esquerda, S do Senna, Curva
+ * do Sol, reta oposta subindo pela direita, Mergulho, Laranjinha e Pinheirinho no miolo, Subida dos Boxes de volta). Pontos
+ * em pixels do desenho; o cenário é o mesmo da Marina (só muda o traçado). Os boxes ficam do lado de dentro da reta de largada.
+ */
+export const GP_TRACK_INTERLAGOS: GpTrackDef = {
+  id: 'interlagos',
+  name: 'Interlagos',
+  scale: 2.1,
+  origin: [180, 150],
+  smooth: 10,
+  limit: 16,
+  points: [
+    [106, 150], // 0 linha de chegada, na reta de largada
+    [108, 200],
+    [114, 238],
+    [122, 260], // 3 entrada do S do Senna
+    [132, 273],
+    [146, 279],
+    [160, 272],
+    [172, 268],
+    [190, 277],
+    [210, 275],
+    [228, 265], // 10 Curva do Sol
+    [244, 244],
+    [252, 210], // 12 reta oposta
+    [252, 170],
+    [246, 130],
+    [236, 96],
+    [222, 62],
+    [212, 30],
+    [196, 14],
+    [176, 18],
+    [160, 34], // 20 Mergulho
+    [150, 54],
+    [146, 76],
+    [150, 96],
+    [158, 112], // 24 Laranjinha
+    [161, 128],
+    [152, 143],
+    [138, 147],
+    [126, 137],
+    [124, 119], // 29 Pinheirinho
+    [127, 100],
+    [123, 80],
+    [115, 60],
+    [103, 49], // 33 Bico de Pato
+    [92, 56],
+    [90, 76],
+    [95, 104],
+    [100, 128], // 37 Subida dos Boxes
+  ],
+  noCut: [],
+  pit: { side: -1, offset: 12, inStart: -46, inEnd: -32, outStart: 30, outEnd: 52, box: -12 },
+  sectors: [11, 25],
+  stands: [
+    { from: 0, to: 2, side: 1, name: 'MAIN' },
+    { from: 12, to: 14, side: 1, name: 'EAST' },
+  ],
+};
+
+/** As pistas de cada modo, na ordem da escolha (a primeira é a padrão). */
+export const GP_TRACKS_REAL: readonly GpTrackDef[] = [GP_TRACK_MARINA, GP_TRACK_INTERLAGOS];
+export const GP_TRACKS_ARCADE: readonly GpTrackDef[] = [GP_TRACK_BALA];
+export const GP_TRACK_IDS = ['marina', 'interlagos', 'bala'] as const;
+export type GpTrackId = (typeof GP_TRACK_IDS)[number];
+export const gpIsTrackId = (v: unknown): v is GpTrackId => GP_TRACK_IDS.includes(v as GpTrackId);
+
 /** A pista do jogo. */
 export const GP_TRACK_DEFAULT = GP_TRACK_MARINA;
 
@@ -711,8 +779,9 @@ export class GpTrack {
 }
 
 /** A pista de cada modo (spec 081): o kart corre na Bala Track; o F1 na Marina. */
-export function gpTrackDefFor(mode: 'arcade' | 'real'): GpTrackDef {
-  return mode === 'arcade' ? GP_TRACK_BALA : GP_TRACK_MARINA;
+export function gpTrackDefFor(mode: 'arcade' | 'real', id?: string | null): GpTrackDef {
+  const list = mode === 'arcade' ? GP_TRACKS_ARCADE : GP_TRACKS_REAL;
+  return list.find((t) => t.id === id) ?? list[0]!;
 }
 
 const cache = new Map<string, GpTrack>();

@@ -63,7 +63,7 @@ describe('Realista de F1 (spec 081, Fase 4)', () => {
   it('uma curva de raio ~25 m não passa a 25 m/s (abre e perde velocidade) e passa a 15 m/s', () => {
     const fast = turnRadius(25);
     expect(fast.r).toBeGreaterThan(40);
-    expect(fast.lost).toBeGreaterThan(0.3);
+    expect(fast.lost).toBeGreaterThan(0.15);
     const slow = turnRadius(15);
     expect(slow.r).toBeLessThan(25.5);
   });

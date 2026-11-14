@@ -121,11 +121,8 @@
   }
 }
 
-/* botão Garagem no lobby do Fox GP */
-.gp-lobby-garage {
-  position: fixed;
-  right: max(16px, env(safe-area-inset-right));
-  bottom: max(16px, env(safe-area-inset-bottom));
-  z-index: 30;
-  box-shadow: 0 4px 0 var(--gp-bg);
+/* botão "Personalizar meu carro" na lista de carros da sala */
+.gp-room-custom {
+  width: 100%;
+  margin: 4px 0 10px;
 }

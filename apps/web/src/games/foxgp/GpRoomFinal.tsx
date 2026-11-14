@@ -13,6 +13,7 @@ import { GpFinal, type GpFinalRow } from './GpFinal';
 import { hexNum, lapClock } from './format';
 import { carFromRoom } from './garage';
 import { PHYSICS_NAME, gpMarkBack } from './gp-best';
+import { gpTrackName } from './vehicles';
 import './foxgp.css';
 
 const nameOf = (id: string, username: string) =>
@@ -57,7 +58,8 @@ export function GpRoomFinal({ snapshot }: { snapshot: RoomSnapshot }) {
     <GpFinal
       rows={rows}
       fastest={fastest}
-      physics={PHYSICS_NAME[info?.physics ?? 'arcade']}
+      physics={PHYSICS_NAME[info?.physics ?? 'real']}
+      track={gpTrackName(info?.physics ?? 'real', info?.track)}
       mode={{
         kind: 'room',
         room: {

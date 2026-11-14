@@ -75,7 +75,8 @@ export interface GpBotMemory {
   /** Vai parar no box nesta volta. */
   pit: boolean;
   /** Já decidiu sobre o box nesta corrida. */
-  pitDecided: boolean;
+  /** Volta em que o bot decidiu sobre o box pela última vez. */
+  pitLap: number;
   /** Preso (barreira, outro carro): dá ré até esta hora. */
   reverseUntil: number;
   stuckT: number;
@@ -174,7 +175,7 @@ export function gpBotProfile(seed: string, index: number): GpBotProfile {
   const pick = (k: keyof typeof R) => lerp(R[k][0], R[k][1], rng());
   return {
     archetype,
-    skill: clamp(pick('skill'), 0.78, 0.98),
+    skill: clamp(pick('skill') + 0.015, 0.8, 0.985),
     react: pick('react'),
     lineBias: pick('lineBias'),
     lineAmp: pick('lineAmp'),
@@ -216,7 +217,7 @@ export function newGpBotMemory(p: number | GpBotProfile): GpBotMemory {
     lane: 0,
     laneUntil: 0,
     pit: false,
-    pitDecided: false,
+    pitLap: -1,
     reverseUntil: 0,
     stuckT: 0,
     wobble: 0,
@@ -252,6 +253,28 @@ function cornerSpeed(world: GpWorld, k: number, g: number): number {
  * de agora) e freia a tempo; passa por uma faixa livre, reduz ao chegar no carro da frente, usa DRS e vácuo como todo
  * mundo, decide se para no box e dá ré quando fica preso. O perfil (`GpBotProfile`) muda o jeito de cada um.
  */
+/** Perda de tempo de uma parada (s): limite do box em vez da velocidade de corrida, mais o serviço (GP_PIT_STOP_SEC). */
+export const GP_BOT_PIT_COST = 7;
+
+/**
+ * O bot para no box? Compara o tempo perdido nas voltas que faltam com o pneu gasto contra o tempo perdido com pneu novo
+ * mais a parada. A parada é no fim da volta, então só serve às voltas depois dela: na última volta (ou na penúltima com
+ * pouco desgaste) segue direto. `noise` (s) é o jeito de cada bot.
+ */
+export function gpBotWantsPit(wear: number, lapsDone: number, lastLapMs: number, noise = 0): boolean {
+  const after = GP_LAPS - lapsDone - 1; // voltas que sobram depois de parar no fim desta
+  if (after <= 0) return false;
+  const rate = Math.max(0.12, wear / Math.max(1, lapsDone)); // desgaste por volta
+  const slow = (w: number) => (lastLapMs / 1000) * 0.14 * Math.min(1, w);
+  let keep = 0;
+  let fresh = 0;
+  for (let i = 0; i < after; i++) {
+    keep += slow(wear + rate * (i + 1.5));
+    fresh += slow(rate * (i + 0.5));
+  }
+  return keep - fresh > GP_BOT_PIT_COST + noise;
+}
+
 export function gpBotInput(world: GpWorld, c: GpCar, mem: GpBotMemory, rng: () => number): GpInput {
   const tr = world.track;
   const t = world.t;
@@ -275,11 +298,13 @@ export function gpBotInput(world: GpWorld, c: GpCar, mem: GpBotMemory, rng: () =
     }
   } else mem.stuckT = 0;
 
-  // ---- box: decide uma vez, ao entrar na última volta, pelo desgaste ----
+  // ---- box: a cada volta nova o bot faz a conta (parar custa tempo, pneu gasto também) ----
+  // Não decide mais na última volta nem perto da linha: parar ali só custa tempo.
   const lapsDone = c.laps.length;
-  if (race && !mem.pitDecided && lapsDone === GP_LAPS - 1 && world.mode === 'real') {
-    mem.pitDecided = true;
-    mem.pit = c.wear > 0.45 && rng() < 0.45;
+  if (race && world.mode === 'real' && mem.pitLap !== lapsDone) {
+    mem.pitLap = lapsDone;
+    const lastMs = c.laps.length ? c.laps[c.laps.length - 1]! : 80_000;
+    mem.pit = c.pitStops === 0 && gpBotWantsPit(c.wear, lapsDone, lastMs, (rng() - 0.5) * 2 * (1 - P.consistency) * 2);
   }
   if (mem.pit && c.pitStops > 0) mem.pit = false;
 

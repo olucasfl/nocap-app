@@ -17,7 +17,7 @@ export const GP_MAX_PLAYERS = 12;
  */
 export type GpPhysicsMode = 'arcade' | 'real';
 export const GP_PHYSICS_MODES: readonly GpPhysicsMode[] = ['arcade', 'real'];
-export const GP_PHYSICS_DEFAULT: GpPhysicsMode = 'arcade';
+export const GP_PHYSICS_DEFAULT: GpPhysicsMode = 'real';
 export const gpIsPhysicsMode = (v: unknown): v is GpPhysicsMode => v === 'arcade' || v === 'real';
 /** Versão do protocolo da rede: sobe quando o formato da entrada ou do estado muda (aparelho antigo não entra). */
 export const GP_NET_VERSION = 3;
@@ -125,6 +125,12 @@ export const GP_CAR_WID = 3.6;
 export const GP_CAR_SIDE_GAP = 0.6;
 /** Corpo do carro para a barreira do Arcade antigo: dois círculos (frente e trás) do tamanho da caixa. */
 export const GP_CAR_R = GP_CAR_WID / 2;
+/**
+ * Caixa de colisão de cada veículo, do tamanho do desenho na pista (o F1 ~6,1 x 2,5 m com as rodas; o kart ~3,9 x 2,5 m).
+ * Antes era uma caixa só (6,5 x 3,6) e a batida acontecia longe do carro.
+ */
+export const GP_HIT_DIMS = { real: { len: 6.1, wid: 2.5 }, arcade: { len: 3.9, wid: 2.5 } } as const;
+export const gpHitDims = (mode: GpPhysicsMode) => GP_HIT_DIMS[mode];
 export const GP_CAR_HALF = GP_CAR_LEN / 2 - GP_CAR_R;
 /** O carro encosta na barreira com esta parte da meia largura dentro do limite (o resto é a borracha da barreira). */
 export const GP_CAR_WALL_IN = 0.9;
@@ -308,19 +314,19 @@ export const GP_REAL_STEER_FADE = 11;
  * Volante proporcional ao pneu (pedido do Italo, 13/11/2026): todo virado pede no máximo `HEADROOM` vezes o que o pneu
  * aguenta naquela velocidade. Um toque leve na reta pede pouca curva e não freia; a curva rápida segura a velocidade.
  */
-export const GP_REAL_STEER_HEADROOM = 1.3;
+export const GP_REAL_STEER_HEADROOM = 1.12;
 /**
  * Aderência lateral máxima: `GRIP0 + DOWNFORCE * v²` (m/s²). Spec 081, Fase 4: a curva lenta fica limitada pelo pneu e a
  * asa ajuda só em alta. Máxima sem escorregar: grampo de 15 m ~11,9 m/s (≈100 km/h na tela), curva fechada de 25 m
  * ~15,5 m/s, curva média de 60 m ~25 m/s, curva rápida de 120 m ~40 m/s.
  */
-export const GP_REAL_GRIP0 = 11;
+export const GP_REAL_GRIP0 = 12;
 export const GP_REAL_DOWNFORCE = 0.0028;
 /**
  * Pedir mais curva do que o pneu aguenta: o carro abre e perde velocidade, esta força (m/s²) vezes o excesso (até
  * `GP_REAL_SCRUB_MAX` vezes o que o pneu aguenta): quanto mais passa do ponto, mais perde.
  */
-export const GP_REAL_SCRUB = 5;
+export const GP_REAL_SCRUB = 2.5;
 export const GP_REAL_SCRUB_MAX = 2;
 /** Folga antes de começar a arrastar: até `SCRUB_FREE` além do limite o carro só abre a trajetória. */
 export const GP_REAL_SCRUB_FREE = 0.15;
@@ -328,7 +334,7 @@ export const GP_REAL_SCRUB_FREE = 0.15;
  * Perda natural na curva (m/s²): `CORNER_DRAG × carga²`, com a carga = aceleração lateral usada / a que o pneu aguenta.
  * Curva leve quase não perde; no limite perde `CORNER_DRAG`.
  */
-export const GP_REAL_CORNER_DRAG = 1.6;
+export const GP_REAL_CORNER_DRAG = 0.45;
 /**
  * Motor com câmbio de verdade (spec 081, Fase 4): a força é `ENGINE × torque(giro) / máxima da marcha` (marcha curta
  * empurra mais), limitada a `ACC_MAX` (o pneu). Alvos: 0→15 m/s em ~1,9 s, subindo até a máxima

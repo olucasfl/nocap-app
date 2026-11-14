@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { blocksRunSchema, keepBlocksRun, prefsSchema, withBlocksRun } from './prefs.controller';
+import { blocksRunSchema, gpSchema, keepBlocksRun, mergeGp, prefsSchema, withBlocksRun } from './prefs.controller';
 
 describe('prefsSchema', () => {
   it('aceita opções válidas e parciais', () => {
@@ -48,5 +48,29 @@ describe('partida do Block Classic na conta', () => {
       blocksRun: run,
     });
     expect(keepBlocksRun(undefined, { mute: true })).toEqual({ mute: true });
+  });
+});
+
+describe('Fox GP na conta (14/11/2026)', () => {
+  it('aceita garagem, comandos e melhores voltas; recusa lixo', () => {
+    const ok = {
+      garage: { fur: 0xff7d26, paint: { body: 1 }, kart: { body: 2 } },
+      binds: { left: ['KeyA', 'ArrowLeft'] },
+      best: { marina: 71234 },
+      guide: true,
+      physics: 'real',
+      vehicle: 'f1',
+    };
+    expect(gpSchema.safeParse(ok).success).toBe(true);
+    expect(gpSchema.safeParse({ ...ok, best: { marina: -1 } }).success).toBe(false);
+    expect(gpSchema.safeParse({ ...ok, physics: 'x' }).success).toBe(false);
+    expect(gpSchema.safeParse({ ...ok, extra: 1 }).success).toBe(false);
+  });
+
+  it('a melhor volta nunca piora ao mesclar, e salvar preferências não apaga o Fox GP', () => {
+    const merged = mergeGp({ best: { marina: 70000, interlagos: 90000 }, guide: true }, { best: { marina: 72000, interlagos: 88000 }, guide: false });
+    expect(merged.best).toEqual({ marina: 70000, interlagos: 88000 });
+    expect(merged.guide).toBe(false);
+    expect(keepBlocksRun({ gp: merged }, { mute: true }).gp).toEqual(merged);
   });
 });

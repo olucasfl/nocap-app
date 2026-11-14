@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { GP_MAX_PLAYERS, type GpPhysicsMode } from '@nocap/games';
 import { GpGarage } from './GpGarage';
-import { loadBest, loadPhysics, savePhysics } from './gp-best';
+import { loadBest, loadPhysics, loadTrack, savePhysics, saveTrack } from './gp-best';
 import { lapClock } from './format';
-import { gpVehicleFor } from './vehicles';
+import { GP_TRACK_CHOICES, gpTrackName, gpVehicleFor } from './vehicles';
 import './theme.css';
 import './foxgp.css';
 
@@ -29,6 +29,12 @@ export function GpPicker({
 }) {
   const [garage, setGarage] = useState(false);
   const [physics, setPhysics] = useState<GpPhysicsMode>(() => loadPhysics());
+  const [track, setTrack] = useState(() => loadTrack());
+  const pickTrack = (id: string) => {
+    setTrack(id);
+    saveTrack(id);
+  };
+  const trackOf = (m: GpPhysicsMode) => (m === 'arcade' ? 'bala' : GP_TRACK_CHOICES.real.find((t) => t.id === track)?.id ?? 'marina');
   const select = (m: GpPhysicsMode) => {
     setPhysics(m);
     savePhysics(m);
@@ -40,9 +46,9 @@ export function GpPicker({
         <h2>Antes de correr</h2>
 
         <div className="gp-pick-modes" role="radiogroup" aria-label="Física">
-          {(['arcade', 'real'] as const).map((m) => {
+          {(['real', 'arcade'] as const).map((m) => {
             const v = gpVehicleFor(m);
-            const best = loadBest(m);
+            const best = loadBest(trackOf(m));
             return (
               <button
                 key={m}
@@ -57,7 +63,7 @@ export function GpPicker({
                   <span className="gp-pick-mode-title">
                     {v.modeName} · {v.vehicleName}
                   </span>
-                  <span className="gp-pick-mode-tag">{v.track}</span>
+                  <span className="gp-pick-mode-tag">{gpTrackName(m, trackOf(m))}</span>
                 </div>
                 <p className="gp-pick-mode-desc">{v.desc}</p>
                 <div className="gp-pick-mode-best" data-testid={`gp-pick-best-${m}`}>
@@ -67,6 +73,27 @@ export function GpPicker({
             );
           })}
         </div>
+
+        {physics === 'real' && (
+          <div className="gp-pick-bots-section gp-pick-track">
+            <span className="gp-kicker">Pista</span>
+            <div className="gp-chips" role="radiogroup" aria-label="Pista">
+              {GP_TRACK_CHOICES.real.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={track === t.id}
+                  className={`gp-chip${track === t.id ? ' is-on' : ''}`}
+                  onClick={() => pickTrack(t.id)}
+                  data-testid={`gp-track-${t.id}`}
+                >
+                  {t.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="gp-pick-bots-section">
           <span className="gp-kicker">

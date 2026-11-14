@@ -1,11 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { GP_TRACK_BALA, GP_TRACK_MARINA, gpTrack, type GpTrackDef } from '@nocap/games';
+import { GP_TRACK_BALA, GP_TRACK_INTERLAGOS, GP_TRACK_MARINA, gpTrack, type GpTrackDef } from '@nocap/games';
 import { GpCarPreview } from './GpCarPreview';
 import { GpCommands } from './GpCommands';
 import { GpGarage } from './GpGarage';
 import { loadGarage } from './garage';
-import { gpTakeBack, loadBest } from './gp-best';
+import { gpTakeBack, loadBest, loadTrack, loadVehicle, saveVehicle } from './gp-best';
 import { lapClock } from './format';
 import { GP_THEME } from './theme';
 import { GP_HOME_VEHICLES } from './vehicles';
@@ -46,7 +46,12 @@ export function GpHome({
   /** Voltando de uma partida: a tela já aparece pronta, sem a animação de entrada. */
   const [back] = useState(gpTakeBack);
   /** Carro mostrado no carrossel (só para ver: não muda o modo que se joga, que é o de "Antes de correr"). */
-  const [shown, setShown] = useState(0);
+  const [shown, setShown] = useState(() => Math.max(0, GP_HOME_VEHICLES.findIndex((v) => v.vehicle === loadVehicle())));
+  // o carro que ficou na tela é o que volta na próxima visita (F1 na primeira vez)
+  useEffect(() => {
+    const v = GP_HOME_VEHICLES[shown];
+    if (v) saveVehicle(v.vehicle);
+  }, [shown]);
   const touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
   const many = GP_HOME_VEHICLES.length > 1;
   const turn = (by: number) =>
@@ -201,6 +206,13 @@ export function GpHome({
                 </p>
               </div>
               <div>
+                <TrackMap def={GP_TRACK_INTERLAGOS} />
+                <p>
+                  <b>Interlagos</b> · Realista · {(gpTrack(GP_TRACK_INTERLAGOS).length / 1000).toFixed(2).replace('.', ',')} km.
+                  Mesmo cenário da Marina, com o desenho do S do Senna, do Mergulho e do Pinheirinho.
+                </p>
+              </div>
+              <div>
                 <TrackMap def={GP_TRACK_BALA} />
                 <p>
                   <b>Bala Track</b> · Arcade · {(gpTrack(GP_TRACK_BALA).length / 1000).toFixed(2).replace('.', ',')} km.
@@ -234,7 +246,7 @@ export function GpHome({
  */
 function HomeCarousel({ shown, onTurn }: { shown: number; onTurn: (by: number) => void }) {
   const v = GP_HOME_VEHICLES[shown] ?? GP_HOME_VEHICLES[0]!;
-  const best = loadBest(v.mode);
+  const best = loadBest(v.mode === 'arcade' ? 'bala' : loadTrack());
   const many = GP_HOME_VEHICLES.length > 1;
   const [x0, setX0] = useState<number | null>(null);
   return (

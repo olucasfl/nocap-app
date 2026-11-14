@@ -41,6 +41,7 @@ import {
   type GpPaint,
   type GpPhysicsMode,
   type GpPlayerInfo,
+  gpTrackDefFor,
 } from '@nocap/games';
 import { GameChat } from '@/components/GameChat';
 import { GameMenu, Keycap, NetBadge } from '@/components/GameMenu';
@@ -67,7 +68,8 @@ import { css, gapText, lapClock } from './format';
 import { drawMinimap } from './minimap';
 import { GpNoticeQueue, NOTICE_FADE_MS, type GpNotice, type GpNoticeKind } from './notices';
 import { PHYSICS_NAME, saveBest } from './gp-best';
-import { gpActionOf, gpKeyName, useGpControls, useGpShake, type GpBinds } from './gp-settings';
+import { gpTrackName } from './vehicles';
+import { gpActionOf, gpKeyName, useGpAutoGas, useGpControls, useGpGuide, useGpShake, type GpBinds } from './gp-settings';
 import './theme.css';
 import './foxgp.css';
 import './gp-hud.css';
@@ -254,6 +256,8 @@ export interface GpOnline {
   infos: GpPlayerInfo[];
   /** Modo de física da sala (todos correm no mesmo: quem simula é o líder). */
   physics: GpPhysicsMode;
+  /** Pista da sala (id). */
+  track?: string;
   /** Dificuldade dos bots da sala (o líder simula os bots). */
   botLevel?: GpBotLevel;
 }
@@ -341,7 +345,8 @@ export function GpPlay({
   color = GP_FURS[0]!,
   paint,
   kart,
-  physics = 'arcade',
+  physics = 'real',
+  track,
   online,
   live,
   onExit,
@@ -356,6 +361,8 @@ export function GpPlay({
   kart?: GpPlayerInfo['kart'] | null;
   /** Modo de física no treino (online vem da sala). */
   physics?: GpPhysicsMode;
+  /** Pista do treino (a do Realista; no online vem da sala). */
+  track?: string;
   online?: GpOnline;
   live?: GpRoomLive;
   onExit: () => void;
@@ -375,6 +382,13 @@ export function GpPlay({
   /** Kart: a barra pisca ao completar um terço; balança no "sem turbo". */
   const [barPulse, setBarPulse] = useState(0);
   const [noTurbo, setNoTurbo] = useState(0);
+  const autoGas = useGpAutoGas((st) => st.on);
+  const autoGasRef = useRef(autoGas);
+  autoGasRef.current = autoGas;
+  const guideOn = useGpGuide((st) => st.on);
+  useEffect(() => {
+    sceneRef.current?.setGuide(guideOn);
+  }, [guideOn]);
   const shakeOn = useGpShake((st) => st.on);
   useEffect(() => {
     if (sceneRef.current) sceneRef.current.shakeOn = shakeOn;
@@ -405,6 +419,7 @@ export function GpPlay({
   const binds = useGpControls((st) => st.binds);
   const [notice, setNotice] = useState<GpNotice | null>(null);
   const mode: GpPhysicsMode = online?.physics ?? physics;
+  const trackId = gpTrackDefFor(mode, online?.track ?? track).id;
   /** O kart só baixa quando o Arcade é jogado (spec 081, Fase 6): a cena espera ele. */
   const [kartOk, setKartOk] = useState(() => mode !== 'arcade' || kartReady());
   useEffect(() => {
@@ -503,7 +518,7 @@ export function GpPlay({
       })),
     ];
     const seed = online?.seed ?? seedOf();
-    const world = new GpWorld(seed, infos, undefined, mode);
+    const world = new GpWorld(seed, infos, gpTrackDefFor(mode, online?.track ?? track), mode);
     // a espera com as luzes acesas: sorteada pela seed no treino (na sala, quem sorteia é o servidor)
     const holdSec = gpLightsHold(createRng(`${seed}:lights`)());
     const isHost = !!online && !!online.meId && online.hostId === meId;
@@ -535,6 +550,7 @@ export function GpPlay({
       const scene = new GpScene(el, world, meId, { reduced, quality: qualityRef.current });
       scene.setCamMode(read(CAM_KEY, CAMS, 'chase'));
       scene.shakeOn = useGpShake.getState().on;
+      scene.setGuide(useGpGuide.getState().on);
       sceneRef.current = scene;
       if (import.meta.env.DEV) (window as unknown as { __gpScene?: GpScene }).__gpScene = scene;
       const resize = () => {
@@ -805,7 +821,7 @@ export function GpPlay({
           }
         } else if (e.type === 'qtime' && mine) {
           gpSfx.lap(true);
-          if (saveBest(mode, e.ms))
+          if (saveBest(trackId, e.ms))
             say(lapClock(e.ms), 4000, 'result', `Recorde do aparelho no ${PHYSICS_NAME[mode]}`);
           else say(lapClock(e.ms), 4000, 'result', 'Seu tempo da volta lançada');
         } else if (e.type === 'bar' && mine) {
@@ -837,7 +853,7 @@ export function GpPlay({
         } else if (e.type === 'lap' && mine) {
           const c = me();
           gpSfx.lap(c?.bestLap === e.ms);
-          saveBest(mode, e.ms);
+          saveBest(trackId, e.ms);
           const fastest = world.fastest?.id === meId && world.fastest.ms === e.ms;
           if (fastest) say('Volta mais rápida', 2600, 'highlight', lapClock(e.ms));
           if (e.lap === GP_LAPS - 1) say('Última volta', 2400, 'highlight');
@@ -872,7 +888,6 @@ export function GpPlay({
           say('Cortou caminho', 2600, 'alert', 'De volta ao último ponto válido');
         } else if (e.type === 'wall' && mine && !fromHost) {
           gpSfx.wall(mode === 'arcade');
-          if (e.speed > 14) say('Batida', 2000, 'alert');
         } else if (e.type === 'bump' && (e.a === meId || e.b === meId) && !fromHost) gpSfx.bump(true);
         else if (e.type === 'turbo' && e.id === focus) gpSfx.turbo(e.level);
         else if (e.type === 'pad' && e.id === focus) gpSfx.turbo(1);
@@ -968,6 +983,9 @@ export function GpPlay({
           mine && (!menuRef.current || online)
             ? controls.read(dt)
             : { throttle: 0, brake: 0, steer: 0 };
+        // celular com acelerador automático: pisa fundo (o freio solta); só na pista e na volta, nunca na espera da largada
+        if (touchDevice && autoGasRef.current && (stage === 'race' || stage === 'quali'))
+          input = { ...input, throttle: input.brake > 0.1 ? 0 : 1 };
         // kart (spec 081): a mesma tecla do DRS é o turbo (os modos não se misturam)
         if (mode === 'arcade') input = { ...input, turbo: !!input.drs, drs: false };
         // só no desenvolvimento: piloto automático no seu carro (os testes de tela medem a fluidez com ele)
@@ -1325,7 +1343,7 @@ export function GpPlay({
       sceneRef.current = null;
       remakeScene.current = null;
     };
-  }, [bots, color, paint, kart, controls, online, touchDevice, mode, kartOk]);
+  }, [bots, color, paint, kart, controls, online, touchDevice, mode, kartOk, track]);
 
   const pad = (k: 'gas' | 'brake' | 'left' | 'right' | 'drs' | 'drift') => ({
     onPointerDown: (e: ReactPointerEvent<HTMLButtonElement>) => {
@@ -1859,7 +1877,16 @@ export function GpPlay({
                   ›
                 </button>
               </div>
-              <div className="gp-pads-r">
+              <div className="gp-pads-r" data-auto={autoGas ? '1' : '0'}>
+                <button
+                  type="button"
+                  className="gp-auto"
+                  aria-pressed={autoGas}
+                  onClick={() => useGpAutoGas.getState().set(!autoGas)}
+                  data-testid="gp-pad-auto"
+                >
+                  Auto {autoGas ? 'ligado' : 'desligado'}
+                </button>
                 {mode === 'arcade' ? (
                   <>
                     <button
@@ -1902,14 +1929,16 @@ export function GpPlay({
                 >
                   Freio
                 </button>
-                <button
-                  type="button"
-                  className="gp-pad is-gas"
-                  aria-label="Acelerar"
-                  {...pad('gas')}
-                >
-                  Acelera
-                </button>
+                {!autoGas && (
+                  <button
+                    type="button"
+                    className="gp-pad is-gas"
+                    aria-label="Acelerar"
+                    {...pad('gas')}
+                  >
+                    Acelera
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -1996,6 +2025,7 @@ export function GpPlay({
           rows={result}
           fastest={extra?.fastest ?? '—'}
           physics={PHYSICS_NAME[mode]}
+          track={gpTrackName(mode, track)}
           mode={{ kind: 'training', onAgain, onExit }}
         />
       )}

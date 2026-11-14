@@ -12,25 +12,14 @@ import './foxgp.css';
  * são normais). Manda o carro (pelo, F1 e kart) para a sala ao entrar e ao salvar a garagem; a sala usa o veículo do
  * modo (o líder troca a física e o veículo de todos muda sozinho).
  */
-export function GpLobbyGarage({ snapshot, me }: { snapshot: RoomSnapshot; me: string | undefined }) {
-  const [open, setOpen] = useState(false);
+export function GpLobbyGarage({ me }: { snapshot: RoomSnapshot; me: string | undefined }) {
   const sent = useRef(false);
   useEffect(() => {
     if (sent.current || !me) return;
     sent.current = true;
     sendRoomQuiet('gpaint', carForRoom(loadGarage()));
   }, [me]);
-  const vehicle = snapshot.foxgp?.physics === 'real' ? 'f1' : 'kart';
-  return (
-    <>
-      <button type="button" className="gp-tbtn is-primary gp-lobby-garage" onClick={() => setOpen(true)} data-testid="gp-lobby-garage">
-        Garagem
-      </button>
-      {open && (
-        <GpGarage vehicle={vehicle} onClose={() => setOpen(false)} onSave={(g) => sendRoom('gpaint', carForRoom(g))} />
-      )}
-    </>
-  );
+  return null;
 }
 
 /**
@@ -39,13 +28,17 @@ export function GpLobbyGarage({ snapshot, me }: { snapshot: RoomSnapshot; me: st
  */
 export function GpRoomCars({ snapshot }: { snapshot: RoomSnapshot }) {
   const [see, setSee] = useState<string | null>(null);
-  const kart = snapshot.foxgp?.physics !== 'real';
+  const [garage, setGarage] = useState(false);
+  const kart = snapshot.foxgp?.physics === 'arcade';
   const cars = snapshot.foxgp?.paints ?? {};
   const shown = see ? carFromRoom(cars[see]) : null;
   const who = snapshot.members.find((m) => m.id === see);
   return (
     <section className="gp-room-cars" aria-label="Os carros da sala" data-testid="gp-room-cars">
       <h3>Carros ({kart ? 'kart' : 'F1'})</h3>
+      <button type="button" className="gp-tbtn is-primary gp-room-custom" onClick={() => setGarage(true)} data-testid="gp-lobby-garage">
+        Personalizar meu carro
+      </button>
       <ul>
         {snapshot.members.map((m) => {
           const car = carFromRoom(cars[m.id]);
@@ -74,6 +67,13 @@ export function GpRoomCars({ snapshot }: { snapshot: RoomSnapshot }) {
           </p>
         ) : null;
       })()}
+      {garage && (
+        <GpGarage
+          vehicle={kart ? 'kart' : 'f1'}
+          onClose={() => setGarage(false)}
+          onSave={(g) => sendRoom('gpaint', carForRoom(g))}
+        />
+      )}
       {see &&
         shown &&
         createPortal(

@@ -663,7 +663,7 @@
 }
 .gph-track-two {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
 }
 .gph-track-two p {
@@ -671,7 +671,7 @@
   line-height: 1.35;
 }
 .gph-track-two .gph-map {
-  max-height: 26vh;
+  max-height: 24vh;
 }
 
 /* ---- garagem por veículo (spec 081, Fase 8): abas e opções que cabem sem rolagem ---- */
@@ -844,4 +844,51 @@
   .gpg .gph-garage-btns .gp-tbtn {
     font-size: 14px;
   }
+}
+
+/* garagem: o nome da cor escolhida ao lado do título da fileira, cores e botões mais redondos (14/11/2026) */
+.gpg-row h3 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.gpg-cur {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--gp-text);
+}
+.gpg-cur i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+.gpg-sw button {
+  border-radius: 8px;
+  transition: transform 0.12s;
+}
+.gpg-sw button:hover {
+  transform: scale(1.12);
+}
+.gpg-chips button,
+.gpg-tabs button,
+.gpg-veh button {
+  border-radius: 999px;
+}
+.gpg .gph-number > div {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.gpg .gph-number b {
+  min-width: 2ch;
+  text-align: center;
+  font-size: 28px;
+}
+.gpg .gph-number button {
+  border-radius: 50%;
 }

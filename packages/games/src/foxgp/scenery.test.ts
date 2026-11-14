@@ -8,7 +8,7 @@ import {
   gpBoardSlots,
   type GpFootprint,
 } from './scenery';
-import { GP_TRACK_MARINA, GP_TRACK_TOCA, gpTrack, type GpTrack } from './track';
+import { GP_TRACK_INTERLAGOS, GP_TRACK_MARINA, GP_TRACK_TOCA, gpTrack, type GpTrack } from './track';
 
 /** Verificador independente: distância do ponto até a linha central mais perto (todas as amostras, sem atalho). */
 function minCenterDist(tr: GpTrack, x: number, z: number) {
@@ -32,7 +32,7 @@ function points(tr: GpTrack, f: GpFootprint) {
 const road = GP_HALF_WIDTH + GP_KERB_W;
 
 describe('cenário fora da pista (spec 081, Fase 13.4)', () => {
-  for (const def of [GP_TRACK_MARINA, GP_TRACK_TOCA]) {
+  for (const def of [GP_TRACK_MARINA, GP_TRACK_TOCA, GP_TRACK_INTERLAGOS]) {
     const tr = gpTrack(def);
     it(`${def.name}: nenhuma arquibancada (degraus e telhado) em cima do asfalto, da zebra ou do box`, () => {
       const slots = gpStandSlots(tr);

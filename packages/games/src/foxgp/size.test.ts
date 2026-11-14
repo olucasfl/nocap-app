@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GP_CAR_LEN, GP_CAR_SIDE_GAP, GP_CAR_WID, GP_HALF_WIDTH } from './constants';
+import { GP_CAR_LEN, GP_CAR_SIDE_GAP, GP_CAR_WID, GP_HALF_WIDTH, gpHitDims } from './constants';
 import { GP_TRACK_MARINA } from './track';
 import { GpWorld, gpGridSpot, type GpCar } from './world';
 
@@ -12,9 +12,11 @@ const touching = (w: GpWorld) =>
 const S = -200;
 
 describe('tamanho dos carros (spec 081, Fase 3)', () => {
-  it('a caixa do carro tem ~3,6 × 6,5 m', () => {
-    expect(GP_CAR_WID).toBeCloseTo(3.6, 1);
-    expect(GP_CAR_LEN).toBeCloseTo(6.5, 1);
+  it('a caixa de colisão é do tamanho do desenho: F1 ~6,1 × 2,5 m, kart ~3,9 × 2,5 m', () => {
+    expect(gpHitDims('real')).toEqual({ len: 6.1, wid: 2.5 });
+    expect(gpHitDims('arcade').len).toBeCloseTo(3.9, 1);
+    expect(gpHitDims('arcade').wid).toBeLessThanOrEqual(GP_CAR_WID);
+    expect(gpHitDims('real').len).toBeLessThanOrEqual(GP_CAR_LEN);
   });
 
   it('3 carros lado a lado cabem no asfalto, sem encostar um no outro', () => {
@@ -29,10 +31,10 @@ describe('tamanho dos carros (spec 081, Fase 3)', () => {
     expect(hit(w.cars[1]!, w.cars[2]!)).toBeNull();
   });
 
-  it('4 não cabem: espalhados de borda a borda, eles se encostam', () => {
-    const w = new GpWorld('s', info(4), GP_TRACK_MARINA);
-    const outer = GP_HALF_WIDTH - GP_CAR_WID / 2;
-    const ds = [-outer, -outer / 3, outer / 3, outer];
+  it('6 lado a lado não cabem: espalhados de borda a borda, eles se encostam', () => {
+    const w = new GpWorld('s', info(6), GP_TRACK_MARINA);
+    const outer = GP_HALF_WIDTH - gpHitDims('arcade').wid / 2;
+    const ds = [-outer, -outer * 0.6, -outer * 0.2, outer * 0.2, outer * 0.6, outer];
     w.cars.forEach((c, i) => Object.assign(c, w.track.pointAt(S, ds[i]!)));
     expect(touching(w)(w.cars[0]!, w.cars[1]!)).not.toBeNull();
   });

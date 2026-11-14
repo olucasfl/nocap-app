@@ -46,10 +46,8 @@ import {
   GP_BUMP_SOFT,
   GP_BUMP_SPIN_DAMP,
   GP_BUMP_SPIN_MAX,
-  GP_CAR_LEN,
-  GP_CAR_R,
+  gpHitDims,
   GP_CAR_WALL_IN,
-  GP_CAR_WID,
   GP_CUT_JUMP,
   GP_CUT_OFF,
   GP_DNF_SEC,
@@ -1018,7 +1016,7 @@ export class GpWorld {
       c.rpm = clamp(v / top, 0.1, 1);
       const limiter = g === tops.length && v >= top;
       // círculo de atrito: no limite da curva sobra pouco pneu para acelerar (nunca menos de 25 %)
-      const traction = Math.sqrt(Math.max(0.0625, 1 - load * load));
+      const traction = Math.sqrt(Math.max(0.25, 1 - 0.7 * load * load));
       const engine =
         c.shiftT > 0 || limiter
           ? 0
@@ -1131,7 +1129,7 @@ export class GpWorld {
     const before = c.s;
     let p = tr.project(c.x, c.z, c.idx);
     // ---- barreira de pneus ----
-    const lim = tr.wallAt(p.i, p.d) - GP_CAR_R * GP_CAR_WALL_IN;
+    const lim = tr.wallAt(p.i, p.d) - (gpHitDims(this.mode).wid / 2) * GP_CAR_WALL_IN;
     if (Math.abs(p.d) > lim) {
       const nx = -tr.tz[p.i]! * Math.sign(p.d);
       const nz = tr.tx[p.i]! * Math.sign(p.d);
@@ -1319,10 +1317,11 @@ export class GpWorld {
   private testCarObb(a: GpCar, b: GpCar): { overlap: number; nx: number; nz: number; px: number; pz: number } | null {
     const dx = b.x - a.x;
     const dz = b.z - a.z;
-    if (dx * dx + dz * dz > GP_CAR_LEN * GP_CAR_LEN + GP_CAR_WID * GP_CAR_WID) return null;
+    const dims = gpHitDims(this.mode);
+    if (dx * dx + dz * dz > dims.len * dims.len + dims.wid * dims.wid) return null;
 
-    const hl = GP_CAR_LEN * 0.5;
-    const hw = GP_CAR_WID * 0.5;
+    const hl = dims.len * 0.5;
+    const hw = dims.wid * 0.5;
 
     const fax = Math.sin(a.h);
     const faz = -Math.cos(a.h);

@@ -841,3 +841,168 @@
 .gpx-tyre[hidden] {
   display: none;
 }
+
+/* ---- celular (14/11/2026): o polegar da direita com acelerador automático ---- */
+.gp-auto {
+  grid-area: auto;
+  justify-self: end;
+  padding: 4px 10px;
+  border: 1px solid var(--gp-line-2);
+  border-radius: 999px;
+  background: rgba(20, 26, 43, 0.7);
+  color: var(--gp-text-3);
+  font: 800 11px var(--gp-display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.gp-auto[aria-pressed='true'] {
+  color: #29c26a;
+  border-color: #29c26a;
+}
+.gp-pads-r[data-auto='0'] {
+  grid-template-areas:
+    'auto auto'
+    '. drs'
+    'brake gas';
+}
+.gp-play[data-physics='arcade'] .gp-pads-r[data-auto='0'] {
+  grid-template-areas:
+    'auto auto'
+    'drs turbo'
+    'brake gas';
+}
+.gp-pads-r[data-auto='1'] {
+  grid-template-areas:
+    'auto auto'
+    'turbo turbo'
+    'brake drs';
+}
+.gp-pads-r[data-auto='1'] .is-drift {
+  grid-area: drs;
+  justify-self: end;
+  width: 96px;
+  height: 96px;
+  font-size: 17px;
+}
+.gp-pads-r[data-auto='1'] .is-turbo {
+  grid-area: turbo;
+  justify-self: end;
+  width: 72px;
+  height: 72px;
+}
+.gp-play[data-physics='real'] .gp-pads-r[data-auto='1'] {
+  grid-template-areas:
+    'auto auto'
+    '. drs'
+    'brake brake';
+}
+.gp-play[data-physics='real'] .gp-pads-r[data-auto='1'] .is-brake {
+  grid-area: brake;
+  justify-self: end;
+  width: 96px;
+  height: 96px;
+}
+.gp-play[data-physics='real'] .gp-pads-r[data-auto='1'] .is-drs {
+  justify-self: end;
+  width: 72px;
+  height: 72px;
+}
+
+/* ---- celular (14/11/2026): avisos pequenos, discretos e sempre dentro da área segura ---- */
+.gp-play.gp-play[data-touch='1'] .gpx-notice {
+  top: calc(max(8px, env(safe-area-inset-top)) + 2px);
+  max-width: min(300px, 44%);
+  padding: 4px 12px 4px 10px;
+  gap: 8px;
+  border-left-width: 4px;
+}
+.gp-play.gp-play[data-touch='1'] .gpx-notice b {
+  font-size: 15px;
+}
+.gp-play.gp-play[data-touch='1'] .gpx-notice small {
+  display: none;
+}
+.gp-play.gp-play[data-touch='1'] .gpx-go {
+  font-size: 44px;
+}
+.gp-play.gp-play[data-touch='1'] .gpx-lapcall {
+  font-size: 15px;
+}
+.gp-play.gp-play[data-touch='1'] .gp-pads {
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+  padding-left: max(12px, env(safe-area-inset-left));
+  padding-right: max(12px, env(safe-area-inset-right));
+}
+.gp-play.gp-play[data-touch='1'] .gpx-board {
+  top: max(8px, env(safe-area-inset-top));
+  right: max(8px, env(safe-area-inset-right));
+  width: 150px;
+  font-size: 11px;
+}
+@media (orientation: portrait) {
+  .gp-play.gp-play[data-touch='1'] .gp-pad {
+    width: 64px;
+    height: 64px;
+  }
+}
+
+/* celular: painel de velocidade compacto, sem os selos que repetem os botões, avisos de pista e da volta pequenos */
+.gp-play.gp-play[data-touch='1'] .gpx-speed {
+  width: 168px;
+  padding: 5px 10px;
+  gap: 2px;
+}
+.gp-play.gp-play[data-touch='1'] .gpx-speed-num b {
+  font-size: 26px;
+}
+.gp-play.gp-play[data-touch='1'] .gpx-drs {
+  display: none;
+}
+.gp-play.gp-play[data-touch='1'] .gpx-pitlane {
+  top: calc(max(8px, env(safe-area-inset-top)) + 34px);
+  padding: 3px 10px;
+  font-size: 11px;
+}
+.gp-play.gp-play[data-touch='1'] .gpx-lapcall {
+  top: 26%;
+  padding: 6px 14px;
+  font-size: 13px;
+}
+.gp-play.gp-play[data-touch='1'] .gpx-box {
+  transform: translateX(-50%) scale(0.7);
+  transform-origin: top center;
+}
+.gp-play.gp-play[data-touch='1'] .gpx-tool span {
+  display: none;
+}
+.gp-play.gp-play[data-touch='1'] .gpx-tool {
+  padding: 8px 10px;
+  min-width: 40px;
+}
+@media (orientation: portrait) {
+  .gp-play.gp-play[data-touch='1'] .gpx-speed {
+    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 84px);
+  }
+  .gp-play.gp-play[data-touch='1'] .gpx-pitlane,
+  .gp-play.gp-play[data-touch='1'] .gpx-lapcall {
+    left: auto;
+    right: max(8px, env(safe-area-inset-right));
+    transform: none;
+    top: calc(max(8px, env(safe-area-inset-top)) + 96px);
+    max-width: 52%;
+    white-space: normal;
+    text-align: center;
+  }
+  .gp-play.gp-play[data-touch='1'] .gpx-lapcall {
+    top: calc(max(8px, env(safe-area-inset-top)) + 150px);
+  }
+  .gp-play.gp-play[data-touch='1'] .gp-pads-r {
+    gap: 8px;
+  }
+}
+@media (orientation: portrait) {
+  .gp-play.gp-play[data-touch='1'] .gpx-speed {
+    left: max(8px, env(safe-area-inset-left));
+    transform: none;
+  }
+}

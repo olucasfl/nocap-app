@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { GP_ACTIONS, bindLabel, gpBindOwner, useGpControls, useGpShake, type GpAction } from './gp-settings';
+import { GP_ACTIONS, bindLabel, gpBindOwner, useGpControls, useGpGuide, useGpShake, type GpAction } from './gp-settings';
 import './theme.css';
 import './gp-hud.css';
 
@@ -163,6 +163,7 @@ export function GpCommands({ touch, onClose }: { touch: boolean; onClose: () => 
                 </div>
               </div>
             )}
+            <GuideToggle />
             <ShakeToggle />
             <button type="button" className="gpc-reset" onClick={reset} data-testid="gp-bind-reset">
               Restaurar padrão
@@ -171,6 +172,18 @@ export function GpCommands({ touch, onClose }: { touch: boolean; onClose: () => 
         )}
       </div>
     </div>
+  );
+}
+
+/** Linha de guia do Realista: a melhor rota e onde frear (vermelho), segurar (amarelo) e acelerar (verde). */
+function GuideToggle() {
+  const on = useGpGuide((st) => st.on);
+  const set = useGpGuide((st) => st.set);
+  return (
+    <label className="gpc-toggle">
+      <input type="checkbox" checked={on} onChange={(e) => set(e.target.checked)} data-testid="gp-guide" />
+      <span>Linha de guia na pista (Realista)</span>
+    </label>
   );
 }
 

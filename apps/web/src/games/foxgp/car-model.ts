@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { decalMaterial, stickDecal } from './decals';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { GpPaint } from '@nocap/games';
 import { bluish } from './format';
@@ -536,7 +537,7 @@ export function buildCar(opts: { fur: number; paint?: GpPaint | null; pbr?: bool
     parent.add(x);
     return x;
   };
-  add(G.paint, body);
+  const paintMesh = add(G.paint, body);
   add(G.accent, accent);
   add(G.carbon, carbon);
   add(G.light, tail);
@@ -573,16 +574,9 @@ export function buildCar(opts: { fur: number; paint?: GpPaint | null; pbr?: bool
   // o número em adesivos (bico, tampa do motor e as duas laterais), postos na superfície da pintura
   const numTex = numberTexture(paint.number, paint.numStyle, paint.numStyle === 'circulo' || !paint.numStyle ? paint.body : 0xfff3e2, 0xfff3e2);
   textures.push(numTex);
-  const numMat = new THREE.MeshBasicMaterial({
-    map: numTex,
-    transparent: true,
-    depthWrite: false,
-    polygonOffset: true,
-    polygonOffsetFactor: -2,
-    polygonOffsetUnits: -4,
-  });
+  const numMat = decalMaterial(numTex, pbr);
   mats.push(numMat);
-  placeNumbers(car, numMat);
+  placeNumbers(car, paintMesh, numMat);
   return {
     group,
     body: car,
@@ -640,45 +634,16 @@ function addRimStyle(wheel: THREE.Object3D, style: string, m: THREE.Material, w:
 }
 
 /**
- * Põe os adesivos do número na superfície do carro (coordenadas da referência: nariz em +Z): acha a altura com um raio
- * de cima para baixo (topo do bico e tampa do motor) e de fora para dentro (laterais). Cada um virado para ser lido de
- * fora: o de cima com o topo do número para o nariz (de pé para quem vem atrás), cada lateral lida do seu lado.
+ * Põe os adesivos do número na pintura (coordenadas da referência: nariz em +Z), colados no casco (`decals.ts`). Só a pintura
+ * recebe (nunca o halo, a asa ou o aerofólio) e os lugares são os que ficam sempre à mostra: o topo do bico, antes do
+ * cockpit, e as duas laterais. O de cima com o topo do número para o nariz (de pé para quem vem atrás), cada lateral lida
+ * do seu lado.
  */
-function placeNumbers(car: THREE.Group, m: THREE.Material) {
-  car.updateMatrixWorld(true);
-  const meshes: THREE.Mesh[] = [];
-  car.traverse((o) => {
-    if ((o as THREE.Mesh).isMesh) meshes.push(o as THREE.Mesh);
-  });
-  const ray = new THREE.Raycaster();
-  const toLocal = (p: THREE.Vector3) => car.worldToLocal(p.clone());
-  const hit = (from: THREE.Vector3, dir: THREE.Vector3) => {
-    ray.set(car.localToWorld(from.clone()), dir.clone().transformDirection(car.matrixWorld));
-    const h = ray.intersectObjects(meshes, false)[0];
-    return h ? toLocal(h.point) : null;
-  };
-  const plane = (size: number) => new THREE.PlaneGeometry(size, size);
-  // de cima: bico e tampa do motor
-  for (const [z, size] of [
-    [1.55, 0.5],
-    [-1.05, 0.6],
-  ] as const) {
-    const p = hit(new THREE.Vector3(0, 3, z), new THREE.Vector3(0, -1, 0));
-    if (!p) continue;
-    const d = new THREE.Mesh(plane(size), m);
-    d.rotation.set(-Math.PI / 2, 0, Math.PI);
-    d.position.set(p.x, p.y + 0.012, p.z);
-    d.userData.tag = 'number';
-    car.add(d);
-  }
+function placeNumbers(car: THREE.Group, paintMesh: THREE.Mesh, m: THREE.Material) {
+  const put = (from: THREE.Vector3, dir: THREE.Vector3, up: THREE.Vector3, size: number) =>
+    stickDecal({ frame: car, targets: [paintMesh], material: m, from, dir, up, size });
+  // de cima: o topo do bico (se a primeira posição não pega, tenta um pouco mais atrás)
+  for (const z of [1.75, 1.6, 1.45]) if (put(new THREE.Vector3(0, 3, z), new THREE.Vector3(0, -1, 0), new THREE.Vector3(0, 0, 1), 0.5)) break;
   // laterais (cada uma lida de fora)
-  for (const sg of [1, -1]) {
-    const p = hit(new THREE.Vector3(sg * 2, 0.42, -0.4), new THREE.Vector3(-sg, 0, 0));
-    if (!p) continue;
-    const d = new THREE.Mesh(plane(0.42), m);
-    d.rotation.y = (sg * Math.PI) / 2;
-    d.position.set(p.x + sg * 0.012, p.y, p.z);
-    d.userData.tag = 'number';
-    car.add(d);
-  }
+  for (const sg of [1, -1]) put(new THREE.Vector3(sg * 2, 0.42, -0.35), new THREE.Vector3(-sg, 0, 0), new THREE.Vector3(0, 1, 0), 0.46);
 }

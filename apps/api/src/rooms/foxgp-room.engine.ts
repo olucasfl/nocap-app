@@ -4,6 +4,8 @@ import {
   GP_MAX_PLAYERS,
   GP_MIN_LAP_SEC,
   GP_PHYSICS_DEFAULT,
+  gpIsTrackId,
+  gpTrackDefFor,
   GP_QUALI_MAX_SEC,
   GP_ROOM_GRID_MS,
   GP_ROOM_LIGHTS_MS,
@@ -95,7 +97,9 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
   /** Quem simula a partida (o líder quando ela começou). */
   private simHost: string | null = null;
   private dirty = false;
-  private readonly lapLength = gpTrack().length;
+  private get lapLength() {
+    return gpTrack(gpTrackDefFor(this.physics, this.trackId)).length;
+  }
 
   constructor(opts: EngineOptions) {
     super({ ...opts, maxPlayers: GP_MAX_PLAYERS });
@@ -109,6 +113,7 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
     return (
       mode === 'classico' &&
       gpIsPhysicsMode(merged.physics) &&
+      (merged.track === undefined || gpIsTrackId(merged.track)) &&
       GP_FILL_OPTIONS.includes(fill as number) &&
       GP_BOT_LEVELS.includes(level as GpBotLevel)
     );
@@ -118,6 +123,12 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
   get physics(): GpPhysicsMode {
     const v = (this.settings as unknown as { physics?: unknown }).physics;
     return gpIsPhysicsMode(v) ? v : GP_PHYSICS_DEFAULT;
+  }
+
+  /** A pista da sala: a escolhida, se existe no modo; senão a primeira do modo. */
+  get trackId(): string {
+    const v = (this.settings as unknown as { track?: unknown }).track;
+    return gpTrackDefFor(this.physics, typeof v === 'string' ? v : null).id;
   }
 
   /** Total de carros com bots (0 = só gente) e a dificuldade (spec 081, 12.4). */
@@ -518,6 +529,7 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
         raceAt: started && this.stage !== 'quali' ? this.raceAt : null,
         holdMs: started && this.stage !== 'quali' ? this.holdMs : null,
         physics: this.physics,
+        track: this.trackId,
         slots: started ? slots : {},
         // a cor de cada um (o pelo), para a barra da classificação e a lista; sem carro ainda, laranja
         colors: Object.fromEntries(

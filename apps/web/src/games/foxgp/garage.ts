@@ -12,6 +12,7 @@ import {
   type GpRoomCar,
 } from '@nocap/games';
 import { defaultPaint } from './car-model';
+import { gpNotify } from './gp-bus';
 
 /**
  * A garagem salva no aparelho (spec 081, Fase 8): a raposa (pelo, a mesma nos dois carros) e uma pintura por veículo.
@@ -63,16 +64,18 @@ function fresh(fur = 0xff7d26): GpGarageSave {
   return { v: 2, fur, paint, kart: gpDefaultKartPaint(paint.body, paint.accent) };
 }
 
+/** Garagem a partir de um objeto qualquer (localStorage ou conta): o que for inválido volta ao padrão. */
+export function parseGarage(v: Partial<GpGarageSave>): GpGarageSave {
+  const fur = gpValidFur(v.fur) ? v.fur : 0xff7d26;
+  const paint = gpValidPaint(v.paint) ?? defaultPaint(fur);
+  const kart = gpValidKartPaint(v.kart) ?? gpDefaultKartPaint(paint.body, paint.accent);
+  return { v: 2, fur, paint, kart };
+}
+
 export function loadGarage(): GpGarageSave {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) {
-      const v = JSON.parse(raw) as Partial<GpGarageSave>;
-      const fur = gpValidFur(v.fur) ? v.fur : 0xff7d26;
-      const paint = gpValidPaint(v.paint) ?? defaultPaint(fur);
-      const kart = gpValidKartPaint(v.kart) ?? gpDefaultKartPaint(paint.body, paint.accent);
-      return { v: 2, fur, paint, kart };
-    }
+    if (raw) return parseGarage(JSON.parse(raw) as Partial<GpGarageSave>);
   } catch {
     /* sem armazenamento ou estragado: começa do padrão */
   }
@@ -85,6 +88,7 @@ export function saveGarage(g: GpGarageSave) {
   } catch {
     /* sem armazenamento: vale só nesta visita */
   }
+  gpNotify();
 }
 
 export const hex6 = (n: number) => `#${n.toString(16).padStart(6, '0')}`;

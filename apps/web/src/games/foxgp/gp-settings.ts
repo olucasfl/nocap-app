@@ -1,3 +1,5 @@
+import { gpNotify } from './gp-bus';
+import { loadGuide, saveGuide } from './gp-best';
 import { create } from 'zustand';
 import { bindLabel } from '../foxshot/fs-settings';
 
@@ -57,6 +59,20 @@ function persist(binds: GpBinds) {
   } catch {
     /* sem armazenamento: vale só nesta sessão */
   }
+  gpNotify();
+}
+
+/** Troca todos os comandos de uma vez (os que vieram da conta); valida o formato. */
+export function gpApplyBinds(raw: unknown) {
+  if (!raw || typeof raw !== 'object') return;
+  const p = raw as Partial<Record<GpAction, unknown>>;
+  const out = copy(GP_DEFAULT_BINDS);
+  for (const a of GP_ACTIONS) {
+    const v = p[a.id];
+    if (Array.isArray(v) && v.length === 2 && v.every((x) => typeof x === 'string')) out[a.id] = [v[0] as string, v[1] as string];
+  }
+  useGpControls.setState({ binds: out });
+  persist(out);
 }
 
 /** Onde uma tecla já está em uso (outra ação ou o outro lugar da mesma), ou null. */
@@ -121,6 +137,38 @@ const SHAKE_KEY = 'nocap-gp-shake';
  * Tremida da tela no turbo e na zebra do kart (spec 081, 5.5 e 6B.4): ligada por padrão, com opção de desligar no menu
  * Comandos. Com movimento reduzido no sistema ela nunca liga.
  */
+/** Linha de guia do Realista (verde, amarelo, vermelho): ligada por padrão, dá para desligar nos Comandos. */
+export const useGpGuide = create<{ on: boolean; set: (on: boolean) => void }>((set) => ({
+  on: loadGuide(),
+  set: (on) => {
+    saveGuide(on);
+    set({ on });
+  },
+}));
+
+const AUTO_KEY = 'nocap-gp-autogas';
+/**
+ * Acelerador automático no celular: o polegar da direita fica livre para o drift, o turbo e o DRS (acelerar + drift + turbo
+ * ao mesmo tempo não cabe em dois polegares). O freio desliga o acelerador. Ligado por padrão; só vale com toque.
+ */
+export const useGpAutoGas = create<{ on: boolean; set: (on: boolean) => void }>((set) => ({
+  on: (() => {
+    try {
+      return localStorage.getItem(AUTO_KEY) !== '0';
+    } catch {
+      return true;
+    }
+  })(),
+  set: (on) => {
+    try {
+      localStorage.setItem(AUTO_KEY, on ? '1' : '0');
+    } catch {
+      /* sem armazenamento */
+    }
+    set({ on });
+  },
+}));
+
 export const useGpShake = create<{ on: boolean; set: (on: boolean) => void }>((set) => ({
   on: (() => {
     try {
@@ -136,5 +184,6 @@ export const useGpShake = create<{ on: boolean; set: (on: boolean) => void }>((s
       /* sem armazenamento: vale só nesta sessão */
     }
     set({ on });
+    gpNotify();
   },
 }));

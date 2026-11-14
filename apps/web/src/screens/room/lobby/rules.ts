@@ -198,9 +198,9 @@ export function rulesSummary(s: RoomSnapshot): string {
   if (s.game === 'foxcap') return 'Fox Cap! · sem jogo escolhido';
   if (s.game === 'desmorona') return 'Desmorona! · Último de pé';
   if (s.game === 'foxgp')
-    return s.foxgp?.physics === 'real'
-      ? 'Fox GP · Circuito da Marina · 3 voltas · Realista'
-      : 'Fox GP · Bala Track · 3 voltas · Arcade';
+    return s.foxgp?.physics === 'arcade'
+      ? 'Fox GP · Bala Track · 3 voltas · Arcade'
+      : `Fox GP · ${s.foxgp?.track === 'interlagos' ? 'Interlagos' : 'Circuito da Marina'} · 3 voltas · Realista`;
   if (s.game === 'pingpong') return 'Ping Fox! · 1 contra 1 · 11 pontos';
   if (s.game === 'foxshot') return `Counter Fox · Mata-mata · ${s.foxshot?.minutes ?? 5} min`;
   if (s.game === 'bola' && s.bola) {
@@ -226,7 +226,8 @@ export function rulesSummary(s: RoomSnapshot): string {
 export function rulesFor(s: RoomSnapshot): RuleDef[] {
   // Fox GP: a física é da sala inteira (o líder simula todos os carros) e só o líder muda
   if (s.game === 'foxgp') {
-    const cur = (s.settings as unknown as { physics?: string }).physics === 'real' ? 'real' : 'arcade';
+    const cur = (s.settings as unknown as { physics?: string }).physics === 'arcade' ? 'arcade' : 'real';
+    const track = (s.settings as unknown as { track?: string }).track === 'interlagos' ? 'interlagos' : 'marina';
     const fill = (s.settings as unknown as { fill?: number }).fill ?? 0;
     const level = (s.settings as unknown as { botLevel?: string }).botLevel ?? 'medio';
     const people = s.members.length;
@@ -235,7 +236,7 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
       {
         id: 'physics',
         label: 'FÍSICA',
-        values: ['arcade', 'real'],
+        values: ['real', 'arcade'],
         current: cur,
         format: (v) => (v === 'real' ? 'Realista' : 'Arcade'),
         patch: (v) => ({ physics: v }),
@@ -244,6 +245,19 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
             ? 'Realista: a curva tem limite; pediu demais, o carro abre e perde velocidade (sem escorregar de lado).'
             : 'Arcade: kart com drift e turbo de 3 níveis; sem pneu, vácuo, box nem DRS.',
       },
+      ...(cur === 'real'
+        ? [
+            {
+              id: 'track',
+              label: 'PISTA',
+              values: ['marina', 'interlagos'],
+              current: track,
+              format: (v: string) => (v === 'interlagos' ? 'Interlagos' : 'Circuito da Marina'),
+              patch: (v: string) => ({ track: v }),
+              note: 'As duas pistas têm o mesmo cenário; muda só o desenho.',
+            } as RuleDef,
+          ]
+        : []),
       {
         id: 'fill',
         label: 'BOTS',

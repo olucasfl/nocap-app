@@ -38,6 +38,8 @@ import {
   type GpCar,
   type GpEvent,
   type GpWorld,
+  gpGuide,
+  gpGuideAt,
 } from '@nocap/games';
 import { mapEdge } from '../atravessa/models';
 import { buildCar, type CarModel } from './car-model';
@@ -339,6 +341,7 @@ export class GpScene {
     this.buildGround();
     this.buildTrack();
     if (world.track.pit) this.buildPit();
+    if (world.mode === 'real') this.buildGuide();
     this.buildGantry();
     this.buildBarriers();
     this.buildScenery();
@@ -718,22 +721,82 @@ export class GpScene {
 
   /** Linha de guia amarela da entrada do box (acende quando o pneu do carro em foco está gasto, spec 081, Fase 10). */
   private pitGuide: THREE.Mesh | null = null;
+  private guideMesh: THREE.Mesh | null = null;
+
+  /** A linha de guia do Realista: a melhor rota, pintada de verde (acelerar), amarelo (segurar) e vermelho (frear). */
+  private buildGuide() {
+    const tr = this.world.track;
+    const g = gpGuide(tr);
+    const COLORS = [0x2ee86b, 0xffd23a, 0xff3b30];
+    const mat = new THREE.MeshBasicMaterial({
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.8,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      toneMapped: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -4,
+      polygonOffsetUnits: -4,
+    });
+    this.guideMesh = this.ribbon(
+      (i) => {
+        const l = gpGuideAt(tr, g, i * tr.ds).lat;
+        return { a: l - 0.5, b: l + 0.5 };
+      },
+      (i) => COLORS[gpGuideAt(tr, g, i * tr.ds).kind] ?? COLORS[0]!,
+      0.07,
+      mat,
+    );
+    if (this.guideMesh) {
+      this.guideMesh.receiveShadow = false;
+      this.guideMesh.renderOrder = 2;
+    }
+  }
+
+  setGuide(on: boolean) {
+    if (this.guideMesh) this.guideMesh.visible = on && this.world.mode === 'real';
+  }
 
   private buildPit() {
     const tr = this.world.track;
     {
       // placa "BOX" com seta, na margem do lado do box, 150 m antes da entrada (fora do asfalto)
       const pd = tr.pit!;
-      const t = labelTexture('BOX ›', '#0b0e17', '#ffd23a', 256, 128, 84);
+      const t = labelTexture('BOX ›', '#0b0e17', '#ffd23a', 512, 256, 170);
       this.textures.push(t);
       const s0 = pd.inStart - 150;
       const i = tr.index(s0);
       const off = Math.min(tr.wallAt(i, pd.side), tr.limit) - 0.6;
       const q = tr.pointAt(s0, pd.side * Math.max(GP_HALF_WIDTH + GP_KERB_W + 1, off));
-      const sign = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 1.6), new THREE.MeshBasicMaterial({ map: t, side: THREE.DoubleSide }));
-      sign.position.set(q.x, 2.4, q.z);
+      const sign = new THREE.Mesh(new THREE.PlaneGeometry(5, 2.5), new THREE.MeshBasicMaterial({ map: t, side: THREE.DoubleSide }));
+      sign.position.set(q.x, 3.2, q.z);
       sign.rotation.y = -q.h + Math.PI;
       this.scene.add(sign);
+      // letreiro grande na entrada do box ("BOX É AQUI"): duas hastes na margem do lado do box e a faixa por cima, de frente
+      // para quem chega (14/11/2026); fica fora do asfalto e alto, sem atrapalhar a pista
+      {
+        const bt = labelTexture('BOX É AQUI ›', '#0b0e17', '#ffd23a', 1024, 256, 150);
+        this.textures.push(bt);
+        const s1 = pd.inStart - 6;
+        const edge = pd.side * (GP_HALF_WIDTH + GP_KERB_W + 2.2);
+        const a = tr.pointAt(s1, edge);
+        const b = tr.pointAt(s1, edge + pd.side * 10);
+        const mid = tr.pointAt(s1, edge + pd.side * 5);
+        const banner = new THREE.Mesh(
+          new THREE.PlaneGeometry(10, 2.5),
+          new THREE.MeshBasicMaterial({ map: bt, side: THREE.DoubleSide, toneMapped: false }),
+        );
+        banner.position.set(mid.x, 6.2, mid.z);
+        banner.rotation.y = -mid.h + Math.PI;
+        const pole = this.std(0x1b1535, 0.5, 0.4);
+        for (const q of [a, b]) {
+          const m = new THREE.Mesh(new THREE.BoxGeometry(0.35, 7.5, 0.35), pole);
+          m.position.set(q.x, 3.75, q.z);
+          this.scene.add(m);
+        }
+        this.scene.add(banner);
+      }
       // a linha de guia: do começo da entrada até a faixa paralela, no meio da faixa do box
       const pts: THREE.Vector3[] = [];
       for (let s = pd.inStart; s <= pd.inEnd + 20; s += 2) {
@@ -1846,7 +1909,11 @@ export class GpScene {
       this.setGhost(v, w.phase === 'quali' && c.id !== focusId);
       // no cockpit o próprio carro some (a câmera está dentro dele); o volante e as bordas ficam
       const inside = cockpit && c.id === focusId && this.camMix >= 1;
-      v.m.body.visible = !inside;
+      // o kart de dentro mostra o próprio volante e as mãos (só a cabeça do piloto some); o F1 some inteiro
+      if ('setDriverHidden' in v.m) {
+        v.m.body.visible = true;
+        (v.m as KartModel).setDriverHidden(inside);
+      } else v.m.body.visible = !inside;
       // fumaça e marcas de pneu quando escorrega
       const moved = Math.hypot(p.x - v.lastX, p.z - v.lastZ);
       v.lastX = p.x;
@@ -2070,8 +2137,15 @@ export class GpScene {
         fov = 60 + vk * vk * (real ? 26 : 14);
       } else {
         // cockpit: o olho do piloto (atrás do halo), olhando para a frente e um pouco para baixo
-        this.camPos.set(p.x + fx * 0.05 * CAR_VIS, 1.05 * CAR_VIS, p.z + fz * 0.05 * CAR_VIS);
-        this.camLook.set(p.x + fx * 20, 0.55, p.z + fz * 20);
+        const kv = car ? this.cars.get(car.id) : undefined;
+        if (kv && 'eye' in kv.m) {
+          // kart: o olho do piloto no próprio kart (o volante e as mãos aparecem à frente)
+          (kv.m as KartModel).eye.getWorldPosition(this.camPos);
+          this.camLook.set(p.x + fx * 20, this.camPos.y - 0.15, p.z + fz * 20);
+        } else {
+          this.camPos.set(p.x + fx * 0.05 * CAR_VIS, 1.05 * CAR_VIS, p.z + fz * 0.05 * CAR_VIS);
+          this.camLook.set(p.x + fx * 20, 0.55, p.z + fz * 20);
+        }
         fov = 74 + Math.min(1, speed / gpVmaxOf(this.world.mode)) ** 2 * (this.world.mode === 'real' ? 14 : 6);
       }
     }
@@ -2105,8 +2179,10 @@ export class GpScene {
     cam.updateProjectionMatrix();
     // volante e visor da marcha
     const inside = this.mode === 'cockpit' && this.camMix >= 1;
-    this.cockpit.visible = inside;
-    if (inside && car) {
+    // o volante de F1 só no Realista: o kart tem o dele
+    const f1Wheel = inside && this.world.mode === 'real';
+    this.cockpit.visible = f1Wheel;
+    if (f1Wheel && car) {
       this.cockpitWheel.rotation.z = -car.steer * 1.1;
       // luzes de troca: acendem com o giro do motor (só no F1; o kart não tem marchas)
       const lit = this.world.mode === 'real' ? Math.round(Math.max(0, (car.rpm - 0.55) / 0.42) * 10) : 0;

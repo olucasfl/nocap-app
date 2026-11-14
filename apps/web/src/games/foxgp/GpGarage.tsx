@@ -35,7 +35,7 @@ const RIM_STYLE_NAME: Record<(typeof GP_RIM_STYLES)[number], string> = {
 const TABS: Record<Vehicle, { id: string; name: string }[]> = {
   f1: [
     { id: 'pintura', name: 'Pintura' },
-    { id: 'desenho', name: 'Desenho' },
+    { id: 'desenho', name: 'Adesivo' },
     { id: 'rodas', name: 'Rodas' },
     { id: 'piloto', name: 'Piloto' },
   ],
@@ -44,6 +44,7 @@ const TABS: Record<Vehicle, { id: string; name: string }[]> = {
     { id: 'chassi', name: 'Chassi' },
     { id: 'pecas', name: 'Peças' },
     { id: 'piloto', name: 'Piloto' },
+    { id: 'capacete', name: 'Capacete' },
   ],
 };
 
@@ -61,9 +62,18 @@ function Swatches({
   colors?: { hex: number; name: string }[];
   testId?: string;
 }) {
+  const cur = colors.find((c) => c.hex === value);
   return (
     <section className="gpg-row">
-      <h3>{label}</h3>
+      <h3>
+        {label}
+        {cur && (
+          <span className="gpg-cur">
+            <i style={{ background: cur.hex < 0 ? 'transparent' : hex6(cur.hex) }} />
+            {cur.name}
+          </span>
+        )}
+      </h3>
       <div className="gpg-sw" role="radiogroup" aria-label={label}>
         {colors.map((c) => (
           <button
@@ -121,7 +131,7 @@ function Choices<T extends string>({
 function NumberPick({ value, onPick }: { value: number; onPick: (n: number) => void }) {
   return (
     <section className="gpg-row gph-number">
-      <h3>Número</h3>
+      <h3>Número do carro</h3>
       <div>
         <button type="button" aria-label="Número menor" onClick={() => onPick(Math.max(0, value - 1))}>
           −
@@ -171,7 +181,7 @@ export function GpGarage({
   const k = g.kart;
   const fur = (
     <Swatches
-      label="Pelo da raposa (o mesmo nos dois)"
+      label="Pelo"
       value={g.fur}
       colors={GP_FUR_OPTIONS}
       onPick={(hex) => setG((v) => ({ ...v, fur: hex }))}
@@ -230,6 +240,7 @@ export function GpGarage({
             <>
               <Swatches label="Carroceria" value={p.body} onPick={(hex) => f1({ body: hex })} testId="garage-body" />
               <Swatches label="Detalhe" value={p.accent} onPick={(hex) => f1({ accent: hex })} testId="garage-accent" />
+              <Swatches label="Asas" value={p.wing ?? p.accent} onPick={(wing) => f1({ wing })} />
               <Swatches label="Terceira cor" value={p.third ?? 0xf4f6fb} onPick={(hex) => f1({ third: hex })} />
               <Choices
                 label="Acabamento"
@@ -250,7 +261,7 @@ export function GpGarage({
               />
               <NumberPick value={p.number} onPick={(number) => f1({ number })} />
               <Choices
-                label="Estilo do número"
+                label="Adesivo do número"
                 value={p.numStyle ?? 'circulo'}
                 items={GP_NUM_STYLES.map((id) => ({ id, name: NUM_STYLE_NAME[id] }))}
                 onPick={(numStyle) => f1({ numStyle })}
@@ -277,7 +288,6 @@ export function GpGarage({
                 colors={GP_TYRE_BANDS.map((hex) => ({ hex, name: hex < 0 ? 'Nenhuma' : (GP_PAINT_COLORS.find((c) => c.hex === hex)?.name ?? hex6(hex)) }))}
                 onPick={(band) => f1({ band })}
               />
-              <Swatches label="Asas" value={p.wing ?? p.accent} onPick={(wing) => f1({ wing })} />
             </>
           )}
           {veh === 'f1' && tab === 'piloto' && (
@@ -318,19 +328,23 @@ export function GpGarage({
             <>
               {fur}
               <Swatches label="Macacão" value={k.suit} onPick={(suit) => kt({ suit })} />
-              <Swatches label="Detalhe do macacão" value={k.suit2} onPick={(suit2) => kt({ suit2 })} />
+              <Swatches label="Detalhe" value={k.suit2} onPick={(suit2) => kt({ suit2 })} />
               <Swatches label="Luvas" value={k.glove} onPick={(glove) => kt({ glove })} />
+            </>
+          )}
+          {veh === 'kart' && tab === 'capacete' && (
+            <>
               <Choices
                 label="Capacete"
                 value={k.helmet ? 'com' : 'sem'}
                 items={[
-                  { id: 'sem', name: 'Sem (cabeça de raposa)' },
+                  { id: 'sem', name: 'Cabeça de raposa' },
                   { id: 'com', name: 'Com' },
                 ]}
                 onPick={(v) => kt({ helmet: v === 'com' })}
                 testId="garage-helmet"
               />
-              {k.helmet && <Swatches label="Cor do capacete" value={k.helmetColor} onPick={(helmetColor) => kt({ helmetColor })} />}
+              {k.helmet && <Swatches label="Cor" value={k.helmetColor} onPick={(helmetColor) => kt({ helmetColor })} />}
             </>
           )}
         </div>

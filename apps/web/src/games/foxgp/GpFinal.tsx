@@ -41,12 +41,15 @@ export function GpFinal({
   rows,
   fastest,
   physics,
+  track,
   mode,
 }: {
   rows: GpFinalRow[];
   fastest: string;
   /** Nome do modo de física da partida (Arcade ou Realista). */
   physics: string;
+  /** Nome da pista corrida. */
+  track?: string;
   mode: GpFinalMode;
 }) {
   const winner = rows[0];
@@ -108,7 +111,7 @@ export function GpFinal({
       )}
       <div className="gpf-left">
         <div className="gpf-head">
-          <span className="gp-kicker">Bandeirada · {physics === 'Arcade' ? 'Bala Track' : 'Circuito da Marina'}</span>
+          <span className="gp-kicker">Bandeirada · {track ?? (physics === 'Arcade' ? 'Bala Track' : 'Circuito da Marina')}</span>
           <h1 className="gp-title gpf-title">
             {title}
             {won && <span>!</span>}

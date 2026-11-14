@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createRng } from '../core/rng';
 import {
-  GP_CAR_LEN,
-  GP_CAR_WID,
   GP_DNF_SEC,
   GP_DT,
   GP_GEARS,
@@ -19,9 +17,10 @@ import {
   GP_VMAX,
   gpGear,
   gpKmh,
+  gpHitDims,
 } from './constants';
 import { gpBotInput, newGpBotMemory } from './bots';
-import { GP_TRACK_MARINA, GP_TRACK_TOCA, GpTrack, gpTrack } from './track';
+import { GP_TRACK_INTERLAGOS, GP_TRACK_MARINA, GP_TRACK_TOCA, GpTrack, gpTrack, gpTrackDefFor } from './track';
 import { GP_IDLE, GpWorld, gpAutoGear, gpGridOrder, gpTorque, type GpCar, type GpInput } from './world';
 
 const info = (n: number, bot = false) =>
@@ -297,7 +296,7 @@ describe('batida entre carros (spec 081, Fase 13.3: impulso uma vez por contato)
   for (const mode of ['arcade', 'real'] as const) {
     describe(mode, () => {
       it('traseira com 8 m/s de diferença: quem bate perde uma parte, o da frente é empurrado, ninguém atravessa', () => {
-        const { w, a, b } = pair(mode, GP_CAR_LEN + 0.15, 0, 25, 17);
+        const { w, a, b } = pair(mode, gpHitDims(mode).len + 0.15, 0, 25, 17);
         const keep = { throttle: 0.55, brake: 0, steer: 0 };
         let minDist = Infinity;
         let aMin = Infinity;
@@ -312,7 +311,7 @@ describe('batida entre carros (spec 081, Fase 13.3: impulso uma vez por contato)
         expect(25 - aMin).toBeGreaterThan(1.5);
         expect(25 - aMin).toBeLessThan(3.6);
         expect(bMax - 17).toBeGreaterThan(1.5);
-        expect(minDist).toBeGreaterThan(GP_CAR_LEN * 0.85);
+        expect(minDist).toBeGreaterThan(gpHitDims(mode).len * 0.85);
         expect(a.prog).toBeLessThan(b.prog);
         // 1 s depois quem bateu já acelera de novo
         const v0 = a.speed;
@@ -322,7 +321,7 @@ describe('batida entre carros (spec 081, Fase 13.3: impulso uma vez por contato)
 
       it('a perda não se acumula: 3 ou 12 passos de contato dão a mesma velocidade', () => {
         const run = (n: number) => {
-          const { w, a, b } = pair(mode, GP_CAR_LEN - 0.2, 0, 24, 16);
+          const { w, a, b } = pair(mode, gpHitDims(mode).len - 0.2, 0, 24, 16);
           for (let i = 0; i < n; i++) collide(w);
           return [a.speed, b.speed];
         };
@@ -334,7 +333,7 @@ describe('batida entre carros (spec 081, Fase 13.3: impulso uma vez por contato)
       });
 
       it('raspada de lado a 30 m/s: nenhum carro cai abaixo de 85 %', () => {
-        const { w, a, b } = pair(mode, 1, GP_CAR_WID - 0.05, 30, 30, -0.04);
+        const { w, a, b } = pair(mode, 1, gpHitDims(mode).wid - 0.05, 30, 30, -0.04);
         b.vx = Math.sin(b.h) * 30;
         b.vz = -Math.cos(b.h) * 30;
         let low = Infinity;
@@ -346,7 +345,7 @@ describe('batida entre carros (spec 081, Fase 13.3: impulso uma vez por contato)
       });
 
       it('de frente a 20 m/s cada: os dois perdem uma vez e não param sozinhos em 3 passos', () => {
-        const { w, a, b } = pair(mode, GP_CAR_LEN + 0.2, 0, 20, 20, Math.PI);
+        const { w, a, b } = pair(mode, gpHitDims(mode).len + 0.2, 0, 20, 20, Math.PI);
         w.drainEvents();
         for (let i = 0; i < 3; i++) w.step(GP_DT, {});
         expect(bumps(w)).toBe(1);
@@ -357,7 +356,7 @@ describe('batida entre carros (spec 081, Fase 13.3: impulso uma vez por contato)
       });
 
       it('a quantidade de movimento se conserva na batida (massas iguais)', () => {
-        const { w, a, b } = pair(mode, GP_CAR_LEN - 0.1, 0.8, 22, 9, 0.3);
+        const { w, a, b } = pair(mode, gpHitDims(mode).len - 0.1, 0.8, 22, 9, 0.3);
         const before = { x: a.vx + b.vx, z: a.vz + b.vz };
         collide(w);
         expect(a.vx + b.vx).toBeCloseTo(before.x, 5);
@@ -365,7 +364,7 @@ describe('batida entre carros (spec 081, Fase 13.3: impulso uma vez por contato)
       });
 
       it('batida de lado gira pouco (limitado) e o giro some', () => {
-        const { w, a, b } = pair(mode, 1.5, -(GP_CAR_LEN + GP_CAR_WID) / 2 + 0.2, 2, 12, Math.PI / 2);
+        const { w, a, b } = pair(mode, 1.5, -(gpHitDims(mode).len + gpHitDims(mode).wid) / 2 + 0.2, 2, 12, Math.PI / 2);
         let spin = 0;
         for (let i = 0; i < 12; i++) {
           w.step(GP_DT, {});
@@ -675,6 +674,18 @@ describe('corrida e chegada', () => {
     expect(c.laps.length).toBe(0);
   });
 
+  it('Interlagos: bots completam a corrida no Realista e a escolha da pista vale', () => {
+    expect(gpTrackDefFor('real', 'interlagos').id).toBe('interlagos');
+    expect(gpTrackDefFor('real', 'bala').id).toBe('marina');
+    expect(gpTrackDefFor('arcade', 'interlagos').id).toBe('bala');
+    const w = new GpWorld('il', info(6, true), GP_TRACK_INTERLAGOS, 'real');
+    runBots(w, GP_QUALI_MAX_SEC + 5, () => w.qualiDone(), 'il');
+    w.beginRace(w.gridOrder());
+    runBots(w, 600, () => w.ended, 'il');
+    expect(w.ended).toBe(true);
+    expect(w.standings().filter((r) => r.car.finished).length).toBeGreaterThanOrEqual(5);
+  });
+
   it('Realista: corrida completa com bots na pista do jogo: 3 voltas em ~4 min e pneu perto do fim', () => {
     const w = new GpWorld('r', info(6, true), undefined, 'real');
     runBots(w, GP_QUALI_MAX_SEC + 5, () => w.qualiDone(), 'r');
@@ -693,7 +704,7 @@ describe('corrida e chegada', () => {
     expect(noPit.length).toBeGreaterThan(0);
     for (const r of noPit) {
       expect(r.car.wear).toBeGreaterThan(0.6);
-      expect(r.car.wear).toBeLessThan(1);
+      expect(r.car.wear).toBeLessThanOrEqual(1);
     }
   });
 

@@ -41,11 +41,12 @@ export function GpRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       meId: info.slots[meId] !== undefined ? meId : '',
       hostId,
       infos: list,
-      physics: info.physics ?? 'arcade',
+      physics: info.physics ?? 'real',
+      track: info.track,
       botLevel: info.botLevel ?? 'medio',
     };
     // a lista só muda se mudarem as vagas: nomes novos no meio da partida não recriam a cena
-  }, [seed, meId, hostId, slotKey, info?.physics]);
+  }, [seed, meId, hostId, slotKey, info?.physics, info?.track]);
   const live: GpRoomLive | undefined = info
     ? {
         stage: info.stage,

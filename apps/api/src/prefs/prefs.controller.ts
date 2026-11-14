@@ -67,7 +67,27 @@ export const blocksRunSchema = z
   .strict();
 export type BlocksRun = z.infer<typeof blocksRunSchema>;
 
-type StoredPrefs = PrefsInput & { blocksRun?: BlocksRun };
+/**
+ * O que o Fox GP guarda na conta (14/11/2026): garagem (pelo e pinturas), comandos, melhor volta por pista, opções.
+ * O servidor só limita formato e tamanho; o aparelho valida o conteúdo ao ler (os mesmos validadores do jogo).
+ */
+export const gpSchema = z
+  .object({
+    garage: z
+      .record(z.string().max(20), z.unknown())
+      .refine((g) => JSON.stringify(g).length <= 3000),
+    binds: z.record(z.string().max(20), z.array(z.string().max(30)).length(2)).refine((b) => Object.keys(b).length <= 30),
+    best: z.record(z.string().max(30), z.number().int().min(1).max(3_600_000)).refine((b) => Object.keys(b).length <= 10),
+    shake: z.boolean(),
+    guide: z.boolean(),
+    physics: z.enum(['arcade', 'real']),
+    vehicle: z.enum(['kart', 'f1']),
+  })
+  .partial()
+  .strict();
+export type GpSaved = z.infer<typeof gpSchema>;
+
+type StoredPrefs = PrefsInput & { blocksRun?: BlocksRun; gp?: GpSaved };
 
 /** Troca (ou apaga, com `null`) a partida guardada sem tocar nas preferências. */
 export function withBlocksRun(data: StoredPrefs | undefined, run: BlocksRun | null): StoredPrefs {
@@ -78,7 +98,21 @@ export function withBlocksRun(data: StoredPrefs | undefined, run: BlocksRun | nu
 
 /** Ao gravar as preferências, a partida guardada continua onde estava. */
 export function keepBlocksRun(existing: StoredPrefs | undefined, next: PrefsInput): StoredPrefs {
-  return existing?.blocksRun ? { ...next, blocksRun: existing.blocksRun } : next;
+  const out: StoredPrefs = { ...next };
+  if (existing?.blocksRun) out.blocksRun = existing.blocksRun;
+  if (existing?.gp) out.gp = existing.gp;
+  return out;
+}
+
+/** Junta o que o Fox GP mandou ao que a conta já tinha (a melhor volta nunca piora; o resto vale o último). */
+export function mergeGp(old: GpSaved | undefined, next: GpSaved): GpSaved {
+  const merged: GpSaved = { ...(old ?? {}), ...next };
+  if (old?.best || next.best) {
+    const best: Record<string, number> = { ...(old?.best ?? {}) };
+    for (const [k, v] of Object.entries(next.best ?? {})) best[k] = best[k] === undefined ? v : Math.min(best[k]!, v);
+    merged.best = best;
+  }
+  return merged;
 }
 
 /** As preferências da conta (spec 058): `GET` devolve as salvas ({} se nunca salvou); `PUT` grava (a última vale). */
@@ -119,6 +153,33 @@ export class PrefsController {
       .values({ userId: req.user.id, data })
       .onConflictDoUpdate({ target: userPrefs.userId, set: { data, updatedAt: new Date() } });
     return { ok: true };
+  }
+
+  @Get('gp')
+  @RateLimit({ limit: 60, windowMs: 60_000 })
+  async loadGp(@Req() req: AuthedRequest): Promise<{ gp: GpSaved | null }> {
+    const [row] = await this.db
+      .select({ data: userPrefs.data })
+      .from(userPrefs)
+      .where(eq(userPrefs.userId, req.user.id));
+    return { gp: (row?.data as StoredPrefs | undefined)?.gp ?? null };
+  }
+
+  @Put('gp')
+  @HttpCode(200)
+  @RateLimit({ limit: 60, windowMs: 60_000 })
+  async saveGp(@Req() req: AuthedRequest, @Body(new ZodValidationPipe(gpSchema)) body: GpSaved) {
+    const [row] = await this.db
+      .select({ data: userPrefs.data })
+      .from(userPrefs)
+      .where(eq(userPrefs.userId, req.user.id));
+    const old = row?.data as StoredPrefs | undefined;
+    const data: StoredPrefs = { ...(old ?? {}), gp: mergeGp(old?.gp, body) };
+    await this.db
+      .insert(userPrefs)
+      .values({ userId: req.user.id, data })
+      .onConflictDoUpdate({ target: userPrefs.userId, set: { data, updatedAt: new Date() } });
+    return { gp: data.gp };
   }
 
   @Get('blocks-run')

@@ -56,4 +56,16 @@ export function gpVehicleFor(mode: GpPhysicsMode): GpVehicleInfo {
 /**
  * Os carros do carrossel da tela inicial: só veículos diferentes (enquanto o kart não existe, só o F1, e as setas somem).
  */
-export const GP_HOME_VEHICLES: readonly GpVehicleInfo[] = GP_KART_READY ? [KART, REAL_F1] : [REAL_F1];
+export const GP_HOME_VEHICLES: readonly GpVehicleInfo[] = GP_KART_READY ? [REAL_F1, KART] : [REAL_F1];
+
+/** As pistas de cada modo (a primeira do Realista é a padrão). */
+export const GP_TRACK_CHOICES: Record<GpPhysicsMode, readonly { id: string; name: string }[]> = {
+  real: [
+    { id: 'marina', name: 'Circuito da Marina' },
+    { id: 'interlagos', name: 'Interlagos' },
+  ],
+  arcade: [{ id: 'bala', name: 'Bala Track' }],
+};
+
+export const gpTrackName = (mode: GpPhysicsMode, id: string | null | undefined) =>
+  (GP_TRACK_CHOICES[mode].find((t) => t.id === id) ?? GP_TRACK_CHOICES[mode][0]!).name;
