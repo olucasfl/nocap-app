@@ -18,6 +18,7 @@ export type RoomGame =
   | 'atravessa'
   | 'desmorona'
   | 'foxgp'
+  | 'golf'
   | 'bola'
   | 'pingpong'
   | 'foxshot'
@@ -162,6 +163,31 @@ export interface DesmoronaRoomState {
   /** Quem já caiu (id → hora da queda em ms de jogo). */
   dead: Record<string, number>;
   winnerId: string | null;
+}
+
+/** O Mini Golf em sala (spec 082): bolas, vagas, buraco atual, placar e resultados. As posições vêm no fluxo "gb", os sons em "ge". */
+export interface GolfRoomState {
+  me: string | null;
+  /** A bola de cada pessoa (cor, acabamento e rastro). */
+  looks: Record<string, { color: number; finish: string; trail: string }>;
+  /** Vaga de cada pessoa nos quadros de posição. */
+  slots: Record<string, number>;
+  /** As fases da partida, na ordem. */
+  levels: number[];
+  hole: number;
+  level: number | null;
+  par: number | null;
+  stage: 'intro' | 'play' | 'cleared' | null;
+  stageEndsAt: number | null;
+  seconds: number;
+  /** Tacadas e estado de cada um neste buraco (0 mirando, 1 rolando, 2 no buraco, 3 estourou). */
+  strokes: Record<string, number>;
+  status: Record<string, number>;
+  /** Soma de tacadas de cada um até aqui. */
+  totals: Record<string, number>;
+  results: { level: number; par: number; rows: Record<string, { s: number; h: boolean }> }[];
+  /** Nome do resultado de cada um no buraco que acabou (ACE, Eagle...). */
+  names: Record<string, string>;
 }
 
 /** O Fox GP em sala (spec 078): fases, horas, vagas, cores, grid, chegadas e quem saiu. As posições vêm no fluxo "pos". */
@@ -315,6 +341,7 @@ export interface RoomSnapshot {
   atravessa?: AtravessaRoomState;
   desmorona?: DesmoronaRoomState;
   foxgp?: FoxGpRoomState;
+  golf?: GolfRoomState;
   bola?: BolaRoomState;
   pingpong?: PingRoomState;
   foxshot?: FoxShotRoomState;
@@ -399,6 +426,8 @@ type LiveType =
   | 'dsteps'
   | 'dpushed'
   | 'bs'
+  | 'gb'
+  | 'ge'
   | 'rtc'
   | 'bswitch'
   | 'fin'
@@ -415,6 +444,8 @@ const live: Record<LiveType, Set<(m: unknown) => void>> = {
   dsteps: new Set(),
   dpushed: new Set(),
   bs: new Set(),
+  gb: new Set(),
+  ge: new Set(),
   rtc: new Set(),
   bswitch: new Set(),
   fin: new Set(),
@@ -578,6 +609,8 @@ function attach(r: Room) {
     'dsteps',
     'dpushed',
     'bs',
+    'gb',
+    'ge',
     'rtc',
     'bswitch',
     'fin',
@@ -929,6 +962,7 @@ export function meOf(snapshot: RoomSnapshot | null, userId?: string): string | u
     snapshot?.bola?.me ??
     snapshot?.desmorona?.me ??
     snapshot?.foxgp?.me ??
+    snapshot?.golf?.me ??
     snapshot?.atravessa?.me ??
     undefined
   );

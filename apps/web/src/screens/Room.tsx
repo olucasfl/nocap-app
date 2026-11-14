@@ -24,6 +24,9 @@ import { DesmoronaRoomFinal } from '@/games/desmorona/DesmoronaRoomFinal';
 import { GpRoomPlay } from '@/games/foxgp/GpRoomPlay';
 import { GpRoomFinal } from '@/games/foxgp/GpRoomFinal';
 import { GpLobbyGarage } from '@/games/foxgp/GpLobbyGarage';
+import { GolfRoomPlay } from '@/games/minigolf/GolfRoomPlay';
+import { GolfRoomFinal } from '@/games/minigolf/GolfRoomFinal';
+import { GolfLobbyBall } from '@/games/minigolf/GolfLobbyBall';
 import { AtravessaRoomFinalPage } from '@/games/atravessa/AtravessaRoomFinalPage';
 import { BolaRoomPlay } from '@/games/bola/BolaRoomPlay';
 import { PingRoomPlay } from '@/games/pingpong/PingRoomPlay';
@@ -60,7 +63,7 @@ function Header({ round }: { round?: string }) {
 
 /** A página de cada jogo (o Intruso é jogado a partir da Mesmíssima). */
 const GAME_PAGE: Record<
-  Exclude<RoomGame, 'desmorona' | 'foxgp' | 'bola' | 'pingpong' | 'foxshot' | 'foxcap'>,
+  Exclude<RoomGame, 'desmorona' | 'foxgp' | 'golf' | 'bola' | 'pingpong' | 'foxshot' | 'foxcap'>,
   '/cor' | '/tempo' | '/eco' | '/atravessa'
 > = {
   color: '/cor',
@@ -73,6 +76,7 @@ const GAME_PAGE: Record<
 const GAME_NAME: Record<RoomGame, string> = {
   desmorona: 'Desmorona!',
   foxgp: 'Fox GP',
+  golf: 'Mini Golf',
   bola: 'Fut Fox',
   pingpong: 'Ping Fox!',
   foxshot: 'Counter Fox',
@@ -94,6 +98,7 @@ const ENTRY_LEAD: Record<RoomGame, string> = {
     'Ping Fox! com os amigos: pingue-pongue 1 contra 1 até 11 pontos, com a raquete batendo de verdade (força, lob e efeito). Os 2 primeiros da sala jogam e o resto assiste. Até 8 pessoas.',
   foxgp:
     'Fox GP com os amigos: classificação de uma volta lançada, grid pelos tempos e corrida de 3 voltas, com DRS, vácuo e box. De 2 a 12 raposas; o líder escolhe a física (Arcade ou Realista).',
+  golf: 'Mini Golf com os amigos: todos jogam o mesmo buraco ao mesmo tempo, as bolas se empurram e vence quem fizer menos tacadas. De 2 a 8 pessoas.',
   desmorona:
     'Desmorona! com os amigos: todo mundo cai do céu, o chão some a cada passo e vence o último de pé. De 2 a 8 pessoas.',
   eco: 'Jogue o Ecooo com amigos: Corrida (todo mundo repete a mesma sequência e quem errar sai) ou Siga o Líder (um cria, os outros repetem). Você escolhe dentro da sala.',
@@ -130,7 +135,7 @@ function Entry({
             ? '/tempo'
             : game === 'eco'
               ? '/eco'
-              : game === 'atravessa' || game === 'desmorona' || game === 'foxgp' || game === 'bola' || game === 'pingpong' || game === 'foxshot' || game === 'foxcap'
+              : game === 'atravessa' || game === 'desmorona' || game === 'foxgp' || game === 'golf' || game === 'bola' || game === 'pingpong' || game === 'foxshot' || game === 'foxcap'
                 ? '/'
                 : '/cor'
         }
@@ -222,6 +227,7 @@ function RoomPageInner({ code, game = 'color' }: { code?: string; game?: RoomGam
     else if (lastGame === 'desmorona' || lastGame === 'foxgp' || lastGame === 'bola' || lastGame === 'pingpong' || lastGame === 'atravessa')
       // cada jogo volta para a tela própria dele (só sai do jogo quem clica em "Sair do ..." nessa tela)
       void navigate({ to: '/fox-cap', search: { jogo: lastGame } });
+    else if (lastGame === 'golf') void navigate({ to: '/minigolf' });
     else if (lastGame === 'foxcap') void navigate({ to: '/' });
     else void navigate({ to: GAME_PAGE[lastGame], search: { aba: 'friends' } });
   }, [snapshot, lastGame, message, status, navigate]);
@@ -310,6 +316,13 @@ function RoomPageInner({ code, game = 'color' }: { code?: string; game?: RoomGam
     return <GpRoomFinal snapshot={snapshot} />;
   }
 
+  if (snapshot?.game === 'golf' && (snapshot.phase === 'show' || snapshot.phase === 'play')) {
+    return <GolfRoomPlay snapshot={snapshot} />;
+  }
+  if (snapshot?.game === 'golf' && snapshot.phase === 'final') {
+    return <GolfRoomFinal snapshot={snapshot} />;
+  }
+
   if (snapshot?.game === 'foxshot' && snapshot.phase === 'lobby') {
     return <CounterFoxLobby snapshot={snapshot} />;
   }
@@ -344,6 +357,7 @@ function RoomPageInner({ code, game = 'color' }: { code?: string; game?: RoomGam
           snapshot.game !== 'atravessa' &&
           snapshot.game !== 'desmorona' &&
           snapshot.game !== 'foxgp' &&
+          snapshot.game !== 'golf' &&
           snapshot.game !== 'bola' &&
           snapshot?.round &&
           snapshot.phase !== 'lobby' &&
@@ -369,6 +383,7 @@ function RoomPageInner({ code, game = 'color' }: { code?: string; game?: RoomGam
       />
       {snapshot?.phase === 'lobby' && <Lobby snapshot={snapshot} />}
       {snapshot?.phase === 'lobby' && snapshot.game === 'foxgp' && <GpLobbyGarage snapshot={snapshot} me={meId} />}
+      {snapshot?.phase === 'lobby' && snapshot.game === 'golf' && <GolfLobbyBall snapshot={snapshot} me={meId} />}
       {snapshot &&
         [
           'create',

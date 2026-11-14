@@ -45,6 +45,7 @@ export const MIN_PLAYERS: Record<RoomGame, number> = {
   atravessa: 2,
   desmorona: 2,
   foxgp: 2,
+  golf: 2,
   // com bots, uma pessoa só já joga
   bola: 1,
   pingpong: 2,
@@ -56,6 +57,7 @@ export const GAME_NAME: Record<RoomGame, string> = {
   atravessa: 'Atravessa!',
   desmorona: 'Desmorona!',
   foxgp: 'Fox GP',
+  golf: 'Mini Golf',
   bola: 'Fut Fox',
   pingpong: 'Ping Fox!',
   foxshot: 'Counter Fox',
@@ -75,6 +77,7 @@ export const GAME_OF: Record<RoomGame, string> = {
   atravessa: 'do Atravessa!',
   desmorona: 'do Desmorona!',
   foxgp: 'do Fox GP',
+  golf: 'do Mini Golf',
   bola: 'do Fut Fox',
   pingpong: 'do Ping Fox!',
   foxshot: 'do Counter Fox',
@@ -92,6 +95,13 @@ const SIZE_NAME: Record<string, string> = {
 /** Modos de cada jogo na sala, com uma linha que explica cada um. */
 export const MODES: Record<RoomGame, { id: string; label: string; note: string }[]> = {
   foxcap: [],
+  golf: [
+    {
+      id: 'classico',
+      label: 'Tacadas',
+      note: 'Todo mundo joga o mesmo buraco ao mesmo tempo e as bolas se empurram. Quem encaçapa espera os outros; passou do tempo ou de 16 tacadas, conta 18. Vence quem somar menos tacadas. Sem ranking.',
+    },
+  ],
   foxshot: [
     {
       id: 'mata',
@@ -197,6 +207,10 @@ export const modeOf = (s: RoomSnapshot) => MODES[s.game].find((m) => m.id === s.
 export function rulesSummary(s: RoomSnapshot): string {
   if (s.game === 'foxcap') return 'Fox Cap! · sem jogo escolhido';
   if (s.game === 'desmorona') return 'Desmorona! · Último de pé';
+  if (s.game === 'golf') {
+    const g = s.settings as unknown as { holes?: number; tier?: string };
+    return `Mini Golf · ${g.holes ?? 9} buracos · ${g.tier === 'easy' ? 'Fácil' : g.tier === 'medium' ? 'Média' : g.tier === 'hard' ? 'Difícil' : 'Mista'}`;
+  }
   if (s.game === 'foxgp')
     return s.foxgp?.physics === 'arcade'
       ? 'Fox GP · Bala Track · 3 voltas · Arcade'
@@ -294,6 +308,47 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
               note: 'Os bots largam junto e o líder simula cada um; não entram em ranking.',
             } as RuleDef,
           ]),
+    ];
+  }
+  if (s.game === 'golf') {
+    const g = s.settings as unknown as { holes?: number; tier?: string; seconds?: number; collide?: boolean };
+    return [
+      {
+        id: 'holes',
+        label: 'BURACOS',
+        values: ['3', '6', '9', '12', '18', '30'],
+        current: String(g.holes ?? 9),
+        format: (v) => `${v} buracos`,
+        patch: (v) => ({ holes: Number(v) }),
+        note: 'Sorteados entre as 30 fases, sem repetir.',
+      },
+      {
+        id: 'tier',
+        label: 'DIFICULDADE',
+        values: ['mix', 'easy', 'medium', 'hard'],
+        current: g.tier ?? 'mix',
+        format: (v) => (v === 'easy' ? 'Fácil' : v === 'medium' ? 'Média' : v === 'hard' ? 'Difícil' : 'Mista'),
+        patch: (v) => ({ tier: v }),
+        note: 'Só há 9 fases fáceis e 10 difíceis; se pedir mais buracos, a partida usa todas as da dificuldade.',
+      },
+      {
+        id: 'seconds',
+        label: 'TEMPO POR BURACO',
+        values: ['60', '180', '300'],
+        current: String(g.seconds ?? 180),
+        format: (v) => `${Number(v) / 60} min`,
+        patch: (v) => ({ seconds: Number(v) }),
+        note: 'Quem não encaçapa no tempo (ou em 16 tacadas) conta 18.',
+      },
+      {
+        id: 'collide',
+        label: 'BOLAS SE EMPURRAM',
+        values: ['sim', 'nao'],
+        current: g.collide === false ? 'nao' : 'sim',
+        format: (v) => (v === 'sim' ? 'Ligado' : 'Desligado'),
+        patch: (v) => ({ collide: v === 'sim' }),
+        note: 'Ligado: as bolas batem umas nas outras e podem atrapalhar.',
+      },
     ];
   }
   if (s.game === 'desmorona' || s.game === 'bola' || s.game === 'pingpong' || s.game === 'foxshot' || s.game === 'foxcap')

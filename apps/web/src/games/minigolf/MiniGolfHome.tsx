@@ -1,14 +1,21 @@
+import { useState, type FormEvent } from 'react';
 import { useNavigate } from '@tanstack/react-router';
+import { NicknameDialog } from '@/components/NicknameDialog';
+import { RoomConflictDialog } from '@/components/RoomConflictDialog';
+import { useRoomEntry } from '@/lib/my-room';
 import { GOLF_LEVELS, GOLF_TIERS, GOLF_TIER_LABEL, type GolfTier } from '@nocap/games';
 import { useTouchGuard } from '../foxgp/touch-guard';
 import { BallPreview } from './BallPreview';
 import { loadBest, loadLook } from './golf-save';
 import './minigolf.css';
 
-/** Tela inicial do Mini Golf (spec 082): jogar online (em breve), offline com 30 fases, personalizar a bola. */
+/** Tela inicial do Mini Golf (spec 082): jogar online (criar sala ou entrar por código), offline com 30 fases, personalizar a bola. */
 export function MiniGolfHome() {
   useTouchGuard();
   const navigate = useNavigate();
+  const entry = useRoomEntry({ resume: true });
+  const [online, setOnline] = useState(false);
+  const [code, setCode] = useState('');
   const best = loadBest();
   const look = loadLook();
   const done = Object.keys(best).length;
@@ -24,7 +31,53 @@ export function MiniGolfHome() {
             <h1 className="mg-disp mgh-title">Mini<br />Golf</h1>
             <p className="mgh-mut mgh-lead">30 fases para treinar sozinho, em três dificuldades. Menos tacadas ganha.</p>
             <div className="mgh-btns">
-              <button type="button" className="mg-pill pri mgh-big" disabled aria-disabled="true" data-testid="mg-online">Jogar online <small>em breve</small></button>
+              <button type="button" className="mg-pill pri mgh-big" onClick={() => setOnline((o) => !o)} aria-expanded={online} data-testid="mg-online">Jogar online</button>
+              {online && (
+                <div className="mgh-card mgh-online" data-testid="mg-online-panel">
+                  {entry.error && <p className="mgh-err" role="alert">{entry.error}</p>}
+                  <button
+                    type="button"
+                    className="mg-pill pri"
+                    disabled={entry.busy}
+                    onClick={() => {
+                      // a sala nasce já com o Mini Golf escolhido (como no Fox GP)
+                      try {
+                        sessionStorage.setItem('cfx-new-room', 'golf');
+                      } catch {
+                        /* o líder escolhe o jogo na sala */
+                      }
+                      void entry.create('foxcap');
+                    }}
+                    data-testid="mg-create"
+                  >
+                    {entry.busy ? 'Criando...' : 'Criar sala com amigos'}
+                  </button>
+                  <form
+                    className="mgh-join"
+                    onSubmit={(e: FormEvent) => {
+                      e.preventDefault();
+                      void entry.join(code);
+                    }}
+                  >
+                    <input
+                      className="mgh-code"
+                      value={code}
+                      maxLength={4}
+                      autoCapitalize="characters"
+                      autoCorrect="off"
+                      autoComplete="off"
+                      placeholder="CÓDIGO"
+                      aria-label="Código da sala"
+                      onChange={(e) => {
+                        setCode(e.target.value.toUpperCase());
+                        entry.clearError();
+                      }}
+                      data-testid="mg-code"
+                    />
+                    <button type="submit" className="mg-pill" disabled={entry.busy || code.length !== 4}>Entrar</button>
+                  </form>
+                </div>
+              )}
               <button type="button" className="mg-pill mgh-mid" onClick={() => void navigate({ to: '/minigolf/jogar' })} data-testid="mg-offline">Offline: {GOLF_LEVELS} fases</button>
               <button type="button" className="mg-pill ghost mgh-mid" onClick={() => void navigate({ to: '/minigolf/bola' })} data-testid="mg-customize">Personalizar bola</button>
             </div>
@@ -40,6 +93,14 @@ export function MiniGolfHome() {
           </div>
         </div>
       </div>
+      <NicknameDialog nick={entry.nick} />
+      <RoomConflictDialog
+        open={!!entry.conflict}
+        code={entry.conflict?.code ?? null}
+        onBack={entry.backToCurrent}
+        onLeave={() => void entry.leaveAndContinue()}
+        onCancel={entry.dismissConflict}
+      />
     </div>
   );
 }

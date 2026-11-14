@@ -7,7 +7,6 @@ import {
   GOLF_TIERS,
   GOLF_TIER_LABEL,
   GOLF_STROKE_LIMIT,
-  GolfLevel,
   golfCountedStrokes,
   golfHit,
   golfNewBall,
@@ -17,24 +16,15 @@ import {
   golfScoreName,
   golfStep,
   type GolfBall,
-  type GolfLevelData,
   type GolfScoreName,
   type GolfTier,
 } from '@nocap/games';
 import { golfSfx } from '@/lib/minigolf-audio';
 import { useTouchGuard } from '../foxgp/touch-guard';
 import { GolfScene } from './GolfScene';
+import { loadLevel } from './level-loader';
 import { loadBest, loadLook, saveBest } from './golf-save';
 import './minigolf.css';
-
-// as fases convertidas moram no pacote de jogos; cada uma baixa só quando é jogada
-const LOADERS = import.meta.glob('../../../../../packages/games/src/minigolf/levels/*.json');
-async function loadLevel(n: number): Promise<GolfLevel> {
-  const key = Object.keys(LOADERS).find((k) => k.endsWith(`/level-${n}.json`));
-  if (!key) throw new Error(`fase ${n} não existe`);
-  const mod = (await LOADERS[key]!()) as { default: GolfLevelData };
-  return new GolfLevel(mod.default);
-}
 
 const clampLevel = (n: number | undefined) => Math.max(1, Math.min(GOLF_LEVELS, Math.trunc(n ?? 1) || 1));
 const nameClass = (n: GolfScoreName) => (n === 'ace' ? 'mg-ace' : n === 'albatross' || n === 'eagle' ? 'mg-eagle' : n === 'birdie' ? 'mg-ok' : n === 'par' ? '' : 'mg-bad');

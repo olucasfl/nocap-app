@@ -254,6 +254,7 @@ const miniGolfPlayRoute = createRoute({
 const miniGolfBallRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/minigolf/bola',
+  validateSearch: (search: Record<string, unknown>): { volta?: 'sala' } => (search.volta === 'sala' ? { volta: 'sala' } : {}),
   component: lazyRouteComponent(() => import('@/games/minigolf/MiniGolfBall'), 'MiniGolfBall'),
 });
 

@@ -74,6 +74,12 @@ export const GAME_CATEGORIES: { id: string; title: string; games: PickGame[] }[]
         cap: 'até 12',
       },
       {
+        id: 'golf',
+        name: 'Mini Golf',
+        note: 'Mini golfe em 3D: todos jogam juntos, as bolas se empurram e vence quem fizer menos tacadas.',
+        cap: 'até 8',
+      },
+      {
         id: 'atravessa',
         name: 'Atravessa!',
         note: 'Atravesse estrada e rio, cada um com a sua cor.',

@@ -656,3 +656,269 @@
     font-size: 22px !important;
   }
 }
+
+/* ---- online: placar, jogadores, lobby, pódio ---- */
+.mg-players {
+  position: absolute;
+  left: max(14px, env(safe-area-inset-left));
+  top: 92px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 190px;
+  pointer-events: none;
+}
+.mg-pl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: 10px;
+  background: rgba(10, 21, 16, 0.8);
+  font-size: 13px;
+  font-weight: 700;
+}
+.mg-pl.me {
+  outline: 1.5px solid var(--mg-lime);
+}
+.mg-pl-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mg-pl-st {
+  font-family: var(--mg-disp);
+  font-size: 16px;
+}
+.mg-lobby-ball {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  flex: none;
+  box-shadow: inset -3px -3px 5px rgba(0, 0, 0, 0.3), inset 2px 2px 4px rgba(255, 255, 255, 0.5);
+}
+.mg-lobby {
+  margin: 14px 0;
+  padding: 14px;
+  border: 2px solid var(--ink, #111);
+  border-radius: 16px;
+  background: var(--white, #fff);
+  color: var(--ink, #111);
+}
+.mg-lobby-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.mg-lobby ul {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mg-lobby li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.mg-lobby-name {
+  font-weight: 700;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mg-lobby-det {
+  font-size: 11px;
+  opacity: 0.7;
+}
+.mg-count {
+  font-size: clamp(80px, 18vw, 180px);
+  color: var(--mg-sun);
+  margin-top: 14px;
+}
+.mg-cleared-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+  min-width: min(380px, 86vw);
+}
+.mg-restrow,
+.mg-brow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: rgba(17, 37, 26, 0.92);
+  border: 1px solid var(--mg-line);
+  font-weight: 700;
+}
+.mg-brow.me {
+  border-color: var(--mg-lime);
+}
+.mg-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--mg-p2);
+  font-family: var(--mg-disp);
+  font-size: 18px;
+}
+.mg-board {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(10, 21, 16, 0.78);
+  animation: mg-fade 0.2s ease-out both;
+}
+.mg-board-card {
+  width: min(880px, 100%);
+  max-height: 100%;
+  overflow: auto;
+  padding: 18px 20px;
+  border-radius: 20px;
+  background: rgba(15, 34, 22, 0.97);
+  border: 1px solid var(--mg-line);
+}
+.mg-board-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+.mg-cells {
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  max-width: 46%;
+}
+.mg-cell {
+  min-width: 26px;
+  text-align: center;
+  font-family: var(--mg-disp);
+  font-size: 20px;
+}
+.mg-mut {
+  color: var(--mg-mut);
+}
+.mg-total {
+  min-width: 48px;
+  text-align: right;
+  font-family: var(--mg-disp);
+  font-size: 28px;
+}
+.mg-steps {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 12px;
+  min-height: 310px;
+}
+.mg-step {
+  width: min(210px, 30vw);
+  border-radius: 18px 18px 0 0;
+  background: var(--mg-p2);
+  border: 2px solid var(--mg-line);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding-top: 14px;
+  text-align: center;
+}
+.mg-step.first {
+  background: var(--mg-lime);
+  border-color: var(--mg-lime);
+  color: #0a1510;
+}
+.mg-podium-ball {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  box-shadow: inset -8px -8px 14px rgba(0, 0, 0, 0.3), inset 6px 6px 10px rgba(255, 255, 255, 0.5), 0 8px 12px rgba(0, 0, 0, 0.4);
+}
+.mg-podium-name {
+  font-size: 18px;
+  padding: 0 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.mg-podium-pos {
+  font-size: 64px;
+}
+.mg-podium-det {
+  font-size: 13px;
+  padding: 0 8px;
+}
+.mg-rest {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 520px;
+  margin: 0 auto;
+  width: 100%;
+}
+.mg-podium-note {
+  font-size: 12px;
+}
+@media (max-width: 520px) {
+  .mg-players {
+    top: 76px;
+    max-width: 150px;
+  }
+  .mg-cells {
+    max-width: 38%;
+  }
+  .mg-steps {
+    gap: 6px;
+  }
+  .mg-step {
+    width: 31vw;
+  }
+}
+
+.mgh-online {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 380px;
+}
+.mgh-join {
+  display: flex;
+  gap: 8px;
+}
+.mgh-code {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  border-radius: 14px;
+  border: 2px solid var(--mg-line);
+  background: var(--mg-p2);
+  color: inherit;
+  text-align: center;
+  font-family: var(--mg-disp);
+  font-weight: 800;
+  font-size: 24px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+.mgh-err {
+  margin: 0;
+  color: #ff8a6a;
+  font-size: 14px;
+}

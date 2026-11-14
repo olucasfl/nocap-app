@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { GOLF_BALL_RADIUS, golfApplyMovement, type GolfBall, type GolfBallLook, type GolfLevel } from '@nocap/games';
-import { buildBallMesh } from './ball-mesh';
+import { applyBallLook, buildBallMesh } from './ball-mesh';
 import { BallTrail } from './trail';
 import { buildGolfMaterials, type GolfMat } from './textures';
 
@@ -187,18 +187,28 @@ export class GolfScene {
     this.camera.lookAt(this.camLook);
   }
 
-  /** Um quadro: posição da bola, peças móveis, câmera suave e luz de sombra seguindo a bola. */
+  /** Um quadro (offline): a bola local, peças móveis, câmera suave e luz de sombra seguindo a bola. */
   render(ball: GolfBall, time: number, dt: number, drawPos?: [number, number, number]) {
     const p = drawPos ?? ball.pos;
     this.gm.tick(dt);
     this.ballMesh.position.set(p[0], p[1], p[2]);
     const sp = Math.hypot(ball.vel[0], ball.vel[2]);
     this.trail.update(dt, [p[0], p[1], p[2]], sp);
+    this.rollMesh(this.ballMesh, ball.vel, dt);
+    this.finishFrame(p, time, dt);
+  }
+
+  private rollMesh(mesh: THREE.Mesh, vel: [number, number, number], dt: number) {
+    const sp = Math.hypot(vel[0], vel[2]);
     if (sp > 0.05) {
-      const axis = new THREE.Vector3(ball.vel[2], 0, -ball.vel[0]).normalize();
+      const axis = new THREE.Vector3(vel[2], 0, -vel[0]).normalize();
       this.spin.setFromAxisAngle(axis, (sp * dt) / GOLF_BALL_RADIUS);
-      this.ballMesh.quaternion.premultiply(this.spin);
+      mesh.quaternion.premultiply(this.spin);
     }
+  }
+
+  /** Peças móveis, câmera e luz: igual no offline e no online. */
+  private finishFrame(p: [number, number, number], time: number, dt: number) {
     this.movers.forEach(({ mesh, i }) => {
       const mv = this.level.data.moving[i]!;
       const t = golfApplyMovement({ p: mv.base.p, s: mv.base.s, r: mv.base.r }, mv.movement, time);
@@ -222,6 +232,50 @@ export class GolfScene {
     this.sun.position.set(target.x + 14, target.y + 24, target.z + 8);
     this.sun.target.position.copy(target);
     this.renderer.render(this.scene, this.camera);
+  }
+
+  // ---- online: várias bolas ----
+  private others = new Map<number, { mesh: THREE.Mesh; trail: BallTrail; look: string }>();
+
+  /** Deixa de usar a bola local: no online todas as bolas (a minha também) são desenhadas por `renderOnline`. */
+  useOnline() {
+    this.ballMesh.visible = false;
+    this.trail.points.visible = false;
+    this.trail.setKind('nenhum');
+  }
+
+  /** Um quadro online: cada bola na sua posição (cor, acabamento e rastro de cada pessoa) e a câmera na `focus`. */
+  renderOnline(balls: { slot: number; look: GolfBallLook; pos: [number, number, number]; vel: [number, number, number]; hidden?: boolean }[], focus: [number, number, number], time: number, dt: number) {
+    this.gm.tick(dt);
+    const seen = new Set<number>();
+    for (const b of balls) {
+      seen.add(b.slot);
+      const key = `${b.look.color}:${b.look.finish}`;
+      let o = this.others.get(b.slot);
+      if (!o) {
+        const mesh = buildBallMesh(b.look);
+        const trail = new BallTrail();
+        trail.setKind(b.look.trail);
+        this.scene.add(mesh, trail.points);
+        o = { mesh, trail, look: key };
+        this.others.set(b.slot, o);
+      } else if (o.look !== key) {
+        applyBallLook(o.mesh, b.look);
+        o.look = key;
+      }
+      o.mesh.visible = !b.hidden;
+      o.mesh.position.set(...b.pos);
+      o.trail.update(dt, b.pos, b.hidden ? 0 : Math.hypot(b.vel[0], b.vel[2]));
+      this.rollMesh(o.mesh, b.vel, dt);
+    }
+    for (const [slot, o] of this.others) {
+      if (seen.has(slot)) continue;
+      this.scene.remove(o.mesh, o.trail.points);
+      (o.mesh.material as THREE.Material).dispose();
+      o.mesh.geometry.dispose();
+      this.others.delete(slot);
+    }
+    this.finishFrame(focus, time, dt);
   }
 
   dispose() {

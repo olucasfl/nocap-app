@@ -804,8 +804,6 @@ export class GolfRoom extends ColorRoom {
   override maxClients = GOLF_ROOM_MAX;
   /** 60 passos por segundo: a tacada vira movimento em no máximo 16 ms. */
   protected override tickMs = 16;
-  private frameN = 0;
-
   protected override makeEngine(opts: ConstructorParameters<typeof ColorRoomEngine>[0]) {
     return new GolfRoomEngine(opts);
   }
@@ -826,11 +824,9 @@ export class GolfRoom extends ColorRoom {
     if (engine.currentPhase !== 'play') return;
     const events = engine.drainEvents();
     if (events.length > 0) this.broadcast('ge', events);
-    // um quadro a cada 2 passos (~31 por segundo)
-    if (++this.frameN % 2 === 0) {
-      const frame = engine.frame();
-      if (frame) this.broadcast('gb', frame);
-    }
+    // um quadro a cada 2 passos (~31 por segundo); a conta fica no motor, porque a sala do Fox Cap! chama isto por ela
+    const frame = engine.nextFrame();
+    if (frame) this.broadcast('gb', frame);
   }
 }
 
@@ -1081,6 +1077,7 @@ const FOX_GAMES = {
   atravessa: { name: 'Atravessa!', make: (o: EngineOpts) => new AtravessaRoomEngine(o) },
   desmorona: { name: 'Desmorona!', make: (o: EngineOpts) => new DesmoronaRoomEngine(o) },
   foxgp: { name: 'Fox GP', make: (o: EngineOpts) => new FoxGpRoomEngine(o) },
+  golf: { name: 'Mini Golf', make: (o: EngineOpts) => new GolfRoomEngine(o) },
   pingpong: { name: 'Ping Fox!', make: (o: EngineOpts) => new PingRoomEngine(o) },
   foxshot: {
     name: 'Counter Fox',
@@ -1131,6 +1128,7 @@ export class FoxRoom extends ColorRoom {
       ['atravessa', AtravessaRoom],
       ['desmorona', DesmoronaRoom],
       ['foxgp', FoxGpRoom],
+      ['golf', GolfRoom],
       ['bola', BolaRoom],
       ['pingpong', PingRoom],
       ['foxshot', FoxShotRoom],
@@ -1187,7 +1185,7 @@ export class FoxRoom extends ColorRoom {
   protected override step() {
     const now = Date.now();
     // o Fut Fox roda a cada passo de 16 ms; os outros jogos, a cada 100 ms (como as salas deles)
-    if (this.engine.game !== 'bola' && this.engine.game !== 'pingpong' && this.engine.game !== 'foxshot' && now - this.lastStep < 92)
+    if (this.engine.game !== 'bola' && this.engine.game !== 'golf' && this.engine.game !== 'pingpong' && this.engine.game !== 'foxshot' && now - this.lastStep < 92)
       return;
     this.lastStep = now;
     super.step();
@@ -1199,6 +1197,7 @@ export class FoxRoom extends ColorRoom {
         atravessa: AtravessaRoom,
         desmorona: DesmoronaRoom,
         foxgp: FoxGpRoom,
+        golf: GolfRoom,
         bola: BolaRoom,
         pingpong: PingRoom,
         foxshot: FoxShotRoom,

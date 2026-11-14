@@ -128,6 +128,7 @@ const SWITCHABLE: RoomGame[] = [
   'atravessa',
   'desmorona',
   'foxgp',
+  'golf',
   'bola',
   'pingpong',
   'foxshot',

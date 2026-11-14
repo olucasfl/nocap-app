@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useNavigate } from '@tanstack/react-router';
+import { useNavigate, useSearch } from '@tanstack/react-router';
+import { currentRoomCode } from '@/lib/rooms';
 import {
   GOLF_BALL_COLORS,
   GOLF_BALL_COLOR_NAMES,
@@ -20,10 +21,16 @@ const hex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
 export function MiniGolfBall() {
   useTouchGuard();
   const navigate = useNavigate();
+  const wanted = useSearch({ strict: false }) as { volta?: string };
   const [look, setLook] = useState<GolfBallLook>(loadLook());
   const set = (p: Partial<GolfBallLook>) => setLook((l) => ({ ...l, ...p }));
   const idx = GOLF_BALL_COLORS.indexOf(look.color as (typeof GOLF_BALL_COLORS)[number]);
-  const back = () => void navigate({ to: '/minigolf' });
+  // vindo do lobby da sala, volta para a sala
+  const back = () => {
+    const code = wanted.volta === 'sala' ? currentRoomCode() : null;
+    if (code) void navigate({ to: '/sala/$code', params: { code } });
+    else void navigate({ to: '/minigolf' });
+  };
 
   return (
     <div className="mgh" data-testid="mg-ball">

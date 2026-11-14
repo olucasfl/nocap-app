@@ -269,6 +269,13 @@ export class GolfRoomEngine extends ColorRoomEngine {
     return { t: r3(this.sim.t), balls };
   }
 
+  private frameTurn = 0;
+  /** O quadro da vez: devolve um a cada 2 chamadas (a sala chama a cada 16 ms). */
+  nextFrame(): GolfFrame | null {
+    this.frameTurn++;
+    return this.frameTurn % 2 === 0 ? this.frame() : null;
+  }
+
   drainEvents(): GolfWireEvent[] {
     const out = this.wireEvents;
     this.wireEvents = [];
