@@ -18,9 +18,8 @@ for (const size of sizes) {
       page,
     }, info) => {
       test.skip(info.project.name !== 'desktop', 'um projeto basta');
-      await page.goto('/fox-cap');
+      await page.goto('/fox-cap?jogo=desmorona');
       await page.getByRole('button', { name: 'Agora não' }).click();
-      await page.getByTestId('foxcap-desmorona').click();
       await page.getByTestId('gl-offline').click();
       await page.getByRole('radio', { name: '3' }).click();
       await page.getByTestId('dsm-start').click();

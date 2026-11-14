@@ -198,6 +198,10 @@ const foxCapRoute = createRoute({
       : {}),
     ...(search.tela === 'amigos' ? { tela: 'amigos' as const } : {}),
   }),
+  // a lista antiga do Fox Cap! não existe mais: sem jogo escolhido, o caminho é a tela inicial
+  beforeLoad: ({ search }) => {
+    if (!search.jogo) throw redirect({ to: '/' });
+  },
   component: lazyRouteComponent(() => import('@/games/desmorona/FoxCapPage'), 'FoxCapPage'),
 });
 
@@ -206,7 +210,7 @@ const desmoronaRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/fox-cap/desmorona',
   beforeLoad: () => {
-    throw redirect({ to: '/fox-cap' });
+    throw redirect({ to: '/fox-cap', search: { jogo: 'desmorona' } });
   },
 });
 
@@ -214,7 +218,7 @@ const bolaRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/fox-cap/bola',
   beforeLoad: () => {
-    throw redirect({ to: '/fox-cap' });
+    throw redirect({ to: '/fox-cap', search: { jogo: 'bola' } });
   },
 });
 

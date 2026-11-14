@@ -65,9 +65,8 @@ const raceOn = (page: Page) => page.waitForFunction(() => (window as Win).__gpSt
 const qualiOn = (page: Page) => page.waitForFunction(() => (window as Win).__gpStage === 'quali', null, { timeout: 15_000 });
 
 async function openHome(page: Page) {
-  await page.goto('/fox-cap');
+  await page.goto('/fox-cap?jogo=foxgp');
   await page.getByRole('button', { name: 'Agora não' }).click({ timeout: 8000 }).catch(() => undefined);
-  await page.getByTestId('foxcap-foxgp').click();
   await expect(page.getByTestId('gp-home')).toBeVisible();
 }
 

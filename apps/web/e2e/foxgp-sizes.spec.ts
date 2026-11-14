@@ -62,9 +62,8 @@ test.describe('Fox GP: tamanhos de tela', () => {
 
   test('tela inicial, Antes de correr, online, pistas e garagem cabem sem rolagem', async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem('nocap-mute', '1'));
-    await page.goto('/fox-cap');
+    await page.goto('/fox-cap?jogo=foxgp');
     await page.getByRole('button', { name: 'Agora não' }).click({ timeout: 8000 }).catch(() => undefined);
-    await page.getByTestId('foxcap-foxgp').click();
     const all: string[] = [];
     for (const [w, h] of SIZES) {
       await page.setViewportSize({ width: w, height: h });

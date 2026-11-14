@@ -131,7 +131,7 @@ function Entry({
             : game === 'eco'
               ? '/eco'
               : game === 'atravessa' || game === 'desmorona' || game === 'foxgp' || game === 'bola' || game === 'pingpong' || game === 'foxshot' || game === 'foxcap'
-                ? '/fox-cap'
+                ? '/'
                 : '/cor'
         }
         label="Voltar ao jogo"
@@ -222,7 +222,7 @@ function RoomPageInner({ code, game = 'color' }: { code?: string; game?: RoomGam
     else if (lastGame === 'desmorona' || lastGame === 'foxgp' || lastGame === 'bola' || lastGame === 'pingpong' || lastGame === 'atravessa')
       // cada jogo volta para a tela própria dele (só sai do jogo quem clica em "Sair do ..." nessa tela)
       void navigate({ to: '/fox-cap', search: { jogo: lastGame } });
-    else if (lastGame === 'foxcap') void navigate({ to: '/fox-cap' });
+    else if (lastGame === 'foxcap') void navigate({ to: '/' });
     else void navigate({ to: GAME_PAGE[lastGame], search: { aba: 'friends' } });
   }, [snapshot, lastGame, message, status, navigate]);
   // Dentro da sala o endereço é sempre o link dela (/sala/ABCD), para copiar do navegador e mandar.

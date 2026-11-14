@@ -7,9 +7,8 @@ test('Fox Cap! leva ao Fut Fox, a partida roda e a bola é tocada', async ({ pag
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  await page.goto('/fox-cap');
+  await page.goto('/fox-cap?jogo=bola');
   await page.getByRole('button', { name: 'Agora não' }).click();
-  await page.getByTestId('foxcap-bola').click();
   await page.getByTestId('gl-offline').click();
   await page.getByTestId('bola-fmt-2x2').click();
   await page.getByTestId('bola-start').click();

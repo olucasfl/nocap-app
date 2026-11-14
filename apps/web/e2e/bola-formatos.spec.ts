@@ -13,12 +13,11 @@ for (const fmt of ['1x1', '2x2', '1x1x1', '2x2x2', '1x1x1x1', '2x2x2x2']) {
     test.skip(info.project.name !== 'desktop', 'um projeto basta');
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto('/fox-cap');
+    await page.goto('/fox-cap?jogo=bola');
     await page
       .getByRole('button', { name: 'Agora não' })
       .click({ timeout: 2000 })
       .catch(() => undefined);
-    await page.getByTestId('foxcap-bola').click();
     await page.getByTestId('gl-offline').click();
     await page.getByTestId(`bola-fmt-${fmt}`).click();
     await page.getByTestId('bola-start').click();

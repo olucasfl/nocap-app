@@ -20,12 +20,11 @@ for (const sz of SIZES) {
       await page.addInitScript(() => {
         (window as unknown as { __gameChatDemo: boolean }).__gameChatDemo = true;
       });
-      await page.goto('/fox-cap');
+      await page.goto('/fox-cap?jogo=desmorona');
       await page
         .getByRole('button', { name: 'Agora não' })
         .click({ timeout: 1200 })
         .catch(() => undefined);
-      await page.getByTestId('foxcap-desmorona').click();
       await page.getByTestId('gl-offline').click();
       await page.getByTestId('dsm-start').click();
       await expect(page.getByTestId('dsm-play')).toBeVisible();

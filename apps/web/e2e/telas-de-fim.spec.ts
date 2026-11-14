@@ -42,12 +42,11 @@ test('Desmorona! sozinho: a tela de fim aparece com pódio, classificação e bo
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
-  await page.goto('/fox-cap');
+  await page.goto('/fox-cap?jogo=desmorona');
   await page
     .getByRole('button', { name: 'Agora não' })
     .click({ timeout: 2000 })
     .catch(() => undefined);
-  await page.getByTestId('foxcap-desmorona').click();
   await page.getByTestId('gl-offline').click();
   await page.getByRole('radio', { name: '3' }).click();
   await page.getByTestId('dsm-start').click();
@@ -62,12 +61,11 @@ test('Desmorona! sozinho: a tela de fim aparece com pódio, classificação e bo
 
 test('Atravessa! sozinho: a tela de fim mostra linhas, tempo, ritmo e botões', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
-  await page.goto('/fox-cap');
+  await page.goto('/fox-cap?jogo=atravessa');
   await page
     .getByRole('button', { name: 'Agora não' })
     .click({ timeout: 2000 })
     .catch(() => undefined);
-  await page.getByTestId('foxcap-atravessa').click();
   await page.getByTestId('gl-offline').click();
   await expect(page.locator('canvas')).toBeVisible({ timeout: 10_000 });
   await page

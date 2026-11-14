@@ -32,5 +32,5 @@ test('menu da partida: encerrar volta ao menu do Counter Fox, treino tem voltar 
   await expect(page.getByTestId('cfh-main')).toBeVisible({ timeout: 15000 });
   // e "Sair do Counter Fox" leva ao Fox Cap!
   await page.getByTestId('cfh-exit').click();
-  await expect(page).toHaveURL(/\/fox-cap$/);
+  await expect(page).toHaveURL(/\/$/);
 });

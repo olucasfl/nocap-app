@@ -35,9 +35,8 @@ for (const game of ['atravessa', 'bola', 'pingpong', 'desmorona'] as const) {
 test('entrar com código inválido mostra o erro na própria tela do jogo', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   await loginAs(page, 'FluxoCodigo');
-  await page.goto('/fox-cap');
+  await page.goto('/fox-cap?jogo=pingpong');
   await page.getByRole('button', { name: 'Agora não' }).click({ timeout: 8000 }).catch(() => undefined);
-  await page.getByTestId('foxcap-pingpong').click();
   await page.getByTestId('gl-friends').click();
   await page.getByTestId('gl-code').fill('ZZZZ');
   await page.getByTestId('gl-join').click();

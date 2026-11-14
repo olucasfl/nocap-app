@@ -12,12 +12,11 @@ test('raposa sobe a parede, anda no teto e cai; a câmera acompanha sem virar', 
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  await page.goto('/fox-cap');
+  await page.goto('/fox-cap?jogo=bola');
   await page
     .getByRole('button', { name: 'Agora não' })
     .click({ timeout: 2000 })
     .catch(() => undefined);
-  await page.getByTestId('foxcap-bola').click();
   await page.getByTestId('gl-offline').click();
   await page.getByTestId('bola-fmt-1x1').click();
   await page.getByTestId('bola-start').click();

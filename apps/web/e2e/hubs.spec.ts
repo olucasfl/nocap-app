@@ -111,12 +111,11 @@ test("hub do Block's tem ranking dos dois jogos", async ({ page }) => {
 
 test('tela do Atravessa! tem ranking temático', async ({ page }) => {
   await installApi(page);
-  await page.goto('/fox-cap');
+  await page.goto('/fox-cap?jogo=atravessa');
   await page
     .getByRole('button', { name: 'Agora não' })
     .click({ timeout: 800 })
     .catch(() => undefined);
-  await page.getByTestId('foxcap-atravessa').click();
   await page.getByTestId('gl-ranking').click();
   await expect(page.getByTestId('hub-ranking')).toContainText('@ana');
   await page.getByTestId('gl-back').click();

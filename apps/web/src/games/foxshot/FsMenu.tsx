@@ -365,7 +365,7 @@ export function FsMenu({
   onResume,
   onEnd,
   children,
-  exitTo = '/fox-cap',
+  exitTo = '/',
   exitLabel = 'Sair do Counter Fox',
   endLabel = 'Encerrar a partida',
   endConfirm = true,

@@ -36,12 +36,11 @@ for (const ph of PHONES) {
         ph.h - ph.bottom + 0.5,
       );
       // jogo: o placar do Atravessa! (canto de cima à esquerda) e o botão de menu (à direita)
-      await page.goto('/fox-cap');
+      await page.goto('/fox-cap?jogo=atravessa');
       await page
         .getByRole('button', { name: 'Agora não' })
         .click({ timeout: 1500 })
         .catch(() => undefined);
-      await page.getByTestId('foxcap-atravessa').click();
       await page.getByTestId('gl-offline').click();
       await expect(page.getByTestId('atr-menu-btn')).toBeVisible({ timeout: 10_000 });
       const score = (await page.locator('.at-score').boundingBox())!;

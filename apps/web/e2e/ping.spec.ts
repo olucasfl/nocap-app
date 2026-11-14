@@ -7,12 +7,11 @@ test.beforeEach(({ page: _page }, info) => {
 
 test('treino: abre, saca, a bola cruza a rede e a raquete segue o mouse', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
-  await page.goto('/fox-cap');
+  await page.goto('/fox-cap?jogo=pingpong');
   await page
     .getByRole('button', { name: 'Agora não' })
     .click({ timeout: 6000 })
     .catch(() => undefined);
-  await page.getByTestId('foxcap-pingpong').click();
   await page.getByTestId('gl-offline').click();
   await page.getByTestId('png-level-medio').click();
   await page.getByTestId('png-start').click();
@@ -184,12 +183,11 @@ test('uma pessoa que dá a passada certa (de baixo para cima, para a frente) dev
 }) => {
   test.setTimeout(170_000);
   await page.setViewportSize({ width: 1280, height: 720 });
-  await page.goto('/fox-cap');
+  await page.goto('/fox-cap?jogo=pingpong');
   await page
     .getByRole('button', { name: 'Agora não' })
     .click({ timeout: 6000 })
     .catch(() => undefined);
-  await page.getByTestId('foxcap-pingpong').click();
   await page.getByTestId('gl-offline').click();
   await page.getByTestId('png-level-facil').click();
   await page.getByTestId('png-start').click();
@@ -213,12 +211,11 @@ for (const size of [
   test.describe(`Ping Fox! em ${size.name}`, () => {
     test.use({ viewport: { width: size.w, height: size.h }, isMobile: true, hasTouch: true });
     test('o HUD cabe e a raquete segue o dedo (sem pular)', async ({ page }) => {
-      await page.goto('/fox-cap');
+      await page.goto('/fox-cap?jogo=pingpong');
       await page
         .getByRole('button', { name: 'Agora não' })
         .click({ timeout: 6000 })
         .catch(() => undefined);
-      await page.getByTestId('foxcap-pingpong').click();
       await page.getByTestId('gl-offline').click();
       await page.getByTestId('png-start').click();
       await expect(page.getByTestId('png-play')).toBeVisible();
@@ -288,12 +285,11 @@ for (const size of [
 test('tela de fim: aparece com o placar e os botões, em qualquer tamanho', async ({ page }) => {
   test.setTimeout(150_000);
   await page.setViewportSize({ width: 1280, height: 720 });
-  await page.goto('/fox-cap');
+  await page.goto('/fox-cap?jogo=pingpong');
   await page
     .getByRole('button', { name: 'Agora não' })
     .click({ timeout: 6000 })
     .catch(() => undefined);
-  await page.getByTestId('foxcap-pingpong').click();
   await page.getByTestId('gl-offline').click();
   await page.getByTestId('png-level-dificil').click();
   await page.getByTestId('png-start').click();
@@ -330,12 +326,11 @@ test('bola mal pegada: câmera lenta, a barra do smash aparece e o aperto vira n
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
-  await page.goto('/fox-cap');
+  await page.goto('/fox-cap?jogo=pingpong');
   await page
     .getByRole('button', { name: 'Agora não' })
     .click({ timeout: 6000 })
     .catch(() => undefined);
-  await page.getByTestId('foxcap-pingpong').click();
   await page.getByTestId('gl-offline').click();
   await page.getByTestId('png-level-facil').click();
   await page.getByTestId('png-start').click();
@@ -376,12 +371,11 @@ test('mouse: o cursor fica preso no jogo e a raquete anda pelo movimento (não s
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
-  await page.goto('/fox-cap');
+  await page.goto('/fox-cap?jogo=pingpong');
   await page
     .getByRole('button', { name: 'Agora não' })
     .click({ timeout: 6000 })
     .catch(() => undefined);
-  await page.getByTestId('foxcap-pingpong').click();
   await page.getByTestId('gl-offline').click();
   await page.getByTestId('png-level-facil').click();
   await page.getByTestId('png-start').click();
@@ -419,12 +413,11 @@ test('saque com o mouse de verdade: o clique lança a bola e a raquete bate nela
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
-  await page.goto('/fox-cap');
+  await page.goto('/fox-cap?jogo=pingpong');
   await page
     .getByRole('button', { name: 'Agora não' })
     .click({ timeout: 6000 })
     .catch(() => undefined);
-  await page.getByTestId('foxcap-pingpong').click();
   await page.getByTestId('gl-offline').click();
   await page.getByTestId('png-level-facil').click();
   await page.getByTestId('png-start').click();
@@ -490,12 +483,11 @@ test('celular: toque (mesmo com tremidinha) lança a bola; arrastar leva a raque
     isMobile: true,
   });
   const page = await ctx.newPage();
-  await page.goto('/fox-cap');
+  await page.goto('/fox-cap?jogo=pingpong');
   await page
     .getByRole('button', { name: 'Agora não' })
     .click({ timeout: 6000 })
     .catch(() => undefined);
-  await page.getByTestId('foxcap-pingpong').click();
   await page.getByTestId('gl-offline').click();
   await page.getByTestId('png-level-facil').click();
   await page.getByTestId('png-start').click();
@@ -577,12 +569,11 @@ test('celular: sair do app no meio do toque e voltar não trava a raquete', asyn
     isMobile: true,
   });
   const page = await ctx.newPage();
-  await page.goto('/fox-cap');
+  await page.goto('/fox-cap?jogo=pingpong');
   await page
     .getByRole('button', { name: 'Agora não' })
     .click({ timeout: 6000 })
     .catch(() => undefined);
-  await page.getByTestId('foxcap-pingpong').click();
   await page.getByTestId('gl-offline').click();
   await page.getByTestId('png-level-facil').click();
   await page.getByTestId('png-start').click();
@@ -628,12 +619,11 @@ test('painel de rede e fps: desligado por padrão, liga e desliga no menu e lemb
   page,
 }) => {
   await page.setViewportSize({ width: 1100, height: 650 });
-  await page.goto('/fox-cap');
+  await page.goto('/fox-cap?jogo=pingpong');
   await page
     .getByRole('button', { name: 'Agora não' })
     .click({ timeout: 6000 })
     .catch(() => undefined);
-  await page.getByTestId('foxcap-pingpong').click();
   await page.getByTestId('gl-offline').click();
   await page.getByTestId('png-level-facil').click();
   await page.getByTestId('png-start').click();
@@ -666,12 +656,11 @@ test('celular: dedo parado lança a bola sem soltar; depois arrasta para sacar q
     isMobile: true,
   });
   const page = await ctx.newPage();
-  await page.goto('/fox-cap');
+  await page.goto('/fox-cap?jogo=pingpong');
   await page
     .getByRole('button', { name: 'Agora não' })
     .click({ timeout: 6000 })
     .catch(() => undefined);
-  await page.getByTestId('foxcap-pingpong').click();
   await page.getByTestId('gl-offline').click();
   await page.getByTestId('png-level-facil').click();
   await page.getByTestId('png-start').click();
