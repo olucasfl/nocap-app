@@ -86,7 +86,23 @@ export const gpSchema = z
   .strict();
 export type GpSaved = z.infer<typeof gpSchema>;
 
-type StoredPrefs = PrefsInput & { blocksRun?: BlocksRun; gp?: GpSaved };
+/** O que o Mini Golf guarda na conta (spec 082): a bola e a melhor marca de cada fase. Sem migration: vive em `user_prefs`. */
+export const golfSchema = z
+  .object({
+    ball: z
+      .object({
+        color: z.number().int().min(0).max(0xffffff),
+        finish: z.enum(['liso', 'listras', 'pontos', 'metade', 'estrela']),
+        trail: z.enum(['nenhum', 'faiscas', 'fogo', 'neve']),
+      })
+      .strict(),
+    best: z.record(z.string().max(4), z.number().int().min(1).max(18)).refine((b) => Object.keys(b).length <= 60),
+  })
+  .partial()
+  .strict();
+export type GolfSaved = z.infer<typeof golfSchema>;
+
+type StoredPrefs = PrefsInput & { blocksRun?: BlocksRun; gp?: GpSaved; golf?: GolfSaved };
 
 /** Troca (ou apaga, com `null`) a partida guardada sem tocar nas preferências. */
 export function withBlocksRun(data: StoredPrefs | undefined, run: BlocksRun | null): StoredPrefs {
@@ -100,12 +116,24 @@ export function keepBlocksRun(existing: StoredPrefs | undefined, next: PrefsInpu
   const out: StoredPrefs = { ...next };
   if (existing?.blocksRun) out.blocksRun = existing.blocksRun;
   if (existing?.gp) out.gp = existing.gp;
+  if (existing?.golf) out.golf = existing.golf;
   return out;
 }
 
 /** Junta o que o Fox GP mandou ao que a conta já tinha (a melhor volta nunca piora; o resto vale o último). */
 export function mergeGp(old: GpSaved | undefined, next: GpSaved): GpSaved {
   const merged: GpSaved = { ...(old ?? {}), ...next };
+  if (old?.best || next.best) {
+    const best: Record<string, number> = { ...(old?.best ?? {}) };
+    for (const [k, v] of Object.entries(next.best ?? {})) best[k] = best[k] === undefined ? v : Math.min(best[k]!, v);
+    merged.best = best;
+  }
+  return merged;
+}
+
+/** Junta o que o Mini Golf mandou ao que a conta tinha (a menor marca de cada fase nunca piora; a bola vale a última). */
+export function mergeGolf(old: GolfSaved | undefined, next: GolfSaved): GolfSaved {
+  const merged: GolfSaved = { ...(old ?? {}), ...next };
   if (old?.best || next.best) {
     const best: Record<string, number> = { ...(old?.best ?? {}) };
     for (const [k, v] of Object.entries(next.best ?? {})) best[k] = best[k] === undefined ? v : Math.min(best[k]!, v);
@@ -179,6 +207,33 @@ export class PrefsController {
       .values({ userId: req.user.id, data })
       .onConflictDoUpdate({ target: userPrefs.userId, set: { data, updatedAt: new Date() } });
     return { gp: data.gp };
+  }
+
+  @Get('golf')
+  @RateLimit({ limit: 60, windowMs: 60_000 })
+  async loadGolf(@Req() req: AuthedRequest): Promise<{ golf: GolfSaved | null }> {
+    const [row] = await this.db
+      .select({ data: userPrefs.data })
+      .from(userPrefs)
+      .where(eq(userPrefs.userId, req.user.id));
+    return { golf: (row?.data as StoredPrefs | undefined)?.golf ?? null };
+  }
+
+  @Put('golf')
+  @HttpCode(200)
+  @RateLimit({ limit: 60, windowMs: 60_000 })
+  async saveGolf(@Req() req: AuthedRequest, @Body(new ZodValidationPipe(golfSchema)) body: GolfSaved) {
+    const [row] = await this.db
+      .select({ data: userPrefs.data })
+      .from(userPrefs)
+      .where(eq(userPrefs.userId, req.user.id));
+    const old = row?.data as StoredPrefs | undefined;
+    const data: StoredPrefs = { ...(old ?? {}), golf: mergeGolf(old?.golf, body) };
+    await this.db
+      .insert(userPrefs)
+      .values({ userId: req.user.id, data })
+      .onConflictDoUpdate({ target: userPrefs.userId, set: { data, updatedAt: new Date() } });
+    return { golf: data.golf };
   }
 
   @Get('blocks-run')

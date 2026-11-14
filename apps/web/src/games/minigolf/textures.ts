@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import type { GolfFinish } from '@nocap/games';
 
 /**
  * Texturas procedurais do Mini Golf (spec 082): geradas por código no navegador, sem arquivos e sem licença de terceiros.
@@ -289,6 +290,44 @@ export function ballNormal(): THREE.CanvasTexture {
     }
   const t = new THREE.CanvasTexture(normalFrom(c, 5));
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.anisotropy = 8;
+  return t;
+}
+
+/** Textura de cor da bola: a cor escolhida com o acabamento (listras, pontos, metade ou estrela). */
+export function ballColorMap(color: number, finish: GolfFinish): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = 1024;
+  c.height = 512;
+  const ctx = c.getContext('2d')!;
+  const css = `#${color.toString(16).padStart(6, '0')}`;
+  const lum = ((color >> 16) & 255) * 0.3 + ((color >> 8) & 255) * 0.59 + (color & 255) * 0.11;
+  const accent = lum > 200 ? '#3a3f45' : '#ffffff';
+  ctx.fillStyle = css;
+  ctx.fillRect(0, 0, 1024, 512);
+  ctx.fillStyle = accent;
+  if (finish === 'listras') for (const y of [150, 256, 362]) ctx.fillRect(0, y - 22, 1024, 44);
+  else if (finish === 'pontos') {
+    for (let j = 0; j < 7; j++) for (let i = 0; i < 14; i++) {
+      ctx.beginPath();
+      ctx.arc(((i + (j % 2) * 0.5) / 14) * 1024, ((j + 0.5) / 7) * 512, 16, 0, 7);
+      ctx.fill();
+    }
+  } else if (finish === 'metade') ctx.fillRect(512, 0, 512, 512);
+  else if (finish === 'estrela') {
+    const star = (cx: number, cy: number, R: number) => {
+      ctx.beginPath();
+      for (let k = 0; k < 10; k++) {
+        const a = (k / 10) * Math.PI * 2 - Math.PI / 2, r = k % 2 ? R * 0.45 : R;
+        ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+      }
+      ctx.closePath();
+      ctx.fill();
+    };
+    for (const [x, y] of [[128, 256], [384, 150], [640, 256], [896, 150], [384, 362], [896, 362]] as const) star(x, y, 52);
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = 8;
   return t;
 }

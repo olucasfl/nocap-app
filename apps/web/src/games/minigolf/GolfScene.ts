@@ -1,6 +1,8 @@
 import * as THREE from 'three';
-import { GOLF_BALL_RADIUS, golfApplyMovement, type GolfBall, type GolfLevel } from '@nocap/games';
-import { ballNormal, buildGolfMaterials, type GolfMat } from './textures';
+import { GOLF_BALL_RADIUS, golfApplyMovement, type GolfBall, type GolfBallLook, type GolfLevel } from '@nocap/games';
+import { buildBallMesh } from './ball-mesh';
+import { BallTrail } from './trail';
+import { buildGolfMaterials, type GolfMat } from './textures';
 
 /** UV por triângulo, projetando no plano dominante (chão: x,z; paredes: z,y ou x,y), em repetições de `tile` metros. */
 function triUv(pos: number[], tile: number): number[] {
@@ -43,11 +45,12 @@ export class GolfScene {
   private camLook = new THREE.Vector3();
   private spin = new THREE.Quaternion();
   private gm = buildGolfMaterials();
+  private trail = new BallTrail();
 
   constructor(
     canvas: HTMLCanvasElement,
     private level: GolfLevel,
-    ballColor: number,
+    look: GolfBallLook,
   ) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -68,11 +71,9 @@ export class GolfScene {
 
     this.buildLevel();
 
-    this.ballMesh = new THREE.Mesh(
-      new THREE.SphereGeometry(GOLF_BALL_RADIUS, 32, 20),
-      new THREE.MeshPhysicalMaterial({ color: ballColor, roughness: 0.32, metalness: 0.02, clearcoat: 0.7, clearcoatRoughness: 0.25, normalMap: ballNormal(), normalScale: new THREE.Vector2(0.9, 0.9) }),
-    );
-    this.ballMesh.castShadow = true;
+    this.ballMesh = buildBallMesh(look);
+    this.trail.setKind(look.trail);
+    this.scene.add(this.trail.points);
     this.scene.add(this.ballMesh);
 
     const dotGeo = new THREE.SphereGeometry(0.045, 10, 8);
@@ -192,6 +193,7 @@ export class GolfScene {
     this.gm.tick(dt);
     this.ballMesh.position.set(p[0], p[1], p[2]);
     const sp = Math.hypot(ball.vel[0], ball.vel[2]);
+    this.trail.update(dt, [p[0], p[1], p[2]], sp);
     if (sp > 0.05) {
       const axis = new THREE.Vector3(ball.vel[2], 0, -ball.vel[0]).normalize();
       this.spin.setFromAxisAngle(axis, (sp * dt) / GOLF_BALL_RADIUS);

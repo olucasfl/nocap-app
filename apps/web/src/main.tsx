@@ -25,6 +25,7 @@ installGlobalSounds();
 startPrefsSync();
 // o Fox GP (e o three.js dele) entra em outro pacote, depois da página aparecer
 void import('@/games/foxgp/gp-account').then((m) => m.startGpSync());
+void import('@/games/minigolf/golf-account').then((m) => m.startGolfSync());
 // Sem rede a consulta falha logo (em vez de ficar esperando) e cada tela mostra o aviso próprio.
 const queryClient = new QueryClient({
   defaultOptions: {

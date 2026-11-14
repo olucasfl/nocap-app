@@ -17,7 +17,7 @@ Status: **em andamento** (14/11/2026): conversor, física portada e a fase 1 jog
 6. Letreiros ao encaçapar pelo par: ACE (1 tacada), Albatross (-3), Eagle (-2), Birdie (-1), Par, Bogey (+1) e
    adiante; animações, pódio e resumo ao fim.
 7. Sons feitos no navegador (Web Audio), **sem música**: tacada, quique, aro, queda, fundo do buraco, letreiros, pódio.
-8. Personalização da bola na Home: cor (e, se o Lucas aprovar, acabamento e rastro). Salva na conta
+8. Personalização da bola (feita em 14/11/2026): cor (12 ou livre), acabamento (liso, listras, pontos, metade, estrela) e rastro (nenhum, faíscas, fogo, neve), com prévia 3D. Salva na conta
    (`user_prefs`, chave `golf`, sem migration), junto com a melhor marca de cada fase.
 9. Física **melhor que a do Open Golf no buraco** (seção 3).
 10. Só Three.js (já no app). Nenhuma biblioteca nova. Sem migration.

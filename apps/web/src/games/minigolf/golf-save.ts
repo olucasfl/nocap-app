@@ -1,6 +1,19 @@
-/** Salvo no aparelho (a conta vem na etapa do servidor): melhor marca por fase e a cor da bola. */
+import { GOLF_BALL_DEFAULT, parseGolfBall, type GolfBallLook } from '@nocap/games';
+
+/**
+ * Salvo no aparelho: a bola (cor, acabamento e rastro) e a melhor marca de cada fase. `golf-account.ts` leva as duas
+ * coisas para a conta (spec 082); cada mudança avisa por `GOLF_CHANGED`.
+ */
 const BEST = 'nocap-golf-best';
-const BALL = 'nocap-golf-ball';
+const BALL = 'nocap-golf-ball2';
+export const GOLF_CHANGED = 'nocap-golf-changed';
+export const golfNotify = () => {
+  try {
+    window.dispatchEvent(new Event(GOLF_CHANGED));
+  } catch {
+    /* sem janela */
+  }
+};
 
 export function loadBest(): Record<number, number> {
   try {
@@ -12,21 +25,40 @@ export function loadBest(): Record<number, number> {
     return {};
   }
 }
-export function saveBest(level: number, strokes: number): Record<number, number> {
-  const b = loadBest();
-  if (!b[level] || strokes < b[level]!) b[level] = strokes;
+function writeBest(b: Record<number, number>) {
   try {
     localStorage.setItem(BEST, JSON.stringify(b));
   } catch {
     /* sem armazenamento */
   }
+}
+export function saveBest(level: number, strokes: number): Record<number, number> {
+  const b = loadBest();
+  if (!b[level] || strokes < b[level]!) b[level] = strokes;
+  writeBest(b);
+  golfNotify();
   return b;
 }
-export function loadBall(): number {
+/** Junta as marcas da conta às do aparelho (vale a menor de cada fase). */
+export function mergeBest(remote: Record<string, number>) {
+  const b = loadBest();
+  for (const [k, v] of Object.entries(remote)) if (!b[Number(k)] || v < b[Number(k)]!) b[Number(k)] = v;
+  writeBest(b);
+}
+
+export function loadLook(): GolfBallLook {
   try {
-    const n = Number(localStorage.getItem(BALL));
-    return Number.isFinite(n) && n > 0 ? n : 0xffc83d;
+    const raw = localStorage.getItem(BALL);
+    return raw ? parseGolfBall(JSON.parse(raw)) : GOLF_BALL_DEFAULT;
   } catch {
-    return 0xffc83d;
+    return GOLF_BALL_DEFAULT;
   }
+}
+export function saveLook(look: GolfBallLook) {
+  try {
+    localStorage.setItem(BALL, JSON.stringify(look));
+  } catch {
+    /* sem armazenamento */
+  }
+  golfNotify();
 }

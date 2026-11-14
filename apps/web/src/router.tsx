@@ -240,11 +240,21 @@ const counterFoxRoute = createRoute({
 const miniGolfRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/minigolf',
+  component: lazyRouteComponent(() => import('@/games/minigolf/MiniGolfHome'), 'MiniGolfHome'),
+});
+const miniGolfPlayRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/minigolf/jogar',
   validateSearch: (search: Record<string, unknown>): { fase?: number } => {
     const n = Number(search.fase);
     return Number.isInteger(n) && n >= 1 && n <= 30 ? { fase: n } : {};
   },
   component: lazyRouteComponent(() => import('@/games/minigolf/MiniGolfPage'), 'MiniGolfPage'),
+});
+const miniGolfBallRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/minigolf/bola',
+  component: lazyRouteComponent(() => import('@/games/minigolf/MiniGolfBall'), 'MiniGolfBall'),
 });
 
 const blocksRoute = createRoute({
@@ -348,6 +358,8 @@ const routeTree = rootRoute.addChildren([
   atravessaRoute,
   foxCapRoute,
   miniGolfRoute,
+  miniGolfPlayRoute,
+  miniGolfBallRoute,
   desmoronaRoute,
   bolaRoute,
   blocksRoute,

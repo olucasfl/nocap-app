@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { blocksRunSchema, gpSchema, keepBlocksRun, mergeGp, prefsSchema, withBlocksRun } from './prefs.controller';
+import { blocksRunSchema, golfSchema, gpSchema, keepBlocksRun, mergeGolf, mergeGp, prefsSchema, withBlocksRun } from './prefs.controller';
 
 describe('prefsSchema', () => {
   it('aceita opções válidas e parciais', () => {
@@ -70,5 +70,17 @@ describe('Fox GP na conta (14/11/2026)', () => {
     const merged = mergeGp({ best: { marina: 70000, interlagos: 90000 } }, { best: { marina: 72000, interlagos: 88000 } });
     expect(merged.best).toEqual({ marina: 70000, interlagos: 88000 });
     expect(keepBlocksRun({ gp: merged }, { mute: true }).gp).toEqual(merged);
+  });
+
+  it('Mini Golf: aceita bola e melhores marcas, recusa lixo, a menor marca nunca piora e outras preferências não apagam', () => {
+    const ok = { ball: { color: 0x2f5bff, finish: 'estrela', trail: 'fogo' }, best: { '3': 2 } };
+    expect(golfSchema.safeParse(ok).success).toBe(true);
+    expect(golfSchema.safeParse({ ball: { ...ok.ball, finish: 'xadrez' } }).success).toBe(false);
+    expect(golfSchema.safeParse({ best: { '3': 0 } }).success).toBe(false);
+    expect(golfSchema.safeParse({ best: { '3': 19 } }).success).toBe(false);
+    expect(golfSchema.safeParse({ ...ok, extra: 1 }).success).toBe(false);
+    const merged = mergeGolf({ best: { '3': 2, '4': 5 } }, { best: { '3': 4, '4': 3 } });
+    expect(merged.best).toEqual({ '3': 2, '4': 3 });
+    expect(keepBlocksRun({ golf: merged }, { mute: true }).golf).toEqual(merged);
   });
 });

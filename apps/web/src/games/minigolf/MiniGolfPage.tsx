@@ -24,7 +24,7 @@ import {
 import { golfSfx } from '@/lib/minigolf-audio';
 import { useTouchGuard } from '../foxgp/touch-guard';
 import { GolfScene } from './GolfScene';
-import { loadBall, loadBest, saveBest } from './golf-save';
+import { loadBest, loadLook, saveBest } from './golf-save';
 import './minigolf.css';
 
 // as fases convertidas moram no pacote de jogos; cada uma baixa só quando é jogada
@@ -99,7 +99,7 @@ export function MiniGolfPage() {
     void loadLevel(fase).then((level) => {
       if (!alive || !canvasRef.current || !boxRef.current) return;
       const box = boxRef.current;
-      scene = new GolfScene(canvasRef.current, level, loadBall());
+      scene = new GolfScene(canvasRef.current, level, loadLook());
       const sc = scene;
       const ball: GolfBall = golfNewBall(level.data);
       const st = {
@@ -330,7 +330,7 @@ export function MiniGolfPage() {
           <div className="n">{strokes}<small>/{GOLF_STROKE_LIMIT}</small></div>
         </div>
         <button type="button" className="mg-pill ghost" onClick={() => { setTier(golfTierOf(fase)); setPicking(true); }} data-testid="mg-levels">Fases</button>
-        <button type="button" className="mg-pill ghost" onClick={() => void navigate({ to: '/' })} data-testid="mg-menu">Menu</button>
+        <button type="button" className="mg-pill ghost" onClick={() => void navigate({ to: '/minigolf' })} data-testid="mg-menu">Menu</button>
       </div>
 
       {phase === 'aim' && power === null && !loading && (
@@ -358,7 +358,7 @@ export function MiniGolfPage() {
             {golfNextLevel(fase) !== null && <button type="button" className="mg-pill pri" onClick={() => go(golfNextLevel(fase)!)} data-testid="mg-next">Próxima fase</button>}
             <button type="button" className="mg-pill" onClick={() => go(fase)} data-testid="mg-retry">Repetir</button>
             <button type="button" className="mg-pill" onClick={() => { setTier(golfTierOf(fase)); setPicking(true); }}>Escolher fase</button>
-            <button type="button" className="mg-pill ghost" onClick={() => void navigate({ to: '/' })}>Menu</button>
+            <button type="button" className="mg-pill ghost" onClick={() => void navigate({ to: '/minigolf' })}>Menu</button>
           </div>
         </div>
       )}
