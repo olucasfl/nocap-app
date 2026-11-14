@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ATR_ROOM_COLORS } from '@nocap/games';
 import { GpRoomCars } from '@/games/foxgp/GpLobbyGarage';
+import { GolfLobbyBall } from '@/games/minigolf/GolfLobbyBall';
 import { acceptRequest, fetchFriends, sendRequest, type RelationState } from '@/lib/friends';
 import { Check, Crown } from '@/components/icons';
 import { FoxAvatar } from '@/components/HubArt';
@@ -262,6 +263,7 @@ export function MembersPanel({
       )}
       {colored && snapshot.game !== 'foxgp' && <ColorPicker snapshot={snapshot} me={me} />}
       {snapshot.game === 'foxgp' && <GpRoomCars snapshot={snapshot} />}
+      {snapshot.game === 'golf' && <GolfLobbyBall snapshot={snapshot} me={me} />}
     </div>
   );
 }

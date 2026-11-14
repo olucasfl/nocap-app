@@ -21,7 +21,7 @@ export function GolfLobbyBall({ snapshot, me }: { snapshot: RoomSnapshot; me: st
     <section className="mg-lobby" aria-label="Bolas da sala" data-testid="golf-lobby">
       <div className="mg-lobby-head">
         <h3 className="mono">Bolas da sala</h3>
-        <button type="button" className="btn ghost" onClick={() => void navigate({ to: '/minigolf/bola', search: { volta: 'sala' } })} data-testid="golf-customize">
+        <button type="button" className="mg-pill ghost" onClick={() => void navigate({ to: '/minigolf/bola', search: { volta: 'sala' } })} data-testid="golf-customize">
           Personalizar minha bola
         </button>
       </div>

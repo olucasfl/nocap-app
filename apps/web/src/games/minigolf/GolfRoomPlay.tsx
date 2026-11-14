@@ -16,7 +16,7 @@ import {
   type GolfBallLook,
   type GolfScoreName,
 } from '@nocap/games';
-import { at, leaveRoom, sendRoomQuiet, serverNow, subscribeRoom, useMeId, type RoomSnapshot } from '@/lib/rooms';
+import { at, leaveRoom, sendRoom, sendRoomQuiet, serverNow, subscribeRoom, useMeId, type RoomSnapshot } from '@/lib/rooms';
 import { golfSfx } from '@/lib/minigolf-audio';
 import { useTouchGuard } from '../foxgp/touch-guard';
 import { GolfScene } from './GolfScene';
@@ -462,6 +462,7 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
             <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
               <span className="mg-tag">Verde: abaixo do par · vermelho: acima</span>
               <span style={{ flex: 1 }} />
+              {snapshot.hostId === me && <button type="button" className="mg-pill ghost" onClick={() => sendRoom('gend')} data-testid="golf-end">Encerrar partida</button>}
               <button type="button" className="mg-pill ghost" onClick={leave}>Sair da partida</button>
             </div>
           </div>

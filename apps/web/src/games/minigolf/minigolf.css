@@ -700,12 +700,22 @@
   box-shadow: inset -3px -3px 5px rgba(0, 0, 0, 0.3), inset 2px 2px 4px rgba(255, 255, 255, 0.5);
 }
 .mg-lobby {
-  margin: 14px 0;
-  padding: 14px;
-  border: 2px solid var(--ink, #111);
+  --mg-lime: #b8f03a;
+  --mg-line: #2a5636;
+  --mg-p2: #183620;
+  --mg-disp: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  margin: 14px 0 96px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 16px;
-  background: var(--white, #fff);
-  color: var(--ink, #111);
+  background: rgba(8, 12, 24, 0.55);
+  color: #fff;
+}
+.mg-lobby h3 {
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 .mg-lobby-head {
   display: flex;
@@ -714,25 +724,33 @@
   gap: 10px;
   flex-wrap: wrap;
 }
+.mg-lobby .mg-pill {
+  min-height: 40px;
+  padding: 0 14px;
+  font-size: 16px;
+}
 .mg-lobby ul {
   list-style: none;
   margin: 10px 0 0;
   padding: 0;
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 8px;
 }
 .mg-lobby li {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  padding: 6px 12px 6px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
 }
 .mg-lobby-name {
   font-weight: 700;
-  flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .mg-lobby-det {
   font-size: 11px;

@@ -26,7 +26,6 @@ import { GpRoomFinal } from '@/games/foxgp/GpRoomFinal';
 import { GpLobbyGarage } from '@/games/foxgp/GpLobbyGarage';
 import { GolfRoomPlay } from '@/games/minigolf/GolfRoomPlay';
 import { GolfRoomFinal } from '@/games/minigolf/GolfRoomFinal';
-import { GolfLobbyBall } from '@/games/minigolf/GolfLobbyBall';
 import { AtravessaRoomFinalPage } from '@/games/atravessa/AtravessaRoomFinalPage';
 import { BolaRoomPlay } from '@/games/bola/BolaRoomPlay';
 import { PingRoomPlay } from '@/games/pingpong/PingRoomPlay';
@@ -383,7 +382,6 @@ function RoomPageInner({ code, game = 'color' }: { code?: string; game?: RoomGam
       />
       {snapshot?.phase === 'lobby' && <Lobby snapshot={snapshot} />}
       {snapshot?.phase === 'lobby' && snapshot.game === 'foxgp' && <GpLobbyGarage snapshot={snapshot} me={meId} />}
-      {snapshot?.phase === 'lobby' && snapshot.game === 'golf' && <GolfLobbyBall snapshot={snapshot} me={meId} />}
       {snapshot &&
         [
           'create',

@@ -44,7 +44,7 @@ Status: **em andamento** (14/11/2026): conversor, física portada e a fase 1 jog
 1. Spec, exceção e licenças (este commit).
 2. Conversor e física, com testes e trajetórias; **fase 1 jogável offline** (PC e celular) para o Lucas sentir.
 3. As 20 fases offline, letreiros, sons, garagem da bola.
-4. Sala online (servidor autoritativo, colisão entre bolas, placar, transição, pódio).
+4. Sala online (servidor autoritativo, colisão entre bolas, placar, transição, pódio). **Feita em 14/11/2026**: `GolfRoomEngine` simula todas as bolas, a sala do Fox Cap! escolhe o jogo, quadros `gb` a ~31/s e eventos `ge`, teste com servidor de verdade e duas janelas.
 
 ## 5. Em aberto
 
