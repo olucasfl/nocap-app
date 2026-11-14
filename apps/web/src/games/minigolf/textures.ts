@@ -216,6 +216,38 @@ function leaves(autumn: boolean): TexSet {
   return toSet(c, 2.6);
 }
 
+function sand(): TexSet {
+  const n = makeNoise(101), r = rng(102);
+  const c = paint((u, v) => mix(hex(0xd8c288), hex(0xf0e0b0), fbm(n, u, v, 12, 5)));
+  const ctx = c.getContext('2d')!;
+  for (let i = 0; i < 2500; i++) {
+    ctx.fillStyle = r() > 0.5 ? 'rgba(255,245,210,0.5)' : 'rgba(150,120,70,0.35)';
+    ctx.fillRect(r() * SIZE, r() * SIZE, 1.5, 1.5);
+  }
+  return toSet(c, 2.2);
+}
+
+function ice(): TexSet {
+  const n = makeNoise(111), r = rng(112);
+  const c = paint((u, v) => mix(hex(0x9ad8f2), hex(0xe4f7ff), fbm(n, u, v, 5, 4)));
+  const ctx = c.getContext('2d')!;
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+  for (let i = 0; i < 40; i++) {
+    ctx.lineWidth = 0.6 + r();
+    ctx.beginPath();
+    let x = r() * SIZE, y = r() * SIZE;
+    ctx.moveTo(x, y);
+    for (let k = 0; k < 6; k++) ctx.lineTo((x += (r() - 0.5) * 60), (y += (r() - 0.5) * 60));
+    ctx.stroke();
+  }
+  return toSet(c, 0.8);
+}
+
+function bumperTex(): TexSet {
+  const c = paint((u, v) => (Math.floor(v * 8) % 2 === 0 ? hex(0xe8402c) : hex(0xf4f4ef)));
+  return toSet(c, 0.4);
+}
+
 function paintRed(): TexSet {
   const n = makeNoise(71);
   const c = paint((u, v) => mix(hex(0xb8301f), hex(0xe2503a), fbm(n, u, v, 8, 3)));
@@ -283,6 +315,9 @@ export function buildGolfMaterials(): { get: (name: string) => GolfMat; water: T
     leaves: leaves(false),
     autumn: leaves(true),
     red: paintRed(),
+    sand: sand(),
+    ice: ice(),
+    bumper: bumperTex(),
     water: waterTex(),
   };
   const mk = (s: TexSet, rough: number, metalness = 0, ns = 1) =>
@@ -300,6 +335,9 @@ export function buildGolfMaterials(): { get: (name: string) => GolfMat; water: T
     dirt: () => ({ mat: mk(T.dirt, 1, 0, 1.2), tile: 2 }),
     metal: () => ({ mat: mk(T.metal, 0.3, 0.7, 0.6), tile: 1 }),
     border: () => ({ mat: mk(T.red, 0.5), tile: 2 }),
+    sand: () => ({ mat: mk(T.sand, 1, 0, 1.3), tile: 2 }),
+    ice: () => ({ mat: mk(T.ice, 0.06, 0.1, 0.5), tile: 2 }),
+    bumper: () => ({ mat: mk(T.bumper, 0.3, 0.1, 0.3), tile: 1 }),
     ground_spinner_platform: () => ({ mat: mk(T.stone, 0.85), tile: 2 }),
     ground_mover_platform: () => ({ mat: mk(T.stone, 0.85), tile: 2 }),
     leafsDark: () => ({ mat: mk(T.leaves, 0.9, 0, 1.2), tile: 1 }),

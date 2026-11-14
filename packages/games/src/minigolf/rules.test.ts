@@ -1,13 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { GOLF_FAIL_STROKES, GOLF_LEVELS, GOLF_PARS, golfCountedStrokes, golfParOf, golfScoreName } from './rules';
+import { GOLF_FAIL_STROKES, GOLF_LEVELS, GOLF_ORDER, GOLF_PARS, golfNextLevel, golfTierOf, golfCountedStrokes, golfParOf, golfScoreName } from './rules';
 
 describe('Mini Golf: regras', () => {
-  it('tem 20 fases com par de 2 a 5', () => {
-    expect(GOLF_LEVELS).toBe(20);
+  it('tem 30 fases com par de 2 a 5, e as três dificuldades cobrem todas, sem repetir', () => {
+    expect(GOLF_LEVELS).toBe(30);
+    expect([...GOLF_ORDER].sort((a, b) => a - b)).toEqual(Array.from({ length: 30 }, (_, i) => i + 1));
+    expect(golfTierOf(1)).toBe('easy');
+    expect(golfTierOf(6)).toBe('medium');
+    expect(golfTierOf(30)).toBe('hard');
+    expect(golfNextLevel(23)).toBe(6);
+    expect(golfNextLevel(30)).toBeNull();
     expect(Math.min(...GOLF_PARS)).toBe(2);
     expect(Math.max(...GOLF_PARS)).toBe(5);
     expect(golfParOf(1)).toBe(2);
     expect(golfParOf(20)).toBe(5);
+    expect(golfParOf(30)).toBe(4);
   });
   it('os nomes do golfe vêm do par; 1 tacada é sempre ACE', () => {
     expect(golfScoreName(1, 4)).toBe('ace');

@@ -1,8 +1,20 @@
 /** Regras do Mini Golf (spec 082): par de cada fase, limite de tacadas, tempo e os nomes do golfe. */
 
-/** Par de cada uma das 20 fases (índice 0 = fase 1). */
-export const GOLF_PARS = [2, 2, 3, 3, 3, 3, 3, 4, 3, 4, 3, 4, 3, 4, 4, 4, 4, 5, 5, 5] as const;
+/** Par de cada fase (índice 0 = fase 1). As 20 primeiras são as do Open Golf; da 21 em diante são nossas (spec 082). */
+export const GOLF_PARS = [2, 2, 3, 3, 3, 3, 3, 4, 3, 4, 3, 4, 3, 4, 4, 4, 4, 5, 5, 5, 2, 3, 3, 3, 3, 4, 4, 4, 3, 4] as const;
 export const GOLF_LEVELS = GOLF_PARS.length;
+export type GolfTier = 'easy' | 'medium' | 'hard';
+/** As fases de cada dificuldade, na ordem em que se joga (a "próxima fase" segue esta ordem). */
+export const GOLF_TIERS: Record<GolfTier, readonly number[]> = {
+  easy: [1, 2, 3, 4, 5, 7, 21, 22, 23],
+  medium: [6, 8, 9, 10, 11, 12, 13, 24, 25, 26, 29],
+  hard: [14, 15, 16, 17, 18, 19, 20, 27, 28, 30],
+};
+export const GOLF_TIER_LABEL: Record<GolfTier, string> = { easy: 'Fácil', medium: 'Média', hard: 'Difícil' };
+export const GOLF_ORDER: readonly number[] = [...GOLF_TIERS.easy, ...GOLF_TIERS.medium, ...GOLF_TIERS.hard];
+export const golfTierOf = (level: number): GolfTier => (GOLF_TIERS.easy.includes(level) ? 'easy' : GOLF_TIERS.medium.includes(level) ? 'medium' : 'hard');
+/** A fase que vem depois (na ordem fácil, média, difícil); `null` na última. */
+export const golfNextLevel = (level: number): number | null => GOLF_ORDER[GOLF_ORDER.indexOf(level) + 1] ?? null;
 /** Máximo de tacadas por buraco. */
 export const GOLF_STROKE_LIMIT = 16;
 /** Quem não encaçapa (tempo ou limite) conta o limite mais isto. */

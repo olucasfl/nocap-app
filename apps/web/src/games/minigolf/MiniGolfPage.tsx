@@ -4,17 +4,22 @@ import {
   GOLF_DT,
   GOLF_LEVELS,
   GOLF_SCORE_LABEL,
+  GOLF_TIERS,
+  GOLF_TIER_LABEL,
   GOLF_STROKE_LIMIT,
   GolfLevel,
   golfCountedStrokes,
   golfHit,
   golfNewBall,
+  golfNextLevel,
   golfParOf,
+  golfTierOf,
   golfScoreName,
   golfStep,
   type GolfBall,
   type GolfLevelData,
   type GolfScoreName,
+  type GolfTier,
 } from '@nocap/games';
 import { golfSfx } from '@/lib/minigolf-audio';
 import { useTouchGuard } from '../foxgp/touch-guard';
@@ -60,7 +65,7 @@ const Chevron = ({ dir }: { dir: 'l' | 'r' }) => (
   </svg>
 );
 
-/** Mini Golf offline (spec 082): 20 fases abertas; cai no buraco e escolhe próxima, repetir, escolher fase ou menu. */
+/** Mini Golf offline (spec 082): 30 fases abertas, em três dificuldades; cai no buraco e escolhe próxima, repetir, escolher fase ou menu. */
 export function MiniGolfPage() {
   useTouchGuard();
   const navigate = useNavigate();
@@ -68,6 +73,7 @@ export function MiniGolfPage() {
   const [fase, setFase] = useState(clampLevel(wanted.fase));
   const [round, setRound] = useState(0);
   const [picking, setPicking] = useState(false);
+  const [tier, setTier] = useState<GolfTier>(golfTierOf(clampLevel(wanted.fase)));
   const [loading, setLoading] = useState(true);
   const [strokes, setStrokes] = useState(0);
   const [phase, setPhase] = useState<Phase>('aim');
@@ -323,7 +329,7 @@ export function MiniGolfPage() {
           <div className="mg-kick">Tacadas</div>
           <div className="n">{strokes}<small>/{GOLF_STROKE_LIMIT}</small></div>
         </div>
-        <button type="button" className="mg-pill ghost" onClick={() => setPicking(true)} data-testid="mg-levels">Fases</button>
+        <button type="button" className="mg-pill ghost" onClick={() => { setTier(golfTierOf(fase)); setPicking(true); }} data-testid="mg-levels">Fases</button>
         <button type="button" className="mg-pill ghost" onClick={() => void navigate({ to: '/' })} data-testid="mg-menu">Menu</button>
       </div>
 
@@ -342,16 +348,16 @@ export function MiniGolfPage() {
       {result && (
         <div className="mg-score" data-testid="mg-result">
           <div style={{ display: 'flex', gap: 10 }}>
-            <span className="mg-tag">Fase {fase} · Par {par}</span>
+            <span className="mg-tag">Fase {fase} · {GOLF_TIER_LABEL[golfTierOf(fase)]} · Par {par}</span>
             <span className="mg-tag">{result.holed ? `${result.strokes} ${result.strokes === 1 ? 'tacada' : 'tacadas'}` : `Conta ${golfCountedStrokes(result.strokes, false)}`}</span>
             {result.record && <span className="mg-tag mg-ace">Novo recorde</span>}
           </div>
           <h1 className={`mg-disp ${nameClass(result.name)}`}>{GOLF_SCORE_LABEL[result.name]}</h1>
           <div className="sub">{SUBTITLE[result.name]}</div>
           <div className="row">
-            {fase < GOLF_LEVELS && <button type="button" className="mg-pill pri" onClick={() => go(fase + 1)} data-testid="mg-next">Próxima fase</button>}
+            {golfNextLevel(fase) !== null && <button type="button" className="mg-pill pri" onClick={() => go(golfNextLevel(fase)!)} data-testid="mg-next">Próxima fase</button>}
             <button type="button" className="mg-pill" onClick={() => go(fase)} data-testid="mg-retry">Repetir</button>
-            <button type="button" className="mg-pill" onClick={() => setPicking(true)}>Escolher fase</button>
+            <button type="button" className="mg-pill" onClick={() => { setTier(golfTierOf(fase)); setPicking(true); }}>Escolher fase</button>
             <button type="button" className="mg-pill ghost" onClick={() => void navigate({ to: '/' })}>Menu</button>
           </div>
         </div>
@@ -362,12 +368,20 @@ export function MiniGolfPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, maxWidth: 880, margin: '0 auto' }}>
             <div style={{ flex: 1 }}>
               <div className="mg-kick">Offline</div>
-              <h2 className="mg-disp" style={{ fontSize: 44 }}>20 fases</h2>
+              <h2 className="mg-disp" style={{ fontSize: 44 }}>{GOLF_LEVELS} fases</h2>
             </div>
             <button type="button" className="mg-pill" onClick={() => setPicking(false)}>Fechar</button>
           </div>
+          <div className="mg-tabs" role="tablist" aria-label="Dificuldade">
+            {(Object.keys(GOLF_TIERS) as GolfTier[]).map((t) => (
+              <button key={t} type="button" role="tab" aria-selected={tier === t} className={`mg-tab${tier === t ? ' on' : ''}`} onClick={() => setTier(t)} data-testid={`mg-tier-${t}`}>
+                {GOLF_TIER_LABEL[t]}
+                <small>{GOLF_TIERS[t].filter((n) => bests[n]).length}/{GOLF_TIERS[t].length}</small>
+              </button>
+            ))}
+          </div>
           <div className="mg-pick-grid">
-            {Array.from({ length: GOLF_LEVELS }, (_, i) => i + 1).map((n) => (
+            {GOLF_TIERS[tier].map((n) => (
               <button key={n} type="button" className={`mg-lv${n === fase ? ' on' : ''}${bests[n] ? ' done' : ''}`} onClick={() => go(n)}>
                 <b>{n}</b>
                 <span>Par {golfParOf(n)}</span>
