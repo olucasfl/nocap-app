@@ -2,7 +2,7 @@ import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth';
 import { loadGarage, parseGarage, saveGarage } from './garage';
 import { GP_CHANGED } from './gp-bus';
-import { loadAllBest, loadGuide, loadPhysics, loadVehicle, mergeBest, saveGuide, savePhysics, saveVehicle } from './gp-best';
+import { loadAllBest, loadPhysics, loadVehicle, mergeBest, savePhysics, saveVehicle } from './gp-best';
 import { gpApplyBinds, gpBinds, useGpShake } from './gp-settings';
 
 /**
@@ -15,7 +15,6 @@ interface GpSaved {
   binds?: Record<string, string[]>;
   best?: Record<string, number>;
   shake?: boolean;
-  guide?: boolean;
   physics?: 'arcade' | 'real';
   vehicle?: 'kart' | 'f1';
 }
@@ -26,7 +25,6 @@ export function collectGp(): Required<GpSaved> {
     binds: gpBinds() as unknown as Record<string, string[]>,
     best: loadAllBest(),
     shake: useGpShake.getState().on,
-    guide: loadGuide(),
     physics: loadPhysics(),
     vehicle: loadVehicle(),
   };
@@ -43,7 +41,6 @@ export function applyGp(r: GpSaved): void {
     if (r.binds) gpApplyBinds(r.binds);
     if (r.best) mergeBest(r.best);
     if (typeof r.shake === 'boolean') useGpShake.getState().set(r.shake);
-    if (typeof r.guide === 'boolean') saveGuide(r.guide);
     if (r.physics === 'arcade' || r.physics === 'real') savePhysics(r.physics);
     if (r.vehicle === 'kart' || r.vehicle === 'f1') saveVehicle(r.vehicle);
   } finally {

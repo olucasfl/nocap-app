@@ -210,63 +210,87 @@ export const GP_TRACK_MARINA: GpTrackDef = {
 };
 
 /**
- * Interlagos (pedido do Lucas, 14/11/2026): o desenho do circuito (reta de largada descendo pela esquerda, S do Senna, Curva
- * do Sol, reta oposta subindo pela direita, Mergulho, Laranjinha e Pinheirinho no miolo, Subida dos Boxes de volta). Pontos
+ * Interlagos (pedido do Lucas, 14/11/2026): o traçado do mapa de DRS enviado por ele (reta principal descendo para o
+ * sudoeste, S do Senna, Curva do Sol, reta oposta embaixo, subida pela direita, Descida do Lago, Ferradura, Laranjinha,
+ * Pinheirinho, Bico de Pato, Mergulho, Junção e Subida dos Boxes de volta, no sentido da corrida). Pontos
  * em pixels do desenho; o cenário é o mesmo da Marina (só muda o traçado). Os boxes ficam do lado de dentro da reta de largada.
  */
 export const GP_TRACK_INTERLAGOS: GpTrackDef = {
   id: 'interlagos',
   name: 'Interlagos',
-  scale: 2.1,
-  origin: [180, 150],
-  smooth: 10,
+  scale: 0.4,
+  origin: [1068, 600],
+  smooth: 8,
   limit: 16,
   points: [
-    [106, 150], // 0 linha de chegada, na reta de largada
-    [108, 200],
-    [114, 238],
-    [122, 260], // 3 entrada do S do Senna
-    [132, 273],
-    [146, 279],
-    [160, 272],
-    [172, 268],
-    [190, 277],
-    [210, 275],
-    [228, 265], // 10 Curva do Sol
-    [244, 244],
-    [252, 210], // 12 reta oposta
-    [252, 170],
-    [246, 130],
-    [236, 96],
-    [222, 62],
-    [212, 30],
-    [196, 14],
-    [176, 18],
-    [160, 34], // 20 Mergulho
-    [150, 54],
-    [146, 76],
-    [150, 96],
-    [158, 112], // 24 Laranjinha
-    [161, 128],
-    [152, 143],
-    [138, 147],
-    [126, 137],
-    [124, 119], // 29 Pinheirinho
-    [127, 100],
-    [123, 80],
-    [115, 60],
-    [103, 49], // 33 Bico de Pato
-    [92, 56],
-    [90, 76],
-    [95, 104],
-    [100, 128], // 37 Subida dos Boxes
+    [1250, 125], // 0 linha de chegada, no alto da reta principal
+    [1100, 160],
+    [900, 230],
+    [700, 330],
+    [520, 430],
+    [400, 495], // 5 fim da reta (velocidade máxima)
+    [320, 540],
+    [285, 590], // 7 S do Senna
+    [300, 640],
+    [350, 670],
+    [385, 720],
+    [385, 800],
+    [365, 880], // 12 Curva do Sol
+    [385, 970],
+    [460, 1040],
+    [560, 1070],
+    [700, 1078], // 16 Reta Oposta
+    [900, 1075],
+    [1150, 1070],
+    [1400, 1065],
+    [1530, 1060],
+    [1590, 1020],
+    [1605, 930],
+    [1590, 840],
+    [1520, 770], // 24 Descida do Lago
+    [1380, 700],
+    [1200, 610],
+    [1050, 530],
+    [975, 480],
+    [945, 420], // 29 Ferradura
+    [965, 350],
+    [1030, 290],
+    [1120, 235],
+    [1190, 205],
+    [1235, 225], // 34 Laranjinha
+    [1250, 275],
+    [1225, 320], // 36 Pinheirinho
+    [1215, 360],
+    [1250, 400],
+    [1305, 405],
+    [1350, 360],
+    [1400, 290],
+    [1450, 225],
+    [1520, 190], // 43 Bico de Pato
+    [1575, 200],
+    [1590, 240],
+    [1555, 320],
+    [1500, 410],
+    [1485, 470],
+    [1520, 540],
+    [1590, 585], // 50 Mergulho
+    [1700, 625],
+    [1790, 655],
+    [1835, 620],
+    [1850, 540],
+    [1845, 460],
+    [1800, 380], // 56 Junção
+    [1740, 280],
+    [1680, 200],
+    [1600, 160],
+    [1480, 140], // 60 Subida dos Boxes
   ],
   noCut: [],
   pit: { side: -1, offset: 12, inStart: -46, inEnd: -32, outStart: 30, outEnd: 52, box: -12 },
-  sectors: [11, 25],
+  sectors: [20, 41],
   stands: [
-    { from: 0, to: 2, side: 1, name: 'MAIN' },
-    { from: 12, to: 14, side: 1, name: 'EAST' },
+    { from: 0, to: 3, side: 1, name: 'MAIN' },
+    { from: 16, to: 18, side: 1, name: 'SOUTH' },
   ],
 };
 

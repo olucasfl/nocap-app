@@ -79,7 +79,6 @@ export const gpSchema = z
     binds: z.record(z.string().max(20), z.array(z.string().max(30)).length(2)).refine((b) => Object.keys(b).length <= 30),
     best: z.record(z.string().max(30), z.number().int().min(1).max(3_600_000)).refine((b) => Object.keys(b).length <= 10),
     shake: z.boolean(),
-    guide: z.boolean(),
     physics: z.enum(['arcade', 'real']),
     vehicle: z.enum(['kart', 'f1']),
   })

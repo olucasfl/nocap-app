@@ -38,8 +38,6 @@ import {
   type GpCar,
   type GpEvent,
   type GpWorld,
-  gpGuide,
-  gpGuideAt,
 } from '@nocap/games';
 import { mapEdge } from '../atravessa/models';
 import { buildCar, type CarModel } from './car-model';
@@ -341,7 +339,6 @@ export class GpScene {
     this.buildGround();
     this.buildTrack();
     if (world.track.pit) this.buildPit();
-    if (world.mode === 'real') this.buildGuide();
     this.buildGantry();
     this.buildBarriers();
     this.buildScenery();
@@ -724,43 +721,6 @@ export class GpScene {
 
   /** Linha de guia amarela da entrada do box (acende quando o pneu do carro em foco está gasto, spec 081, Fase 10). */
   private pitGuide: THREE.Mesh | null = null;
-  private guideMesh: THREE.Mesh | null = null;
-
-  /** A linha de guia do Realista: a melhor rota, pintada de verde (acelerar), amarelo (segurar) e vermelho (frear). */
-  private buildGuide() {
-    const tr = this.world.track;
-    const g = gpGuide(tr);
-    const COLORS = [0x2ee86b, 0xffd23a, 0xff3b30];
-    const mat = new THREE.MeshBasicMaterial({
-      vertexColors: true,
-      transparent: true,
-      opacity: 0.8,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-      toneMapped: false,
-      polygonOffset: true,
-      polygonOffsetFactor: -4,
-      polygonOffsetUnits: -4,
-    });
-    this.guideMesh = this.ribbon(
-      (i) => {
-        const l = gpGuideAt(tr, g, i * tr.ds).lat;
-        return { a: l - 0.5, b: l + 0.5 };
-      },
-      (i) => COLORS[gpGuideAt(tr, g, i * tr.ds).kind] ?? COLORS[0]!,
-      0.07,
-      mat,
-    );
-    if (this.guideMesh) {
-      this.guideMesh.receiveShadow = false;
-      this.guideMesh.renderOrder = 2;
-    }
-  }
-
-  setGuide(on: boolean) {
-    if (this.guideMesh) this.guideMesh.visible = on && this.world.mode === 'real';
-  }
-
   private buildPit() {
     const tr = this.world.track;
     {

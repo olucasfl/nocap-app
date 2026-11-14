@@ -6,4 +6,3 @@ export * from './paint';
 export * from './world';
 export * from './bots';
 export * from './net';
-export * from './guide';

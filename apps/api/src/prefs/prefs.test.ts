@@ -57,7 +57,6 @@ describe('Fox GP na conta (14/11/2026)', () => {
       garage: { fur: 0xff7d26, paint: { body: 1 }, kart: { body: 2 } },
       binds: { left: ['KeyA', 'ArrowLeft'] },
       best: { marina: 71234 },
-      guide: true,
       physics: 'real',
       vehicle: 'f1',
     };
@@ -68,9 +67,8 @@ describe('Fox GP na conta (14/11/2026)', () => {
   });
 
   it('a melhor volta nunca piora ao mesclar, e salvar preferências não apaga o Fox GP', () => {
-    const merged = mergeGp({ best: { marina: 70000, interlagos: 90000 }, guide: true }, { best: { marina: 72000, interlagos: 88000 }, guide: false });
+    const merged = mergeGp({ best: { marina: 70000, interlagos: 90000 } }, { best: { marina: 72000, interlagos: 88000 } });
     expect(merged.best).toEqual({ marina: 70000, interlagos: 88000 });
-    expect(merged.guide).toBe(false);
     expect(keepBlocksRun({ gp: merged }, { mute: true }).gp).toEqual(merged);
   });
 });

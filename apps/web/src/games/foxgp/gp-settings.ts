@@ -1,5 +1,4 @@
 import { gpNotify } from './gp-bus';
-import { loadGuide, saveGuide } from './gp-best';
 import { create } from 'zustand';
 import { bindLabel } from '../foxshot/fs-settings';
 
@@ -137,15 +136,6 @@ const SHAKE_KEY = 'nocap-gp-shake';
  * Tremida da tela no turbo e na zebra do kart (spec 081, 5.5 e 6B.4): ligada por padrão, com opção de desligar no menu
  * Comandos. Com movimento reduzido no sistema ela nunca liga.
  */
-/** Linha de guia do Realista (verde, amarelo, vermelho): ligada por padrão, dá para desligar nos Comandos. */
-export const useGpGuide = create<{ on: boolean; set: (on: boolean) => void }>((set) => ({
-  on: loadGuide(),
-  set: (on) => {
-    saveGuide(on);
-    set({ on });
-  },
-}));
-
 const AUTO_KEY = 'nocap-gp-autogas';
 /**
  * Acelerador automático no celular: o polegar da direita fica livre para o drift, o turbo e o DRS (acelerar + drift + turbo

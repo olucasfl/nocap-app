@@ -69,7 +69,7 @@ import { drawMinimap } from './minimap';
 import { GpNoticeQueue, NOTICE_FADE_MS, type GpNotice, type GpNoticeKind } from './notices';
 import { PHYSICS_NAME, saveBest } from './gp-best';
 import { gpTrackName } from './vehicles';
-import { gpActionOf, gpKeyName, useGpAutoGas, useGpControls, useGpGuide, useGpShake, type GpBinds } from './gp-settings';
+import { gpActionOf, gpKeyName, useGpAutoGas, useGpControls, useGpShake, type GpBinds } from './gp-settings';
 import './theme.css';
 import './foxgp.css';
 import './gp-hud.css';
@@ -385,10 +385,6 @@ export function GpPlay({
   const autoGas = useGpAutoGas((st) => st.on);
   const autoGasRef = useRef(autoGas);
   autoGasRef.current = autoGas;
-  const guideOn = useGpGuide((st) => st.on);
-  useEffect(() => {
-    sceneRef.current?.setGuide(guideOn);
-  }, [guideOn]);
   const shakeOn = useGpShake((st) => st.on);
   useEffect(() => {
     if (sceneRef.current) sceneRef.current.shakeOn = shakeOn;
@@ -550,7 +546,6 @@ export function GpPlay({
       const scene = new GpScene(el, world, meId, { reduced, quality: qualityRef.current });
       scene.setCamMode(read(CAM_KEY, CAMS, 'chase'));
       scene.shakeOn = useGpShake.getState().on;
-      scene.setGuide(useGpGuide.getState().on);
       sceneRef.current = scene;
       if (import.meta.env.DEV) (window as unknown as { __gpScene?: GpScene }).__gpScene = scene;
       const resize = () => {

@@ -110,24 +110,6 @@ export function saveTrack(id: string) {
   gpNotify();
 }
 
-const GUIDE_KEY = 'nocap-gp-guide';
-/** A linha de guia do Realista (verde, amarelo, vermelho): ligada por padrão, dá para desligar nos Comandos. */
-export function loadGuide(): boolean {
-  try {
-    return localStorage.getItem(GUIDE_KEY) !== '0';
-  } catch {
-    return true;
-  }
-}
-export function saveGuide(on: boolean) {
-  try {
-    localStorage.setItem(GUIDE_KEY, on ? '1' : '0');
-  } catch {
-    /* sem armazenamento */
-  }
-  gpNotify();
-}
-
 export const PHYSICS_NAME: Record<GpPhysicsMode, string> = { arcade: 'Arcade', real: 'Realista' };
 
 const BACK_KEY = 'nocap-gp-back';
