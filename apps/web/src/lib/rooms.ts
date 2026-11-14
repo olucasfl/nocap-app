@@ -185,6 +185,7 @@ export interface FoxGpRoomState {
   physics?: 'arcade' | 'real';
   /** Pista da sala (id). */
   track?: string;
+  laps?: number;
   slots: Record<string, number>;
   colors: Record<string, string>;
   quali: Record<string, number | null>;

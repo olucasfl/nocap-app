@@ -1,4 +1,4 @@
-import type { GpPhysicsMode } from '@nocap/games';
+import { gpLapsOr, type GpPhysicsMode } from '@nocap/games';
 
 import { gpNotify } from './gp-bus';
 
@@ -104,6 +104,24 @@ export function loadTrack(): string {
 export function saveTrack(id: string) {
   try {
     localStorage.setItem(TRACK_KEY, id);
+  } catch {
+    /* sem armazenamento */
+  }
+  gpNotify();
+}
+
+const LAPS_KEY = 'nocap-gp-laps';
+/** Voltas do treino (2 a 10, padrão 3). */
+export function loadLaps(): number {
+  try {
+    return gpLapsOr(Number(localStorage.getItem(LAPS_KEY)));
+  } catch {
+    return gpLapsOr(null);
+  }
+}
+export function saveLaps(n: number) {
+  try {
+    localStorage.setItem(LAPS_KEY, String(n));
   } catch {
     /* sem armazenamento */
   }

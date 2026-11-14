@@ -95,16 +95,29 @@ describe('sala do Fox GP', () => {
     expect(room.currentPhase).toBe('show');
   });
 
-  it('regra Física: Arcade por padrão, só o líder troca, só Arcade ou Realista', () => {
+  it('regra Física: Realista por padrão, só o líder troca, só Arcade ou Realista', () => {
     const room = new FoxGpRoomEngine({ code: 'ABCD', now: () => T0, newSeed: () => 's' });
     room.join('ana', 'ana');
     room.join('bia', 'bia');
-    expect(snap(room).physics).toBe('arcade');
-    expect(() => room.configure('bia', { physics: 'real' } as never)).toThrow(RoomError);
+    expect(snap(room).physics).toBe('real');
+    expect(() => room.configure('bia', { physics: 'arcade' } as never)).toThrow(RoomError);
     expect(() => room.configure('ana', { physics: 'drift' } as never)).toThrow(RoomError);
-    room.configure('ana', { physics: 'real' } as never);
-    expect(snap(room, 'bia').physics).toBe('real');
-    expect(room.physics).toBe('real');
+    room.configure('ana', { physics: 'arcade' } as never);
+    expect(snap(room, 'bia').physics).toBe('arcade');
+    expect(room.physics).toBe('arcade');
+  });
+
+  it('regra Voltas: padrão 3, só o líder troca, aceita 2 a 10', () => {
+    const room = new FoxGpRoomEngine({ code: 'ABCD', now: () => T0, newSeed: () => 's' });
+    room.join('ana', 'ana');
+    room.join('bia', 'bia');
+    expect(room.laps).toBe(3);
+    expect(() => room.configure('bia', { laps: 5 } as never)).toThrow(RoomError);
+    for (const bad of [1, 11, 2.5, '4']) expect(() => room.configure('ana', { laps: bad } as never)).toThrow(RoomError);
+    room.configure('ana', { laps: 10 } as never);
+    expect(room.laps).toBe(10);
+    room.configure('ana', { laps: 2 } as never);
+    expect(room.laps).toBe(2);
   });
 
   it('até 12 na sala (a 13ª vaga é recusada); 12 pessoas com o mesmo carro entram sem erro', () => {

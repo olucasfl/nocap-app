@@ -43,10 +43,11 @@ export function GpRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       infos: list,
       physics: info.physics ?? 'real',
       track: info.track,
+      laps: info.laps,
       botLevel: info.botLevel ?? 'medio',
     };
     // a lista só muda se mudarem as vagas: nomes novos no meio da partida não recriam a cena
-  }, [seed, meId, hostId, slotKey, info?.physics, info?.track]);
+  }, [seed, meId, hostId, slotKey, info?.physics, info?.track, info?.laps]);
   const live: GpRoomLive | undefined = info
     ? {
         stage: info.stage,

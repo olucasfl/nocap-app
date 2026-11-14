@@ -1,6 +1,7 @@
 import {
   GP_DNF_SEC,
-  GP_LAPS,
+  gpLapsOr,
+  gpIsLaps,
   GP_MAX_PLAYERS,
   GP_MIN_LAP_SEC,
   GP_PHYSICS_DEFAULT,
@@ -114,6 +115,7 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
       mode === 'classico' &&
       gpIsPhysicsMode(merged.physics) &&
       (merged.track === undefined || gpIsTrackId(merged.track)) &&
+      (merged.laps === undefined || gpIsLaps(merged.laps)) &&
       GP_FILL_OPTIONS.includes(fill as number) &&
       GP_BOT_LEVELS.includes(level as GpBotLevel)
     );
@@ -129,6 +131,11 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
   get trackId(): string {
     const v = (this.settings as unknown as { track?: unknown }).track;
     return gpTrackDefFor(this.physics, typeof v === 'string' ? v : null).id;
+  }
+
+  /** Voltas da corrida (2 a 10, padrão 3). */
+  get laps(): number {
+    return gpLapsOr((this.settings as unknown as { laps?: unknown }).laps);
   }
 
   /** Total de carros com bots (0 = só gente) e a dificuldade (spec 081, 12.4). */
@@ -284,7 +291,7 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
     // o progresso só vale na corrida e não pode correr mais que o carro aguenta
     if (this.stage === 'race') {
       const cap = ((t - this.raceAt) / 1000) * 45 + 10;
-      r.prog = Math.min(prog!, cap, GP_LAPS * this.lapLength + 5);
+      r.prog = Math.min(prog!, cap, this.laps * this.lapLength + 5);
     }
     r.pos = [
       r2(x!),
@@ -330,7 +337,7 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
     const m = v as { lap?: unknown; ms?: unknown } | null;
     if (!r || r.finishMs !== null || !m || !Number.isInteger(m.lap) || !finite(m.ms)) return;
     const lap = m.lap as number;
-    if (lap !== r.laps.length + 1 || lap > GP_LAPS || m.ms < FoxGpRoomEngine.timing.minLapMs) return;
+    if (lap !== r.laps.length + 1 || lap > this.laps || m.ms < FoxGpRoomEngine.timing.minLapMs) return;
     r.laps.push(Math.round(m.ms));
     if (r.best === null || m.ms < r.best) r.best = Math.round(m.ms);
     this.dirty = true;
@@ -343,14 +350,14 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
     const m = v as { ms?: unknown; laps?: unknown } | null;
     if (!r || r.finishMs !== null || !m || !finite(m.ms) || !Array.isArray(m.laps)) return;
     const laps = m.laps as unknown[];
-    if (laps.length !== GP_LAPS || !laps.every((l) => finite(l) && l >= FoxGpRoomEngine.timing.minLapMs))
+    if (laps.length !== this.laps || !laps.every((l) => finite(l) && l >= FoxGpRoomEngine.timing.minLapMs))
       return;
     const sum = (laps as number[]).reduce((a, b) => a + b, 0);
     if (Math.abs(sum - m.ms) > FINISH_SLACK_MS || m.ms > this.stageMs() + 2000) return;
     r.laps = (laps as number[]).map((l) => Math.round(l));
     r.best = Math.min(...r.laps);
     r.finishMs = Math.round(m.ms);
-    r.prog = GP_LAPS * this.lapLength;
+    r.prog = this.laps * this.lapLength;
     if (this.firstFinishAt === null) this.firstFinishAt = this.gnow();
     this.dirty = true;
   }
@@ -530,6 +537,7 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
         holdMs: started && this.stage !== 'quali' ? this.holdMs : null,
         physics: this.physics,
         track: this.trackId,
+        laps: this.laps,
         slots: started ? slots : {},
         // a cor de cada um (o pelo), para a barra da classificação e a lista; sem carro ainda, laranja
         colors: Object.fromEntries(

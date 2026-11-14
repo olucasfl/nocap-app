@@ -229,6 +229,8 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
     const cur = (s.settings as unknown as { physics?: string }).physics === 'arcade' ? 'arcade' : 'real';
     const track = (s.settings as unknown as { track?: string }).track === 'interlagos' ? 'interlagos' : 'marina';
     const fill = (s.settings as unknown as { fill?: number }).fill ?? 0;
+    const rawLaps = (s.settings as unknown as { laps?: number }).laps;
+    const laps = Number.isInteger(rawLaps) && rawLaps! >= 2 && rawLaps! <= 10 ? rawLaps! : 3;
     const level = (s.settings as unknown as { botLevel?: string }).botLevel ?? 'medio';
     const people = s.members.length;
     const bots = fill === 0 ? 0 : Math.max(0, Math.min(12, fill) - people);
@@ -258,6 +260,15 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
             } as RuleDef,
           ]
         : []),
+      {
+        id: 'laps',
+        label: 'VOLTAS',
+        values: ['2', '3', '4', '5', '6', '7', '8', '9', '10'],
+        current: String(laps),
+        format: (v: string) => `${v} voltas`,
+        patch: (v: string) => ({ laps: Number(v) }),
+        note: 'Quantas voltas a corrida tem. Padrão: 3.',
+      } as RuleDef,
       {
         id: 'fill',
         label: 'BOTS',

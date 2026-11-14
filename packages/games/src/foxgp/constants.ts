@@ -21,7 +21,12 @@ export const GP_PHYSICS_DEFAULT: GpPhysicsMode = 'real';
 export const gpIsPhysicsMode = (v: unknown): v is GpPhysicsMode => v === 'arcade' || v === 'real';
 /** Versão do protocolo da rede: sobe quando o formato da entrada ou do estado muda (aparelho antigo não entra). */
 export const GP_NET_VERSION = 3;
+/** Voltas padrão da corrida; a sala e o treino escolhem entre `GP_LAP_OPTIONS`. */
 export const GP_LAPS = 3;
+export const GP_LAP_OPTIONS = [2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
+export const gpIsLaps = (v: unknown): v is number => typeof v === 'number' && (GP_LAP_OPTIONS as readonly number[]).includes(v);
+/** Aceita só uma das opções; qualquer outra coisa vira o padrão. */
+export const gpLapsOr = (v: unknown): number => (gpIsLaps(v) ? v : GP_LAPS);
 
 // ---- pista ----
 

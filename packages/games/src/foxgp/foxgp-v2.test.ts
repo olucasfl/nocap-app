@@ -9,6 +9,8 @@ import {
   GP_QUALI_MAX_SEC,
   GP_REAL_VMAX,
   type GpPhysicsMode,
+  GP_LAP_OPTIONS,
+  gpLapsOr,
 } from './constants';
 import { GP_BOT_ARCHETYPES, gpBotInput, gpBotWantsPit, gpBotProfile, newGpBotMemory } from './bots';
 import { GpHost, gpSnapshotFor } from './net';
@@ -237,5 +239,21 @@ describe('bots e o box (14/11/2026)', () => {
   });
   it('com muito desgaste cedo na corrida vale parar', () => {
     expect(gpBotWantsPit(0.7, 1, 80_000)).toBe(true);
+  });
+});
+
+describe('voltas da corrida', () => {
+  it('aceita de 2 a 10 e o resto vira 3', () => {
+    expect(GP_LAP_OPTIONS).toEqual([2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    expect(gpLapsOr(7)).toBe(7);
+    expect(gpLapsOr(1)).toBe(GP_LAPS);
+    expect(gpLapsOr(11)).toBe(GP_LAPS);
+    expect(gpLapsOr('4')).toBe(GP_LAPS);
+    expect(gpLapsOr(null)).toBe(GP_LAPS);
+  });
+  it('o mundo guarda as voltas pedidas', () => {
+    const w = new GpWorld('s', [{ id: 'a', name: 'A', color: 0xff7d26 } as never], undefined, 'real', 5);
+    expect(w.laps).toBe(5);
+    expect(new GpWorld('s', [{ id: 'a', name: 'A', color: 0xff7d26 } as never]).laps).toBe(GP_LAPS);
   });
 });

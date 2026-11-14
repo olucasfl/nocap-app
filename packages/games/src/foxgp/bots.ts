@@ -261,8 +261,8 @@ export const GP_BOT_PIT_COST = 7;
  * mais a parada. A parada é no fim da volta, então só serve às voltas depois dela: na última volta (ou na penúltima com
  * pouco desgaste) segue direto. `noise` (s) é o jeito de cada bot.
  */
-export function gpBotWantsPit(wear: number, lapsDone: number, lastLapMs: number, noise = 0): boolean {
-  const after = GP_LAPS - lapsDone - 1; // voltas que sobram depois de parar no fim desta
+export function gpBotWantsPit(wear: number, lapsDone: number, lastLapMs: number, noise = 0, totalLaps = GP_LAPS): boolean {
+  const after = totalLaps - lapsDone - 1; // voltas que sobram depois de parar no fim desta
   if (after <= 0) return false;
   const rate = Math.max(0.12, wear / Math.max(1, lapsDone)); // desgaste por volta
   const slow = (w: number) => (lastLapMs / 1000) * 0.14 * Math.min(1, w);
@@ -304,7 +304,7 @@ export function gpBotInput(world: GpWorld, c: GpCar, mem: GpBotMemory, rng: () =
   if (race && world.mode === 'real' && mem.pitLap !== lapsDone) {
     mem.pitLap = lapsDone;
     const lastMs = c.laps.length ? c.laps[c.laps.length - 1]! : 80_000;
-    mem.pit = c.pitStops === 0 && gpBotWantsPit(c.wear, lapsDone, lastMs, (rng() - 0.5) * 2 * (1 - P.consistency) * 2);
+    mem.pit = c.pitStops === 0 && gpBotWantsPit(c.wear, lapsDone, lastMs, (rng() - 0.5) * 2 * (1 - P.consistency) * 2, world.laps);
   }
   if (mem.pit && c.pitStops > 0) mem.pit = false;
 

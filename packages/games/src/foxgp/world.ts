@@ -61,6 +61,7 @@ import {
   GP_INERTIA,
   GP_KERB_W,
   GP_LAPS,
+  gpLapsOr,
   GP_PIT_LIMIT,
   GP_PIT_STOP_SEC,
   GP_QUALI_HOLD_SEC,
@@ -412,6 +413,8 @@ export class GpWorld {
   private contacts = new Set<string>();
   private finishedCount = 0;
   meId: string | null = null;
+  /** Voltas da corrida. */
+  readonly laps: number;
 
   constructor(
     readonly seed: string,
@@ -419,7 +422,10 @@ export class GpWorld {
     def?: GpTrackDef,
     /** Modo de física (spec 080): o mesmo para todos os carros da partida. */
     readonly mode: GpPhysicsMode = 'arcade',
+    /** Voltas da corrida (2 a 10); o padrão é `GP_LAPS`. */
+    laps: number = GP_LAPS,
   ) {
+    this.laps = gpLapsOr(laps);
     // sem pista dada, a do modo (o kart na Bala Track, o F1 na Marina)
     this.track = gpTrack(def ?? gpTrackDefFor(mode));
     this.cars = infos.map((p, slot) => this.newCar(p, slot));
@@ -1227,7 +1233,7 @@ export class GpWorld {
     }
     const lapBase = c.laps.length * L;
     if (c.prog >= 0) sectors(lapBase);
-    for (let k = c.laps.length + 1; k <= GP_LAPS; k++) {
+    for (let k = c.laps.length + 1; k <= this.laps; k++) {
       if (!crossed(k * L)) break;
       const tt = at(k * L);
       if (c.sectorT.length === 2) this.closeSector(c, 2, tt);
@@ -1241,7 +1247,7 @@ export class GpWorld {
       if (c.bestLap === null || ms < c.bestLap) c.bestLap = ms;
       if (this.fastest === null || ms < this.fastest.ms) this.fastest = { id: c.id, ms };
       this.events.push({ type: 'lap', id: c.id, lap: k, ms });
-      if (k === GP_LAPS) this.finishCar(c, Math.round(tt * 1000));
+      if (k === this.laps) this.finishCar(c, Math.round(tt * 1000));
     }
   }
 

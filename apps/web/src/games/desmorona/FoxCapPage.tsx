@@ -28,7 +28,7 @@ import { PingPicker } from '../pingpong/PingPicker';
 import { GpPicker } from '../foxgp/GpPicker';
 import { GpHome } from '../foxgp/GpHome';
 import { loadGarage } from '../foxgp/garage';
-import { gpMarkBack, loadPhysics, loadTrack } from '../foxgp/gp-best';
+import { gpMarkBack, loadLaps, loadPhysics, loadTrack } from '../foxgp/gp-best';
 import type { PpBotName } from '@nocap/games';
 import '@/screens/account.css';
 import '@/screens/room.css';
@@ -129,6 +129,7 @@ export function FoxCapPage() {
             kart={loadGarage().kart}
             physics={loadPhysics()}
             track={loadTrack()}
+            laps={loadLaps()}
             onExit={() => {
               gpMarkBack();
               setFlow(null);

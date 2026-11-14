@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { GP_MAX_PLAYERS, type GpPhysicsMode } from '@nocap/games';
+import { GP_LAP_OPTIONS, GP_MAX_PLAYERS, type GpPhysicsMode } from '@nocap/games';
 import { GpGarage } from './GpGarage';
-import { loadBest, loadPhysics, loadTrack, savePhysics, saveTrack } from './gp-best';
+import { loadBest, loadLaps, loadPhysics, loadTrack, saveLaps, savePhysics, saveTrack } from './gp-best';
 import { lapClock } from './format';
 import { GP_TRACK_CHOICES, gpTrackName, gpVehicleFor } from './vehicles';
 import './theme.css';
@@ -30,6 +30,11 @@ export function GpPicker({
   const [garage, setGarage] = useState(false);
   const [physics, setPhysics] = useState<GpPhysicsMode>(() => loadPhysics());
   const [track, setTrack] = useState(() => loadTrack());
+  const [laps, setLaps] = useState(() => loadLaps());
+  const pickLaps = (n: number) => {
+    setLaps(n);
+    saveLaps(n);
+  };
   const pickTrack = (id: string) => {
     setTrack(id);
     saveTrack(id);
@@ -94,6 +99,25 @@ export function GpPicker({
             </div>
           </div>
         )}
+
+        <div className="gp-pick-bots-section">
+          <span className="gp-kicker">Voltas</span>
+          <div className="gp-chips" role="radiogroup" aria-label="Número de voltas">
+            {GP_LAP_OPTIONS.map((n) => (
+              <button
+                key={n}
+                type="button"
+                role="radio"
+                aria-checked={laps === n}
+                className={`gp-chip${laps === n ? ' is-on' : ''}`}
+                onClick={() => pickLaps(n)}
+                data-testid={`gp-laps-${n}`}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div className="gp-pick-bots-section">
           <span className="gp-kicker">

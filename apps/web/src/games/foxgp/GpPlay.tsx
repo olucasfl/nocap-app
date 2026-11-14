@@ -9,7 +9,7 @@ import {
   GP_DNF_SEC,
   GP_DT,
   GP_GO_SEC,
-  GP_LAPS,
+  gpLapsOr,
   GP_LIGHTS,
   GP_LIGHT_SEC,
   GP_PIT_STOP_SEC,
@@ -267,6 +267,8 @@ export interface GpOnline {
   physics: GpPhysicsMode;
   /** Pista da sala (id). */
   track?: string;
+  /** Voltas da corrida da sala. */
+  laps?: number;
   /** Dificuldade dos bots da sala (o líder simula os bots). */
   botLevel?: GpBotLevel;
 }
@@ -356,6 +358,7 @@ export function GpPlay({
   kart,
   physics = 'real',
   track,
+  laps: lapsProp,
   online,
   live,
   onExit,
@@ -372,6 +375,8 @@ export function GpPlay({
   physics?: GpPhysicsMode;
   /** Pista do treino (a do Realista; no online vem da sala). */
   track?: string;
+  /** Voltas do treino (online vem da sala). */
+  laps?: number;
   online?: GpOnline;
   live?: GpRoomLive;
   onExit: () => void;
@@ -425,6 +430,7 @@ export function GpPlay({
   const binds = useGpControls((st) => st.binds);
   const [notice, setNotice] = useState<GpNotice | null>(null);
   const mode: GpPhysicsMode = online?.physics ?? physics;
+  const laps = gpLapsOr(online?.laps ?? lapsProp);
   const trackId = gpTrackDefFor(mode, online?.track ?? track).id;
   /** O kart só baixa quando o Arcade é jogado (spec 081, Fase 6): a cena espera ele. */
   const [kartOk, setKartOk] = useState(() => mode !== 'arcade' || kartReady());
@@ -543,7 +549,7 @@ export function GpPlay({
       })),
     ];
     const seed = online?.seed ?? seedOf();
-    const world = new GpWorld(seed, infos, gpTrackDefFor(mode, online?.track ?? track), mode);
+    const world = new GpWorld(seed, infos, gpTrackDefFor(mode, online?.track ?? track), mode, laps);
     // a espera com as luzes acesas: sorteada pela seed no treino (na sala, quem sorteia é o servidor)
     const holdSec = gpLightsHold(createRng(`${seed}:lights`)());
     const isHost = !!online && !!online.meId && online.hostId === meId;
@@ -880,9 +886,9 @@ export function GpPlay({
           saveBest(trackId, e.ms);
           const fastest = world.fastest?.id === meId && world.fastest.ms === e.ms;
           if (fastest) say('Volta mais rápida', 2600, 'highlight', lapClock(e.ms));
-          if (e.lap === GP_LAPS - 1) say('Última volta', 2400, 'highlight');
-          else if (e.lap < GP_LAPS)
-            say(`Volta ${e.lap + 1}/${GP_LAPS}`, 2000, 'info', lapClock(e.ms));
+          if (e.lap === laps - 1) say('Última volta', 2400, 'highlight');
+          else if (e.lap < laps)
+            say(`Volta ${e.lap + 1}/${laps}`, 2000, 'info', lapClock(e.ms));
         } else if (e.type === 'finish' && mine) {
           gpSfx.finish(e.place);
           say(`Você terminou em ${e.place}º`, 5000, 'result', 'Agora assista os outros');
@@ -1252,7 +1258,7 @@ export function GpPlay({
           lit: w.lit,
           pos: myRow?.pos ?? 0,
           total: world.cars.filter((x) => !x.gone).length,
-          lap: Math.min(GP_LAPS, (seen?.laps.length ?? 0) + 1),
+          lap: Math.min(laps, (seen?.laps.length ?? 0) + 1),
           raceMs: world.phase === 'race' && started ? world.t * 1000 : 0,
           best: seen?.bestLap ?? null,
           last: seen?.laps.length ? seen.laps[seen.laps.length - 1]! : null,
@@ -1367,7 +1373,7 @@ export function GpPlay({
       sceneRef.current = null;
       remakeScene.current = null;
     };
-  }, [bots, color, paint, kart, controls, online, touchDevice, mode, kartOk, track]);
+  }, [bots, color, paint, kart, controls, online, touchDevice, mode, kartOk, track, laps]);
 
   const pad = (k: 'gas' | 'brake' | 'left' | 'right' | 'drs' | 'drift') => ({
     onPointerDown: (e: ReactPointerEvent<HTMLButtonElement>) => {
@@ -1445,7 +1451,7 @@ export function GpPlay({
                   <>
                     <span>Volta</span>
                     <b className="gpn" data-testid="gp-lap">
-                      {h.lap}/{GP_LAPS}
+                      {h.lap}/{laps}
                     </b>
                   </>
                 )}
