@@ -480,3 +480,10 @@
     --ui-zoom: 0.72;
   }
 }
+
+/* celular em pé: a barra de baixo (70px + 16px de margem) é fixa; sem este respiro o último cartão fica embaixo dela */
+@media (max-width: 767px) and (not ((orientation: landscape) and (max-height: 520px))) {
+  .tabs-app {
+    padding-bottom: calc(70px + 16px + 28px + var(--sa-bottom, env(safe-area-inset-bottom)));
+  }
+}
