@@ -1,0 +1,140 @@
+/* Quem quer jogar de novo (RematchBoard): as cores vêm do jogo por --rmb-yes, --rmb-yes-ink, --rmb-card e --rmb-line. */
+.rmb {
+  --rmb-yes: #29c26a;
+  --rmb-yes-ink: #04210f;
+  --rmb-card: rgba(255, 255, 255, 0.07);
+  --rmb-line: rgba(255, 255, 255, 0.18);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rmb-p {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 8px 8px;
+  border-radius: 16px;
+  background: var(--rmb-card);
+  border: 2px solid var(--rmb-line);
+  min-width: 0;
+  transition: transform 0.25s, opacity 0.25s;
+}
+.rmb-p.me {
+  border-style: dashed;
+}
+.rmb-p[data-state='yes'] {
+  border-color: var(--rmb-yes);
+  border-style: solid;
+  animation: rmb-pop 0.45s cubic-bezier(0.2, 1.5, 0.4, 1) both;
+}
+.rmb-p[data-state='off'] {
+  opacity: 0.4;
+}
+.rmb-av {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.rmb-av > * {
+  max-width: 100%;
+  max-height: 100%;
+}
+.rmb-p[data-state='yes'] .rmb-av {
+  animation: rmb-bob 1.4s ease-in-out infinite;
+}
+.rmb-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+}
+.rmb-tag {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 34px;
+  padding: 4px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  line-height: 1.15;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.72);
+}
+.rmb-p[data-state='yes'] .rmb-tag {
+  background: var(--rmb-yes);
+  color: var(--rmb-yes-ink);
+}
+.rmb-check {
+  flex: none;
+  animation: rmb-check 0.4s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+.rmb-dots {
+  display: inline-flex;
+  gap: 3px;
+}
+.rmb-dots i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: rmb-dot 1.2s ease-in-out infinite;
+}
+.rmb-dots i:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.rmb-dots i:nth-child(3) {
+  animation-delay: 0.4s;
+}
+@keyframes rmb-pop {
+  from {
+    transform: scale(0.92);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+@keyframes rmb-bob {
+  50% {
+    transform: translateY(-3px);
+  }
+}
+@keyframes rmb-check {
+  from {
+    transform: scale(0) rotate(-40deg);
+  }
+  to {
+    transform: scale(1) rotate(0);
+  }
+}
+@keyframes rmb-dot {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rmb-p,
+  .rmb-av,
+  .rmb-check,
+  .rmb-dots i {
+    animation: none !important;
+  }
+}

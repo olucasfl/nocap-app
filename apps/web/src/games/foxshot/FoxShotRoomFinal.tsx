@@ -1,10 +1,25 @@
 import { useEffect } from 'react';
 import { sendRoom, leaveRoom, useMeId, type RoomSnapshot } from '@/lib/rooms';
 import { FS_MAP_NAMES } from '@nocap/games';
+import { RematchBoard, type RematchPlayer } from '@/components/final/RematchBoard';
+import { FoxAvatar } from '@/components/HubArt';
 import { CounterFoxBackdrop } from './CounterFoxBackdrop';
 import { CounterFoxLogo } from './CounterFoxLogo';
 import { FsBombEnd } from './FsBombEnd';
 import './counterfox-hub.css';
+
+const FUR = ['#ff7d26', '#4aa8ff', '#7ed957', '#ff5fa8', '#ffd23a', '#8b5cf6', '#26c6c0', '#ff4a3a', '#d9d9d2', '#c89a62'];
+/** Quem quer jogar de novo: cada pessoa da sala com uma raposa de cor própria. */
+function votePlayers(snapshot: RoomSnapshot, me: string | undefined): RematchPlayer[] {
+  return snapshot.members.map((m, i) => ({
+    id: m.id,
+    name: m.username,
+    connected: m.connected,
+    rematch: m.rematch,
+    me: m.id === me,
+    avatar: <FoxAvatar fur={FUR[i % FUR.length]!} />,
+  }));
+}
 
 /** Resultado do mata-mata online: tabela com posição, pontos, abates, assistências e mortes; jogar de novo volta ao lobby da sala. */
 export function FoxShotRoomFinal({ snapshot }: { snapshot: RoomSnapshot }) {
@@ -42,6 +57,7 @@ export function FoxShotRoomFinal({ snapshot }: { snapshot: RoomSnapshot }) {
         againLabel={voted ? 'Esperando os outros' : 'Jogar de novo'}
         againNote={voted ? 'toque para desistir' : 'volta ao lobby da sala'}
         againOn={!!voted}
+        votes={votePlayers(snapshot, me)}
         onAgain={() => sendRoom('vote', { again: !voted })}
       />
     );
@@ -87,6 +103,9 @@ export function FoxShotRoomFinal({ snapshot }: { snapshot: RoomSnapshot }) {
                 ))}
               </tbody>
             </table>
+            <div className="cfx-rb">
+              <RematchBoard players={votePlayers(snapshot, me)} />
+            </div>
           </div>
         </section>
         <footer className="cfl-foot">

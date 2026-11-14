@@ -256,3 +256,34 @@
     animation: none;
   }
 }
+
+/* quem quer jogar de novo (RematchBoard) no tema do Fox GP: cartões opacos e compactos */
+.gpf .rmb {
+  --rmb-yes: var(--gp-green, #29c26a);
+  --rmb-yes-ink: #04210f;
+  --rmb-card: #141a2b;
+  --rmb-line: #2a3350;
+  color: var(--gp-text, #f4f6fb);
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+}
+.gpf .rmb-p {
+  padding: 8px 6px 6px;
+  gap: 4px;
+}
+.gpf .rmb-name {
+  font-family: var(--gp-display);
+  font-weight: 800;
+  font-size: 16px;
+}
+.gpf .rmb-av {
+  width: 38px;
+  height: 38px;
+}
+.gpf .rmb-tag {
+  min-height: 28px;
+  font-size: 10px;
+}
+.gpf-right {
+  overflow-y: auto;
+}

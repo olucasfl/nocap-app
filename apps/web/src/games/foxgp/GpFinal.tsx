@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type { GpKartPaint, GpPaint } from '@nocap/games';
 import type { RematchRoom } from '@/components/final/RematchPanel';
+import { RematchBoard } from '@/components/final/RematchBoard';
+import { FoxAvatar } from '@/components/HubArt';
 import { GpPodium3D } from './GpPodium3D';
 import { lapClock } from './format';
 import { GP_THEME } from './theme';
@@ -73,8 +75,6 @@ export function GpFinal({
   useEffect(() => card.current?.focus({ preventScroll: true }), []);
   const [sureClose, setSureClose] = useState(false);
   const room = mode.kind === 'room' ? mode.room : null;
-  const votes = room ? room.members.filter((m) => m.connected && m.rematch).length : 0;
-  const here = room ? room.members.filter((m) => m.connected).length : 0;
   return (
     <div
       className="gpf"
@@ -186,9 +186,19 @@ export function GpFinal({
           </div>
         </div>
         {room && (
-          <p className="gpf-votes" role="status">
-            Revanche: {votes} de {here} {room.message ? `· ${room.message}` : ''}
-          </p>
+          <>
+            <RematchBoard
+              players={room.members.map((m) => ({
+                id: m.id,
+                name: m.name,
+                connected: m.connected,
+                rematch: m.rematch,
+                me: m.id === room.meId,
+                avatar: <FoxAvatar fur={m.color} />,
+              }))}
+            />
+            {room.message && <p className="gpf-votes" role="alert">{room.message}</p>}
+          </>
         )}
         <div className="gpf-btns">
           {mode.kind === 'training' ? (

@@ -1,3 +1,4 @@
+import { RematchBoard, type RematchPlayer } from '@/components/final/RematchBoard';
 import { CounterFoxBackdrop } from './CounterFoxBackdrop';
 import { CounterFoxLogo } from './CounterFoxLogo';
 import './counterfox-hub.css';
@@ -30,6 +31,7 @@ export function FsBombEnd({
   againLabel,
   againNote,
   againOn,
+  votes,
 }: {
   winner: 'tr' | 'ct' | null;
   tr: number;
@@ -45,6 +47,8 @@ export function FsBombEnd({
   againLabel: string;
   againNote?: string;
   againOn?: boolean;
+  /** Quem quer jogar de novo (a sala). */
+  votes?: RematchPlayer[];
 }) {
   const verdict = !winner ? 'empate' : !mySide ? 'fim' : winner === mySide ? 'win' : 'lose';
   const title = verdict === 'win' ? 'Vitória' : verdict === 'lose' ? 'Derrota' : winner ? `${SIDE[winner]} vencem` : 'Empate';
@@ -104,6 +108,11 @@ export function FsBombEnd({
               </div>
             ))}
           </div>
+          {votes && (
+            <div className="cfx-rb">
+              <RematchBoard players={votes} />
+            </div>
+          )}
         </section>
         <footer className="cfl-foot">
           <button type="button" className="cfh-btn danger" onClick={onExit} data-sfx="back" data-testid="fb-final-exit">

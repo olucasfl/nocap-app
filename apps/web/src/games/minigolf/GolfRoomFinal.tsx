@@ -1,6 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import { closeRoom, leaveRoom, sendRoom, useMeId, useRoom, at, type RoomSnapshot } from '@/lib/rooms';
 import { GOLF_SCORE_LABEL, golfScoreName } from '@nocap/games';
+import { RematchBoard } from '@/components/final/RematchBoard';
 import { useTouchGuard } from '../foxgp/touch-guard';
 import './minigolf.css';
 
@@ -33,8 +34,6 @@ export function GolfRoomFinal({ snapshot }: { snapshot: RoomSnapshot }) {
   const top = rows.slice(0, 3);
   const order = top.length === 3 ? [top[1]!, top[0]!, top[2]!] : top.length === 2 ? [top[1]!, top[0]!] : top;
   const leave = () => void navigate({ to: '/minigolf' }).then(() => leaveRoom());
-  const votes = snapshot.members.filter((m) => m.connected && m.rematch).length;
-  const here = snapshot.members.filter((m) => m.connected).length;
   const winner = rows[0];
 
   return (
@@ -73,8 +72,17 @@ export function GolfRoomFinal({ snapshot }: { snapshot: RoomSnapshot }) {
           </div>
         )}
         {message && <p className="mgh-mut" role="alert">{message}</p>}
+        <RematchBoard
+          players={snapshot.members.map((m) => ({
+            id: m.id,
+            name: nameOf(m.id, m.username),
+            connected: m.connected,
+            rematch: m.rematch,
+            me: m.id === me,
+            avatar: <span className="mg-podium-ball" style={{ background: hex(looks[m.id]?.color ?? 0xffc83d), width: 44, height: 44 }} />,
+          }))}
+        />
         <div className="mgh-save">
-          <span className="mgh-mut">{votes} de {here} querem jogar de novo.</span>
           <button type="button" className={`mg-pill${mine?.rematch ? '' : ' pri'}`} onClick={() => sendRoom('vote', { again: !mine?.rematch })} data-testid="golf-again">
             {mine?.rematch ? 'Cancelar revanche' : 'Jogar de novo'}
           </button>

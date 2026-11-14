@@ -1783,3 +1783,24 @@
   text-shadow: 0 0 40px rgba(255, 106, 43, 0.8);
   animation: cfh-pop 0.5s both;
 }
+
+/* quem quer jogar de novo (RematchBoard) no tema do Counter Fox */
+.cfx-rb {
+  width: 100%;
+  max-width: 820px;
+  margin: 14px auto 0;
+}
+.cfx-rb .rmb {
+  --rmb-yes: #ff7d26;
+  --rmb-yes-ink: #1a0d02;
+  --rmb-card: rgba(255, 255, 255, 0.06);
+  --rmb-line: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+}
+.cfx-rb .rmb-name {
+  font-family: Rajdhani, sans-serif;
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
