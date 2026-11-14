@@ -15,6 +15,7 @@ export const GP_ACTIONS = [
   { id: 'drs', label: 'DRS (Realista) / turbo (Arcade)' },
   { id: 'drift', label: 'Derrapar (Arcade, segurar)' },
   { id: 'cam', label: 'Trocar a câmera' },
+  { id: 'back', label: 'Olhar para trás (segurar)' },
   { id: 'lap', label: 'Iniciar a volta lançada' },
 ] as const;
 export type GpAction = (typeof GP_ACTIONS)[number]['id'];
@@ -28,6 +29,7 @@ export const GP_DEFAULT_BINDS: GpBinds = {
   drs: ['KeyE', ''],
   drift: ['Space', ''],
   cam: ['KeyC', ''],
+  back: ['KeyQ', ''],
   lap: ['KeyL', ''],
 };
 

@@ -1718,6 +1718,14 @@ export class GpScene {
   }
 
   /** Troca de câmera com transição suave (a preferência fica com quem chama). */
+  /** Olhar para trás (segurar a tecla): a câmera vira 180° e volta ao soltar. Não vale na câmera de cima ("far"). */
+  private lookBack = false;
+  setLookBack(on: boolean) {
+    if (on === this.lookBack) return;
+    this.lookBack = on;
+    this.chaseInit = false; // a câmera de trás pula direto, sem atravessar o carro
+  }
+
   setCamMode(mode: GpCamMode) {
     if (mode === this.mode) return;
     this.camFrom = {
@@ -2112,14 +2120,15 @@ export class GpScene {
         const real = this.world.mode === 'real';
         const back = (real ? 7.2 - vk * 1.4 : 7.2) * CAR_VIS;
         const up = (real ? 2.7 - vk * 0.6 : 2.7) * CAR_VIS;
-        const want = this.chaseWant.set(p.x - fx * back, up, p.z - fz * back);
-        if (!this.chaseInit) {
+        const dir = this.lookBack ? -1 : 1;
+        const want = this.chaseWant.set(p.x - dir * fx * back, up, p.z - dir * fz * back);
+        if (!this.chaseInit || this.lookBack) {
           this.chasePos.copy(want);
           this.chaseInit = true;
         }
         this.chasePos.lerp(want, 1 - Math.exp(-dt * 7));
         this.camPos.copy(this.chasePos);
-        this.camLook.set(p.x + fx * 4 * CAR_VIS, 0.9 * CAR_VIS, p.z + fz * 4 * CAR_VIS);
+        this.camLook.set(p.x + dir * fx * 4 * CAR_VIS, 0.9 * CAR_VIS, p.z + dir * fz * 4 * CAR_VIS);
         fov = 60 + vk * vk * (real ? 26 : 14);
       } else {
         // cockpit: o olho do piloto (atrás do halo), olhando para a frente e um pouco para baixo
@@ -2128,12 +2137,12 @@ export class GpScene {
           // kart: o olho do piloto no próprio kart (o volante e as mãos aparecem à frente)
           (kv.m as KartModel).eye.getWorldPosition(this.camPos);
           // olhando um pouco para baixo (~18°): aparecem o volante, as mãos e o bico do kart, e a pista continua à frente
-          this.camLook.set(this.camPos.x + fx * 10, this.camPos.y - 3.2, this.camPos.z + fz * 10);
+          this.camLook.set(this.camPos.x + fx * 10 * (this.lookBack ? -1 : 1), this.camPos.y - (this.lookBack ? 0.5 : 3.2), this.camPos.z + fz * 10 * (this.lookBack ? -1 : 1));
         } else if (kv) {
           // F1: o olho do piloto, um pouco acima e atrás do volante, olhando a pista por cima do bico
           kv.m.group.updateMatrixWorld(true);
           this.camPos.copy(kv.m.body.localToWorld(new THREE.Vector3(0, 1.1, -0.08)));
-          this.camLook.set(p.x + fx * 22, this.camPos.y - 1.5, p.z + fz * 22);
+          this.camLook.set(p.x + fx * 22 * (this.lookBack ? -1 : 1), this.camPos.y - (this.lookBack ? 1.0 : 1.5), p.z + fz * 22 * (this.lookBack ? -1 : 1));
         } else {
           this.camPos.set(p.x + fx * 0.05 * CAR_VIS, 1.05 * CAR_VIS, p.z + fz * 0.05 * CAR_VIS);
           this.camLook.set(p.x + fx * 20, 0.55, p.z + fz * 20);

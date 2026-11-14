@@ -176,6 +176,14 @@ const kartTips = (touch: boolean, b: GpBinds): TipRow[] => [
     keys: touch ? <b className="gm-tag">Câmera</b> : <Keycap k={gpKeyName('cam', b)} touchHide={false} />,
     text: 'Câmera: distante, atrás do carro ou cockpit',
   },
+  ...(touch
+    ? []
+    : [
+        {
+          keys: <Keycap k={gpKeyName('back', b)} touchHide={false} />,
+          text: 'Segure para olhar para trás',
+        },
+      ]),
 ];
 
 const tipRows = (touch: boolean, b: GpBinds, kart = false): TipRow[] =>
@@ -485,8 +493,27 @@ export function GpPlay({
       else if ((e.code === 'ArrowLeft' || e.code === 'ArrowRight') && watchingRef.current)
         api.current?.next(e.code === 'ArrowLeft' ? -1 : 1);
     };
+    // olhar para trás: enquanto a tecla está apertada (solta ao perder o foco ou abrir o menu)
+    const backDown = (e: KeyboardEvent) => {
+      if (gameChatOpen() || menuRef.current || gpActionOf(e.code) !== 'back') return;
+      sceneRef.current?.setLookBack(true);
+      e.preventDefault();
+    };
+    const backUp = (e: KeyboardEvent) => {
+      if (gpActionOf(e.code) === 'back') sceneRef.current?.setLookBack(false);
+    };
+    const backOff = () => sceneRef.current?.setLookBack(false);
     window.addEventListener('keydown', key);
-    return () => window.removeEventListener('keydown', key);
+    window.addEventListener('keydown', backDown);
+    window.addEventListener('keyup', backUp);
+    window.addEventListener('blur', backOff);
+    return () => {
+      window.removeEventListener('keydown', key);
+      window.removeEventListener('keydown', backDown);
+      window.removeEventListener('keyup', backUp);
+      window.removeEventListener('blur', backOff);
+      backOff();
+    };
   }, []);
   useEffect(() => {
     sceneRef.current?.setCamMode(cam);
