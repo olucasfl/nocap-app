@@ -2,7 +2,7 @@
 
 Pedido em 14/11/2026 (planos `PLANO_MINIGOLF_NOCAP.md` e telas no canvas "Mini Golf NoCap"). Base: Open Golf
 (github.com/mgerdes/Open-Golf, MIT), com as 20 fases, o formato de fase e a física portados para TypeScript.
-Status: **rascunho** (telas em aprovação).
+Status: **em andamento** (14/11/2026): conversor, física portada e a fase 1 jogável offline (`/minigolf`); falta o resto da lista da seção 4.
 
 ## 1. Decisões do Lucas
 

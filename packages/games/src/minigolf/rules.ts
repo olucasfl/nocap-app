@@ -1,0 +1,48 @@
+/** Regras do Mini Golf (spec 082): par de cada fase, limite de tacadas, tempo e os nomes do golfe. */
+
+/** Par de cada uma das 20 fases (índice 0 = fase 1). */
+export const GOLF_PARS = [2, 2, 3, 3, 3, 3, 3, 4, 3, 4, 3, 4, 3, 4, 4, 4, 4, 5, 5, 5] as const;
+export const GOLF_LEVELS = GOLF_PARS.length;
+/** Máximo de tacadas por buraco. */
+export const GOLF_STROKE_LIMIT = 16;
+/** Quem não encaçapa (tempo ou limite) conta o limite mais isto. */
+export const GOLF_FAIL_EXTRA = 2;
+export const GOLF_FAIL_STROKES = GOLF_STROKE_LIMIT + GOLF_FAIL_EXTRA;
+/** Tempo por buraco no online, em segundos (a sala escolhe). */
+export const GOLF_HOLE_SECONDS = [60, 180, 300] as const;
+export const GOLF_HOLE_SECONDS_DEFAULT = 180;
+/** Quantidade de buracos que a sala pode escolher. */
+export const GOLF_HOLE_COUNTS = [3, 6, 9, 12, 18, 20] as const;
+
+export const golfParOf = (level: number): number => GOLF_PARS[Math.max(1, Math.min(GOLF_LEVELS, level)) - 1]!;
+
+export type GolfScoreName = 'ace' | 'albatross' | 'eagle' | 'birdie' | 'par' | 'bogey' | 'double' | 'triple' | 'fail';
+
+/** O nome do resultado: ACE é 1 tacada; os demais vêm da diferença para o par. `fail` = não encaçapou. */
+export function golfScoreName(strokes: number, par: number, holed = true): GolfScoreName {
+  if (!holed) return 'fail';
+  if (strokes <= 1) return 'ace';
+  const d = strokes - par;
+  if (d <= -3) return 'albatross';
+  if (d === -2) return 'eagle';
+  if (d === -1) return 'birdie';
+  if (d === 0) return 'par';
+  if (d === 1) return 'bogey';
+  if (d === 2) return 'double';
+  return 'triple';
+}
+
+export const GOLF_SCORE_LABEL: Record<GolfScoreName, string> = {
+  ace: 'ACE',
+  albatross: 'Albatross',
+  eagle: 'Eagle',
+  birdie: 'Birdie',
+  par: 'Par',
+  bogey: 'Bogey',
+  double: 'Double Bogey',
+  triple: 'Triple Bogey',
+  fail: 'Estourou',
+};
+
+/** Tacadas que contam na pontuação: as feitas, ou o máximo mais 2 se não encaçapou. */
+export const golfCountedStrokes = (strokes: number, holed: boolean): number => (holed ? Math.min(strokes, GOLF_STROKE_LIMIT) : GOLF_FAIL_STROKES);

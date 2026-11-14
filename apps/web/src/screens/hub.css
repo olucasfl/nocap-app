@@ -1100,3 +1100,9 @@ a.hz-today:active {
     animation: none;
   }
 }
+
+/* Mini Golf: gramado escuro, o verde-lima do jogo */
+.hub-card-golf {
+  background: #b8f03a;
+  color: #0a1510;
+}

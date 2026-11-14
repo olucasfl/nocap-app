@@ -927,6 +927,26 @@ export function BolaArt() {
   );
 }
 
+/** Mini Golf: pista verde vista de cima, moinho, bola e bandeira no buraco. */
+export function MiniGolfArt() {
+  return (
+    <svg className="ha ha-golf" viewBox="0 0 200 150" aria-hidden="true">
+      <rect width="200" height="150" fill="#0f2e1c" />
+      <path d="M22 118 V50 Q22 28 44 28 H128 Q150 28 150 50 V62 H172 Q186 62 186 76 V118 Q186 132 172 132 H36 Q22 132 22 118Z" fill="#35a655" {...stroke} strokeWidth={4} />
+      <ellipse cx="96" cy="104" rx="20" ry="11" fill="#ecd9a0" {...stroke} strokeWidth={3} />
+      <g transform="translate(70 66)">
+        <rect x="-4" y="-2" width="8" height="30" rx="2" fill="#f4f4ef" {...stroke} strokeWidth={3} />
+        <rect x="-26" y="-4" width="52" height="7" rx="2" fill="#ff5a3c" transform="rotate(30)" {...stroke} strokeWidth={2.5} />
+        <rect x="-26" y="-4" width="52" height="7" rx="2" fill="#ffc83d" transform="rotate(120)" {...stroke} strokeWidth={2.5} />
+      </g>
+      <circle cx="160" cy="98" r="8" fill="#0a1510" {...stroke} strokeWidth={3} />
+      <rect x="159" y="62" width="3" height="36" fill="#f4f4ef" />
+      <path d="M162 62 l22 8 -22 8z" fill="#ff5a3c" {...stroke} strokeWidth={2.5} />
+      <circle cx="44" cy="112" r="9" fill="#ffc83d" {...stroke} strokeWidth={3} />
+    </svg>
+  );
+}
+
 /** Avatar de jogador: a cabeça da raposa de boné na cor escolhida (usado na sala). */
 export function FoxAvatar({ fur, cap = '#2f5bff' }: { fur: string; cap?: string }) {
   return (
