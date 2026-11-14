@@ -11,6 +11,7 @@ import { BolaRoomEngine } from './bola-room.engine';
 import { FoxLobbyEngine } from './fox-lobby.engine';
 import { DesmoronaRoomEngine } from './desmorona-room.engine';
 import { FoxGpRoomEngine } from './foxgp-room.engine';
+import { GolfRoomEngine } from './golf-room.engine';
 import { PingRoomEngine } from './ping-room.engine';
 import { FOXSHOT_ROOM_MAX, FoxShotRoomEngine } from './foxshot-room.engine';
 import {
@@ -21,6 +22,7 @@ import {
   GP_MAX_PLAYERS,
   IMPOSTOR_MAX_PLAYERS,
   packBolaFrame,
+  GOLF_ROOM_MAX,
 } from '@nocap/games';
 import {
   GUEST_PREFIX,
@@ -502,6 +504,7 @@ export class ColorRoom extends Room {
           game === 'atravessa' ||
           game === 'desmorona' ||
           game === 'foxgp' ||
+          game === 'golf' ||
           game === 'bola' ||
           game === 'pingpong' ||
           game === 'foxshot' ||
@@ -790,6 +793,45 @@ function sendFrame(room: { clients: Iterable<Client> }, frame: Record<string, un
     for (const c of compact) c.send('bs', packed);
   }
   for (const c of legacy) c.send('bs', out);
+}
+
+/**
+ * Sala do Mini Golf (spec 082). O servidor simula todas as bolas; os aparelhos mandam só a tacada ("gshot") e a bola
+ * escolhida ("glook"). A sala transmite os quadros de posição ("gb", cerca de 30 por segundo) e os eventos de som
+ * ("ge") na hora; o resto (buraco, placar, tempo) vai no estado da sala.
+ */
+export class GolfRoom extends ColorRoom {
+  override maxClients = GOLF_ROOM_MAX;
+  /** 60 passos por segundo: a tacada vira movimento em no máximo 16 ms. */
+  protected override tickMs = 16;
+  private frameN = 0;
+
+  protected override makeEngine(opts: ConstructorParameters<typeof ColorRoomEngine>[0]) {
+    return new GolfRoomEngine(opts);
+  }
+
+  protected override registerGameMessages() {
+    const engine = () => this.engine as GolfRoomEngine;
+    const idOf = (c: Client) => (c.userData as AuthData | undefined)?.id;
+    this.onMessage('gshot', (c, m) => {
+      const id = idOf(c);
+      if (id) engine().shoot(id, m);
+    });
+    this.onMessage('glook', (c, m) => this.act(c, (id) => engine().setLook(id, m)));
+    this.onMessage('gend', (c) => this.act(c, (id) => engine().endNow(id)));
+  }
+
+  protected override afterTick() {
+    const engine = this.engine as GolfRoomEngine;
+    if (engine.currentPhase !== 'play') return;
+    const events = engine.drainEvents();
+    if (events.length > 0) this.broadcast('ge', events);
+    // um quadro a cada 2 passos (~31 por segundo)
+    if (++this.frameN % 2 === 0) {
+      const frame = engine.frame();
+      if (frame) this.broadcast('gb', frame);
+    }
+  }
 }
 
 /**

@@ -122,6 +122,7 @@ export class ColorRoomEngine {
     | 'atravessa'
     | 'desmorona'
     | 'foxgp'
+    | 'golf'
     | 'bola'
     | 'pingpong'
     | 'foxshot'

@@ -10,6 +10,7 @@ import {
   BolaRoom,
   DesmoronaRoom,
   FoxGpRoom,
+  GolfRoom,
   FoxRoom,
   PingRoom,
   FoxShotRoom,
@@ -36,6 +37,7 @@ for (const [name, room] of [
   ['foxshot', FoxShotRoom],
   ['desmorona', DesmoronaRoom],
   ['foxgp', FoxGpRoom],
+  ['golf', GolfRoom],
   ['atravessa', AtravessaRoom],
   ['bola', BolaRoom],
 ] as const)

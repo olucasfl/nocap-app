@@ -15,6 +15,7 @@ import {
   FoxRoom,
   DesmoronaRoom,
   FoxGpRoom,
+  GolfRoom,
   PingRoom,
   FoxShotRoom,
   ColorRoom,
@@ -63,6 +64,7 @@ async function bootstrap() {
   rooms.define('atravessa', AtravessaRoom);
   rooms.define('desmorona', DesmoronaRoom);
   rooms.define('foxgp', FoxGpRoom);
+  rooms.define('golf', GolfRoom);
   rooms.define('pingpong', PingRoom);
   rooms.define('foxshot', FoxShotRoom);
   rooms.define('bola', BolaRoom);
