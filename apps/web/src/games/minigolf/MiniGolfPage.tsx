@@ -17,6 +17,7 @@ import {
   type GolfScoreName,
 } from '@nocap/games';
 import { golfSfx } from '@/lib/minigolf-audio';
+import { useTouchGuard } from '../foxgp/touch-guard';
 import { GolfScene } from './GolfScene';
 import { loadBall, loadBest, saveBest } from './golf-save';
 import './minigolf.css';
@@ -61,6 +62,7 @@ const Chevron = ({ dir }: { dir: 'l' | 'r' }) => (
 
 /** Mini Golf offline (spec 082): 20 fases abertas; cai no buraco e escolhe próxima, repetir, escolher fase ou menu. */
 export function MiniGolfPage() {
+  useTouchGuard();
   const navigate = useNavigate();
   const wanted = useSearch({ strict: false }) as { fase?: number };
   const [fase, setFase] = useState(clampLevel(wanted.fase));
@@ -128,6 +130,9 @@ export function MiniGolfPage() {
         golfSfx.score(name);
         setResult({ name, strokes: st.strokes, holed, best: record ? counted : prev, record });
       };
+
+      // gancho só de desenvolvimento (some do build): mostra o resultado sem precisar jogar até o buraco
+      if (import.meta.env.DEV) (window as unknown as { __mgFinish?: (h: boolean, n: number) => void }).__mgFinish = (h, n) => { st.strokes = n; setStrokes(n); finish(h); };
 
       const toAim = () => {
         st.phase = 'aim';
