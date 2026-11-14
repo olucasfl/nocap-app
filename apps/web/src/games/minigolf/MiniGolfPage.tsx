@@ -26,6 +26,12 @@ import { loadLevel } from './level-loader';
 import { loadBest, loadLook, saveBest } from './golf-save';
 import './minigolf.css';
 
+/** No PC a câmera gira com o botão direito do mouse; no celular, pelas setas da tela. */
+const HINT =
+  typeof window !== 'undefined' && window.matchMedia?.('(pointer: fine)').matches
+    ? 'Arraste para trás e solte para tacar · Botão direito do mouse (arrastando) gira a câmera'
+    : 'Arraste para trás e solte para tacar · Use as setas para girar a câmera';
+
 const clampLevel = (n: number | undefined) => Math.max(1, Math.min(GOLF_LEVELS, Math.trunc(n ?? 1) || 1));
 const nameClass = (n: GolfScoreName) => (n === 'ace' ? 'mg-ace' : n === 'albatross' || n === 'eagle' ? 'mg-eagle' : n === 'birdie' ? 'mg-ok' : n === 'par' ? '' : 'mg-bad');
 const SUBTITLE: Record<GolfScoreName, string> = {
@@ -142,6 +148,7 @@ export function MiniGolfPage() {
         if (e.button === 2 || e.pointerType === 'mouse' && e.button !== 0) {
           st.right = true;
           st.drag = { x: e.clientX, y: e.clientY, id: e.pointerId };
+          (e.target as Element).setPointerCapture?.(e.pointerId);
           return;
         }
         if (st.phase !== 'aim' || st.drag) return;
@@ -324,7 +331,7 @@ export function MiniGolfPage() {
       </div>
 
       {phase === 'aim' && power === null && !loading && (
-        <div className="mg-hint">Arraste para trás e solte para tacar · A e D giram a câmera</div>
+        <div className="mg-hint">{HINT}</div>
       )}
       {power !== null && (
         <div className="mg-power" aria-hidden="true">
@@ -374,8 +381,6 @@ export function MiniGolfPage() {
             {GOLF_TIERS[tier].map((n) => (
               <button key={n} type="button" className={`mg-lv${n === fase ? ' on' : ''}${bests[n] ? ' done' : ''}`} onClick={() => go(n)}>
                 <b>{n}</b>
-                <span>Par {golfParOf(n)}</span>
-                <span>{bests[n] ? `Melhor ${bests[n]}` : 'Nova'}</span>
               </button>
             ))}
           </div>

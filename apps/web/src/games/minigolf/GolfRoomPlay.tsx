@@ -32,6 +32,11 @@ interface Sample {
 }
 /** Os quadros chegam a ~31 por segundo; desenhamos um pouco no passado para mover sem trancos. */
 const DELAY_MS = 90;
+/** No PC a câmera gira com o botão direito do mouse; no celular, pelas setas da tela. */
+const HINT =
+  typeof window !== 'undefined' && window.matchMedia?.('(pointer: fine)').matches
+    ? 'Arraste para trás e solte para tacar · Botão direito do mouse (arrastando) gira a câmera · TAB mostra o placar'
+    : 'Arraste para trás e solte para tacar · Setas giram a câmera · Placar mostra a tabela';
 const hex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
 const nameOf = (id: string, username: string) => (id.startsWith('guest:') ? username : at(username));
 const clock = (ms: number) => {
@@ -205,6 +210,7 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         if (e.pointerType === 'mouse' && e.button !== 0) {
           right = true;
           drag = { x: e.clientX, y: e.clientY, id: e.pointerId };
+          cv.setPointerCapture?.(e.pointerId);
           return;
         }
         if (!canAim() || drag) return;
@@ -383,7 +389,7 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         })}
       </div>
 
-      {stage === 'play' && power === null && myStatus === 0 && !loading && <div className="mg-hint">Arraste para trás e solte para tacar · TAB mostra o placar</div>}
+      {stage === 'play' && power === null && myStatus === 0 && !loading && <div className="mg-hint">{HINT}</div>}
       {stage === 'play' && myStatus >= 2 && <div className="mg-hint">{myStatus === 2 ? 'No buraco! Esperando os outros...' : 'Estourou. Esperando os outros...'}</div>}
       {power !== null && (
         <div className="mg-power" aria-hidden="true">
