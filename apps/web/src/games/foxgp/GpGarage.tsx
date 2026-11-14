@@ -239,7 +239,12 @@ export function GpGarage({
                   data-testid={`garage-theme-${t.id}`}
                   style={{ background: `linear-gradient(135deg, ${hex6(body)} 0 55%, ${hex6(accent)} 55% 100%)` }}
                   onClick={() =>
-                    setG((v) => ({ ...v, paint: { ...t.f1, number: v.paint.number }, kart: { ...t.kart, number: v.kart.number, helmet: v.kart.helmet } }))
+                    setG((v) =>
+                      // o tema vale só para o veículo da aba aberta: o outro fica como estava
+                      veh === 'f1'
+                        ? { ...v, paint: { ...t.f1, number: v.paint.number } }
+                        : { ...v, kart: { ...t.kart, number: v.kart.number, helmet: v.kart.helmet } },
+                    )
                   }
                 >
                   <span>{t.name}</span>

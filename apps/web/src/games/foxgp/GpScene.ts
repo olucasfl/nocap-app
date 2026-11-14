@@ -1566,6 +1566,30 @@ export class GpScene {
     return { g, wheel, gear: { tex, ctx, last: '' } };
   }
 
+  private blobTex: THREE.Texture | null = null;
+  /** Mancha de sombra macia (elipse com borda esfumada), uma por cena. */
+  private blobTexture(): THREE.Texture {
+    if (this.blobTex) return this.blobTex;
+    const cv = document.createElement('canvas');
+    cv.width = 64;
+    cv.height = 128;
+    const g = cv.getContext('2d');
+    if (g) {
+      g.translate(32, 64);
+      g.scale(1, 2);
+      const grd = g.createRadialGradient(0, 0, 4, 0, 0, 31);
+      grd.addColorStop(0, 'rgba(255,255,255,1)');
+      grd.addColorStop(0.55, 'rgba(255,255,255,0.7)');
+      grd.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = grd;
+      g.fillRect(-32, -32, 64, 64);
+    }
+    const t = new THREE.CanvasTexture(cv);
+    this.textures.push(t);
+    this.blobTex = t;
+    return t;
+  }
+
   private makePuffTexture(): THREE.Texture {
     const cv = document.createElement('canvas');
     cv.width = 64;
@@ -1643,13 +1667,15 @@ export class GpScene {
       const mesh = o as THREE.Mesh;
       if (mesh.isMesh) mesh.castShadow = this.quality !== 'low';
     });
-    // sombra de contato (sempre: com ou sem mapa de sombra)
+    // sombra de contato (sempre: com ou sem mapa de sombra): uma mancha macia, mais escura bem embaixo do carro e sumindo
+    // nas bordas (antes era um retângulo chapado e duro). Com o mapa de sombra do sol ela é só um reforço leve.
     const blob = new THREE.Mesh(
-      new THREE.PlaneGeometry(2.0, 3.8),
+      new THREE.PlaneGeometry(1.9, 3.7),
       new THREE.MeshBasicMaterial({
+        map: this.blobTexture(),
         color: 0x000000,
         transparent: true,
-        opacity: 0.25,
+        opacity: this.quality === 'low' ? 0.55 : 0.4,
         depthWrite: false,
       }),
     );
