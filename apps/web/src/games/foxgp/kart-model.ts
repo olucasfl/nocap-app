@@ -254,7 +254,7 @@ export function buildKart(opts: {
 
   // o olho do piloto: o centro da cabeça, um pouco para a frente (a frente do kart é −Z)
   const eye = new THREE.Object3D();
-  eye.position.set(rig.head.center[0]!, rig.head.center[1]!, rig.head.center[2]! - 0.06);
+  eye.position.set(rig.head.center[0]!, rig.head.center[1]! + 0.05, rig.head.center[2]! + 0.04);
   root.add(eye);
   const radius = rig.wheel_fl.radius * scale;
   return {

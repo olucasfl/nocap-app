@@ -2127,7 +2127,8 @@ export class GpScene {
         if (kv && 'eye' in kv.m) {
           // kart: o olho do piloto no próprio kart (o volante e as mãos aparecem à frente)
           (kv.m as KartModel).eye.getWorldPosition(this.camPos);
-          this.camLook.set(p.x + fx * 20, this.camPos.y - 0.15, p.z + fz * 20);
+          // olhando um pouco para baixo (~18°): aparecem o volante, as mãos e o bico do kart, e a pista continua à frente
+          this.camLook.set(this.camPos.x + fx * 10, this.camPos.y - 3.2, this.camPos.z + fz * 10);
         } else if (kv) {
           // F1: o olho do piloto, um pouco acima e atrás do volante, olhando a pista por cima do bico
           kv.m.group.updateMatrixWorld(true);
