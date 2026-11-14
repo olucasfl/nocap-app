@@ -379,7 +379,7 @@ export class GpScene {
     this.cockpit = ck.g;
     this.cockpitWheel = ck.wheel;
     this.cockpitGear = ck.gear;
-    this.camera.add(this.cockpit);
+    this.scene.add(this.cockpit);
     this.cockpit.visible = false;
     this.scene.add(this.camera);
     for (const c of world.cars) this.addCar(c);
@@ -1552,17 +1552,9 @@ export class GpScene {
     );
     screen.position.set(0, 0, 0.012);
     wheel.add(screen);
-    wheel.position.set(0, -0.27, -0.55);
-    wheel.rotation.x = -0.35;
-    wheel.scale.setScalar(0.8);
+    // o volante é um objeto 3D do próprio carro (preso ao carro em foco), com luvas e luz de verdade
+    wheel.scale.setScalar(1.0);
     g.add(wheel);
-    // as bordas do cockpit nos cantos de baixo (a visão da pista fica livre)
-    for (const sx of [-1, 1]) {
-      const edge = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.05, 0.5), carbon);
-      edge.position.set(sx * 0.36, -0.3, -0.45);
-      edge.rotation.z = sx * 0.25;
-      g.add(edge);
-    }
     return { g, wheel, gear: { tex, ctx, last: '' } };
   }
 
@@ -1902,7 +1894,12 @@ export class GpScene {
       if ('setDriverHidden' in v.m) {
         v.m.body.visible = true;
         (v.m as KartModel).setDriverHidden(inside);
-      } else v.m.body.visible = !inside;
+      } else {
+        // F1: o carro de verdade fica (bico, rodas da frente, asa e o volante 3D), só a cabeça da raposa some
+        v.m.body.visible = true;
+        v.m.fox.visible = !inside;
+        if (inside && this.world.mode === 'real') this.attachCockpit(v.m.body);
+      }
       // fumaça e marcas de pneu quando escorrega
       const moved = Math.hypot(p.x - v.lastX, p.z - v.lastZ);
       v.lastX = p.x;
@@ -2131,6 +2128,11 @@ export class GpScene {
           // kart: o olho do piloto no próprio kart (o volante e as mãos aparecem à frente)
           (kv.m as KartModel).eye.getWorldPosition(this.camPos);
           this.camLook.set(p.x + fx * 20, this.camPos.y - 0.15, p.z + fz * 20);
+        } else if (kv) {
+          // F1: o olho do piloto, um pouco acima e atrás do volante, olhando a pista por cima do bico
+          kv.m.group.updateMatrixWorld(true);
+          this.camPos.copy(kv.m.body.localToWorld(new THREE.Vector3(0, 1.1, -0.08)));
+          this.camLook.set(p.x + fx * 22, this.camPos.y - 1.5, p.z + fz * 22);
         } else {
           this.camPos.set(p.x + fx * 0.05 * CAR_VIS, 1.05 * CAR_VIS, p.z + fz * 0.05 * CAR_VIS);
           this.camLook.set(p.x + fx * 20, 0.55, p.z + fz * 20);
@@ -2196,6 +2198,16 @@ export class GpScene {
 
   /** Luzes de troca de marcha do volante do cockpit (acendem com o giro). */
   private shiftLights: THREE.MeshBasicMaterial[] = [];
+
+  /** Prende o volante 3D ao carro em foco (coordenadas do carro: nariz em +Z; o volante olha para o piloto, em −Z). */
+  private attachCockpit(body: THREE.Object3D) {
+    if (this.cockpit.parent !== body) {
+      body.add(this.cockpit);
+      this.cockpit.rotation.order = 'YXZ';
+      this.cockpit.rotation.set(-0.8, Math.PI, 0);
+      this.cockpit.position.set(0, 0.8, 0.42);
+    }
+  }
 
   dispose() {
     for (const t of this.textures) t.dispose();
