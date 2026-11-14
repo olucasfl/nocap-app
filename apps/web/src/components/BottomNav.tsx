@@ -28,7 +28,7 @@ export function BottomNav({ railOnly = false }: { railOnly?: boolean }) {
   return (
     <nav
       className={`bottom-nav${railOnly ? ' rail-only' : ''}`}
-      data-n={inRoom ? 5 : 4}
+      data-n={5}
       aria-label="Navegação principal"
     >
       {/* Só aparece no menu lateral (tablet e computador). */}
@@ -37,7 +37,14 @@ export function BottomNav({ railOnly = false }: { railOnly?: boolean }) {
       </div>
       {[first, ...others].map(({ to, label, Icon, sfx }, i) => (
         <Fragment key={to}>
-          {i === 1 && inRoom && room && (
+          {i === 2 && !(inRoom && room) && (
+            // sem sala: o item "Sala" leva à tela de criar sala ou entrar com o código
+            <Link to="/sala" className="tab room idle-room" data-sfx="roomJoin" activeProps={{ className: 'tab room idle-room on', 'aria-current': 'page' }}>
+              <Door />
+              Sala
+            </Link>
+          )}
+          {i === 2 && inRoom && room && (
             <Link
               to="/sala/$code"
               params={{ code: room.code }}

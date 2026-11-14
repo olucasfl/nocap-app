@@ -1,8 +1,26 @@
-import { FoxCapArt, BlocksArt, ColorArt, EcoArt, TimeArt } from '@/components/HubArt';
+import {
+  AtravessaArt,
+  BlocksArt,
+  BolaArt,
+  ColorArt,
+  CounterFoxArt,
+  DesmoronaArt,
+  EcoArt,
+  FoxGpArt,
+  PingArt,
+  TimeArt,
+} from '@/components/HubArt';
 import { Link } from '@tanstack/react-router';
-import type { ReactNode } from 'react';
+import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { WordsHubArt } from '@/games/words/words-art';
 import { useQuery } from '@tanstack/react-query';
+import { Field } from '@/components/Field';
+import { Door, Search } from '@/components/icons';
+import { NicknameDialog } from '@/components/NicknameDialog';
+import { RoomConflictDialog } from '@/components/RoomConflictDialog';
+import { fetchFriends } from '@/lib/friends';
+import { dayKey, norm, pickDaily } from '@/lib/home-daily';
+import { useRoomEntry } from '@/lib/my-room';
 import { MuteButton } from '@/components/MuteButton';
 import { RoomBanner } from '@/components/RoomBanner';
 import { ThemeButton } from '@/components/ThemeButton';
@@ -39,7 +57,7 @@ function blocksBestLabel(stats: Stats | undefined): string | null {
   return points > 0 ? `RECORDE ${points} PTS` : 'SEM RECORDE AINDA';
 }
 
-/** Os Dailys de hoje: o que cada jogo mostra no chip. */
+/** Os Dailys de hoje: de onde sai o desafio do dia. */
 const DAILIES = [
   { game: 'color', name: 'Mesmíssima', to: '/cor' },
   { game: 'time', name: 'Já Deu?', to: '/tempo' },
@@ -47,52 +65,10 @@ const DAILIES = [
   { game: 'wclassic', name: "Word's", to: '/words/classic/daily' },
 ] as const;
 
-function DailyChip({
-  game,
-  name,
-  to,
-  stats,
-  loading,
-}: {
-  game: GameId;
-  name: string;
-  to: string;
-  stats: Stats | undefined;
-  loading: boolean;
-}) {
-  const done = !!stats?.daily[game]?.playedToday;
-  const state = loading ? 'loading' : !stats ? 'plain' : done ? 'done' : 'todo';
-  return (
-    <Link
-      to={to as '/'}
-      search={game === 'wclassic' ? undefined : ({ modo: 'daily' } as never)}
-      className={`hz-pill ${state}`}
-      data-sfx="start"
-      data-testid={`daily-${game}`}
-      aria-label={`Daily de ${name}${done ? ', feito hoje' : ''}`}
-    >
-      <span className="hz-pill-dot" aria-hidden="true">
-        {done && (
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="4.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M5 12.5l4.5 4.5L19 7" />
-          </svg>
-        )}
-      </span>
-      {name}
-    </Link>
-  );
-}
-
 /** Um cartão de jogo (a capa). `wide` ocupa a linha inteira, com a capa ao lado do texto. */
 function GameCard({
   to,
+  search,
   cls,
   art,
   name,
@@ -103,6 +79,7 @@ function GameCard({
   loading = false,
 }: {
   to: string;
+  search?: Record<string, string>;
   cls: string;
   art: ReactNode;
   name: string;
@@ -116,6 +93,7 @@ function GameCard({
   return (
     <Link
       to={to as '/'}
+      search={search as never}
       className={`hub-card ${cls}${wide ? ' wide' : ''}`}
       data-sfx="start"
       data-testid={`card-${cls.replace('hub-card-', '')}`}
@@ -140,6 +118,35 @@ function GameCard({
   );
 }
 
+interface GameDef {
+  id: string;
+  section: 'fox' | 'brain';
+  to: string;
+  search?: Record<string, string>;
+  cls: string;
+  art: ReactNode;
+  name: string;
+  tag: string;
+  size?: 'mid' | 'long';
+  wide?: boolean;
+  badge?: string;
+}
+
+/** Todos os jogos da tela inicial, em duas categorias: Fox Cap! (cada jogo solto) e Palavras, cores e mente. */
+const GAMES: GameDef[] = [
+  { id: 'counter', section: 'fox', to: '/fox-cap/counter-fox', cls: 'hub-card-counter', art: <CounterFoxArt />, name: 'Counter Fox', tag: 'Tiro 3D', size: 'long' },
+  { id: 'bola', section: 'fox', to: '/fox-cap', search: { jogo: 'bola' }, cls: 'hub-card-bola', art: <BolaArt />, name: 'Fut Fox', tag: 'Futebol' },
+  { id: 'foxgp', section: 'fox', to: '/fox-cap', search: { jogo: 'foxgp' }, cls: 'hub-card-foxgp', art: <FoxGpArt />, name: 'Fox GP', tag: 'Corrida', badge: 'NOVO' },
+  { id: 'atravessa', section: 'fox', to: '/fox-cap', search: { jogo: 'atravessa' }, cls: 'hub-card-atravessa', art: <AtravessaArt />, name: 'Atravessa!', tag: 'Reflexo', size: 'long' },
+  { id: 'pingpong', section: 'fox', to: '/fox-cap', search: { jogo: 'pingpong' }, cls: 'hub-card-ping', art: <PingArt />, name: 'Ping Fox!', tag: 'Duelo' },
+  { id: 'desmorona', section: 'fox', to: '/fox-cap', search: { jogo: 'desmorona' }, cls: 'hub-card-desmorona', art: <DesmoronaArt />, name: 'Desmorona!', tag: 'Sobrevivência', size: 'long' },
+  { id: 'words', section: 'brain', to: '/words', cls: 'hub-card-words', art: <WordsHubArt />, name: "Word's", tag: 'Palavras', wide: true },
+  { id: 'blocks', section: 'brain', to: '/blocks', cls: 'hub-card-blocks', art: <BlocksArt />, name: "Block's", tag: 'Blocos' },
+  { id: 'color', section: 'brain', to: '/cor', cls: 'hub-card-color', art: <ColorArt />, name: 'Mesmíssima', tag: 'Cores', size: 'long' },
+  { id: 'time', section: 'brain', to: '/tempo', cls: 'hub-card-time', art: <TimeArt />, name: 'Já Deu?', tag: 'Tempo', size: 'mid' },
+  { id: 'eco', section: 'brain', to: '/eco', cls: 'hub-card-eco', art: <EcoArt />, name: 'Ecooo', tag: 'Memória' },
+];
+
 export function Hub() {
   const user = useAuth((s) => s.user);
   const stats = useQuery({
@@ -148,6 +155,7 @@ export function Hub() {
     enabled: !!user,
     retry: false,
   });
+  const friends = useQuery({ queryKey: ['friends'], queryFn: fetchFriends, enabled: !!user, retry: false });
   const authStatus = useAuth((s) => s.status);
   const data = user ? stats.data : undefined;
   // a conta (e os números dela) ainda carregando: mostra um carregando, nunca "só com conta"
@@ -156,6 +164,60 @@ export function Hub() {
   const rawName = user?.name?.trim().split(/\s+/)[0] || user?.username || '';
   const firstName = rawName ? rawName.charAt(0).toUpperCase() + rawName.slice(1).toLowerCase() : '';
 
+  const [searching, setSearching] = useState(false);
+  const [query, setQuery] = useState('');
+  const q = norm(query.trim());
+  const visible = (g: GameDef) => !q || norm(`${g.name} ${g.tag}`).includes(q);
+  const foxGames = GAMES.filter((g) => g.section === 'fox' && visible(g));
+  const brainGames = GAMES.filter((g) => g.section === 'brain' && visible(g));
+
+  const today = useMemo(() => {
+    const list = DAILIES.map((d) => ({
+      ...d,
+      done: !!data?.daily[d.game]?.playedToday,
+      plays: (data?.modes ?? [])
+        .filter((m) => m.game === d.game)
+        .reduce((n, m) => n + m.matches, 0),
+    }));
+    return { pick: pickDaily(list, dayKey()), doneCount: list.filter((d) => d.done).length, total: list.length };
+  }, [data]);
+
+  const online = (friends.data?.friends ?? []).filter((f) => f.online);
+
+  const entry = useRoomEntry();
+  const [code, setCode] = useState('');
+  const [roomOpen, setRoomOpen] = useState(false);
+  const join = (e: FormEvent) => {
+    e.preventDefault();
+    void entry.join(code);
+  };
+
+  const cardLines = (id: string): (string | null)[] => {
+    if (id === 'atravessa') return [atravessaBestLabel(data)];
+    if (id === 'blocks') return [blocksBestLabel(data)];
+    if (id === 'color' || id === 'time' || id === 'eco') return [bestLabel(data, id)];
+    if (id === 'words') return ['DAILY COM RANKING E CENTENAS DE FASES'];
+    return [g_tag(id)];
+  };
+  const g_tag = (id: string) => (GAMES.find((g) => g.id === id)?.tag ?? '').toUpperCase();
+  const needsLoad = (id: string) => ['atravessa', 'blocks', 'color', 'time', 'eco'].includes(id);
+
+  const renderCard = (g: GameDef) => (
+    <GameCard
+      key={g.id}
+      to={g.to}
+      search={g.search}
+      cls={g.cls}
+      art={g.art}
+      name={g.name}
+      size={g.size}
+      wide={g.wide}
+      badge={g.badge}
+      lines={cardLines(g.id)}
+      loading={needsLoad(g.id) && loading}
+    />
+  );
+
   return (
     <main className="hub hz">
       <header className="top">
@@ -163,122 +225,200 @@ export function Hub() {
           no cap<span>!</span>
         </div>
         <div className="top-actions">
+          <button
+            type="button"
+            className="hz-search-btn"
+            aria-label={searching ? 'Fechar a busca' : 'Buscar jogo'}
+            aria-expanded={searching}
+            onClick={() => {
+              setSearching((v) => !v);
+              setQuery('');
+            }}
+            data-testid="hub-search-btn"
+          >
+            <Search />
+          </button>
           <ThemeButton />
           <MuteButton />
         </div>
       </header>
 
+      {searching && (
+        <div className="hz-search">
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar jogo"
+            aria-label="Buscar jogo"
+            autoFocus
+            data-testid="hub-search"
+          />
+        </div>
+      )}
+
       <RoomBanner />
 
-      <section className="hz-hello" aria-label="Resumo">
-        <div>
-          <h1>{firstName ? `Olá, ${firstName}!` : 'Bora jogar?'}</h1>
-          {!user && authStatus === 'ready' && (
-            <p className="mono">ENTRE PARA GUARDAR RECORDES E DAILYS</p>
+      {!q && (
+        <section className="hz-roomtop" aria-label="Sala com a galera">
+          <button
+            type="button"
+            className="hz-roomtop-btn"
+            aria-expanded={roomOpen}
+            onClick={() => setRoomOpen((v) => !v)}
+            data-testid="hub-room-toggle"
+          >
+            <Door />
+            Monte uma sala com a galera
+            <span aria-hidden="true">{roomOpen ? '−' : '+'}</span>
+          </button>
+          {roomOpen && (
+            <div className="hz-room">
+              {entry.error && (
+                <p className="acc-failure mono" role="alert">
+                  {entry.error}
+                </p>
+              )}
+              <button
+                type="button"
+                className="btn alt"
+                disabled={entry.busy}
+                onClick={() => void entry.create('foxcap')}
+                data-testid="hub-create-room"
+              >
+                {entry.busy ? 'Criando...' : 'Criar sala'}
+              </button>
+              <form className="hz-room-join" onSubmit={join} noValidate>
+                <Field
+                  label="Ou entre com o código"
+                  value={code}
+                  onChange={(e) => {
+                    setCode(e.target.value.toUpperCase());
+                    entry.clearError();
+                  }}
+                  maxLength={4}
+                  autoCapitalize="characters"
+                  autoCorrect="off"
+                  autoComplete="off"
+                  hint="4 letras, como ABCD"
+                  data-testid="hub-room-code"
+                />
+                <button type="submit" className="btn ghost" disabled={entry.busy}>
+                  Entrar
+                </button>
+              </form>
+            </div>
           )}
-        </div>
-        {streak > 0 && (
-          <span className="hz-streak mono" title="Dias seguidos entrando no NoCap">
-            <b>{streak}</b> {streakLabel(streak).replace(/^\d+ /, '').toUpperCase()} SEGUIDOS
-          </span>
-        )}
-      </section>
+        </section>
+      )}
 
-      <section className="hz-sec hz-daily" aria-label="Dailys de hoje">
-        <h2 className="hz-h">
-          Dailys <small className="mono">1 POR JOGO, POR DIA</small>
-        </h2>
-        <div className="hz-pills">
-          {DAILIES.map((d) => (
-            <DailyChip
-              key={d.game}
-              game={d.game}
-              name={d.name}
-              to={d.to}
-              stats={data}
-              loading={loading}
-            />
-          ))}
-        </div>
-      </section>
+      {!q && (
+        <>
+          <section className="hz-hello" aria-label="Resumo">
+            <div>
+              <h1>{firstName ? `Olá, ${firstName}!` : 'Bora jogar?'}</h1>
+              {!user && authStatus === 'ready' && (
+                <p className="mono">ENTRE PARA GUARDAR RECORDES E DAILYS</p>
+              )}
+            </div>
+            {streak > 0 && (
+              <span className="hz-streak mono" title="Dias seguidos entrando no NoCap">
+                <b>{streak}</b> {streakLabel(streak).replace(/^\d+ /, '').toUpperCase()} SEGUIDOS
+              </span>
+            )}
+          </section>
 
-      <section className="hz-sec" aria-label="Palavras">
-        <h2 className="hz-h">
-          Palavras <small className="mono">CLASSIC, CONNECT E BEE</small>
-        </h2>
-        <div className="hz-grid one">
-          <GameCard
-            to="/words"
-            cls="hub-card-words"
-            art={<WordsHubArt />}
-            name="Word's"
-            lines={['JOGOS DE PALAVRAS', 'DAILY COM RANKING E CENTENAS DE FASES']}
-            wide
-          />
-        </div>
-      </section>
+          <section className="hz-sec hz-today-sec" aria-label="Desafio do dia">
+            <h2 className="hz-h">
+              Desafio do dia <small className="mono">1 DAILY POR JOGO, POR DIA</small>
+            </h2>
+            {loading ? (
+              <div className="hz-today skel" aria-hidden="true" />
+            ) : today.pick ? (
+              <Link
+                to={today.pick.to as '/'}
+                search={today.pick.game === 'wclassic' ? undefined : ({ modo: 'daily' } as never)}
+                className="hz-today"
+                data-sfx="start"
+                data-testid={`daily-${today.pick.game}`}
+              >
+                <span className="hz-today-kick mono">
+                  {today.doneCount > 0 ? `PRÓXIMO · ${today.doneCount}/${today.total} FEITOS` : 'DAILY DE HOJE'}
+                </span>
+                <b>{today.pick.name}</b>
+                <span className="hz-today-go">Jogar o daily</span>
+              </Link>
+            ) : (
+              <div className="hz-today done" data-testid="daily-all-done">
+                <span className="hz-today-kick mono">
+                  {user ? `${today.total}/${today.total} FEITOS` : 'ENTRE PARA CONTAR OS DAILYS'}
+                </span>
+                <b>{user ? 'Você cumpriu todos os dailys de hoje' : 'Dailys do dia'}</b>
+                <span className="hz-today-sub">Volte amanhã para os novos.</span>
+              </div>
+            )}
+          </section>
 
-      <section className="hz-sec" aria-label="Arcade">
-        <h2 className="hz-h">
-          Arcade <small className="mono">BATA SEU RECORDE</small>
-        </h2>
-        <div className="hz-grid">
-          <GameCard
-            to="/blocks"
-            cls="hub-card-blocks"
-            art={<BlocksArt />}
-            name="Block's"
-            lines={[blocksBestLabel(data)]}
-            loading={loading}
-          />
-          <GameCard
-            to="/fox-cap"
-            cls="hub-card-atravessa"
-            art={<FoxCapArt />}
-            name="Fox Cap!"
-            size="long"
-            lines={[atravessaBestLabel(data)]}
-            loading={loading}
-            badge="NOVO"
-          />
-        </div>
-      </section>
+          {online.length > 0 && (
+            <section className="hz-sec" aria-label="Amigos online">
+              <h2 className="hz-h">
+                Amigos online <small className="mono">{online.length} AGORA</small>
+              </h2>
+              <ul className="hz-online" data-testid="hub-online">
+                {online.slice(0, 6).map((f) => (
+                  <li key={f.username}>
+                    <Link to="/amigos/$username" params={{ username: f.username }} className="hz-friend">
+                      <span className="hz-friend-av" aria-hidden="true">
+                        {f.username.charAt(0).toUpperCase()}
+                        <i />
+                      </span>
+                      <span className="hz-friend-name">@{f.username}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              {online.length > 6 && (
+                <Link to="/amigos" className="hz-online-more mono">
+                  + {online.length - 6} ONLINE
+                </Link>
+              )}
+            </section>
+          )}
+        </>
+      )}
 
-      <section className="hz-sec" aria-label="Reflexo e precisão">
-        <h2 className="hz-h">
-          Reflexo e precisão <small className="mono">COR, TEMPO E RITMO</small>
-        </h2>
-        <div className="hz-grid">
-          <GameCard
-            to="/cor"
-            cls="hub-card-color"
-            art={<ColorArt />}
-            name="Mesmíssima"
-            size="long"
-            lines={[bestLabel(data, 'color')]}
-            loading={loading}
-          />
-          <GameCard
-            to="/tempo"
-            cls="hub-card-time"
-            art={<TimeArt />}
-            name="Já Deu?"
-            size="mid"
-            lines={[bestLabel(data, 'time')]}
-            loading={loading}
-          />
-          <GameCard
-            to="/eco"
-            cls="hub-card-eco"
-            art={<EcoArt />}
-            name="Ecooo"
-            lines={[bestLabel(data, 'eco')]}
-            loading={loading}
-          />
-        </div>
-      </section>
+      {foxGames.length > 0 && (
+        <section className="hz-sec" aria-label="Fox Cap">
+          <h2 className="hz-h">
+            Fox Cap <small className="mono">AS RAPOSAS DE BONÉ</small>
+          </h2>
+          <div className="hz-grid">{foxGames.map(renderCard)}</div>
+        </section>
+      )}
 
-      <div className="hub-more mono">+ MAIS JOGOS EM BREVE</div>
+      {brainGames.length > 0 && (
+        <section className="hz-sec" aria-label="Palavras, cores e mente">
+          <h2 className="hz-h">
+            Palavras, cores e mente <small className="mono">PALAVRAS, BLOCOS, COR, TEMPO E MEMÓRIA</small>
+          </h2>
+          <div className="hz-grid">{brainGames.map(renderCard)}</div>
+        </section>
+      )}
+
+      {q && foxGames.length === 0 && brainGames.length === 0 && (
+        <p className="hz-empty mono" data-testid="hub-search-empty">
+          NENHUM JOGO COM “{query.trim().toUpperCase()}”
+        </p>
+      )}
+
+      <NicknameDialog nick={entry.nick} />
+      <RoomConflictDialog
+        open={!!entry.conflict}
+        code={entry.conflict?.code ?? null}
+        onBack={entry.backToCurrent}
+        onLeave={() => void entry.leaveAndContinue()}
+        onCancel={entry.dismissConflict}
+      />
     </main>
   );
 }

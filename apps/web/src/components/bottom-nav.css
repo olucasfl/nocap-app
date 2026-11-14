@@ -86,3 +86,9 @@
     font-size: 9.5px;
   }
 }
+
+/* "Sala" sem estar numa sala: um item comum no meio da barra (amarelo só quando a conta está numa sala) */
+.tab.idle-room:not(.on) {
+  background: transparent;
+  color: var(--ink);
+}

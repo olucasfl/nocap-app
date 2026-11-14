@@ -85,10 +85,11 @@ test('os chips de Daily da Home abrem o Daily do jogo e não só o hub', async (
     .getByRole('button', { name: 'Agora não' })
     .click({ timeout: 800 })
     .catch(() => undefined);
-  await page.getByTestId('daily-color').click();
+  // a Home mostra um daily por vez (o desafio do dia): o Daily de cada jogo abre pelo endereço
+  await page.goto('/cor?modo=daily');
   await expect(page.getByTestId('daily-panel')).toBeVisible();
   await page.goto('/');
-  await page.getByTestId('daily-wclassic').click();
+  await page.goto('/words/classic/daily');
   await expect(page).toHaveURL(/\/words\/classic\/daily$/);
   await expect(page.getByTestId('daily-card')).toBeVisible();
   await page.getByTestId('daily-tab-ranking').click();

@@ -121,36 +121,6 @@ function Skeleton() {
   );
 }
 
-/** A primeira tela: escolher de qual jogo é o ranking. */
-function GamePicker({ onPick }: { onPick: (g: Game) => void }) {
-  return (
-    <main className="rkp picker">
-      <header className="rkp-head">
-        <h1>Ranking</h1>
-        <p className="mono">Escolha um jogo para ver quem manda nele</p>
-      </header>
-      <div className="rkp-picks">
-        {GAMES.map((g) => (
-          <button
-            key={g.id}
-            type="button"
-            data-sfx="select"
-            data-testid={`pick-${g.id}`}
-            className={`rkp-pick ${g.id}`}
-            onClick={() => onPick(g.id)}
-          >
-            <span className="rkp-pick-art">
-              <GameArt game={g.id} size="md" />
-            </span>
-            <span className="rkp-pick-name">{GAME_LABEL[g.id]}</span>
-            <span className="rkp-pick-go mono">VER RANKING</span>
-          </button>
-        ))}
-      </div>
-    </main>
-  );
-}
-
 /**
  * A página de Rankings. Três blocos, de cima para baixo: o jogo escolhido (um cabeçalho colorido com o botão de
  * trocar), os filtros (categoria, período e só amigos) e a classificação (pódio, lista e a sua posição fixa
@@ -159,20 +129,8 @@ function GamePicker({ onPick }: { onPick: (g: Game) => void }) {
  */
 export function Rankings() {
   const search = route.useSearch();
-  const navigate = useNavigate();
-  if (!search.jogo) {
-    return (
-      <GamePicker
-        onPick={(g) =>
-          void navigate({
-            to: '/ranking',
-            search: { ...search, jogo: g, modo: undefined, periodo: undefined },
-          })
-        }
-      />
-    );
-  }
-  return <RankingView game={search.jogo} />;
+  // sem jogo no endereço o ranking abre direto no primeiro jogo da fileira (a troca é pela fileira de capas)
+  return <RankingView game={search.jogo ?? GAMES[0]!.id} />;
 }
 
 function RankingView({ game }: { game: Game }) {
@@ -189,12 +147,6 @@ function RankingView({ game }: { game: Game }) {
 
   const go = (patch: Partial<RankingsSearch>) =>
     void navigate({ to: '/ranking', search: { ...search, ...patch }, replace: true });
-
-  const changeGame = () =>
-    void navigate({
-      to: '/ranking',
-      search: { ...search, jogo: undefined, modo: undefined, periodo: undefined, quem: undefined },
-    });
 
   const query = useQuery({
     queryKey: ['ranking', game, board, period, scope, user?.id ?? null],
@@ -241,6 +193,24 @@ function RankingView({ game }: { game: Game }) {
         <p className="mono">Quem joga melhor no NoCap</p>
       </header>
 
+      {/* Troca rápida de jogo, sem voltar à lista */}
+      <div className="rkp-games" role="tablist" aria-label="Jogo do ranking">
+        {GAMES.map((g) => (
+          <button
+            key={g.id}
+            type="button"
+            role="tab"
+            data-sfx="select"
+            data-testid={`quick-${g.id}`}
+            aria-label={GAME_LABEL[g.id]}
+            aria-selected={g.id === game}
+            onClick={() => go({ jogo: g.id, modo: undefined, periodo: undefined })}
+          >
+            <GameArt game={g.id} size="sm" />
+          </button>
+        ))}
+      </div>
+
       {/* 1. O jogo */}
       <section className="rkp-hero" aria-label="Jogo do ranking">
         <div className="rkp-hero-art" aria-hidden="true">
@@ -251,33 +221,7 @@ function RankingView({ game }: { game: Game }) {
           <b>{GAME_LABEL[game]}</b>
           <span className="rkp-chip mono">{boardLabel}</span>
         </div>
-        <button
-          type="button"
-          className="rkp-switch"
-          data-sfx="select"
-          data-testid="change-game"
-          onClick={changeGame}
-        >
-          <span aria-hidden="true">‹</span> Trocar de jogo
-        </button>
       </section>
-
-      {/* Troca rápida de jogo, sem voltar à lista */}
-      <div className="rkp-games" role="tablist" aria-label="Jogo do ranking">
-        {GAMES.map((g) => (
-          <button
-            key={g.id}
-            type="button"
-            role="tab"
-            data-sfx="select"
-            data-testid={`quick-${g.id}`}
-            aria-selected={g.id === game}
-            onClick={() => go({ jogo: g.id, modo: undefined, periodo: undefined })}
-          >
-            {GAME_LABEL[g.id]}
-          </button>
-        ))}
-      </div>
 
       {/* 2. Os filtros */}
       <section className="rkp-filters" aria-label="Filtros do ranking">

@@ -156,3 +156,10 @@ export const Pencil = (p: IconProps) => (
     <path d="M4 20l1-4L16 5l3 3L8 19zM14 7l3 3" />
   </Svg>
 );
+
+export const Search = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="11" cy="11" r="7" />
+    <path d="M20 20l-4-4" />
+  </Svg>
+);
