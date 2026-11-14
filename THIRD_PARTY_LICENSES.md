@@ -36,3 +36,10 @@ partir dele (nenhuma malha ou textura do arquivo vai para o jogo).
 ## Sons do Fox GP
 
 Todos sintetizados em Web Audio (`apps/web/src/lib/foxgp-audio.ts`): nenhum arquivo de áudio de terceiros.
+
+## Open Golf
+
+https://github.com/mgerdes/Open-Golf (MIT, Copyright (c) 2020 Michael Gerdes)
+
+O Mini Golf (spec 082) porta a física, o formato de fase e as 20 fases deste projeto. Texturas, modelos e sons do
+repositório só entram depois de conferida a licença de cada um.
