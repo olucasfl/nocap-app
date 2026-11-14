@@ -992,3 +992,111 @@ a.hz-today:active {
   transform: translate(4px, 4px);
   box-shadow: 0 0 0 var(--ink);
 }
+
+/* Desafio do dia: os dailys de hoje numa linha só, um quadrinho temático por jogo. */
+.hz-dailies {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0 4px 4px 0;
+  list-style: none;
+}
+.hz-dailies li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.hz-dt {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: var(--border);
+  border-radius: 16px;
+  box-shadow: 3px 3px 0 var(--ink);
+  text-decoration: none;
+}
+.hz-dt:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--ink);
+}
+.hz-dt-art {
+  position: absolute;
+  inset: 0;
+  display: block;
+  transition: opacity 0.3s;
+}
+.hz-dt-art .ha {
+  width: 100%;
+  height: 100%;
+  transform: scale(1.12);
+}
+.hz-dt.is-done .hz-dt-art {
+  opacity: 0.4;
+}
+.hz-dt-mark {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hz-dt-mark.done {
+  right: 5px;
+  top: 5px;
+  width: 26px;
+  height: 26px;
+  border: var(--border);
+  border-radius: 50%;
+  background: var(--green);
+  color: #111;
+  animation: hz-dt-pop 0.5s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+.hz-dt-mark.todo {
+  left: 50%;
+  bottom: 5px;
+  margin-left: -26px;
+  width: 52px;
+  height: 20px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: #111;
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  animation: hz-dt-pulse 1.8s ease-in-out infinite;
+}
+.hz-dt-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 800 11px var(--font-display);
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+@keyframes hz-dt-pop {
+  from {
+    transform: scale(0) rotate(-40deg);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) rotate(0);
+    opacity: 1;
+  }
+}
+@keyframes hz-dt-pulse {
+  50% {
+    transform: scale(1.12);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hz-dt-mark.done,
+  .hz-dt-mark.todo {
+    animation: none;
+  }
+}

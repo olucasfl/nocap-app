@@ -15,11 +15,11 @@ import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { WordsHubArt } from '@/games/words/words-art';
 import { useQuery } from '@tanstack/react-query';
 import { Field } from '@/components/Field';
-import { Door, Search } from '@/components/icons';
+import { Check, Door, Search } from '@/components/icons';
 import { NicknameDialog } from '@/components/NicknameDialog';
 import { RoomConflictDialog } from '@/components/RoomConflictDialog';
 import { fetchFriends } from '@/lib/friends';
-import { dayKey, norm, pickDaily } from '@/lib/home-daily';
+import { norm } from '@/lib/home-daily';
 import { useRoomEntry } from '@/lib/my-room';
 import { MuteButton } from '@/components/MuteButton';
 import { RoomBanner } from '@/components/RoomBanner';
@@ -59,10 +59,10 @@ function blocksBestLabel(stats: Stats | undefined): string | null {
 
 /** Os Dailys de hoje: de onde sai o desafio do dia. */
 const DAILIES = [
-  { game: 'color', name: 'Mesmíssima', to: '/cor' },
-  { game: 'time', name: 'Já Deu?', to: '/tempo' },
-  { game: 'eco', name: 'Ecooo', to: '/eco' },
-  { game: 'wclassic', name: "Word's", to: '/words/classic/daily' },
+  { game: 'color', name: 'Mesmíssima', to: '/cor', cls: 'hub-card-color', art: <ColorArt /> },
+  { game: 'time', name: 'Já Deu?', to: '/tempo', cls: 'hub-card-time', art: <TimeArt /> },
+  { game: 'eco', name: 'Ecooo', to: '/eco', cls: 'hub-card-eco', art: <EcoArt /> },
+  { game: 'wclassic', name: "Word's", to: '/words/classic/daily', cls: 'hub-card-words', art: <WordsHubArt /> },
 ] as const;
 
 /** Um cartão de jogo (a capa). `wide` ocupa a linha inteira, com a capa ao lado do texto. */
@@ -179,7 +179,7 @@ export function Hub() {
         .filter((m) => m.game === d.game)
         .reduce((n, m) => n + m.matches, 0),
     }));
-    return { pick: pickDaily(list, dayKey()), doneCount: list.filter((d) => d.done).length, total: list.length };
+    return { list, doneCount: list.filter((d) => d.done).length, total: list.length };
   }, [data]);
 
   const online = (friends.data?.friends ?? []).filter((f) => f.online);
@@ -330,33 +330,37 @@ export function Hub() {
 
           <section className="hz-sec hz-today-sec" aria-label="Desafio do dia">
             <h2 className="hz-h">
-              Desafio do dia <small className="mono">1 DAILY POR JOGO, POR DIA</small>
+              Desafio do dia{' '}
+              <small className="mono">
+                {loading ? 'DAILYS DE HOJE' : today.doneCount === today.total ? 'TUDO FEITO, VOLTE AMANHÃ' : `${today.doneCount}/${today.total} FEITOS`}
+              </small>
             </h2>
-            {loading ? (
-              <div className="hz-today skel" aria-hidden="true" />
-            ) : today.pick ? (
-              <Link
-                to={today.pick.to as '/'}
-                search={today.pick.game === 'wclassic' ? undefined : ({ modo: 'daily' } as never)}
-                className="hz-today"
-                data-sfx="start"
-                data-testid={`daily-${today.pick.game}`}
-              >
-                <span className="hz-today-kick mono">
-                  {today.doneCount > 0 ? `PRÓXIMO · ${today.doneCount}/${today.total} FEITOS` : 'DAILY DE HOJE'}
-                </span>
-                <b>{today.pick.name}</b>
-                <span className="hz-today-go">Jogar o daily</span>
-              </Link>
-            ) : (
-              <div className="hz-today done" data-testid="daily-all-done">
-                <span className="hz-today-kick mono">
-                  {user ? `${today.total}/${today.total} FEITOS` : 'ENTRE PARA CONTAR OS DAILYS'}
-                </span>
-                <b>{user ? 'Você cumpriu todos os dailys de hoje' : 'Dailys do dia'}</b>
-                <span className="hz-today-sub">Volte amanhã para os novos.</span>
-              </div>
-            )}
+            <ul className="hz-dailies" data-testid="daily-row">
+              {today.list.map((d) => (
+                <li key={d.game}>
+                  <Link
+                    to={d.to as '/'}
+                    search={d.game === 'wclassic' ? undefined : ({ modo: 'daily' } as never)}
+                    className={`hz-dt ${d.cls}${d.done ? ' is-done' : ' is-todo'}`}
+                    data-sfx="start"
+                    data-testid={`daily-${d.game}`}
+                    aria-label={`${d.name}: daily ${d.done ? 'feito' : 'para jogar'}`}
+                  >
+                    <span className="hz-dt-art" aria-hidden="true">
+                      {d.art}
+                    </span>
+                    {d.done ? (
+                      <span className="hz-dt-mark done" aria-hidden="true">
+                        <Check size={14} />
+                      </span>
+                    ) : (
+                      !loading && <span className="hz-dt-mark todo mono" aria-hidden="true">JOGAR</span>
+                    )}
+                  </Link>
+                  <span className="hz-dt-name">{d.name}</span>
+                </li>
+              ))}
+            </ul>
           </section>
 
           {online.length > 0 && (
