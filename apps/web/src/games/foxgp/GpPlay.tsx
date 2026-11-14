@@ -69,6 +69,7 @@ import { drawMinimap } from './minimap';
 import { GpNoticeQueue, NOTICE_FADE_MS, type GpNotice, type GpNoticeKind } from './notices';
 import { PHYSICS_NAME, saveBest } from './gp-best';
 import { gpTrackName } from './vehicles';
+import { useTouchGuard } from './touch-guard';
 import { gpActionOf, gpKeyName, useGpAutoGas, useGpControls, useGpShake, type GpBinds } from './gp-settings';
 import './theme.css';
 import './foxgp.css';
@@ -382,6 +383,7 @@ export function GpPlay({
   /** Kart: a barra pisca ao completar um terço; balança no "sem turbo". */
   const [barPulse, setBarPulse] = useState(0);
   const [noTurbo, setNoTurbo] = useState(0);
+  useTouchGuard();
   const autoGas = useGpAutoGas((st) => st.on);
   const autoGasRef = useRef(autoGas);
   autoGasRef.current = autoGas;

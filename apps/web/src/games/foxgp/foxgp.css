@@ -1321,3 +1321,42 @@
     display: none;
   }
 }
+
+/* partida: nada de lupa, seleção, menu de segurar nem zoom do iPhone/Android nos botões e no resto da tela */
+html.gp-playing,
+html.gp-playing body,
+.gp-play,
+.gp-play * {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+html.gp-playing,
+html.gp-playing body,
+.gp-play {
+  touch-action: none;
+  overscroll-behavior: none;
+}
+html.gp-playing input,
+html.gp-playing textarea {
+  -webkit-user-select: text;
+  user-select: text;
+  touch-action: manipulation;
+}
+.gp-play button,
+.gp-play .gp-pad {
+  touch-action: none;
+  -webkit-touch-callout: none;
+  outline: none;
+}
+.gp-play img,
+.gp-play canvas,
+.gp-play svg {
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+.gp-play button svg,
+.gp-play button img {
+  pointer-events: none;
+}
