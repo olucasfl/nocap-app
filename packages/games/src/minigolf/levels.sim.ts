@@ -33,7 +33,7 @@ export function solve(lv: GolfLevel, maxStrokes: number): number | null {
     for (const s of frontier) {
       for (let a = 0; a < 48; a++) {
         const ang = (a / 48) * Math.PI * 2;
-        for (const p of [0.12, 0.25, 0.4, 0.6, 0.85]) {
+        for (const p of [0.1, 0.18, 0.28, 0.4, 0.55, 0.7, 0.9]) {
           // as peças móveis mudam com o tempo: testa duas fases do relógio
           for (const t0 of [0, 1.7]) {
             const r = run(lv, s.pos, ang, p, t0);

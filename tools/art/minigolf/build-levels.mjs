@@ -261,6 +261,7 @@ LEVELS.push((() => {
 // Letras: # ou espaço = vazio · . chão · @ saída · H buraco · i gelo · s areia · o pino · ~ água · b ponte sobre água
 // Rampas (sobem 1 m na direção da seta): ^ norte, v sul, < oeste, > leste.
 const C = 3;
+const RISE = 0.6; // altura de cada rampa
 function gridLevel(id, rows, movers = []) {
   const L = new Level(id);
   const R = rows.length, Wd = Math.max(...rows.map((r) => r.length));
@@ -277,7 +278,7 @@ function gridLevel(id, rows, movers = []) {
     const l = low.get([c, r].join());
     if (!ramp(c, r)) return l;
     const d = dirOf[ch(c, r)];
-    return mv[0] === d[0] && mv[1] === d[1] ? l + 1 : mv[0] === -d[0] && mv[1] === -d[1] ? l : l;
+    return mv[0] === d[0] && mv[1] === d[1] ? l + RISE : l;
   };
   const q = [start];
   while (q.length) {
@@ -288,7 +289,7 @@ function gridLevel(id, rows, movers = []) {
       const y = exitY(c, r, mv);
       if (ramp(nc, nr)) {
         const d = dirOf[ch(nc, nr)];
-        low.set([nc, nr].join(), mv[0] === d[0] && mv[1] === d[1] ? y : y - 1);
+        low.set([nc, nr].join(), mv[0] === d[0] && mv[1] === d[1] ? y : y - RISE);
       } else {
         // saindo de rampa pelo lado alto: o chão seguinte fica em cima
         low.set([nc, nr].join(), y);
@@ -298,7 +299,7 @@ function gridLevel(id, rows, movers = []) {
   }
   const yTop = (c, r) => {
     const l = low.get([c, r].join()) ?? 0;
-    return ramp(c, r) ? l + 1 : l;
+    return ramp(c, r) ? l + RISE : l;
   };
   let minY = 0;
   low.forEach((v) => (minY = Math.min(minY, v)));
@@ -311,8 +312,8 @@ function gridLevel(id, rows, movers = []) {
       if (k === 'H') { L.hole = [cx, y, cz]; L.floorWithHole(x0, z0, x1, z1, y, cx, cz); }
       else if (ramp(c, r)) {
         const d = dirOf[k];
-        if (d[0] === 0) L.slope(x0, z0, x1, z1, d[1] < 0 ? y + 1 : y, d[1] < 0 ? y : y + 1);
-        else L.slope(x0, z0, x1, z1, d[0] < 0 ? y + 1 : y, d[0] < 0 ? y : y + 1, true);
+        if (d[0] === 0) L.slope(x0, z0, x1, z1, d[1] < 0 ? y + RISE : y, d[1] < 0 ? y : y + RISE);
+        else L.slope(x0, z0, x1, z1, d[0] < 0 ? y + RISE : y, d[0] < 0 ? y : y + RISE, true);
       } else if (k === '~') L.waterRect(x0, z0, x1, z1, y - 0.45, [0.6, 0, 0]);
       else if (k === 'b') {
         L.waterRect(x0, z0, x1, z1, y - 0.45, [0.6, 0, 0]);
@@ -347,17 +348,16 @@ function gridLevel(id, rows, movers = []) {
   return L;
 }
 
-// 27 Zigue-zague (difícil): faixas em serpentina, com giratório, pêndulo e um bloco que corre.
+// 27 Zigue-zague (difícil): três faixas curtas em serpentina, com giratório e pêndulo.
 LEVELS.push(gridLevel(27, [
-  '@........#',
-  '#######..#'.replace('.', '.'),
-  '#.......##',
-  '#.#########',
-  '#........H',
+  '@.....#',
+  '#####.#',
+  '#.....#',
+  '#.#####',
+  '#.....H',
 ], [
-  { kind: 'spinner', col: 4, row: 0, length: 4 },
-  { kind: 'pendulum', col: 4, row: 2, along: 'x', t0: 0.5 },
-  { kind: 'spinner', col: 5, row: 4, length: 3, t0: 1 },
+  { kind: 'spinner', col: 3, row: 0, length: 4 },
+  { kind: 'pendulum', col: 3, row: 2, along: 'x', t0: 0.5 },
 ]));
 
 // 28 Montanha (difícil): sobe duas rampas até o patamar do buraco, com um pêndulo no alto.
@@ -378,9 +378,9 @@ LEVELS.push(gridLevel(29, [
 
 // 30 Gelo (difícil): corredor de gelo com pino, volta num segundo corredor.
 LEVELS.push(gridLevel(30, [
-  '@iiiioi.#',
-  '#######.#',
-  '#H.iiii.#',
+  '@..ii..#',
+  '######.#',
+  '#H.ii..#',
 ]));
 
 const holeModel = loadHole();
