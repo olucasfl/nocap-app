@@ -25,12 +25,34 @@ export function stickDecal(opts: {
   const h = ray.intersectObjects(targets, false)[0];
   if (!h || !h.face) return false;
   const hull = h.object as THREE.Mesh;
-  const normal = h.face.normal.clone().transformDirection(hull.matrixWorld).normalize();
+  const rayDir = ray.ray.direction.clone();
+  let normal = h.face.normal.clone().transformDirection(hull.matrixWorld).normalize();
+  // a malha pode ter as faces para dentro (o casco do F1 é desenhado dos dois lados): o adesivo olha para quem lança o raio,
+  // senão ele sai espelhado e de cabeça para baixo
+  if (normal.dot(rayDir) > 0) normal.negate();
   const upW = up.clone().transformDirection(frame.matrixWorld);
   const upT = upW.addScaledVector(normal, -upW.dot(normal)).normalize();
   const right = new THREE.Vector3().crossVectors(upT, normal).normalize();
+  const k0 = frame.getWorldScale(new THREE.Vector3()).x;
+  const half = (size * k0) / 2;
+  // o lugar tem que ser liso (os quatro cantos na mesma superfície, quase sem curva) ...
+  for (const [a, b] of [[1, 1], [-1, 1], [1, -1], [-1, -1]] as const) {
+    const o = h.point.clone().addScaledVector(right, a * half).addScaledVector(upT, b * half).addScaledVector(normal, half * 2);
+    const r = new THREE.Raycaster(o, normal.clone().negate());
+    const c = r.intersectObjects(targets, false)[0];
+    if (!c || !c.face) return false;
+    const cn = c.face.normal.clone().transformDirection((c.object as THREE.Mesh).matrixWorld).normalize();
+    if (Math.abs(cn.dot(normal)) < 0.5) return false;
+  }
+  // ... e livre: nada do carro (asa, entrada de ar, roda, halo) pode ficar na frente dele
+  const blockers: THREE.Object3D[] = [];
+  frame.traverse((o) => {
+    if ((o as THREE.Mesh).isMesh && !targets.includes(o) && o.userData.tag !== 'number' && (o as THREE.Mesh).visible) blockers.push(o);
+  });
+  const block = new THREE.Raycaster(h.point.clone().addScaledVector(normal, 0.01 * k0), normal, 0, half * 3);
+  if (block.intersectObjects(blockers, false).length) return false;
   const orient = new THREE.Euler().setFromRotationMatrix(new THREE.Matrix4().makeBasis(right, upT, normal));
-  const k = frame.getWorldScale(new THREE.Vector3()).x;
+  const k = k0;
   const geo = new DecalGeometry(hull, h.point, orient, new THREE.Vector3(size * k, size * k, 0.35 * k));
   if (!geo.attributes.position || geo.attributes.position.count < 3) return false;
   geo.applyMatrix4(new THREE.Matrix4().copy(hull.matrixWorld).invert());

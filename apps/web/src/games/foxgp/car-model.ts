@@ -642,8 +642,19 @@ function addRimStyle(wheel: THREE.Object3D, style: string, m: THREE.Material, w:
 function placeNumbers(car: THREE.Group, paintMesh: THREE.Mesh, m: THREE.Material) {
   const put = (from: THREE.Vector3, dir: THREE.Vector3, up: THREE.Vector3, size: number) =>
     stickDecal({ frame: car, targets: [paintMesh], material: m, from, dir, up, size });
-  // de cima: o topo do bico (se a primeira posição não pega, tenta um pouco mais atrás)
-  for (const z of [1.75, 1.6, 1.45]) if (put(new THREE.Vector3(0, 3, z), new THREE.Vector3(0, -1, 0), new THREE.Vector3(0, 0, 1), 0.5)) break;
-  // laterais (cada uma lida de fora)
-  for (const sg of [1, -1]) put(new THREE.Vector3(sg * 2, 0.42, -0.35), new THREE.Vector3(-sg, 0, 0), new THREE.Vector3(0, 1, 0), 0.46);
+  // de cima: o topo do bico, com o topo do número para o rabo (de pé para quem olha o carro de cima com o nariz para baixo)
+  for (const [z, size] of [[1.5, 0.32], [1.35, 0.34], [1.2, 0.36], [1.0, 0.4], [0.8, 0.44]] as const)
+    if (put(new THREE.Vector3(0, 3, z), new THREE.Vector3(0, -1, 0), new THREE.Vector3(0, 0, -1), size)) break;
+  // laterais (cada uma lida de fora): o primeiro lugar liso e livre, sem asa nem entrada de ar na frente
+  const spots: readonly (readonly [number, number, number])[] = [
+    [0.42, -0.35, 0.44],
+    [0.42, -0.7, 0.4],
+    [0.38, -0.1, 0.4],
+    [0.36, -1.0, 0.36],
+    [0.3, -0.5, 0.34],
+    [0.3, 0.2, 0.32],
+  ];
+  for (const sg of [1, -1])
+    for (const [y, z, size] of spots)
+      if (put(new THREE.Vector3(sg * 2, y, z), new THREE.Vector3(-sg, 0, 0), new THREE.Vector3(0, 1, 0), size)) break;
 }

@@ -467,12 +467,15 @@ export class GpScene {
     if (this.quality !== 'high') return;
     const composer = new EffectComposer(this.renderer);
     composer.addPass(new RenderPass(this.scene, this.camera));
-    composer.addPass(new UnrealBloomPass(new THREE.Vector2(256, 256), 0.32, 0.5, 0.88));
+    // O RenderPass desenha numa textura linear sem tone mapping: o bloom ali via o sol (2,7) em qualquer superfície clara e
+    // estourava tudo. Agora a cor sai primeiro do OutputPass (tone mapping + sRGB, igual à qualidade média) e o bloom só
+    // pega o que passa muito de branco (lâmpadas, luzes do carro), de leve.
+    composer.addPass(new OutputPass());
+    composer.addPass(new UnrealBloomPass(new THREE.Vector2(256, 256), 0.16, 0.35, 0.97));
     if (!this.reduced) {
       this.afterimage = new AfterimagePass(0);
       composer.addPass(this.afterimage);
     }
-    composer.addPass(new OutputPass());
     composer.addPass(new SMAAPass(256, 256));
     this.composer = composer;
   }
