@@ -934,7 +934,29 @@ export class NhWorld {
   }
 
   private drawOptions(n: number): ChoiceId[] {
-    return this.shuffled(this.availableUpgrades()).slice(0, n);
+    const base: ChoiceId[] = this.shuffled(this.availableUpgrades()).slice(0, n);
+    // arma no máximo + passivo certo: a evolução vem na próxima janela, no lugar de uma das melhorias
+    const evo = this.availableEvolutions()[0];
+    if (evo) return [evo, ...base.slice(0, Math.max(0, n - 1))];
+    return base;
+  }
+
+  /**
+   * Parceiro de combinação que a pessoa já tem: para uma arma, o passivo que a evolui; para um passivo, a arma que ele evolui.
+   * A carta mostra "Combina com ..." quando isto não é nulo.
+   */
+  comboHint(id: ChoiceId): UpgradeId | null {
+    if (id.startsWith('evo')) return null;
+    const u = id as UpgradeId;
+    for (const e of EVOLUTIONS) {
+      if (this.evolved.has(e.id)) continue;
+      if (e.maxed.includes(u) && this.levels[e.passive] > 0) return e.passive;
+      if (e.passive === u) {
+        const w = e.maxed.find((m) => this.levels[m] > 0);
+        if (w) return w;
+      }
+    }
+    return null;
   }
 
   private openModal(kind: 'levelUp' | 'chest'): void {

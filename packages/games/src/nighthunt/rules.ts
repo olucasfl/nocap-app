@@ -26,6 +26,17 @@ const cd = (n: number) =>
   (PLAYER_SETTINGS.haloLauncher.launcher.cooldown / n).toFixed(1).replace('.', ',');
 const rg = (n: number) => (PLAYER_SETTINGS.regenerationDelay / n).toFixed(1).replace('.', ',');
 
+/** Passivos globais que NÃO afetam a arma (linha "Ignora: ..." da carta). */
+export const IGNORES: Partial<Record<UpgradeId, UpgradeId[]>> = {
+  whip: ['swift'],
+  garlic: ['swift', 'tome'],
+  magma: ['swift'],
+  pentagram: ['swift', 'duration'],
+  sword: ['swift', 'duration'],
+};
+export const ignoresText = (id: UpgradeId): string =>
+  (IGNORES[id] ?? []).map((u) => UPGRADES[u].name).join(', ');
+
 export const UPGRADES: Record<UpgradeId, UpgradeInfo> = {
   whip: {
     id: 'whip',

@@ -789,3 +789,31 @@ describe('armas novas da fase 3', () => {
     expect(PASSIVE_IDS).toEqual(expect.arrayContaining(['duration', 'amount', 'curse']));
   });
 });
+
+describe('evolução na janela de nível e aviso de combinação', () => {
+  it('arma no máximo + passivo certo: a próxima janela de nível entrega a evolução', () => {
+    const w = new NhWorld('ev1');
+    w.levels.garlic = 6;
+    w.levels.regeneration = 1;
+    (w as unknown as { addXp(n: number): void }).addXp(1e6);
+    expect(w.pending?.kind).toBe('levelUp');
+    expect(w.pending?.options[0]).toBe('evoGarlic');
+    w.choose('evoGarlic');
+    expect(w.evolved.has('evoGarlic')).toBe(true);
+  });
+  it('sem o passivo a evolução não aparece', () => {
+    const w = new NhWorld('ev2');
+    w.levels.garlic = 6;
+    (w as unknown as { addXp(n: number): void }).addXp(1e6);
+    expect(w.pending?.options.some((o) => o.startsWith('evo'))).toBe(false);
+  });
+  it('a carta avisa "combina com" só quando você já tem o parceiro', () => {
+    const w = new NhWorld('ev3');
+    expect(w.comboHint('heart')).toBeNull();
+    w.levels.whip = 2;
+    expect(w.comboHint('heart')).toBe('whip');
+    w.levels.heart = 1;
+    expect(w.comboHint('whip')).toBe('heart');
+    expect(w.comboHint('evoWhip')).toBeNull();
+  });
+});

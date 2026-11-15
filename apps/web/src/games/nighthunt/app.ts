@@ -2,6 +2,7 @@ import {
   ACHIEVEMENTS,
   EVOLUTIONS,
   EVO_INFO,
+  ignoresText,
   HEROES,
   HERO_IDS,
   HERO_INFO,
@@ -71,10 +72,11 @@ type Screen =
   | 'upgrades'
   | 'achievements'
   | 'items'
+  | 'guide'
   | 'audio'
   | 'game'
   | 'over';
-type Modal = null | 'levelUp' | 'chest' | 'pause' | 'audio' | 'confirmQuit';
+type Modal = null | 'levelUp' | 'chest' | 'pause' | 'audio' | 'confirmQuit' | 'guide';
 type Style = 'main' | 'danger' | 'blue' | 'dis';
 
 // Telas de menu desenham numa caixa de 510x680 centrada; o jogo usa a largura inteira. W e H valem para a tela que está sendo desenhada.
@@ -435,6 +437,8 @@ export class NhApp {
   private isListScreen(): boolean {
     return (
       this.screen === 'achievements' ||
+      this.screen === 'guide' ||
+      this.modal === 'guide' ||
       this.screen === 'items' ||
       this.screen === 'upgrades' ||
       this.screen === 'heroes'
@@ -1009,6 +1013,10 @@ export class NhApp {
       case 'achievements':
         this.drawAchievements();
         break;
+      case 'guide':
+        this.drawMenuBg();
+        this.drawGuide(() => this.go('menu'));
+        break;
       case 'items':
         this.drawItems();
         break;
@@ -1178,6 +1186,7 @@ export class NhApp {
     this.goldCounter(14, 16);
     this.smallBtn('sound', W - 56, 14, 42, () => this.go('audio'));
     this.btn('VOLTAR', 14, H - 58, 120, 44, () => this.hooks.exit(), 'danger');
+    this.btn('GUIA', W - 134, H - 58, 120, 44, () => this.go('guide'), 'blue');
   }
 
   // ---------------- escolha do herói e do mapa ----------------
@@ -1502,6 +1511,72 @@ export class NhApp {
   }
 
   // ---------------- conquistas ----------------
+  /** Guia de combinações: arma no máximo + passivo = arma evoluída (no início e na pausa da partida). */
+  private drawGuide(onClose: () => void): void {
+    const g = this.g;
+    const a = this.a;
+    const inGame = this.screen === 'game';
+    if (inGame) {
+      g.fillStyle = 'rgba(6,8,14,.78)';
+      g.fillRect(0, -this.my, W, this.fh);
+    }
+    const pw = Math.min(W - 36, 560);
+    const px = (W - pw) / 2;
+    const pop = ease((inGame ? this.modalT : this.screenT) / 0.3);
+    const f = this.windowFrame(
+      'GUIA DE COMBINAÇÕES',
+      px,
+      72,
+      pw,
+      Math.min(H - 150, 560),
+      pop,
+      onClose,
+    );
+    drawText(g, a, 'Arma no nível máximo + o item certo = evolução', W / 2, f.y + 2, {
+      size: 16,
+      align: 'center',
+      color: '#ffd44a',
+    });
+    const top = f.y + 30;
+    const viewH = f.h - 36;
+    const rh = 74;
+    const list = EVOLUTIONS;
+    this.scrollMax = Math.max(0, list.length * rh - viewH);
+    g.save();
+    g.beginPath();
+    g.rect(f.x, top, f.w, viewH);
+    g.clip();
+    list.forEach((e, i) => {
+      const y = top + i * rh - this.scroll;
+      if (y < top - rh || y > top + viewH) return;
+      const wId = e.maxed[0]!;
+      const known = this.save.seen.includes(wId) || this.save.stats.evolutions.includes(e.id);
+      const owned = this.world && this.world.levels[wId] > 0;
+      nineSlice(g, a, 'UI/Button', f.x + 2, y + 2, f.w - 4, rh - 8, 5, 2);
+      const info = EVO_INFO[e.id];
+      const cx = f.x + 12;
+      this.drawIconTile(UPGRADES[wId].icon, cx, y + 10, 48, { dark: !known });
+      drawText(g, a, 'MAX', cx + 24, y + 56, { size: 12, align: 'center', color: '#ffd44a' });
+      drawText(g, a, '+', cx + 66, y + 22, { size: 26, align: 'center', color: '#ffffff' });
+      this.drawIconTile(UPGRADES[e.passive].icon, cx + 84, y + 10, 48, { dark: !known });
+      drawText(g, a, '=', cx + 148, y + 22, { size: 26, align: 'center', color: '#ffffff' });
+      this.drawIconTile(`E/${e.id}`, cx + 166, y + 10, 48, { dark: !known });
+      const tx = cx + 226;
+      drawText(g, a, known ? info.name : '???', tx, y + 10, {
+        size: 18,
+        color: known ? '#ffe27a' : '#8d93a8',
+        maxWidth: f.w - 250,
+      });
+      const txt = known
+        ? `${UPGRADES[wId].name} + ${UPGRADES[e.passive].name}${owned ? ' (você tem a arma)' : ''}`
+        : 'Encontre a arma para descobrir.';
+      for (const [k, l] of wrapText(a, txt, f.w - 250, { size: 13 }).entries())
+        drawText(g, a, l, tx, y + 34 + k * 15, { size: 13, color: known ? '#c9d3ea' : '#7f8aa8' });
+    });
+    g.restore();
+    this.drawScrollbar(f.x + f.w - 6, top, viewH);
+  }
+
   private drawAchievements(): void {
     const g = this.g;
     const a = this.a;
@@ -1876,6 +1951,7 @@ export class NhApp {
     if (this.modal === 'chest') this.drawChest();
     if (this.modal === 'pause' || this.modal === 'confirmQuit') this.drawPause();
     if (this.modal === 'audio') this.drawAudioWindow(() => this.openModalBack());
+    if (this.modal === 'guide') this.drawGuide(() => this.openModalBack());
     g.restore();
     if (w.alive === false && this.draw.deadFor > 0.3) {
       const t = ease((this.draw.deadFor - 0.3) / 0.8);
@@ -2016,7 +2092,7 @@ export class NhApp {
           w: cw,
           h,
           fn: () => {
-            if (this.banishMode) {
+            if (this.banishMode && !id.startsWith('evo')) {
               w.banish(id as UpgradeId);
               this.banishMode = false;
             } else this.pickUpgrade(id);
@@ -2057,13 +2133,14 @@ export class NhApp {
       );
       yy += 26;
       const body = info.evo ? info.desc : UPGRADES[id as UpgradeId].level(lv + 1);
-      for (const l of wrapText(a, body, cw - 22, { size: n >= 4 ? 13 : 15 })) {
+      for (const l of wrapText(a, body, cw - 22, { size: info.evo ? 12 : n >= 4 ? 13 : 15 })) {
+        if (yy > y + lift + h - 84) break;
         drawText(g, a, l, x + cw / 2, yy, {
-          size: n >= 4 ? 13 : 15,
+          size: info.evo ? 12 : n >= 4 ? 13 : 15,
           align: 'center',
           color: '#ffffff',
         });
-        yy += n >= 4 ? 15 : 17;
+        yy += info.evo ? 14 : n >= 4 ? 15 : 17;
       }
       yy += 6;
       if (!info.evo)
@@ -2076,6 +2153,24 @@ export class NhApp {
             });
           yy += n >= 4 ? 14 : 16;
         }
+      // linhas de apoio: combinação (parceiro que você já tem), o que a arma ignora e, nas evoluções, a receita
+      const note = (txt: string, color: string, dy: number) => {
+        for (const [k, l] of wrapText(a, txt, cw - 18, { size: 12 }).entries())
+          drawText(g, a, l, x + cw / 2, y + lift + h - 70 - dy + k * 14, {
+            size: 12,
+            align: 'center',
+            color,
+          });
+      };
+      if (info.evo) {
+        const ev = EVO_INFO[id as EvoId];
+        note(`Requer: ${UPGRADES[ev.passive].name}.`, '#ffb25a', 0);
+      } else {
+        const hint = w.comboHint(id);
+        if (hint) note(`Combina com ${UPGRADES[hint].name}`, '#7fe08a', 0);
+        const ign = ignoresText(id as UpgradeId);
+        if (ign) note(`Ignora: ${ign}.`, '#ffb25a', hint ? 18 : 0);
+      }
       drawText(g, a, `[${i + 1}]`, x + cw / 2, y + lift + h - 24, {
         size: 13,
         align: 'center',
@@ -2207,7 +2302,7 @@ export class NhApp {
     const px = (W - pw) / 2;
     const pop = ease(this.modalT / 0.25);
     const confirm = this.modal === 'confirmQuit';
-    const f = this.windowFrame(confirm ? 'DESISTIR?' : 'PAUSA', px, 170, pw, 390, pop);
+    const f = this.windowFrame(confirm ? 'DESISTIR?' : 'PAUSA', px, 150, pw, 460, pop);
     if (confirm) {
       drawText(g, this.a, 'A partida acaba e o ouro', W / 2, f.y + 14, {
         size: 20,
@@ -2227,11 +2322,20 @@ export class NhApp {
       });
     this.btn('CONTINUAR', px + 40, f.y + 40, pw - 80, 62, () => this.closeModal(), 'main');
     this.btn('OPÇÕES', px + 40, f.y + 114, pw - 80, 52, () => this.openModal('audio'), 'blue');
-    this.btn('SAIR E SALVAR', px + 40, f.y + 176, pw - 80, 52, () => this.saveAndExit(), 'blue');
+    this.btn(
+      'GUIA DE COMBOS',
+      px + 40,
+      f.y + 176,
+      pw - 80,
+      52,
+      () => this.openModal('guide'),
+      'blue',
+    );
+    this.btn('SAIR E SALVAR', px + 40, f.y + 238, pw - 80, 52, () => this.saveAndExit(), 'blue');
     this.btn(
       'DESISTIR',
       px + 40,
-      f.y + 238,
+      f.y + 300,
       pw - 80,
       52,
       () => (this.modal = 'confirmQuit'),

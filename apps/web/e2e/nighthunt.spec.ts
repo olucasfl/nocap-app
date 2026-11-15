@@ -118,7 +118,7 @@ test.describe('Night Hunt', () => {
     await page.waitForTimeout(500);
     expect((await state(page)).t!).toBeGreaterThan(t0);
     await page.keyboard.press('Escape');
-    await tap(page, 255, 474, 'game'); // DESISTIR (na pausa)
+    await tap(page, 255, 516, 'game'); // DESISTIR (na pausa)
     await tap(page, 255, 340, 'game'); // SIM, SAIR
     await screenIs(page, 'over');
     expect(await colors(page)).toBeGreaterThan(12);
