@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from '@tanstack/react-router';
 import {
   BEE_RANKS,
@@ -314,7 +314,6 @@ export function BeePlay() {
   const rankIndex = BEE_RANKS.findIndex((r) => r.id === rank.id);
   const genius = Math.min(1, points / (0.7 * max));
   const hints = beeHints(puzzle, found);
-  const maxSize = Math.max(1, ...hints.sizes.map((x) => x.count));
   const unlockedIds: HintId[] = [
     'sizes',
     ...(hints.needMap === 0 ? (['map'] as HintId[]) : []),
@@ -646,15 +645,14 @@ export function BeePlay() {
 
             {hintView === 'sizes' && (
               <section className="bz-hint-block" aria-label="Quantidade de letras">
-                <h4>Quantas letras</h4>
-                <ul className="bz-sizes" data-testid="hint-sizes">
+                <h4>Ainda para achar</h4>
+                <ul className="bz-find" data-testid="hint-sizes">
                   {hints.sizes.map(({ size, count }) => (
-                    <li key={size} style={{ '--w': count / maxSize } as CSSProperties}>
-                      <span>{size} letras</span>
-                      <i aria-hidden="true" />
-                      <b>
-                        {count} {count === 1 ? 'palavra' : 'palavras'}
-                      </b>
+                    <li key={size}>
+                      <b>{count}</b>
+                      <span>
+                        {count === 1 ? 'palavra' : 'palavras'} com <em>{size} letras</em>
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -669,37 +667,29 @@ export function BeePlay() {
                 />
               ) : (
                 <section className="bz-hint-block" aria-label="Por letra e tamanho">
-                  <h4>Por letra e tamanho</h4>
-                  <div className="bz-mapg-list" data-testid="hint-map">
-                    {hints.map.letters.map((l, r) => {
-                      const total = hints.map.rowTotals[r]!;
-                      const rowMax = Math.max(1, ...hints.map.cells[r]!);
-                      return (
-                        <div key={l} className="bz-mapg">
-                          <div className="bz-mapg-h">
-                            <span className="bz-chip">{l.toUpperCase()}</span>
-                            <b>Começa com {l.toUpperCase()}</b>
-                            <small className="mono">
-                              {total} {total === 1 ? 'palavra' : 'palavras'}
-                            </small>
-                          </div>
-                          <ul className="bz-sizes">
-                            {hints.map.sizes.map((n, c) => {
-                              const count = hints.map.cells[r]![c]!;
-                              return count > 0 ? (
-                                <li key={n} style={{ '--w': count / rowMax } as CSSProperties}>
-                                  <span>{n} letras</span>
-                                  <i aria-hidden="true" />
-                                  <b>
-                                    {count} {count === 1 ? 'palavra' : 'palavras'}
-                                  </b>
-                                </li>
-                              ) : null;
-                            })}
-                          </ul>
+                  <h4>Ainda para achar, por letra</h4>
+                  <div className="bz-find-groups" data-testid="hint-map">
+                    {hints.map.letters.map((l, r) => (
+                      <div key={l} className="bz-find-group">
+                        <div className="bz-find-h">
+                          <span className="bz-chip">{l.toUpperCase()}</span>
+                          <b>Começa com {l.toUpperCase()}</b>
                         </div>
-                      );
-                    })}
+                        <ul className="bz-find">
+                          {hints.map.sizes.map((n, c) => {
+                            const count = hints.map.cells[r]![c]!;
+                            return count > 0 ? (
+                              <li key={n}>
+                                <b>{count}</b>
+                                <span>
+                                  {count === 1 ? 'palavra' : 'palavras'} com <em>{n} letras</em>
+                                </span>
+                              </li>
+                            ) : null;
+                          })}
+                        </ul>
+                      </div>
+                    ))}
                   </div>
                 </section>
               ))}
@@ -712,7 +702,7 @@ export function BeePlay() {
                 />
               ) : (
                 <section className="bz-hint-block" aria-label="Começo das palavras">
-                  <h4>Duas primeiras letras</h4>
+                  <h4>Ainda para achar, pelas duas primeiras letras</h4>
                   <ul className="bz-pairs" data-testid="hint-pairs">
                     {hints.pairs.map(({ prefix, count }) => (
                       <li key={prefix}>
