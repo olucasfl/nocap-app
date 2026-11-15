@@ -913,7 +913,7 @@ function grandCircuit() {
   P = [XN, OZ - 3]; PHI = 0;
   {
     const st = straight(L2, { gaps: [[8.5, 13.5]] });
-    const cap = (x0, x1) => L.box(x0, TOP - 0.125, OZ - 3, x1, TOP + WALL_H, OZ - 3 + WALL_T, 'wall-top', 'wall-side');
+    const cap = (x0, x1) => L.box(x0, TOP - 0.125, OZ - 3, x1, TOP + WALL_H, OZ - 3 + 0.85, 'wall-top', 'wall-side');
     cap(XN - W / 2 - WALL_T, XN - 1.15);
     cap(XN + 1.15, XN + W / 2 + WALL_T);
     // lombadas: seis cristas seguidas, de lado a lado
@@ -1198,8 +1198,8 @@ function level23() {
   L.loop(OX, y, OZ, 0, false);
   const XE = OX + 3.86;
   K.lane(XE, OZ - 3, 7, { y, gaps: [[1, 6]] });
-  K.block(XE - 3, XE - 1.15, OZ - 3, OZ - 3 + 0.5, y, 0.375); // fecha o sul da pista de saída, deixando a boca aberta
-  K.block(XE + 1.15, XE + 3, OZ - 3, OZ - 3 + 0.5, y, 0.375);
+  K.block(XE - 3, XE - 1.15, OZ - 3, OZ - 3 + 0.85, y, 0.375); // fecha o sul da pista de saída, deixando a boca aberta
+  K.block(XE + 1.15, XE + 3, OZ - 3, OZ - 3 + 0.85, y, 0.375);
   K.spinner(XE, OZ - 3 - 3.5, y);
   K.plank(XE, OZ - 10.2, y, 3, 7);
   y = 6; // andar de cima: janela, duas paredes que deslizam e o copo
@@ -1268,8 +1268,8 @@ function level25() {
   const XE = OX + 3.86;
   // saída do loop: rampa para o andar de cima (3 m em 10 m) e uma ilha com o moinho
   K.lane(XE, OZ - 3, 11, { y, ramps: [{ s0: 1, len: 9, dh: 3 }] });
-  K.block(XE - 3, XE - 1.15, OZ - 3, OZ - 3 + 0.5, y, 0.375);
-  K.block(XE + 1.15, XE + 3, OZ - 3, OZ - 3 + 0.5, y, 0.375);
+  K.block(XE - 3, XE - 1.15, OZ - 3, OZ - 3 + 0.85, y, 0.375);
+  K.block(XE + 1.15, XE + 3, OZ - 3, OZ - 3 + 0.85, y, 0.375);
   y = 3;
   K.lane(XE, OZ - 14, 4, { y });
   bridge2(L, XE, OZ - 18, y, 1.5);
