@@ -14,7 +14,8 @@ import {
   mapUnlocked,
 } from './rules';
 import { NhWorld, NO_META, STEP, metaBonus, type Enemy } from './world';
-import { MONSTERS } from './monsters';
+import { MONSTERS, ALL_ENEMIES } from './monsters';
+import { BESTIARY } from './bestiary';
 import {
   EVOLUTIONS,
   HEROES,
@@ -833,5 +834,38 @@ describe('evolução na janela de nível e aviso de combinação', () => {
     w.levels.heart = 1;
     expect(w.comboHint('whip')).toBe('heart');
     expect(w.comboHint('evoWhip')).toBeNull();
+  });
+});
+
+describe('bestiário', () => {
+  it('todo inimigo do jogo tem entrada, nome, texto e números iguais aos do jogo', () => {
+    const ids = new Set(BESTIARY.map((b) => b.id));
+    for (const e of ALL_ENEMIES) expect(ids.has(e.id), e.id).toBe(true);
+    expect(new Set(BESTIARY.map((b) => b.n)).size).toBe(BESTIARY.length);
+    for (const b of BESTIARY) {
+      expect(b.name.length).toBeGreaterThan(2);
+      expect(b.desc.length).toBeGreaterThan(15);
+      const e = ALL_ENEMIES.find((x) => x.id === b.id)!;
+      expect(b.stats.hp).toBe(e.health);
+      expect(b.stats.dmg).toBe(e.damage);
+    }
+    expect(BESTIARY.find((b) => b.id === 'Vagalume')!.maps).toEqual(['deserto']);
+    expect(BESTIARY.find((b) => b.id === 'BasicEnemy')!.maps).toContain('campo');
+  });
+  it('a partida conta quem apareceu e quantos de cada foram derrotados, e o save soma', () => {
+    const w = new NhWorld('bs1');
+    const a = (w as unknown as { spawnEnemy(x: number, y: number, c: string): Enemy }).spawnEnemy(
+      500,
+      0,
+      'BasicEnemy',
+    );
+    (w as unknown as { damageEnemy(e: Enemy, d: number): void }).damageEnemy(a, 99);
+    const r = w.result();
+    expect(r.seenIds).toContain('BasicEnemy');
+    expect(r.killsById.BasicEnemy).toBe(1);
+    const s = emptySave();
+    applyRun(s, r, 1);
+    applyRun(s, r, 2);
+    expect(s.stats.bestiary.BasicEnemy).toBe(3);
   });
 });

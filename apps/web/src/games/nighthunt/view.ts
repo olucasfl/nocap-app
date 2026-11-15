@@ -1,7 +1,7 @@
 import { HEROES, MAPS, SWORD_BOXES, type Enemy, type NhWorld, type Obstacle } from '@nocap/games';
 import { animFrame, drawFrame, type Atlas } from './assets';
 import { BREAKABLE_DEBRIS, BREAKABLE_GLOW } from './extra-art';
-import { MONSTER_BY_ID, PICK_RADIUS } from '@nocap/games';
+import { MONSTERS, MONSTER_BY_ID, PICK_RADIUS } from '@nocap/games';
 
 /** Área visível do mundo (em unidades do mundo), recalculada a cada quadro para preencher a tela em pé ou deitada. */
 let CX = 255;
@@ -242,6 +242,36 @@ function drawMonster(
     tint,
     tintAlpha,
   });
+}
+
+/** Desenha um inimigo animado fora da partida (bestiário): os do Slash pela animação deles, os do Dungeon Crawl pela animação em código. */
+export function drawEnemyPreview(
+  g: CanvasRenderingContext2D,
+  a: Atlas,
+  art: string,
+  x: number,
+  y: number,
+  t: number,
+  scale = 1,
+): void {
+  if (art.startsWith('Dc:')) {
+    const key = art.slice(3);
+    const m = MONSTERS.find((q) => q.art === key);
+    const an = MON_ANIM[key] ?? MON_ANIM.skeleton!;
+    const ph = t * an.spd;
+    const hop = an.fly ? Math.sin(ph * 0.6) * an.bob : -Math.abs(Math.sin(ph * 0.5)) * an.bob;
+    drawFrame(g, a, `M/${key}`, x, y + hop, {
+      s: (m?.scale ?? 1.6) * scale,
+      sx: 1 + an.sq * Math.sin(ph),
+      sy: 1 - an.sq * Math.sin(ph),
+      rot: Math.sin(ph * 0.5) * an.sway,
+      flip: !an.left,
+      ay: 0.62,
+    });
+    return;
+  }
+  const anim = ENEMY_ANIM[art.startsWith('Boss') ? art : art] ?? 'Enemies/Bat/Move';
+  drawFrame(g, a, animFrame(a, anim, t), x, y, { s: 2 * scale });
 }
 
 export interface WorldDrawState {

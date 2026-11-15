@@ -19,6 +19,7 @@ import {
   mapProgress,
   mapUnlocked,
   type ChoiceId,
+  BESTIARY,
   type EvoId,
   NhWorld,
   STEP,
@@ -54,6 +55,7 @@ import { NhAudio, type NhSound } from './audio';
 import { NH_REMOTE, loadSave, writeSave } from './save';
 import {
   drawWorld,
+  drawEnemyPreview,
   stage,
   viewHalf,
   heroFrame,
@@ -72,6 +74,7 @@ type Screen =
   | 'upgrades'
   | 'achievements'
   | 'items'
+  | 'bestiary'
   | 'guide'
   | 'audio'
   | 'game'
@@ -177,6 +180,7 @@ export class NhApp {
     map: 'campo',
   };
   private chestT = 0;
+  private selBest = 0;
   /** Tempo desde que o chefe final caiu (a tela de vitória abre depois de um instante). */
   private victoryT = 0;
   private chestPick: ChoiceId | null = null;
@@ -306,6 +310,12 @@ export class NhApp {
         }
       },
       resume: () => this.startGame(true),
+      bestiary: (sel: number) => {
+        BESTIARY.forEach((b, i) => {
+          if (i % 3 !== 2) this.save.stats.bestiary[b.id] = 1 + i * 7;
+        });
+        this.selBest = sel;
+      },
       give: (id: string, n: number) => {
         const w = this.world;
         if (w) (w.levels as Record<string, number>)[id] = n;
@@ -438,6 +448,7 @@ export class NhApp {
     return (
       this.screen === 'achievements' ||
       this.screen === 'guide' ||
+      this.screen === 'bestiary' ||
       this.modal === 'guide' ||
       this.screen === 'items' ||
       this.screen === 'upgrades' ||
@@ -461,6 +472,12 @@ export class NhApp {
       if (this.modal === 'chest' && (key === 'enter' || key === ' ') && this.chestT > 1.6)
         this.pickUpgrade(this.chestPick!);
       if (this.modal === 'chest' && key === 'escape' && this.chestT > 1.6) this.pickUpgrade(null);
+    } else if (this.screen === 'bestiary' && (key === 'arrowdown' || key === 'arrowup')) {
+      this.selBest = Math.max(
+        0,
+        Math.min(BESTIARY.length - 1, this.selBest + (key === 'arrowdown' ? 1 : -1)),
+      );
+      this.scroll = Math.max(0, Math.min(this.scrollMax, this.selBest * 28 - 140));
     } else if (this.screen === 'menu' && (key === 'enter' || key === ' ')) this.go('heroes');
     else if (this.screen === 'heroes' && (key === 'enter' || key === ' ')) this.go('maps');
     else if (this.screen === 'maps' && (key === 'enter' || key === ' ')) this.startGame();
@@ -1013,6 +1030,9 @@ export class NhApp {
       case 'achievements':
         this.drawAchievements();
         break;
+      case 'bestiary':
+        this.drawBestiary();
+        break;
       case 'guide':
         this.drawMenuBg();
         this.drawGuide(() => this.go('menu'));
@@ -1187,6 +1207,7 @@ export class NhApp {
     this.smallBtn('sound', W - 56, 14, 42, () => this.go('audio'));
     this.btn('VOLTAR', 14, H - 58, 120, 44, () => this.hooks.exit(), 'danger');
     this.btn('GUIA', W - 134, H - 58, 120, 44, () => this.go('guide'), 'blue');
+    this.btn('BESTIÁRIO', W / 2 - 75, H - 58, 150, 44, () => this.go('bestiary'), 'blue');
   }
 
   // ---------------- escolha do herói e do mapa ----------------
@@ -1575,6 +1596,159 @@ export class NhApp {
     });
     g.restore();
     this.drawScrollbar(f.x + f.w - 6, top, viewH);
+  }
+
+  /** Bestiário: lista numerada à esquerda, o bicho animado com descrição e números à direita. */
+  private drawBestiary(): void {
+    const g = this.g;
+    const a = this.a;
+    this.drawMenuBg();
+    const pop = ease(this.screenT / 0.3);
+    const known = (id: string) => (this.save.stats.bestiary[id] ?? 0) > 0;
+    const seen = BESTIARY.filter((b) => known(b.id)).length;
+    const pw = Math.min(W - 36, 920);
+    const px = (W - pw) / 2;
+    const f = this.windowFrame('BESTIÁRIO', px, 72, pw, H - 150, pop, () => this.go('menu'));
+    drawText(g, a, `Encontrados: ${seen}/${BESTIARY.length}`, W / 2, f.y + 2, {
+      size: 20,
+      align: 'center',
+      color: '#ffd44a',
+    });
+    const top = f.y + 34;
+    const viewH = f.h - 40;
+    const lw = Math.max(170, Math.min(300, f.w * 0.4));
+    const rh = 28;
+    this.scrollMax = Math.max(0, BESTIARY.length * rh - viewH);
+    g.save();
+    g.beginPath();
+    g.rect(f.x, top, lw, viewH);
+    g.clip();
+    BESTIARY.forEach((b, i) => {
+      const y = top + i * rh - this.scroll;
+      if (y < top - rh || y > top + viewH) return;
+      const sel = this.selBest === i;
+      if (sel) {
+        g.fillStyle = 'rgba(255,212,74,.18)';
+        g.fillRect(f.x + 2, y, lw - 12, rh - 2);
+      }
+      this.hits.push({
+        x: f.x,
+        y: Math.max(y, top),
+        w: lw - 8,
+        h: Math.min(rh, top + viewH - y),
+        fn: () => (this.selBest = i),
+        id: `bs${i}`,
+      });
+      const k = known(b.id);
+      drawText(g, a, String(b.n).padStart(3, '0'), f.x + 6, y + 4, { size: 16, color: '#8fa0c4' });
+      drawText(g, a, k ? b.name : '----------------', f.x + 56, y + 4, {
+        size: 16,
+        color: k ? (sel ? '#ffd44a' : '#ffffff') : '#6a7490',
+        maxWidth: lw - 70,
+      });
+    });
+    g.restore();
+    this.drawScrollbar(f.x + lw - 6, top, viewH);
+    // painel do bicho selecionado
+    const b = BESTIARY[Math.min(this.selBest, BESTIARY.length - 1)]!;
+    const k = known(b.id);
+    const rx = f.x + lw + 14;
+    const rw = f.w - lw - 18;
+    const kills = (this.save.stats.bestiary[b.id] ?? 1) - 1;
+    drawText(g, a, `Derrotou: ${kills}`, rx + rw / 2, top - 2, {
+      size: 17,
+      align: 'center',
+      color: '#c9d3ea',
+    });
+    const sh = Math.min(150, viewH * 0.36);
+    const sy = top + 22;
+    const mapId = b.maps[0] ?? 'campo';
+    const gd = MAPS[mapId]?.ground ?? [75, 109, 59];
+    g.save();
+    g.beginPath();
+    g.rect(rx, sy, rw, sh);
+    g.clip();
+    g.fillStyle = `rgb(${gd[0]},${gd[1]},${gd[2]})`;
+    g.fillRect(rx, sy, rw, sh);
+    g.fillStyle = 'rgba(0,0,0,.18)';
+    for (let i = 0; i < 14; i++) g.fillRect(rx + ((i * 97) % rw), sy + ((i * 53) % sh), 5, 3);
+    if (k) {
+      g.fillStyle = 'rgba(0,0,0,.28)';
+      g.beginPath();
+      g.ellipse(rx + rw / 2, sy + sh * 0.78, 28, 8, 0, 0, Math.PI * 2);
+      g.fill();
+      drawEnemyPreview(g, a, b.art, rx + rw / 2, sy + sh * 0.55, this.time, b.boss ? 1.1 : 1.4);
+    } else {
+      drawText(g, a, '?', rx + rw / 2, sy + sh / 2 - 30, {
+        size: 64,
+        align: 'center',
+        color: '#3a4a30',
+      });
+    }
+    g.restore();
+    g.strokeStyle = '#d6a23a';
+    g.lineWidth = 3;
+    g.strokeRect(rx, sy, rw, sh);
+    let yy = sy + sh + 10;
+    if (!k) {
+      drawText(g, a, 'Ainda não encontrado. Jogue para descobrir este bicho.', rx, yy, {
+        size: 15,
+        color: '#8fa0c4',
+        maxWidth: rw,
+      });
+      return;
+    }
+    drawText(g, a, b.name, rx, yy, { size: 22, color: '#ffd44a', maxWidth: rw });
+    yy += 28;
+    const dl = wrapText(a, b.desc, rw, { size: 14 });
+    for (const l of dl) {
+      drawText(g, a, l, rx, yy, { size: 14, color: '#e6ecff' });
+      yy += 16;
+    }
+    yy += 6;
+    const mapHp = MAPS[mapId]?.enemyHp ?? 1;
+    const num = (n: number) => String(Math.round(n * 10) / 10).replace('.', ',');
+    const stats: Array<[string, string, string]> = [
+      ['PV', num(b.stats.hp * mapHp), '#ff6a6a'],
+      ['Poder', num(b.stats.dmg), '#ffb25a'],
+      ['Velocidade', num(b.stats.speed), '#9ad0ff'],
+      ['XP', num(b.stats.xp), '#7fe08a'],
+      ['Ouro', num(b.stats.gold), '#ffd44a'],
+    ];
+    const cw = Math.floor(rw / 2);
+    stats.forEach(([lab, val, col], i) => {
+      const cx = rx + (i % 2) * cw;
+      const cy = yy + Math.floor(i / 2) * 20;
+      drawText(g, a, `${lab}: `, cx, cy, { size: 15, color: col });
+      drawText(g, a, val, cx + measureText(a, `${lab}: `, { size: 15 }), cy, {
+        size: 15,
+        color: '#ffffff',
+      });
+    });
+    yy += Math.ceil(stats.length / 2) * 20 + 8;
+    if (b.ability) {
+      drawText(g, a, 'Regra: ', rx, yy, { size: 15, color: '#ffd44a' });
+      const al = wrapText(a, b.ability, rw - measureText(a, 'Regra: ', { size: 15 }), { size: 14 });
+      al.forEach((l, i) =>
+        drawText(
+          g,
+          a,
+          l,
+          rx + (i === 0 ? measureText(a, 'Regra: ', { size: 15 }) : 0),
+          yy + i * 16,
+          {
+            size: 14,
+            color: '#e6ecff',
+          },
+        ),
+      );
+      yy += al.length * 16 + 4;
+    }
+    const mn = b.maps.map((m) => MAP_INFO[m]?.name ?? m).join(', ');
+    drawText(g, a, 'Encontra-se em:', rx, yy, { size: 15, color: '#ffd44a' });
+    const mapsTxt = mn || '-';
+    for (const [i, l] of wrapText(a, mapsTxt, rw, { size: 15 }).entries())
+      drawText(g, a, l, rx, yy + 18 + i * 17, { size: 15, color: '#ffffff' });
   }
 
   private drawAchievements(): void {

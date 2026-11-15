@@ -249,6 +249,9 @@ export interface RunResult {
   rerollsUsed: number;
   won: boolean;
   infinite: boolean;
+  /** Inimigos vistos e abates por tipo nesta partida (alimenta o bestiário). */
+  seenIds: string[];
+  killsById: Record<string, number>;
 }
 
 const BY_ID = new Map(ALL_ENEMIES.map((e) => [e.id, e]));
@@ -410,6 +413,8 @@ export class NhWorld {
   private obsCells = new Set<string>();
   infinite = false;
   victory = false;
+  seenIds = new Set<string>();
+  killsById: Record<string, number> = {};
   private finalSpawned = false;
   private brkCells = new Set<string>();
   private brkDone = new Set<string>();
@@ -788,6 +793,8 @@ export class NhWorld {
       rerollsUsed: this.rerollsUsed,
       won: won || this.victory,
       infinite: this.infinite,
+      seenIds: [...this.seenIds],
+      killsById: { ...this.killsById },
     };
   }
 
@@ -1069,6 +1076,7 @@ export class NhWorld {
       mode: 0,
     };
     e.maxHp = e.hp;
+    this.seenIds.add(id);
     if (s.moveType === 'Launch') {
       let dir: { x: number; y: number };
       const lp = this.waveLastPos;
@@ -1941,6 +1949,7 @@ export class NhWorld {
   private killEnemy(e: Enemy): void {
     e.dead = true;
     this.kills++;
+    this.killsById[e.s.id] = (this.killsById[e.s.id] ?? 0) + 1;
     if (e.s.id.endsWith('Boss')) this.bossKills++;
     if (e.s.id.endsWith('FinalBoss') || e.s.id === 'FinalBoss') {
       this.finalBossKills++;

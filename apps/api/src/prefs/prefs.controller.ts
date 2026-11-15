@@ -159,7 +159,7 @@ export const nhSchema = z
       .strict(),
     stats: z
       .record(z.string().max(30), z.unknown())
-      .refine((o) => JSON.stringify(o).length <= 6000),
+      .refine((o) => JSON.stringify(o).length <= 12000),
     achievements: z
       .record(z.string().max(30), z.number().min(0))
       .refine((o) => Object.keys(o).length <= 150),

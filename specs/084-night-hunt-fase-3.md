@@ -1,6 +1,6 @@
 # 084: Night Hunt, fase 3 (itens novos no estilo Vampire Survivors, bestiário e nova evolução)
 
-Status: rascunho com as decisões de heróis, preços, chefe final e obstáculos já tomadas (seção 9); faltam a lista de itens e a liberação da wiki do VS. Continuação da [083](083-night-hunt.md).
+Status: **implementada em 15/11/2026** (armas, passivos, evoluções, sistemas, heróis, bestiário e guia). Falta calibrar o equilíbrio jogando e conferir as evoluções de Osso, Rastreador de Runas e Bomba de Cereja com a wiki do VS (a rede da sessão ainda não alcançava a wiki). Continuação da [083](083-night-hunt.md).
 
 ## 1. Pedido (15/11/2026)
 
@@ -355,3 +355,15 @@ Preços **nivelados**, de 600 em 600 (600, 1.200, 1.800, 2.400, 3.000, 3.600, 4.
 1. ~~Lista de itens~~: aprovada em 15/11/2026 (5 armas da seção 3.3.1 a 3.3.5, mais Cruz, Osso, Rastreador de Runas, Pentagrama, Bomba de Cereja e os passivos Duração, Quantidade e Maldição; sem Ressurreição).
 2. **Wiki do Vampire Survivors e Medium:** liberados na rede da sessão em 15/11/2026 (ambiente `nocap-app`); falta confirmar que respondem (o proxy pode levar alguns minutos).
 3. **Evoluções das armas atuais** (Adagas, Machado, Nova Ígnea): conferir uma a uma com o guia do VS.
+
+
+## 10. Como ficou implementado (15/11/2026)
+
+- **Evoluções que mudaram em relação às fichas** (para cada arma ter um passivo só dela): Rastreador de Runas + **Duração** (era Imã), Bomba de Cereja + **Quantidade** (era Ligeireza), Pentagrama + **Sabedoria**, Círculo de Brasas + Ligeireza. Os outros seguem as fichas.
+- **Sistemas:** empurrão com peso por inimigo (chefes 0), separação por grade de 48 px a cada dois passos, obstáculos por mapa (tronco e pedra no campo, cacto e arenito no deserto, bloco e árvore de gelo), alcance de atração (70, +40% por nível do Imã) e de coleta (26) com círculo opcional nas Opções, chefe final por mapa (15, 20 e 25 min) que conclui o mapa, modo infinito sem chefe final com recordes por mapa.
+- **Armas novas:** `weapons.ts` (tabelas por nível) e `tickWeapons2` em `world.ts`; arte em `extra-art.ts` (`X/<arma>`, `X/p/<projétil>`); desenho dos cortes, poças, aura, anel, explosões e pentagrama em `view.ts`.
+- **Cartas:** a evolução entra na próxima janela de nível, a carta mostra "Combina com ..." quando o parceiro está na mochila, "Ignora: ..." e "Requer: ...".
+- **Guia de combinações:** tela no início (botão GUIA) e na pausa da partida.
+- **Heróis:** 8, de 0 a 4.200 de 600 em 600; só o Kael começa com a Espada.
+- **Bestiário:** `bestiary.ts` (56 entradas, nomes e textos pt-BR, números lidos de `ENEMIES`), tela com lista e bicho animado, contagem de abates na conta (`stats.bestiary`).
+- **Não feito:** sons próprios das armas novas (reaproveitam os do Slash), bichos novos além dos 15 do Dungeon Crawl e dos chefes finais, uniões (cortadas por decisão do Lucas).

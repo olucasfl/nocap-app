@@ -465,6 +465,8 @@ export interface NhStats {
   mapsDone: Record<string, number>;
   /** Recordes do modo infinito por mapa. */
   mapRecords: Record<string, { t: number; kills: number; level: number }>;
+  /** Bestiário: por inimigo, abates + 1 (ausente = nunca visto; 1 = visto, nenhum abate). */
+  bestiary: Record<string, number>;
 }
 /** Partida guardada com "Sair e salvar" (a conta guarda junto com o resto do save). */
 export interface SavedRun {
@@ -533,6 +535,7 @@ export function emptySave(): NhSave {
       rerolls: 0,
       mapsDone: {},
       mapRecords: {},
+      bestiary: {},
     },
     achievements: {},
     seen: [],
@@ -886,6 +889,9 @@ export function applyRun(
   st.heroRuns[r.hero] = (st.heroRuns[r.hero] ?? 0) + 1;
   st.heroBestTime[r.hero] = Math.max(st.heroBestTime[r.hero] ?? 0, r.score);
   st.mapBestTime[r.map] = Math.max(st.mapBestTime[r.map] ?? 0, r.score);
+  // bestiário: quem apareceu vira "visto" e os abates somam
+  for (const id of r.seenIds) st.bestiary[id] = st.bestiary[id] ?? 1;
+  for (const [id, k] of Object.entries(r.killsById)) st.bestiary[id] = (st.bestiary[id] ?? 1) + k;
   if (r.won && !r.infinite) st.mapsDone[r.map] = st.mapsDone[r.map] ?? (now || 1);
   if (r.infinite) {
     const old = st.mapRecords[r.map] ?? { t: 0, kills: 0, level: 0 };

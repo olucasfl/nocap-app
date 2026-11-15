@@ -15,6 +15,7 @@ interface Nh {
   chest(): void;
   brk(): number;
   give(id: string, n: number): void;
+  bestiary(sel: number): void;
   saveExit(): void;
   buyHero(id: string): void;
   resume(): void;
@@ -237,6 +238,24 @@ test.describe('Night Hunt guardar e continuar', () => {
     const after = await state(page);
     expect(Math.abs((after.t ?? 0) - (before.t ?? 0))).toBeLessThan(2);
     expect(after.level).toBe(before.level);
+    expect(errors).toEqual([]);
+  });
+});
+
+test.describe('Night Hunt bestiário e guia', () => {
+  test('bestiário e guia de combinações abrem e desenham', async ({ page }) => {
+    const errors = await open(page);
+    await page.evaluate(() => {
+      window.__nh.bestiary(12);
+      window.__nh.go('bestiary');
+    });
+    await screenIs(page, 'bestiary');
+    await page.waitForTimeout(700);
+    expect(await colors(page)).toBeGreaterThan(14);
+    await page.evaluate(() => window.__nh.go('guide'));
+    await screenIs(page, 'guide');
+    await page.waitForTimeout(700);
+    expect(await colors(page)).toBeGreaterThan(14);
     expect(errors).toEqual([]);
   });
 });
