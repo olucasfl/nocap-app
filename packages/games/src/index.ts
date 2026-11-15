@@ -19,3 +19,4 @@ export * from './foxshot';
 export * from './bola';
 export * from './foxgp';
 export * from './minigolf';
+export * from './nighthunt';
