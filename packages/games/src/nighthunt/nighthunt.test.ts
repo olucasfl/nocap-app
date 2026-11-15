@@ -293,9 +293,17 @@ describe('heróis e mapas', () => {
     expect(s.gold).toBe(270); // 400 - 150 do preço + 20 da conquista "Novo companheiro"
     expect(s.heroes).toContain('mara');
     expect(mapUnlocked(s, 'deserto')).toBe(false);
-    s.stats.bestTime = 301;
+    s.stats.bestTime = 8 * 60;
+    s.stats.bestLevel = 10;
+    expect(mapUnlocked(s, 'deserto')).toBe(false); // faltam os 3 chefes
+    s.stats.bossKills = 3;
     expect(mapUnlocked(s, 'deserto')).toBe(true);
-    expect(MAP_INFO.gelo!.unlockTime).toBe(600);
+    expect(mapUnlocked(s, 'gelo')).toBe(false);
+    s.stats.bestTime = 15 * 60;
+    s.stats.bestLevel = 25;
+    s.stats.evolutions = ['evoHalo', 'evoAxe'];
+    expect(mapUnlocked(s, 'gelo')).toBe(true);
+    expect(MAP_INFO.gelo!.reqs).toHaveLength(3);
   });
 });
 

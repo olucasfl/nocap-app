@@ -711,40 +711,68 @@ export const HERO_INFO: Record<string, HeroInfo> = {
     desc: 'Começa com Machado Giratório. Causa 18% mais dano e ganha 15% mais ouro.',
   },
 };
+/** Uma exigência para liberar um mapa (todas precisam estar cumpridas). */
+export interface MapReq {
+  label: string;
+  need: number;
+  have(s: NhSave): number;
+}
 export interface MapInfo {
   id: string;
   name: string;
   desc: string;
-  /** Tempo máximo sobrevivido (s) para liberar. */
-  unlockTime: number;
-  unlockText: string;
+  reqs: MapReq[];
 }
+const minutes = (m: number): MapReq => ({
+  label: `Sobreviva ${m} minutos`,
+  need: m * 60,
+  have: (s) => s.stats.bestTime,
+});
+const reachLevel = (n: number): MapReq => ({
+  label: `Chegue ao nível ${n}`,
+  need: n,
+  have: (s) => s.stats.bestLevel,
+});
 export const MAP_INFO: Record<string, MapInfo> = {
   campo: {
     id: 'campo',
     name: 'Campo Verde',
     desc: 'O campo do Slash. Sem regras extras.',
-    unlockTime: 0,
-    unlockText: '',
+    reqs: [],
   },
   deserto: {
     id: 'deserto',
     name: 'Deserto Seco',
     desc: 'Inimigos 10% mais rápidos, mas 30% mais ouro.',
-    unlockTime: 300,
-    unlockText: 'Sobreviva 5 minutos',
+    reqs: [
+      reachLevel(10),
+      minutes(8),
+      { label: 'Derrote 3 chefes', need: 3, have: (s) => s.stats.bossKills },
+    ],
   },
   gelo: {
     id: 'gelo',
     name: 'Planície Gelada',
     desc: 'Inimigos com 25% mais vida, mas 20% mais XP.',
-    unlockTime: 600,
-    unlockText: 'Sobreviva 10 minutos',
+    reqs: [
+      reachLevel(25),
+      minutes(15),
+      { label: 'Evolua 2 armas', need: 2, have: (s) => s.stats.evolutions.length },
+    ],
   },
 };
+/** Progresso de cada exigência de um mapa, para a tela de mapas. */
+export const mapProgress = (
+  s: NhSave,
+  id: string,
+): Array<{ label: string; have: number; need: number; done: boolean }> =>
+  (MAP_INFO[id]?.reqs ?? []).map((r) => {
+    const have = Math.min(r.need, r.have(s));
+    return { label: r.label, have, need: r.need, done: have >= r.need };
+  });
 export const heroUnlocked = (s: NhSave, id: string): boolean => s.heroes.includes(id);
 export const mapUnlocked = (s: NhSave, id: string): boolean =>
-  s.stats.bestTime >= (MAP_INFO[id]?.unlockTime ?? 0);
+  mapProgress(s, id).every((r) => r.done);
 /** Compra um herói com ouro. */
 export function buyHero(s: NhSave, id: string): boolean {
   const h = HEROES[id];

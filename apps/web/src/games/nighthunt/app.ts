@@ -14,6 +14,7 @@ import {
   WEAPON_IDS,
   buyHero,
   heroUnlocked,
+  mapProgress,
   mapUnlocked,
   type ChoiceId,
   type EvoId,
@@ -282,7 +283,11 @@ export class NhApp {
       pick: (hero: string, map: string) => {
         this.save.pick = { hero, map };
         if (!this.save.heroes.includes(hero)) this.save.heroes.push(hero);
-        this.save.stats.bestTime = Math.max(this.save.stats.bestTime, 700);
+        const st = this.save.stats;
+        st.bestTime = Math.max(st.bestTime, 1000);
+        st.bestLevel = Math.max(st.bestLevel, 30);
+        st.bossKills = Math.max(st.bossKills, 5);
+        if (st.evolutions.length < 2) st.evolutions = ['evoHalo', 'evoAxe'];
       },
       brk: () => {
         const w = this.world;
@@ -1240,7 +1245,7 @@ export class NhApp {
         a,
         open ? info.desc : 'Mapa bloqueado.',
         f.w - pw - 44,
-        Math.max(20, rh - 8 - 46 - 76),
+        open ? Math.max(20, rh - 8 - 46 - 76) : 18,
         15,
       );
       fit.lines.forEach((l, j) =>
@@ -1252,12 +1257,22 @@ export class NhApp {
           size: 15,
           color: '#9ad0ff',
         });
-      if (!open)
-        drawText(g, a, info.unlockText, tx, y + rh - 80, {
-          size: 15,
-          color: '#ff9a6a',
-          maxWidth: f.w - pw - 44,
+      if (!open) {
+        // exigências com o progresso de cada uma (todas precisam estar cumpridas)
+        const reqs = mapProgress(this.save, id);
+        reqs.forEach((r, j) => {
+          const time = r.label.startsWith('Sobreviva');
+          const v = (n: number) => (time ? fmtTime(n) : String(n));
+          drawText(
+            g,
+            a,
+            `${r.label} (${v(r.have)}/${v(r.need)})`,
+            tx,
+            y + rh - 58 - (reqs.length - j) * 16,
+            { size: 13, color: r.done ? '#7fe08a' : '#ff9a6a', maxWidth: f.w - pw - 44 },
+          );
         });
+      }
       void m;
       this.btn(
         open ? 'JOGAR' : 'BLOQUEADO',
