@@ -898,7 +898,7 @@ function grandCircuit() {
   {
     const cap = (z, x0, x1) => L.box(x0, TOP - 0.125, z, x1, TOP + WALL_H, z + WALL_T, 'wall-top', 'wall-side');
     cap(Z0, CX1 - W1 / 2 - WALL_T, CX1 + W1 / 2 + WALL_T); // muro atrás da largada
-    cap(OZ - WALL_T, CX1 - W1 / 2 - WALL_T, OX - 1.6); // muro ao norte, com a boca da pista do loop aberta
+    cap(OZ - WALL_T, CX1 - W1 / 2 - WALL_T, OX - 1.05); // muro ao norte, com a boca da pista do loop aberta
     for (const [tz, src] of [[9, -12.675], [5, -6.675]]) {
       const dx = CX1 - 7.75, dz = tz - src, dy = TOP - OGF;
       const bb = copySolid(og6, (v, nm) => v[0] > 5 && v[0] < 10.6 && Math.min(v[2], v[5], v[8]) >= src - 0.15 && Math.max(v[2], v[5], v[8]) <= src + 0.75 && (nm === 'default' || Math.max(v[1], v[4], v[7]) > 0.1), dx, dy, dz);
@@ -1194,7 +1194,7 @@ function level23() {
   y = 3; // andar do meio: área de manobra e loop
   const OX = 1.5, OZ = -18.3, CX1 = OX - 1.5;
   K.lane(CX1, -8.6, 9.5, { y, W: 6 });
-  K.block(CX1 - 3.5, OX - 1.6, OZ - 0.5, OZ, y, 0.375); // fecha o norte da área de manobra, deixando a boca da pista do loop aberta
+  K.block(CX1 - 3.5, OX - 1.05, OZ - 0.5, OZ, y, 0.375); // fecha o norte da área de manobra, deixando a boca da pista do loop aberta
   L.loop(OX, y, OZ, 0, false);
   const XE = OX + 3.86;
   K.lane(XE, OZ - 3, 7, { y, gaps: [[1, 6]] });
@@ -1263,7 +1263,7 @@ function level25() {
   // ilha 3: área de manobra e loop
   const OX = 1.5, OZ = -18.8, CX1 = 0;
   K.lane(CX1, -10.8, 8, { y, W: 6 });
-  K.block(CX1 - 3.5, OX - 1.6, OZ - 0.5, OZ, y, 0.375);
+  K.block(CX1 - 3.5, OX - 1.05, OZ - 0.5, OZ, y, 0.375);
   L.loop(OX, y, OZ, 0, false);
   const XE = OX + 3.86;
   // saída do loop: rampa para o andar de cima (3 m em 10 m) e uma ilha com o moinho

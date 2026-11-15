@@ -316,11 +316,11 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
       {
         id: 'holes',
         label: 'BURACOS',
-        values: ['3', '6', '9', '12', '18', '30', '40'],
+        values: ['3', '6', '9', '12', '18', '25'],
         current: String(g.holes ?? 9),
         format: (v) => `${v} buracos`,
         patch: (v) => ({ holes: Number(v) }),
-        note: 'As fases são sorteadas proporcionalmente (fáceis, médias e difíceis) e jogadas da mais fácil para a mais difícil. Com 40, são todas, na ordem do offline.',
+        note: 'As fases são sorteadas proporcionalmente (fáceis, médias e difíceis) e jogadas da mais fácil para a mais difícil. Com 25, são todas, na ordem do offline.',
       },
       {
         id: 'seconds',
