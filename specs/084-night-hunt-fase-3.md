@@ -262,11 +262,13 @@ Preços **nivelados**, de 600 em 600 (600, 1.200, 1.800, 2.400, 3.000, 3.600, 4.
 - **Chefe final:** tempos aprovados (Campo 15 min, Deserto 20, Gelo 25); **não aparece no modo infinito** (6.4).
 - **Obstáculos:** tiros, armas, aura e poças **passam por cima** deles; só o jogador e os inimigos colidem (6.3).
 
+- **Bestiário:** terá também **bichos novos** (além dos do Slash e dos 15 do Dungeon Crawl), com arte e regra próprias para os mapas e itens novos; a arte nova vem de sprites CC0 (o repositório oficial do Dungeon Crawl Stone Soup) ou de arte nossa. Abre por botão novo no início.
+- **Baú:** continua podendo entregar a evolução (além de a evolução entrar na próxima janela de nível).
+- **Guia de combinações:** existe no menu inicial **e** dentro da partida (no menu de pausa).
+
 ### Ainda abertas
 
 1. **A lista de itens** além das 5 armas desta spec (a regra de evolução já está na seção 5).
-2. **Wiki do Vampire Survivors:** a rede desta sessão bloqueia `vampire-survivors.fandom.com` (e `medium.com`); libere os endereços ou cole as páginas para a pesquisa por item.
-3. **Bestiário:** só os inimigos do Slash e os 15 do Dungeon Crawl, ou também bichos novos? Abre por botão novo no início (ao lado de Itens, minha sugestão) ou como aba de Itens?
-4. **Evolução na janela de nível:** a evolução entra no lugar da melhoria da arma na próxima janela, e o baú continua podendo entregar também? As uniões de 3 itens entram já na primeira leva?
-5. **Guia de combinações:** aba dentro de Itens (sugestão) ou tela própria?
-6. **Evoluções das armas atuais** (Adagas, Machado, Nova Ígnea): conferir uma a uma com o guia do VS.
+2. **Wiki do Vampire Survivors e Medium:** liberados na rede da sessão em 15/11/2026 (ambiente `nocap-app`); falta confirmar que respondem (o proxy pode levar alguns minutos).
+3. **Uniões de 3 itens:** três itens no nível máximo (duas armas e um passivo, ou três armas) que se fundem numa arma nova, como a coluna da direita do guia do VS. Proposta: **não entram na primeira leva** (só as de 2 itens e as evoluções arma + passivo); entram depois que houver armas suficientes para formar trios.
+4. **Evoluções das armas atuais** (Adagas, Machado, Nova Ígnea): conferir uma a uma com o guia do VS.
