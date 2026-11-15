@@ -216,6 +216,27 @@ function gridLevel(id, rows, movers = []) {
   const low = new Map();
   let start = null;
   for (let r = 0; r < R; r++) for (let c = 0; c < Wd; c++) if (ch(c, r) === '@') start = [c, r];
+  {
+    // toda fase precisa ter caminho do início ao buraco por células de chão (os blocos de loop não entram na conta)
+    let hole = null;
+    for (let r = 0; r < R; r++) for (let c = 0; c < Wd; c++) if (ch(c, r) === 'H') hole = [c, r];
+    if (!hole) throw new Error(`fase ${id}: sem buraco`);
+    const hasLoop = rows.some((row) => [...row].some((k) => LOOP_CH[k] || k === '_')); // loops e vãos de salto são checados pelo robô
+    if (!hasLoop) {
+      const seen = new Set([start.join()]);
+      const qq = [start];
+      while (qq.length) {
+        const [c, r] = qq.shift();
+        for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const k = [c + dc, r + dr].join();
+          if (seen.has(k) || !solid(c + dc, r + dr)) continue;
+          seen.add(k);
+          qq.push([c + dc, r + dr]);
+        }
+      }
+      if (!seen.has(hole.join())) throw new Error(`fase ${id}: o buraco não é alcançável pelo chão`);
+    }
+  }
   low.set(start.join(), 0);
   const seeds = [start];
   for (let r = 0; r < R; r++) for (let c = 0; c < Wd; c++) { const a = absY(ch(c, r)); if (a !== null && ch(c, r) !== ' ') { low.set([c, r].join(), a); seeds.push([c, r]); } }
@@ -526,6 +547,55 @@ G(142, ['##H######', '.o....###', '###MMM###', '###MM....', '#........', '#.o...
 G(143, ['@..o.####', '....N####', '###NN.o..', '###NN....', '########H'], [{ kind: 'pendulum', col: 7, row: 3, along: 'x', t0: 0.3 }]);
 // 144 Dois loops: o primeiro sobe para o norte, o corredor com giratório leva ao segundo, que vira para o leste e termina no buraco
 G(144, ['#########', '#########', '####..###', '####..N##', '##...NN..', '#LLL#NN.H', '..LL#####', '@.#######'], [{ kind: 'spinner', col: 3, row: 4, length: 3.4 }]);
+
+// ===== Reformulação (ids 201 a 224): cada fase tem um formato próprio =====
+const GX = (col, row, span, half, t0 = 0) => ({ kind: 'gate', col, row, span, half, t0 });
+// 201 Anel: dois caminhos em volta de um bloco, um com giratório e o outro com pino
+G(201, ['...H...', '.#####.', '.#####o', '...@...'], [{ kind: 'spinner', col: 0, row: 2, length: 3.4 }]);
+// 202 Escada: sobe em degraus na diagonal, com pino, portão e um trecho em S
+G(202, ['@..######', '##v######', '##.o.####', '####v####', '####...##', '######v##', '######..H'], [GX(5, 4, [0, 2.2], [0.2, 0.7], 0.4)]);
+// 203 Cruz: o caminho certo é o do norte; leste e sul são becos com gelo e areia
+G(203, ['###H###', '###.###', '###.###', '@..o.ii', '###.###', '###s###', '###.###'], [{ kind: 'spinner', col: 3, row: 1, length: 3.4 }]);
+// 204 Caracol: espiral quadrada para dentro, o buraco fica no centro
+G(204, ['@......', '######.', '.....#.', '.###.#s', '.#H..#.', '.#####.', '.......'], [{ kind: 'spinner', col: 3, row: 0, length: 3.4 }, { kind: 'pendulum', col: 3, row: 6, along: 'x', t0: 0.6 }]);
+// 205 Descida: uma ladeira longa para baixo, a curva e outra ladeira até o buraco
+G(205, ['@..<<<...', '########.', '#H..>>>o.'], [{ kind: 'spinner', col: 7, row: 0, length: 3.4 }]);
+// 206 Pinball: sala cheia de pinos, o buraco fica num nicho atrás de um portão
+G(206, ['###H###', '.......', '.o.o.o.', '.......', '.o.o.o.', '.......', '###@###'], [GX(3, 1, [2.2, 0], [0.7, 0.2], 0.2)]);
+// 207 Lagos: a tábua sobre o lago é o atalho, a volta por fora é a saída segura
+G(207, ['@........', '.~~~~~~~.', '.bbbbbbbH', '.~~~~~~~.', '....o....'], [{ kind: 'pendulum', col: 4, row: 2, along: 'x', t0: 0.3 }]);
+// 208 Colina: o topo tem uma subida e uma descida; a volta pela esquerda é de gelo com giratório
+G(208, ['@.>>....', 'i######^', 'i######^', 'i######.', '......H.'], [{ kind: 'spinner', col: 0, row: 2, length: 3.4 }, GX(5, 0, [0, 2.2], [0.2, 0.7], 0.5)]);
+// 209 Salas: quatro salas ligadas por portas, subindo na diagonal
+G(209, ['####.......', '####...#.o.', '#####.##..H', '####...####', '...#...####', '.@.....####', '...########'], [GX(3, 4, [0, 2.2], [0.2, 0.7], 0.3), { kind: 'spinner', col: 5, row: 4, length: 3.4 }]);
+// 210 Anel de gelo: a pista toda é de gelo, com giratório num lado
+G(210, ['@iiiiii', 'i#####i', 'i#####i', 'i#####i', 'iiiHiii'], [{ kind: 'spinner', col: 6, row: 2, length: 3.4 }]);
+// 211 Torre: o caminho sobe em volta de uma torre, 4,8 m, e o buraco fica no topo
+G(211, ['@.>>...', '######v', 'H#####v', '.#####.', '^#####.', '^#####.', '....<<.'], [{ kind: 'spinner', col: 4, row: 0, length: 3.4 }, { kind: 'pendulum', col: 6, row: 4, t0: 0.5 }]);
+// 212 Salto: duas rampas lançam a bola por cima da água
+G(212, ['@..>~....', '########.', '#H..~<...'], [{ kind: 'spinner', col: 6, row: 0, length: 3.4 }, GX(3, 2, [0, 2.2], [0.2, 0.7], 0.4)]);
+// 213 Cruz dupla: duas encruzilhadas em sequência, só a do norte da segunda leva ao buraco
+G(213, ['###.###H###', '###.###.###', '###.###.###', '@..o...o...', '###.###.###', '###s###i###', '###.###.###'], [{ kind: 'spinner', col: 5, row: 3, length: 3.4 }, GX(7, 1, [2.2, 0], [0.7, 0.2], 0.6)]);
+// 214 Pinball em dois andares: sobe a rampa e termina no andar de cima
+G(214, ['###H###', '.o...o.', '.......', '###^###', '###^###', '.......', '.o.o.o.', '.......', '###@###'], [{ kind: 'spinner', col: 3, row: 2, length: 3.4 }]);
+// 215 Descida em S: duas ladeiras e o final em gelo
+G(215, ['@..<<<.....', '##########.', '......>>>..', '.##########', '.iiiiiiiH..'], [GX(9, 2, [0, 2.2], [0.2, 0.7], 0.2), { kind: 'spinner', col: 2, row: 0, length: 3.4 }]);
+// 216 Loop e gelo: sobe a espiral e sai deslizando no gelo até o buraco
+G(216, ['#..iiiiiH#', '#LLL######', '..LL######', '@...######'], [{ kind: 'spinner', col: 5, row: 0, length: 3.4 }]);
+// 218 Salas de gelo: a sala do meio é toda de gelo
+G(218, ['########.H.', '########...', '####iii...i', '####iii####', '...iiii####', '.@.iiii####', '...########'].map((l) => l.slice(0, 11).padEnd(11, '#')), [GX(3, 4, [0, 2.2], [0.2, 0.7], 0.3)]);
+// 219 Colina dupla: uma colina em cima, outra embaixo, e o buraco no fim da volta
+G(219, ['@.>>o<<.', '#######.', 'H######.', '.######.', '.>>..<<.'], [{ kind: 'spinner', col: 0, row: 3, length: 3.4 }, GX(7, 2, [2.2, 0], [0.7, 0.2], 0.5), { kind: 'pendulum', col: 3, row: 4, along: 'x', t0: 0.2 }]);
+// 220 Escada que desce, com uma ponte e gelo nos degraus
+G(220, ['######..@', '######^##', '####i.i##', '####^####', '##.b.####', '##^######', 'H..######'], [{ kind: 'spinner', col: 5, row: 2, length: 3.4 }]);
+// 221 Caracol grande: espiral que desce, com areia e giratórios
+G(221, ['@........', '########.', '.<.....#.', '.#####.#.', '.#H.>..#s', '.#######.', '.........'], [{ kind: 'spinner', col: 4, row: 0, length: 3.4 }, { kind: 'pendulum', col: 4, row: 6, along: 'x', t0: 0.8 }]);
+// 222 Ilha no lago: duas tábuas e uma ilha com giratório no meio
+G(222, ['@............', '.~~~~~~~~~~~.', '.bbbb...bbbbH', '.~~~~~~~~~~~.', '......o......'], [{ kind: 'pendulum', col: 2, row: 2, along: 'x', t0: 0.2 }, { kind: 'spinner', col: 6, row: 2, length: 3.4 }, { kind: 'pendulum', col: 10, row: 2, along: 'x', t0: 1.1 }]);
+// 223 Cruz grande: gelo a oeste, areia a leste, e o norte leva ao buraco
+G(223, ['####H####', '####.####', '####.####', '####.####', '@iiio.sss', '####.####', '####i####', '####s####', '####.####'], [{ kind: 'spinner', col: 4, row: 2, length: 3.4 }, GX(4, 1, [2.2, 0], [0.7, 0.2], 0.4)]);
+// 224 Pinball grande: nove pinos, dois giratórios e um portão antes do nicho do buraco
+G(224, ['####H####', '.s.....s.', '.o.o.o.o.', '.........', '.o.o.o.o.', '.........', '.o.o.o.o.', '.........', '####@####'], [{ kind: 'spinner', col: 2, row: 3, length: 3.4 }, { kind: 'spinner', col: 6, row: 5, length: 3.4, t0: 0.8 }, GX(4, 1, [2.2, 0], [0.7, 0.2], 0.3)]);
 
 const holeModel = loadHole();
 fs.mkdirSync(out, { recursive: true });
