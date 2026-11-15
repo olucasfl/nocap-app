@@ -46,7 +46,84 @@ Sem ficha completa e aprovada, o item não entra.
 
 ### 3.3 Fichas dos itens
 
-(vazio até o Lucas mandar a lista)
+Decisão do Lucas (15/11/2026): as **primeiras armas novas** vêm de mecânicas vistas nos repositórios de estudo (só a ideia, nenhuma arte, som ou código copiado) e cada uma tem **arte feita por nós no estilo do Slash**. Evoluções e uniões vêm da tabela "Evolutions & Unions" do VS que o Lucas mandou. Tamanho de ícone 16x11 na paleta `PAL`, moldura octogonal igual aos atuais; evoluídos com a moldura dourada `E/*`.
+
+Convenções das fichas: "Ignora" lista os passivos globais que **não** afetam a arma (linha laranja da carta); números base são ponto de partida para calibrar com o robô. Ligeireza (+10% de velocidade de projétil por nível) e Alcance (+10% de tamanho por nível) valem para tudo que tem velocidade ou tamanho, a menos que a ficha diga que ignora.
+
+#### 3.3.1 Chicote (arma, corpo a corpo, golpes em sequência)
+
+| Campo | Conteúdo |
+| --- | --- |
+| Origem no VS | Whip (Chicote); evolui em Bloody Tear (Laceração Sangrenta) com Hollow Heart (Coração Vazio) |
+| Comportamento | Estala para a frente e logo depois para trás, em linha reta e larga (retângulo), acertando tudo no caminho. Cada nível acrescenta **mais um corte em sequência**, com 0,12 s entre eles, alternando os lados (frente, trás, frente...). Mira para onde o jogador anda por último |
+| Níveis | 1: dois cortes (frente e trás). 2: dano +30%. 3: +1 corte. 4: dano +30%. 5: +1 corte. 6: +1 corte e comprimento +20% |
+| Evolução | **Laceração Sangrenta** = Chicote no 6 + **Coração** (qualquer nível), em escolha de nível ou baú. Vermelho, comprimento x2, 40% mais rápido, dano crítico (x2 em 15% dos golpes) e **absorve 1% do dano causado como vida** |
+| Ignora | Ligeireza (não é projétil) |
+| Arte | Quadro do corte: arco branco-azulado largo (como o rastro da espada do Slash) e versão vermelha de brasa para a evolução; ícone: chicote enrolado em laranja com contorno escuro; evoluído com gotas vermelhas |
+| Animação | Corte desenhado em 5 quadros por golpe (abre, estala, some em 0,15 s), leve tremor de tela no acerto; o personagem faz o gesto de ataque do Slash |
+| Som | `Weapon/Sword` do Slash com tom mais agudo; critico da evolução com o som de acerto forte |
+| Equilíbrio | Dano base 3, recarga 1,4 s; no nível 6 são 4 cortes (8 acertos com dois lados) por recarga |
+
+#### 3.3.2 Varinha Arcana (arma, projétil com alvo automático)
+
+| Campo | Conteúdo |
+| --- | --- |
+| Origem no VS | Magic Wand (Varinha Mágica); evolui em Holy Wand (Santa Varinha) com Empty Tome (Diário de Caça, que reduz recarga) |
+| Comportamento | Escolhe sozinha inimigos aleatórios dentro de um raio (260) e dispara um projétil rápido em cada um; **a quantidade de projéteis por salva sobe por nível** (cada projétil mira um alvo diferente quando há vários). Sem inimigo no alcance, não dispara |
+| Níveis | 1: 1 projétil. 2: +1. 3: recarga -15%. 4: +1. 5: dano +40%. 6: +1 projétil e atravessa 1 inimigo |
+| Evolução | **Santa Varinha** = Varinha no 6 + **Diário de Caça** (qualquer nível). Dispara sem pausa entre as salvas (recarga mínima), projéteis dourados que atravessam 2 inimigos e deixam rastro |
+| Ignora | Nada (é projétil: Ligeireza, Alcance e Poder valem) |
+| Arte | Projétil: bola azul-clara com cauda de 3 quadros girando; ícone: varinha com gema azul brilhando; evoluída: dourada com estrela; efeito de acerto reaproveita `Effects/PickBonus` azulado |
+| Animação | A varinha aparece na mão do personagem por 0,2 s a cada salva; projétil pulsa em 4 quadros; rastro some em 0,2 s |
+| Som | `Weapon/Shot` do Slash agudo |
+| Equilíbrio | Dano base 2, recarga 1,2 s, alcance 260; nível 6 = 4 projéteis |
+
+#### 3.3.3 Aura de Alho (arma, aura contínua com empurrão)
+
+| Campo | Conteúdo |
+| --- | --- |
+| Origem no VS | Garlic (Alho); evolui em Soul Eater (Devorador de Almas) com Pummarola (Regeneração) |
+| Comportamento | Círculo em volta do jogador que causa dano a todos dentro dele a cada 0,6 s. **Empurra** os inimigos que acerta (sistema de empurrão, seção 7.1). Cresce com os níveis |
+| Níveis | 1: raio 70, dano 2. 2: raio +10%. 3: raio +15%. 4: dano +50%. 5: raio +20%. 6: empurrão forte e intervalo 0,5 s |
+| Evolução | **Devorador de Almas** = Aura no 6 + **Regeneração** (qualquer nível). Aura roxa maior (raio x1,6), dano x2 e **cura 1 de vida a cada 5 inimigos atingidos** |
+| Ignora | Ligeireza (não é projétil), Diário de Caça (não recarrega: é contínua) |
+| Arte | Anel pulsante translúcido verde-pálido com bulbos de alho em volta, desenhado em canvas (círculo com borda dentada e partículas subindo); ícone: bulbo de alho; evoluída: anel roxo com rostos de fumaça |
+| Animação | Anel "respira" (raio ±4%) e emite um pulso mais forte a cada acerto em grupo; partículas verdes sobem; no empurrão, os inimigos têm um quique curto |
+| Som | `Effects/Hit` do Slash baixo e contínuo, com um som de pulso a cada ciclo |
+| Equilíbrio | Dano baixo por golpe mas acerta todos ao mesmo tempo; boa para quem foge pouco |
+
+#### 3.3.4 Poças de Magma (arma, zonas no chão)
+
+| Campo | Conteúdo |
+| --- | --- |
+| Origem no VS | Santa Water (Água Benta) com ideia de poças do Anel de Magma do repositório; evolui em La Borra (Imã) |
+| Comportamento | Joga um frasco de magma em pontos aleatórios perto do jogador (raio 250); cada frasco deixa uma **poça que queima por 3 s**, causando dano a cada 0,4 s a quem estiver em cima. Mais frascos e poças maiores por nível |
+| Níveis | 1: 1 poça. 2: área +30%. 3: 2 poças. 4: dano +40%. 5: duração +25%. 6: 3 poças |
+| Evolução | **Lava Viva** (La Borra) = Poças no 6 + **Imã** (qualquer nível). As poças deslizam lentamente por conta própria, crescem com o tempo e duram 6 s |
+| Ignora | Ligeireza (a poça não voa) |
+| Arte | Frasco em arco (3 quadros girando) e poça ovalada de magma laranja com bolhas, borda escura, desenhada em canvas; ícone: frasco de vidro com líquido vermelho-laranja; evoluída: poça com veios dourados e fagulhas |
+| Animação | Frasco cai com sombra no chão; a poça "abre" em 0,25 s, as bolhas sobem em laço de 6 quadros e a poça encolhe nos últimos 0,5 s |
+| Som | `Weapon/ThrowAxe` do Slash grave ao lançar; chiado curto ao abrir |
+| Equilíbrio | Dano por tique 1,5; fica forte contra hordas que cercam o jogador |
+
+#### 3.3.5 Círculo de Brasas (arma, bolas de fogo em órbita que aparecem e somem)
+
+| Campo | Conteúdo |
+| --- | --- |
+| Origem no VS | Fire Wand / King Bible (ideia do repositório: anel de bolas de fogo que nasce e gira); evolui em Anel Infernal (união com Ligeireza) |
+| Comportamento | A cada 3 s nasce um **anel de bolas de fogo** em volta do jogador, gira por 2,5 s e some. A quantidade de bolas sobe por nível, e o raio cresce um pouco enquanto gira. Diferente dos Orbes Guardiões (que ficam o tempo todo) |
+| Níveis | 1: 3 bolas. 2: +1. 3: dano +30%. 4: +1. 5: duração +25%. 6: +2 |
+| Evolução | **Anel Infernal** = Círculo no 6 + **Ligeireza** (qualquer nível). Dois anéis (um por dentro girando ao contrário), bolas azuladas que deixam rastro de fogo |
+| Ignora | Diário de Caça não ignora (muda o intervalo); nada ignorado |
+| Arte | Bola de fogo de 4 quadros (laranja, amarelo, branco) com cauda; ícone: três bolas em círculo; evoluída: anéis azul-claro |
+| Animação | Bolas giram com leve oscilação; surgem com um "pop" de 2 quadros e somem encolhendo |
+| Som | `Weapon/Shot` do Slash grave ao nascer |
+| Equilíbrio | Dano 2 por bola, acerta cada inimigo a cada 0,4 s; boa defesa próxima, fraca contra quem atira de longe |
+
+#### 3.3.6 O que muda nas armas atuais
+
+- Todas ganham a linha **"Ignora: ..."** e, nas evoluídas, "Evolução do X" e "Requer: Y" na carta (seção 5.2).
+- Evolução das atuais conferida contra o guia do VS (a revisar com o Lucas, uma a uma): Adagas + Ligeireza (no VS, Faca + Bracer), Machado + Armadura (hoje; no VS é Candelabro, que é o nosso Alcance), Nova Ígnea + Coração.
 
 ## 4. Bestiário
 
@@ -105,22 +182,78 @@ Referência enviada pelo Lucas: o guia "Evolutions & Unions" do VS e as fichas d
 - Robô e simulador aprendem a perseguir receitas (priorizar o passivo parceiro da arma mais forte).
 - Testes: receita certa libera a opção na janela de nível; sem o passivo não libera; união exige todas as armas no máximo; a faixa "combina com" só aparece com o parceiro na mochila; a evolução substitui a arma antiga no slot.
 
-## 6. Etapas
+## 6. Sistemas novos da fase
+
+### 6.1 Empurrão (knockback) nos inimigos
+
+- Cada inimigo ganha um vetor de empurrão (`pushX/pushY`) e um tempo de empurrão que reduz a velocidade própria enquanto dura (0,15 a 0,3 s). Armas passam a ter `knockback` (força em px) e a força é dividida por um fator de peso por inimigo (chefes e Ent Ancião/Golem quase não saem do lugar, morcegos voam longe).
+- Quem empurra: Aura de Alho (nível 6 e evoluída), Espada no acerto final do giro, evolução do Machado, Nova Ígnea evoluída. Inimigos "imunes" (chefe final) têm peso infinito.
+- Animação: o inimigo desliza para trás com uma leve esticada e um quadro de poeira; sem empurrar para dentro de obstáculos (a colisão resolve primeiro).
+
+### 6.2 Separação entre inimigos
+
+- Quem está muito perto de outro soma uma força de afastamento (proporcional à sobreposição), como no repositório de estudo. Resultado: a horda cerca o jogador em vez de virar um bolo num ponto só, e dá para ver os bichos.
+- Custo: grade espacial (células de 64 px) para só olhar os vizinhos; limite de vizinhos olhados por inimigo. Meta: 460 inimigos a 60 quadros no celular médio (medir antes e depois).
+- Chefes empurram os pequenos; pequenos nunca empurram chefes.
+
+### 6.3 Obstáculos no mapa, com colisão e tema de cada mapa
+
+- Gerados como os objetos quebráveis (células de 420 px com hash da seed), mas **maiores, sólidos e indestrutíveis**; nunca na partida nem em cima de quebráveis; sem formar paredes que prendam o jogador (no máximo 2 obstáculos adjacentes).
+- Colisão: o jogador e os inimigos deslizam em volta (círculo ou caixa pequena na base do sprite, não no sprite todo). **Projéteis, aura e poças passam por cima** (não bloqueiam armas). Perseguição simples: o inimigo contorna pelo lado mais curto.
+- Temas (arte nossa, 2 a 3 variantes por mapa, ordenada por altura com os personagens):
+  - **Campo Verde:** tronco caído, toco largo, pedra coberta de musgo, arbusto alto.
+  - **Deserto Seco:** pedra de arenito, cacto grande, costelas de um esqueleto gigante, coluna quebrada.
+  - **Planície Gelada:** bloco de gelo, árvore congelada, estátua coberta de neve.
+- Animação: nenhuma por padrão, só balançar de leve (arbusto, cacto) e um brilho nos blocos de gelo; sombra no chão. Aviso sonoro nenhum.
+
+### 6.4 Condição de vitória por mapa e modo infinito
+
+- **Primeira vez no mapa, ou enquanto o chefe final ainda não caiu:** a partida corre normal e, num tempo fixo do mapa (proposta: Campo 15 min, Deserto 20 min, Gelo 25 min), **o chefe final do mapa aparece** (com vida pelo `bossHp`, fase de escolta e arena aberta). A partida só vira vitória quando o chefe final morre; se o jogador morrer antes, nada é concluído.
+- **Ao derrotar o chefe final:** tela de vitória (nova, no estilo da de fim de jogo), prêmio em ouro maior, selo "Concluído" no mapa e nova conquista; o jogo oferece **continuar jogando** (modo infinito) ou voltar ao início.
+- **Modo infinito do mapa:** só liberado **depois** de concluir o mapa. Igual ao jogo de hoje (hordas sem fim, chefe a cada 2,5 min). Cada mapa guarda os **recordes** do modo infinito: maior tempo, mais abates e maior nível, mostrados na tela de mapas (e na conta).
+- Cada mapa tem um **chefe final próprio**, com regra própria: Campo Verde = Golem de Pedra (o `FinalBoss` do Slash, empurrando com pisadas), Deserto Seco = Dragão Dourado maior (anel de orbes mais denso, mergulho), Planície Gelada = Golem de Cristal gigante (estilhaços em anel, fase de gelo). Arte: sprites existentes ampliados com a regra, nunca arte nova copiada.
+- Save: `stats.mapsDone` (mapas concluídos) e `stats.mapRecords` (por mapa: tempo, abates, nível do infinito). A API valida o formato (campo próprio, sem migration).
+
+### 6.5 Duas distâncias de coleta
+
+- **Alcance de atração:** o item só começa a voar até o jogador quando entra neste raio (base 70). **Alcance de coleta:** o item só conta como pego quando entra neste raio menor (base 24, hoje é o contato do corpo).
+- O passivo Pedra Atrativa/Imã aumenta o alcance de atração (+40% por nível, 5 níveis); o item Ímã de chão continua puxando tudo do mapa de uma vez.
+- Opção nas configurações: "Mostrar o alcance de coleta" (círculo tracejado fino), desligado por padrão.
+
+### 6.6 Heróis refeitos (cada um com uma arma boa que sempre tem evolução)
+
+Regra de desenho: o herói começa com **uma arma que tem evolução e tem um papel diferente**, e uma característica pequena e clara. Todos começam também com a Espada? **Não:** só o Kael. Cada herói começa com a arma dele no lugar da Espada e a Espada passa a ser uma melhoria que pode aparecer depois (decisão a confirmar na seção 9).
+
+| Herói | Preço | Arma inicial (evolução) | Característica | Por que escolher |
+| --- | --- | --- | --- | --- |
+| Kael, o Guerreiro | 0 | Espada (Lâmina Real, com Poder) | +20% de XP | O simples e equilibrado para aprender |
+| Vesper, a Açoitadora | 600 | Chicote (Laceração Sangrenta, com Coração) | +20% de vida máxima, dano crítico pequeno desde o início | Corpo a corpo largo, ótimo contra hordas dos dois lados |
+| Mara, a Caçadora | 1.500 | Varinha Arcana (Santa Varinha, com Diário de Caça) | +15% de velocidade de projétil, -10% de vida | Alcance e alvo automático para quem quer só desviar |
+| Brann, o Guardião | 2.500 | Aura de Alho (Devorador de Almas, com Regeneração) | +25% de vida, -8% de velocidade | Tanque que aguenta no meio da horda |
+| Dorian, o Alquimista | 3.500 | Poças de Magma (Lava Viva, com Imã) | +15% de duração de zonas e raio de atração +20% | Controle de área: encurrala os inimigos nas poças |
+| Selene, a Piromante | 4.500 | Círculo de Brasas (Anel Infernal, com Ligeireza) | +12% de dano, -15% de vida | Defesa giratória de risco e dano altos |
+| Ysolde, a Tempestade | 6.000 | Raio Lunar (Tempestade, com Trevo) | recarga 12% menor, -20% de vida | Dano alto em alvos aleatórios sem mirar |
+| Rurik, o Lenhador | 8.000 | Machado Giratório (evolução, com Armadura) | +18% de dano, +15% de ouro | Dano em arco que atravessa tudo |
+
+Os preços seguem a nova economia (15 vezes a do Slash). As características pequenas ficam em `HEROES` (`data.ts`), e a descrição de cada herói na carta mostra a arma inicial, a evolução e o passivo que ela pede. O robô testa cada herói com a arma inicial dele.
+
+## 7. Etapas
 
 1. **Bestiário** (não depende da lista de itens): dados, contagem no mundo, save e schema, tela, conquistas, testes e e2e.
+   1b. **Sistemas** (seção 6): empurrão, separação, obstáculos temáticos, duas distâncias de coleta, vitória por mapa com chefe final e modo infinito com recordes.
 2. **Fichas dos itens** (com a pesquisa de cada um) e aprovação do Lucas.
-3. **Itens novos**: motor + arte + animação + som + ícones, um por vez, com teste unitário e print.
+3. **Armas novas** (Chicote, Varinha Arcana, Aura de Alho, Poças de Magma, Círculo de Brasas) e evoluções: motor + arte + animação + som + ícones, uma por vez, com teste unitário e print; depois os **heróis refeitos** (7.6) e a revisão das evoluções antigas.
 4. **Nova evolução**: motor, janela, coleção, robô.
 5. **Equilíbrio** com o robô e jogando; documentação (`docs/ASSETS-NIGHTHUNT.md`, ARCHITECTURE, ROADMAP, HANDOFF) e INDEX.
 
-## 7. Critérios de pronto
+## 8. Critérios de pronto
 
 - Cada item novo tem ficha aprovada, ícone, animação em laço, descrição pt-BR, níveis e (se couber) evolução; aparece na coleção.
 - Bestiário abre pelo início, mostra o bicho animado, descrição e números iguais aos de `ENEMIES`, conta abates e sincroniza com a conta.
 - Testes: dados do bestiário (todo inimigo de `ENEMIES` tem entrada), contagem, schema da API, e2e da tela em celular e computador.
 - Nada de lógica de jogo fora de `packages/games`; UI em pt-BR; sem emoji.
 
-## 8. Perguntas abertas (precisam do Lucas)
+## 9. Perguntas abertas (precisam do Lucas)
 
 1. **A lista de itens** que você quer (a regra de evolução já está na seção 5).
 2. **Pesquisa no VS:** esta sessão não alcança a wiki do VS (a rede bloqueia `vampire-survivors.fandom.com`). Posso trabalhar só com o que conheço, ou você libera esse endereço nas configurações de rede da sessão (ou cola as páginas dos itens)? Os números do VS entram como referência, não como cópia: os itens seguem a identidade própria do Night Hunt.
@@ -129,4 +262,7 @@ Referência enviada pelo Lucas: o guia "Evolutions & Unions" do VS e as fichas d
 5. **Slots:** continuam 6 armas e 6 passivos (como no VS)?
 7. **Evolução na janela de nível:** confirma que a evolução entra no lugar da melhoria da arma na próxima janela (e o baú continua podendo entregar também)? E as uniões de 3 itens entram já na primeira leva ou só depois?
 8. **Guia de combinações:** aba dentro de Itens (minha sugestão) ou tela própria?
-6. **Onde o bestiário abre:** botão novo no início (ao lado de Itens), ou dentro da tela de Itens como aba?
+6. **Heróis:** a Espada some do começo de todos menos o Kael (e vira uma melhoria que pode aparecer), ou todos começam com a Espada mais a arma deles? Os 8 heróis e os preços da tabela 6.6 estão bons? A Espada sobe de graça para os novos heróis comprados?
+9. **Tempo do chefe final:** Campo 15 min, Deserto 20, Gelo 25 está bom? O chefe final precisa ser vencido na mesma partida em que aparece, ou ele continua vivo no modo infinito até cair?
+10. **Obstáculos:** projéteis e armas passam por cima deles (proposta). Confirma, ou eles devem bloquear tiros?
+11. **Onde o bestiário abre:** botão novo no início (ao lado de Itens), ou dentro da tela de Itens como aba?
