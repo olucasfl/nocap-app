@@ -8,11 +8,10 @@ const [og, news] = process.argv.slice(2);
 const dir = path.resolve('packages/games/src/minigolf/levels');
 // ordem final: 1 a 4 bem simples; depois cresce em tamanho, obstáculos e truques (o = Open Golf, n = nova)
 const ORDER = [
-  'o3', 'o2', 'o4', 'n101',
-  'n102', 'o5', 'n103', 'n104', 'o9', 'o10',
-  'n105', 'o6', 'n106', 'o8', 'n107', 'o11', 'n108', 'o12', 'o13', 'n109',
-  'o7', 'o14', 'n110', 'o15', 'n111', 'o16', 'n112', 'o17', 'n113', 'o1',
-  'o18', 'n114', 'o19', 'n115', 'o20', 'n116', 'n117', 'n119', 'n120', 'n118',
+  'o3', 'o2', 'o4', 'n101', 'n104', 'o5', 'n107', 'n108', 'o9', 'n116',
+  'n119', 'o10', 'n115', 'n105', 'o6', 'n111', 'n113', 'o8', 'n120', 'o11',
+  'n121', 'n124', 'o12', 'o13', 'n102', 'o14', 'n106', 'o7', 'o15', 'n123',
+  'o16', 'n122', 'o17', 'n112', 'o18', 'n117', 'o19', 'n109', 'o20', 'o1',
 ];
 if (ORDER.length !== 40 || new Set(ORDER).size !== 40) throw new Error('ordem inválida');
 ORDER.forEach((k, i) => {

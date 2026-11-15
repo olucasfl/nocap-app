@@ -75,7 +75,7 @@ describe('Fox GP na conta (14/11/2026)', () => {
   it('Mini Golf: aceita bola e melhores marcas, recusa lixo, a menor marca nunca piora e outras preferências não apagam', () => {
     const ok = { ball: { color: 0x2f5bff, finish: 'estrela', trail: 'fogo' }, best: { '3': 2 } };
     expect(golfSchema.safeParse(ok).success).toBe(true);
-    expect(golfSchema.safeParse({ ball: { ...ok.ball, finish: 'xadrez' } }).success).toBe(false);
+    expect(golfSchema.safeParse({ ball: { ...ok.ball, finish: 'inexistente' } }).success).toBe(false);
     expect(golfSchema.safeParse({ best: { '3': 0 } }).success).toBe(false);
     expect(golfSchema.safeParse({ best: { '3': 19 } }).success).toBe(false);
     expect(golfSchema.safeParse({ ...ok, extra: 1 }).success).toBe(false);

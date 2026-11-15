@@ -86,7 +86,8 @@ describe('Mini Golf: física portada do Open Golf', () => {
   });
 
   it('bola rápida passa por cima do buraco sem cair', () => {
-    const r = approach(1, 1.0, 12);
+    // fase 40: a do Open Golf em que o buraco fica no meio, sem muro logo atrás (a bola não volta e cai)
+    const r = approach(40, 1.0, 12);
     expect(r.b.holed).toBe(false);
   });
 

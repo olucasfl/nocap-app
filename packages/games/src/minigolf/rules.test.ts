@@ -6,14 +6,15 @@ describe('Mini Golf: regras', () => {
     expect(GOLF_LEVELS).toBe(40);
     expect([...GOLF_ORDER].sort((a, b) => a - b)).toEqual(Array.from({ length: 40 }, (_, i) => i + 1));
     expect(golfTierOf(1)).toBe('easy');
-    expect(golfTierOf(6)).toBe('medium');
+    expect(golfTierOf(6)).toBe('easy');
+    expect(golfTierOf(14)).toBe('medium');
     expect(golfTierOf(40)).toBe('hard');
-    expect(golfNextLevel(33)).toBe(6);
+    expect(golfNextLevel(13)).toBe(14);
     expect(golfNextLevel(40)).toBeNull();
     expect(Math.min(...GOLF_PARS)).toBe(2);
     expect(Math.max(...GOLF_PARS)).toBe(5);
     expect(golfParOf(1)).toBe(2);
-    expect(golfParOf(20)).toBe(5);
+    expect(golfParOf(20)).toBe(4);
     expect(golfParOf(30)).toBe(5);
   });
   it('os nomes do golfe vêm do par; 1 tacada é sempre ACE', () => {

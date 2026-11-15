@@ -2,7 +2,7 @@
 
 Pedido em 14/11/2026 (planos `PLANO_MINIGOLF_NOCAP.md` e telas no canvas "Mini Golf NoCap"). Base: Open Golf
 (github.com/mgerdes/Open-Golf, MIT), com as 20 fases originais, o formato de fase e a física portados para TypeScript.
-Status: **feito** (14/11/2026): física portada, 20 fases do Open Golf + 20 fases novas (21 a 40, com rampas, gelo, areia, ponte e peças móveis, provadas por robô), garagem da bola, melhor marca na conta e sala online. Falta validar em aparelhos reais.
+Status: **feito** (14/11/2026): física portada, 20 fases do Open Golf + 20 fases novas (maiores e mais difíceis: saltos de rampa, portões, ilhas, labirinto, cascata; provadas por robô), todas as 40 ordenadas por dificuldade (`tools/art/minigolf/assemble.mjs`), garagem da bola, melhor marca na conta e sala online. Falta validar em aparelhos reais.
 
 ## 1. Decisões do Lucas
 
