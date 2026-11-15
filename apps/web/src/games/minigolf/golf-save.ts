@@ -39,11 +39,12 @@ export function saveBest(level: number, strokes: number): Record<number, number>
   golfNotify();
   return b;
 }
-/** Junta as marcas da conta às do aparelho (vale a menor de cada fase). */
-export function mergeBest(remote: Record<string, number>) {
-  const b = loadBest();
-  for (const [k, v] of Object.entries(remote)) if (!b[Number(k)] || v < b[Number(k)]!) b[Number(k)] = v;
+/** A conta manda: o aparelho passa a ter exatamente as marcas dela (conta zerada = aparelho zerado). */
+export function replaceBest(remote: Record<string, number> | undefined) {
+  const b: Record<number, number> = {};
+  for (const [k, v] of Object.entries(remote ?? {})) if (typeof v === 'number' && v > 0) b[Number(k)] = v;
   writeBest(b);
+  if (!Object.keys(b).length) setProgress(null);
 }
 
 export function loadLook(): GolfBallLook {

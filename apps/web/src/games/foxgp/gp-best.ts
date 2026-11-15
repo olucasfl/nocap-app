@@ -40,6 +40,17 @@ export function mergeBest(remote: Record<string, number>) {
   }
 }
 
+/** A conta manda: o aparelho passa a ter exatamente as melhores voltas dela (conta zerada = aparelho zerado). */
+export function replaceBest(remote: Record<string, number> | undefined) {
+  const out: Record<string, number> = {};
+  for (const [k, ms] of Object.entries(remote ?? {})) if (typeof ms === 'number' && ms > 0 && Number.isFinite(ms)) out[k] = Math.round(ms);
+  try {
+    localStorage.setItem(BEST_KEY, JSON.stringify(out));
+  } catch {
+    /* sem armazenamento */
+  }
+}
+
 /** Guarda se for melhor; devolve true quando é um recorde novo. */
 export function saveBest(trackId: string, ms: number): boolean {
   const all = readBest();

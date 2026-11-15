@@ -1,11 +1,11 @@
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth';
-import { GOLF_CHANGED, loadBest, loadLook, mergeBest, saveLook } from './golf-save';
+import { GOLF_CHANGED, loadBest, loadLook, replaceBest, saveLook } from './golf-save';
 import { parseGolfBall } from '@nocap/games';
 
 /**
- * O Mini Golf na conta (spec 082): a bola e a melhor marca de cada fase valem em qualquer aparelho. Ao entrar, o que está
- * na conta vale (a menor marca de cada fase vence); conta sem nada recebe o que o aparelho tinha. Depois, cada mudança
+ * O Mini Golf na conta (spec 082): a bola e a melhor marca de cada fase valem em qualquer aparelho. Ao abrir, o que está
+ * na conta vale por inteiro (o banco é a verdade: se zerarem as marcas lá, o aparelho zera também); conta sem nada recebe o que o aparelho tinha. Depois, cada mudança
  * sobe sozinha. Mesmo caminho do Fox GP (`gp-account.ts`).
  */
 interface GolfSaved {
@@ -38,11 +38,10 @@ async function sync(userId: string) {
       applying = true;
       try {
         if (golf.ball) saveLook(parseGolfBall(golf.ball));
-        if (golf.best) mergeBest(golf.best);
+        replaceBest(golf.best);
       } finally {
         applying = false;
       }
-      push();
     } else await apiClient.put('/me/prefs/golf', collect());
   } catch {
     loadedFor = null;
