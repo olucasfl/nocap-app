@@ -1,8 +1,8 @@
 # Spec 082: Mini Golf (3D, offline com 40 fases e online com amigos)
 
 Pedido em 14/11/2026 (planos `PLANO_MINIGOLF_NOCAP.md` e telas no canvas "Mini Golf NoCap"). Base: Open Golf
-(github.com/mgerdes/Open-Golf, MIT), com as 40 fases, o formato de fase e a física portados para TypeScript.
-Status: **em andamento** (14/11/2026): conversor, física portada e a fase 1 jogável offline (`/minigolf`); falta o resto da lista da seção 4.
+(github.com/mgerdes/Open-Golf, MIT), com as 20 fases originais, o formato de fase e a física portados para TypeScript.
+Status: **feito** (14/11/2026): física portada, 20 fases do Open Golf + 20 fases novas (21 a 40, com rampas, gelo, areia, ponte e peças móveis, provadas por robô), garagem da bola, melhor marca na conta e sala online. Falta validar em aparelhos reais.
 
 ## 1. Decisões do Lucas
 
@@ -26,7 +26,7 @@ Status: **em andamento** (14/11/2026): conversor, física portada e a fase 1 jog
 
 - `packages/games/src/minigolf/`: física pura e determinística (passo fixo, 120 Hz), formato de fase, pares,
   nomes do golfe (`golfName(strokes, par)`), regras de sala e pontuação. Testes por trajetória.
-- `tools/art/minigolf/` (só ferramenta, fora do `package.json`): conversor `.level` → JSON/GLB das 40 fases.
+- `tools/art/minigolf/` (só ferramenta, fora do `package.json`): conversor `.level` → JSON/GLB das 20 fases do Open Golf; as 21 a 40 saem de `build-levels.mjs`.
 - API: `apps/api/src/rooms/golf-room.engine.ts` (servidor autoritativo: roda a mesma física, valida a tacada,
   empurra as bolas), mais `/me/prefs/golf`.
 - Web: `apps/web/src/games/minigolf/` (cena, HUD, telas do canvas, sons, garagem da bola).

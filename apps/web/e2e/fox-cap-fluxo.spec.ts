@@ -8,9 +8,9 @@ test.use({ viewport: { width: 1280, height: 720 } });
 test.setTimeout(240_000);
 
 async function open(page: Page, game: string) {
-  await page.goto('/fox-cap');
+  await page.goto('/');
   await page.getByRole('button', { name: 'Agora não' }).click({ timeout: 8000 }).catch(() => undefined);
-  await page.getByTestId(`foxcap-${game}`).click();
+  await page.getByTestId(game === 'pingpong' ? 'card-ping' : `card-${game}`).click();
   await expect(page.getByTestId(`gl-${game}`)).toBeVisible();
   await expect(page).toHaveURL(new RegExp(`jogo=${game}`));
 }
@@ -31,7 +31,7 @@ async function backToHubThenList(page: Page, game: string) {
   // só o "Sair do jogo" da tela do jogo leva para a lista
   await page.getByTestId('gl-exit').click();
   await expect(page.getByTestId(`gl-${game}`)).toHaveCount(0);
-  await expect(page.getByTestId(`foxcap-${game}`)).toBeVisible();
+  await expect(page.getByTestId(game === 'pingpong' ? 'card-ping' : `card-${game}`)).toBeVisible();
   await expect(page).not.toHaveURL(/jogo=/);
 }
 

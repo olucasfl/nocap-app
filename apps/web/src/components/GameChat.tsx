@@ -124,7 +124,7 @@ export function GameChat({
 
   const setOpen = (v: boolean) => {
     if (useGameChat.getState().open === v) return;
-    useGameChat.setState({ open: v });
+    useGameChat.setState({ open: v, at: performance.now() });
     if (v) {
       // o mouse volta a aparecer para poder clicar e digitar (e lembra se estava preso, para prender de novo ao fechar)
       wasLocked.current = !!document.pointerLockElement;
@@ -159,7 +159,8 @@ export function GameChat({
       const input = e.target instanceof HTMLInputElement ? e.target : null;
       const typing = !!input || (e.target instanceof HTMLElement && !!e.target.closest('textarea'));
       const isOpen = useGameChat.getState().open;
-      const menuOpen = !!document.querySelector('.gm-wrap');
+      // menu de pausa de qualquer jogo (.gm-wrap) e o do Counter Fox (.fsm) ficam na frente: T não abre o chat por cima
+      const menuOpen = !!document.querySelector('.gm-wrap, .fsm');
       if (e.code === 'Escape' && isOpen) {
         e.preventDefault();
         e.stopImmediatePropagation();

@@ -7,7 +7,7 @@ const ROUTES = [
   '/ranking',
   '/amigos',
   '/perfil',
-  '/fox-cap',
+  '/fox-cap?jogo=atravessa',
   '/atravessa',
   '/entrar',
   '/criar-conta',

@@ -24,19 +24,19 @@ test('chat do saguão: mensagem nova aparece ao lado do botão e o painel mostra
     return ctx.newPage();
   };
   const A = await mk(1100, 700);
-  await A.goto('/fox-cap');
+  await A.goto('/');
   await skipIntro(A);
-  await A.getByText('Com amigos', { exact: true }).first().click();
-  await A.getByTestId('foxcap-friends').click();
+  await A.getByTestId('hub-room-toggle').click();
+  await A.getByTestId('hub-create-room').click();
   await nick(A, 'Ana');
   await A.waitForURL(/\/sala\//);
   const code = A.url().split('/sala/')[1]!.slice(0, 4);
 
   const B = await mk(390, 800);
-  await B.goto('/fox-cap');
+  await B.goto('/');
   await skipIntro(B);
-  await B.getByText('Com amigos', { exact: true }).first().click();
-  await B.getByLabel('Código da sala').fill(code);
+  await B.getByTestId('hub-room-toggle').click();
+  await B.getByTestId('hub-room-code').fill(code);
   await B.getByRole('button', { name: 'Entrar', exact: true }).click();
   await nick(B, 'Bia');
   await B.waitForURL(/\/sala\//);
@@ -44,8 +44,8 @@ test('chat do saguão: mensagem nova aparece ao lado do botão e o painel mostra
   await expect(B.getByTestId('room-chat-btn')).toBeVisible();
   await A.getByTestId('room-chat-btn').click();
   await expect(A.getByTestId('room-chat-panel')).toBeVisible();
-  await A.getByLabel('Mensagem').fill('bora jogar');
-  await A.getByRole('button', { name: 'Enviar' }).click();
+  await A.getByTestId('room-chat-panel').getByLabel('Mensagem').fill('bora jogar');
+  await A.getByTestId('room-chat-panel').getByRole('button', { name: 'Enviar' }).click();
   // fora do painel a mensagem aparece ao lado do botão e o botão mostra o número
   await expect(B.locator('.gc-toast')).toContainText('bora jogar');
   await expect(B.locator('.gc-count')).toHaveText('1');
@@ -53,8 +53,8 @@ test('chat do saguão: mensagem nova aparece ao lado do botão e o painel mostra
   await B.getByTestId('room-chat-btn').click();
   await expect(B.locator('.gc-count')).toHaveCount(0);
   await expect(B.getByTestId('room-chat-panel')).toContainText('bora jogar');
-  await B.getByLabel('Mensagem').fill('bora!');
-  await B.getByRole('button', { name: 'Enviar' }).click();
+  await B.getByTestId('room-chat-panel').getByLabel('Mensagem').fill('bora!');
+  await B.getByTestId('room-chat-panel').getByRole('button', { name: 'Enviar' }).click();
   await B.screenshot({ path: info.outputPath('b-panel.png') });
   await A.screenshot({ path: info.outputPath('a-panel.png') });
   await expect(A.getByTestId('room-chat-panel')).toContainText('bora!');

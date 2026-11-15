@@ -16,12 +16,12 @@ async function nick(page: Page, name: string) {
 }
 
 async function open(page: Page) {
-  await page.goto('/fox-cap');
+  await page.goto('/');
   await page
     .getByRole('button', { name: 'Agora não' })
     .click({ timeout: 8000 })
     .catch(() => undefined);
-  await page.getByText('Com amigos', { exact: true }).first().click();
+  await page.getByTestId('hub-room-toggle').click();
 }
 
 async function twoInRoom(browser: import('@playwright/test').Browser) {
@@ -31,13 +31,13 @@ async function twoInRoom(browser: import('@playwright/test').Browser) {
     ).newPage();
   const A = await mk();
   await open(A);
-  await A.getByTestId('foxcap-friends').click();
+  await A.getByTestId('hub-create-room').click();
   await nick(A, 'Ana');
   await A.waitForURL(/\/sala\//);
   const code = A.url().split('/sala/')[1]!.slice(0, 4);
   const B = await mk();
   await open(B);
-  await B.getByLabel('Código da sala').fill(code);
+  await B.getByTestId('hub-room-code').fill(code);
   await B.getByRole('button', { name: 'Entrar', exact: true }).click();
   await nick(B, 'Bia');
   await B.waitForURL(/\/sala\//);
@@ -75,14 +75,14 @@ test('a conexão cai no meio e volta sozinha, para quem caiu e para os outros', 
 test('sair da sala leva para fora e não puxa de volta', async ({ browser }) => {
   const { A, B, code } = await twoInRoom(browser);
   await B.getByRole('button', { name: /sair/i }).first().click();
-  await B.waitForURL(/\/fox-cap/, { timeout: 15_000 });
+  await B.waitForURL((u) => !u.pathname.startsWith('/sala'), { timeout: 15_000 });
   // fica fora: nem volta sozinha para a sala, nem o aviso "você está em uma sala" aparece
   await B.waitForTimeout(6000);
-  expect(B.url()).toContain('/fox-cap');
+  expect(B.url()).not.toContain('/sala');
   expect(await status(B)).not.toBe('connected');
   await expect(B.getByText('VOCÊ ESTÁ EM UMA SALA')).toHaveCount(0);
   await expect(B.getByText('SUA SALA CONTINUA ABERTA')).toHaveCount(0);
   // quem fica na sala vê a saída
-  await expect(A.getByText('Bia')).toHaveCount(0, { timeout: 10_000 });
+  await expect(A.getByText('Bia', { exact: true })).toHaveCount(0, { timeout: 10_000 });
   void code;
 });

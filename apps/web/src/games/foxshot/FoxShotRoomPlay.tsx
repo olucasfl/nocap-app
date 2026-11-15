@@ -34,7 +34,7 @@ import { leaveRoom, sendRoom, serverNow, type RoomSnapshot } from '@/lib/rooms';
 import { FsNetClient } from '@/lib/foxshot-link';
 import { GameChat } from '@/components/GameChat';
 import { PauseOverlay } from '@/components/PauseOverlay';
-import { useGameChat } from '@/lib/game-chat-state';
+import { chatJustChanged, useGameChat } from '@/lib/game-chat-state';
 import { InviteDialog } from '@/components/InviteDialog';
 import { FoxShotScene, fsWorldFor, type Quality } from './FoxShotScene';
 import { FsControls } from './fs-controls';
@@ -185,6 +185,8 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
     setPausedState(v);
     if (ctl.current) ctl.current.enabled = !v;
     if (v) {
+      // o menu de pausa fica sozinho na frente: o chat aberto fecha
+      if (useGameChat.getState().open) useGameChat.setState({ open: false, at: performance.now() });
       setNeedClick(false);
       shopRef.current = false;
       setShopState(false);
@@ -252,7 +254,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
       (locked) => {
         // abrir o chat solta o mouse de propósito: não é pedido de menu; e logo depois de começar, soltar o mouse só pede o clique
         if (!locked && !pausedRef.current && !shopRef.current && !bigMapRef.current && !useGameChat.getState().open) {
-          if (performance.now() - lastResumeAt > 1500) setPaused(true);
+          if (performance.now() - lastResumeAt > 1500 && !chatJustChanged()) setPaused(true);
           else setNeedClick(true);
         }
         if (locked) {

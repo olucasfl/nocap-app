@@ -15,9 +15,9 @@ for (const game of ['atravessa', 'bola', 'pingpong', 'desmorona'] as const) {
   test(`${game}: criar sala pela tela do jogo, sala temática do jogo e sair volta para a tela do jogo`, async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 });
     await loginAs(page, `Fluxo${game}`);
-    await page.goto('/fox-cap');
+    await page.goto('/');
     await page.getByRole('button', { name: 'Agora não' }).click({ timeout: 8000 }).catch(() => undefined);
-    await page.getByTestId(`foxcap-${game}`).click();
+    await page.getByTestId(game === 'pingpong' ? 'card-ping' : `card-${game}`).click();
     await page.getByTestId('gl-friends').click();
     await expect(page.getByTestId('gl-friends-panel')).toBeVisible();
     await page.getByTestId('foxcap-friends').click();

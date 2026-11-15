@@ -29,7 +29,7 @@ const ROUTES = [
   '/entrar',
   '/criar-conta',
   '/sala?jogo=color',
-  '/fox-cap',
+  '/fox-cap?jogo=atravessa',
   '/fox-cap/desmorona',
   '/fox-cap/bola',
   '/fox-cap/counter-fox',

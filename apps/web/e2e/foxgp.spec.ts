@@ -279,7 +279,7 @@ test.describe('Fox GP', () => {
       w.__sawList = false;
       w.__watch = true;
       const tick = () => {
-        if (document.querySelector('[data-testid="foxcap-foxgp"]')) w.__sawList = true;
+        if (document.querySelector('[data-testid="card-foxgp"]')) w.__sawList = true;
         if (w.__watch) requestAnimationFrame(tick);
       };
       requestAnimationFrame(tick);

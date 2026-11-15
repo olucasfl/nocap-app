@@ -52,19 +52,19 @@ test('duas janelas: classificação, grid, corrida pela sala e pódio', async ({
     return p;
   };
   const A = await mk();
-  await A.goto('/fox-cap');
+  await A.goto('/');
   await A.getByRole('button', { name: 'Agora não' }).click({ timeout: 8000 }).catch(() => undefined);
-  await A.getByText('Com amigos', { exact: true }).first().click();
-  await A.getByTestId('foxcap-friends').click();
+  await A.getByTestId('hub-room-toggle').click();
+  await A.getByTestId('hub-create-room').click();
   await nick(A, 'Ana');
   await A.waitForURL(/\/sala\//);
   const code = A.url().split('/sala/')[1]!.slice(0, 4);
 
   const B = await mk();
-  await B.goto('/fox-cap');
+  await B.goto('/');
   await B.getByRole('button', { name: 'Agora não' }).click({ timeout: 8000 }).catch(() => undefined);
-  await B.getByText('Com amigos', { exact: true }).first().click();
-  await B.getByLabel('Código da sala').fill(code);
+  await B.getByTestId('hub-room-toggle').click();
+  await B.getByTestId('hub-room-code').fill(code);
   await B.getByRole('button', { name: 'Entrar', exact: true }).click();
   await nick(B, 'Bia');
   await B.waitForURL(/\/sala\//);
@@ -156,7 +156,7 @@ test('duas janelas: classificação, grid, corrida pela sala e pódio', async ({
     w.__saw = [];
     w.__watch = true;
     const tick = () => {
-      if (document.querySelector('[data-testid="foxcap-foxgp"]')) w.__saw!.push('lista');
+      if (document.querySelector('[data-testid="card-foxgp"]')) w.__saw!.push('lista');
       if (!document.querySelector('[data-testid="gp-final"]') && !document.querySelector('[data-testid="gp-home"]'))
         w.__saw!.push(location.pathname);
       if (w.__watch) requestAnimationFrame(tick);

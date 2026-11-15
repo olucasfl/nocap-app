@@ -121,7 +121,7 @@ function GameCard({
 
 interface GameDef {
   id: string;
-  section: 'fox' | 'brain';
+  section: 'action' | 'sport' | 'brain';
   to: string;
   search?: Record<string, string>;
   cls: string;
@@ -133,15 +133,15 @@ interface GameDef {
   badge?: string;
 }
 
-/** Todos os jogos da tela inicial, em duas categorias: Fox Cap! (cada jogo solto) e Palavras, cores e mente. */
+/** Todos os jogos da tela inicial, em três categorias: Ação, Esportes e duelos, e Palavras, cores e mente. */
 const GAMES: GameDef[] = [
-  { id: 'counter', section: 'fox', to: '/fox-cap/counter-fox', cls: 'hub-card-counter', art: <CounterFoxArt />, name: 'Counter Fox', tag: 'Tiro 3D', size: 'long' },
-  { id: 'bola', section: 'fox', to: '/fox-cap', search: { jogo: 'bola' }, cls: 'hub-card-bola', art: <BolaArt />, name: 'Fut Fox', tag: 'Futebol' },
-  { id: 'foxgp', section: 'fox', to: '/fox-cap', search: { jogo: 'foxgp' }, cls: 'hub-card-foxgp', art: <FoxGpArt />, name: 'Fox GP', tag: 'Corrida', badge: 'NOVO' },
-  { id: 'atravessa', section: 'fox', to: '/fox-cap', search: { jogo: 'atravessa' }, cls: 'hub-card-atravessa', art: <AtravessaArt />, name: 'Atravessa!', tag: 'Reflexo', size: 'long' },
-  { id: 'pingpong', section: 'fox', to: '/fox-cap', search: { jogo: 'pingpong' }, cls: 'hub-card-ping', art: <PingArt />, name: 'Ping Fox!', tag: 'Duelo' },
-  { id: 'desmorona', section: 'fox', to: '/fox-cap', search: { jogo: 'desmorona' }, cls: 'hub-card-desmorona', art: <DesmoronaArt />, name: 'Desmorona!', tag: 'Sobrevivência', size: 'long' },
-  { id: 'minigolf', section: 'fox', to: '/minigolf', cls: 'hub-card-golf', art: <MiniGolfArt />, name: 'Mini Golf', tag: 'Golfe', badge: 'NOVO' },
+  { id: 'counter', section: 'action', to: '/fox-cap/counter-fox', cls: 'hub-card-counter', art: <CounterFoxArt />, name: 'Counter Fox', tag: 'Tiro 3D', size: 'long' },
+  { id: 'bola', section: 'sport', to: '/fox-cap', search: { jogo: 'bola' }, cls: 'hub-card-bola', art: <BolaArt />, name: 'Fut Fox', tag: 'Futebol' },
+  { id: 'foxgp', section: 'action', to: '/fox-cap', search: { jogo: 'foxgp' }, cls: 'hub-card-foxgp', art: <FoxGpArt />, name: 'Fox GP', tag: 'Corrida', badge: 'NOVO' },
+  { id: 'atravessa', section: 'action', to: '/fox-cap', search: { jogo: 'atravessa' }, cls: 'hub-card-atravessa', art: <AtravessaArt />, name: 'Atravessa!', tag: 'Reflexo', size: 'long' },
+  { id: 'pingpong', section: 'sport', to: '/fox-cap', search: { jogo: 'pingpong' }, cls: 'hub-card-ping', art: <PingArt />, name: 'Ping Fox!', tag: 'Duelo' },
+  { id: 'desmorona', section: 'action', to: '/fox-cap', search: { jogo: 'desmorona' }, cls: 'hub-card-desmorona', art: <DesmoronaArt />, name: 'Desmorona!', tag: 'Sobrevivência', size: 'long' },
+  { id: 'minigolf', section: 'sport', to: '/minigolf', cls: 'hub-card-golf', art: <MiniGolfArt />, name: 'Mini Golf', tag: 'Golfe', badge: 'NOVO' },
   { id: 'words', section: 'brain', to: '/words', cls: 'hub-card-words', art: <WordsHubArt />, name: "Word's", tag: 'Palavras', wide: true },
   { id: 'blocks', section: 'brain', to: '/blocks', cls: 'hub-card-blocks', art: <BlocksArt />, name: "Block's", tag: 'Blocos' },
   { id: 'color', section: 'brain', to: '/cor', cls: 'hub-card-color', art: <ColorArt />, name: 'Mesmíssima', tag: 'Cores', size: 'long' },
@@ -170,7 +170,8 @@ export function Hub() {
   const [query, setQuery] = useState('');
   const q = norm(query.trim());
   const visible = (g: GameDef) => !q || norm(`${g.name} ${g.tag}`).includes(q);
-  const foxGames = GAMES.filter((g) => g.section === 'fox' && visible(g));
+  const actionGames = GAMES.filter((g) => g.section === 'action' && visible(g));
+  const sportGames = GAMES.filter((g) => g.section === 'sport' && visible(g));
   const brainGames = GAMES.filter((g) => g.section === 'brain' && visible(g));
 
   const today = useMemo(() => {
@@ -393,12 +394,21 @@ export function Hub() {
         </>
       )}
 
-      {foxGames.length > 0 && (
-        <section className="hz-sec" aria-label="Fox Cap">
+      {actionGames.length > 0 && (
+        <section className="hz-sec" aria-label="Ação">
           <h2 className="hz-h">
-            Fox Cap <small className="mono">AS RAPOSAS DE BONÉ</small>
+            Ação <small className="mono">TIRO, CORRIDA E SOBREVIVÊNCIA</small>
           </h2>
-          <div className="hz-grid">{foxGames.map(renderCard)}</div>
+          <div className="hz-grid">{actionGames.map(renderCard)}</div>
+        </section>
+      )}
+
+      {sportGames.length > 0 && (
+        <section className="hz-sec" aria-label="Esportes e duelos">
+          <h2 className="hz-h">
+            Esportes e duelos <small className="mono">FUTEBOL, PING PONG E GOLFE</small>
+          </h2>
+          <div className="hz-grid">{sportGames.map(renderCard)}</div>
         </section>
       )}
 
@@ -411,7 +421,7 @@ export function Hub() {
         </section>
       )}
 
-      {q && foxGames.length === 0 && brainGames.length === 0 && (
+      {q && actionGames.length === 0 && sportGames.length === 0 && brainGames.length === 0 && (
         <p className="hz-empty mono" data-testid="hub-search-empty">
           NENHUM JOGO COM “{query.trim().toUpperCase()}”
         </p>

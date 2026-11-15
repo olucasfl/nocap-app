@@ -22,7 +22,7 @@ const ROUTES: [string, string][] = [
   ['entrar', '/entrar'],
   ['criar', '/criar-conta'],
   ['sala', '/sala?jogo=color'],
-  ['foxcap', '/fox-cap'],
+  ['foxcap', '/fox-cap?jogo=atravessa'],
 ];
 const SIZES: [string, number, number][] = [
   ['phone', 390, 844],

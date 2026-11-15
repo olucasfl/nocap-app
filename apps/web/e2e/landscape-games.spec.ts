@@ -7,7 +7,7 @@ const PHONES = [
   { name: 'deitado-568', w: 568, h: 320 },
 ];
 
-test.beforeEach((_args, info) => {
+test.beforeEach(({ page: _p }, info) => {
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
 });
 
@@ -29,7 +29,7 @@ for (const ph of PHONES) {
     test.use({ viewport: { width: ph.w, height: ph.h }, hasTouch: true, isMobile: true });
 
     async function open(page: import('@playwright/test').Page) {
-      await page.goto('/fox-cap');
+      await page.goto('/');
       await page
         .getByRole('button', { name: 'Agora não' })
         .click({ timeout: 1500 })
@@ -42,7 +42,7 @@ for (const ph of PHONES) {
 
     test('Desmorona!: HUD, pular, menu e controles cabem e não se sobrepõem', async ({ page }) => {
       await open(page);
-      await page.getByTestId('foxcap-desmorona').click();
+      await page.getByTestId('card-desmorona').click();
       await page.getByTestId('gl-offline').click();
       await page.getByTestId('dsm-start').click({ timeout: 5000 }).catch(() => undefined);
       await expect(page.getByTestId('dsm-play')).toBeVisible();
@@ -78,7 +78,7 @@ for (const ph of PHONES) {
 
     test('Atravessa!: HUD, menu e controles cabem', async ({ page }) => {
       await open(page);
-      await page.getByTestId('foxcap-atravessa').click();
+      await page.getByTestId('card-atravessa').click();
       await page.getByTestId('gl-offline').click();
       await expect(page.locator('canvas')).toBeVisible({ timeout: 10_000 });
       await page.waitForTimeout(2500);

@@ -82,7 +82,7 @@ import { bindLabel, fsSettings, useFsSettings } from './fs-settings';
 
 const bombKey = () => bindLabel(fsSettings().binds.bomb);
 import { FsMenu } from './FsMenu';
-import { useGameChat } from '@/lib/game-chat-state';
+import { chatJustChanged, useGameChat } from '@/lib/game-chat-state';
 import { FsShop } from './FsShop';
 import {
   FsBigMap,
@@ -277,6 +277,8 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
     setPausedState(v);
     if (ctl.current) ctl.current.enabled = !v;
     if (v) {
+      // o menu de pausa fica sozinho na frente: o chat aberto fecha
+      if (useGameChat.getState().open) useGameChat.setState({ open: false, at: performance.now() });
       setNeedClick(false);
       shopRef.current = false;
       setShopState(false);
@@ -325,7 +327,7 @@ export function FoxShotTestPage({ match, onExit, onAgain }: { match?: FsMatchCon
         if (endedRef.current) return;
         // o mouse soltou (Esc ou clique fora): abre o menu; prendeu: some o menu
         if (!locked && !pausedRef.current && !shopRef.current && !bigMapRef.current && performance.now() - shopClosedAt.current > 600 && !useGameChat.getState().open) {
-          if (performance.now() - lastResumeAt > 1500) setPaused(true);
+          if (performance.now() - lastResumeAt > 1500 && !chatJustChanged()) setPaused(true);
           else setNeedClick(true);
         }
         if (locked) {

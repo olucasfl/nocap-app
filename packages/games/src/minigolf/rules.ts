@@ -1,7 +1,7 @@
 /** Regras do Mini Golf (spec 082): par de cada fase, limite de tacadas, tempo e os nomes do golfe. */
 
 /** Par de cada fase (índice 0 = fase 1). As 20 primeiras são as do Open Golf; da 21 em diante são nossas (spec 082). */
-export const GOLF_PARS = [2, 2, 3, 3, 3, 3, 3, 4, 3, 4, 3, 4, 3, 4, 4, 4, 4, 5, 5, 5, 2, 3, 3, 3, 3, 4, 4, 5, 3, 5, 2, 4, 3, 3, 3, 3, 3, 5, 3, 3] as const;
+export const GOLF_PARS = [2, 2, 3, 3, 3, 3, 3, 4, 3, 4, 3, 4, 3, 4, 4, 4, 4, 5, 5, 5, 2, 3, 3, 3, 3, 4, 4, 5, 3, 5, 2, 4, 3, 3, 4, 4, 4, 5, 4, 5] as const;
 export const GOLF_LEVELS = GOLF_PARS.length;
 export type GolfTier = 'easy' | 'medium' | 'hard';
 /** As fases de cada dificuldade, na ordem em que se joga (a "próxima fase" segue esta ordem). */

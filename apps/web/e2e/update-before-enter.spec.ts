@@ -16,20 +16,22 @@ test('com versão velha, criar sala pede para atualizar antes e depois segue', a
   page,
 }, info) => {
   test.skip(info.project.name !== 'desktop', 'um projeto basta');
-  let outdated = true;
+  // começa em dia (senão o aviso geral de versão nova da Home cobre a tela); fica velha só na hora de criar a sala
+  let outdated = false;
   await page.route('**/version.json*', (route) =>
     route.fulfill({
       contentType: 'application/json',
       body: JSON.stringify({ id: outdated ? 'versao-nova' : current() }),
     }),
   );
-  await page.goto('/fox-cap');
+  await page.goto('/');
   await page
     .getByRole('button', { name: 'Agora não' })
     .click({ timeout: 1500 })
     .catch(() => undefined);
-  await page.getByTestId('tab-amigos').click();
-  await page.getByTestId('foxcap-friends').click();
+  await page.getByTestId('hub-room-toggle').click();
+  outdated = true;
+  await page.getByTestId('hub-create-room').click();
   await expect(page.getByRole('alertdialog', { name: /atualize antes de entrar/i })).toBeVisible();
   // agora o "servidor" já tem a mesma versão que o app: atualizar recarrega e a entrada continua
   outdated = false;
@@ -44,12 +46,12 @@ test('com a versão em dia entra sem aviso nenhum', async ({ page }, info) => {
   await page.route('**/version.json*', (route) =>
     route.fulfill({ contentType: 'application/json', body: JSON.stringify({ id: current() }) }),
   );
-  await page.goto('/fox-cap');
+  await page.goto('/');
   await page
     .getByRole('button', { name: 'Agora não' })
     .click({ timeout: 1500 })
     .catch(() => undefined);
-  await page.getByTestId('tab-amigos').click();
-  await page.getByTestId('foxcap-friends').click();
+  await page.getByTestId('hub-room-toggle').click();
+  await page.getByTestId('hub-create-room').click();
   await expect(page.getByRole('alertdialog', { name: /atualize antes de entrar/i })).toBeHidden();
 });

@@ -282,7 +282,8 @@
   right: max(14px, calc(50% - 330px), env(safe-area-inset-right));
   bottom: max(14px, env(safe-area-inset-bottom));
   flex-direction: row-reverse;
-  z-index: 40;
+  /* acima do saguão temático (.gll, z 60): senão o botão some atrás dele */
+  z-index: 65;
 }
 .gc.dock .gc-toast {
   border-radius: 14px 14px 4px 14px;
@@ -295,7 +296,7 @@
   bottom: max(14px, env(safe-area-inset-bottom));
   width: min(380px, calc(100% - 28px));
   height: min(60dvh, 460px);
-  z-index: 45;
+  z-index: 66;
 }
 @media (max-width: 560px) {
   .gc-panel.dock {

@@ -65,23 +65,23 @@ test('duas janelas jogam pela sala: as duas telas andam iguais e as batidas dos 
     return ctx.newPage();
   };
   const A = await mk();
-  await A.goto('/fox-cap');
+  await A.goto('/');
   await A.getByRole('button', { name: 'Agora não' })
     .click({ timeout: 8000 })
     .catch(() => undefined);
-  await A.getByText('Com amigos', { exact: true }).first().click();
-  await A.getByTestId('foxcap-friends').click();
+  await A.getByTestId('hub-room-toggle').click();
+  await A.getByTestId('hub-create-room').click();
   await nick(A, 'Ana');
   await A.waitForURL(/\/sala\//);
   const code = A.url().split('/sala/')[1]!.slice(0, 4);
 
   const B = await mk();
-  await B.goto('/fox-cap');
+  await B.goto('/');
   await B.getByRole('button', { name: 'Agora não' })
     .click({ timeout: 8000 })
     .catch(() => undefined);
-  await B.getByText('Com amigos', { exact: true }).first().click();
-  await B.getByLabel('Código da sala').fill(code);
+  await B.getByTestId('hub-room-toggle').click();
+  await B.getByTestId('hub-room-code').fill(code);
   await B.getByRole('button', { name: 'Entrar', exact: true }).click();
   await nick(B, 'Bia');
   await B.waitForURL(/\/sala\//);
@@ -124,13 +124,13 @@ test('sozinho com um bot do outro lado: o líder põe o bot no lobby e a partida
   page,
 }) => {
   await page.setViewportSize({ width: 1100, height: 700 });
-  await page.goto('/fox-cap');
+  await page.goto('/');
   await page
     .getByRole('button', { name: 'Agora não' })
     .click({ timeout: 8000 })
     .catch(() => undefined);
-  await page.getByText('Com amigos', { exact: true }).first().click();
-  await page.getByTestId('foxcap-friends').click();
+  await page.getByTestId('hub-room-toggle').click();
+  await page.getByTestId('hub-create-room').click();
   await nick(page, 'Ana');
   await page.waitForURL(/\/sala\//);
   await page.getByRole('tab', { name: /Jogos/i }).click();
@@ -167,22 +167,22 @@ test('encerrar a sala: todo mundo sai e ninguém fica preso no "entrando na sala
     return ctx.newPage();
   };
   const A = await mk();
-  await A.goto('/fox-cap');
+  await A.goto('/');
   await A.getByRole('button', { name: 'Agora não' })
     .click({ timeout: 8000 })
     .catch(() => undefined);
-  await A.getByText('Com amigos', { exact: true }).first().click();
-  await A.getByTestId('foxcap-friends').click();
+  await A.getByTestId('hub-room-toggle').click();
+  await A.getByTestId('hub-create-room').click();
   await nick(A, 'Ana');
   await A.waitForURL(/\/sala\//);
   const code = A.url().split('/sala/')[1]!.slice(0, 4);
   const B = await mk();
-  await B.goto('/fox-cap');
+  await B.goto('/');
   await B.getByRole('button', { name: 'Agora não' })
     .click({ timeout: 8000 })
     .catch(() => undefined);
-  await B.getByText('Com amigos', { exact: true }).first().click();
-  await B.getByLabel('Código da sala').fill(code);
+  await B.getByTestId('hub-room-toggle').click();
+  await B.getByTestId('hub-room-code').fill(code);
   await B.getByRole('button', { name: 'Entrar', exact: true }).click();
   await nick(B, 'Bia');
   await B.waitForURL(/\/sala\//);
@@ -211,22 +211,22 @@ test('o líder encerra a partida pelo menu e as duas telas vão para o fim', asy
     return ctx.newPage();
   };
   const A = await mk();
-  await A.goto('/fox-cap');
+  await A.goto('/');
   await A.getByRole('button', { name: 'Agora não' })
     .click({ timeout: 8000 })
     .catch(() => undefined);
-  await A.getByText('Com amigos', { exact: true }).first().click();
-  await A.getByTestId('foxcap-friends').click();
+  await A.getByTestId('hub-room-toggle').click();
+  await A.getByTestId('hub-create-room').click();
   await nick(A, 'Ana');
   await A.waitForURL(/\/sala\//);
   const code = A.url().split('/sala/')[1]!.slice(0, 4);
   const B = await mk();
-  await B.goto('/fox-cap');
+  await B.goto('/');
   await B.getByRole('button', { name: 'Agora não' })
     .click({ timeout: 8000 })
     .catch(() => undefined);
-  await B.getByText('Com amigos', { exact: true }).first().click();
-  await B.getByLabel('Código da sala').fill(code);
+  await B.getByTestId('hub-room-toggle').click();
+  await B.getByTestId('hub-room-code').fill(code);
   await B.getByRole('button', { name: 'Entrar', exact: true }).click();
   await nick(B, 'Bia');
   await B.waitForURL(/\/sala\//);
