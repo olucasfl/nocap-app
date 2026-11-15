@@ -1,0 +1,234 @@
+{
+ "201": {
+  "path": 12,
+  "turns": 4,
+  "kinds": [
+   "spinner",
+   "pino"
+  ]
+ },
+ "202": {
+  "path": 18,
+  "turns": 2,
+  "kinds": [
+   "pendulum",
+   "gate",
+   "agua"
+  ]
+ },
+ "203": {
+  "path": 15,
+  "turns": 2,
+  "kinds": [
+   "spinner",
+   "pino",
+   "areia"
+  ]
+ },
+ "204": {
+  "path": 18,
+  "turns": 2,
+  "kinds": [
+   "spinner",
+   "pino",
+   "rampa"
+  ]
+ },
+ "205": {
+  "path": 11,
+  "turns": 1,
+  "kinds": [
+   "spinner",
+   "pino",
+   "areia"
+  ]
+ },
+ "206": {
+  "path": 14,
+  "turns": 1,
+  "kinds": [
+   "spinner",
+   "gate",
+   "rampa",
+   "gelo"
+  ]
+ },
+ "207": {
+  "path": 15,
+  "turns": 1,
+  "kinds": [
+   "pendulum",
+   "pino",
+   "agua"
+  ]
+ },
+ "208": {
+  "path": 17,
+  "turns": 5,
+  "kinds": [
+   "gate",
+   "spinner",
+   "pino"
+  ]
+ },
+ "209": {
+  "path": 15,
+  "turns": 6,
+  "kinds": [
+   "gate",
+   "spinner",
+   "pino",
+   "rampa"
+  ]
+ },
+ "210": {
+  "path": 17,
+  "turns": 4,
+  "kinds": [
+   "spinner",
+   "gate",
+   "pino"
+  ]
+ },
+ "211": {
+  "path": 23,
+  "turns": 3,
+  "kinds": [
+   "spinner",
+   "pendulum",
+   "rampa"
+  ]
+ },
+ "212": {
+  "path": 31,
+  "turns": 6,
+  "kinds": [
+   "spinner",
+   "pendulum",
+   "areia"
+  ]
+ },
+ "213": {
+  "path": 33,
+  "turns": 4,
+  "kinds": [
+   "gate",
+   "spinner",
+   "rampa",
+   "gelo"
+  ]
+ },
+ "214": {
+  "path": 15,
+  "turns": 6,
+  "kinds": [
+   "spinner",
+   "agua",
+   "rampa",
+   "gelo"
+  ]
+ },
+ "215": {
+  "path": 27,
+  "turns": 7,
+  "kinds": [
+   "spinner",
+   "gate",
+   "pino",
+   "gelo"
+  ]
+ },
+ "216": {
+  "path": 0,
+  "kinds": [
+   "spinner",
+   "loop",
+   "gelo"
+  ]
+ },
+ "217": {
+  "path": 15,
+  "turns": 1,
+  "kinds": [
+   "pendulum",
+   "spinner",
+   "pino",
+   "agua"
+  ]
+ },
+ "218": {
+  "path": 39,
+  "turns": 6,
+  "kinds": [
+   "spinner",
+   "pendulum",
+   "rampa"
+  ]
+ },
+ "219": {
+  "path": 25,
+  "turns": 3,
+  "kinds": [
+   "spinner",
+   "gate",
+   "pendulum",
+   "pino",
+   "rampa"
+  ]
+ },
+ "220": {
+  "path": 33,
+  "turns": 11,
+  "kinds": [
+   "spinner",
+   "gate",
+   "pino",
+   "areia"
+  ]
+ },
+ "221": {
+  "path": 24,
+  "turns": 8,
+  "kinds": [
+   "gate",
+   "spinner",
+   "pino",
+   "agua",
+   "rampa",
+   "gelo"
+  ]
+ },
+ "222": {
+  "path": 43,
+  "turns": 12,
+  "kinds": [
+   "spinner",
+   "gate",
+   "pino",
+   "gelo",
+   "areia"
+  ]
+ },
+ "223": {
+  "path": 23,
+  "turns": 7,
+  "kinds": [
+   "gate",
+   "spinner",
+   "pendulum",
+   "pino"
+  ]
+ },
+ "224": {
+  "path": 41,
+  "turns": 16,
+  "kinds": [
+   "spinner",
+   "gate",
+   "pendulum",
+   "pino",
+   "gelo",
+   "areia"
+  ]
+ }
+}

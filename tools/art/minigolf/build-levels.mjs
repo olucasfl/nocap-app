@@ -548,55 +548,220 @@ G(143, ['@..o.####', '....N####', '###NN.o..', '###NN....', '########H'], [{ kin
 // 144 Dois loops: o primeiro sobe para o norte, o corredor com giratório leva ao segundo, que vira para o leste e termina no buraco
 G(144, ['#########', '#########', '####..###', '####..N##', '##...NN..', '#LLL#NN.H', '..LL#####', '@.#######'], [{ kind: 'spinner', col: 3, row: 4, length: 3.4 }]);
 
-// ===== Reformulação (ids 201 a 224): cada fase tem um formato próprio =====
+// ===== Reformulação (ids 201 a 224): requisitos mínimos, formatos próprios e tamanho que cresce com a dificuldade =====
+// Requisitos de toda fase nova (conferidos aqui, sem robô; a fase que falhar derruba a construção):
+//  1 há caminho de chão do início ao buraco (loops conferidos à parte)
+//  2 caminho mínimo: fácil 10 células, médio 14, difícil 22 (3 m cada)
+//  3 o caminho faz pelo menos uma curva (nada de reta)
+//  4 a bola não chega ao buraco em linha reta livre: tem de haver parede, pino, peça móvel, água ou desnível na linha
+//  5 gelo e areia só ficam no caminho (nunca num canto vazio): precisam estar em algum trajeto mais curto
+//  6 obstáculos de tipos diferentes: fácil 1, médio 2, difícil 3 (giratório, pêndulo, portão, pino, água, rampa, gelo, areia, loop)
+const TIER = { easy: [10, 1], medium: [14, 2], hard: [22, 3] };
+function validate(id, tier, rows, movers) {
+  const R = rows.length, W = Math.max(...rows.map((r) => r.length));
+  const ch = (c, r) => rows[r]?.[c] ?? '#';
+  const solid = (c, r) => !['#', ' ', '_'].includes(ch(c, r));
+  const find = (k) => { for (let r = 0; r < R; r++) for (let c = 0; c < W; c++) if (ch(c, r) === k) return [c, r]; return null; };
+  const st = find('@'), hl = find('H');
+  const kinds = new Set(movers.map((m) => m.kind));
+  const all = rows.join('');
+  if (/[LMNOPQRS]/.test(all)) kinds.add('loop');
+  if (all.includes('o')) kinds.add('pino');
+  if (/[~b]/.test(all)) kinds.add('agua');
+  if (/[\^v<>]/.test(all)) kinds.add('rampa');
+  if (all.includes('i')) kinds.add('gelo');
+  if (all.includes('s')) kinds.add('areia');
+  const [minPath, minKinds] = TIER[tier];
+  const fail = (m) => { throw new Error(`fase ${id} (${tier}): ${m}`); };
+  if (kinds.size < minKinds) fail(`só ${kinds.size} tipo(s) de obstáculo (${[...kinds]}), precisa de ${minKinds}`);
+  if (kinds.has('loop')) return { path: 0, kinds: [...kinds] };
+  const bfs = (from) => {
+    const d = new Map([[from.join(), 0]]);
+    const q = [from];
+    while (q.length) {
+      const [c, r] = q.shift();
+      for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const k = [c + dc, r + dr].join();
+        if (d.has(k) || !solid(c + dc, r + dr)) continue;
+        d.set(k, d.get([c, r].join()) + 1);
+        q.push([c + dc, r + dr]);
+      }
+    }
+    return d;
+  };
+  const ds = bfs(st), dh = bfs(hl);
+  const D = ds.get(hl.join());
+  if (D === undefined) fail('o buraco não é alcançável pelo chão');
+  const cells = D + 1;
+  if (cells < minPath) fail(`caminho de ${cells} células, precisa de ${minPath}`);
+  // uma trilha mais curta, para contar as curvas
+  let cur = st, dir = null, turns = 0;
+  while (cur.join() !== hl.join()) {
+    const here = ds.get(cur.join());
+    const nxt = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dc, dr]) => [cur[0] + dc, cur[1] + dr, dc, dr]).find(([c, r]) => dh.get([c, r].join()) === dh.get(cur.join()) - 1 && ds.get([c, r].join()) === here + 1);
+    if (dir && (dir[0] !== nxt[2] || dir[1] !== nxt[3])) turns++;
+    dir = [nxt[2], nxt[3]];
+    cur = [nxt[0], nxt[1]];
+  }
+  if (turns < 1) fail('o caminho é uma reta');
+  // linha reta livre do início ao buraco
+  const blocker = (c, r) => !solid(c, r) || 'o~b^v<>ABCDExyz'.includes(ch(c, r)) || movers.some((m) => m.col === c && m.row === r);
+  let free = true;
+  for (let t = 0; t <= 1 && free; t += 0.01) {
+    const c = Math.round(st[0] + (hl[0] - st[0]) * t), r = Math.round(st[1] + (hl[1] - st[1]) * t);
+    if (blocker(c, r)) free = false;
+  }
+  if (free) fail('dá para acertar o buraco em linha reta');
+  // gelo e areia só no caminho
+  for (let r = 0; r < R; r++) for (let c = 0; c < W; c++) {
+    if (!'is'.includes(ch(c, r))) continue;
+    const a = ds.get([c, r].join()), b = dh.get([c, r].join());
+    if (a === undefined || b === undefined || a + b !== D) fail(`${ch(c, r) === 'i' ? 'gelo' : 'areia'} fora do caminho em (${c},${r})`);
+  }
+  return { path: cells, turns, kinds: [...kinds] };
+}
+const STATS = {};
+const T = (id, tier, rows, movers = []) => {
+  STATS[id] = validate(id, tier, rows, movers);
+  LEVELS.push(gridLevel(id, rows, movers));
+};
 const GX = (col, row, span, half, t0 = 0) => ({ kind: 'gate', col, row, span, half, t0 });
-// 201 Anel: dois caminhos em volta de um bloco, um com giratório e o outro com pino
-G(201, ['...H...', '.#####.', '.#####o', '...@...'], [{ kind: 'spinner', col: 0, row: 2, length: 3.4 }]);
-// 202 Escada: sobe em degraus na diagonal, com pino, portão e um trecho em S
-G(202, ['@..######', '##v######', '##.o.####', '####v####', '####...##', '######v##', '######..H'], [GX(5, 4, [0, 2.2], [0.2, 0.7], 0.4)]);
-// 203 Cruz: o caminho certo é o do norte; leste e sul são becos com gelo e areia
-G(203, ['###H###', '###.###', '###.###', '@..o.ii', '###.###', '###s###', '###.###'], [{ kind: 'spinner', col: 3, row: 1, length: 3.4 }]);
-// 204 Caracol: espiral quadrada para dentro, o buraco fica no centro
-G(204, ['@......', '######.', '.....#.', '.###.#s', '.#H..#.', '.#####.', '.......'], [{ kind: 'spinner', col: 3, row: 0, length: 3.4 }, { kind: 'pendulum', col: 3, row: 6, along: 'x', t0: 0.6 }]);
-// 205 Descida: uma ladeira longa para baixo, a curva e outra ladeira até o buraco
-G(205, ['@..<<<...', '########.', '#H..>>>o.'], [{ kind: 'spinner', col: 7, row: 0, length: 3.4 }]);
-// 206 Pinball: sala cheia de pinos, o buraco fica num nicho atrás de um portão
-G(206, ['###H###', '.......', '.o.o.o.', '.......', '.o.o.o.', '.......', '###@###'], [GX(3, 1, [2.2, 0], [0.7, 0.2], 0.2)]);
-// 207 Lagos: a tábua sobre o lago é o atalho, a volta por fora é a saída segura
-G(207, ['@........', '.~~~~~~~.', '.bbbbbbbH', '.~~~~~~~.', '....o....'], [{ kind: 'pendulum', col: 4, row: 2, along: 'x', t0: 0.3 }]);
-// 208 Colina: o topo tem uma subida e uma descida; a volta pela esquerda é de gelo com giratório
-G(208, ['@.>>....', 'i######^', 'i######^', 'i######.', '......H.'], [{ kind: 'spinner', col: 0, row: 2, length: 3.4 }, GX(5, 0, [0, 2.2], [0.2, 0.7], 0.5)]);
-// 209 Salas: quatro salas ligadas por portas, subindo na diagonal
-G(209, ['####.......', '####...#.o.', '#####.##..H', '####...####', '...#...####', '.@.....####', '...########'], [GX(3, 4, [0, 2.2], [0.2, 0.7], 0.3), { kind: 'spinner', col: 5, row: 4, length: 3.4 }]);
-// 210 Anel de gelo: a pista toda é de gelo, com giratório num lado
-G(210, ['@iiiiii', 'i#####i', 'i#####i', 'i#####i', 'iiiHiii'], [{ kind: 'spinner', col: 6, row: 2, length: 3.4 }]);
-// 211 Torre: o caminho sobe em volta de uma torre, 4,8 m, e o buraco fica no topo
-G(211, ['@.>>...', '######v', 'H#####v', '.#####.', '^#####.', '^#####.', '....<<.'], [{ kind: 'spinner', col: 4, row: 0, length: 3.4 }, { kind: 'pendulum', col: 6, row: 4, t0: 0.5 }]);
-// 212 Salto: duas rampas lançam a bola por cima da água
-G(212, ['@..>~....', '########.', '#H..~<...'], [{ kind: 'spinner', col: 6, row: 0, length: 3.4 }, GX(3, 2, [0, 2.2], [0.2, 0.7], 0.4)]);
-// 213 Cruz dupla: duas encruzilhadas em sequência, só a do norte da segunda leva ao buraco
-G(213, ['###.###H###', '###.###.###', '###.###.###', '@..o...o...', '###.###.###', '###s###i###', '###.###.###'], [{ kind: 'spinner', col: 5, row: 3, length: 3.4 }, GX(7, 1, [2.2, 0], [0.7, 0.2], 0.6)]);
-// 214 Pinball em dois andares: sobe a rampa e termina no andar de cima
-G(214, ['###H###', '.o...o.', '.......', '###^###', '###^###', '.......', '.o.o.o.', '.......', '###@###'], [{ kind: 'spinner', col: 3, row: 2, length: 3.4 }]);
-// 215 Descida em S: duas ladeiras e o final em gelo
-G(215, ['@..<<<.....', '##########.', '......>>>..', '.##########', '.iiiiiiiH..'], [GX(9, 2, [0, 2.2], [0.2, 0.7], 0.2), { kind: 'spinner', col: 2, row: 0, length: 3.4 }]);
-// 216 Loop e gelo: sobe a espiral e sai deslizando no gelo até o buraco
-G(216, ['#..iiiiiH#', '#LLL######', '..LL######', '@...######'], [{ kind: 'spinner', col: 5, row: 0, length: 3.4 }]);
-// 218 Salas de gelo: a sala do meio é toda de gelo
-G(218, ['########.H.', '########...', '####iii...i', '####iii####', '...iiii####', '.@.iiii####', '...########'].map((l) => l.slice(0, 11).padEnd(11, '#')), [GX(3, 4, [0, 2.2], [0.2, 0.7], 0.3)]);
-// 219 Colina dupla: uma colina em cima, outra embaixo, e o buraco no fim da volta
-G(219, ['@.>>o<<.', '#######.', 'H######.', '.######.', '.>>..<<.'], [{ kind: 'spinner', col: 0, row: 3, length: 3.4 }, GX(7, 2, [2.2, 0], [0.7, 0.2], 0.5), { kind: 'pendulum', col: 3, row: 4, along: 'x', t0: 0.2 }]);
-// 220 Escada que desce, com uma ponte e gelo nos degraus
-G(220, ['######..@', '######^##', '####i.i##', '####^####', '##.b.####', '##^######', 'H..######'], [{ kind: 'spinner', col: 5, row: 2, length: 3.4 }]);
-// 221 Caracol grande: espiral que desce, com areia e giratórios
-G(221, ['@........', '########.', '.<.....#.', '.#####.#.', '.#H.>..#s', '.#######.', '.........'], [{ kind: 'spinner', col: 4, row: 0, length: 3.4 }, { kind: 'pendulum', col: 4, row: 6, along: 'x', t0: 0.8 }]);
-// 222 Ilha no lago: duas tábuas e uma ilha com giratório no meio
-G(222, ['@............', '.~~~~~~~~~~~.', '.bbbb...bbbbH', '.~~~~~~~~~~~.', '......o......'], [{ kind: 'pendulum', col: 2, row: 2, along: 'x', t0: 0.2 }, { kind: 'spinner', col: 6, row: 2, length: 3.4 }, { kind: 'pendulum', col: 10, row: 2, along: 'x', t0: 1.1 }]);
-// 223 Cruz grande: gelo a oeste, areia a leste, e o norte leva ao buraco
-G(223, ['####H####', '####.####', '####.####', '####.####', '@iiio.sss', '####.####', '####i####', '####s####', '####.####'], [{ kind: 'spinner', col: 4, row: 2, length: 3.4 }, GX(4, 1, [2.2, 0], [0.7, 0.2], 0.4)]);
-// 224 Pinball grande: nove pinos, dois giratórios e um portão antes do nicho do buraco
-G(224, ['####H####', '.s.....s.', '.o.o.o.o.', '.........', '.o.o.o.o.', '.........', '.o.o.o.o.', '.........', '####@####'], [{ kind: 'spinner', col: 2, row: 3, length: 3.4 }, { kind: 'spinner', col: 6, row: 5, length: 3.4, t0: 0.8 }, GX(4, 1, [2.2, 0], [0.7, 0.2], 0.3)]);
+const HG = (col, row, t0 = 0) => GX(col, row, [0, 2.2], [0.2, 0.7], t0); // portão num corredor leste-oeste
+const VG = (col, row, t0 = 0) => GX(col, row, [2.2, 0], [0.7, 0.2], t0); // portão num corredor norte-sul
+const SP = (col, row, t0 = 0) => ({ kind: 'spinner', col, row, length: 3.4, t0 });
 
+// Labirinto por semente: caminho do início ao ponto mais longe, com obstáculos espaçados ao longo da solução
+function maze(id, tier, mw, mh, seed, hazards) {
+  let a = seed >>> 0;
+  const rnd = () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const W = 2 * mw + 1, H = 2 * mh + 1;
+  const g = Array.from({ length: H }, () => Array(W).fill('#'));
+  const seen = new Set(['0,0']);
+  const stack = [[0, 0]];
+  g[1][1] = '.';
+  while (stack.length) {
+    const [cx, cy] = stack[stack.length - 1];
+    const nb = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([dx, dy]) => cx + dx >= 0 && cy + dy >= 0 && cx + dx < mw && cy + dy < mh && !seen.has(`${cx + dx},${cy + dy}`));
+    if (!nb.length) { stack.pop(); continue; }
+    const [dx, dy] = nb[Math.floor(rnd() * nb.length)];
+    seen.add(`${cx + dx},${cy + dy}`);
+    g[2 * cy + 1 + dy][2 * cx + 1 + dx] = '.';
+    g[2 * (cy + dy) + 1][2 * (cx + dx) + 1] = '.';
+    stack.push([cx + dx, cy + dy]);
+  }
+  // o buraco: a célula do labirinto mais distante do início
+  const dist = new Map([['1,1', 0]]), par = new Map();
+  const q = [[1, 1]];
+  let far = [1, 1];
+  while (q.length) {
+    const [x, y] = q.shift();
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const k = `${x + dx},${y + dy}`;
+      if (g[y + dy]?.[x + dx] !== '.' || dist.has(k)) continue;
+      dist.set(k, dist.get(`${x},${y}`) + 1);
+      par.set(k, [x, y]);
+      q.push([x + dx, y + dy]);
+      if (dist.get(k) > dist.get(far.join())) far = [x + dx, y + dy];
+    }
+  }
+  const path = [far];
+  while (par.has(path[0].join())) path.unshift(par.get(path[0].join()));
+  g[1][1] = '@';
+  g[far[1]][far[0]] = 'H';
+  const movers = [];
+  const L = path.length;
+  hazards.forEach((hz, k) => {
+    let i = Math.floor(((k + 1) * L) / (hazards.length + 1));
+    for (; i < L - 2; i++) {
+      const [x, y] = path[i], [px, py] = path[i - 1], [nx, ny] = path[i + 1];
+      const horiz = py === y && ny === y, vert = px === x && nx === x;
+      if (!(horiz || vert) || g[y][x] !== '.') continue;
+      if (hz === 'spinner') movers.push(SP(x, y, 0.4 * k));
+      else if (hz === 'gate') movers.push(horiz ? HG(x, y, 0.3 * k) : VG(x, y, 0.3 * k));
+      else if (hz === 'pendulum') movers.push(horiz ? { kind: 'pendulum', col: x, row: y, along: 'x', t0: 0.3 * k } : { kind: 'pendulum', col: x, row: y, t0: 0.3 * k });
+      else if (hz === 'o') g[y][x] = 'o';
+      else if (hz === 'i' || hz === 's') {
+        // trecho de duas células seguidas na mesma direção
+        const [qx, qy] = path[i + 1];
+        if (g[qy][qx] === '.' && i + 1 < L - 1) { g[y][x] = hz; g[qy][qx] = hz; } else continue;
+      }
+      break;
+    }
+  });
+  T(id, tier, g.map((r) => r.join('')), movers);
+}
+
+// Escada gerada: degraus de `flat` células, uma rampa entre eles, e um obstáculo diferente em cada degrau
+function stairs(id, tier, steps, flat, hazards) {
+  const Wd = (flat - 1) * steps + 1, Ht = 2 * steps - 1;
+  const g = Array.from({ length: Ht }, () => Array(Wd).fill('#'));
+  const movers = [];
+  for (let k = 0; k < steps; k++) {
+    const x0 = (flat - 1) * k, y = 2 * k;
+    for (let x = x0; x < x0 + flat; x++) g[y][x] = '.';
+    if (k < steps - 1) g[y + 1][x0 + flat - 1] = 'v';
+    const mid = x0 + 1, hz = hazards[k % hazards.length];
+    if (hz === 'o') g[y][mid] = 'o';
+    else if (hz === 'i') { g[y][mid] = 'i'; g[y][mid + 1] = 'i'; }
+    else if (hz === 's') { g[y][mid] = 's'; g[y][mid + 1] = 's'; }
+    else if (hz === 'b') g[y][mid] = 'b';
+    else if (hz === 'gate') movers.push(HG(mid, y, 0.3 * k));
+    else if (hz === 'spinner') movers.push(SP(mid, y, 0.4 * k));
+    else if (hz === 'pendulum') movers.push({ kind: 'pendulum', col: mid, row: y, along: 'x', t0: 0.3 * k });
+  }
+  g[0][0] = '@';
+  g[Ht - 1][Wd - 1] = 'H';
+  T(id, tier, g.map((r) => r.join('')), movers);
+}
+
+// ---- fáceis ----
+// 201 Moinho: o giratório faz de pás de moinho no meio do caminho
+T(201, 'easy', ['@..#####', '##.#####', '##...o..', '#####.##', '#####..H'], [SP(3, 2)]);
+// 202 Ponte do moinho: duas tábuas sobre a água
+T(202, 'easy', ['@..bbb...', '########.', '#H..bbb..'], [{ kind: 'pendulum', col: 7, row: 0, along: 'x', t0: 0.3 }, HG(2, 2, 0.4)]);
+// 203 Trincheira: a areia fica na reta final, perto do buraco
+T(203, 'easy', ['@...o..', '######.', 'Hsss...'], [SP(2, 0)]);
+// 204 Descida: ladeira, curva e outra ladeira até o buraco
+T(204, 'easy', ['@..<<<...', '########.', '#H..>>>o.'], [SP(7, 0)]);
+// 205 Anel do pomar: duas voltas em torno de um bloco, com pinos de um lado e giratório do outro
+T(205, 'easy', ['@......', '.#####.', '.#####o', '.#####.', '.....sH'], [SP(0, 2)]);
+// ---- médias ----
+// 206 Colina: o topo tem subida e descida; a volta pela esquerda é de gelo, com giratório
+T(206, 'medium', ['@.>>......', 'i########^', 'i########^', 'i########.', 'i########.', '........H.'], [SP(0, 2), HG(6, 0, 0.5)]);
+// 207 Lago: a tábua longa é o atalho; a volta por fora é segura
+T(207, 'medium', ['@............', '.~~~~~~~~~~~.', '.bbbbbbbbbbbH', '.~~~~~~~~~~~.', '......o......'], [{ kind: 'pendulum', col: 4, row: 2, along: 'x', t0: 0.3 }, { kind: 'pendulum', col: 8, row: 2, along: 'x', t0: 1.1 }]);
+// 208 Salas: quatro salas ligadas por portas, subindo na diagonal
+T(208, 'medium', ['####.......', '####...#.o.', '#####.##..H', '####...####', '...#...####', '.@.....####', '...########'], [HG(3, 4, 0.3), SP(5, 4)]);
+// 209 Escada: sobe em degraus na diagonal
+T(209, 'medium', ['@..######', '##v######', '##.o.####', '####v####', '####...##', '######v##', '######..H'], [HG(5, 4, 0.4), SP(5, 4)]);
+maze(210, 'medium', 4, 3, 7, ['o', 'spinner', 'gate']);
+// 211 Torre: o caminho sobe em volta de uma torre até o buraco no topo
+T(211, 'medium', ['@.>>...', '######v', 'H#####v', '.#####.', '^#####.', '^#####.', '....<<.'], [SP(4, 0), { kind: 'pendulum', col: 6, row: 4, t0: 0.5 }]);
+// 212 Caracol: espiral para dentro, com o buraco no centro
+T(212, 'medium', ['@......', '######.', '.....#.', '.###.#s', '.#H..#.', '.#####.', '.......'], [SP(3, 0), { kind: 'pendulum', col: 3, row: 6, along: 'x', t0: 0.6 }]);
+// 213 Descida em S: duas ladeiras e o final em gelo
+T(213, 'medium', ['@..<<<.....', '##########.', '......>>>..', '.##########', '.iiiiiiiH..'], [HG(9, 2, 0.2), SP(2, 0)]);
+// 214 Escada que desce, com ponte e gelo nos degraus
+T(214, 'medium', ['######..@', '######^##', '####i.i##', '####^####', '##.b.####', '##^######', 'H..######'], [SP(5, 2)]);
+maze(215, 'medium', 4, 4, 21, ['spinner', 'i', 'o', 'gate']);
+// 216 Loop e gelo: sobe a espiral e sai deslizando no gelo até o buraco
+T(216, 'medium', ['#..iiiiiH#', '#LLL######', '..LL######', '@...######'], [SP(5, 0)]);
+// 217 Ilha no lago: duas tábuas e uma ilha com giratório no meio
+T(217, 'medium', ['@............', '.~~~~~~~~~~~.', '.bbbb...bbbbH', '.~~~~~~~~~~~.', '......o......'], [{ kind: 'pendulum', col: 2, row: 2, along: 'x', t0: 0.2 }, SP(6, 2), { kind: 'pendulum', col: 10, row: 2, along: 'x', t0: 1.1 }]);
+// 218 Caracol grande: espiral que desce, com areia e giratórios
+T(218, 'medium', ['@........', '########.', '.<.....#.', '.#####.#.', '.#H.>..#.', '.#######.', '.........'], [SP(4, 0), { kind: 'pendulum', col: 4, row: 6, along: 'x', t0: 0.8 }]);
+// ---- difíceis ----
+// 219 Colina dupla: uma colina em cima, outra embaixo
+T(219, 'hard', ['@.>>o<<...', '#########.', 'H########.', '.########.', '.>>...<<..'], [SP(0, 3), VG(9, 2, 0.5), { kind: 'pendulum', col: 4, row: 4, along: 'x', t0: 0.2 }]);
+maze(220, 'hard', 5, 4, 5, ['spinner', 's', 'gate', 'o', 'spinner']);
+// 221 Terraços: cinco degraus, cada um com um obstáculo diferente
+stairs(221, 'hard', 5, 4, ['o', 'i', 'b', 'gate', 'spinner']);
+maze(222, 'hard', 5, 5, 11, ['spinner', 'i', 'o', 'gate', 's', 'spinner']);
+// 223 Quatro salas: quatro salas na diagonal, cada uma com seu moinho
+T(223, 'hard', ['###############.H.', '###############..o', '##########........', '##########...#####', '#####........#####', '#####...##########', '........##########', '.@.###############', '...###############'], [HG(3, 6, 0.3), SP(6, 5), { kind: 'pendulum', col: 8, row: 4, along: 'x', t0: 0.5 }, SP(11, 3, 0.9), { kind: 'pendulum', col: 13, row: 2, along: 'x', t0: 0.2 }]);
+maze(224, 'hard', 6, 5, 3, ['i', 'spinner', 's', 'gate', 'spinner', 'o', 'i', 'pendulum']);
+
+fs.writeFileSync(new URL('./level-stats.json', import.meta.url), JSON.stringify(STATS, null, 1));
 const holeModel = loadHole();
 fs.mkdirSync(out, { recursive: true });
 for (const L of LEVELS) {

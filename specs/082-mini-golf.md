@@ -50,3 +50,16 @@ Status: **feito** (14/11/2026): física portada, 20 fases do Open Golf + 20 fase
 
 Tela "Offline" com fases trancadas ou todas abertas (proposta: todas abertas); acabamentos e rastros da bola;
 licenças das texturas e modelos do repositório (conferir antes de copiar arte; o código e o formato são MIT).
+
+## Requisitos mínimos de fase (14/11/2026)
+
+Toda fase nova montada em `tools/art/minigolf/build-levels.mjs` é conferida na construção (sem robô); a que falhar derruba o build:
+
+1. Caminho de chão do início ao buraco.
+2. Caminho mínimo: fácil 10 células (3 m cada), médio 14, difícil 22.
+3. O caminho tem pelo menos uma curva.
+4. Não dá para acertar o buraco em linha reta livre: tem parede, pino, peça móvel, água ou desnível na linha.
+5. Gelo e areia só ficam no caminho, nunca num canto vazio.
+6. Tipos de obstáculo diferentes: fácil 1, médio 2, difícil 3 (giratório, pêndulo, portão, pino, água, rampa, gelo, areia, loop).
+
+As fases maiores usam o gerador de labirinto por semente (`maze`, obstáculos espaçados ao longo da solução) e o de escada (`stairs`); os loops vêm da peça do Open Golf (`loop-piece.json`). `levels.test.ts` confere as 40 fases (um buraco, geometria válida, bola parada no início fica no chão).
