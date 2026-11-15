@@ -1305,6 +1305,48 @@ a.hz-today:active {
   .hz-roomtop .hz-room-join { flex-direction: column; flex-wrap: nowrap; align-items: stretch; }
   .hz-roomtop .hz-room-join .btn { width: 100%; }
 }
+
+
+
+/* ===== Computador: o painel da direita cabe inteiro na tela e fica parado quando a página rola (só os jogos descem) ===== */
+@media (min-width: 1000px) {
+  .hz-side {
+    gap: 12px;
+    top: 14px;
+    max-height: calc(100vh - 28px);
+  }
+  /* dailys: os quatro lado a lado, pequenos */
+  .hz-side .hz-dailies {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    padding: 0 3px 3px 0;
+  }
+  .hz-side .hz-dailies li { gap: 4px; }
+  .hz-side .hz-dt { border-radius: 11px; box-shadow: 2px 2px 0 var(--ink); }
+  .hz-side .hz-dt.is-done { outline-width: 3px; outline-offset: 1px; }
+  .hz-side .hz-dt-art { inset: 17px 0 0; }
+  .hz-side .hz-dt-band { height: 17px; font-size: 8.5px; letter-spacing: 0.1em; border-bottom-width: 2px; }
+  .hz-side .hz-dt-mark.todo { width: 40px; height: 15px; margin-left: -20px; bottom: 3px; font-size: 7.5px; border-width: 1.5px; }
+  .hz-side .hz-dt-name { font-size: 9px; }
+  .hz-today-sec .hz-h { font-size: 15px; margin-bottom: 2px; }
+  /* sala: cartão mais compacto */
+  .hz-roomtop { padding: 12px 14px; box-shadow: 4px 4px 0 var(--ink); }
+  .hz-roomtop-btn { font-size: 19px; padding-bottom: 8px; }
+  .hz-roomtop .hz-room { gap: 8px; }
+  .hz-roomtop .btn { min-height: 40px; }
+  .hz-roomtop input { min-height: 38px; }
+  /* amigos online: linhas menores */
+  .hz-online-sec { padding: 10px 12px; }
+  .hz-online-sec .hz-online { gap: 6px; }
+  .hz-online-sec .hz-friend { min-height: 42px; }
+  .hz-online-sec .hz-friend-av,
+  .hz-online-sec .hz-friend-plus { width: 28px; height: 28px; }
 }
-
-
+/* telas baixas: aperta mais um pouco (some o texto de ajuda do código) */
+@media (min-width: 1000px) and (max-height: 760px) {
+  .hz-roomtop .hz-room-hint,
+  .hz-roomtop small { display: none; }
+  .hz-roomtop { padding: 10px 12px; }
+  .hz-roomtop-btn { font-size: 17px; padding-bottom: 6px; }
+  .hz-online-sec .hz-friend { min-height: 38px; }
+}
