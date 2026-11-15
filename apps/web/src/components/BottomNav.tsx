@@ -28,7 +28,7 @@ export function BottomNav({ railOnly = false }: { railOnly?: boolean }) {
   return (
     <nav
       className={`bottom-nav${railOnly ? ' rail-only' : ''}`}
-      data-n={5}
+      data-n={inRoom ? 5 : 4}
       aria-label="Navegação principal"
     >
       {/* Só aparece no menu lateral (tablet e computador). */}
