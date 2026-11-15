@@ -7,7 +7,7 @@ Status: rascunho com as decisões de heróis, preços, chefe final e obstáculos
 1. **Itens novos** parecidos com os do Vampire Survivors (VS), no estilo dele, com animações prontas e bem feitas **seguindo o padrão que o jogo já tem** (arte do Slash + sprites gerados em `extra-art.ts`).
 2. **Pesquisar cada item no VS antes de fazer** (o que faz, como evolui, o que combina com o quê, números) e só então implementar.
 3. **Bestiário** como o do VS: lista numerada dos inimigos à esquerda, painel à direita com o bicho **animado**, descrição, estatísticas e onde aparece.
-4. **Evolução e uniões** como no VS (seção 5): arma no máximo + passivo evolui na próxima escolha, e a carta avisa "combina com" quando a pessoa já tem o parceiro.
+4. **Evolução** como no VS (seção 5): uma arma no nível máximo mais **um** passivo (o certo para ela) vira uma versão melhorada da própria arma; a carta avisa "combina com" quando a pessoa já tem o parceiro. **Não há uniões** de várias armas (decisão do Lucas, 15/11/2026).
 5. Perguntar antes de decidir qualquer coisa duvidosa (seção 8).
 
 ## 2. O que já existe e esta fase reaproveita
@@ -25,10 +25,10 @@ Para cada item pedido, antes de codar, escrever na seção 3.3 uma ficha com:
 
 | Campo | Conteúdo |
 | --- | --- |
-| Origem no VS | nome original, tipo (arma, passivo, arcano, união), como se obtém |
+| Origem no VS | nome original, tipo (arma, passivo), como se obtém |
 | Comportamento | o que faz, alcance, padrão de ataque, o que o Poder/Alcance/Ligeireza/Sabedoria mudam nele |
 | Níveis | 1 a 6 (armas) ou 1 a 5 (passivos), com o que muda em cada |
-| Evolução | com qual passivo (ou qual arma, se for união), resultado, texto "Requer" |
+| Evolução | com qual passivo, resultado, texto "Requer" |
 | Ignora | quais passivos globais não afetam a arma (linha "Ignora: ..." da carta) |
 | Arte | quadros do atlas do Slash a reaproveitar ou sprite novo a gerar (paleta, tamanho, frames) |
 | Animação | quadros por segundo, laço, efeito de acerto, som (do Slash ou novo) |
@@ -46,7 +46,7 @@ Sem ficha completa e aprovada, o item não entra.
 
 ### 3.3 Fichas dos itens
 
-Decisão do Lucas (15/11/2026): as **primeiras armas novas** vêm de mecânicas vistas nos repositórios de estudo (só a ideia, nenhuma arte, som ou código copiado) e cada uma tem **arte feita por nós no estilo do Slash**. Evoluções e uniões vêm da tabela "Evolutions & Unions" do VS que o Lucas mandou. Tamanho de ícone 16x11 na paleta `PAL`, moldura octogonal igual aos atuais; evoluídos com a moldura dourada `E/*`.
+Decisão do Lucas (15/11/2026): as **primeiras armas novas** vêm de mecânicas vistas nos repositórios de estudo (só a ideia, nenhuma arte, som ou código copiado) e cada uma tem **arte feita por nós no estilo do Slash**. As evoluções vêm da tabela "Evolutions & Unions" do VS (só as de arma + passivo) que o Lucas mandou. Tamanho de ícone 16x11 na paleta `PAL`, moldura octogonal igual aos atuais; evoluídos com a moldura dourada `E/*`.
 
 Convenções das fichas: "Ignora" lista os passivos globais que **não** afetam a arma (linha laranja da carta); números base são ponto de partida para calibrar com o robô. Ligeireza (+10% de velocidade de projétil por nível) e Alcance (+10% de tamanho por nível) valem para tudo que tem velocidade ou tamanho, a menos que a ficha diga que ignora.
 
@@ -110,7 +110,7 @@ Convenções das fichas: "Ignora" lista os passivos globais que **não** afetam 
 
 | Campo | Conteúdo |
 | --- | --- |
-| Origem no VS | Fire Wand / King Bible (ideia do repositório: anel de bolas de fogo que nasce e gira); evolui em Anel Infernal (união com Ligeireza) |
+| Origem no VS | Fire Wand / King Bible (ideia do repositório: anel de bolas de fogo que nasce e gira); evolui em Anel Infernal (com Ligeireza) |
 | Comportamento | A cada 3 s nasce um **anel de bolas de fogo** em volta do jogador, gira por 2,5 s e some. A quantidade de bolas sobe por nível, e o raio cresce um pouco enquanto gira. Diferente dos Orbes Guardiões (que ficam o tempo todo) |
 | Níveis | 1: 3 bolas. 2: +1. 3: dano +30%. 4: +1. 5: duração +25%. 6: +2 |
 | Evolução | **Anel Infernal** = Círculo no 6 + **Ligeireza** (qualquer nível). Dois anéis (um por dentro girando ao contrário), bolas azuladas que deixam rastro de fogo |
@@ -152,14 +152,14 @@ Convenções das fichas: "Ignora" lista os passivos globais que **não** afetam 
 - Vai no save da conta. Atenção: `stats` no schema da API é limitado a 6.000 caracteres; com 40 entradas, usar um campo próprio `bestiary` (número de abates por id, ids curtos) e subir o schema junto, sem migration (é JSON em `user_prefs`).
 - Conquistas novas: "Zoólogo" (ver todos), "Caçador de chefes" (derrotar todos os chefes), por mapa.
 
-## 5. Evolução e uniões, como no Vampire Survivors
+## 5. Evolução, como no Vampire Survivors
 
 Referência enviada pelo Lucas: o guia "Evolutions & Unions" do VS e as fichas de item do jogo (Chicote e Laceração Sangrenta).
 
 ### 5.1 Regras
 
 1. **Evolução (arma + passivo):** uma arma no **nível máximo**, com o **passivo certo** na mochila (em qualquer nível), pode evoluir para uma versão bem mais forte (o Chicote vira Laceração Sangrenta: vermelho, vai muito mais longe, bate mais rápido, critica e absorve vida). Exemplos do guia: Chicote + Coração Vazio, Varinha Mágica + Livro de Magia (Tomo Vazio), Faca + Bracer, Machado + Candelabro, Cruz + Trevo, Rei da Bíblia + Espinafre, entre outros.
-2. **União (duas ou três armas no máximo):** coluna do meio e da direita do guia: duas armas no nível máximo (ou arma + passivo + arma) se fundem numa arma nova (ex.: Chicote + Laceração = Rosa de Sangue; Anel + Anel = União de anéis; trios com três itens no nível máximo).
+2. **Só evolução, sem uniões (decisão do Lucas, 15/11/2026):** a única combinação é **1 arma no nível máximo + 1 item de benefício (passivo)** = a mesma arma melhorada. Não existe fusão de duas ou três armas, e a coluna do meio e da direita do guia do VS (uniões) fica de fora.
 3. **A evolução aparece na hora de escolher:** quando a arma chega ao máximo e o passivo está na mochila, **a próxima janela de nível entrega a evolução no lugar da melhoria dessa arma** (carta dourada com o nome novo). O baú continua entregando evolução quando aparecer primeiro (regra atual). Ao escolher, a arma antiga some e a evoluída ocupa o mesmo slot.
 4. **Aviso "combina com":** na carta de qualquer item oferecido (arma ou passivo), se a pessoa **já tem** o parceiro dele, a carta mostra uma faixa "Combina com [Item]" (e, quando já está tudo no máximo, "Pronta para evoluir"). Vale nos dois sentidos: passivo oferecido que evolui uma arma que a pessoa tem, e arma oferecida cujo passivo a pessoa tem. Itens sem combinação não mostram faixa.
 5. **Slot pronto:** no HUD, o slot da arma que já pode evoluir ganha moldura piscando (só `opacity`), como pista visual enquanto a evolução não chega.
@@ -170,17 +170,17 @@ Referência enviada pelo Lucas: o guia "Evolutions & Unions" do VS e as fichas d
 
 - Carta de item: nome, descrição curta, e linhas de apoio em laranja: **"Ignora: Velocidade, Duração."** (quais passivos globais não afetam aquela arma) e, nas evoluídas, **"Evolução do Chicote."** e **"Requer: Coração Vazio."**
 - Ícone evoluído com a moldura dourada (`E/*`) e a arte vermelha/mais viva própria de cada evolução.
-- **Guia de combinações** (tela nova ou aba em Itens), no formato do terceiro print: linhas "ARMA (MAX) + PASSIVO = EVOLUÇÃO", uniões com 2 ou 3 itens, e o bloco "Sem evolução". Itens ainda não descobertos aparecem como `?`.
+- **Guia de combinações** (aba em Itens e dentro da pausa da partida), no formato do terceiro print: linhas "ARMA (MAX) + PASSIVO = ARMA EVOLUÍDA" e o bloco "Sem evolução". Itens ainda não descobertos aparecem como `?`.
 - A coleção mostra a receita de cada evolução gerada pela tabela de dados (nunca texto escrito à mão).
 
 ### 5.3 Dados e motor
 
-- `EVOLUTIONS` (`data.ts`) vira uma tabela de receitas: `{ id, kind: 'evolution' | 'union', weapons: UpgradeId[] (máximo), passives: UpgradeId[] (qualquer nível), result: EvoId }`. Hoje já existe o formato arma + passivo; a união acrescenta mais de uma arma.
+- `EVOLUTIONS` (`data.ts`) já é uma tabela de receitas `{ id, maxed: arma no nível máximo, passive: item de benefício exigido (qualquer nível), result }`; a fase 3 só acrescenta as receitas das armas novas e das atuais revisadas.
 - `availableEvolutions()` passa a alimentar também `drawOptions()` (janela de nível) além do baú.
 - `drawOptions` marca cada opção com `combo: UpgradeId | null` (parceiro que a pessoa já tem) para a carta mostrar a faixa.
-- Evento `evolve` e animação de evolução já existem (fase 2); as uniões reaproveitam, com o efeito dourado.
+- Evento `evolve` e animação de evolução já existem (fase 2); as evoluções novas reaproveitam, com o efeito dourado.
 - Robô e simulador aprendem a perseguir receitas (priorizar o passivo parceiro da arma mais forte).
-- Testes: receita certa libera a opção na janela de nível; sem o passivo não libera; união exige todas as armas no máximo; a faixa "combina com" só aparece com o parceiro na mochila; a evolução substitui a arma antiga no slot.
+- Testes: receita certa libera a opção na janela de nível; sem o passivo não libera; arma abaixo do máximo não libera; a faixa "combina com" só aparece com o parceiro na mochila; a evolução substitui a arma antiga no slot.
 
 ## 6. Sistemas novos da fase
 
@@ -270,5 +270,4 @@ Preços **nivelados**, de 600 em 600 (600, 1.200, 1.800, 2.400, 3.000, 3.600, 4.
 
 1. **A lista de itens** além das 5 armas desta spec (a regra de evolução já está na seção 5).
 2. **Wiki do Vampire Survivors e Medium:** liberados na rede da sessão em 15/11/2026 (ambiente `nocap-app`); falta confirmar que respondem (o proxy pode levar alguns minutos).
-3. **Uniões de 3 itens:** três itens no nível máximo (duas armas e um passivo, ou três armas) que se fundem numa arma nova, como a coluna da direita do guia do VS. Proposta: **não entram na primeira leva** (só as de 2 itens e as evoluções arma + passivo); entram depois que houver armas suficientes para formar trios.
-4. **Evoluções das armas atuais** (Adagas, Machado, Nova Ígnea): conferir uma a uma com o guia do VS.
+3. **Evoluções das armas atuais** (Adagas, Machado, Nova Ígnea): conferir uma a uma com o guia do VS.
