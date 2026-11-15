@@ -1,6 +1,7 @@
 import { HEROES, MAPS, SWORD_BOXES, type Enemy, type NhWorld } from '@nocap/games';
 import { animFrame, drawFrame, type Atlas } from './assets';
 import { BREAKABLE_DEBRIS, BREAKABLE_GLOW } from './extra-art';
+import { MONSTER_BY_ID } from '@nocap/games';
 
 /** Área visível do mundo (em unidades do mundo), recalculada a cada quadro para preencher a tela em pé ou deitada. */
 let CX = 255;
@@ -115,6 +116,127 @@ export const viewHalf = (): { hw: number; hh: number } => ({
 
 /** Tamanho lógico da tela (preenche o canvas inteiro); o app atualiza ao redimensionar. */
 export const stage = { w: 510, h: 680 };
+
+/** Como cada monstro do Dungeon Crawl se mexe (os quadros são parados: a animação é feita em código). */
+const MON_ANIM: Record<
+  string,
+  { bob: number; spd: number; sq: number; sway: number; left?: boolean; fly?: boolean }
+> = {
+  firefly: { bob: 5, spd: 14, sq: 0.14, sway: 0.25, left: true, fly: true },
+  slime: { bob: 0, spd: 5, sq: 0.2, sway: 0 },
+  scorpion: { bob: 1, spd: 7, sq: 0.04, sway: 0.05, left: true },
+  snake: { bob: 0, spd: 6, sq: 0.05, sway: 0.22 },
+  eye: { bob: 4, spd: 3, sq: 0.06, sway: 0.05, fly: true },
+  hound: { bob: 2, spd: 11, sq: 0.08, sway: 0.06, left: true },
+  skeleton: { bob: 2, spd: 8, sq: 0.05, sway: 0.1 },
+  brainworm: { bob: 0, spd: 5, sq: 0.12, sway: 0.1 },
+  griffin: { bob: 3, spd: 9, sq: 0.1, sway: 0.08, left: true, fly: true },
+  treant: { bob: 0, spd: 3, sq: 0.04, sway: 0.06 },
+  wyvern: { bob: 3, spd: 6, sq: 0.1, sway: 0.05, fly: true },
+  golddragon: { bob: 2, spd: 4, sq: 0.06, sway: 0.04 },
+  icewolf: { bob: 2, spd: 11, sq: 0.08, sway: 0.06, left: true },
+  wraith: { bob: 5, spd: 4, sq: 0.06, sway: 0.08, fly: true },
+  golem: { bob: 0, spd: 2.5, sq: 0.04, sway: 0.03 },
+};
+
+/** Desenha um monstro novo com a animação do tipo dele e os avisos das regras (bote, mergulho, fase, raiva, raízes). */
+function drawMonster(
+  g: CanvasRenderingContext2D,
+  a: Atlas,
+  w: NhWorld,
+  e: Enemy,
+  x: number,
+  y: number,
+  t: number,
+): void {
+  const m = MONSTER_BY_ID.get(e.s.id)!;
+  const an = MON_ANIM[m.art] ?? MON_ANIM.skeleton!;
+  const ph = t * an.spd + e.uid;
+  const hop = an.fly ? Math.sin(ph * 0.6) * an.bob : -Math.abs(Math.sin(ph * 0.5)) * an.bob;
+  let sxm = 1 + an.sq * Math.sin(ph);
+  let sym = 1 - an.sq * Math.sin(ph);
+  let rot = Math.sin(ph * 0.5) * an.sway;
+  let dx = 0;
+  let tint: string | undefined;
+  let tintAlpha = 0.5;
+  let alpha = 1;
+  const trait = e.s.trait;
+  const ghost = w.isGhost(e);
+  if (e.mode === 1) {
+    // avisando o bote: treme e pisca
+    dx = Math.sin(t * 60) * 2;
+    tint = '#ffffff';
+    tintAlpha = 0.35 + 0.3 * Math.sin(t * 40);
+    sym *= 0.9;
+  } else if (e.mode === 2) {
+    sxm *= 1.28;
+    sym *= 0.82;
+    rot += 0.0;
+  }
+  if (trait === 'enrage' && e.hp <= e.maxHp / 2) {
+    tint = '#ff2a2a';
+    tintAlpha = 0.4;
+  }
+  if (trait === 'phase') {
+    alpha = ghost ? 0.35 : 0.9;
+    if (ghost) {
+      tint = '#9ad0ff';
+      tintAlpha = 0.6;
+    }
+  }
+  if (
+    (trait === 'orb' || trait === 'spread' || trait === 'ring' || trait === 'scythe') &&
+    e.shootTimer > 2.6
+  ) {
+    sxm *= 1.12;
+    sym *= 1.12;
+  }
+  // sombra no chão
+  g.save();
+  g.globalAlpha = an.fly ? 0.18 : 0.28;
+  g.fillStyle = '#000';
+  g.beginPath();
+  g.ellipse(x, y + 16 * m.scale * 0.6, 13 * m.scale, 4.5 * m.scale, 0, 0, Math.PI * 2);
+  g.fill();
+  g.restore();
+  // aura das raízes do Ent
+  if (trait === 'roots') {
+    g.save();
+    g.globalAlpha = 0.22 + 0.06 * Math.sin(t * 3);
+    g.strokeStyle = '#6fd86a';
+    g.lineWidth = 3;
+    g.setLineDash([10, 8]);
+    g.beginPath();
+    g.ellipse(x, y + 10, 115, 80, 0, 0, Math.PI * 2);
+    g.stroke();
+    g.restore();
+  }
+  const frame = `M/${m.art}`;
+  const flip = an.left ? e.faceX > 0 : e.faceX < 0;
+  if (e.mode === 2) {
+    // rastro do disparo
+    drawFrame(g, a, frame, x - e.dirX * 18, y - e.dirY * 18 + hop, {
+      s: m.scale,
+      sx: sxm,
+      sy: sym,
+      flip,
+      alpha: 0.3,
+      ay: 0.62,
+    });
+  }
+  drawFrame(g, a, frame, x + dx, y + hop, {
+    s: m.scale,
+    sx: sxm,
+    sy: sym,
+    rot,
+    flip,
+    ay: 0.62,
+    alpha,
+    white: e.flash > 0,
+    tint,
+    tintAlpha,
+  });
+}
 
 export interface WorldDrawState {
   time: number;
@@ -234,6 +356,10 @@ export function drawWorld(
     if (!playerDone && o.y < w.player.y) drawPlayer();
     const e = o.e!;
     if (e.life > 0 && e.life <= 2 && Math.floor(t * 2.5) % 2 === 0) continue; // pisca antes de sumir
+    if (MONSTER_BY_ID.has(e.s.id)) {
+      drawMonster(g, a, w, e, sx(e.x), sy(e.y), t);
+      continue;
+    }
     const touching = Math.abs(e.x - w.player.x) < 40 && Math.abs(e.y - w.player.y) < 48;
     drawFrame(g, a, animFrame(a, enemyAnimKey(e, touching), t + e.uid * 0.17), sx(e.x), sy(e.y), {
       flip: e.faceX < 0,

@@ -82,4 +82,8 @@ Leitura: **o equilíbrio ainda não está bom.** Quem começa com Orbes, Raio ou
 - **Economia:** custos da loja e dos heróis 15 vezes os do Slash (heróis: 600, 1500, 2500, 4000).
 - **Mapas:** Deserto exige nível 10, 8 min e 3 chefes; Gelo exige nível 25, 15 min e 2 evoluções.
 
-- **Mapas (15/11/2026):** por pedido do Lucas só o Campo Verde está no jogo por enquanto; Deserto e Gelo ficam guardados em `MAPS`/`MAP_INFO` (com as exigências de desbloqueio) fora de `MAP_IDS`.
+- **Mapas (15/11/2026):** o Campo Verde e o Deserto Seco (com as exigências de desbloqueio) estão no jogo; o Gelo fica guardado em `MAPS`/`MAP_INFO` (com as exigências de desbloqueio) fora de `MAP_IDS`.
+
+## Monstros do Dungeon Crawl (15/11/2026)
+
+15 monstros novos (arte CC0 do Dungeon Crawl Stone Soup, folha em `apps/web/public/nighthunt/dcss.png`, animados por código em `view.ts`), cada um com uma regra própria (`monsters.ts`) e nenhum no Campo Verde. Deserto (12): Vaga-lume (zigue-zague), Gosma Azul (divide em duas), Escorpião (carapaça: metade do dano de projétil), Naja (bote com aviso), Olho Sangrento (orbe mirado), Cão Infernal (matilha, enfurece com meia vida), Esqueleto Ceifador (arremessa foice), Verme Cerebral (drena 3 de XP), Grifo (mergulho), Ent Ancião (raízes: -40% de velocidade por perto), Dragão Rosa (3 orbes em leque), Dragão Dourado (chefe do mapa, anel de 12 orbes, sempre baú). Gelo, guardados (3): Lobo de Gelo (uivo acelera a matilha), Espectro (fica fantasma, sem sofrer nem causar dano), Golem de Cristal (8 estilhaços ao morrer). Licença da folha: ver `docs/ASSETS-NIGHTHUNT.md`.

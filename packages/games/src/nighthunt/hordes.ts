@@ -88,6 +88,36 @@ export const DRIP_TIERS: readonly DripTier[] = [
     ],
   },
 ];
+/**
+ * Quem aparece no fluxo contínuo de um mapa: a faixa do Slash mais os monstros daquele mapa (o Campo Verde não tem nenhum).
+ * Os monstros do mapa entram com peso extra para serem uma parte grande do que se vê.
+ */
+export const MAP_DRIP: Record<string, ReadonlyArray<readonly [number, string, number]>> = {
+  deserto: [
+    [0, 'Vagalume', 5],
+    [60, 'GosmaAzul', 4],
+    [150, 'Escorpiao', 4],
+    [150, 'NajaRubra', 3],
+    [300, 'OlhoSangrento', 3],
+    [480, 'EsqueletoCeifador', 3],
+    [480, 'VermeCerebral', 2],
+    [720, 'Grifo', 3],
+    [720, 'EntAnciao', 1],
+    [960, 'DragaoRosa', 2],
+  ],
+  gelo: [
+    [0, 'LoboDeGelo', 4],
+    [150, 'Espectro', 3],
+    [480, 'GolemCristal', 2],
+  ],
+};
+export function dripWeights(t: number, mapId: string): ReadonlyArray<readonly [string, number]> {
+  const base = dripTier(t).weights;
+  const extra = (MAP_DRIP[mapId] ?? [])
+    .filter(([from]) => t >= from)
+    .map(([, id, w]) => [id, w] as const);
+  return extra.length ? [...base, ...extra] : base;
+}
 export function dripTier(t: number): DripTier {
   let cur = DRIP_TIERS[0]!;
   for (const tier of DRIP_TIERS) if (t >= tier.from) cur = tier;
@@ -205,3 +235,38 @@ export const HORDE_EVENTS: readonly HordeEvent[] = [
  */
 export const bossHp = (baseHealth: number, t: number): number =>
   Math.round(baseHealth * (7 + t / 45));
+
+/** Eventos próprios de cada mapa (somam aos de todos): matilhas, chefes do mapa. */
+export const MAP_EVENTS: Record<string, readonly HordeEvent[]> = {
+  deserto: [
+    {
+      id: 'hellpack',
+      from: 200,
+      every: 70,
+      shape: 'swarm',
+      enemy: () => 'CaoInfernal',
+      count: (t) => Math.min(30, Math.round(6 + t / 120)),
+      quiet: 5,
+    },
+    {
+      id: 'golddragon',
+      from: 360,
+      every: 360,
+      shape: 'boss',
+      enemy: () => 'DragaoDouradoBoss',
+      count: () => 1,
+      quiet: 5,
+    },
+  ],
+  gelo: [
+    {
+      id: 'wolfpack',
+      from: 180,
+      every: 75,
+      shape: 'swarm',
+      enemy: () => 'LoboDeGelo',
+      count: (t) => Math.min(30, Math.round(6 + t / 100)),
+      quiet: 5,
+    },
+  ],
+};

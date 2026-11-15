@@ -1,4 +1,4 @@
-import { HEROES, MAPS } from '@nocap/games';
+import { HEROES, MAPS, MONSTER_CELLS } from '@nocap/games';
 
 /**
  * Arte nova do Night Hunt feita no estilo do Slash: variações de matiz dos sprites do guerreiro (um por herói) e da
@@ -434,6 +434,7 @@ export function extendAtlas(
   base: HTMLImageElement,
   frames: Record<string, Rect>,
   bgs: { f: string }[][],
+  dcss?: HTMLImageElement,
 ): HTMLCanvasElement {
   const W = base.width;
   const pending: Array<{ name: string; canvas: HTMLCanvasElement }> = [];
@@ -470,6 +471,15 @@ export function extendAtlas(
   // orbes do jogador: as bolas do corvo em azul
   for (let i = 0; i < 4; i++)
     add(`X/orb${i}`, shifted(crop(`Enemies/DarkRaven/Ball0${i}`), 140, 1.2));
+  // monstros do Dungeon Crawl Stone Soup (CC0): um quadro por bicho, recortado da folha em células de 34 px
+  if (dcss)
+    for (const [art, [col, row]] of Object.entries(MONSTER_CELLS)) {
+      const c = document.createElement('canvas');
+      c.width = 34;
+      c.height = 34;
+      c.getContext('2d')!.drawImage(dcss, col * 34, 102 + row * 34, 34, 34, 0, 0, 34, 34);
+      add(`M/${art}`, c);
+    }
   // objetos quebráveis do cenário
   for (const [mapId, map] of Object.entries(BREAKABLE_ART))
     add(`X/brk/${mapId}`, outlined(paint(map, 2, 12), '#0f1424', 2));

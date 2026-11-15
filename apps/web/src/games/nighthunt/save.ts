@@ -1,4 +1,4 @@
-import { emptySave, type NhSave } from '@nocap/games';
+import { MAP_IDS, emptySave, type NhSave } from '@nocap/games';
 
 const KEY = 'nighthunt:save:v1';
 /** Avisa a sincronização com a conta que o save mudou no aparelho / que a conta mandou um save mais novo. */
@@ -19,7 +19,12 @@ function normalize(s: Partial<NhSave>): NhSave {
     achievements: s.achievements ?? {},
     seen: s.seen ?? [],
     heroes: s.heroes?.length ? s.heroes : base.heroes,
-    pick: { ...base.pick, ...s.pick, map: 'campo' }, // só há um mapa por enquanto
+    pick: {
+      ...base.pick,
+      ...s.pick,
+      // um mapa que saiu do jogo volta para o primeiro
+      map: MAP_IDS.includes(s.pick?.map ?? '') ? s.pick!.map : 'campo',
+    },
   };
 }
 

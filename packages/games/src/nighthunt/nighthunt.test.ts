@@ -11,7 +11,8 @@ import {
   goldWithBonus,
   mapUnlocked,
 } from './rules';
-import { NhWorld, NO_META, STEP, metaBonus } from './world';
+import { NhWorld, NO_META, STEP, metaBonus, type Enemy } from './world';
+import { MONSTERS } from './monsters';
 import {
   EVOLUTIONS,
   HEROES,
@@ -167,6 +168,9 @@ describe('mundo', () => {
       dirY: 0,
       shootTimer: 0,
       dead: false,
+      maxHp: 1,
+      aux: 0,
+      mode: 0,
     });
     w.step({ x: 0, y: 0 });
     w.step({ x: 0, y: 0 });
@@ -255,6 +259,9 @@ const enemy = (w: NhWorld, id: string, x: number, y: number, uid: number) => {
     dirY: 0,
     shootTimer: 0,
     dead: false,
+    maxHp: 1,
+    aux: 0,
+    mode: 0,
   });
 };
 
@@ -284,7 +291,7 @@ describe('heróis e mapas', () => {
     sim(gelo);
     expect(MAPS.gelo!.enemyHp).toBeGreaterThan(1);
     expect(gelo.mapId).toBe('gelo');
-    expect(MAP_IDS).toEqual(['campo']);
+    expect(MAP_IDS).toEqual(['campo', 'deserto']);
   });
 
   it('comprar herói gasta ouro; mapas liberam pelo tempo sobrevivido', () => {
@@ -517,5 +524,75 @@ describe('guardar e continuar a partida', () => {
     }
     expect(r.t).toBeGreaterThan(w.t + 9);
     expect(NhWorld.restore('lixo')).toBeNull();
+  });
+});
+
+describe('monstros novos (Dungeon Crawl)', () => {
+  const run = (w: NhWorld, sec: number) => {
+    for (let i = 0; i < sec * 60; i++) {
+      if (w.pending) w.choose(w.pending.options[0]!);
+      w.player.hp = w.player.maxHp;
+      w.step({ x: Math.cos(i / 300), y: Math.sin(i / 300) });
+      w.drainEvents();
+    }
+  };
+  const ids = (w: NhWorld) => new Set(w.enemies.map((e) => e.s.id));
+  const spawn = (w: NhWorld, id: string, dx = 40, dy = 0) =>
+    (w as unknown as { spawnEnemy(a: number, b: number, c: string): Enemy }).spawnEnemy(dx, dy, id);
+
+  it('nenhum monstro novo no Campo Verde e vários no Deserto', () => {
+    const campo = new NhWorld('mc', NO_META, { map: 'campo' });
+    run(campo, 700);
+    for (const m of MONSTERS) expect(ids(campo).has(m.id)).toBe(false);
+    const des = new NhWorld('md', NO_META, { map: 'deserto' });
+    run(des, 700);
+    const seen = [...ids(des)].filter((id) => MONSTERS.some((m) => m.id === id));
+    expect(seen.length).toBeGreaterThanOrEqual(3);
+  });
+  it('a maioria dos monstros é do mapa 2, nenhum é do mapa 1', () => {
+    expect(MONSTERS.filter((m) => m.maps.includes('campo'))).toHaveLength(0);
+    expect(MONSTERS.filter((m) => m.maps.includes('deserto')).length).toBeGreaterThanOrEqual(10);
+    expect(new Set(MONSTERS.map((m) => m.art)).size).toBeGreaterThanOrEqual(15);
+  });
+  it('Gosma Azul se divide, Golem solta estilhaços, Escorpião aguenta projétil', () => {
+    const w = new NhWorld('ms');
+    const g = spawn(w, 'GosmaAzul');
+    (w as unknown as { damageEnemy(e: Enemy, d: number): void }).damageEnemy(g, 999);
+    expect(w.enemies.filter((e) => e.s.id === 'Gosminha' && !e.dead)).toHaveLength(2);
+    const golem = spawn(w, 'GolemCristal');
+    const before = w.projectiles.length;
+    (w as unknown as { damageEnemy(e: Enemy, d: number): void }).damageEnemy(golem, 9999);
+    expect(w.projectiles.length - before).toBe(8);
+  });
+  it('Espectro fica fantasma e não sofre dano; Verme drena XP; Ent segura o jogador', () => {
+    const w = new NhWorld('mg');
+    const s = spawn(w, 'Espectro', 900, 900);
+    s.aux = 3; // fase fantasma
+    const hp = s.hp;
+    (w as unknown as { damageEnemy(e: Enemy, d: number): void }).damageEnemy(s, 5);
+    expect(s.hp).toBe(hp);
+    s.aux = 0;
+    (w as unknown as { damageEnemy(e: Enemy, d: number): void }).damageEnemy(s, 1);
+    expect(s.hp).toBe(hp - 1);
+    const a = new NhWorld('me');
+    spawn(a, 'EntAnciao', 60, 0);
+    a.step({ x: 1, y: 0 });
+    const free = new NhWorld('me2');
+    free.step({ x: 1, y: 0 });
+    expect(a.player.x).toBeLessThan(free.player.x);
+    const v = new NhWorld('mv');
+    v.xp = 10;
+    spawn(v, 'VermeCerebral', 0, 0);
+    v.step({ x: 0, y: 0 });
+    expect(v.xp).toBe(7);
+  });
+  it('bote da Naja: avisa, dispara em linha reta e espera de novo', () => {
+    const w = new NhWorld('mn');
+    const n = spawn(w, 'NajaRubra', 120, 0);
+    n.aux = 0;
+    w.step({ x: 0, y: 0 });
+    expect(n.mode).toBe(1);
+    for (let i = 0; i < 40; i++) w.step({ x: 0, y: 0 });
+    expect(n.mode).toBe(2);
   });
 });

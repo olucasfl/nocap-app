@@ -98,7 +98,7 @@ async function loadFont(name: string): Promise<BitmapFont> {
 }
 
 export async function loadAtlas(): Promise<Atlas> {
-  const [meta, img, square, bonk] = await Promise.all([
+  const [meta, img, dcss, square, bonk] = await Promise.all([
     fetch(`${BASE}/atlas.json`).then(
       (r) =>
         r.json() as Promise<{
@@ -109,10 +109,11 @@ export async function loadAtlas(): Promise<Atlas> {
         }>,
     ),
     loadImage(`${BASE}/atlas.png`),
+    loadImage(`${BASE}/dcss.png`),
     loadFont('square'),
     loadFont('bonk'),
   ]);
-  const big = extendAtlas(img, meta.frames, meta.bgs);
+  const big = extendAtlas(img, meta.frames, meta.bgs, dcss);
   return {
     img: big,
     white: silhouette(big, big.width, big.height, '#ffffff'),

@@ -22,3 +22,7 @@ Gerados por código em `apps/web/src/games/nighthunt/extra-art.ts`, a partir do 
 - Conquistas, coleção, tela de resultado e transições são do Night Hunt.
 - Heróis, mapas, armas e passivos novos, evoluções, reroll/pular/banir e a conta (`user_prefs`) são do Night Hunt.
 - Os chefes soltam baú com mais frequência, para a evolução ser possível.
+
+## Monstros do Dungeon Crawl Stone Soup
+
+`apps/web/public/nighthunt/dcss.png`: folha de sprites do Dungeon Crawl Stone Soup, domínio público (CC0), tirada de https://github.com/VampAK1864/Vampire-Survivors (pasta `Assets/_Udemy Vampire Survival Assets/Art`, que traz a licença CC0 do Dungeon Crawl). Sem exigência de crédito. As músicas e os efeitos sonoros dessa mesma pasta NÃO foram usados (licença desconhecida).

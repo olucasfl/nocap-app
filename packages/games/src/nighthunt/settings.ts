@@ -14,6 +14,8 @@ export interface EnemySettings {
   healthPotionRewardChance: number;
   magnetRewardChance: number;
   chestRewardChance: number;
+  /** Regra própria do monstro novo (ver monsters.ts). */
+  trait?: string;
 }
 export interface SpawnerCommon {
   enemyId: string;

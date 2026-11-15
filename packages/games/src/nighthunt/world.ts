@@ -1,13 +1,16 @@
 import { createRng } from '../core/rng';
 import {
   HORDE_EVENTS,
+  MAP_EVENTS,
   MAX_ENEMIES,
   bossHp,
-  dripTier,
+  dripWeights,
   gemValue,
   hpScale,
   minPopulation,
+  type HordeEvent,
 } from './hordes';
+import { ALL_ENEMIES, MONSTER_BY_ID } from './monsters';
 import { overlaps, type Shape } from './geometry';
 import {
   ENEMY_BOX,
@@ -105,6 +108,11 @@ export interface Enemy {
   dirY: number;
   shootTimer: number;
   dead: boolean;
+  /** Vida inicial (para as regras que dependem da metade da vida). */
+  maxHp: number;
+  /** Relógio e estado da regra própria do monstro (modo 0 seguindo, 1 avisando, 2 em disparo). */
+  aux: number;
+  mode: number;
 }
 export interface Item {
   uid: number;
@@ -182,7 +190,7 @@ export interface RunResult {
   won: boolean;
 }
 
-const BY_ID = new Map(ENEMIES.map((e) => [e.id, e]));
+const BY_ID = new Map(ALL_ENEMIES.map((e) => [e.id, e]));
 const PERIODIC = new Map<string, { followTime: number; waitTime: number }>(
   PERIODIC_FOLLOW.map((p) => [p.enemyIdToAffect, p]),
 );
@@ -198,6 +206,7 @@ const BOSS_CHEST: Record<string, number> = {
   HarderBoss: 0.8,
   HardestBoss: 0.9,
   FinalBoss: 1,
+  DragaoDouradoBoss: 1,
 };
 
 export const EXTRA_META = {
@@ -224,6 +233,15 @@ function scaleShape(sh: Shape, k: number): Shape {
 }
 
 const MAX_ITEMS = 400;
+
+const ROOT_RADIUS = 115;
+const SHOOT_CD = { orb: 3.2, spread: 4, ring: 5, scythe: 3.6 } as const;
+/** Bote (Naja), mergulho (Grifo) e avanço (Lobo de Gelo): alcance, espera, aviso, duração do disparo e multiplicador de velocidade. */
+const CHARGE_CFG = {
+  lunge: { range: 240, cd: 3, tele: 0.45, dash: 0.5, mult: 4 },
+  dive: { range: 9999, cd: 4.5, tele: 0.5, dash: 0.8, mult: 3.2 },
+  charge: { range: 340, cd: 3.5, tele: 0.35, dash: 0.55, mult: 3.4 },
+} as const;
 
 export class NhWorld {
   readonly rng: () => number;
@@ -299,6 +317,7 @@ export class NhWorld {
   private viewHH = 620;
   private spawnClock = 0;
   private quietUntil = 0;
+  private hordeEvents: readonly HordeEvent[] = HORDE_EVENTS;
   private eventNext: number[] = HORDE_EVENTS.map((e) => e.from);
   private baseHp: number;
   private baseSpeed: number;
@@ -325,6 +344,8 @@ export class NhWorld {
     this.heroId = hero.id;
     this.mapDef = MAPS[opts.map ?? 'campo'] ?? MAPS.campo!;
     this.mapId = this.mapDef.id;
+    this.hordeEvents = [...HORDE_EVENTS, ...(MAP_EVENTS[this.mapId] ?? [])];
+    this.eventNext = this.hordeEvents.map((e) => e.from);
     const b = (key: SlimMetaKey, lv: number) => metaBonus(key, lv);
     this.baseHp = Math.round((PLAYER_SETTINGS.defaultHP + b('health', meta.health)) * hero.hp);
     this.baseSpeed = (PLAYER_SETTINGS.speed + b('movementSpeed', meta.movementSpeed)) * hero.speed;
@@ -359,6 +380,7 @@ export class NhWorld {
       'events',
       'meta',
       'mapDef',
+      'hordeEvents',
       'enemies',
       'items',
       'projectiles',
@@ -378,7 +400,7 @@ export class NhWorld {
         .filter((e) => !e.dead && near(e.x, e.y))
         .slice(0, maxEnemies)
         .map((e) => [
-          ENEMIES.findIndex((q) => q.id === e.s.id),
+          ALL_ENEMIES.findIndex((q) => q.id === e.s.id),
           e.x,
           e.y,
           e.hp,
@@ -459,7 +481,7 @@ export class NhWorld {
       const w = new NhWorld(o.seed, meta, { hero: o.hero, map: o.map });
       Object.assign(w, o.state);
       w.enemies = o.enemies.map((a) => {
-        const s = ENEMIES[a[0]!]!;
+        const s = ALL_ENEMIES[a[0]!]!;
         return {
           uid: w.nextUid++,
           s,
@@ -688,7 +710,11 @@ export class NhWorld {
     p.moving = len > 0;
     if (!p.moving) return;
     const k = len > 1 ? 1 / len : 1;
-    const sp = p.speed * (1 + 0.08 * this.levels.boots);
+    // raízes do Ent Ancião: quem chega perto anda 40% mais devagar
+    const rooted = this.enemies.some(
+      (e) => !e.dead && e.s.trait === 'roots' && Math.hypot(e.x - p.x, e.y - p.y) < ROOT_RADIUS,
+    );
+    const sp = p.speed * (1 + 0.08 * this.levels.boots) * (rooted ? 0.6 : 1);
     p.x += input.x * k * dt * sp;
     p.y += input.y * k * dt * sp;
     if (input.x < 0) p.face = -1;
@@ -887,7 +913,11 @@ export class NhWorld {
       dirY: 0,
       shootTimer: 0,
       dead: false,
+      maxHp: 0,
+      aux: 0.8 + this.rng() * 1.6,
+      mode: 0,
     };
+    e.maxHp = e.hp;
     if (s.moveType === 'Launch') {
       let dir: { x: number; y: number };
       const lp = this.waveLastPos;
@@ -924,7 +954,7 @@ export class NhWorld {
     this.spawnerTime += dt;
     const now = this.spawnerTime;
     // eventos (enxame, anel, muralha, manada, chefe)
-    HORDE_EVENTS.forEach((ev, i) => {
+    this.hordeEvents.forEach((ev, i) => {
       if (now < (this.eventNext[i] ?? Infinity)) return;
       this.eventNext[i] = now + ev.every;
       const id = ev.enemy(now);
@@ -969,13 +999,13 @@ export class NhWorld {
     if (now < this.quietUntil) return;
     const deficit = minPopulation(now) - this.enemies.length;
     if (deficit <= 0 || this.enemies.length >= MAX_ENEMIES) return;
-    const tier = dripTier(now);
-    const total = tier.weights.reduce((acc, [, w]) => acc + w, 0);
+    const weights = dripWeights(now, this.mapId);
+    const total = weights.reduce((acc, [, w]) => acc + w, 0);
     const batch = Math.min(deficit, 2 + Math.ceil(deficit / 8));
     for (let k = 0; k < batch; k++) {
       let r = this.rng() * total;
-      let id = tier.weights[0]![0];
-      for (const [eid, w] of tier.weights) {
+      let id = weights[0]![0];
+      for (const [eid, w] of weights) {
         r -= w;
         if (r <= 0) {
           id = eid;
@@ -990,6 +1020,7 @@ export class NhWorld {
   private moveEnemies(dt: number): void {
     const p = this.player;
     const order: Enemy['s']['moveType'][] = ['Follow', 'Launch', 'PeriodicFollow'];
+    const howlers = this.enemies.filter((e) => !e.dead && e.s.trait === 'howl');
     for (const mt of order) {
       for (const e of this.enemies) {
         if (e.dead || e.s.moveType !== mt) continue;
@@ -1004,8 +1035,21 @@ export class NhWorld {
             my = dy / l;
           }
         };
-        if (mt === 'Follow') chase();
-        else if (mt === 'Launch') {
+        let sm = 1;
+        if (mt === 'Follow') {
+          chase();
+          sm = this.traitMove(
+            e,
+            dt,
+            howlers,
+            () => chase(),
+            (x, y) => {
+              mx = x;
+              my = y;
+            },
+            [mx, my],
+          );
+        } else if (mt === 'Launch') {
           mx = e.dirX;
           my = e.dirY;
         } else {
@@ -1019,8 +1063,8 @@ export class NhWorld {
           }
           if (e.follow) chase();
         }
-        e.x += mx * e.speedX * dt;
-        e.y += my * e.speedY * dt;
+        e.x += mx * e.speedX * sm * dt;
+        e.y += my * e.speedY * sm * dt;
         if (mx < 0) e.faceX = -1;
         else if (mx > 0) e.faceX = 1;
         if (e.life > 0) {
@@ -1031,8 +1075,81 @@ export class NhWorld {
     }
   }
 
+  /**
+   * Regras próprias dos monstros novos no movimento. Devolve o multiplicador de velocidade do quadro e pode trocar a direção
+   * (zigue-zague, bote, mergulho, avanço). Quem não tem regra anda normal.
+   */
+  private traitMove(
+    e: Enemy,
+    dt: number,
+    howlers: Enemy[],
+    _chase: () => void,
+    setDir: (x: number, y: number) => void,
+    cur: [number, number],
+  ): number {
+    const t = e.s.trait;
+    let mult = 1;
+    // uivo do Lobo de Gelo
+    if (
+      howlers.length &&
+      t !== 'howl' &&
+      howlers.some((h) => Math.hypot(h.x - e.x, h.y - e.y) < 230)
+    )
+      mult *= 1.25;
+    if (!t) return mult;
+    const p = this.player;
+    const dx = p.x - e.x;
+    const dy = p.y - e.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    if (t === 'zigzag') {
+      const a = Math.sin(this.t * 7 + e.uid) * 0.9;
+      const c = Math.cos(a);
+      const s = Math.sin(a);
+      setDir(cur[0] * c - cur[1] * s, cur[0] * s + cur[1] * c);
+    } else if (t === 'enrage') {
+      if (e.hp <= e.maxHp / 2) mult *= 1.5;
+    } else if (t === 'phase') {
+      e.aux += dt;
+      if (this.isGhost(e)) mult *= 1.3;
+    } else if (t === 'lunge' || t === 'dive' || t === 'charge' || t === 'howl') {
+      const cfg = CHARGE_CFG[t === 'howl' ? 'charge' : t];
+      if (e.mode === 0) {
+        e.aux -= dt;
+        if (e.aux <= 0 && dist < cfg.range) {
+          e.mode = 1;
+          e.aux = cfg.tele;
+          e.dirX = dx / dist;
+          e.dirY = dy / dist;
+        }
+      } else if (e.mode === 1) {
+        e.aux -= dt;
+        setDir(0, 0);
+        if (e.aux <= 0) {
+          e.mode = 2;
+          e.aux = cfg.dash;
+          e.dirX = dx / dist;
+          e.dirY = dy / dist;
+        }
+      } else {
+        e.aux -= dt;
+        setDir(e.dirX, e.dirY);
+        mult *= cfg.mult;
+        if (e.aux <= 0) {
+          e.mode = 0;
+          e.aux = cfg.cd;
+        }
+      }
+    }
+    return mult;
+  }
+
+  /** Espectro: parte do ciclo fica fantasma, sem sofrer nem causar dano. */
+  isGhost(e: Enemy): boolean {
+    return e.s.trait === 'phase' && e.aux % 4 > 2.4;
+  }
+
   private damageEnemy(e: Enemy, dmg: number): void {
-    if (e.dead) return;
+    if (e.dead || this.isGhost(e)) return;
     e.hp -= dmg;
     e.flash = 0.1;
     this.events.push({ k: 'enemyHit', x: e.x, y: e.y, dmg });
@@ -1046,6 +1163,16 @@ export class NhWorld {
     if (e.s.id === 'FinalBoss') this.finalBossKills++;
     this.events.push({ k: 'enemyDeath', x: e.x, y: e.y });
     const s = e.s;
+    if (s.trait === 'split') {
+      for (const o of [-16, 16])
+        this.spawnEnemy(e.x + o - this.player.x, e.y - this.player.y, 'Gosminha');
+    } else if (s.trait === 'shards') {
+      const dirs: [number, number][] = Array.from({ length: 8 }, (_, i) => [
+        Math.cos((i / 8) * Math.PI * 2),
+        Math.sin((i / 8) * Math.PI * 2),
+      ]);
+      this.fire('orb', e.x, e.y, dirs, 150, 3, 1, 1, true);
+    }
     const jitter = (): [number, number] => [e.x - 15 + this.rng() * 30, e.y - 15 + this.rng() * 30];
     for (let i = 0; i < s.xpReward; i++) this.dropItem('xp', ...jitter());
     if (s.goldReward > 0) {
@@ -1343,6 +1470,46 @@ export class NhWorld {
   private tickEnemyLaunchers(dt: number): void {
     for (const e of this.enemies) {
       if (e.dead) continue;
+      if (
+        e.s.trait === 'orb' ||
+        e.s.trait === 'spread' ||
+        e.s.trait === 'ring' ||
+        e.s.trait === 'scythe'
+      ) {
+        const cd = SHOOT_CD[e.s.trait];
+        e.shootTimer += dt;
+        if (e.shootTimer >= cd) {
+          e.shootTimer = 0;
+          const ax = this.player.x - e.x;
+          const ay = this.player.y - e.y;
+          if (e.s.trait === 'scythe')
+            this.fire('axe', e.x, e.y, [[ax, ay]], AXE_LAUNCHER.projectileSpeed, 7, 1, 1, true);
+          else if (e.s.trait === 'orb') this.fire('orb', e.x, e.y, [[ax, ay]], 125, 8, 1, 1, true);
+          else if (e.s.trait === 'spread') {
+            const base = Math.atan2(ay, ax);
+            this.fire(
+              'orb',
+              e.x,
+              e.y,
+              [-0.35, 0, 0.35].map(
+                (o) => [Math.cos(base + o), Math.sin(base + o)] as [number, number],
+              ),
+              125,
+              8,
+              1,
+              1,
+              true,
+            );
+          } else {
+            const dirs: [number, number][] = Array.from({ length: 12 }, (_, i) => [
+              Math.cos((i / 12) * Math.PI * 2),
+              Math.sin((i / 12) * Math.PI * 2),
+            ]);
+            this.fire('orb', e.x, e.y, dirs, 120, 6, 1, 1, true);
+          }
+        }
+        continue;
+      }
       const cfg = (AXE_LAUNCHER.enemyIds as readonly string[]).includes(e.s.id)
         ? ('axe' as const)
         : (MAGIC_ORB_LAUNCHER.enemyIds as readonly string[]).includes(e.s.id)
@@ -1495,7 +1662,7 @@ export class NhWorld {
     };
   }
   enemyShape(e: Enemy): Shape {
-    const b = ENEMY_BOX[e.s.graphicsType] ?? ENEMY_BOX.Skeleton!;
+    const b = MONSTER_BY_ID.get(e.s.id)?.box ?? ENEMY_BOX[e.s.graphicsType] ?? ENEMY_BOX.Skeleton!;
     return { kind: 'box', cx: e.x + b.ox, cy: e.y + b.oy, w: b.w, h: b.h };
   }
 
@@ -1531,7 +1698,7 @@ export class NhWorld {
         if (e.dead || q.pierces <= 0 || q.hit.has(e.uid)) continue;
         if (overlaps(qs, this.enemyShape(e))) {
           q.hit.add(e.uid);
-          this.damageEnemy(e, q.damage);
+          this.damageEnemy(e, e.s.trait === 'shell' ? q.damage * 0.5 : q.damage);
           q.pierces--;
         }
       }
@@ -1552,10 +1719,14 @@ export class NhWorld {
     const damageNow: Array<() => void> = [];
     for (const e of this.enemies) {
       if (e.dead) continue;
-      if (overlaps(ps, this.enemyShape(e))) {
+      if (!this.isGhost(e) && overlaps(ps, this.enemyShape(e))) {
         now.add(e.uid);
         if (!this.playerContacts.has(e.uid) || resolveAll)
-          damageNow.push(() => this.hurtPlayer(e.s.damage));
+          damageNow.push(() => {
+            this.hurtPlayer(e.s.damage);
+            // Verme Cerebral: drena XP
+            if (e.s.trait === 'drain') this.xp = Math.max(0, this.xp - 3);
+          });
       }
     }
     this.playerContacts = now;
