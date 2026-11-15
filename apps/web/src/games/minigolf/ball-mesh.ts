@@ -16,6 +16,14 @@ export function buildBallMesh(look: GolfBallLook): THREE.Mesh {
   });
   const m = new THREE.Mesh(new THREE.SphereGeometry(GOLF_BALL_RADIUS, 40, 24), mat);
   m.castShadow = true;
+  // a bola vista através da parede: cópia translúcida que só desenha onde a bola real está atrás de algo (teste de profundidade invertido)
+  const ghost = new THREE.Mesh(
+    m.geometry,
+    new THREE.MeshBasicMaterial({ map: mat.map, transparent: true, opacity: 0.6, depthFunc: THREE.GreaterDepth, depthWrite: false }),
+  );
+  ghost.renderOrder = 50;
+  m.add(ghost);
+  m.userData.ghost = ghost;
   return m;
 }
 
@@ -25,4 +33,9 @@ export function applyBallLook(mesh: THREE.Mesh, look: GolfBallLook) {
   mat.map?.dispose();
   mat.map = ballColorMap(look.color, look.finish, look.color2);
   mat.needsUpdate = true;
+  const ghost = mesh.userData.ghost as THREE.Mesh | undefined;
+  if (ghost) {
+    (ghost.material as THREE.MeshBasicMaterial).map = mat.map;
+    (ghost.material as THREE.MeshBasicMaterial).needsUpdate = true;
+  }
 }

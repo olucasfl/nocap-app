@@ -46,16 +46,6 @@ export class GolfScene {
   private head: THREE.Mesh;
   private sun = new THREE.DirectionalLight(0xfff2d6, 2.2);
   private movers: { mesh: THREE.Object3D; i: number }[] = [];
-  private levelGroup?: THREE.Group;
-  /** Visão da bola: raio da câmera até ela; se uma parede está no meio, a câmera sobe e chega mais perto e um anel marca a bola. */
-  private readonly ray = new THREE.Raycaster();
-  private occTick = 0;
-  private occluded = false;
-  private lift = 0;
-  private readonly ballRing = new THREE.Mesh(
-    new THREE.RingGeometry(0.1, 0.15, 32),
-    new THREE.MeshBasicMaterial({ color: 0xffc83d, depthTest: false, depthWrite: false, transparent: true, opacity: 0.95 }),
-  );
   private camPos = new THREE.Vector3();
   private camLook = new THREE.Vector3();
   private spin = new THREE.Quaternion();
@@ -90,9 +80,6 @@ export class GolfScene {
     this.trail.setKind(look.trail, look.color);
     this.scene.add(this.trail.points);
     this.scene.add(this.ballMesh);
-    this.ballRing.renderOrder = 999;
-    this.ballRing.visible = false;
-    this.scene.add(this.ballRing);
 
     const dotGeo = new THREE.SphereGeometry(0.045, 10, 8);
     for (let i = 0; i < 16; i++) {
@@ -195,7 +182,6 @@ export class GolfScene {
       m.stencilFunc = THREE.NotEqualStencilFunc;
     }
     this.scene.add(group);
-    this.levelGroup = group;
   }
 
   resize(w: number, h: number) {
@@ -300,21 +286,9 @@ export class GolfScene {
     });
     const target = new THREE.Vector3(p[0], p[1], p[2]);
     const hole = this.level.data.holes[0]!.p;
-    // a bola nunca some: com parede no meio, a câmera sobe e se aproxima, e um anel marca a bola por cima de tudo
-    if (this.levelGroup && !this.focusHole && ++this.occTick % 3 === 0) {
-      const to = target.clone().add(new THREE.Vector3(0, 0.12, 0));
-      const dir = to.clone().sub(this.camPos);
-      const dist = dir.length();
-      this.ray.set(this.camPos, dir.normalize());
-      this.ray.far = Math.max(0.1, dist - 0.25);
-      this.occluded = this.ray.intersectObject(this.levelGroup, true).length > 0;
-    }
-    this.lift += ((this.occluded && !this.focusHole ? 1 : 0) - this.lift) * (1 - Math.pow(0.02, dt));
-    const camDist = 3.4 * this.zoom * (1 - 0.5 * this.lift);
-    const camHigh = 1.9 * this.zoom + this.lift * 4.2;
     const want = this.focusHole
       ? new THREE.Vector3(hole[0] - Math.sin(this.yaw) * 1.1, hole[1] + 0.85, hole[2] - Math.cos(this.yaw) * 1.1)
-      : new THREE.Vector3(-Math.sin(this.yaw) * camDist, camHigh, -Math.cos(this.yaw) * camDist).add(target);
+      : new THREE.Vector3(-Math.sin(this.yaw) * 3.4 * this.zoom, 1.9 * this.zoom, -Math.cos(this.yaw) * 3.4 * this.zoom).add(target);
     const k = 1 - Math.pow(this.focusHole ? 0.02 : 0.0001, dt);
     this.camPos.lerp(want, k);
     this.camLook.lerp(
@@ -323,13 +297,6 @@ export class GolfScene {
     );
     this.camera.position.copy(this.camPos);
     this.camera.lookAt(this.camLook);
-    const showRing = this.occluded && this.ballMesh.visible && !this.focusHole;
-    this.ballRing.visible = showRing;
-    if (showRing) {
-      this.ballRing.position.copy(target).add(new THREE.Vector3(0, 0.06, 0));
-      this.ballRing.lookAt(this.camera.position);
-      this.ballRing.scale.setScalar(Math.max(0.6, this.camPos.distanceTo(target) * 0.22));
-    }
     this.sun.position.set(target.x + 14, target.y + 24, target.z + 8);
     this.sun.target.position.copy(target);
     this.renderer.render(this.scene, this.camera);
