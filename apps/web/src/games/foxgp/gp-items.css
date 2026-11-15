@@ -1,0 +1,67 @@
+.gpi {
+  position: relative;
+  min-height: 100dvh;
+  background: radial-gradient(ellipse at 50% 0%, #1d2440 0%, var(--gp-bg, #0b0e17) 60%);
+  color: var(--gp-text, #f4f6fb);
+  font-family: 'Inter', system-ui, sans-serif;
+  padding: max(16px, env(safe-area-inset-top)) 16px 32px;
+}
+.gpi-cv {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 3;
+}
+.gpi-head,
+.gpi-grid {
+  position: relative;
+  z-index: 2;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.gpi-head h1 {
+  margin: 0 0 4px;
+  font:
+    900 clamp(26px, 5vw, 40px) 'Saira Condensed',
+    system-ui,
+    sans-serif;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.gpi-head p {
+  margin: 0 0 18px;
+  color: var(--gp-muted, #a9b2c7);
+}
+.gpi-grid {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
+  gap: 12px;
+}
+.gpi-card {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px 12px;
+  border: 1px solid var(--gp-line, #2a3350);
+  border-top: 3px solid var(--tone);
+  border-radius: 12px;
+  background: rgba(20, 26, 43, 0.55);
+}
+.gpi-view {
+  height: 190px;
+}
+.gpi-card b {
+  font:
+    800 20px 'Saira Condensed',
+    system-ui,
+    sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.gpi-card span {
+  font-size: 13px;
+  color: var(--gp-text-3, #c9d0e0);
+}

@@ -81,3 +81,4 @@
 | 084 | [Night Hunt, fase 3](084-night-hunt-fase-3.md) | 5 | implementada (15/11/2026): 10 armas e 3 passivos novos com evoluções, empurrão, separação, obstáculos, chefe final por mapa e modo infinito, heróis refeitos, bestiário e guia; falta calibrar jogando |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.
+| 085 | [Fox GP, Arcade com poderes](085-fox-gp-poderes.md) | 5 | rascunho aprovado (15/11/2026); etapa 0 feita (vitrine dos 12 itens em `/fox-cap/foxgp-itens`) |

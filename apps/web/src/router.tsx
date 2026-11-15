@@ -231,6 +231,12 @@ const foxShotTestRoute = createRoute({
   },
 });
 
+const foxGpItemsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/fox-cap/foxgp-itens',
+  component: lazyRouteComponent(() => import('@/games/foxgp/GpItemsPreview'), 'GpItemsPreview'),
+});
+
 const counterFoxRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/fox-cap/counter-fox',
@@ -259,7 +265,8 @@ const miniGolfPlayRoute = createRoute({
 const miniGolfBallRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/minigolf/bola',
-  validateSearch: (search: Record<string, unknown>): { volta?: 'sala' } => (search.volta === 'sala' ? { volta: 'sala' } : {}),
+  validateSearch: (search: Record<string, unknown>): { volta?: 'sala' } =>
+    search.volta === 'sala' ? { volta: 'sala' } : {},
   component: lazyRouteComponent(() => import('@/games/minigolf/MiniGolfBall'), 'MiniGolfBall'),
 });
 
@@ -379,6 +386,7 @@ const routeTree = rootRoute.addChildren([
   blocksRoute,
   foxShotTestRoute,
   counterFoxRoute,
+  foxGpItemsRoute,
   wordsRoute,
   wordsClassicRoute,
   wordsClassicPlayRoute,
