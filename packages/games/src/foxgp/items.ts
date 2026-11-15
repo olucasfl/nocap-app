@@ -1,0 +1,484 @@
+import { createRng } from '../core/rng';
+import { GP_ARC_VMAX, GP_HALF_WIDTH } from './constants';
+import type { GpCar, GpWorld } from './world';
+
+/**
+ * Arcade com poderes (spec 085): caixas na pista, um item por vez (ou três do mesmo tipo, "triplo"), efeitos e a
+ * escolha do item pela posição. Tudo puro e determinístico (mesma seed, mesma corrida); em sala, só o servidor roda.
+ * As ideias vêm de jogos de kart em geral; nomes, regras e números são nossos.
+ */
+export type GpItemKind = 'peel' | 'ball' | 'seeker' | 'bomb' | 'nitro' | 'star' | 'bolt';
+export type GpItemId =
+  | 'peel'
+  | 'peel3'
+  | 'ball'
+  | 'ball3'
+  | 'seeker'
+  | 'seeker3'
+  | 'bomb'
+  | 'nitro'
+  | 'nitro3'
+  | 'star'
+  | 'bolt';
+
+export const gpItemKind = (id: GpItemId): GpItemKind => id.replace('3', '') as GpItemKind;
+export const gpItemCount = (id: GpItemId) => (id.endsWith('3') ? 3 : 1);
+
+// ---- números do jogo (ajustar jogando) ----
+/** Espaço entre fileiras de caixas (m) e quantas por fileira. */
+export const GP_BOX_ROW_GAP = 220;
+export const GP_BOX_PER_ROW = 3;
+/** Raio de pegar a caixa e tempo até ela voltar (s). */
+export const GP_BOX_RADIUS = 3.2;
+export const GP_BOX_RESPAWN = 3;
+/** Raio de acerto dos itens (m). */
+export const GP_ITEM_HIT_RADIUS = 2.6;
+export const GP_BOMB_RADIUS = 14;
+export const GP_BOMB_FUSE = 2.6;
+export const GP_PEEL_TTL = 60;
+export const GP_SHOT_TTL = 14;
+export const GP_BOLT_TTL = 22;
+/** Quanto dura o tropeço (s) e a imunidade logo depois (s). */
+export const GP_HIT_STUN = 1.1;
+export const GP_HIT_SAFE = 1.6;
+/** O que sobra da velocidade ao ser acertado. */
+export const GP_HIT_KEEP = 0.35;
+export const GP_STAR_SEC = 8;
+export const GP_NITRO_SEC = 1.5;
+/** Espera entre dois usos (s), para o triplo não sair de uma vez. */
+export const GP_USE_GAP = 0.45;
+
+export const GP_BALL_SPEED = GP_ARC_VMAX * 1.5;
+export const GP_SEEKER_SPEED = GP_ARC_VMAX * 1.3;
+export const GP_BOLT_SPEED = GP_ARC_VMAX * 1.75;
+const GP_BALL_BOUNCES = 4;
+
+// ---- item pela posição ----
+/** Faixa do carro: 0 frente, 1 meio, 2 trás (com 1 carro só, frente). */
+export function gpItemTier(rank: number, total: number): 0 | 1 | 2 {
+  if (total <= 1) return 0;
+  const f = (rank - 1) / (total - 1);
+  return f < 0.25 ? 0 : f < 0.65 ? 1 : 2;
+}
+
+const WEIGHTS: Record<0 | 1 | 2, readonly (readonly [GpItemId, number])[]> = {
+  0: [
+    ['peel', 4],
+    ['ball', 4],
+    ['nitro', 2],
+  ],
+  1: [
+    ['ball', 2],
+    ['seeker', 4],
+    ['bomb', 3],
+    ['peel3', 2],
+    ['nitro', 2],
+    ['ball3', 1],
+  ],
+  2: [
+    ['seeker3', 3],
+    ['nitro3', 3],
+    ['ball3', 2],
+    ['star', 3],
+    ['bolt', 3],
+    ['bomb', 1],
+  ],
+};
+
+/** Sorteia o item de quem pegou a caixa. O Cometa azul só sai de quem não lidera. */
+export function gpRollItem(rank: number, total: number, rng: () => number): GpItemId {
+  const tier = gpItemTier(rank, total);
+  const list = WEIGHTS[tier].filter(([id]) => !(id === 'bolt' && rank <= 1));
+  const sum = list.reduce((a, [, w]) => a + w, 0);
+  let r = rng() * sum;
+  for (const [id, w] of list) {
+    r -= w;
+    if (r < 0) return id;
+  }
+  return list[0]![0];
+}
+
+// ---- estado ----
+export interface GpItemBox {
+  x: number;
+  z: number;
+  /** Segundos até voltar (0 = ativa). */
+  cd: number;
+}
+
+export interface GpCarItem {
+  /** O item que tem agora e quantos ainda faltam (triplo). */
+  id: GpItemId | null;
+  left: number;
+  /** Espera entre usos (s). */
+  gap: number;
+  /** Tropeçando (s), imune (s) e Superfox (s). */
+  stun: number;
+  safe: number;
+  star: number;
+}
+
+export type GpShotKind = 'ball' | 'seeker' | 'bolt';
+export interface GpShot {
+  uid: number;
+  kind: GpShotKind;
+  owner: string;
+  x: number;
+  z: number;
+  h: number;
+  /** Seeker/bolt: avanço na pista (m), afastamento do centro e o carro perseguido. */
+  prog: number;
+  d: number;
+  target: string | null;
+  ttl: number;
+  bounces: number;
+}
+export interface GpTrap {
+  uid: number;
+  kind: 'peel' | 'bomb';
+  owner: string;
+  x: number;
+  z: number;
+  ttl: number;
+  /** Bomba: segundos até explodir. */
+  fuse: number;
+  /** Quem o largou fica imune por um instante (s). */
+  arm: number;
+}
+
+export type GpItemEvent =
+  | { type: 'pickup'; id: string; item: GpItemId }
+  | { type: 'use'; id: string; item: GpItemId }
+  | { type: 'hit'; id: string; by: string; kind: GpItemKind }
+  | { type: 'blocked'; id: string; kind: GpItemKind }
+  | { type: 'boom'; x: number; z: number };
+
+/** Fileiras de caixas ao longo da pista, longe da largada. */
+export function gpItemBoxes(world: GpWorld): GpItemBox[] {
+  const tr = world.track;
+  const rows = Math.max(3, Math.floor(tr.length / GP_BOX_ROW_GAP));
+  const out: GpItemBox[] = [];
+  const span = GP_HALF_WIDTH * 1.2;
+  for (let r = 0; r < rows; r++) {
+    const s = ((r + 0.6) / rows) * tr.length;
+    for (let k = 0; k < GP_BOX_PER_ROW; k++) {
+      const d = (k - (GP_BOX_PER_ROW - 1) / 2) * (span / (GP_BOX_PER_ROW - 1));
+      const p = tr.pointAt(s, d);
+      out.push({ x: p.x, z: p.z, cd: 0 });
+    }
+  }
+  return out;
+}
+
+const dist = (ax: number, az: number, bx: number, bz: number) => Math.hypot(ax - bx, az - bz);
+
+/**
+ * O sistema de itens de uma partida: roda junto do `GpWorld` (chame `step` depois do `world.step`), com o pedido de
+ * "usar item" de cada carro. Os efeitos mexem no carro (velocidade, giro, turbo) e viram eventos para o som e o HUD.
+ */
+export class GpItemSystem {
+  readonly boxes: GpItemBox[];
+  readonly cars = new Map<string, GpCarItem>();
+  shots: GpShot[] = [];
+  traps: GpTrap[] = [];
+  private events: GpItemEvent[] = [];
+  private uid = 0;
+  private rng: () => number;
+
+  constructor(
+    private world: GpWorld,
+    seed = world.seed,
+  ) {
+    this.rng = createRng(`${seed}:items`);
+    this.boxes = gpItemBoxes(world);
+    for (const c of world.cars)
+      this.cars.set(c.id, { id: null, left: 0, gap: 0, stun: 0, safe: 0, star: 0 });
+  }
+
+  state(id: string): GpCarItem {
+    let s = this.cars.get(id);
+    if (!s) {
+      s = { id: null, left: 0, gap: 0, stun: 0, safe: 0, star: 0 };
+      this.cars.set(id, s);
+    }
+    return s;
+  }
+
+  drainEvents(): GpItemEvent[] {
+    const e = this.events;
+    this.events = [];
+    return e;
+  }
+
+  /** Posição de cada carro ativo (1 = líder), pela distância percorrida. */
+  rankOf(id: string): { rank: number; total: number } {
+    const live = this.world.cars.filter((c) => !c.gone && !c.ghost);
+    const sorted = [...live].sort((a, b) => b.prog - a.prog);
+    const i = sorted.findIndex((c) => c.id === id);
+    return { rank: i < 0 ? sorted.length : i + 1, total: sorted.length };
+  }
+
+  /** Dá um item direto (testes, sala e depuração). */
+  give(id: string, item: GpItemId) {
+    const s = this.state(id);
+    s.id = item;
+    s.left = gpItemCount(item);
+  }
+
+  private active(c: GpCar) {
+    return !c.gone && !c.ghost && !c.finished;
+  }
+
+  step(dt: number, use: Readonly<Record<string, boolean>> = {}) {
+    const w = this.world;
+    if (w.phase !== 'race') return;
+    for (const c of w.cars) {
+      const s = this.state(c.id);
+      s.gap = Math.max(0, s.gap - dt);
+      s.stun = Math.max(0, s.stun - dt);
+      s.safe = Math.max(0, s.safe - dt);
+      s.star = Math.max(0, s.star - dt);
+    }
+    for (const b of this.boxes) b.cd = Math.max(0, b.cd - dt);
+
+    // pegar caixa
+    for (const c of w.cars) {
+      if (!this.active(c)) continue;
+      const s = this.state(c.id);
+      if (s.id) continue;
+      for (const b of this.boxes) {
+        if (b.cd > 0 || dist(c.x, c.z, b.x, b.z) > GP_BOX_RADIUS) continue;
+        b.cd = GP_BOX_RESPAWN;
+        const { rank, total } = this.rankOf(c.id);
+        const item = gpRollItem(rank, total, this.rng);
+        this.give(c.id, item);
+        this.events.push({ type: 'pickup', id: c.id, item });
+        break;
+      }
+    }
+
+    // usar item
+    for (const c of w.cars) {
+      if (!this.active(c) || !use[c.id]) continue;
+      const s = this.state(c.id);
+      if (!s.id || s.gap > 0 || s.stun > 0) continue;
+      this.useItem(c, s);
+    }
+
+    this.stepTraps(dt);
+    this.stepShots(dt);
+
+    // tropeço: o carro fica lento enquanto dura
+    for (const c of w.cars) {
+      const s = this.state(c.id);
+      if (s.stun > 0 && c.speed > GP_ARC_VMAX * 0.5) this.scaleSpeed(c, 0.96);
+    }
+  }
+
+  private scaleSpeed(c: GpCar, k: number) {
+    c.speed *= k;
+    c.vx *= k;
+    c.vz *= k;
+  }
+
+  private useItem(c: GpCar, s: GpCarItem) {
+    const item = s.id!;
+    const kind = gpItemKind(item);
+    s.left -= 1;
+    s.gap = GP_USE_GAP;
+    if (s.left <= 0) s.id = null;
+    this.events.push({ type: 'use', id: c.id, item });
+    const fx = Math.sin(c.h);
+    const fz = -Math.cos(c.h);
+    switch (kind) {
+      case 'peel':
+        this.traps.push({
+          uid: ++this.uid,
+          kind: 'peel',
+          owner: c.id,
+          x: c.x - fx * 4,
+          z: c.z - fz * 4,
+          ttl: GP_PEEL_TTL,
+          fuse: 0,
+          arm: 0.7,
+        });
+        break;
+      case 'bomb':
+        this.traps.push({
+          uid: ++this.uid,
+          kind: 'bomb',
+          owner: c.id,
+          x: c.x + fx * 9,
+          z: c.z + fz * 9,
+          ttl: GP_BOMB_FUSE + 1,
+          fuse: GP_BOMB_FUSE,
+          arm: 0.7,
+        });
+        break;
+      case 'ball':
+        this.shots.push({
+          uid: ++this.uid,
+          kind: 'ball',
+          owner: c.id,
+          x: c.x + fx * 4,
+          z: c.z + fz * 4,
+          h: c.h,
+          prog: c.prog,
+          d: c.d,
+          target: null,
+          ttl: GP_SHOT_TTL,
+          bounces: GP_BALL_BOUNCES,
+        });
+        break;
+      case 'seeker':
+      case 'bolt': {
+        const target = kind === 'bolt' ? this.leaderOtherThan(c.id) : this.nextAhead(c);
+        this.shots.push({
+          uid: ++this.uid,
+          kind,
+          owner: c.id,
+          x: c.x + fx * 4,
+          z: c.z + fz * 4,
+          h: c.h,
+          prog: c.prog + 4,
+          d: c.d,
+          target,
+          ttl: kind === 'bolt' ? GP_BOLT_TTL : GP_SHOT_TTL,
+          bounces: 0,
+        });
+        break;
+      }
+      case 'nitro':
+        c.boostLevel = Math.max(c.boostLevel, 2);
+        c.boostT = Math.max(c.boostT, GP_NITRO_SEC);
+        break;
+      case 'star':
+        this.state(c.id).star = GP_STAR_SEC;
+        c.boostLevel = Math.max(c.boostLevel, 1);
+        c.boostT = Math.max(c.boostT, GP_STAR_SEC);
+        break;
+    }
+  }
+
+  private nextAhead(me: GpCar): string | null {
+    let best: GpCar | null = null;
+    for (const c of this.world.cars) {
+      if (c.id === me.id || !this.active(c) || c.prog <= me.prog) continue;
+      if (!best || c.prog < best.prog) best = c;
+    }
+    return best?.id ?? null;
+  }
+
+  private leaderOtherThan(id: string): string | null {
+    let best: GpCar | null = null;
+    for (const c of this.world.cars) {
+      if (c.id === id || !this.active(c)) continue;
+      if (!best || c.prog > best.prog) best = c;
+    }
+    return best?.id ?? null;
+  }
+
+  /** Acerta um carro (some se estiver imune ou de Superfox). Devolve se pegou. */
+  hit(c: GpCar, by: string, kind: GpItemKind): boolean {
+    const s = this.state(c.id);
+    if (s.star > 0 || s.safe > 0) {
+      this.events.push({ type: 'blocked', id: c.id, kind });
+      return false;
+    }
+    s.stun = GP_HIT_STUN;
+    s.safe = GP_HIT_STUN + GP_HIT_SAFE;
+    c.spin += (this.rng() < 0.5 ? -1 : 1) * 7;
+    this.scaleSpeed(c, GP_HIT_KEEP);
+    c.boostT = 0;
+    c.boostX = 0;
+    this.events.push({ type: 'hit', id: c.id, by, kind });
+    return true;
+  }
+
+  private stepTraps(dt: number) {
+    const keep: GpTrap[] = [];
+    for (const t of this.traps) {
+      t.ttl -= dt;
+      t.arm = Math.max(0, t.arm - dt);
+      let gone = t.ttl <= 0;
+      if (t.kind === 'bomb') {
+        t.fuse -= dt;
+        if (t.fuse <= 0) {
+          this.events.push({ type: 'boom', x: t.x, z: t.z });
+          for (const c of this.world.cars) {
+            if (this.active(c) && dist(c.x, c.z, t.x, t.z) <= GP_BOMB_RADIUS)
+              this.hit(c, t.owner, 'bomb');
+          }
+          gone = true;
+        }
+      } else {
+        for (const c of this.world.cars) {
+          if (!this.active(c) || (t.arm > 0 && c.id === t.owner)) continue;
+          if (dist(c.x, c.z, t.x, t.z) <= GP_ITEM_HIT_RADIUS) {
+            this.hit(c, t.owner, 'peel');
+            gone = true;
+            break;
+          }
+        }
+      }
+      if (!gone) keep.push(t);
+    }
+    this.traps = keep;
+  }
+
+  private stepShots(dt: number) {
+    const tr = this.world.track;
+    const keep: GpShot[] = [];
+    for (const sh of this.shots) {
+      sh.ttl -= dt;
+      let dead = sh.ttl <= 0;
+      if (sh.kind === 'ball') {
+        const v = GP_BALL_SPEED * dt;
+        sh.x += Math.sin(sh.h) * v;
+        sh.z -= Math.cos(sh.h) * v;
+        const pr = tr.projectGlobal(sh.x, sh.z);
+        if (Math.abs(pr.d) > GP_HALF_WIDTH - 0.8) {
+          if (sh.bounces-- <= 0) dead = true;
+          else {
+            // espelha a direção em torno do traçado da pista
+            const along = tr.pointAt(pr.s, 0).h;
+            sh.h = 2 * along - sh.h;
+            const p = tr.pointAt(pr.s, Math.sign(pr.d) * (GP_HALF_WIDTH - 1.2));
+            sh.x = p.x;
+            sh.z = p.z;
+          }
+        }
+      } else {
+        // perseguidores seguem o traçado da pista e vão para o afastamento do alvo
+        const target = sh.target ? this.world.car(sh.target) : undefined;
+        const speed = sh.kind === 'bolt' ? GP_BOLT_SPEED : GP_SEEKER_SPEED;
+        sh.prog += speed * dt;
+        if (target && this.active(target)) {
+          const gap = target.prog - sh.prog;
+          // bem à frente do alvo: não passa dele, espera atrás para acertar
+          if (gap < 0) sh.prog = Math.max(sh.prog - speed * dt * 0.5, target.prog);
+          sh.d += Math.max(-1, Math.min(1, target.d - sh.d)) * Math.min(1, 6 * dt) * 6;
+        } else if (sh.kind === 'bolt') {
+          sh.target = this.leaderOtherThan(sh.owner);
+        }
+        const p = tr.pointAt(sh.prog, sh.d);
+        sh.x = p.x;
+        sh.z = p.z;
+        sh.h = p.h;
+      }
+      if (!dead) {
+        for (const c of this.world.cars) {
+          if (!this.active(c) || c.id === sh.owner) continue;
+          if (sh.kind !== 'ball' && sh.target && c.id !== sh.target) continue;
+          if (dist(c.x, c.z, sh.x, sh.z) <= GP_ITEM_HIT_RADIUS) {
+            this.hit(c, sh.owner, sh.kind);
+            dead = true;
+            break;
+          }
+        }
+      }
+      if (!dead) keep.push(sh);
+    }
+    this.shots = keep;
+  }
+}
