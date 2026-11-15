@@ -102,6 +102,17 @@ function enemyAnimKey(e: Enemy, touching: boolean): string {
   return ENEMY_ANIM[gt] ?? 'Enemies/Bat/Move';
 }
 
+/**
+ * Zoom da câmera do mundo: bem mais aberta que a do Slash (como a do Vampire Survivors). Em telas muito largas ou altas o zoom
+ * sobe um pouco para não mostrar mapa demais.
+ */
+export const viewZoom = (): number => Math.max(0.6, stage.w / 1500, stage.h / 1250);
+/** Metade da largura e da altura visíveis, em unidades do mundo (os inimigos nascem fora disso). */
+export const viewHalf = (): { hw: number; hh: number } => ({
+  hw: stage.w / viewZoom() / 2,
+  hh: stage.h / viewZoom() / 2,
+});
+
 /** Tamanho lógico da tela (preenche o canvas inteiro); o app atualiza ao redimensionar. */
 export const stage = { w: 510, h: 680 };
 
@@ -127,7 +138,7 @@ export function drawWorld(
   const camX = w.player.x;
   const camY = w.player.y;
   // O mundo é desenhado num espaço virtual (largura/zoom x altura/zoom) centrado na tela, assim o zoom limita quanto do mapa aparece em telas largas.
-  const z = Math.max(1, stage.w / 900, stage.h / 900);
+  const z = viewZoom();
   VIEW_WIDTH = stage.w / z;
   VIEW_HEIGHT = stage.h / z;
   CX = VIEW_WIDTH / 2;
@@ -150,7 +161,12 @@ export function drawWorld(
     const x = sx(it.x) + gfx.ox;
     const y = sy(it.y) - gfx.oy - hop;
     if (x < -40 || x > VIEW_WIDTH + 40 || y < -40 || y > VIEW_HEIGHT + 40) continue;
-    drawFrame(g, a, frame, x, y);
+    const val = it.type === 'xp' ? (it.value ?? 1) : 1;
+    drawFrame(g, a, frame, x, y, {
+      s: val >= 20 ? 1.35 : val >= 5 ? 1.15 : 1,
+      tint: val >= 20 ? '#ff3a3a' : val >= 5 ? '#3cff5a' : undefined,
+      tintAlpha: val >= 20 ? 0.6 : 0.5,
+    });
   }
 
   // objetos quebráveis do cenário (tema do mapa)

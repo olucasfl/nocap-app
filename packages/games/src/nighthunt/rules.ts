@@ -27,21 +27,54 @@ const cd = (n: number) =>
 const rg = (n: number) => (PLAYER_SETTINGS.regenerationDelay / n).toFixed(1).replace('.', ',');
 
 export const UPGRADES: Record<UpgradeId, UpgradeInfo> = {
-  weaponLength: {
-    id: 'weaponLength',
-    name: 'Lâmina Longa',
-    desc: 'A espada gira em volta de você a cada 2 segundos. Cada nível alonga a lâmina.',
-    max: 5,
-    level: (n) => `Alcance da espada +1 (nível ${n}).`,
+  sword: {
+    id: 'sword',
+    name: 'Espada',
+    desc: 'Gira em volta de você a cada 2 segundos. Cada nível alonga a lâmina e aumenta o dano.',
+    max: 6,
+    level: (n) =>
+      n === 1 ? 'A espada que todo caçador leva.' : `Dano +1 e lâmina mais longa (nível ${n}).`,
     icon: 'UI/UpgradeIcons/WeaponLength',
   },
   weaponDamage: {
     id: 'weaponDamage',
-    name: 'Lâmina Afiada',
-    desc: 'Cada nível aumenta o dano da espada em 1.',
-    max: 10,
-    level: (n) => `Dano da espada +1 (nível ${n}).`,
+    name: 'Poder',
+    desc: 'Aumenta o dano de todas as suas armas, na mesma proporção.',
+    max: 5,
+    level: (n) => `Dano de tudo +${n * 12}% (nível ${n}).`,
     icon: 'UI/UpgradeIcons/WeaponDamage',
+  },
+  weaponLength: {
+    id: 'weaponLength',
+    name: 'Alcance',
+    desc: 'Aumenta o tamanho e o alcance de todas as suas armas: espada, tiros, orbes e raios.',
+    max: 5,
+    level: (n) => `Alcance de tudo +${n * 10}% (nível ${n}).`,
+    icon: 'X/area',
+  },
+  growth: {
+    id: 'growth',
+    name: 'Crescimento',
+    desc: 'Você ganha mais experiência de cada cristal.',
+    max: 5,
+    level: (n) => `XP ganho +${n * 8}% (nível ${n}).`,
+    icon: 'X/growth',
+  },
+  greed: {
+    id: 'greed',
+    name: 'Ganância',
+    desc: 'Inimigos e objetos soltam mais ouro.',
+    max: 5,
+    level: (n) => `Ouro ganho +${n * 10}% (nível ${n}).`,
+    icon: 'X/greed',
+  },
+  swift: {
+    id: 'swift',
+    name: 'Ligeireza',
+    desc: 'Todos os seus projéteis e os orbes se movem mais rápido.',
+    max: 5,
+    level: (n) => `Velocidade dos projéteis +${n * 10}% (nível ${n}).`,
+    icon: 'X/swift',
   },
   horizontal: {
     id: 'horizontal',
@@ -399,17 +432,10 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
     Math.min(10, s.stats.bestLevel),
     10,
   ]),
-  mk(
-    'level-max',
-    'Lenda',
-    `Chegue ao nível máximo (${PLAYER_SETTINGS.requiredXP.length + 1}).`,
-    60,
-    ICON.xp,
-    (s) => [
-      Math.min(PLAYER_SETTINGS.requiredXP.length + 1, s.stats.bestLevel),
-      PLAYER_SETTINGS.requiredXP.length + 1,
-    ],
-  ),
+  mk('level-max', 'Lenda', 'Chegue ao nível 40.', 60, ICON.xp, (s) => [
+    Math.min(40, s.stats.bestLevel),
+    40,
+  ]),
   mk('gold-100', 'Bolso cheio', 'Junte 100 de ouro no total.', 5, ICON.gold, (s) => [
     Math.min(100, s.stats.gold),
     100,
@@ -448,16 +474,16 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   ]),
   mk(
     'sword-long',
-    'Alcance total',
-    'Leve a Lâmina Longa ao nível máximo.',
+    'Espada lendária',
+    'Leve a Espada ao nível máximo.',
     25,
-    UPGRADES.weaponLength.icon,
-    (s) => [s.stats.upgradeBest.weaponLength, maxUp('weaponLength')],
+    UPGRADES.sword.icon,
+    (s) => [s.stats.upgradeBest.sword, maxUp('sword')],
   ),
   mk(
     'sword-sharp',
     'Gume perfeito',
-    'Leve a Lâmina Afiada ao nível 10.',
+    'Leve o Poder ao nível máximo.',
     40,
     UPGRADES.weaponDamage.icon,
     (s) => [s.stats.upgradeBest.weaponDamage, maxUp('weaponDamage')],
@@ -723,7 +749,7 @@ export interface MapInfo {
   desc: string;
   reqs: MapReq[];
 }
-const minutes = (m: number): MapReq => ({
+const reqMinutes = (m: number): MapReq => ({
   label: `Sobreviva ${m} minutos`,
   need: m * 60,
   have: (s) => s.stats.bestTime,
@@ -746,7 +772,7 @@ export const MAP_INFO: Record<string, MapInfo> = {
     desc: 'Inimigos 10% mais rápidos, mas 30% mais ouro.',
     reqs: [
       reachLevel(10),
-      minutes(8),
+      reqMinutes(8),
       { label: 'Derrote 3 chefes', need: 3, have: (s) => s.stats.bossKills },
     ],
   },
@@ -756,7 +782,7 @@ export const MAP_INFO: Record<string, MapInfo> = {
     desc: 'Inimigos com 25% mais vida, mas 20% mais XP.',
     reqs: [
       reachLevel(25),
-      minutes(15),
+      reqMinutes(15),
       { label: 'Evolua 2 armas', need: 2, have: (s) => s.stats.evolutions.length },
     ],
   },
@@ -841,7 +867,7 @@ export const EVO_INFO: Record<EvoId, EvoInfo> = {
     id: 'evoSword',
     name: 'Lâmina Real',
     desc: 'A espada causa o dobro de dano e golpeia 40% mais rápido.',
-    from: 'weaponDamage',
-    passive: 'regeneration',
+    from: 'sword',
+    passive: 'weaponDamage',
   },
 };

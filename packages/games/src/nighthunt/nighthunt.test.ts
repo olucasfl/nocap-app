@@ -184,11 +184,13 @@ describe('mundo', () => {
 });
 
 describe('melhorias permanentes e conquistas', () => {
-  it('bônus e preços vêm da tabela do Slash', () => {
+  it('bônus vêm da tabela do Slash e os preços são 15 vezes os do Slash', () => {
     expect(metaBonus('health', 3)).toBe(30);
     expect(new NhWorld('v', { ...NO_META, health: 2 }).player.maxHp).toBe(70);
     const s = emptySave();
     s.gold = 10;
+    expect(buyMeta(s, 'health')).toBe(false); // custa 150
+    s.gold = 150;
     expect(buyMeta(s, 'health')).toBe(true);
     expect(s.meta.health).toBe(1);
     expect(buyMeta(s, 'health')).toBe(false);
@@ -288,9 +290,9 @@ describe('heróis e mapas', () => {
   it('comprar herói gasta ouro; mapas liberam pelo tempo sobrevivido', () => {
     const s = emptySave();
     expect(buyHero(s, 'mara')).toBe(false);
-    s.gold = 400;
+    s.gold = 1000;
     expect(buyHero(s, 'mara')).toBe(true);
-    expect(s.gold).toBe(270); // 400 - 150 do preço + 20 da conquista "Novo companheiro"
+    expect(s.gold).toBe(420); // 1000 - 600 do preço + 20 da conquista "Novo companheiro"
     expect(s.heroes).toContain('mara');
     expect(mapUnlocked(s, 'deserto')).toBe(false);
     s.stats.bestTime = 8 * 60;

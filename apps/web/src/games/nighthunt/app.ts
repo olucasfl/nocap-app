@@ -53,6 +53,7 @@ import { NH_REMOTE, loadSave, writeSave } from './save';
 import {
   drawWorld,
   stage,
+  viewHalf,
   heroFrame,
   mapFrame,
   pushFx,
@@ -524,6 +525,7 @@ export class NhApp {
       let n = 0;
       const input = this.readInput();
       while (this.acc >= STEP && n < 6 && !w.pending) {
+        w.setView(viewHalf().hw, viewHalf().hh);
         w.step(input);
         this.acc -= STEP;
         n++;
@@ -1243,9 +1245,9 @@ export class NhApp {
       // texto, recorde/requisito e botão empilhados: a descrição cabe no espaço que sobra
       const fit = fitText(
         a,
-        open ? info.desc : 'Mapa bloqueado.',
+        open ? info.desc : '',
         f.w - pw - 44,
-        open ? Math.max(20, rh - 8 - 46 - 76) : 18,
+        open ? Math.max(20, rh - 8 - 46 - 76) : 1,
         15,
       );
       fit.lines.forEach((l, j) =>

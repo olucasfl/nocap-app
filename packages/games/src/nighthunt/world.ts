@@ -1,4 +1,13 @@
 import { createRng } from '../core/rng';
+import {
+  HORDE_EVENTS,
+  MAX_ENEMIES,
+  bossHp,
+  dripTier,
+  gemValue,
+  hpScale,
+  minPopulation,
+} from './hordes';
 import { overlaps, type Shape } from './geometry';
 import {
   ENEMY_BOX,
@@ -33,15 +42,13 @@ import {
 } from './data';
 import {
   AXE_LAUNCHER,
-  CIRCULAR_SPAWNERS,
   ENEMIES,
-  INDIVIDUAL_SPAWNERS,
   ITEM_SETTINGS,
   MAGIC_ORB_LAUNCHER,
   META_SETTINGS,
   PERIODIC_FOLLOW,
   PLAYER_SETTINGS,
-  WAVE_SPAWNERS,
+  xpToNext,
   type EnemySettings,
 } from './settings';
 
@@ -107,6 +114,8 @@ export interface Item {
   attracted: boolean;
   speed: number;
   born: number;
+  /** Valor do cristal de XP (sobe com o tempo). */
+  value?: number;
 }
 /** Objeto do cenário que se quebra (e solta item). A aparência depende do mapa; a regra é a mesma em todos. */
 export interface Breakable {
@@ -192,9 +201,9 @@ const BOSS_CHEST: Record<string, number> = {
 };
 
 export const EXTRA_META = {
-  reroll: { costs: [60, 160, 300], bonuses: [1, 2, 3] },
-  skip: { costs: [60, 160, 300], bonuses: [1, 2, 3] },
-  banish: { costs: [80, 200, 360], bonuses: [1, 2, 3] },
+  reroll: { costs: [350, 900, 1800], bonuses: [1, 2, 3] },
+  skip: { costs: [350, 900, 1800], bonuses: [1, 2, 3] },
+  banish: { costs: [450, 1100, 2200], bonuses: [1, 2, 3] },
 } as const;
 type SlimMetaKey = keyof typeof META_SETTINGS | keyof typeof EXTRA_META;
 const metaTable = (key: SlimMetaKey) =>
@@ -207,6 +216,14 @@ export function metaCost(key: SlimMetaKey, level: number): number | null {
 export function metaBonus(key: SlimMetaKey, level: number): number {
   return level <= 0 ? 0 : ((metaTable(key).bonuses as readonly number[])[level - 1] ?? 0);
 }
+
+/** Aumenta o tamanho de uma forma mantendo o centro (o passivo Alcance). */
+function scaleShape(sh: Shape, k: number): Shape {
+  if (k === 1) return sh;
+  return sh.kind === 'circle' ? { ...sh, r: sh.r * k } : { ...sh, w: sh.w * k, h: sh.h * k };
+}
+
+const MAX_ITEMS = 400;
 
 export class NhWorld {
   readonly rng: () => number;
@@ -267,15 +284,20 @@ export class NhWorld {
   private collisionTimer = 0;
   private playerContacts = new Set<number>();
   private spawnerTime = 0;
-  private spawnTimers: number[];
   private waveLastPos: { x: number; y: number } | null = null;
   private waveLastDir = { x: 0, y: 0 };
   private projDamage: number;
   private projPierces: number;
-  private dmgMult: number;
+  private heroDmg: number;
   private heroCd: number;
   private heroArmor: number;
-  private goldMult: number;
+  private heroGold: number;
+  /** Zona visível (metade da largura e da altura, em unidades do mundo): o cliente informa, os inimigos nascem fora dela. */
+  private viewHW = 460;
+  private viewHH = 620;
+  private spawnClock = 0;
+  private quietUntil = 0;
+  private eventNext: number[] = HORDE_EVENTS.map((e) => e.from);
   private baseHp: number;
   private baseSpeed: number;
   private mapDef;
@@ -307,28 +329,44 @@ export class NhWorld {
     this.player.hp = this.baseHp;
     this.player.speed = this.baseSpeed;
     this.xpMult = (1 + b('xpGatherer', meta.xpGatherer)) * hero.xp * this.mapDef.xp;
-    this.dmgMult = hero.damage;
+    this.heroDmg = hero.damage;
     this.heroCd = hero.cooldown;
     this.heroArmor = hero.armor;
-    this.goldMult = hero.gold * this.mapDef.gold;
+    this.heroGold = hero.gold * this.mapDef.gold;
     this.weapon.damage = PLAYER_SETTINGS.weapon.damage + b('overallDamage', meta.overallDamage);
     this.projDamage = 1 + b('overallDamage', meta.overallDamage);
     this.projPierces = 1 + b('projectilePiercing', meta.projectilePiercing);
     this.rerolls = 1 + b('reroll', meta.reroll);
     this.skips = 1 + b('skip', meta.skip);
     this.banishes = 1 + b('banish', meta.banish);
-    this.spawnTimers = [
-      ...INDIVIDUAL_SPAWNERS.map(() => 0),
-      ...CIRCULAR_SPAWNERS.map(() => 0),
-      ...WAVE_SPAWNERS.map(() => 0),
-    ];
     this.launchers.halo.cooldown = PLAYER_SETTINGS.haloLauncher.launcher.cooldown;
+    this.levels.sword = 1; // a espada é a arma de todo herói; as outras vêm das escolhas
     if (hero.start) this.applyUpgrade(hero.start);
   }
 
   // ---- API do cliente ----
-  get requiredXp(): number | null {
-    return (PLAYER_SETTINGS.requiredXP as readonly number[])[this.level] ?? null;
+  get requiredXp(): number {
+    return xpToNext(this.level);
+  }
+  /** Dano de tudo: herói x Poder (+12% por nível). */
+  get dmgMult(): number {
+    return this.heroDmg * (1 + 0.12 * this.levels.weaponDamage);
+  }
+  /** Tamanho de tudo: Alcance (+10% por nível) aumenta espada, projéteis, orbes e área dos raios. */
+  get area(): number {
+    return 1 + 0.1 * this.levels.weaponLength;
+  }
+  get goldMult(): number {
+    return this.heroGold * (1 + 0.1 * this.levels.greed);
+  }
+  /** Velocidade dos projéteis e dos orbes. */
+  get swiftMult(): number {
+    return 1 + 0.1 * this.levels.swift;
+  }
+  /** Informa a zona visível da câmera (o cliente chama a cada quadro). */
+  setView(halfW: number, halfH: number): void {
+    this.viewHW = halfW;
+    this.viewHH = halfH;
   }
   get cdMult(): number {
     return Math.max(0.4, this.heroCd * (1 - 0.08 * this.levels.tome));
@@ -512,10 +550,10 @@ export class NhWorld {
     const py = this.player.y + SWORD_PIVOT_Y;
     return {
       kind: 'box',
-      cx: px + b.ox * c - b.oy * s,
-      cy: py + b.ox * s + b.oy * c,
-      w: b.w,
-      h: b.h,
+      cx: px + b.ox * this.area * c - b.oy * this.area * s,
+      cy: py + b.ox * this.area * s + b.oy * this.area * c,
+      w: b.w * this.area,
+      h: b.h * this.area,
       rot: a,
     };
   }
@@ -554,10 +592,9 @@ export class NhWorld {
 
   // ---- níveis e melhorias ----
   private addXp(points: number): void {
-    this.xp += points * this.xpMult;
-    const req = PLAYER_SETTINGS.requiredXP as readonly number[];
-    while (this.level < req.length && this.xp >= req[this.level]!) {
-      this.xp -= req[this.level]!;
+    this.xp += points * this.xpMult * (1 + 0.08 * this.levels.growth);
+    while (this.xp >= xpToNext(this.level)) {
+      this.xp -= xpToNext(this.level);
       this.level++;
       this.events.push({ k: 'levelUp' });
       this.openModal('levelUp');
@@ -604,12 +641,10 @@ export class NhWorld {
     this.levels[id]++;
     const L = PLAYER_SETTINGS;
     switch (id) {
-      case 'weaponLength':
-        this.weapon.lengthLevel++;
-        this.weapon.inContact.clear();
-        break;
-      case 'weaponDamage':
+      case 'sword':
         this.weapon.damage++;
+        this.weapon.lengthLevel = Math.min(SWORD_BOXES.length - 1, this.levels.sword - 1);
+        this.weapon.inContact.clear();
         break;
       case 'horizontal':
         this.launchers.horizontal.waves += L.horizontalLauncher.wavesToShootPerUpgrade;
@@ -634,7 +669,7 @@ export class NhWorld {
         break;
       }
       default:
-        break; // axe, orbit, lightning, armor, boots, magnet, clover e tome agem pelo nível
+        break; // as demais armas e os passivos agem pelo nível
     }
   }
 
@@ -646,7 +681,7 @@ export class NhWorld {
   }
 
   // ---- inimigos ----
-  private spawnEnemy(dx: number, dy: number, id: string): Enemy {
+  private spawnEnemy(dx: number, dy: number, id: string, hp?: number): Enemy {
     const s = BY_ID.get(id);
     if (!s) throw new Error('inimigo desconhecido ' + id);
     const per = PERIODIC.get(id);
@@ -656,7 +691,10 @@ export class NhWorld {
       s,
       x: this.player.x + dx,
       y: this.player.y + dy,
-      hp: Math.max(1, Math.round(s.health * this.mapDef.enemyHp)),
+      hp: Math.max(
+        1,
+        Math.round((hp ?? s.health * hpScale(this.spawnerTime)) * this.mapDef.enemyHp),
+      ),
       speedX: (lo + this.rng() * (s.speed - lo)) * this.mapDef.enemySpeed,
       speedY: (lo + this.rng() * (s.speed - lo)) * this.mapDef.enemySpeed,
       life: s.lifetime,
@@ -689,48 +727,82 @@ export class NhWorld {
     return e;
   }
 
+  /** Ponto fora da tela (retângulo da câmera mais uma margem) na direção `angle`, relativo ao jogador. */
+  private edgeOffset(angle: number, margin: number): [number, number] {
+    const c = Math.cos(angle);
+    const s = Math.sin(angle);
+    const d = Math.min(
+      this.viewHW / Math.max(1e-3, Math.abs(c)),
+      this.viewHH / Math.max(1e-3, Math.abs(s)),
+    );
+    return [c * (d + margin), s * (d + margin)];
+  }
+
+  /** Hordas no estilo Vampire Survivors: fluxo contínuo por população mínima, eventos com pausa e chefes (ver hordes.ts). */
   private tickSpawners(dt: number): void {
     this.spawnerTime += dt;
     const now = this.spawnerTime;
-    let n = 0;
-    const active = (start: number, stop: number) =>
-      start <= now && now <= (stop === -1 ? Infinity : stop);
-    const due = (i: number, cooldown: number): boolean => {
-      this.spawnTimers[i] = (this.spawnTimers[i] ?? 0) + dt;
-      if ((this.spawnTimers[i] ?? 0) >= cooldown) {
-        this.spawnTimers[i] = 0;
-        return true;
+    // eventos (enxame, anel, muralha, manada, chefe)
+    HORDE_EVENTS.forEach((ev, i) => {
+      if (now < (this.eventNext[i] ?? Infinity)) return;
+      this.eventNext[i] = now + ev.every;
+      const id = ev.enemy(now);
+      const n = ev.count(now);
+      if (this.enemies.length + n > MAX_ENEMIES + 120) return;
+      const base = this.rng() * Math.PI * 2;
+      if (ev.shape === 'swarm') {
+        // arco denso de um lado só, em duas fileiras
+        const arc = Math.min(2.4, 0.5 + n * 0.035);
+        for (let k = 0; k < n; k++) {
+          const a = base + (k / Math.max(1, n - 1) - 0.5) * arc;
+          const [dx, dy] = this.edgeOffset(a, 50 + (k % 2) * 40 + this.rng() * 20);
+          this.spawnEnemy(dx, dy, id);
+        }
+      } else if (ev.shape === 'ring') {
+        for (let k = 0; k < n; k++) {
+          const [dx, dy] = this.edgeOffset(base + (k / n) * Math.PI * 2, 60);
+          this.spawnEnemy(dx, dy, id);
+        }
+      } else if (ev.shape === 'wall') {
+        // fila de quem atravessa a tela em linha reta (todos pegam a mesma direção)
+        const [cx, cy] = this.edgeOffset(base, 60);
+        const l = Math.hypot(cx, cy) || 1;
+        const px = -cy / l;
+        const py = cx / l;
+        for (let k = 0; k < n; k++) {
+          const o = (k - (n - 1) / 2) * 44;
+          this.spawnEnemy(cx + px * o, cy + py * o, id);
+        }
+      } else {
+        for (let k = 0; k < n; k++) {
+          const [dx, dy] = this.edgeOffset(base + k * 2.4, 80);
+          this.spawnEnemy(dx, dy, id, bossHp(BY_ID.get(id)!.health, now));
+        }
       }
-      return false;
-    };
-    for (const sp of INDIVIDUAL_SPAWNERS) {
-      const i = n++;
-      const c = sp.common;
-      if (!active(c.startDelay, c.stopDelay) || !due(i, c.cooldown)) continue;
-      const sx = this.rng() < 0.5 ? 1 : -1;
-      const sy = this.rng() < 0.5 ? 1 : -1;
-      this.spawnEnemy((300 + this.rng() * 300) * sx, (300 + this.rng() * 300) * sy, c.enemyId);
-    }
-    for (const sp of CIRCULAR_SPAWNERS) {
-      const i = n++;
-      const c = sp.common;
-      if (!active(c.startDelay, c.stopDelay) || !due(i, c.cooldown)) continue;
-      const angle = (2 * Math.PI) / sp.enemiesToSpawn;
-      for (let k = 0; k < sp.enemiesToSpawn; k++)
-        this.spawnEnemy(r1(Math.sin(angle * k)) * 600, r1(Math.cos(angle * k)) * 600, c.enemyId);
-    }
-    for (const sp of WAVE_SPAWNERS) {
-      const i = n++;
-      const c = sp.common;
-      if (!active(c.startDelay, c.stopDelay) || !due(i, c.cooldown)) continue;
-      const bx = (500 + this.rng() * 100) * (this.rng() < 0.5 ? 1 : -1);
-      const by = this.rng() * 500 * (this.rng() < 0.5 ? 1 : -1);
-      const side = Math.ceil(Math.sqrt(sp.enemiesToSpawn));
-      for (let k = 0; k < sp.enemiesToSpawn; k++) {
-        const ox = -20 + this.rng() * 40;
-        const oy = -20 + this.rng() * 40;
-        this.spawnEnemy(bx + ox + 50 * (k % side), by + oy + 50 * Math.floor(k / side), c.enemyId);
+      this.quietUntil = Math.max(this.quietUntil, now + ev.quiet);
+    });
+    // fluxo contínuo: repõe a população mínima aos poucos
+    this.spawnClock += dt;
+    if (this.spawnClock < 0.25) return;
+    this.spawnClock = 0;
+    if (now < this.quietUntil) return;
+    const deficit = minPopulation(now) - this.enemies.length;
+    if (deficit <= 0 || this.enemies.length >= MAX_ENEMIES) return;
+    const tier = dripTier(now);
+    const total = tier.weights.reduce((acc, [, w]) => acc + w, 0);
+    const batch = Math.min(deficit, 2 + Math.ceil(deficit / 8));
+    for (let k = 0; k < batch; k++) {
+      let r = this.rng() * total;
+      let id = tier.weights[0]![0];
+      for (const [eid, w] of tier.weights) {
+        r -= w;
+        if (r <= 0) {
+          id = eid;
+          break;
+        }
       }
+      const [dx, dy] = this.edgeOffset(this.rng() * Math.PI * 2, 40 + this.rng() * 80);
+      this.spawnEnemy(dx, dy, id);
     }
   }
 
@@ -810,7 +882,26 @@ export class NhWorld {
   }
 
   private dropItem(type: ItemType, x: number, y: number): void {
-    this.items.push({ uid: this.nextUid++, type, x, y, attracted: false, speed: 0, born: this.t });
+    // teto de itens no chão (como o Vampire Survivors): os cristais mais antigos viram um só, sem perder XP
+    if (this.items.length >= MAX_ITEMS) {
+      const first = this.items.findIndex((i) => i.type === 'xp');
+      const second = first < 0 ? -1 : this.items.findIndex((i, k) => k > first && i.type === 'xp');
+      if (first >= 0 && second >= 0) {
+        this.items[second]!.value =
+          (this.items[second]!.value ?? 1) + (this.items[first]!.value ?? 1);
+        this.items.splice(first, 1);
+      }
+    }
+    this.items.push({
+      uid: this.nextUid++,
+      type,
+      x,
+      y,
+      attracted: false,
+      speed: 0,
+      born: this.t,
+      value: type === 'xp' ? gemValue(this.t) : undefined,
+    });
   }
 
   // ---- projéteis ----
@@ -828,11 +919,12 @@ export class NhWorld {
   ): void {
     for (const [dx, dy] of dirs) {
       const l = Math.hypot(dx, dy) || 1;
+      const sp = hostile ? speed : speed * this.swiftMult;
       this.projectiles.push({
         x,
         y,
-        vx: (dx / l) * speed,
-        vy: (dy / l) * speed,
+        vx: (dx / l) * sp,
+        vy: (dy / l) * sp,
         gy: extra.gy ?? 0,
         kind,
         expire: this.t + life,
@@ -971,14 +1063,14 @@ export class NhWorld {
     if (lv <= 0) return [];
     const evo = this.evolved.has('evoOrbit');
     const n = 1 + lv + (evo ? 3 : 0);
-    const radius = evo ? 112 : 78 + lv * 3;
+    const radius = (evo ? 112 : 78 + lv * 3) * this.area;
     const out: { x: number; y: number; r: number }[] = [];
     for (let i = 0; i < n; i++) {
       const a = this.orbAngle + (i * Math.PI * 2) / n;
       out.push({
         x: this.player.x + Math.cos(a) * radius,
         y: this.player.y + 6 + Math.sin(a) * radius,
-        r: evo ? 24 : 17,
+        r: (evo ? 24 : 17) * this.area,
       });
     }
     return out;
@@ -1018,7 +1110,7 @@ export class NhWorld {
     // Orbes guardiões
     if (this.levels.orbit > 0) {
       const evo = this.evolved.has('evoOrbit');
-      this.orbAngle += dt * (2.6 + this.levels.orbit * 0.25);
+      this.orbAngle += dt * (2.6 + this.levels.orbit * 0.25) * this.swiftMult;
       for (const o of this.orbs()) {
         const shape: Shape = { kind: 'circle', cx: o.x, cy: o.y, r: o.r };
         for (const e of this.enemies) {
@@ -1058,7 +1150,7 @@ export class NhWorld {
           this.events.push({ k: 'bolt', x: t.x, y: t.y });
           if (evo) {
             for (const o of this.enemies)
-              if (o !== t && !o.dead && Math.hypot(o.x - t.x, o.y - t.y) < 90)
+              if (o !== t && !o.dead && Math.hypot(o.x - t.x, o.y - t.y) < 90 * this.area)
                 this.damageEnemy(o, dmg * 0.6);
           }
           this.damageEnemy(t, dmg);
@@ -1185,7 +1277,7 @@ export class NhWorld {
     this.events.push({ k: 'pickup', type: it.type, x: it.x, y: it.y });
     switch (it.type) {
       case 'xp':
-        this.addXp(1);
+        this.addXp(it.value ?? 1);
         break;
       case 'gold':
         this.gold++;
@@ -1253,7 +1345,7 @@ export class NhWorld {
     // projéteis do jogador x inimigos
     for (const q of this.projectiles) {
       if (q.pierces <= 0 || q.hostile) continue;
-      const qs = PROJECTILE_SHAPE[q.kind](q.x, q.y, q.angle, q.big);
+      const qs = scaleShape(PROJECTILE_SHAPE[q.kind](q.x, q.y, q.angle, q.big), this.area);
       for (const e of this.enemies) {
         if (e.dead || q.pierces <= 0 || q.hit.has(e.uid)) continue;
         if (overlaps(qs, this.enemyShape(e))) {

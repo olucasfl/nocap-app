@@ -75,13 +75,22 @@ export const UPGRADE_LIMITS = {
   maxRegenerationUpgrades: 6,
 } as const;
 export const META_SETTINGS = {
-  health: { costs: [10, 30, 50], bonuses: [10, 20, 30] },
-  overallDamage: { costs: [20, 40, 70], bonuses: [0.5, 1, 1.5] },
-  projectilePiercing: { costs: [30, 100, 200], bonuses: [1, 2, 3] },
-  movementSpeed: { costs: [20, 50, 100], bonuses: [10, 20, 30] },
-  xpGatherer: { costs: [10, 30, 50], bonuses: [0.1, 0.2, 0.3] },
-  goldGatherer: { costs: [10, 30, 50], bonuses: [0.1, 0.2, 0.3] },
+  health: { costs: [150, 450, 1000], bonuses: [10, 20, 30] },
+  overallDamage: { costs: [250, 700, 1500], bonuses: [0.5, 1, 1.5] },
+  projectilePiercing: { costs: [400, 1200, 2500], bonuses: [1, 2, 3] },
+  movementSpeed: { costs: [200, 600, 1300], bonuses: [10, 20, 30] },
+  xpGatherer: { costs: [150, 450, 1000], bonuses: [0.1, 0.2, 0.3] },
+  goldGatherer: { costs: [150, 450, 1000], bonuses: [0.1, 0.2, 0.3] },
 } as const;
+/**
+ * XP para sair do nível `level` (0 = primeiro) e ir ao seguinte. Os 18 primeiros valores são os do Slash;
+ * depois a curva segue o desenho do Vampire Survivors (cresce por nível, com saltos nos níveis 20 e 40), sem teto.
+ */
+export function xpToNext(level: number): number {
+  const t = PLAYER_SETTINGS.requiredXP as readonly number[];
+  if (level < t.length) return t[level]!;
+  return 220 + (level - 17) * 10 + (level >= 19 ? 150 : 0) + (level >= 39 ? 600 : 0);
+}
 export const ITEM_SETTINGS = { healthPerPotion: 10 } as const;
 export const AXE_LAUNCHER = {
   enemyIds: ['Hunter', 'SiegeEnemyRanged'],

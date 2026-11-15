@@ -9,6 +9,7 @@ import type { NhInput, NhWorld } from './world';
 export const BOT_PRIORITY: readonly UpgradeId[] = [
   'halo',
   'horizontal',
+  'sword',
   'weaponDamage',
   'orbit',
   'lightning',
@@ -20,10 +21,13 @@ export const BOT_PRIORITY: readonly UpgradeId[] = [
   'regeneration',
   'tome',
   'boots',
+  'swift',
+  'growth',
+  'greed',
   'magnet',
   'clover',
 ];
-const LOW: readonly UpgradeId[] = ['clover', 'magnet'];
+const LOW: readonly UpgradeId[] = ['clover', 'magnet', 'greed'];
 
 export function botInput(w: NhWorld): NhInput {
   const p = w.player;

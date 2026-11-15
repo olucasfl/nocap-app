@@ -101,6 +101,10 @@ export const VIEW_WIDTH = 510;
 export const VIEW_HEIGHT = 680;
 
 export type UpgradeId =
+  | 'sword'
+  | 'growth'
+  | 'greed'
+  | 'swift'
   | 'weaponLength'
   | 'weaponDamage'
   | 'horizontal'
@@ -117,6 +121,10 @@ export type UpgradeId =
   | 'clover'
   | 'tome';
 export const UPGRADE_IDS: readonly UpgradeId[] = [
+  'sword',
+  'growth',
+  'greed',
+  'swift',
   'weaponLength',
   'weaponDamage',
   'horizontal',
@@ -135,8 +143,7 @@ export const UPGRADE_IDS: readonly UpgradeId[] = [
 ];
 /** Armas (a espada conta como uma só: Lâmina Longa e Lâmina Afiada) e passivos, como nos slots do Vampire Survivors. */
 export const WEAPON_IDS: readonly UpgradeId[] = [
-  'weaponLength',
-  'weaponDamage',
+  'sword',
   'horizontal',
   'diagonal',
   'halo',
@@ -144,7 +151,10 @@ export const WEAPON_IDS: readonly UpgradeId[] = [
   'orbit',
   'lightning',
 ];
+/** Passivos: só beneficiam (dano, alcance, vida, velocidade...), nunca atacam. Os globais valem para todas as armas. */
 export const PASSIVE_IDS: readonly UpgradeId[] = [
+  'weaponDamage',
+  'weaponLength',
   'regeneration',
   'armor',
   'boots',
@@ -152,12 +162,19 @@ export const PASSIVE_IDS: readonly UpgradeId[] = [
   'heart',
   'clover',
   'tome',
+  'growth',
+  'greed',
+  'swift',
 ];
 export const MAX_WEAPON_SLOTS = 6;
 export const MAX_PASSIVE_SLOTS = 6;
 export const UPGRADE_MAX: Record<UpgradeId, number> = {
+  sword: 6,
+  growth: 5,
+  greed: 5,
+  swift: 5,
   weaponLength: 5,
-  weaponDamage: 10,
+  weaponDamage: 5,
   horizontal: 6,
   diagonal: 6,
   halo: 6,
@@ -173,8 +190,7 @@ export const UPGRADE_MAX: Record<UpgradeId, number> = {
   tome: 5,
 };
 /** Identificador do "espaço" que o item ocupa (a espada é um espaço só). */
-export const slotOf = (id: UpgradeId): string =>
-  id === 'weaponLength' || id === 'weaponDamage' ? 'sword' : id;
+export const slotOf = (id: UpgradeId): string => id;
 
 export type EvoId =
   'evoHorizontal' | 'evoDiagonal' | 'evoHalo' | 'evoAxe' | 'evoOrbit' | 'evoLightning' | 'evoSword';
@@ -194,7 +210,7 @@ export const EVOLUTIONS: readonly Evolution[] = [
   { id: 'evoAxe', maxed: ['axe'], passive: 'armor' },
   { id: 'evoOrbit', maxed: ['orbit'], passive: 'magnet' },
   { id: 'evoLightning', maxed: ['lightning'], passive: 'clover' },
-  { id: 'evoSword', maxed: ['weaponLength'], passive: 'regeneration' },
+  { id: 'evoSword', maxed: ['sword'], passive: 'weaponDamage' },
 ];
 
 export interface HeroDef {
@@ -237,7 +253,7 @@ export const HEROES: Record<string, HeroDef> = {
     xp: 1,
     start: 'horizontal',
     hue: 300,
-    price: 150,
+    price: 600,
   },
   brann: {
     id: 'brann',
@@ -250,7 +266,7 @@ export const HEROES: Record<string, HeroDef> = {
     xp: 1,
     start: 'orbit',
     hue: 110,
-    price: 300,
+    price: 1500,
   },
   ysolde: {
     id: 'ysolde',
@@ -263,7 +279,7 @@ export const HEROES: Record<string, HeroDef> = {
     xp: 1.1,
     start: 'lightning',
     hue: 250,
-    price: 500,
+    price: 2500,
   },
   rurik: {
     id: 'rurik',
@@ -276,7 +292,7 @@ export const HEROES: Record<string, HeroDef> = {
     xp: 1,
     start: 'axe',
     hue: 40,
-    price: 800,
+    price: 4000,
   },
 };
 export const HERO_IDS = Object.keys(HEROES);

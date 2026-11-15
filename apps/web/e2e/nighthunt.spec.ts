@@ -178,10 +178,10 @@ test.describe('Night Hunt', () => {
 
   test('comprar herói gasta ouro e fica salvo no aparelho', async ({ page }) => {
     const errors = await open(page);
-    await page.evaluate(() => window.__nh.gold(400));
+    await page.evaluate(() => window.__nh.gold(1000));
     await tap(page, 255, 333); // JOGAR (lista de heróis)
     await screenIs(page, 'heroes');
-    await tap(page, 401, 302); // comprar Mara (150)
+    await tap(page, 401, 302); // comprar Mara (600)
     const saved = await page.evaluate(
       () =>
         JSON.parse(localStorage.getItem('nighthunt:save:v1') ?? '{}') as {

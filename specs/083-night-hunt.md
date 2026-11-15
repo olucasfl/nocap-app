@@ -71,3 +71,13 @@ Leitura: **o equilíbrio ainda não está bom.** Quem começa com Orbes, Raio ou
 - Drops (rng próprio): 30% moedas, 32% coração (cura), 12% ímã, 26% cristais de XP. Os inimigos não soltam mais poção nem ímã (só XP, moedas e baú); essas duas coisas vêm só dos objetos.
 - O ímã (dos objetos e dos inimigos) agora puxa todos os itens do mapa.
 - Aparência por mapa, só visual: campo (lampião de ferro num poste), deserto (urna de argila com faixa dourada), gelo (cristal de gelo sobre uma rocha), pequenos como as tochas do Vampire Survivors e com aura suave, com cacos nas cores do mapa. Arte em `apps/web/src/games/nighthunt/extra-art.ts`.
+
+
+## Rodada de ajustes de progressão (15/11/2026, pedido do Lucas)
+
+- **Níveis sem teto:** `xpToNext(nível)` em `settings.ts`: os 18 primeiros valores são os do Slash; depois cresce por nível, com saltos nos níveis 20 e 40 (desenho do Vampire Survivors). O valor de cada cristal sobe com o tempo (`gemValue`), cristais verdes e vermelhos aparecem (5 e 20 de XP) e há teto de 400 itens no chão (os cristais mais antigos se fundem).
+- **Hordas (`hordes.ts`):** fluxo contínuo por população mínima que sobe com o tempo (faixas de inimigos por minuto) mais eventos com pausa depois: enxame de morcegos (a cada 38 s), anel que se fecha (52 s), muralha que atravessa a tela (66 s), manada de corredores (84 s), goblin do tesouro (110 s), chefe grande a cada 150 s e o chefe final sem fim a partir dos 30 min. Chefes com `bossHp` bem maior que o do Slash. Os inimigos nascem fora da câmera (o cliente informa a área visível por `setView`).
+- **Câmera:** zoom 0,6 (mundo bem mais aberto, como o Vampire Survivors), subindo só em telas muito largas ou altas.
+- **Armas x passivos:** 6 slots de armas (Espada, Adagas, Tiro Arcano, Nova Ígnea, Machado, Orbes, Raio Lunar; a Espada agora é uma arma com 6 níveis) e 6 de passivos. Passivos globais: Poder (+12% de dano de tudo por nível), Alcance (+10% de tamanho de espada, tiros, orbes e raios), Ligeireza (+10% de velocidade de projétil), Crescimento (+8% XP), Ganância (+10% ouro), além de Armadura, Botas, Imã, Coração, Trevo, Diário e Regeneração. Evolução da Espada: Espada no máximo + Poder.
+- **Economia:** custos da loja e dos heróis 15 vezes os do Slash (heróis: 600, 1500, 2500, 4000).
+- **Mapas:** Deserto exige nível 10, 8 min e 3 chefes; Gelo exige nível 25, 15 min e 2 evoluções.
