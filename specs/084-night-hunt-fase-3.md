@@ -83,7 +83,7 @@ Convenções das fichas: "Ignora" lista os passivos globais que **não** afetam 
 | Campo | Conteúdo |
 | --- | --- |
 | Origem no VS | Garlic (Alho); evolui em Soul Eater (Devorador de Almas) com Pummarola (Regeneração) |
-| Comportamento | Círculo em volta do jogador que causa dano a todos dentro dele a cada 0,6 s. **Empurra** os inimigos que acerta (sistema de empurrão, seção 7.1). Cresce com os níveis |
+| Comportamento | Círculo em volta do jogador que causa dano a todos dentro dele a cada 0,6 s. **Empurra** os inimigos que acerta (sistema de empurrão, seção 6.1). Cresce com os níveis |
 | Níveis | 1: raio 70, dano 2. 2: raio +10%. 3: raio +15%. 4: dano +50%. 5: raio +20%. 6: empurrão forte e intervalo 0,5 s |
 | Evolução | **Devorador de Almas** = Aura no 6 + **Regeneração** (qualquer nível). Aura roxa maior (raio x1,6), dano x2 e **cura 1 de vida a cada 5 inimigos atingidos** |
 | Ignora | Ligeireza (não é projétil), Diário de Caça (não recarrega: é contínua) |
