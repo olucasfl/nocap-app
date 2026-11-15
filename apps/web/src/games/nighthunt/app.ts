@@ -2186,7 +2186,9 @@ export class NhApp {
         const lv = w.levels[id];
         if (!lv) continue;
         const x = 14 + i * 38;
-        this.drawIconTile(UPGRADES[id].icon, x, y, 34);
+        // a arma evoluída ocupa o lugar da que existia antes (mesmo espaço, ícone novo)
+        const evoDone = EVOLUTIONS.find((e) => e.maxed.includes(id) && w.evolved.has(e.id));
+        this.drawIconTile(evoDone ? `E/${evoDone.id}` : UPGRADES[id].icon, x, y, 34);
         const evo = EVOLUTIONS.some(
           (e) => w.evolved.has(e.id) && (e.maxed.includes(id) || e.passive === id),
         );

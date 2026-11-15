@@ -59,6 +59,60 @@ function hash(a: number, b: number): number {
   return ((h ^ (h >>> 16)) >>> 0) / 4294967295;
 }
 
+const GROUND_TILE = 128;
+const GROUND_SCALE = 2;
+const groundCache = new Map<string, CanvasPattern | null>();
+/** Ladrilho de textura do chão, gerado uma vez por mapa: pontinhos claros e escuros e tufos (grama) ou pedrinhas (areia). */
+function groundPattern(
+  g: CanvasRenderingContext2D,
+  mapId: string,
+  ground: readonly number[],
+): CanvasPattern | null {
+  const hit = groundCache.get(mapId);
+  if (hit !== undefined) return hit;
+  const c = document.createElement('canvas');
+  c.width = GROUND_TILE;
+  c.height = GROUND_TILE;
+  const q = c.getContext('2d');
+  if (!q) return null;
+  const kind = mapId === 'deserto' ? 'sand' : mapId === 'gelo' ? 'snow' : 'grass';
+  const [r, gg, b] = ground as [number, number, number];
+  const shade = (k: number) =>
+    `rgb(${Math.max(0, Math.min(255, r + k))},${Math.max(0, Math.min(255, gg + k))},${Math.max(0, Math.min(255, b + k))})`;
+  let seed = mapId.length * 7919 + 13;
+  const rnd = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+  const put = (x: number, y: number, w: number, h: number, color: string) => {
+    q.fillStyle = color;
+    // desenha também nas bordas opostas para o ladrilho emendar sem costura
+    for (const dx of [0, -GROUND_TILE, GROUND_TILE])
+      for (const dy of [0, -GROUND_TILE, GROUND_TILE]) q.fillRect(x + dx, y + dy, w, h);
+  };
+  const n = kind === 'grass' ? 900 : 760;
+  for (let i = 0; i < n; i++) {
+    const x = Math.floor(rnd() * GROUND_TILE);
+    const y = Math.floor(rnd() * GROUND_TILE);
+    const k = rnd();
+    if (k < 0.45) put(x, y, 1, 1, shade(kind === 'snow' ? 12 : -18));
+    else if (k < 0.8) put(x, y, 1, 1, shade(kind === 'snow' ? -12 : 16));
+    else if (kind === 'grass') {
+      // tufo: duas lâminas escuras e uma clara
+      put(x, y, 1, 3, shade(-26));
+      put(x + 2, y + 1, 1, 2, shade(-22));
+      put(x + 1, y - 1, 1, 2, shade(22));
+    } else if (kind === 'sand') {
+      put(x, y, 2, 1, shade(-26));
+      put(x, y + 1, 1, 1, shade(-16));
+    } else put(x, y, 2, 1, shade(18));
+  }
+  q.globalAlpha = 1;
+  const p = g.createPattern(c, 'repeat');
+  groundCache.set(mapId, p);
+  return p;
+}
+
 function drawBackground(
   g: CanvasRenderingContext2D,
   a: Atlas,
@@ -69,6 +123,19 @@ function drawBackground(
   const m = MAPS[mapId] ?? MAPS.campo!;
   g.fillStyle = `rgb(${m.ground[0]},${m.ground[1]},${m.ground[2]})`;
   g.fillRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
+  // textura do chão (grama, areia, neve): um ladrilho que se repete e anda com a câmera
+  const pat = groundPattern(g, mapId, m.ground);
+  if (pat) {
+    const P = GROUND_TILE * GROUND_SCALE;
+    const ox = (((VIEW_WIDTH / 2 - camX) % P) + P) % P;
+    const oy = (((VIEW_HEIGHT / 2 + camY) % P) + P) % P;
+    pat.setTransform(new DOMMatrix().translate(ox, oy).scale(GROUND_SCALE));
+    g.save();
+    g.imageSmoothingEnabled = false;
+    g.fillStyle = pat;
+    g.fillRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
+    g.restore();
+  }
   const I0 = Math.floor((camX - CX - 280) / 512);
   const I1 = Math.ceil((camX + CX + 280) / 512);
   const J0 = Math.floor((camY - CY - 280) / 512);

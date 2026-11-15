@@ -16,6 +16,7 @@ import {
 import { NhWorld, NO_META, STEP, metaBonus, type Enemy } from './world';
 import { MONSTERS, ALL_ENEMIES } from './monsters';
 import { BESTIARY } from './bestiary';
+import { botPlay } from './bot';
 import {
   EVOLUTIONS,
   HEROES,
@@ -867,5 +868,35 @@ describe('bestiário', () => {
     applyRun(s, r, 1);
     applyRun(s, r, 2);
     expect(s.stats.bestiary.BasicEnemy).toBe(3);
+  });
+});
+
+describe('limite de 6 itens e substituição na evolução', () => {
+  it('janelas de nível em fila não deixam passar de 6 armas e 6 passivos', () => {
+    const w = new NhWorld('cap1');
+    for (const id of ['whip', 'wand', 'garlic', 'magma', 'embers', 'cross'] as const)
+      w.levels[id] = 1;
+    w.levels.sword = 0;
+    for (const id of ['heart', 'armor', 'boots', 'magnet', 'clover', 'tome'] as const)
+      w.levels[id] = 1;
+    (w as unknown as { addXp(n: number): void }).addXp(1e7);
+    let guard = 0;
+    while (w.pending && guard++ < 400) {
+      for (const o of w.pending.options)
+        if (!o.startsWith('evo')) expect(w.levels[o as UpgradeId] > 0).toBe(true);
+      w.choose(w.pending.options[0]!);
+    }
+    const weapons = WEAPON_IDS.filter((u) => w.levels[u] > 0).length;
+    const passives = PASSIVE_IDS.filter((u) => w.levels[u] > 0).length;
+    expect(weapons).toBeLessThanOrEqual(6);
+    expect(passives).toBeLessThanOrEqual(6);
+  });
+  it('o robô jogando nunca passa de 6 armas e 6 passivos', () => {
+    for (const seed of ['b1', 'b2', 'b3']) {
+      const w = new NhWorld('cap-' + seed);
+      botPlay(w, 300);
+      expect(WEAPON_IDS.filter((u) => w.levels[u] > 0).length).toBeLessThanOrEqual(6);
+      expect(PASSIVE_IDS.filter((u) => w.levels[u] > 0).length).toBeLessThanOrEqual(6);
+    }
   });
 });

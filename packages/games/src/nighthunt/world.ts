@@ -730,8 +730,31 @@ export class NhWorld {
   choose(id: ChoiceId): void {
     if (!this.pending || !this.pending.options.includes(id)) return;
     if (id.startsWith('evo')) this.applyEvolution(id as EvoId);
-    else this.applyUpgrade(id as UpgradeId);
-    this.pending = this.queue.shift() ?? null;
+    else {
+      // nunca passa de 6 armas e 6 passivos, mesmo que a janela tenha sido sorteada antes de encher
+      if (!this.availableUpgrades().includes(id as UpgradeId)) return;
+      this.applyUpgrade(id as UpgradeId);
+    }
+    this.nextPending();
+  }
+
+  /** Passa para a próxima janela da fila, sorteando de novo (a lista pode ter mudado: espaços cheios, itens no máximo). */
+  private nextPending(): void {
+    const next = this.queue.shift() ?? null;
+    if (next) {
+      if (next.kind === 'levelUp') next.options = this.drawOptions(next.options.length);
+      else {
+        const evo = this.availableEvolutions();
+        const avail = this.availableUpgrades();
+        next.options = evo.length
+          ? [evo[0]!]
+          : avail.length
+            ? [avail[Math.floor(this.rng() * avail.length)]!]
+            : [];
+      }
+      if (next.options.length === 0) return this.nextPending();
+    }
+    this.pending = next;
   }
 
   /** Sorteia de novo as opções da janela de nível. */
@@ -747,13 +770,13 @@ export class NhWorld {
     if (!this.pending || this.pending.kind !== 'levelUp' || this.skips <= 0) return false;
     this.skips--;
     this.gold += 5;
-    this.pending = this.queue.shift() ?? null;
+    this.nextPending();
     return true;
   }
   /** Recusa o prêmio do baú: nada muda, e uma evolução recusada volta a aparecer no próximo baú. */
   decline(): boolean {
     if (!this.pending || this.pending.kind !== 'chest') return false;
-    this.pending = this.queue.shift() ?? null;
+    this.nextPending();
     return true;
   }
   /** Tira um item do jogo até o fim da partida. */
