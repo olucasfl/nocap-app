@@ -120,7 +120,91 @@ Convenções das fichas: "Ignora" lista os passivos globais que **não** afetam 
 | Som | `Weapon/Shot` do Slash grave ao nascer |
 | Equilíbrio | Dano 2 por bola, acerta cada inimigo a cada 0,4 s; boa defesa próxima, fraca contra quem atira de longe |
 
-#### 3.3.6 O que muda nas armas atuais
+#### 3.3.6 Cruz (arma, bumerangue)
+
+| Campo | Conteúdo |
+| --- | --- |
+| Origem no VS | Cross (Cruz); evolui em Heaven Sword (Espada Celestial) com Clover (Trevo). Conferido na tabela do Lucas |
+| Comportamento | Lança uma cruz na direção do inimigo mais próximo; ela vai, desacelera, **volta** passando pelo jogador e some. Atravessa quem estiver no caminho nos dois sentidos |
+| Níveis | 1: 1 cruz. 2: velocidade +20%. 3: +1 cruz (sai em outra direção). 4: dano +40%. 5: tamanho +25%. 6: +1 cruz |
+| Evolução | **Espada Celestial** = Cruz no 6 + **Trevo** (qualquer nível). Espada dourada maior que vai e volta duas vezes antes de sumir, com dano x1,6 |
+| Ignora | Nada |
+| Arte | Cruz prateada de 4 quadros girando; ícone: cruz com ponta azul; evoluída: espada dourada com brilho; rastro curto de luz |
+| Animação | Gira rápido na ida, desacelera na virada (leve "pausa" de 2 quadros) e acelera na volta; rastro some em 0,15 s |
+| Som | `Weapon/ThrowAxe` do Slash agudo na ida e um "zum" curto na volta |
+| Equilíbrio | Dano 3, recarga 2,2 s; cada cruz acerta duas vezes (ida e volta); ótima para corredores |
+
+#### 3.3.7 Osso (arma, quica entre inimigos)
+
+| Campo | Conteúdo |
+| --- | --- |
+| Origem no VS | Bone (Osso); proposta de evolução: **Osso Maldito** com **Armadura** (a conferir com a wiki) |
+| Comportamento | Arremessa um osso em arco curto que, ao acertar, **quica para o inimigo mais próximo** (até 2 quicadas, +1 por nível 4 e 6). Sem outro alvo, cai |
+| Níveis | 1: 1 osso, 2 quicadas. 2: dano +25%. 3: +1 osso. 4: +1 quicada. 5: dano +30%. 6: +1 osso e +1 quicada |
+| Evolução | **Osso Maldito** = Osso no 6 + **Armadura** (qualquer nível). Quica 6 vezes, dano x1,5 e cada abate solta um estilhaço |
+| Ignora | Nada |
+| Arte | Osso pequeno de 4 quadros girando, branco-creme; ícone: osso em X sobre fundo escuro; evoluído: osso roxo-escuro com fumaça |
+| Animação | Gira no ar, tremida curta ao quicar, estilhaço de 3 quadros ao acertar |
+| Som | `Effects/Hit` agudo no acerto e tique seco no quique |
+| Equilíbrio | Dano 3, recarga 1,6 s; bom contra grupos separados |
+
+#### 3.3.8 Rastreador de Runas (arma, ricochete nas bordas da tela)
+
+| Campo | Conteúdo |
+| --- | --- |
+| Origem no VS | Runetracer (Rastreador de Runas); proposta de evolução: **Sem Futuro** com **Imã** (a conferir) |
+| Comportamento | Dispara uma esfera de runa que **quica nas bordas da tela** por 5 s, atravessando inimigos, mudando o ângulo a cada quique |
+| Níveis | 1: 1 esfera. 2: velocidade +20%. 3: +1 esfera. 4: duração +25%. 5: dano +40%. 6: +1 esfera, atravessa tudo |
+| Evolução | **Sem Futuro** = Rastreador no 6 + **Imã** (qualquer nível). Esferas maiores que explodem ao fim do tempo |
+| Ignora | Nada |
+| Arte | Esfera azul-turquesa com símbolo de runa (3 quadros pulsando); ícone: runa azul em círculo; evoluída: roxa e maior, com borda de faíscas |
+| Animação | Pulsa e deixa rastro luminoso; faísca a cada quique |
+| Som | `Weapon/Shot` agudo ao lançar e plim a cada quique |
+| Equilíbrio | Dano 2 por acerto (o mesmo inimigo só leva de novo depois de 0,5 s); fica forte com telas cheias |
+
+#### 3.3.9 Pentagrama (arma, varre a tela)
+
+| Campo | Conteúdo |
+| --- | --- |
+| Origem no VS | Pentagram (Pentagrama); evolui em Gorgeous Moon (Lua Esplêndida) com Crown (Sabedoria). Conferido na tabela do Lucas |
+| Comportamento | A cada 20 s (recarga longa) um pentagrama se abre sob o jogador e **varre a tela inteira: causa dano grande a todos os inimigos visíveis e puxa para o jogador todos os itens do chão**. Não atinge chefes finais |
+| Níveis | 1: dano 15 a todos na tela. 2: recarga -10%. 3: dano +30%. 4: recarga -10%. 5: dano +30%. 6: atinge o dobro do alcance e a recarga cai para 12 s |
+| Evolução | **Lua Esplêndida** = Pentagrama no 6 + **Sabedoria** (qualquer nível). Dano x1,5, recarga 10 s e o efeito vira lua cheia (só dano maior e mais rápido, sem efeito extra) |
+| Ignora | Ligeireza, Duração |
+| Arte | Pentagrama roxo grande desenhado em canvas (linhas e círculo brilhando) e onda que se expande; ícone: pentagrama roxo; evoluído: dourado com lua |
+| Animação | O desenho se forma em 0,4 s, brilha e expande em onda até as bordas em 0,6 s; tela escurece de leve e treme |
+| Som | `UI/LevelUp` do Slash grave e prolongado |
+| Equilíbrio | Dano de limpeza de tela, mas só a cada 20 s: valor de emergência, não de dano contínuo |
+
+#### 3.3.10 Bomba de Cereja (arma, bomba que quica)
+
+| Campo | Conteúdo |
+| --- | --- |
+| Origem no VS | Cherry Bomb (Bomba de Cereja); proposta de evolução: **Bomba Cerejão** com **Ligeireza** (a conferir) |
+| Comportamento | Lança uma bomba que **quica pelo chão por 1,5 s** e **explode** em área (raio 70); a explosão solta 3 estilhaços em círculo. Mais bombas por nível |
+| Níveis | 1: 1 bomba. 2: raio +20%. 3: +1 bomba. 4: dano +40%. 5: estilhaços +2. 6: +1 bomba |
+| Evolução | **Bomba Cerejão** = Bomba no 6 + **Ligeireza** (qualquer nível). Cada estilhaço vira outra bomba menor que quica e explode (efeito dominó, 1 geração) |
+| Ignora | Nada |
+| Arte | Duas cerejas ligadas por um cabo, vermelho-vivo, 3 quadros quicando; ícone: bomba de cereja com pavio; explosão com o quadro de morte do Slash em laranja |
+| Animação | Quica com sombra no chão; pavio faísca em 2 quadros; explosão em 5 quadros com onda |
+| Som | `Weapon/ThrowAxe` na saída e explosão curta (som de morte do inimigo grave) |
+| Equilíbrio | Dano 4 na explosão e 1 por estilhaço; área média, recarga 2,4 s |
+
+### 3.4 Passivos novos (3)
+
+Os passivos novos entram na lista de 6 slots de passivos (agora são 15 no total). **Ressurreição ficou de fora** por decisão do Lucas (15/11/2026).
+
+| Passivo | Origem no VS | Efeito (máximo 5 níveis, salvo dito) | Arte |
+| --- | --- | --- | --- |
+| Duração | Spellbinder | Zonas, poças, auras, projéteis que duram e anéis duram +15% por nível. Armas que não têm duração (Pentagrama) ignoram | Relógio de areia dourado |
+| Quantidade | Duplicator (raro) | +1 projétil, bomba ou golpe nas armas que atiram, no **nível 1 e no nível 2** (máximo 2 níveis; aparece raro, com peso 1/3 das outras opções) | Dois círculos sobrepostos, azul e vermelho |
+| Maldição | Skull O'Maniac | Inimigos com +8% de vida e +5% de velocidade por nível, em troca de **+10% de XP e +10% de ouro** por nível. Armadilha opcional para quem quer mais risco | Caveira roxa com olhos vermelhos |
+
+Cada um tem ficha de carta (nome, descrição, "o que muda em cada nível") no mesmo padrão dos atuais, ícone 16x11 na paleta `PAL` e, onde faz sentido, evolução nenhuma (passivos não evoluem).
+
+**Observação:** a wiki do Vampire Survivors continua bloqueada na rede desta sessão, então as evoluções de **Osso, Rastreador de Runas e Bomba de Cereja** (e os números das armas) são **propostas feitas de memória**, a conferir com a wiki ou com o Lucas. As de Cruz e Pentagrama batem com a tabela que o Lucas mandou. Correção: na minha mensagem anterior eu disse que a Cruz evoluía com Alcance; o certo, pela tabela do Lucas, é **Trevo**.
+
+#### 3.3.11 O que muda nas armas atuais
 
 - Todas ganham a linha **"Ignora: ..."** e, nas evoluídas, "Evolução do X" e "Requer: Y" na carta (seção 5.2).
 - Evolução das atuais conferida contra o guia do VS (a revisar com o Lucas, uma a uma): Adagas + Ligeireza (no VS, Faca + Bracer), Machado + Armadura (hoje; no VS é Candelabro, que é o nosso Alcance), Nova Ígnea + Coração.
@@ -268,6 +352,6 @@ Preços **nivelados**, de 600 em 600 (600, 1.200, 1.800, 2.400, 3.000, 3.600, 4.
 
 ### Ainda abertas
 
-1. **A lista de itens** além das 5 armas desta spec (a regra de evolução já está na seção 5).
+1. ~~Lista de itens~~: aprovada em 15/11/2026 (5 armas da seção 3.3.1 a 3.3.5, mais Cruz, Osso, Rastreador de Runas, Pentagrama, Bomba de Cereja e os passivos Duração, Quantidade e Maldição; sem Ressurreição).
 2. **Wiki do Vampire Survivors e Medium:** liberados na rede da sessão em 15/11/2026 (ambiente `nocap-app`); falta confirmar que respondem (o proxy pode levar alguns minutos).
 3. **Evoluções das armas atuais** (Adagas, Machado, Nova Ígnea): conferir uma a uma com o guia do VS.
