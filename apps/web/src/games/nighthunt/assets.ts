@@ -341,3 +341,25 @@ export function nineSlice(
     for (const c of cols) g.drawImage(a.img, c[0], r[0], c[1], r[1], c[2], r[2], c[3], r[3]);
   g.restore();
 }
+
+/** Quebra o texto em linhas e reduz o tamanho da fonte até caber na caixa (largura x altura), para qualquer tela. */
+export function fitText(
+  a: Atlas,
+  text: string,
+  maxWidth: number,
+  maxHeight: number,
+  size: number,
+  minSize = 9,
+): { lines: string[]; size: number; lh: number } {
+  for (let sz = size; sz >= minSize; sz--) {
+    const lh = Math.round(sz * 1.2);
+    const lines = wrapText(a, text, maxWidth, { size: sz });
+    if (lines.length * lh <= maxHeight) return { lines, size: sz, lh };
+  }
+  const lh = Math.round(minSize * 1.2);
+  const lines = wrapText(a, text, maxWidth, { size: minSize }).slice(
+    0,
+    Math.max(1, Math.floor(maxHeight / lh)),
+  );
+  return { lines, size: minSize, lh };
+}

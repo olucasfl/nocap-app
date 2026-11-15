@@ -42,6 +42,7 @@ import {
   measureText,
   nineSlice,
   wrapText,
+  fitText,
   type Atlas,
 } from './assets';
 import { NhAudio, type NhSound } from './audio';
@@ -1097,12 +1098,10 @@ export class NhApp {
         y + 19,
         { size: 15, color: '#9ad0ff' },
       );
-      const lines = wrapText(a, info.desc, f.w - 260, { size: 14 });
-      lines
-        .slice(0, 4)
-        .forEach((l, j) =>
-          drawText(g, a, l, f.x + 108, y + 42 + j * 16, { size: 14, color: '#e6ecff' }),
-        );
+      const fit = fitText(a, info.desc, f.w - 260, rh - 42 - 14, 14);
+      fit.lines.forEach((l, j) =>
+        drawText(g, a, l, f.x + 108, y + 42 + j * fit.lh, { size: fit.size, color: '#e6ecff' }),
+      );
       if (h.start) drawFrame(g, a, UPGRADES[h.start].icon, f.x + f.w - 160, y + 30, { s: 0.55 });
       const bx = f.x + f.w - 140;
       if (!owned) {
@@ -1214,17 +1213,29 @@ export class NhApp {
         color: open ? '#ffd44a' : '#8d93a8',
         maxWidth: f.w - pw - 40,
       });
-      const lines = wrapText(a, open ? info.desc : 'Mapa bloqueado.', f.w - pw - 44, { size: 15 });
-      lines
-        .slice(0, 3)
-        .forEach((l, j) => drawText(g, a, l, tx, y + 46 + j * 18, { size: 15, color: '#e6ecff' }));
+      // texto, recorde/requisito e botão empilhados: a descrição cabe no espaço que sobra
+      const fit = fitText(
+        a,
+        open ? info.desc : 'Mapa bloqueado.',
+        f.w - pw - 44,
+        Math.max(20, rh - 8 - 46 - 76),
+        15,
+      );
+      fit.lines.forEach((l, j) =>
+        drawText(g, a, l, tx, y + 46 + j * fit.lh, { size: fit.size, color: '#e6ecff' }),
+      );
       const best = this.save.stats.mapBestTime[id] ?? 0;
       if (open && best > 0)
-        drawText(g, a, `Recorde: ${fmtTime(best)}`, tx, y + rh - 62, {
+        drawText(g, a, `Recorde: ${fmtTime(best)}`, tx, y + rh - 80, {
           size: 15,
           color: '#9ad0ff',
         });
-      if (!open) drawText(g, a, info.unlockText, tx, y + rh - 62, { size: 16, color: '#ff9a6a' });
+      if (!open)
+        drawText(g, a, info.unlockText, tx, y + rh - 80, {
+          size: 15,
+          color: '#ff9a6a',
+          maxWidth: f.w - pw - 44,
+        });
       void m;
       this.btn(
         open ? 'JOGAR' : 'BLOQUEADO',
@@ -1268,12 +1279,13 @@ export class NhApp {
       const tx = f.x + 86;
       drawText(g, a, m.name, tx, y + 8, { size: 24, color: '#ffffff' });
       const next = metaBonus(m.key, max ? lv : lv + 1);
-      const lines = wrapText(a, m.desc(next), f.w - 86 - 150, { size: 15 });
-      lines
-        .slice(0, 2)
-        .forEach((l, j) =>
-          drawText(g, a, l, tx, y + 36 + j * 18, { size: 15, color: max ? '#9aa3b8' : '#c9d3ea' }),
-        );
+      const fit = fitText(a, m.desc(next), f.w - 86 - 150, rh - 36 - 30, 15);
+      fit.lines.forEach((l, j) =>
+        drawText(g, a, l, tx, y + 36 + j * fit.lh, {
+          size: fit.size,
+          color: max ? '#9aa3b8' : '#c9d3ea',
+        }),
+      );
       for (let p = 0; p < 3; p++)
         drawFrame(g, a, 'UI/ButtonMark', tx + p * 22 + 6, y + rh - 18, {
           s: 1.4,
