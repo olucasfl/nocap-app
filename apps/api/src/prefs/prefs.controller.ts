@@ -165,7 +165,13 @@ export const nhSchema = z
       .refine((o) => Object.keys(o).length <= 150),
     seen: z.array(z.string().max(20)).max(40),
     heroes: z.array(z.string().max(12)).max(12),
-    pick: z.object({ hero: z.string().max(12), map: z.string().max(12) }).strict(),
+    pick: z
+      .object({
+        hero: z.string().max(12),
+        map: z.string().max(12),
+        infinite: z.boolean().optional(),
+      })
+      .strict(),
     run: z
       .object({
         at: z.number().min(0),
@@ -183,6 +189,7 @@ export const nhSchema = z
     sound: z.boolean(),
     damageNumbers: z.boolean(),
     flashes: z.boolean(),
+    showRange: z.boolean().optional(),
   })
   .strict();
 export type NhSaved = z.infer<typeof nhSchema>;

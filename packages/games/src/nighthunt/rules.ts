@@ -283,6 +283,10 @@ export interface NhStats {
   mapBestTime: Record<string, number>;
   banishes: number;
   rerolls: number;
+  /** Mapas concluídos (id -> quando, ms): matar o chefe final libera o modo infinito do mapa. */
+  mapsDone: Record<string, number>;
+  /** Recordes do modo infinito por mapa. */
+  mapRecords: Record<string, { t: number; kills: number; level: number }>;
 }
 /** Partida guardada com "Sair e salvar" (a conta guarda junto com o resto do save). */
 export interface SavedRun {
@@ -311,13 +315,15 @@ export interface NhSave {
   seen: UpgradeId[];
   /** Heróis comprados com ouro e escolhas da última partida. */
   heroes: string[];
-  pick: { hero: string; map: string };
+  pick: { hero: string; map: string; infinite?: boolean };
   /** Partida em andamento guardada para continuar depois (uma só). */
   run?: SavedRun | null;
   music: boolean;
   sound: boolean;
   damageNumbers: boolean;
   flashes: boolean;
+  /** Mostra o círculo do alcance de coleta e de atração em volta do personagem. */
+  showRange?: boolean;
 }
 
 export function emptySave(): NhSave {
@@ -347,6 +353,8 @@ export function emptySave(): NhSave {
       mapBestTime: {},
       banishes: 0,
       rerolls: 0,
+      mapsDone: {},
+      mapRecords: {},
     },
     achievements: {},
     seen: [],
@@ -487,6 +495,22 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
     Math.min(1, s.stats.finalBossKills),
     1,
   ]),
+  mk(
+    'win-campo',
+    'Senhor do Campo',
+    'Conclua o Campo Verde derrotando o chefe final.',
+    150,
+    ICON.skull,
+    (s) => [s.stats.mapsDone.campo ? 1 : 0, 1],
+  ),
+  mk(
+    'win-deserto',
+    'Senhor das Areias',
+    'Conclua o Deserto Seco derrotando o Dragão Dourado.',
+    250,
+    ICON.skull,
+    (s) => [s.stats.mapsDone.deserto ? 1 : 0, 1],
+  ),
   mk(
     'sword-long',
     'Espada lendária',
@@ -654,13 +678,18 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
 ];
 
 /** Aplica o resultado de uma partida no save e devolve as conquistas liberadas (com o ouro do prêmio já somado). */
+/** Ouro extra por concluir um mapa. */
+export const VICTORY_GOLD = 500;
+/** O mapa já foi concluído (chefe final morto)? Só então o modo infinito dele abre. */
+export const mapCompleted = (s: NhSave, id: string): boolean => (s.stats.mapsDone[id] ?? 0) > 0;
 export function applyRun(
   save: NhSave,
   r: RunResult,
   now = 0,
 ): { unlocked: Achievement[]; goldGained: number } {
   const st = save.stats;
-  const gained = goldWithBonus(r.gold, save.meta);
+  // vencer o mapa (chefe final) paga um prêmio extra
+  const gained = goldWithBonus(r.gold, save.meta) + (r.won && !r.infinite ? VICTORY_GOLD : 0);
   save.gold += gained;
   save.highscore = Math.max(save.highscore, r.score);
   st.runs++;
@@ -679,6 +708,15 @@ export function applyRun(
   st.heroRuns[r.hero] = (st.heroRuns[r.hero] ?? 0) + 1;
   st.heroBestTime[r.hero] = Math.max(st.heroBestTime[r.hero] ?? 0, r.score);
   st.mapBestTime[r.map] = Math.max(st.mapBestTime[r.map] ?? 0, r.score);
+  if (r.won && !r.infinite) st.mapsDone[r.map] = st.mapsDone[r.map] ?? (now || 1);
+  if (r.infinite) {
+    const old = st.mapRecords[r.map] ?? { t: 0, kills: 0, level: 0 };
+    st.mapRecords[r.map] = {
+      t: Math.max(old.t, Math.floor(r.score)),
+      kills: Math.max(old.kills, r.kills),
+      level: Math.max(old.level, r.level + 1),
+    };
+  }
   for (const e of r.evolutions) if (!st.evolutions.includes(e)) st.evolutions.push(e);
   for (const id of UPGRADE_IDS) {
     const lv = r.upgrades[id] ?? 0;

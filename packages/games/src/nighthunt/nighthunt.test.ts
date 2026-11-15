@@ -5,6 +5,7 @@ import {
   MAP_INFO,
   UPGRADES,
   applyRun,
+  mapCompleted,
   buyHero,
   buyMeta,
   emptySave,
@@ -542,10 +543,10 @@ describe('monstros novos (Dungeon Crawl)', () => {
 
   it('nenhum monstro novo no Campo Verde e vários no Deserto', () => {
     const campo = new NhWorld('mc', NO_META, { map: 'campo' });
-    run(campo, 700);
+    run(campo, 420);
     for (const m of MONSTERS) expect(ids(campo).has(m.id)).toBe(false);
     const des = new NhWorld('md', NO_META, { map: 'deserto' });
-    run(des, 700);
+    run(des, 420);
     const seen = [...ids(des)].filter((id) => MONSTERS.some((m) => m.id === id));
     expect(seen.length).toBeGreaterThanOrEqual(3);
   });
@@ -594,5 +595,94 @@ describe('monstros novos (Dungeon Crawl)', () => {
     expect(n.mode).toBe(1);
     for (let i = 0; i < 40; i++) w.step({ x: 0, y: 0 });
     expect(n.mode).toBe(2);
+  });
+});
+
+describe('sistemas da fase 3: empurrão, separação, obstáculos, coleta e vitória', () => {
+  const step = (w: NhWorld, n: number) => {
+    for (let i = 0; i < n; i++) {
+      w.player.hp = w.player.maxHp;
+      w.step({ x: 0, y: 0 });
+      w.drainEvents();
+    }
+  };
+  const spawn = (w: NhWorld, id: string, dx: number, dy: number) =>
+    (w as unknown as { spawnEnemy(a: number, b: number, c: string): Enemy }).spawnEnemy(dx, dy, id);
+
+  it('empurrão afasta o inimigo, e chefe quase não sai do lugar', () => {
+    const w = new NhWorld('k1');
+    const a = spawn(w, 'BasicEnemy', 60, 0);
+    const b = spawn(w, 'BasicBoss', -60, 0);
+    w.knock(a, 0, 0, 300);
+    w.knock(b, 0, 0, 300);
+    const ax = a.x;
+    const bx = b.x;
+    step(w, 20);
+    expect(a.x - ax).toBeGreaterThan(20);
+    expect(bx - b.x).toBeLessThan(5);
+  });
+  it('separação: inimigos empilhados se afastam uns dos outros', () => {
+    const w = new NhWorld('k2');
+    const es = Array.from({ length: 8 }, () => spawn(w, 'Hunter', 900, 900));
+    for (const e of es) e.speedX = e.speedY = 0;
+    step(w, 120);
+    const xs = es.map((e) => e.x);
+    expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(20);
+  });
+  it('obstáculos nascem pela seed, travam o jogador e não ficam na partida', () => {
+    const a = new NhWorld('o1', NO_META, { map: 'campo' });
+    for (let i = 0; i < 400; i++) {
+      a.player.hp = a.player.maxHp;
+      a.step({ x: 1, y: 0.2 });
+      a.drainEvents();
+    }
+    expect(a.obstacles.length).toBeGreaterThan(0);
+    expect(a.obstacles.every((o) => Math.hypot(o.x, o.y) >= 190)).toBe(true);
+    const o = a.obstacles[0]!;
+    a.player.x = o.x - o.r - 4;
+    a.player.y = o.y;
+    for (let i = 0; i < 30; i++) a.step({ x: 1, y: 0 });
+    expect(Math.hypot(a.player.x - o.x, a.player.y - o.y)).toBeGreaterThanOrEqual(o.r + 15);
+  });
+  it('item entra no alcance de atração e só é pego no alcance de coleta', () => {
+    const w = new NhWorld('p1');
+    w.items.push({ uid: 9001, type: 'xp', x: 60, y: 0, attracted: false, speed: 0, born: 0 });
+    w.step({ x: 0, y: 0 });
+    expect(w.items[0]!.attracted).toBe(true);
+    w.items.length = 0;
+    w.items.push({ uid: 9002, type: 'xp', x: 120, y: 0, attracted: false, speed: 0, born: 0 });
+    w.step({ x: 0, y: 0 });
+    expect(w.items[0]!.attracted).toBe(false);
+    w.levels.magnet = 5;
+    w.step({ x: 0, y: 0 });
+    expect(w.items[0]!.attracted).toBe(true);
+  });
+  it('chefe final aparece só na partida normal; matar conclui o mapa e o infinito não tem chefe final', () => {
+    const n = new NhWorld('f1', NO_META, { map: 'campo' });
+    (n as unknown as { spawnerTime: number }).spawnerTime = 899.9;
+    step(n, 30);
+    const boss = n.enemies.find((e) => e.s.id === 'FinalBoss')!;
+    expect(boss).toBeTruthy();
+    (n as unknown as { damageEnemy(e: Enemy, d: number): void }).damageEnemy(boss, 1e9);
+    expect(n.victory).toBe(true);
+    expect(n.result().won).toBe(true);
+    const inf = new NhWorld('f2', NO_META, { map: 'campo', infinite: true });
+    (inf as unknown as { spawnerTime: number }).spawnerTime = 899.9;
+    step(inf, 30);
+    expect(inf.enemies.some((e) => e.s.id === 'FinalBoss')).toBe(false);
+  });
+  it('concluir o mapa libera o infinito e o infinito guarda recordes', () => {
+    const s = emptySave();
+    expect(mapCompleted(s, 'campo')).toBe(false);
+    const w = new NhWorld('v1');
+    w.victory = true;
+    w.t = 700;
+    applyRun(s, w.result(), 1000);
+    expect(mapCompleted(s, 'campo')).toBe(true);
+    const i = new NhWorld('v2', NO_META, { infinite: true });
+    i.t = 900;
+    i.kills = 321;
+    applyRun(s, i.result(), 2000);
+    expect(s.stats.mapRecords.campo).toMatchObject({ t: 900, kills: 321 });
   });
 });

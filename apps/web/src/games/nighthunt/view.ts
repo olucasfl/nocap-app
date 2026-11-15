@@ -1,7 +1,7 @@
-import { HEROES, MAPS, SWORD_BOXES, type Enemy, type NhWorld } from '@nocap/games';
+import { HEROES, MAPS, SWORD_BOXES, type Enemy, type NhWorld, type Obstacle } from '@nocap/games';
 import { animFrame, drawFrame, type Atlas } from './assets';
 import { BREAKABLE_DEBRIS, BREAKABLE_GLOW } from './extra-art';
-import { MONSTER_BY_ID } from '@nocap/games';
+import { MONSTER_BY_ID, PICK_RADIUS } from '@nocap/games';
 
 /** Área visível do mundo (em unidades do mundo), recalculada a cada quadro para preencher a tela em pé ou deitada. */
 let CX = 255;
@@ -248,6 +248,8 @@ export interface WorldDrawState {
   dropT: Map<number, number>;
   hero: string;
   map: string;
+  /** Desenha o círculo do alcance de coleta e de atração. */
+  showRange?: boolean;
 }
 
 /** Desenha o mundo do Night Hunt na tela lógica de 510x680, com o jogador sempre no centro (câmera do Slash). */
@@ -328,7 +330,13 @@ export function drawWorld(
   }
 
   // inimigos e jogador, ordenados por altura para ficar natural
-  const list: Array<{ y: number; e?: Enemy }> = [];
+  const list: Array<{ y: number; e?: Enemy; ob?: Obstacle }> = [];
+  for (const o of w.obstacles) {
+    const x = sx(o.x);
+    const y = sy(o.y);
+    if (x < -80 || x > VIEW_WIDTH + 80 || y < -80 || y > VIEW_HEIGHT + 80) continue;
+    list.push({ y: o.y, ob: o });
+  }
   for (const e of w.enemies) {
     const x = sx(e.x);
     const y = sy(e.y);
@@ -354,6 +362,19 @@ export function drawWorld(
   };
   for (const o of list) {
     if (!playerDone && o.y < w.player.y) drawPlayer();
+    if (o.ob) {
+      const ob = o.ob;
+      const f = `X/obs/${st.map}/${ob.kind}`;
+      g.save();
+      g.globalAlpha = 0.25;
+      g.fillStyle = '#000';
+      g.beginPath();
+      g.ellipse(sx(ob.x), sy(ob.y) + ob.r * 0.5, ob.r * 1.1, ob.r * 0.4, 0, 0, Math.PI * 2);
+      g.fill();
+      g.restore();
+      drawFrame(g, a, f, sx(ob.x), sy(ob.y) + ob.r * 0.55, { s: 1.4, ay: 1 });
+      continue;
+    }
     const e = o.e!;
     if (e.life > 0 && e.life <= 2 && Math.floor(t * 2.5) % 2 === 0) continue; // pisca antes de sumir
     if (MONSTER_BY_ID.has(e.s.id)) {
@@ -367,6 +388,20 @@ export function drawWorld(
     });
   }
   if (!playerDone) drawPlayer();
+  if (st.showRange) {
+    g.save();
+    g.lineWidth = 1.5;
+    g.setLineDash([5, 5]);
+    g.strokeStyle = 'rgba(120,215,255,.45)';
+    g.beginPath();
+    g.arc(CX, CY, w.attractRadius, 0, Math.PI * 2);
+    g.stroke();
+    g.strokeStyle = 'rgba(255,230,120,.7)';
+    g.beginPath();
+    g.arc(CX, CY, PICK_RADIUS, 0, Math.PI * 2);
+    g.stroke();
+    g.restore();
+  }
 
   // barra de vida do jogador
   if (st.deadFor < 0) {

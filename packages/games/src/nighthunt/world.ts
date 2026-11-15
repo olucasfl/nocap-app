@@ -1,5 +1,6 @@
 import { createRng } from '../core/rng';
 import {
+  FINAL_BOSS,
   HORDE_EVENTS,
   MAP_EVENTS,
   MAX_ENEMIES,
@@ -89,6 +90,17 @@ export interface NhInput {
 export interface NhOptions {
   hero?: string;
   map?: string;
+  /** Modo infinito do mapa (só depois de concluir o mapa): sem chefe final, com recordes. */
+  infinite?: boolean;
+}
+
+/** Obstáculo sólido do cenário (indestrutível): trava o jogador e os inimigos, mas não as armas. */
+export interface Obstacle {
+  x: number;
+  y: number;
+  r: number;
+  kind: number;
+  cell: string;
 }
 
 export interface Enemy {
@@ -108,6 +120,9 @@ export interface Enemy {
   dirY: number;
   shootTimer: number;
   dead: boolean;
+  /** Empurrão em andamento (px/s), que some rápido. */
+  pushX?: number;
+  pushY?: number;
   /** Vida inicial (para as regras que dependem da metade da vida). */
   maxHp: number;
   /** Relógio e estado da regra própria do monstro (modo 0 seguindo, 1 avisando, 2 em disparo). */
@@ -164,6 +179,8 @@ export type NhEvent =
   | { k: 'levelUp' }
   | { k: 'fire'; kind: 'horizontal' | 'diagonal' | 'halo' | 'axe' }
   | { k: 'bolt'; x: number; y: number }
+  | { k: 'victory' }
+  | { k: 'finalBoss' }
   | { k: 'breakHit'; x: number; y: number }
   | { k: 'break'; x: number; y: number; kind: number }
   | { k: 'evolve'; id: EvoId };
@@ -188,6 +205,7 @@ export interface RunResult {
   banishesUsed: number;
   rerollsUsed: number;
   won: boolean;
+  infinite: boolean;
 }
 
 const BY_ID = new Map(ALL_ENEMIES.map((e) => [e.id, e]));
@@ -234,6 +252,14 @@ function scaleShape(sh: Shape, k: number): Shape {
 
 const MAX_ITEMS = 400;
 
+/** Alcance de coleta (o item é pego) e alcance de atração base (o item começa a voar até você). */
+export const PICK_RADIUS = 26;
+export const ATTRACT_BASE = 70;
+const PLAYER_R = 16;
+/** Obstáculos do cenário: células de 520 px com 30% de chance de ter um, raio de cada modelo. */
+const OBSTACLE_CELL = 520;
+const OBSTACLE_CHANCE = 0.3;
+const OBSTACLE_R = [30, 26] as const;
 const ROOT_RADIUS = 115;
 const SHOOT_CD = { orb: 3.2, spread: 4, ring: 5, scythe: 3.6 } as const;
 /** Bote (Naja), mergulho (Grifo) e avanço (Lobo de Gelo): alcance, espera, aviso, duração do disparo e multiplicador de velocidade. */
@@ -323,6 +349,11 @@ export class NhWorld {
   private baseSpeed: number;
   private mapDef;
   breakables: Breakable[] = [];
+  obstacles: Obstacle[] = [];
+  private obsCells = new Set<string>();
+  infinite = false;
+  victory = false;
+  private finalSpawned = false;
   private brkCells = new Set<string>();
   private brkDone = new Set<string>();
   private brkSeed: number;
@@ -336,6 +367,7 @@ export class NhWorld {
     opts: NhOptions = {},
   ) {
     this.seedId = seed;
+    this.infinite = !!opts.infinite;
     this.rng = createRng('nighthunt:' + seed);
     // fluxo próprio: os objetos do cenário não mexem na sorte dos inimigos
     this.brkRng = createRng('nighthunt:brk:' + seed);
@@ -559,6 +591,10 @@ export class NhWorld {
   get area(): number {
     return 1 + 0.1 * this.levels.weaponLength;
   }
+  /** Alcance de atração dos itens: base 70, +40% por nível do passivo Imã. */
+  get attractRadius(): number {
+    return ATTRACT_BASE * (1 + 0.4 * this.levels.magnet);
+  }
   get goldMult(): number {
     return this.heroGold * (1 + 0.1 * this.levels.greed);
   }
@@ -677,7 +713,8 @@ export class NhWorld {
       damageTaken: this.damageTaken,
       banishesUsed: this.banishesUsed,
       rerollsUsed: this.rerollsUsed,
-      won,
+      won: won || this.victory,
+      infinite: this.infinite,
     };
   }
 
@@ -686,12 +723,17 @@ export class NhWorld {
     if (!this.alive || this.pending) return;
     this.tick++;
     this.movePlayer(input, dt);
+    this.tickObstacles();
     this.tickWeapon(dt);
     this.tickMagnet(dt);
     this.tickRegen(dt);
     this.collisionTimer += dt;
     this.tickSpawners(dt);
     this.moveEnemies(dt);
+    // a separação roda em quadros alternados (com o dobro do passo): metade do custo, mesmo resultado
+    if (this.tick % 2 === 0) this.separateEnemies(dt * 2);
+    else for (const e of this.enemies) if (!e.dead) this.applyPush(e, dt);
+    this.solveObstacles();
     this.tickLaunchers(dt);
     this.tickNewWeapons(dt);
     this.tickEnemyLaunchers(dt);
@@ -953,6 +995,14 @@ export class NhWorld {
   private tickSpawners(dt: number): void {
     this.spawnerTime += dt;
     const now = this.spawnerTime;
+    // chefe final do mapa: só na partida normal (no modo infinito não aparece)
+    const fin = FINAL_BOSS[this.mapId];
+    if (!this.infinite && fin && !this.finalSpawned && now >= fin.at) {
+      this.finalSpawned = true;
+      const [dx, dy] = this.edgeOffset(this.rng() * Math.PI * 2, 90);
+      this.spawnEnemy(dx, dy, fin.id, bossHp(BY_ID.get(fin.id)!.health, now));
+      this.events.push({ k: 'finalBoss' });
+    }
     // eventos (enxame, anel, muralha, manada, chefe)
     this.hordeEvents.forEach((ev, i) => {
       if (now < (this.eventNext[i] ?? Infinity)) return;
@@ -1143,6 +1193,142 @@ export class NhWorld {
     return mult;
   }
 
+  // ---- empurrão, separação e obstáculos ----
+  /** Quanto o inimigo se deixa empurrar (0 = nada: chefes). */
+  private pushWeight(e: Enemy): number {
+    if (e.s.id.endsWith('Boss')) return 0;
+    if (e.s.trait === 'roots' || e.s.trait === 'shards') return 0.3;
+    return 1;
+  }
+
+  /** Empurra um inimigo para longe de (fx, fy) com a força dada (px/s). */
+  knock(e: Enemy, fx: number, fy: number, force: number): void {
+    const w = this.pushWeight(e);
+    if (w <= 0 || e.dead) return;
+    const dx = e.x - fx;
+    const dy = e.y - fy;
+    const l = Math.hypot(dx, dy) || 1;
+    e.pushX = (e.pushX ?? 0) + (dx / l) * force * w;
+    e.pushY = (e.pushY ?? 0) + (dy / l) * force * w;
+  }
+
+  /** Aplica e apaga o empurrão (some em cerca de 0,25 s). */
+  private applyPush(e: Enemy, dt: number): void {
+    if (e.pushX === undefined || e.pushY === undefined) return;
+    e.x += e.pushX * dt;
+    e.y += e.pushY * dt;
+    const k = Math.max(0, 1 - 7 * dt);
+    e.pushX *= k;
+    e.pushY *= k;
+    if (Math.abs(e.pushX) + Math.abs(e.pushY) < 4) {
+      e.pushX = undefined;
+      e.pushY = undefined;
+    }
+  }
+
+  /** Separação: inimigos muito perto se afastam, e a horda cerca o jogador em vez de virar um bolo (grade de 48 px). */
+  private separateEnemies(dt: number): void {
+    const list = this.enemies;
+    for (const e of list) if (!e.dead) this.applyPush(e, dt / 2);
+    if (list.length < 2) return;
+    const cell = 48;
+    const grid = new Map<number, Enemy[]>();
+    const key = (cx: number, cy: number) => cx * 73856093 + cy * 19349663;
+    for (const e of list) {
+      if (e.dead) continue;
+      const k = key(Math.floor(e.x / cell), Math.floor(e.y / cell));
+      const b = grid.get(k);
+      if (b) b.push(e);
+      else grid.set(k, [e]);
+    }
+    const minD = 30;
+    for (const e of list) {
+      if (e.dead) continue;
+      const cx = Math.floor(e.x / cell);
+      const cy = Math.floor(e.y / cell);
+      const boss = e.s.id.endsWith('Boss');
+      let ox = 0;
+      let oy = 0;
+      let seen = 0;
+      for (let gx = cx - 1; gx <= cx + 1 && seen < 8; gx++)
+        for (let gy = cy - 1; gy <= cy + 1 && seen < 8; gy++) {
+          const b = grid.get(key(gx, gy));
+          if (!b) continue;
+          for (const o of b) {
+            if (o === e || seen >= 8) continue;
+            let dx = e.x - o.x;
+            let dy = e.y - o.y;
+            if (dx * dx + dy * dy < 1) {
+              // no mesmo ponto: cada um sai para um lado (pelo uid)
+              dx = Math.cos(e.uid * 2.4);
+              dy = Math.sin(e.uid * 2.4);
+            }
+            const d2 = dx * dx + dy * dy;
+            const lim = boss || o.s.id.endsWith('Boss') ? 56 : minD;
+            if (d2 >= lim * lim) continue;
+            seen++;
+            const d = Math.sqrt(d2) || 0.01;
+            const f = ((lim - d) / lim) * (o.s.id.endsWith('Boss') && !boss ? 2 : 1);
+            ox += (dx / d) * f;
+            oy += (dy / d) * f;
+          }
+        }
+      if (boss) continue; // chefes não são empurrados por bichos pequenos
+      e.x += ox * 70 * dt;
+      e.y += oy * 70 * dt;
+    }
+  }
+
+  /** Gera os obstáculos do cenário ao redor do jogador (por hash da célula) e solta os que ficaram longe. */
+  private tickObstacles(): void {
+    if (this.tick % 20 !== 2) return;
+    const px = this.player.x;
+    const py = this.player.y;
+    const ci = Math.floor(px / OBSTACLE_CELL);
+    const cj = Math.floor(py / OBSTACLE_CELL);
+    for (let j = cj - 2; j <= cj + 2; j++)
+      for (let i = ci - 2; i <= ci + 2; i++) {
+        const key = i + ',' + j;
+        if (this.obsCells.has(key)) continue;
+        this.obsCells.add(key);
+        if (this.cellHash(i, j, 11) > OBSTACLE_CHANCE) continue;
+        const x = (i + 0.2 + this.cellHash(i, j, 12) * 0.6) * OBSTACLE_CELL;
+        const y = (j + 0.2 + this.cellHash(i, j, 13) * 0.6) * OBSTACLE_CELL;
+        if (Math.hypot(x, y) < 190) continue;
+        const kind = this.cellHash(i, j, 14) < 0.5 ? 0 : 1;
+        this.obstacles.push({ x, y, r: OBSTACLE_R[kind]!, kind, cell: key });
+      }
+    this.obstacles = this.obstacles.filter((o) => {
+      const far = Math.hypot(o.x - px, o.y - py) > OBSTACLE_CELL * 3.2;
+      if (far) this.obsCells.delete(o.cell);
+      return !far;
+    });
+  }
+
+  /** Tira o jogador e os inimigos de dentro dos obstáculos (eles deslizam pela borda). Armas e projéteis passam por cima. */
+  private solveObstacles(): void {
+    const obs = this.obstacles;
+    if (obs.length === 0) return;
+    const push = (o: Obstacle, x: number, y: number, r: number): [number, number] => {
+      const dx = x - o.x;
+      const dy = y - o.y;
+      const d = Math.hypot(dx, dy) || 0.01;
+      const min = o.r + r;
+      if (d >= min) return [x, y];
+      return [o.x + (dx / d) * min, o.y + (dy / d) * min];
+    };
+    const p = this.player;
+    for (const o of obs) [p.x, p.y] = push(o, p.x, p.y, PLAYER_R);
+    for (const e of this.enemies) {
+      if (e.dead) continue;
+      const r = e.s.id.endsWith('Boss') ? 30 : 16;
+      for (const o of obs) {
+        if (Math.abs(e.x - o.x) > o.r + r + 2 || Math.abs(e.y - o.y) > o.r + r + 2) continue;
+        [e.x, e.y] = push(o, e.x, e.y, r);
+      }
+    }
+  }
+
   /** Espectro: parte do ciclo fica fantasma, sem sofrer nem causar dano. */
   isGhost(e: Enemy): boolean {
     return e.s.trait === 'phase' && e.aux % 4 > 2.4;
@@ -1160,7 +1346,13 @@ export class NhWorld {
     e.dead = true;
     this.kills++;
     if (e.s.id.endsWith('Boss')) this.bossKills++;
-    if (e.s.id === 'FinalBoss') this.finalBossKills++;
+    if (e.s.id.endsWith('FinalBoss') || e.s.id === 'FinalBoss') {
+      this.finalBossKills++;
+      if (!this.victory && !this.infinite) {
+        this.victory = true;
+        this.events.push({ k: 'victory' });
+      }
+    }
     this.events.push({ k: 'enemyDeath', x: e.x, y: e.y });
     const s = e.s;
     if (s.trait === 'split') {
@@ -1677,6 +1869,7 @@ export class NhWorld {
         if (hit && !this.weapon.inContact.has(e.uid)) {
           this.weapon.inContact.add(e.uid);
           this.damageEnemy(e, this.swordDamage());
+          this.knock(e, this.player.x, this.player.y, 150);
         } else if (!hit) this.weapon.inContact.delete(e.uid);
       }
     }
@@ -1738,25 +1931,17 @@ export class NhWorld {
       }
     }
     for (const d of damageNow) d();
-    // itens: tocar no jogador coleta; o ímã (e o passivo Pedra Atrativa) atrai
-    const pull = this.levels.magnet > 0 ? 40 + this.levels.magnet * 38 : 0;
-    const magnetShape: Shape = {
-      kind: 'circle',
-      cx: this.player.x,
-      cy: this.player.y,
-      r: MAGNET_RADIUS,
-    };
-    const passiveShape: Shape = { kind: 'circle', cx: this.player.x, cy: this.player.y, r: pull };
+    // itens: duas distâncias. Dentro do alcance de coleta (curto) o item é pego; dentro do alcance de atração (maior, cresce com o
+    // passivo Imã) ele começa a voar até o jogador; o item Ímã de chão puxa tudo que estiver em MAGNET_RADIUS enquanto dura.
+    const attractR = this.attractRadius;
+    const px0 = this.player.x;
+    const py0 = this.player.y;
     for (const it of this.items) {
-      const sh = this.itemShape(it);
-      if (this.alive && overlaps(ps, sh)) {
+      const d = Math.hypot(it.x - px0, it.y - py0);
+      if (this.alive && d <= PICK_RADIUS + (it.type === 'chest' ? 8 : 0)) {
         it.speed = -1; // marca coletado
         this.pickup(it);
-      } else if (
-        !it.attracted &&
-        ((this.magnet.active && overlaps(magnetShape, sh)) ||
-          (pull > 0 && overlaps(passiveShape, sh)))
-      ) {
+      } else if (!it.attracted && (d <= attractR || (this.magnet.active && d <= MAGNET_RADIUS))) {
         it.attracted = true;
       }
     }

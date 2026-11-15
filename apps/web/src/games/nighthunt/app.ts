@@ -14,6 +14,7 @@ import {
   WEAPON_IDS,
   buyHero,
   heroUnlocked,
+  mapCompleted,
   mapProgress,
   mapUnlocked,
   type ChoiceId,
@@ -174,6 +175,8 @@ export class NhApp {
     map: 'campo',
   };
   private chestT = 0;
+  /** Tempo desde que o chefe final caiu (a tela de vitória abre depois de um instante). */
+  private victoryT = 0;
   private chestPick: ChoiceId | null = null;
   private banishMode = false;
   private screenRed = 0;
@@ -545,6 +548,13 @@ export class NhApp {
       if (this.acc > STEP * 6) this.acc = 0;
     }
     if (this.modal === 'chest') this.chestT += dt;
+    if (this.victoryT > 0 && !this.modal) {
+      this.victoryT += dt;
+      if (this.victoryT > 2.6) {
+        this.victoryT = 0;
+        this.finishRun();
+      }
+    }
     if (!w.alive) {
       this.draw.deadFor = this.draw.deadFor < 0 ? 0 : this.draw.deadFor + dt;
       if (this.draw.deadFor > 2.6) this.finishRun();
@@ -617,6 +627,18 @@ export class NhApp {
         case 'levelUp':
           snd('levelUp');
           break;
+        case 'finalBoss':
+          this.toastQ.push({
+            text: 'O CHEFE FINAL CHEGOU',
+            sub: 'Derrote-o para concluir o mapa',
+            t: 0,
+          });
+          snd('chest');
+          break;
+        case 'victory':
+          this.victoryT = 0.001;
+          snd('levelUp');
+          break;
         case 'fire':
           snd(e.kind === 'axe' ? 'horizontal' : e.kind);
           break;
@@ -676,7 +698,8 @@ export class NhApp {
       map = back.mapId;
       this.world = back;
     } else {
-      this.world = new NhWorld(String(this.runSeed), this.save.meta, { hero, map });
+      const infinite = !!this.save.pick.infinite && mapCompleted(this.save, map);
+      this.world = new NhWorld(String(this.runSeed), this.save.meta, { hero, map, infinite });
       // começar outra partida apaga a guardada
       this.save.run = null;
     }
@@ -693,6 +716,7 @@ export class NhApp {
       map,
     };
     this.screenRed = 0;
+    this.victoryT = 0;
     this.modal = null;
     this.banishMode = false;
     this.result = null;
@@ -1338,7 +1362,20 @@ export class NhApp {
         drawText(g, a, l, tx, y + 46 + j * fit.lh, { size: fit.size, color: '#e6ecff' }),
       );
       const best = this.save.stats.mapBestTime[id] ?? 0;
-      if (open && best > 0)
+      const done = open && mapCompleted(this.save, id);
+      const rec = this.save.stats.mapRecords[id];
+      if (done)
+        drawText(
+          g,
+          a,
+          rec
+            ? `Concluído - Infinito: ${fmtTime(rec.t)}, ${rec.kills} abates, nível ${rec.level}`
+            : 'Concluído - modo infinito liberado',
+          tx,
+          y + rh - 80,
+          { size: 14, color: '#7fe08a', maxWidth: f.w - pw - 44 },
+        );
+      else if (open && best > 0)
         drawText(g, a, `Recorde: ${fmtTime(best)}`, tx, y + rh - 80, {
           size: 15,
           color: '#9ad0ff',
@@ -1364,14 +1401,30 @@ export class NhApp {
         open ? 'JOGAR' : 'BLOQUEADO',
         tx,
         y + rh - 52,
-        200,
+        done ? 130 : 200,
         38,
         () => {
           this.save.pick.map = id;
+          this.save.pick.infinite = false;
           this.startGame();
         },
         open ? 'main' : 'dis',
       );
+      // modo infinito: só depois de concluir o mapa (chefe final derrotado)
+      if (done)
+        this.btn(
+          'INFINITO',
+          tx + 138,
+          y + rh - 52,
+          140,
+          38,
+          () => {
+            this.save.pick.map = id;
+            this.save.pick.infinite = true;
+            this.startGame();
+          },
+          'blue',
+        );
     });
   }
 
@@ -1702,7 +1755,7 @@ export class NhApp {
     const pw = Math.min(W - 40, 440);
     const px = (W - pw) / 2;
     const pop = ease((this.screen === 'audio' ? this.screenT : this.modalT) / 0.25);
-    this.windowFrame('OPÇÕES', px, 150, pw, 430, pop, onClose);
+    this.windowFrame('OPÇÕES', px, 140, pw, 490, pop, onClose);
     for (const [wch, label] of [
       ['music', 'Música'],
       ['sound', 'Efeitos sonoros'],
@@ -1746,10 +1799,16 @@ export class NhApp {
       this.save.damageNumbers,
       () => (this.save.damageNumbers = !this.save.damageNumbers),
     );
+    toggle(
+      'Alcance de coleta',
+      480,
+      !!this.save.showRange,
+      () => (this.save.showRange = !this.save.showRange),
+    );
     this.btn(
       'PRONTO',
       (W - 200) / 2,
-      500,
+      548,
       200,
       54,
       () => {
@@ -1766,6 +1825,7 @@ export class NhApp {
     const a = this.a;
     const w = this.world;
     if (!w) return;
+    this.draw.showRange = !!this.save.showRange;
     drawWorld(g, a, w, this.draw);
     // vinheta de dano / morte
     if (this.screenRed > 0 || this.draw.deadFor >= 0) {
@@ -2216,13 +2276,27 @@ export class NhApp {
     const pop = ease(this.screenT / 0.35);
     const px = 24;
     const pw = W - 48;
-    const f = this.windowFrame('FIM DE JOGO', px, 70, pw, 520, pop);
+    const won = res.r.won && !res.r.infinite;
+    const f = this.windowFrame(won ? 'MAPA CONCLUÍDO' : 'FIM DE JOGO', px, 70, pw, 520, pop);
     const t = this.screenT;
-    drawText(g, a, res.record ? 'NOVO RECORDE!' : 'Você caiu na noite', W / 2, f.y + 4, {
-      size: res.record ? 30 : 24,
-      align: 'center',
-      color: res.record ? '#ffd44a' : '#f2c8c8',
-    });
+    drawText(
+      g,
+      a,
+      won
+        ? 'VITÓRIA!'
+        : res.record
+          ? 'NOVO RECORDE!'
+          : res.r.infinite
+            ? 'Fim do modo infinito'
+            : 'Você caiu na noite',
+      W / 2,
+      f.y + 4,
+      {
+        size: won || res.record ? 30 : 24,
+        align: 'center',
+        color: won || res.record ? '#ffd44a' : '#f2c8c8',
+      },
+    );
     if (res.record) {
       g.save();
       g.globalAlpha = 0.3 + 0.3 * Math.sin(this.time * 6);

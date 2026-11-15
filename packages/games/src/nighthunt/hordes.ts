@@ -224,7 +224,7 @@ export const HORDE_EVENTS: readonly HordeEvent[] = [
     from: 1800,
     every: 25,
     shape: 'boss',
-    enemy: () => 'FinalBoss',
+    enemy: () => 'HardestBoss',
     count: (t) => 1 + Math.floor((t - 1800) / 120),
     quiet: 0,
   },
@@ -269,4 +269,11 @@ export const MAP_EVENTS: Record<string, readonly HordeEvent[]> = {
       quiet: 5,
     },
   ],
+};
+
+/** Chefe final de cada mapa (partida normal): aparece no tempo dado; matar conclui o mapa. No modo infinito não aparece. */
+export const FINAL_BOSS: Record<string, { at: number; id: string }> = {
+  campo: { at: 900, id: 'FinalBoss' },
+  deserto: { at: 1200, id: 'DragaoDouradoFinalBoss' },
+  gelo: { at: 1500, id: 'GolemCristalFinalBoss' },
 };

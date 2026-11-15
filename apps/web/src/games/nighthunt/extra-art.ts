@@ -130,6 +130,10 @@ const PAL: Record<string, string> = {
   I: '#8ed0f0',
   J: '#4a8fc0',
   c: '#f4f8ff',
+  W: '#d9a85a',
+  q: '#d8b070',
+  Q: '#a67c3c',
+  z: '#f0d090',
 };
 
 /**
@@ -185,6 +189,93 @@ export const BREAKABLE_ART: Record<string, string[]> = {
     '.aaaaaAAAAa.',
     '.aAaaAAAAAA.',
     '..AAAAAAAA..',
+  ],
+};
+
+/** Obstáculos sólidos do cenário, dois por mapa (16 colunas, ampliados 3x): campo (tronco caído, pedra com musgo), deserto (cacto grande, arenito), gelo (bloco de gelo, árvore congelada). */
+export const OBSTACLE_ART: Record<string, string[][]> = {
+  campo: [
+    [
+      '................',
+      '..nnnnnnnnnnnn..',
+      '.WWnnnNnnnnnnnW.',
+      'WWWWnNnnnnNnnWWW',
+      'WoWWnnnnnnnnnWoW',
+      'WWWWnnNnnnnnnWWW',
+      '.WWnNnnnnnnnnnW.',
+      '..NNNNNNNNNNNN..',
+      '................',
+    ],
+    [
+      '................',
+      '.....aaaaaa.....',
+      '...aaaaaaaaaa...',
+      '..aaaggaaaaaaa..',
+      '.aaaGgGaaaaaaaA.',
+      '.aaaaaaaaaaaaaA.',
+      'aaaaaaaaaaaaaAAA',
+      'aaaaaaaaaaaAAAAA',
+      '.aaAAAAAAAAAAAA.',
+      '..AAAAAAAAAAAA..',
+      '................',
+    ],
+  ],
+  deserto: [
+    [
+      '.......gg.......',
+      '......gGGg......',
+      '......gGGg......',
+      '..gg..gGGg......',
+      '.gGGg.gGGg..gg..',
+      '.gGGg.gGGg.gGGg.',
+      '.gGGggggGGggGGg.',
+      '..gGGGGGGGGGGg..',
+      '....gGGGGGGg....',
+      '......gGGg......',
+      '......gGGg......',
+      '......gGGg......',
+      '.....NNNNNN.....',
+      '....NNNNNNNN....',
+    ],
+    [
+      '................',
+      '....zzzzzz......',
+      '..zzqqqqqqqz....',
+      '.zqqqqqQqqqqq...',
+      'zqqqqqqQqqqqqQ..',
+      'zqqQqqqqqqqqQQ..',
+      'qqqqqqqqqqqQQQ..',
+      '.qqQQQQQQQQQQ...',
+      '..QQQQQQQQQQ....',
+      '................',
+    ],
+  ],
+  gelo: [
+    [
+      '................',
+      '....iiiiiiii....',
+      '...iIIIIIIIIi...',
+      '..iIiiIIIIIIJJ..',
+      '..iIiIIIIIIIJJ..',
+      '..iIIIIIIIIIJJ..',
+      '..iIIIIIIIIJJJ..',
+      '..iIIIIIIIJJJJ..',
+      '...IIIIIIJJJJ...',
+      '....JJJJJJJJ....',
+    ],
+    [
+      '.......ii.......',
+      '......iIIi......',
+      '.....iIIIIi.....',
+      '....iccIIcci....',
+      '.....iIIIIi.....',
+      '...iccIIIIIcci..',
+      '..iIIIIIIIIIIi..',
+      '.iccIIIIIIIIcci.',
+      '.......NN.......',
+      '.......NN.......',
+      '......NNNN......',
+    ],
   ],
 };
 /** Cor do brilho de cada objeto (aura suave desenhada por baixo). */
@@ -413,11 +504,10 @@ const ICONS: Record<string, string[]> = {
   ],
 };
 
-function paint(map: string[], scale: number, cols = 16): HTMLCanvasElement {
+function paint(map: string[], scale: number, cols = 16, trim = false): HTMLCanvasElement {
   const c = document.createElement('canvas');
   c.width = cols * scale;
-  c.height =
-    map.length >= 16 || cols === 16 ? Math.max(16, map.length) * scale : map.length * scale;
+  c.height = (trim || cols !== 16 ? map.length : Math.max(16, map.length)) * scale;
   const q = c.getContext('2d')!;
   map.forEach((row, j) =>
     [...row].forEach((ch, i) => {
@@ -483,6 +573,11 @@ export function extendAtlas(
   // objetos quebráveis do cenário
   for (const [mapId, map] of Object.entries(BREAKABLE_ART))
     add(`X/brk/${mapId}`, outlined(paint(map, 2, 12), '#0f1424', 2));
+  // obstáculos sólidos do cenário
+  for (const [mapId, list] of Object.entries(OBSTACLE_ART))
+    list.forEach((map, k) =>
+      add(`X/obs/${mapId}/${k}`, outlined(paint(map, 3, 16, true), '#0f1424', 2)),
+    );
   // ícones novos
   const base32 = (id: string) => outlined(paint(ICONS[id]!, 2), '#0f2233', 2);
   for (const id of Object.keys(ICONS)) add(`X/${id}`, base32(id));
