@@ -433,8 +433,15 @@ function AtlasSprite({
 export function NightHuntArt() {
   return (
     <svg className="ha ha-nighthunt" viewBox="0 0 200 150" aria-hidden="true">
-      <circle cx="100" cy="128" r="58" fill="#ff9a3c" />
-      <circle cx="100" cy="128" r="58" fill="none" stroke={INK} strokeWidth="3.5" />
+      <defs>
+        <clipPath id="nh-cover-clip">
+          <rect x="0" y="0" width="200" height="150" />
+        </clipPath>
+      </defs>
+      <g clipPath="url(#nh-cover-clip)">
+        <circle cx="100" cy="118" r="52" fill="#ff9a3c" />
+        <circle cx="100" cy="118" r="52" fill="none" stroke={INK} strokeWidth="3.5" />
+      </g>
       <g style={{ filter: 'brightness(0) opacity(.85)' }}>
         <AtlasSprite x={0} y={227} w={320} h={149} at={[100, 150]} scale={0.7} />
       </g>
