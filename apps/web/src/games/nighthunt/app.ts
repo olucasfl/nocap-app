@@ -46,7 +46,15 @@ import {
 } from './assets';
 import { NhAudio, type NhSound } from './audio';
 import { NH_REMOTE, loadSave, writeSave } from './save';
-import { drawWorld, heroFrame, mapFrame, pushFx, type Fx, type WorldDrawState } from './view';
+import {
+  drawWorld,
+  stage,
+  heroFrame,
+  mapFrame,
+  pushFx,
+  type Fx,
+  type WorldDrawState,
+} from './view';
 import { animFrame } from './assets';
 
 type Screen =
@@ -63,8 +71,9 @@ type Screen =
 type Modal = null | 'levelUp' | 'chest' | 'pause' | 'audio' | 'confirmQuit';
 type Style = 'main' | 'danger' | 'blue' | 'dis';
 
-const W = VIEW_WIDTH;
-const H = VIEW_HEIGHT;
+// Telas de menu desenham numa caixa de 510x680 centrada; o jogo usa a largura inteira. W e H valem para a tela que está sendo desenhada.
+let W = VIEW_WIDTH;
+let H = VIEW_HEIGHT;
 const NAVY = '#191d2b';
 const ease = (x: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
 const back = (x: number) => {
@@ -121,6 +130,12 @@ export class NhApp {
   private cw = 0;
   private ch = 0;
   private k = 1;
+  /** Tamanho lógico da tela inteira (a caixa 510x680 cabe dentro dele, em pé ou deitado). */
+  private fw = VIEW_WIDTH;
+  private fh = VIEW_HEIGHT;
+  private bx = 0;
+  private by = 0;
+  private my = 0;
   private ox = 0;
   private oy = 0;
   private time = 0;
@@ -426,9 +441,11 @@ export class NhApp {
     this.ch = r.height;
     this.canvas.width = Math.round(r.width * this.dpr);
     this.canvas.height = Math.round(r.height * this.dpr);
-    this.k = Math.min(this.cw / W, this.ch / H);
-    this.ox = (this.cw - W * this.k) / 2;
-    this.oy = (this.ch - H * this.k) / 2;
+    this.k = Math.min(this.cw / VIEW_WIDTH, this.ch / VIEW_HEIGHT);
+    this.fw = this.cw / this.k;
+    this.fh = this.ch / this.k;
+    stage.w = this.fw;
+    stage.h = this.fh;
   }
 
   // ---------------- laço ----------------
@@ -882,12 +899,18 @@ export class NhApp {
       g.fillText('Carregando...', this.cw / 2, this.ch / 2);
       return;
     }
+    const inGame = this.screen === 'game';
+    // menus: caixa 510x680 no centro; jogo: largura inteira, HUD no topo, janelas centradas na vertical
+    W = inGame ? this.fw : VIEW_WIDTH;
+    H = VIEW_HEIGHT;
+    this.bx = inGame ? 0 : (this.fw - VIEW_WIDTH) / 2;
+    this.by = inGame ? 0 : (this.fh - VIEW_HEIGHT) / 2;
+    this.my = inGame && this.modal ? Math.max(0, (this.fh - VIEW_HEIGHT) / 2) : 0;
+    this.ox = this.bx * this.k;
+    this.oy = (this.by + this.my) * this.k;
     g.save();
-    g.translate(this.ox, this.oy);
     g.scale(this.k, this.k);
-    g.beginPath();
-    g.rect(0, 0, W, H);
-    g.clip();
+    g.translate(this.bx, this.by);
     g.imageSmoothingEnabled = false;
     switch (this.screen) {
       case 'menu':
@@ -923,46 +946,52 @@ export class NhApp {
     if (this.fade.t > 0) {
       g.globalAlpha = Math.min(1, this.fade.t);
       g.fillStyle = '#080a10';
-      g.fillRect(0, 0, W, H);
+      g.fillRect(-this.bx, -this.by, this.fw, this.fh);
       g.globalAlpha = 1;
     }
     g.restore();
-    // moldura fina da área de jogo quando sobra espaço nas laterais
-    if (this.ox > 4 || this.oy > 4) {
-      g.strokeStyle = 'rgba(120,140,190,.25)';
-      g.lineWidth = 1;
-      g.strokeRect(this.ox - 0.5, this.oy - 0.5, W * this.k + 1, H * this.k + 1);
-    }
   }
 
   private drawMenuBg(): void {
     const g = this.g;
     const a = this.a;
+    // o fundo ocupa a tela inteira; o conteúdo fica na caixa 510x680 (bx, by é o canto dela)
+    const x0 = -this.bx;
+    const y0 = -this.by;
+    const fw = this.fw;
+    const fh = this.fh;
+    const bottom = y0 + fh;
     g.fillStyle = NAVY;
-    g.fillRect(0, 0, W, H);
-    const red = g.createLinearGradient(0, H * 0.35, 0, H);
+    g.fillRect(x0, y0, fw, fh);
+    const red = g.createLinearGradient(0, y0 + fh * 0.35, 0, bottom);
     red.addColorStop(0, 'rgba(158,40,54,0)');
     red.addColorStop(1, 'rgba(158,40,54,.85)');
     g.fillStyle = red;
-    g.fillRect(0, H * 0.35, W, H * 0.65);
-    const blue = g.createLinearGradient(0, 0, 0, H * 0.55);
+    g.fillRect(x0, y0 + fh * 0.35, fw, fh * 0.65);
+    const blue = g.createLinearGradient(0, y0, 0, y0 + fh * 0.55);
     blue.addColorStop(0, 'rgba(30,77,146,.95)');
     blue.addColorStop(1, 'rgba(30,77,146,0)');
     g.fillStyle = blue;
-    g.fillRect(0, 0, W, H * 0.55);
-    // sol e raios girando devagar, e a horda de silhueta
+    g.fillRect(x0, y0, fw, fh * 0.55);
+    // sol e raios girando devagar, e a horda de silhueta (a horda se repete para cobrir telas largas)
+    const cx = x0 + fw / 2;
     g.save();
     g.globalAlpha = 0.22;
-    drawFrame(g, a, 'UI/sunrays', W / 2, H - 70, { s: 5.2, rot: this.time * 0.05 });
-    g.restore();
-    drawFrame(g, a, 'UI/TitleMenu/Sun', W / 2, H - 70, { s: 1.5, tint: '#ff9a3c', tintAlpha: 1 });
-    drawFrame(g, a, 'UI/TitleMenu/Horde', W / 2, H - 101, {
-      s: 1.6,
-      tint: '#191d2b',
-      tintAlpha: 1,
+    drawFrame(g, a, 'UI/sunrays', cx, bottom - 70, {
+      s: 5.2 * Math.max(1, fw / 510),
+      rot: this.time * 0.05,
     });
+    g.restore();
+    drawFrame(g, a, 'UI/TitleMenu/Sun', cx, bottom - 70, { s: 1.5, tint: '#ff9a3c', tintAlpha: 1 });
+    for (let hx = cx - 560; hx <= cx + 560; hx += 480)
+      if (hx > x0 - 300 && hx < x0 + fw + 300)
+        drawFrame(g, a, 'UI/TitleMenu/Horde', hx, bottom - 101, {
+          s: 1.6,
+          tint: '#191d2b',
+          tintAlpha: 1,
+        });
     g.fillStyle = NAVY;
-    g.fillRect(0, H - 22, W, 22);
+    g.fillRect(x0, bottom - 22, fw, 22);
   }
 
   private drawMenu(): void {
@@ -1606,14 +1635,21 @@ export class NhApp {
     // vinheta de dano / morte
     if (this.screenRed > 0 || this.draw.deadFor >= 0) {
       const dead = this.draw.deadFor >= 0 ? Math.min(1, this.draw.deadFor / 1.8) : 0;
-      const gr = g.createRadialGradient(W / 2, H / 2, 150, W / 2, H / 2, 520);
+      const gr = g.createRadialGradient(
+        W / 2,
+        this.fh / 2,
+        150,
+        W / 2,
+        this.fh / 2,
+        520 + Math.max(0, W - 510) / 2,
+      );
       gr.addColorStop(0, 'rgba(160,10,20,0)');
       gr.addColorStop(1, `rgba(160,10,20,${Math.min(0.75, this.screenRed * 0.7 + dead * 0.55)})`);
       g.fillStyle = gr;
-      g.fillRect(0, 0, W, H);
+      g.fillRect(0, 0, W, this.fh);
       if (dead > 0) {
         g.fillStyle = `rgba(8,10,16,${dead * 0.55})`;
-        g.fillRect(0, 0, W, H);
+        g.fillRect(0, 0, W, this.fh);
       }
     }
     this.drawHud(w);
@@ -1635,10 +1671,13 @@ export class NhApp {
       );
       g.restore();
     }
+    g.save();
+    g.translate(0, this.my);
     if (this.modal === 'levelUp') this.drawLevelUp();
     if (this.modal === 'chest') this.drawChest();
     if (this.modal === 'pause' || this.modal === 'confirmQuit') this.drawPause();
     if (this.modal === 'audio') this.drawAudioWindow(() => this.openModalBack());
+    g.restore();
     if (w.alive === false && this.draw.deadFor > 0.3) {
       const t = ease((this.draw.deadFor - 0.3) / 0.8);
       g.save();
@@ -1718,7 +1757,7 @@ export class NhApp {
     const pend = w?.pending;
     if (!w || !pend || pend.kind !== 'levelUp') return;
     g.fillStyle = `rgba(6,8,14,${0.7 * ease(this.modalT / 0.25)})`;
-    g.fillRect(0, 0, W, H);
+    g.fillRect(0, -this.my, W, this.fh);
     const t = this.modalT;
     const pop = ease(t / 0.3);
     const cards = pend.options;
@@ -1884,7 +1923,7 @@ export class NhApp {
     const a = this.a;
     const t = this.chestT;
     g.fillStyle = `rgba(6,8,14,${0.75 * ease(t / 0.3)})`;
-    g.fillRect(0, 0, W, H);
+    g.fillRect(0, -this.my, W, this.fh);
     const cx = W / 2;
     g.save();
     g.globalAlpha = Math.min(1, t * 2) * 0.45;
@@ -1951,7 +1990,7 @@ export class NhApp {
   private drawPause(): void {
     const g = this.g;
     g.fillStyle = `rgba(6,8,14,${0.7 * ease(this.modalT / 0.2)})`;
-    g.fillRect(0, 0, W, H);
+    g.fillRect(0, -this.my, W, this.fh);
     const pw = 340;
     const px = (W - pw) / 2;
     const pop = ease(this.modalT / 0.25);

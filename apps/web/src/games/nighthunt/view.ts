@@ -1,16 +1,11 @@
-import {
-  HEROES,
-  MAPS,
-  SWORD_BOXES,
-  VIEW_HEIGHT,
-  VIEW_WIDTH,
-  type Enemy,
-  type NhWorld,
-} from '@nocap/games';
+import { HEROES, MAPS, SWORD_BOXES, type Enemy, type NhWorld } from '@nocap/games';
 import { animFrame, drawFrame, type Atlas } from './assets';
 
-export const CX = VIEW_WIDTH / 2;
-export const CY = VIEW_HEIGHT / 2;
+/** Área visível do mundo (em unidades do mundo), recalculada a cada quadro para preencher a tela em pé ou deitada. */
+let CX = 255;
+let CY = 340;
+let VIEW_WIDTH = 510;
+let VIEW_HEIGHT = 680;
 
 /** Efeitos de tela (morte de inimigo, coleta de item): só desenho, nada disso entra na simulação. */
 export interface Fx {
@@ -103,6 +98,9 @@ function enemyAnimKey(e: Enemy, touching: boolean): string {
   return ENEMY_ANIM[gt] ?? 'Enemies/Bat/Move';
 }
 
+/** Tamanho lógico da tela (preenche o canvas inteiro); o app atualiza ao redimensionar. */
+export const stage = { w: 510, h: 680 };
+
 export interface WorldDrawState {
   time: number;
   /** Tempo desde a morte (para a animação de morrer), ou -1. */
@@ -124,6 +122,16 @@ export function drawWorld(
 ): void {
   const camX = w.player.x;
   const camY = w.player.y;
+  // O mundo é desenhado num espaço virtual (largura/zoom x altura/zoom) centrado na tela, assim o zoom limita quanto do mapa aparece em telas largas.
+  const z = Math.max(1, stage.w / 900, stage.h / 900);
+  VIEW_WIDTH = stage.w / z;
+  VIEW_HEIGHT = stage.h / z;
+  CX = VIEW_WIDTH / 2;
+  CY = VIEW_HEIGHT / 2;
+  g.save();
+  g.translate(stage.w / 2, stage.h / 2);
+  g.scale(z, z);
+  g.translate(-VIEW_WIDTH / 2, -VIEW_HEIGHT / 2);
   const sx = (x: number) => CX + x - camX;
   const sy = (y: number) => CY - (y - camY);
   const t = st.time;
@@ -251,6 +259,7 @@ export function drawWorld(
     const key = animFrame(a, f.key, f.t);
     drawFrame(g, a, key, sx(f.x), sy(f.y));
   }
+  g.restore();
 }
 
 function drawSword(
