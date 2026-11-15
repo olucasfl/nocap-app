@@ -320,7 +320,7 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
         current: String(g.holes ?? 9),
         format: (v) => `${v} buracos`,
         patch: (v) => ({ holes: Number(v) }),
-        note: 'As fases são sorteadas proporcionalmente (fáceis, médias e difíceis) e jogadas da mais fácil para a mais difícil. Com 25, são todas, na ordem do offline.',
+        note: 'As fases são sorteadas (as fáceis são sempre a minoria: com 12 buracos, 2 fáceis, 4 médias e 6 difíceis) e jogadas da mais fácil para a mais difícil. Com 25, são todas, na ordem do offline.',
       },
       {
         id: 'seconds',

@@ -14,23 +14,24 @@ export type GolfRoomTier = (typeof GOLF_ROOM_TIERS)[number];
 export const GOLF_ROOM_DEFAULTS = { holes: 9, tier: 'mix' as GolfRoomTier, seconds: 180, collide: true };
 
 /**
- * As fases da partida: não há escolha de dificuldade, só de quantos buracos. As fases são sorteadas pela seed (iguais para
- * todos) de forma proporcional às três dificuldades (12 buracos = 4 fáceis, 4 médias, 4 difíceis; 25 = todas) e jogadas
- * da mais fácil para a mais difícil (os números das fases já seguem a dificuldade).
+ * As fases da partida: não há escolha de dificuldade, só de quantos buracos. As fáceis são sempre a minoria: a proporção é
+ * 1 fácil : 2 médias : 3 difíceis (12 buracos = 2 fáceis, 4 médias, 6 difíceis). Quando a dificuldade não tem fases
+ * suficientes (25 = todas), o que sobra vai para as outras, as difíceis primeiro. Dentro de cada dificuldade as fases são
+ * sorteadas pela seed (iguais para todos, sem repetir) e a partida é jogada em ordem crescente.
  */
+export const GOLF_ONLINE_WEIGHTS = { easy: 1, medium: 2, hard: 3 } as const;
 export function golfPickLevels(seed: string, count: number, _tier?: GolfRoomTier): number[] {
   const tiers: GolfTier[] = ['easy', 'medium', 'hard'];
   const want = Math.max(0, Math.min(count, GOLF_LEVELS));
-  // método do maior resto: cota de cada dificuldade proporcional ao tamanho dela
-  const raw = tiers.map((t) => (want * GOLF_TIERS[t].length) / GOLF_LEVELS);
-  const take = raw.map((x) => Math.floor(x));
+  const wsum = tiers.reduce((n, t) => n + GOLF_ONLINE_WEIGHTS[t], 0);
+  const cap = tiers.map((t) => GOLF_TIERS[t].length);
+  const raw = tiers.map((t, i) => Math.min((want * GOLF_ONLINE_WEIGHTS[t]) / wsum, cap[i]!));
+  const take = raw.map((x) => Math.floor(x + 1e-9));
   let left = want - take.reduce((n, x) => n + x, 0);
-  [...raw.keys()].sort((x, y) => raw[y]! - Math.floor(raw[y]!) - (raw[x]! - Math.floor(raw[x]!)) || x - y).forEach((i) => {
-    if (left > 0 && take[i]! < GOLF_TIERS[tiers[i]!].length) {
-      take[i]!++;
-      left--;
-    }
-  });
+  // método do maior resto; empate vai para a dificuldade mais alta (a fácil fica sempre na minoria)
+  const order = [...raw.keys()].sort((x, y) => raw[y]! - Math.floor(raw[y]! + 1e-9) - (raw[x]! - Math.floor(raw[x]! + 1e-9)) || y - x);
+  for (const i of order) if (left > 0 && take[i]! < cap[i]!) { take[i]!++; left--; }
+  for (const i of [2, 1, 0]) while (left > 0 && take[i]! < cap[i]!) { take[i]!++; left--; }
   const rng = createRng(`golf:${seed}`);
   const out: number[] = [];
   tiers.forEach((t, k) => {

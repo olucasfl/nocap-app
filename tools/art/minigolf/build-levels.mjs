@@ -1173,7 +1173,7 @@ function finishLevel(L, id, minY) {
 // 22 A Janela: pequena e muito difícil. Janela fixa, janela que desliza, moinho com túnel e o copo atrás.
 function level22() {
   const L = new Level(251), K = kit(L), y = 0;
-  K.lane(0, 12, 36, { y });
+  K.lane(0, 12, 24.1, { y }); // até onde começa a sala do copo (sem piso duplicado)
   K.cap(0, 12, 5, y); // atrás da largada
   K.windowWall({ cx: 0, z: 5, y, hx: -1.1 });
   K.windowWall({ cx: 0, z: -1.5, y, slide: 1.5, hx: 0, t0: 0.5 });
@@ -1193,7 +1193,7 @@ function level23() {
   K.plank(0, -2, y, 3, 7);
   y = 3; // andar do meio: área de manobra e loop
   const OX = 1.5, OZ = -18.3, CX1 = OX - 1.5;
-  K.lane(CX1, -8.6, 9.5, { y, W: 6 });
+  K.lane(CX1, -8.3, 10, { y, W: 6 }); // começa onde a ponta da gangorra encosta (7 m de tábua levantada alcançam 6,3 m)
   K.block(CX1 - 3.5, OX - 1.05, OZ - 0.5, OZ, y, 0.375); // fecha o norte da área de manobra, deixando a boca da pista do loop aberta
   L.loop(OX, y, OZ, 0, false);
   const XE = OX + 3.86;
@@ -1203,8 +1203,8 @@ function level23() {
   K.spinner(XE, OZ - 3 - 3.5, y);
   K.plank(XE, OZ - 10.2, y, 3, 7);
   y = 6; // andar de cima: janela, duas paredes que deslizam e o copo
-  const z2 = OZ - 10.2 - 6.9;
-  K.lane(XE, z2, 16, { y });
+  const z2 = OZ - 10.2 - 6.3;
+  K.lane(XE, z2, 15.5, { y }); // termina onde começa a sala do copo
   K.windowWall({ cx: XE, z: z2 - 3.5, y, hx: 1.0 });
   for (const [dz, t0] of [[7.5, 0], [10, 1.5]])
     L.mover(`parede-${dz}`, { p: [XE + 1.2, y, z2 - dz] }, { type: 'linear', t0, length: 3, p0: [0, 0, 0], p1: [-2.4, 0, 0] }, (b) => b.box(-1, -0.125, -0.12, 1, 0.375, 0.12, 'wall-top', 'wall-side'));
@@ -1235,7 +1235,7 @@ function level24() {
   K.block(-1.5, -0.62, -40.5, -40.0, y, 1.3); // parede em volta da boca do tubo
   K.block(0.62, 1.5, -40.5, -40.0, y, 1.3);
   K.tube(0, [-40.5, y], [-54.5, 0], 0.7);
-  K.lane(0, -54.5, 14, { y: 0 });
+  K.lane(0, -54.5, 14.5, { y: 0 }); // até a sala do copo (z = -69)
   K.whirlpool(0, -61.5, 0, 3.0, { swirl: 1.0, pull: 0.2 });
   L.ballStart = [0, 0, 7.8];
   K.cup(0, -71, 0, 4);
@@ -1246,7 +1246,7 @@ function level24() {
 function level25() {
   const L = new Level(254), K = kit(L);
   let y = 0;
-  K.lane(0, 8, 5, { y });
+  K.lane(0, 8, 5.8, { y }); // até a articulação da primeira ponte (z = 2,2)
   K.cap(0, 8, 5, y);
   K.windowWall({ cx: 0, z: 4.0, y, hx: 0, hw: 0.5 }); // a primeira janela já fica no caminho
   // tábuas de ponte: abertas (rasas) 2,4 s e fechadas (levantadas como muro) 2,4 s
@@ -1273,7 +1273,7 @@ function level25() {
   y = 3;
   K.lane(XE, OZ - 14, 4, { y });
   bridge2(L, XE, OZ - 18, y, 1.5);
-  K.lane(XE, OZ - 22, 5, { y });
+  K.lane(XE, OZ - 22, 9, { y }); // pista contínua por baixo do moinho até a sala do copo
   K.windmill({ cx: XE, zc: OZ - 27.2, y, depth: 3.4, t0: 1 });
   L.ballStart = [0, 0, 6.8];
   K.cup(XE, OZ - 33, y, 4);

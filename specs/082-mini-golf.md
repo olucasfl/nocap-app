@@ -57,7 +57,7 @@ A campanha tem as **20 fases do Open Golf, exatamente como no original** (geomet
 
 **Grande Circuito (fase 21):** circuito que desce em andares (começa 3 m acima do deque da fase 5), com corredores de 5 m e muros no tamanho do original (0,5 m de espessura, 0,375 m de altura). Em ordem: reta com os dois pêndulos da fase 6 (os vãos dos lados são fechados com blocos, então a bola tem de passar pelo pêndulo), o loop da fase 9 (entrada na diagonal, a partir de uma área de manobra de 6 m), reta com as lombadas da fase 4 e um giratório da fase 1 com os lados fechados, curva arredondada, reta com o rio da fase 7 (corrente 5x empurrando a bola para o muro), descida suave de 3 m e as quatro paredes deslizantes da fase 18, duas curvas em S, colina de 1,5 m com um giratório no alto e, por fim, a fase 5 inteira (rampa suave, espiral que desce 6 m e câmara redonda do buraco). Montada em `tools/art/minigolf/build-levels.mjs` (`grandCircuit`).
 
-As dificuldades agrupam as fases em 7, 7 e 7 (fácil 1 a 7, média 8 a 14, difícil 15 a 21); a sala online sorteia proporcional entre elas (21 buracos = todas). As ferramentas de `tools/art/minigolf/` ficam como histórico de trabalho.
+As dificuldades agrupam as fases em 7, 7 e 7 (fácil 1 a 7, média 8 a 14, difícil 15 a 21); a sala online sorteia 1 fácil : 2 médias : 3 difíceis (12 buracos = 2, 4 e 6; as fáceis são sempre a minoria; 25 = todas). As ferramentas de `tools/art/minigolf/` ficam como histórico de trabalho.
 
 **Peças novas (fases 22 a 25), em `build-levels.mjs` (`kit`):**
 - **Janela na parede:** muro de 1,2 m com abertura de 0,5 m x 0,35 m no chão (a bola tem 0,24 m); pode ser fixa ou deslizar de lado.
