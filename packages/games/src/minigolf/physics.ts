@@ -42,10 +42,10 @@ const GRAVITY = -9.8;
 
 // ---- constantes do game.cfg do Open Golf ----
 const CFG = {
-  holeForceDistance: 0.5,
-  holeForce: 0.05,
-  inHoleDelta: [0, -0.65, 0] as V3,
-  inHoleRadius: 0.5,
+  holeForceDistance: 0.35,
+  holeForce: 0.04,
+  inHoleDelta: [0, -0.3, 0] as V3,
+  inHoleRadius: 0.35,
   ballRotScale: 0.5,
   waterMaxSpeed: 4,
   waterSpeed: 2.5,
@@ -221,8 +221,13 @@ export class GolfLevel {
 
   constructor(data: GolfLevelData) {
     // a areia freia, mas sem parar a bola quase na hora (o valor original do Open Golf era forte demais): atrito e perda de velocidade menores
+    // copo raso (metade da profundidade do Open Golf): a bola cai à vista e não some num poço
     this.data = {
       ...data,
+      holeTris: data.holeTris.map((ht, i) => {
+        const hy = data.holes[i]!.p[1];
+        return ht.map((v, k) => (k % 3 === 1 ? hy + (v - hy) * 0.5 : v));
+      }),
       materials: data.materials.map((m) => (m.name === 'sand' ? { ...m, f: Math.min(m.f, 0.45), v: Math.max(m.v, 0.992) } : m)),
     };
     data = this.data;
@@ -500,12 +505,20 @@ export function golfStep(level: GolfLevel, ball: GolfBall, time: number, dt = GO
   // o copo: entrou quando passa da borda para dentro; só vale o acerto quando assenta no fundo
   const inHoleP = add(holePos, CFG.inHoleDelta);
   if (!ball.inHole && dist(inHoleP, bp) < CFG.inHoleRadius) ball.inHole = true;
+  // passou da borda para dentro do cilindro do copo: já é acerto, a bola não escapa mais
+  if (!ball.inHole && closeHole >= 0) {
+    const h = d.holes[closeHole]!;
+    if (Math.hypot(h.p[0] - bp[0], h.p[2] - bp[2]) < h.r * 0.9 && bp[1] < h.p[1] - 0.05) ball.inHole = true;
+  }
   if (ball.inHole && !ball.holed) {
     ball.holeTime += dt;
-    const settled = ball.slowTime > 0.25 || ball.holeTime > 1.5;
-    if (settled && ball.holeTime > 0.35) ball.holed = true;
+    const settled = ball.slowTime > 0.2 || ball.holeTime > 0.7;
+    if (settled && ball.holeTime > 0.3) ball.holed = true;
   }
 
-  for (const c of contacts) if (c.oob && !c.ignored) ball.outOfBounds = true;
-  if (ball.pos[1] < CFG.killY) ball.outOfBounds = true;
+  // dentro do copo nada vale como fora: a bola que atravessa o fundo conta como acerto, não como perdida
+  if (!ball.inHole) for (const c of contacts) if (c.oob && !c.ignored) ball.outOfBounds = true;
+  if (ball.inHole && !ball.holed && closeHole < 0) ball.holed = true;
+  if (ball.pos[1] < CFG.killY) ball.outOfBounds = ball.inHole ? false : true;
+  if (ball.inHole && ball.pos[1] < CFG.killY) ball.holed = true;
 }
