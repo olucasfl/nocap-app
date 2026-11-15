@@ -9,7 +9,9 @@
   z-index: 4;
   pointer-events: none;
 }
-.tc-layer > * { pointer-events: auto; }
+.tc-layer > * {
+  pointer-events: auto;
+}
 .tc {
   position: absolute;
   width: var(--tc);
@@ -31,11 +33,28 @@
   -webkit-user-select: none;
   filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.45));
 }
-.tc svg { width: 42%; height: 42%; }
-.tc span { font: 900 clamp(7px, 1.9vh, 9px) var(--font-display, system-ui); letter-spacing: 0.04em; line-height: 1; margin-top: 1px; }
-.tc span:empty { display: none; }
-.tc:active, .tc.on { background: rgba(255, 210, 63, 0.7); color: #1b1535; transform: scale(0.94); }
-.tc .tc-text { font: 900 clamp(13px, 3.4vh, 18px) var(--font-display, system-ui); }
+.tc svg {
+  width: 50%;
+  height: 50%;
+}
+.tc span {
+  font: 900 clamp(8px, 2.2vh, 10px) var(--font-display, system-ui);
+  letter-spacing: 0.04em;
+  line-height: 1;
+  margin-top: 1px;
+}
+.tc span:empty {
+  display: none;
+}
+.tc:active,
+.tc.on {
+  background: rgba(255, 210, 63, 0.7);
+  color: #1b1535;
+  transform: scale(0.94);
+}
+.tc .tc-text {
+  font: 900 clamp(13px, 3.4vh, 18px) var(--font-display, system-ui);
+}
 .tc-fire {
   right: var(--sx);
   bottom: var(--sy);
@@ -44,8 +63,13 @@
   background: rgba(255, 106, 43, 0.82);
   border-width: 4px;
 }
-.tc-fire svg { width: 40%; height: 40%; }
-.tc-fire span { font-size: clamp(8px, 2.2vh, 11px); }
+.tc-fire svg {
+  width: 40%;
+  height: 40%;
+}
+.tc-fire span {
+  font-size: clamp(8px, 2.2vh, 11px);
+}
 .tc-fire2 {
   left: max(22px, env(safe-area-inset-left));
   bottom: calc(var(--sy) + var(--tc) * 1.9);
@@ -53,12 +77,31 @@
   height: calc(var(--tc) * 1.05);
   background: rgba(255, 106, 43, 0.6);
 }
-.tc-fire2 svg { width: 44%; height: 44%; }
-.tc-jump { right: calc(var(--sx) + var(--tcf) * 0.18); bottom: calc(var(--sy) + var(--tcf) + 8px); }
-.tc-ads { right: calc(var(--sx) + var(--tcf) + 10px); bottom: calc(var(--sy) + var(--tcf) * 0.5); background: rgba(255, 210, 63, 0.5); }
-.tc-crouch { right: calc(var(--sx) + var(--tcf) + 10px); bottom: calc(var(--sy) + var(--tcf) * 0.5 + var(--tc) + 8px); }
-.tc-reload { right: calc(var(--sx) + var(--tcf) + var(--tc) + 20px); bottom: var(--sy); }
-.tc-cycle { right: calc(var(--sx) + var(--tcf) + var(--tc) + 20px); bottom: calc(var(--sy) + var(--tc) + 8px); }
+.tc-fire2 svg {
+  width: 44%;
+  height: 44%;
+}
+.tc-jump {
+  right: calc(var(--sx) + var(--tcf) * 0.18);
+  bottom: calc(var(--sy) + var(--tcf) + 8px);
+}
+.tc-ads {
+  right: calc(var(--sx) + var(--tcf) + 10px);
+  bottom: calc(var(--sy) + var(--tcf) * 0.5);
+  background: rgba(255, 210, 63, 0.5);
+}
+.tc-crouch {
+  right: calc(var(--sx) + var(--tcf) + 10px);
+  bottom: calc(var(--sy) + var(--tcf) * 0.5 + var(--tc) + 8px);
+}
+.tc-reload {
+  right: calc(var(--sx) + var(--tcf) + var(--tc) + 20px);
+  bottom: var(--sy);
+}
+.tc-cycle {
+  right: calc(var(--sx) + var(--tcf) + var(--tc) + 20px);
+  bottom: calc(var(--sy) + var(--tc) + 8px);
+}
 .tc-top {
   position: absolute;
   top: max(8px, env(safe-area-inset-top));
@@ -66,7 +109,12 @@
   display: flex;
   gap: 8px;
 }
-.tc-sm { position: static; width: calc(var(--tc) * 0.82); height: calc(var(--tc) * 0.82); border-radius: 14px; }
+.tc-sm {
+  position: static;
+  width: calc(var(--tc) * 0.82);
+  height: calc(var(--tc) * 0.82);
+  border-radius: 14px;
+}
 .tc-bomb {
   position: absolute;
   right: calc(var(--sx) + var(--tcf) * 0.18);
@@ -74,14 +122,23 @@
   display: flex;
   gap: 8px;
 }
-.tc-use { background: rgba(255, 90, 60, 0.6); }
+.tc-use {
+  background: rgba(255, 90, 60, 0.6);
+}
 /* a coluna da direita do HUD desce para não ficar embaixo dos botões do canto */
 @media (pointer: coarse) {
-  .fsh-rcol { top: calc(max(8px, env(safe-area-inset-top)) + var(--tc-top, 56px)); }
-  .fs-menubtn { display: none; }
+  .fsh-rcol {
+    top: calc(max(8px, env(safe-area-inset-top)) + var(--tc-top, 56px));
+  }
+  .fs-menubtn {
+    display: none;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .tc:active, .tc.on { transform: none; }
+  .tc:active,
+  .tc.on {
+    transform: none;
+  }
 }
 
 /* ---- HUD no desenho do Call of Duty Mobile (celular deitado) ---- */
@@ -98,9 +155,16 @@
     border-radius: 12px;
     background: var(--fsh-panel);
   }
-  .fs .fsh-vitals b { font-size: clamp(16px, 5vh, 24px); }
-  .fs .fsh-vitals .fsh-ic { width: clamp(16px, 4.6vh, 22px); height: clamp(16px, 4.6vh, 22px); }
-  .fs .fsh-helm { display: none; }
+  .fs .fsh-vitals b {
+    font-size: clamp(16px, 5vh, 24px);
+  }
+  .fs .fsh-vitals .fsh-ic {
+    width: clamp(16px, 4.6vh, 22px);
+    height: clamp(16px, 4.6vh, 22px);
+  }
+  .fs .fsh-helm {
+    display: none;
+  }
   .fs .fsh-ammo {
     left: 50%;
     right: auto;
@@ -115,34 +179,116 @@
     border-radius: 12px;
     background: var(--fsh-panel);
   }
-  .fs .fsh-ammo-n b { font-size: clamp(18px, 5.4vh, 28px); }
-  .fs .fsh-ammo-n span { font-size: clamp(10px, 2.8vh, 14px); }
-  .fs .fsh-slots { display: flex; flex-direction: row; gap: 6px; margin: 0; }
-  .fs .fsh-slots li { padding: 2px 6px; border-right: 0; border-bottom: 3px solid transparent; transform: none; gap: 4px; }
-  .fs .fsh-slots li.on { padding: 2px 6px; transform: none; border-right: 0; border-bottom-color: #ffd23f; background: rgba(255, 255, 255, 0.1); }
-  .fs .fsh-slots li .fsh-w { width: clamp(34px, 9vh, 48px); height: clamp(14px, 4vh, 20px); }
-  .fs .fsh-slots li.on .fsh-w { width: clamp(44px, 12vh, 62px); height: clamp(18px, 5vh, 24px); }
-  .fs .fsh-slots li small, .fs .fsh-slots li i { display: none; }
+  .fs .fsh-ammo-n b {
+    font-size: clamp(18px, 5.4vh, 28px);
+  }
+  .fs .fsh-ammo-n span {
+    font-size: clamp(10px, 2.8vh, 14px);
+  }
+  .fs .fsh-slots {
+    display: flex;
+    flex-direction: row;
+    gap: 6px;
+    margin: 0;
+  }
+  .fs .fsh-slots li {
+    padding: 2px 6px;
+    border-right: 0;
+    border-bottom: 3px solid transparent;
+    transform: none;
+    gap: 4px;
+  }
+  .fs .fsh-slots li.on {
+    padding: 2px 6px;
+    transform: none;
+    border-right: 0;
+    border-bottom-color: #ffd23f;
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .fs .fsh-slots li .fsh-w {
+    width: clamp(34px, 9vh, 48px);
+    height: clamp(14px, 4vh, 20px);
+  }
+  .fs .fsh-slots li.on .fsh-w {
+    width: clamp(44px, 12vh, 62px);
+    height: clamp(18px, 5vh, 24px);
+  }
+  .fs .fsh-slots li small,
+  .fs .fsh-slots li i {
+    display: none;
+  }
 }
 
 /* ---- loja no celular: seções lado a lado que rolam, itens compactos e botão de fechar sempre à vista ---- */
 @media (pointer: coarse), (max-height: 520px) {
-  .fss { gap: 6px; overflow-y: auto; justify-content: flex-start; padding-top: max(8px, env(safe-area-inset-top)); }
-  .fss-head b { font-size: 18px; }
-  .fss-key { display: none; }
-  .fss-cols { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
-  .fss-col { flex: 0 0 min(44vw, 240px); scroll-snap-align: start; }
-  .fss-col h4 { padding: 5px 8px; }
-  .fss-col ul { padding: 6px; gap: 6px; }
-  .fss-item { min-height: 56px; padding: 6px 8px; }
-  .fss-ico { height: 30px; }
-  .fss-n { display: none; }
-  .fss-mine { flex-wrap: wrap; }
-  .fss-close { position: fixed; top: max(8px, env(safe-area-inset-top)); right: max(10px, env(safe-area-inset-right)); z-index: 32; min-height: 40px; padding: 0 18px; }
+  .fss {
+    gap: 6px;
+    overflow-y: auto;
+    justify-content: flex-start;
+    padding-top: max(8px, env(safe-area-inset-top));
+  }
+  .fss-head b {
+    font-size: 18px;
+  }
+  .fss-key {
+    display: none;
+  }
+  .fss-cols {
+    flex: 0 0 auto;
+    max-height: none;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: visible;
+    scroll-snap-type: x proximity;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .fss-col {
+    flex: 0 0 min(44vw, 240px);
+    scroll-snap-align: start;
+  }
+  .fss-col h4 {
+    padding: 5px 8px;
+  }
+  .fss-col ul {
+    padding: 6px;
+    gap: 6px;
+  }
+  .fss-item {
+    min-height: 56px;
+    padding: 6px 8px;
+  }
+  .fss-ico {
+    height: 30px;
+  }
+  .fss-n {
+    display: none;
+  }
+  .fss-mine {
+    position: static;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+  .fss-col ul {
+    max-height: none;
+    overflow: visible;
+  }
+  .fss-close {
+    position: fixed;
+    top: max(8px, env(safe-area-inset-top));
+    right: max(10px, env(safe-area-inset-right));
+    z-index: 32;
+    min-height: 40px;
+    padding: 0 18px;
+  }
 }
 
 /* ---- "gire o aparelho": o Counter Fox só joga deitado ---- */
-.fs-rotate { background: rgba(10, 14, 36, 0.96); z-index: 40; }
+.fs-rotate {
+  background: rgba(10, 14, 36, 0.98);
+  z-index: 100;
+}
 .fs-rotate .fs-card::before {
   content: '';
   justify-self: center;
@@ -154,9 +300,18 @@
   animation: fs-turn 1.8s ease-in-out infinite;
 }
 @keyframes fs-turn {
-  0%, 25% { transform: rotate(0deg); }
-  65%, 100% { transform: rotate(-90deg); }
+  0%,
+  25% {
+    transform: rotate(0deg);
+  }
+  65%,
+  100% {
+    transform: rotate(-90deg);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .fs-rotate .fs-card::before { animation: none; transform: rotate(-90deg); }
+  .fs-rotate .fs-card::before {
+    animation: none;
+    transform: rotate(-90deg);
+  }
 }
