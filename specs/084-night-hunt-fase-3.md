@@ -1,13 +1,13 @@
 # 084: Night Hunt, fase 3 (itens novos no estilo Vampire Survivors, bestiário e nova evolução)
 
-Status: rascunho, aguardando a lista de itens e a nova mecânica de evolução do Lucas. Continuação da [083](083-night-hunt.md).
+Status: rascunho, aguardando a lista de itens do Lucas (a regra de evolução e uniões já está descrita). Continuação da [083](083-night-hunt.md).
 
 ## 1. Pedido (15/11/2026)
 
 1. **Itens novos** parecidos com os do Vampire Survivors (VS), no estilo dele, com animações prontas e bem feitas **seguindo o padrão que o jogo já tem** (arte do Slash + sprites gerados em `extra-art.ts`).
 2. **Pesquisar cada item no VS antes de fazer** (o que faz, como evolui, o que combina com o quê, números) e só então implementar.
 3. **Bestiário** como o do VS: lista numerada dos inimigos à esquerda, painel à direita com o bicho **animado**, descrição, estatísticas e onde aparece.
-4. **Nova mecânica de evolução**: o Lucas vai mandar. Esta spec já deixa o encaixe pronto.
+4. **Evolução e uniões** como no VS (seção 5): arma no máximo + passivo evolui na próxima escolha, e a carta avisa "combina com" quando a pessoa já tem o parceiro.
 5. Perguntar antes de decidir qualquer coisa duvidosa (seção 8).
 
 ## 2. O que já existe e esta fase reaproveita
@@ -28,7 +28,8 @@ Para cada item pedido, antes de codar, escrever na seção 3.3 uma ficha com:
 | Origem no VS | nome original, tipo (arma, passivo, arcano, união), como se obtém |
 | Comportamento | o que faz, alcance, padrão de ataque, o que o Poder/Alcance/Ligeireza/Sabedoria mudam nele |
 | Níveis | 1 a 6 (armas) ou 1 a 5 (passivos), com o que muda em cada |
-| Evolução | com qual passivo, exige baú, resultado |
+| Evolução | com qual passivo (ou qual arma, se for união), resultado, texto "Requer" |
+| Ignora | quais passivos globais não afetam a arma (linha "Ignora: ..." da carta) |
 | Arte | quadros do atlas do Slash a reaproveitar ou sprite novo a gerar (paleta, tamanho, frames) |
 | Animação | quadros por segundo, laço, efeito de acerto, som (do Slash ou novo) |
 | Equilíbrio | dano base, recarga, perfuração, comparação com as armas de hoje |
@@ -74,14 +75,35 @@ Sem ficha completa e aprovada, o item não entra.
 - Vai no save da conta. Atenção: `stats` no schema da API é limitado a 6.000 caracteres; com 40 entradas, usar um campo próprio `bestiary` (número de abates por id, ids curtos) e subir o schema junto, sem migration (é JSON em `user_prefs`).
 - Conquistas novas: "Zoólogo" (ver todos), "Caçador de chefes" (derrotar todos os chefes), por mapa.
 
-## 5. Nova mecânica de evolução
+## 5. Evolução e uniões, como no Vampire Survivors
 
-Aguardando a descrição do Lucas. Pontos de encaixe já mapeados:
+Referência enviada pelo Lucas: o guia "Evolutions & Unions" do VS e as fichas de item do jogo (Chicote e Laceração Sangrenta).
 
-- `EVOLUTIONS` (`data.ts`) hoje é uma tabela estática "arma no máximo + passivo + baú". A nova regra pode substituir ou conviver com ela (ex.: uniões entre duas armas, arcanos, evolução por outra condição).
-- `availableEvolutions()` e `openModal('chest')` em `world.ts` decidem o que o baú entrega; a janela de evolução e o aviso no baú ficam no `app.ts`.
-- Coleção (tela Itens) mostra a receita de cada evolução (`EVO_INFO`); a nova regra precisa gerar o texto da receita.
-- Robô (`bot.ts`) e simulador (`nighthunt.sim.ts`) precisam aprender a persegui-la.
+### 5.1 Regras
+
+1. **Evolução (arma + passivo):** uma arma no **nível máximo**, com o **passivo certo** na mochila (em qualquer nível), pode evoluir para uma versão bem mais forte (o Chicote vira Laceração Sangrenta: vermelho, vai muito mais longe, bate mais rápido, critica e absorve vida). Exemplos do guia: Chicote + Coração Vazio, Varinha Mágica + Livro de Magia (Tomo Vazio), Faca + Bracer, Machado + Candelabro, Cruz + Trevo, Rei da Bíblia + Espinafre, entre outros.
+2. **União (duas ou três armas no máximo):** coluna do meio e da direita do guia: duas armas no nível máximo (ou arma + passivo + arma) se fundem numa arma nova (ex.: Chicote + Laceração = Rosa de Sangue; Anel + Anel = União de anéis; trios com três itens no nível máximo).
+3. **A evolução aparece na hora de escolher:** quando a arma chega ao máximo e o passivo está na mochila, **a próxima janela de nível entrega a evolução no lugar da melhoria dessa arma** (carta dourada com o nome novo). O baú continua entregando evolução quando aparecer primeiro (regra atual). Ao escolher, a arma antiga some e a evoluída ocupa o mesmo slot.
+4. **Aviso "combina com":** na carta de qualquer item oferecido (arma ou passivo), se a pessoa **já tem** o parceiro dele, a carta mostra uma faixa "Combina com [Item]" (e, quando já está tudo no máximo, "Pronta para evoluir"). Vale nos dois sentidos: passivo oferecido que evolui uma arma que a pessoa tem, e arma oferecida cujo passivo a pessoa tem. Itens sem combinação não mostram faixa.
+5. **Slot pronto:** no HUD, o slot da arma que já pode evoluir ganha moldura piscando (só `opacity`), como pista visual enquanto a evolução não chega.
+6. **Itens sem evolução:** a lista "No evolutions" do guia (passivos de efeito único e itens de chão) não mostram faixa.
+7. **Regra especial do guia (relíquia + nível 80):** fora do escopo agora, anotada para depois.
+
+### 5.2 Cartas e telas (padrão das fichas do VS)
+
+- Carta de item: nome, descrição curta, e linhas de apoio em laranja: **"Ignora: Velocidade, Duração."** (quais passivos globais não afetam aquela arma) e, nas evoluídas, **"Evolução do Chicote."** e **"Requer: Coração Vazio."**
+- Ícone evoluído com a moldura dourada (`E/*`) e a arte vermelha/mais viva própria de cada evolução.
+- **Guia de combinações** (tela nova ou aba em Itens), no formato do terceiro print: linhas "ARMA (MAX) + PASSIVO = EVOLUÇÃO", uniões com 2 ou 3 itens, e o bloco "Sem evolução". Itens ainda não descobertos aparecem como `?`.
+- A coleção mostra a receita de cada evolução gerada pela tabela de dados (nunca texto escrito à mão).
+
+### 5.3 Dados e motor
+
+- `EVOLUTIONS` (`data.ts`) vira uma tabela de receitas: `{ id, kind: 'evolution' | 'union', weapons: UpgradeId[] (máximo), passives: UpgradeId[] (qualquer nível), result: EvoId }`. Hoje já existe o formato arma + passivo; a união acrescenta mais de uma arma.
+- `availableEvolutions()` passa a alimentar também `drawOptions()` (janela de nível) além do baú.
+- `drawOptions` marca cada opção com `combo: UpgradeId | null` (parceiro que a pessoa já tem) para a carta mostrar a faixa.
+- Evento `evolve` e animação de evolução já existem (fase 2); as uniões reaproveitam, com o efeito dourado.
+- Robô e simulador aprendem a perseguir receitas (priorizar o passivo parceiro da arma mais forte).
+- Testes: receita certa libera a opção na janela de nível; sem o passivo não libera; união exige todas as armas no máximo; a faixa "combina com" só aparece com o parceiro na mochila; a evolução substitui a arma antiga no slot.
 
 ## 6. Etapas
 
@@ -100,9 +122,11 @@ Aguardando a descrição do Lucas. Pontos de encaixe já mapeados:
 
 ## 8. Perguntas abertas (precisam do Lucas)
 
-1. **A lista de itens e a regra nova de evolução** (a que você vai mandar).
+1. **A lista de itens** que você quer (a regra de evolução já está na seção 5).
 2. **Pesquisa no VS:** esta sessão não alcança a wiki do VS (a rede bloqueia `vampire-survivors.fandom.com`). Posso trabalhar só com o que conheço, ou você libera esse endereço nas configurações de rede da sessão (ou cola as páginas dos itens)? Os números do VS entram como referência, não como cópia: os itens seguem a identidade própria do Night Hunt.
 3. **Cópia de arte:** os itens novos usam arte nova desenhada por nós no estilo do Slash (e não os sprites do VS). Confirma?
 4. **Bestiário:** só os inimigos do Slash (36 + chefes) ou também criar bichos novos para os itens/mapas novos?
-5. **Slots:** continuam 6 armas e 6 passivos, ou a nova evolução muda isso?
+5. **Slots:** continuam 6 armas e 6 passivos (como no VS)?
+7. **Evolução na janela de nível:** confirma que a evolução entra no lugar da melhoria da arma na próxima janela (e o baú continua podendo entregar também)? E as uniões de 3 itens entram já na primeira leva ou só depois?
+8. **Guia de combinações:** aba dentro de Itens (minha sugestão) ou tela própria?
 6. **Onde o bestiário abre:** botão novo no início (ao lado de Itens), ou dentro da tela de Itens como aba?
