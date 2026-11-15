@@ -49,6 +49,8 @@ export class GolfScene {
   /** Os tracinhos brancos em volta da bola parada (como no Open Golf): aparecem quando dá para bater. As telas ligam e desligam. */
   readyHint = false;
   private readonly readyRing = new THREE.Group();
+  /** Água com corrente: cada direção tem as suas texturas, que correm no sentido da corrente (mais rápido quanto mais forte). */
+  private waterFlows: { map: THREE.Texture; normal: THREE.Texture | null; ux: number; uz: number }[] = [];
   private camPos = new THREE.Vector3();
   private camLook = new THREE.Vector3();
   private spin = new THREE.Quaternion();
@@ -123,9 +125,19 @@ export class GolfScene {
     const group = new THREE.Group();
     const byMat = new Map<number, number[]>();
     const water: number[] = [];
+    const flow = new Map<string, { pos: number[]; dx: number; dz: number }>();
+    let wk = 0;
     for (let i = 0; i < d.solid.m.length; i++) {
       const tri = d.solid.t.slice(i * 9, i * 9 + 9);
-      if (d.solid.f[i]! & 2) water.push(...tri);
+      if (d.solid.f[i]! & 2) {
+        const wd = d.waterDirs?.[wk++] ?? [0, 0, 0];
+        if (Math.hypot(wd[0], wd[2]) < 1e-3) water.push(...tri);
+        else {
+          const key = `${wd[0].toFixed(2)},${wd[2].toFixed(2)}`;
+          if (!flow.has(key)) flow.set(key, { pos: [], dx: wd[0], dz: wd[2] });
+          flow.get(key)!.pos.push(...tri);
+        }
+      }
       else {
         const k = d.solid.m[i]!;
         if (!byMat.has(k)) byMat.set(k, []);
@@ -144,6 +156,20 @@ export class GolfScene {
     };
     byMat.forEach((pos, k) => group.add(mk(pos, this.gm.get(d.materials[k]!.name))));
     if (water.length) group.add(mk(water, this.gm.water, 2, false));
+    flow.forEach((f) => {
+      const m = this.gm.water.clone();
+      const map = this.gm.water.map!.clone();
+      const normal = this.gm.water.normalMap ? this.gm.water.normalMap.clone() : null;
+      map.needsUpdate = true;
+      if (normal) normal.needsUpdate = true;
+      m.map = map;
+      m.normalMap = normal;
+      group.add(mk(f.pos, m, 2, false));
+      const len = Math.hypot(f.dx, f.dz);
+      // a corrente do Open Golf vale a escala da água (1 a 5): a textura anda 0,35 m/s no mais fraco e até 1,6 m/s no mais forte
+      const speed = 0.35 + 0.25 * Math.min(len, 5);
+      this.waterFlows.push({ map, normal, ux: (f.dx / len) * speed, uz: (f.dz / len) * speed });
+    });
     // peças móveis: a geometria local gira e anda por `golfApplyMovement` a cada quadro
     d.moving.forEach((mv, i) => {
       const by = new Map<number, number[]>();
@@ -200,6 +226,15 @@ export class GolfScene {
       m.stencilFunc = THREE.NotEqualStencilFunc;
     }
     this.scene.add(group);
+  }
+
+  /** A textura anda no sentido da corrente (uv = metros / 2; somar à posição da textura a faz andar para trás, por isso o sinal). */
+  private tickWater(dt: number) {
+    for (const w of this.waterFlows) {
+      w.map.offset.x -= (w.ux * dt) / 2;
+      w.map.offset.y -= (w.uz * dt) / 2;
+      w.normal?.offset.copy(w.map.offset);
+    }
   }
 
   resize(w: number, h: number) {
@@ -277,6 +312,7 @@ export class GolfScene {
   render(ball: GolfBall, time: number, dt: number, drawPos?: [number, number, number]) {
     const p = drawPos ?? ball.pos;
     this.gm.tick(dt);
+    this.tickWater(dt);
     this.ballMesh.position.set(p[0], p[1], p[2]);
     const sp = Math.hypot(ball.vel[0], ball.vel[2]);
     this.trail.update(dt, [p[0], p[1], p[2]], sp);
@@ -340,6 +376,7 @@ export class GolfScene {
   /** Um quadro online: cada bola na sua posição (cor, acabamento e rastro de cada pessoa) e a câmera na `focus`. */
   renderOnline(balls: { slot: number; look: GolfBallLook; pos: [number, number, number]; vel: [number, number, number]; hidden?: boolean }[], focus: [number, number, number], time: number, dt: number) {
     this.gm.tick(dt);
+    this.tickWater(dt);
     const seen = new Set<number>();
     for (const b of balls) {
       seen.add(b.slot);
