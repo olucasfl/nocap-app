@@ -133,7 +133,7 @@ interface GameDef {
   badge?: string;
 }
 
-/** Todos os jogos da tela inicial, em três categorias: Ação, Esportes e duelos, e Palavras, cores e mente. */
+/** Todos os jogos da tela inicial, em três categorias: Palavras, cores e mente (primeiro), Ação, e Esportes e duelos. */
 const GAMES: GameDef[] = [
   { id: 'counter', section: 'action', to: '/fox-cap/counter-fox', cls: 'hub-card-counter', art: <CounterFoxArt />, name: 'Counter Fox', tag: 'Tiro 3D', size: 'long' },
   { id: 'bola', section: 'sport', to: '/fox-cap', search: { jogo: 'bola' }, cls: 'hub-card-bola', art: <BolaArt />, name: 'Fut Fox', tag: 'Futebol' },
@@ -405,6 +405,15 @@ export function Hub() {
           )}
         </section>
       )}
+      {brainGames.length > 0 && (
+        <section className="hz-sec" aria-label="Palavras, cores e mente">
+          <h2 className="hz-h">
+            Palavras, cores e mente <small className="mono">PALAVRAS, BLOCOS, COR, TEMPO E MEMÓRIA</small>
+          </h2>
+          <div className="hz-grid">{brainGames.map(renderCard)}</div>
+        </section>
+      )}
+
       {actionGames.length > 0 && (
         <section className="hz-sec" aria-label="Ação">
           <h2 className="hz-h">
@@ -423,14 +432,6 @@ export function Hub() {
         </section>
       )}
 
-      {brainGames.length > 0 && (
-        <section className="hz-sec" aria-label="Palavras, cores e mente">
-          <h2 className="hz-h">
-            Palavras, cores e mente <small className="mono">PALAVRAS, BLOCOS, COR, TEMPO E MEMÓRIA</small>
-          </h2>
-          <div className="hz-grid">{brainGames.map(renderCard)}</div>
-        </section>
-      )}
 
       </div>
       {q && actionGames.length === 0 && sportGames.length === 0 && brainGames.length === 0 && (
