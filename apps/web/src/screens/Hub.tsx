@@ -340,9 +340,6 @@ export function Hub() {
                     <span className="hz-dt-band mono" aria-hidden="true">
                       {d.done ? <><Check size={12} /> FEITO</> : 'DAILY'}
                     </span>
-                    <span className="hz-dt-day" aria-hidden="true">
-                      {new Date().getDate()}
-                    </span>
                     <span className="hz-dt-art" aria-hidden="true">
                       {d.art}
                     </span>
