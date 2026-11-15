@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from 'react';
 import './fs-touch.css';
+import './fs-mobile.css';
 
 export type TouchName =
   'fire' | 'ads' | 'jump' | 'reload' | 'cycle' | 'use' | 'buy' | 'bombslot' | 'crouch';

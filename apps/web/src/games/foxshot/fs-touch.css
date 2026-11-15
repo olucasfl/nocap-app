@@ -125,11 +125,7 @@
 .tc-use {
   background: rgba(255, 90, 60, 0.6);
 }
-/* a coluna da direita do HUD desce para não ficar embaixo dos botões do canto */
 @media (pointer: coarse) {
-  .fsh-rcol {
-    top: calc(max(8px, env(safe-area-inset-top)) + var(--tc-top, 56px));
-  }
   .fs-menubtn {
     display: none;
   }
@@ -216,71 +212,6 @@
   .fs .fsh-slots li small,
   .fs .fsh-slots li i {
     display: none;
-  }
-}
-
-/* ---- loja no celular: seções lado a lado que rolam, itens compactos e botão de fechar sempre à vista ---- */
-@media (pointer: coarse), (max-height: 520px) {
-  .fss {
-    gap: 6px;
-    overflow-y: auto;
-    justify-content: flex-start;
-    padding-top: max(8px, env(safe-area-inset-top));
-  }
-  .fss-head b {
-    font-size: 18px;
-  }
-  .fss-key {
-    display: none;
-  }
-  .fss-cols {
-    flex: 0 0 auto;
-    max-height: none;
-    display: flex;
-    gap: 8px;
-    overflow-x: auto;
-    overflow-y: visible;
-    scroll-snap-type: x proximity;
-    padding-bottom: 4px;
-    -webkit-overflow-scrolling: touch;
-  }
-  .fss-col {
-    flex: 0 0 min(44vw, 240px);
-    scroll-snap-align: start;
-  }
-  .fss-col h4 {
-    padding: 5px 8px;
-  }
-  .fss-col ul {
-    padding: 6px;
-    gap: 6px;
-  }
-  .fss-item {
-    min-height: 56px;
-    padding: 6px 8px;
-  }
-  .fss-ico {
-    height: 30px;
-  }
-  .fss-n {
-    display: none;
-  }
-  .fss-mine {
-    position: static;
-    flex-wrap: wrap;
-    margin-top: 6px;
-  }
-  .fss-col ul {
-    max-height: none;
-    overflow: visible;
-  }
-  .fss-close {
-    position: fixed;
-    top: max(8px, env(safe-area-inset-top));
-    right: max(10px, env(safe-area-inset-right));
-    z-index: 32;
-    min-height: 40px;
-    padding: 0 18px;
   }
 }
 

@@ -2059,7 +2059,7 @@ function Match({ snapshot }: { snapshot: RoomSnapshot }) {
   };
 
   return (
-    <div className="fs" ref={root} data-testid="fs-root">
+    <div className={`fs${touchUi ? ' fs-m' : ''}`} ref={root} data-testid="fs-root">
       <canvas ref={canvas} className="fs-canvas" data-testid="fs-canvas" />
       <div className="fs-blind" ref={blindEl} data-testid="fs-blind" aria-hidden="true" />
       <div className="fs-hitdir" ref={hitEl} data-testid="fs-hitdir" aria-hidden="true">
