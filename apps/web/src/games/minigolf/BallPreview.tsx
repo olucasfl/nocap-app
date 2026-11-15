@@ -41,11 +41,11 @@ export function BallPreview({ look, size }: { look: GolfBallLook; size?: number 
     ball.scale.setScalar(1.7);
     scene.add(ball);
     const trail = new BallTrail();
-    trail.setKind(lookRef.current.trail);
+    trail.setKind(lookRef.current.trail, lookRef.current.color);
     scene.add(trail.points);
     apply.current = (l) => {
       applyBallLook(ball, l);
-      trail.setKind(l.trail);
+      trail.setKind(l.trail, l.color);
     };
     const fit = () => {
       const w = cv.clientWidth || 300, h = cv.clientHeight || 300;

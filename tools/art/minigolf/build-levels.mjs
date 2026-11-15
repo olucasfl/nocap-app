@@ -162,99 +162,6 @@ function loadHole() {
 }
 
 const LEVELS = [];
-const W = 0.25;
-
-// 21 Rampa suave (fácil): corredor com subida para um patamar onde fica o buraco.
-LEVELS.push((() => {
-  const L = new Level(21);
-  L.ballStart = [0, 0, 0];
-  L.hole = [0, 1.0, -14];
-  L.floor(-1.5, 2, 1.5, -6, 0);
-  L.slope(-1.5, -6, 1.5, -10, 0, 1.0);
-  L.floorWithHole(-1.5, -10, 1.5, -16, 1.0, 0, -14);
-  L.wall(-1.5, 2, -1.5, -6, 0.5); L.wall(1.5, 2, 1.5, -6, 0.5);
-  L.wall(-1.5, -6, -1.5, -10, 1.5); L.wall(1.5, -6, 1.5, -10, 1.5);
-  L.wall(-1.5, -10, -1.5, -16, 1.5); L.wall(1.5, -10, 1.5, -16, 1.5);
-  L.wall(-1.5, 2, 1.5, 2, 0.5); L.wall(-1.5, -16, 1.5, -16, 1.5);
-  L.outside(0, -7, -0.9);
-  return L;
-})());
-
-// 22 Cotovelo (fácil): corredor em L; dá para usar a parede.
-LEVELS.push((() => {
-  const L = new Level(22);
-  L.ballStart = [0, 0, 2];
-  L.hole = [9, 0, -8];
-  L.floor(-1.5, 4, 1.5, -9.5, 0);
-  L.floorWithHole(1.5, -9.5, 10.5, -6.5, 0, 9, -8);
-  L.floor(-1.5, -9.5, 1.5, -6.5, 0);
-  L.wall(-1.5, 4, -1.5, -9.5, 0.5); L.wall(1.5, 4, 1.5, -6.5, 0.5);
-  L.wall(-1.5, -9.5, 10.5, -9.5, 0.5); L.wall(1.5, -6.5, 10.5, -6.5, 0.5);
-  L.wall(10.5, -9.5, 10.5, -6.5, 0.5); L.wall(-1.5, 4, 1.5, 4, 0.5);
-  L.outside(4, -3, -0.9);
-  return L;
-})());
-
-// 23 Gelo (fácil): trecho de gelo no meio do corredor e um pino para desviar.
-LEVELS.push((() => {
-  const L = new Level(23);
-  L.ballStart = [0, 0, 0];
-  L.hole = [0, 0, -17];
-  L.floor(-2, 2, 2, -5, 0);
-  L.floor(-2, -5, 2, -11, 0, 'ice');
-  L.floorWithHole(-2, -11, 2, -19, 0, 0, -17);
-  L.bumper(-0.6, -8, 0.45, -0.3, 0.5);
-  L.wall(-2, 2, -2, -19, 0.5); L.wall(2, 2, 2, -19, 0.5);
-  L.wall(-2, 2, 2, 2, 0.5); L.wall(-2, -19, 2, -19, 0.5);
-  L.outside(0, -8, -0.9);
-  return L;
-})());
-
-// 24 Dois moinhos (média): dois giratórios em série.
-LEVELS.push((() => {
-  const L = new Level(24);
-  L.ballStart = [0, 0, 0];
-  L.hole = [0, 0, -20];
-  L.floor(-2.5, 2, 2.5, -17, 0);
-  L.floorWithHole(-2.5, -17, 2.5, -22, 0, 0, -20);
-  L.wall(-2.5, 2, -2.5, -22, 0.5); L.wall(2.5, 2, 2.5, -22, 0.5);
-  L.wall(-2.5, 2, 2.5, 2, 0.5); L.wall(-2.5, -22, 2.5, -22, 0.5);
-  const arm = (s) => (m) => m.box(-1.9, 0.0, -0.1, 1.9, 0.5, 0.1, 'metal', 'metal');
-  L.mover('moinho-1', { p: [0, 0, -6] }, { type: 'spinner', t0: 0, length: 4 }, arm());
-  L.mover('moinho-2', { p: [0, 0, -12] }, { type: 'spinner', t0: 1, length: 3 }, arm());
-  L.outside(0, -10, -0.9);
-  return L;
-})());
-
-// 25 Pêndulos (média): três portões balançando.
-LEVELS.push((() => {
-  const L = new Level(25);
-  L.ballStart = [0, 0, 0];
-  L.hole = [0, 0, -20];
-  L.floor(-1.8, 2, 1.8, -17, 0);
-  L.floorWithHole(-1.8, -17, 1.8, -22, 0, 0, -20);
-  L.wall(-1.8, 2, -1.8, -22, 0.5); L.wall(1.8, 2, 1.8, -22, 0.5);
-  L.wall(-1.8, 2, 1.8, 2, 0.5); L.wall(-1.8, -22, 1.8, -22, 0.5);
-  const gate = (m) => m.box(-0.12, -2.1, -0.15, 0.12, 0.0, 0.15, 'metal', 'metal');
-  [[-6, 0], [-10.5, 1.2], [-15, 0.6]].forEach(([z, t0], i) =>
-    L.mover(`pendulo-${i + 1}`, { p: [0, 2.2, z] }, { type: 'pendulum', t0, length: 3, theta0: 1.0, axis: [0, 0, -1] }, gate));
-  L.outside(0, -10, -0.9);
-  return L;
-})());
-
-// 26 Pinball (média): sala aberta cheia de pinos que rebatem forte.
-LEVELS.push((() => {
-  const L = new Level(26);
-  L.ballStart = [0, 0, 2];
-  L.hole = [0, 0, -15];
-  L.floor(-4.5, 4, 4.5, -13, 0);
-  L.floorWithHole(-4.5, -13, 4.5, -17.5, 0, 0, -15);
-  L.wall(-4.5, 4, -4.5, -17.5, 0.5); L.wall(4.5, 4, 4.5, -17.5, 0.5);
-  L.wall(-4.5, 4, 4.5, 4, 0.5); L.wall(-4.5, -17.5, 4.5, -17.5, 0.5);
-  [[-2.5, -2], [2.5, -2], [0, -4.5], [-3, -7], [3, -7], [-1, -9.5], [1.6, -11.2]].forEach(([x, z]) => L.bumper(x, z, 0.55, -0.3, 0.5));
-  L.outside(0, -7, -0.9);
-  return L;
-})());
 
 
 // ---------- fases por mapa de texto (células de 3 m) ----------
@@ -266,7 +173,8 @@ function gridLevel(id, rows, movers = []) {
   const L = new Level(id);
   const R = rows.length, Wd = Math.max(...rows.map((r) => r.length));
   const ch = (c, r) => (rows[r]?.[c] ?? '#');
-  const solid = (c, r) => !['#', ' '].includes(ch(c, r));
+  const solid = (c, r) => !['#', ' ', '_'].includes(ch(c, r));
+  const absY = (k) => ('ABCDE'.includes(k) ? (k.charCodeAt(0) - 64) * RISE : 'xyz'.includes(k) ? -(k.charCodeAt(0) - 119) * RISE : null);
   const ramp = (c, r) => '^v<>'.includes(ch(c, r));
   const dirOf = { '^': [0, -1], v: [0, 1], '<': [-1, 0], '>': [1, 0] };
   // elevação de cada célula por busca a partir da saída
@@ -274,13 +182,15 @@ function gridLevel(id, rows, movers = []) {
   let start = null;
   for (let r = 0; r < R; r++) for (let c = 0; c < Wd; c++) if (ch(c, r) === '@') start = [c, r];
   low.set(start.join(), 0);
+  const seeds = [start];
+  for (let r = 0; r < R; r++) for (let c = 0; c < Wd; c++) { const a = absY(ch(c, r)); if (a !== null && ch(c, r) !== ' ') { low.set([c, r].join(), a); seeds.push([c, r]); } }
   const exitY = (c, r, mv) => {
     const l = low.get([c, r].join());
     if (!ramp(c, r)) return l;
     const d = dirOf[ch(c, r)];
     return mv[0] === d[0] && mv[1] === d[1] ? l + RISE : l;
   };
-  const q = [start];
+  const q = [...seeds];
   while (q.length) {
     const [c, r] = q.shift();
     for (const mv of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
@@ -323,10 +233,20 @@ function gridLevel(id, rows, movers = []) {
       if (k === 'o') L.bumper(cx, cz, 0.55, y - 0.3, y + 0.5);
       // paredes nas bordas com o vazio
       const top = yTop(c, r) + 0.5;
-      if (!solid(c, r - 1)) L.wall(x0, z0, x1, z0, top);
-      if (!solid(c, r + 1)) L.wall(x0, z1, x1, z1, top);
-      if (!solid(c - 1, r)) L.wall(x0, z0, x0, z1, top);
-      if (!solid(c + 1, r)) L.wall(x1, z0, x1, z1, top);
+      // degrau entre pisos de alturas diferentes (sem rampa): uma mureta no lado mais alto
+      if (!ramp(c, r)) {
+        for (const [dc, dr, wx0, wz0, wx1, wz1] of [[0, -1, x0, z0, x1, z0], [0, 1, x0, z1, x1, z1], [-1, 0, x0, z0, x0, z1], [1, 0, x1, z0, x1, z1]]) {
+          const nc = c + dc, nr = r + dr;
+          if (!solid(nc, nr) || ramp(nc, nr)) continue;
+          const yn = low.get([nc, nr].join()) ?? 0;
+          if (yn < y - 0.05) L.wall(wx0, wz0, wx1, wz1, y + 0.5, 0.25, yn - 0.3);
+        }
+      }
+      const edge = (cc, rr) => !solid(cc, rr) && ch(cc, rr) !== '_';
+      if (edge(c, r - 1)) L.wall(x0, z0, x1, z0, top);
+      if (edge(c, r + 1)) L.wall(x0, z1, x1, z1, top);
+      if (edge(c - 1, r)) L.wall(x0, z0, x0, z1, top);
+      if (edge(c + 1, r)) L.wall(x1, z0, x1, z1, top);
     }
   }
   for (const m of movers) {
@@ -338,6 +258,11 @@ function gridLevel(id, rows, movers = []) {
       const alongX = m.along === 'x'; // o corredor corre em x: o braço balança em z
       L.mover(`pendulo-${m.col}-${m.row}`, { p: [p[0], y + 2.2, p[2]] }, { type: 'pendulum', t0: m.t0 ?? 0, length: m.length ?? 3, theta0: 1.0, axis: alongX ? [1, 0, 0] : [0, 0, -1] }, (s) =>
         s.box(-0.15, -2.1, -0.15, 0.15, 0, 0.15, 'metal', 'metal'));
+    } else if (m.kind === 'gate') {
+      // portão: uma parede que corre de um lado ao outro do corredor
+      const [dx, dz] = m.span;
+      const [hx, hz] = m.half ?? [0.15, 1.1];
+      L.mover(`portao-${m.col}-${m.row}`, { p: [p[0] + dx / 2, y, p[2] + dz / 2] }, { type: 'linear', t0: m.t0 ?? 0, length: m.length ?? 3, p0: [0, 0, 0], p1: [-dx, 0, -dz] }, (s) => s.box(-hx, 0, -hz, hx, 0.7, hz, 'metal', 'metal'));
     } else if (m.kind === 'slider') {
       const [dx, dz] = m.span; // desloca o bloco de -d/2 a +d/2
       L.mover(`esteira-${m.col}-${m.row}`, { p: [p[0] + dx / 2, y, p[2] + dz / 2] }, { type: 'linear', t0: m.t0 ?? 0, length: m.length ?? 4, p0: [0, 0, 0], p1: [-dx, 0, -dz] }, (s) =>
@@ -348,88 +273,123 @@ function gridLevel(id, rows, movers = []) {
   return L;
 }
 
-// 27 Zigue-zague (difícil): três faixas curtas em serpentina, com giratório e pêndulo.
-LEVELS.push(gridLevel(27, [
-  '@.....#',
-  '#####.#',
-  '#.....#',
-  '#.#####',
-  '#.....H',
+// ===== Campanha nova (ids 101 a 120; `assemble.mjs` os põe na ordem final de dificuldade) =====
+// Letras extras: _ vão aberto (sem mureta: dá para saltar de uma rampa) · A a E patamar fixo (+0,6 m cada) · x y z patamar abaixo (-0,6 m cada)
+const G = (id, rows, movers) => LEVELS.push(gridLevel(id, rows, movers));
+
+// 101 Reta com curva (bem simples)
+G(101, ['@....#', '####.#', '####H#']);
+// 102 Duas rampas: sobe duas vezes e vira
+G(102, ['@..>..>..#', '########.#', '#H.......#']);
+// 103 Areia e gelo: a areia segura, o gelo solta
+G(103, ['@..ss....#', '#######.##', '#H..ii...#']);
+// 104 Pinos: sala aberta com rebatedores
+G(104, ['@.....o..#', '..o.o....#', '.....o..H#']);
+// 105 Ponte dupla: duas tábuas sobre a água
+G(105, ['@..bbb..#', '#######.#', '#H..bb..#']);
+// 106 Primeiro salto: rampa, vão aberto e patamar do outro lado
+G(106, ['@...>_Ass...#', '###########.#', '#H.........#']);
+// 107 Dois moinhos: sala larga com dois giratórios
+G(107, ['.........#', '@........H', '.........#'], [
+  { kind: 'spinner', col: 3, row: 1, length: 4 },
+  { kind: 'spinner', col: 6, row: 1, length: 4, t0: 0.5 },
+]);
+// 108 Pista de gelo: escorrega entre pinos
+G(108, ['@iiioii..#', '.iioiiii.#', '..iiiiioH#']);
+// 109 Escada de portões: três rampas, pêndulo, giratório e dois portões
+G(109, ['@.>..>..>.#', '#########.#', '#H........#'], [
+  { kind: 'pendulum', col: 3, row: 0, along: 'x', t0: 0.3 },
+  { kind: 'gate', col: 5, row: 2, span: [0, 2.2], half: [0.2, 0.7], t0: 0.2 },
+]);
+// 110 Salto alto: duas rampas, vão de duas casas e patamar mais alto, com pêndulo
+G(110, ['@..>>__Bss...#', '############.#', '#H...........#'], [
+  { kind: 'pendulum', col: 11, row: 0, along: 'x', t0: 0.4 },
+]);
+// 111 Labirinto: caminhos que se cruzam, com giratórios nos corredores longos
+G(111, [
+  '@..#.....',
+  '##.#.###.',
+  '...#...#.',
+  '.#####.#.',
+  '........H',
 ], [
-  { kind: 'spinner', col: 3, row: 0, length: 4 },
-  { kind: 'pendulum', col: 3, row: 2, along: 'x', t0: 0.5 },
-]));
-
-// 28 Montanha (difícil): sobe duas rampas até o patamar do buraco, com um pêndulo no alto.
-LEVELS.push(gridLevel(28, [
-  '#########',
-  '#H....###',
-  '#####^###',
-  '@..>..###',
+  { kind: 'spinner', col: 3, row: 4, length: 3.4 },
+  { kind: 'spinner', col: 6, row: 0, length: 3.4, t0: 1 },
+]);
+// 112 Corredor de portões: cinco paredes que abrem e fecham
+G(112, ['@.........#', '#########.#', '#H........#'].map((r, i) => (i === 0 ? '@..........#' : i === 1 ? '##########.#' : '#H.........#')), [
+  { kind: 'gate', col: 3, row: 0, span: [0, 2.4], half: [0.2, 0.8], t0: 0 },
+  { kind: 'gate', col: 6, row: 0, span: [0, 2.4], half: [0.2, 0.8], t0: 1 },
+  { kind: 'gate', col: 9, row: 0, span: [0, 2.4], half: [0.2, 0.8], t0: 2 },
+  { kind: 'gate', col: 4, row: 2, span: [0, 2.4], half: [0.2, 0.8], t0: 0.6 },
+  { kind: 'gate', col: 7, row: 2, span: [0, 2.4], half: [0.2, 0.8], t0: 1.6 },
+]);
+// 113 Ilhas: três ilhas ligadas por tábuas estreitas, com pinos nas bordas
+G(113, ['@..~~o.~~..#', '...bb..bb..H', '...~~.o~~..#']);
+// 114 Serpentina grande: sete faixas, cada uma com a sua armadilha
+G(114, [
+  '@..........',
+  '##########.',
+  '...........',
+  '.##########',
+  '...........',
+  '##########.',
+  'H..........',
 ], [
-  { kind: 'spinner', col: 1, row: 3, length: 4 },
-  { kind: 'pendulum', col: 3, row: 1, along: 'x', t0: 0 },
-]));
+  { kind: 'spinner', col: 5, row: 0, length: 4 },
+  { kind: 'pendulum', col: 5, row: 2, along: 'x', t0: 0.5 },
+  { kind: 'gate', col: 6, row: 4, span: [0, 2.4], half: [0.2, 0.8], t0: 0.8 },
+  { kind: 'spinner', col: 3, row: 6, length: 4, t0: 0.3 },
+  { kind: 'pendulum', col: 7, row: 6, along: 'x', t0: 1.2 },
+]);
+// 115 Dois saltos: a rampa lança até o patamar, e a segunda lança até a ilha final
+G(115, ['@..>>__B..>_Css.H#'], [
+  { kind: 'pendulum', col: 9, row: 0, along: 'x', t0: 0.2 },
+  { kind: 'spinner', col: 14, row: 0, length: 3.4 },
+]);
+// 116 Fortaleza: sala cheia de pinos e giratórios, com o buraco no alto da muralha
+G(116, [
+  '#####AAAH#',
+  '.o...^.o..',
+  '@...o...o.',
+  '..o.....o.',
+  '.....o....',
+], [
+  { kind: 'spinner', col: 2, row: 2, length: 4 },
+  { kind: 'spinner', col: 7, row: 3, length: 4, t0: 0.7 },
+]);
+// 117 Cascata: o gramado desce em degraus, e cada degrau é um salto para baixo
+G(117, ['@...._x...#', '#########.#', '#H...y_...#']);
+// 118 Grande final: salto, portões, pista de gelo com pino e travessia por tábuas
+G(118, [
+  '@..>.>__B...#',
+  '###########.#',
+  '#...........#',
+  '#.###########',
+  '#.iiiiioiii.#',
+  '###########.#',
+  '#H..bb.bb...#',
+], [
+  { kind: 'gate', col: 6, row: 2, span: [0, 2.2], half: [0.2, 0.7], t0: 0.3 },
+  { kind: 'pendulum', col: 6, row: 4, along: 'x', t0: 0.9 },
+]);
+// 119 Pinball gigante: campo de pinos em xadrez, o buraco no canto oposto
+G(119, [
+  '@.o...o...o',
+  '...o...o...',
+  '.o...o...o.',
+  '...o...o...',
+  '.o...o...o.',
+  '...o...o...',
+  'o...o...o.H',
+]);
+// 120 Dois caminhos: o atalho pelo salto ou a volta por gelo, ponte e pino
+G(120, [
+  '@...>_A...H',
+  '.#########^',
+  '..i.bb.o...',
+]);
 
-// 29 Ponte (média): uma tábua estreita sobre a água.
-LEVELS.push(gridLevel(29, [
-  '@..bbb..H',
-]));
-
-// 30 Gelo (difícil): corredor de gelo com pino, volta num segundo corredor.
-LEVELS.push(gridLevel(30, [
-  '@..ii..#',
-  '######.#',
-  '#H.ii..#',
-]));
-
-
-// ---- 31 a 40: mais fases, em três dificuldades ----
-// 31 Degrau (fácil): uma rampa curta e o buraco no patamar.
-LEVELS.push(gridLevel(31, ['@..>.H']));
-
-// 32 Cotovelo duplo (fácil): duas curvas suaves.
-LEVELS.push(gridLevel(32, [
-  '@....',
-  '####.',
-  'H....',
-]));
-
-// 33 Areia e gelo (fácil): a areia segura a bola, o gelo a solta.
-LEVELS.push(gridLevel(33, ['@.ss...ii.H']));
-
-// 34 Ponte e gelo (média): uma tábua sobre a água e um trecho escorregadio antes do buraco.
-LEVELS.push(gridLevel(34, [
-  '@.bb..#',
-  '#####.#',
-  '#H.ii.#',
-]));
-
-// 35 Pinos em fila (média): quatro pinos no caminho; é preciso desviar ou usar o rebote.
-LEVELS.push(gridLevel(35, [
-  '@.o.o.#',
-  '#####.#',
-  '#H.o.o#',
-]));
-
-// 36 Rampa e moinho (média): sobe e atravessa um giratório no patamar.
-LEVELS.push(gridLevel(36, ['@..>..#', '#####.#', '#H....#'], [{ kind: 'spinner', col: 5, row: 0, length: 3.5 }]));
-
-// 37 Escadaria (difícil): duas rampas em sequência e um pêndulo no primeiro patamar.
-LEVELS.push(gridLevel(37, ['@.>..>.#', '######.#', '#H.....#'], [{ kind: 'pendulum', col: 3, row: 0, along: 'x', t0: 0.4 }]));
-
-// 38 S com pinos (difícil): serpentina com um pino em cada faixa.
-LEVELS.push(gridLevel(38, [
-  '@..o..#',
-  '#####.#',
-  '#H.o..#',
-]));
-
-// 39 Gelo e pêndulo (difícil): um corredor de gelo com um pêndulo no meio.
-LEVELS.push(gridLevel(39, ['@..iii.#', '######.#', '#H.ii..#'], [{ kind: 'pendulum', col: 4, row: 0, along: 'x', t0: 0 }]));
-
-// 40 Grande final 2 (difícil): rampa, giratório, ponte e gelo.
-LEVELS.push(gridLevel(40, ['@.>..bb#', '######.#', '#H.i...#'], [{ kind: 'spinner', col: 3, row: 0, length: 3.5 }]));
 
 const holeModel = loadHole();
 fs.mkdirSync(out, { recursive: true });

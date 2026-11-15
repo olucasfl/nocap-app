@@ -314,7 +314,52 @@ export function ballColorMap(color: number, finish: GolfFinish, color2?: number)
       ctx.fill();
     }
   } else if (finish === 'metade') ctx.fillRect(512, 0, 512, 512);
-  else if (finish === 'estrela') {
+  else if (finish === 'xadrez') {
+    for (let j = 0; j < 8; j++) for (let i = 0; i < 16; i++) if ((i + j) % 2 === 0) ctx.fillRect(i * 64, j * 64, 64, 64);
+  } else if (finish === 'espiral') {
+    for (let x = -512; x < 1024; x += 128) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0); ctx.lineTo(x + 56, 0); ctx.lineTo(x + 56 + 400, 512); ctx.lineTo(x + 400, 512);
+      ctx.closePath(); ctx.fill();
+    }
+  } else if (finish === 'zigue') {
+    ctx.strokeStyle = accent; ctx.lineWidth = 34; ctx.lineJoin = 'round';
+    for (const y0 of [110, 256, 402]) {
+      ctx.beginPath();
+      for (let x = 0; x <= 1024; x += 64) ctx.lineTo(x, y0 + ((x / 64) % 2 ? 34 : -34));
+      ctx.stroke();
+    }
+  } else if (finish === 'degrade') {
+    const g = ctx.createLinearGradient(0, 0, 0, 512);
+    g.addColorStop(0, css); g.addColorStop(1, accent);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, 1024, 512);
+  } else if (finish === 'galaxia') {
+    ctx.fillStyle = '#0b0d1f'; ctx.fillRect(0, 0, 1024, 512);
+    for (const [x, y, r] of [[200, 180, 190], [700, 330, 230], [980, 120, 150]] as const) {
+      const g = ctx.createRadialGradient(x, y, 4, x, y, r);
+      g.addColorStop(0, css + 'cc'); g.addColorStop(1, css + '00');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, 1024, 512);
+    }
+    let sd = 7; const rnd = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+    ctx.fillStyle = accent;
+    for (let k = 0; k < 90; k++) { ctx.beginPath(); ctx.arc(rnd() * 1024, rnd() * 512, 1.5 + rnd() * 4, 0, 7); ctx.fill(); }
+  } else if (finish === 'camuflagem') {
+    let sd = 11; const rnd = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+    const dark = `rgb(${(((color >> 16) & 255) * 0.55) | 0},${(((color >> 8) & 255) * 0.55) | 0},${((color & 255) * 0.55) | 0})`;
+    for (let k = 0; k < 26; k++) {
+      ctx.fillStyle = k % 2 ? dark : accent;
+      ctx.beginPath();
+      ctx.ellipse(rnd() * 1024, rnd() * 512, 50 + rnd() * 70, 30 + rnd() * 40, rnd() * 3, 0, 7);
+      ctx.fill();
+    }
+  } else if (finish === 'tenis') {
+    ctx.strokeStyle = accent; ctx.lineWidth = 16;
+    for (const ph of [0, Math.PI]) {
+      ctx.beginPath();
+      for (let x = 0; x <= 1024; x += 8) ctx.lineTo(x, 256 + Math.sin((x / 1024) * Math.PI * 4 + ph) * 120);
+      ctx.stroke();
+    }
+  } else if (finish === 'estrela') {
     const star = (cx: number, cy: number, R: number) => {
       ctx.beginPath();
       for (let k = 0; k < 10; k++) {

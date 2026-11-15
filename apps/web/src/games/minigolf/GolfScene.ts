@@ -72,7 +72,7 @@ export class GolfScene {
     this.buildLevel();
 
     this.ballMesh = buildBallMesh(look);
-    this.trail.setKind(look.trail);
+    this.trail.setKind(look.trail, look.color);
     this.scene.add(this.trail.points);
     this.scene.add(this.ballMesh);
 
@@ -296,17 +296,18 @@ export class GolfScene {
     const seen = new Set<number>();
     for (const b of balls) {
       seen.add(b.slot);
-      const key = `${b.look.color}:${b.look.color2 ?? ''}:${b.look.finish}`;
+      const key = `${b.look.color}:${b.look.color2 ?? ''}:${b.look.finish}:${b.look.trail}`;
       let o = this.others.get(b.slot);
       if (!o) {
         const mesh = buildBallMesh(b.look);
         const trail = new BallTrail();
-        trail.setKind(b.look.trail);
+        trail.setKind(b.look.trail, b.look.color);
         this.scene.add(mesh, trail.points);
         o = { mesh, trail, look: key };
         this.others.set(b.slot, o);
       } else if (o.look !== key) {
         applyBallLook(o.mesh, b.look);
+        o.trail.setKind(b.look.trail, b.look.color);
         o.look = key;
       }
       o.mesh.visible = !b.hidden;

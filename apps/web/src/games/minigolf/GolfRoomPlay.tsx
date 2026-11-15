@@ -37,7 +37,7 @@ const DELAY_MS = 90;
 const HINT =
   typeof window !== 'undefined' && window.matchMedia?.('(pointer: fine)').matches
     ? 'Puxe a bola para tacar · Arraste em outro lugar para girar a câmera · Botão direito cancela · TAB mostra o placar'
-    : 'Arraste para trás e solte para tacar · Setas giram a câmera · Placar mostra a tabela';
+    : 'Puxe a bola para tacar · Arraste a tela para girar a câmera · Outro dedo cancela · Placar mostra a tabela';
 const hex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
 const nameOf = (id: string, username: string) => (id.startsWith('guest:') ? username : at(username));
 const clock = (ms: number) => {
@@ -222,7 +222,11 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
           cancelAim();
           return;
         }
-        if (drag) return;
+        // um segundo toque (ou clique) com a puxada em andamento cancela a tacada
+        if (drag) {
+          if (e.pointerId !== drag.id) cancelAim();
+          return;
+        }
         const r = cv.getBoundingClientRect();
         const onBall = canAim() && sc.ballHit(myPos, e.clientX - r.left, e.clientY - r.top);
         right = !onBall;

@@ -1319,3 +1319,12 @@
 .mgl-lv.doing {
   box-shadow: 0 0 0 2px rgba(255, 200, 61, 0.35);
 }
+.mg-pill.mgh-exit {
+  background: #b3261e;
+  border-color: #e0524a;
+  color: #fff;
+  box-shadow: 0 4px 0 #6d140f;
+}
+.mg-pill.mgh-exit:hover {
+  background: #c8322a;
+}

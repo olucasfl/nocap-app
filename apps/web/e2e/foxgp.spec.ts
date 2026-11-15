@@ -149,6 +149,7 @@ test.describe('Fox GP', () => {
     await expect(page.getByTestId('gp-garage')).toBeVisible();
     // a garagem abre no veículo do carrossel (o F1) e tem sub-abas
     await page.getByTestId('garage-veh-f1').click();
+    await page.getByTestId('garage-tab-pintura').click();
     await page.getByTestId('garage-body-e8343c').click();
     await page.getByTestId('garage-tab-desenho').click();
     await page.getByTestId('garage-pattern-chevron').click();

@@ -35,12 +35,14 @@ const RIM_STYLE_NAME: Record<(typeof GP_RIM_STYLES)[number], string> = {
 };
 const TABS: Record<Vehicle, { id: string; name: string }[]> = {
   f1: [
+    { id: 'temas', name: 'Temas' },
     { id: 'pintura', name: 'Pintura' },
     { id: 'desenho', name: 'Adesivo' },
     { id: 'rodas', name: 'Rodas' },
     { id: 'piloto', name: 'Piloto' },
   ],
   kart: [
+    { id: 'temas', name: 'Temas' },
     { id: 'carenagem', name: 'Carenagem' },
     { id: 'chassi', name: 'Chassi' },
     { id: 'pecas', name: 'Peças' },
@@ -222,37 +224,6 @@ export function GpGarage({
             </button>
           ))}
         </div>
-        <section className="gpg-row gpg-themes" aria-label="Temas prontos">
-          <h3>Temas prontos</h3>
-          <div className="gpg-theme-list">
-            {GP_THEMES.map((t) => {
-              const c = veh === 'f1' ? t.f1 : t.kart;
-              const body = c.body;
-              const accent = veh === 'f1' ? t.f1.accent : t.kart.stripe;
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  className="gpg-theme"
-                  title={t.name}
-                  aria-label={`Tema ${t.name}`}
-                  data-testid={`garage-theme-${t.id}`}
-                  style={{ background: `linear-gradient(135deg, ${hex6(body)} 0 55%, ${hex6(accent)} 55% 100%)` }}
-                  onClick={() =>
-                    setG((v) =>
-                      // o tema vale só para o veículo da aba aberta: o outro fica como estava
-                      veh === 'f1'
-                        ? { ...v, paint: { ...t.f1, number: v.paint.number } }
-                        : { ...v, kart: { ...t.kart, number: v.kart.number, helmet: v.kart.helmet } },
-                    )
-                  }
-                >
-                  <span>{t.name}</span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
         <div className="gpg-tabs" role="tablist" aria-label="Opções">
           {TABS[veh].map((t) => (
             <button
@@ -268,6 +239,38 @@ export function GpGarage({
           ))}
         </div>
         <div className="gpg-body">
+          {tab === 'temas' && (
+          <section className="gpg-row gpg-themes" aria-label="Temas prontos">
+            <div className="gpg-theme-list">
+              {GP_THEMES.map((t) => {
+                const c = veh === 'f1' ? t.f1 : t.kart;
+                const body = c.body;
+                const accent = veh === 'f1' ? t.f1.accent : t.kart.stripe;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    className="gpg-theme"
+                    title={t.name}
+                    aria-label={`Tema ${t.name}`}
+                    data-testid={`garage-theme-${t.id}`}
+                    style={{ background: `linear-gradient(135deg, ${hex6(body)} 0 55%, ${hex6(accent)} 55% 100%)` }}
+                    onClick={() =>
+                      setG((v) =>
+                        // o tema vale só para o veículo da aba aberta: o outro fica como estava
+                        veh === 'f1'
+                          ? { ...v, paint: { ...t.f1, number: v.paint.number } }
+                          : { ...v, kart: { ...t.kart, number: v.kart.number, helmet: v.kart.helmet } },
+                      )
+                    }
+                  >
+                    <span>{t.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+          )}
           {veh === 'f1' && tab === 'pintura' && (
             <>
               <Swatches label="Carroceria" value={p.body} onPick={(hex) => f1({ body: hex })} testId="garage-body" />

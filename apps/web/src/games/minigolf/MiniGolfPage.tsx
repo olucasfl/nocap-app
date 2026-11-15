@@ -30,7 +30,7 @@ import './minigolf.css';
 const HINT =
   typeof window !== 'undefined' && window.matchMedia?.('(pointer: fine)').matches
     ? 'Puxe a bola para tacar · Arraste em outro lugar para girar a câmera · Botão direito cancela'
-    : 'Arraste para trás e solte para tacar · Use as setas para girar a câmera';
+    : 'Puxe a bola para tacar · Arraste a tela para girar a câmera · Outro dedo cancela';
 
 const clampLevel = (n: number | undefined) => Math.max(1, Math.min(GOLF_LEVELS, Math.trunc(n ?? 1) || 1));
 const nameClass = (n: GolfScoreName) => (n === 'ace' ? 'mg-ace' : n === 'albatross' || n === 'eagle' ? 'mg-eagle' : n === 'birdie' ? 'mg-ok' : n === 'par' ? '' : 'mg-calm');
@@ -160,7 +160,11 @@ export function MiniGolfPage() {
           cancelAim();
           return;
         }
-        if (st.drag) return;
+        // um segundo toque (ou clique) com a puxada em andamento cancela a tacada
+        if (st.drag) {
+          if (e.pointerId !== st.drag.id) cancelAim();
+          return;
+        }
         const r = canvasRef.current!.getBoundingClientRect();
         const onBall = st.phase === 'aim' && sc.ballHit(ball.pos, e.clientX - r.left, e.clientY - r.top);
         st.right = !onBall;

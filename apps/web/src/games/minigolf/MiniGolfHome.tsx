@@ -80,6 +80,7 @@ export function MiniGolfHome() {
               )}
               <button type="button" className="mg-pill mgh-mid" onClick={() => void navigate({ to: '/minigolf/fases' })} data-testid="mg-offline">Offline: {GOLF_LEVELS} fases</button>
               <button type="button" className="mg-pill ghost mgh-mid" onClick={() => void navigate({ to: '/minigolf/bola' })} data-testid="mg-customize">Personalizar bola</button>
+              <button type="button" className="mg-pill mgh-mid mgh-exit" onClick={() => void navigate({ to: '/' })} data-testid="mg-exit">Sair do jogo</button>
             </div>
           </div>
           <div className="mgh-right">

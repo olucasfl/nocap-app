@@ -93,8 +93,8 @@ export const golfSchema = z
       .object({
         color: z.number().int().min(0).max(0xffffff),
         color2: z.number().int().min(0).max(0xffffff).optional(),
-        finish: z.enum(['liso', 'listras', 'pontos', 'metade', 'estrela']),
-        trail: z.enum(['nenhum', 'faiscas', 'fogo', 'neve']),
+        finish: z.enum(['liso', 'listras', 'pontos', 'metade', 'estrela', 'xadrez', 'espiral', 'zigue', 'degrade', 'galaxia', 'camuflagem', 'tenis']),
+        trail: z.enum(['nenhum', 'faiscas', 'fogo', 'neve', 'arcoiris', 'estrelas', 'bolhas', 'raio', 'cometa']),
       })
       .strict(),
     best: z.record(z.string().max(4), z.number().int().min(1).max(18)).refine((b) => Object.keys(b).length <= 60),

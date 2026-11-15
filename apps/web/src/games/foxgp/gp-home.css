@@ -972,3 +972,44 @@
     border-top: 1px solid var(--gp-line, #26304a);
   }
 }
+
+/* abas da garagem bem evidentes: grandes, cheias de cor e com a atual destacada */
+.gpg-tabs {
+  gap: 4px;
+  padding: 4px;
+  border: 2px solid var(--gp-line-2);
+  border-radius: 14px;
+  background: var(--gp-bg);
+}
+.gpg-tabs button {
+  padding: 9px 4px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--gp-text-3);
+  font-size: 14px;
+}
+.gpg-tabs button:hover {
+  background: var(--gp-panel-2);
+  color: var(--gp-text);
+}
+.gpg-tabs button[aria-selected='true'] {
+  background: var(--gp-accent);
+  color: var(--gp-bg);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
+}
+.gpg-themes .gpg-theme-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.gpg-themes .gpg-theme {
+  min-height: 56px;
+  font-size: 15px;
+}
+@media (max-width: 767px), (max-height: 560px) and (orientation: landscape) {
+  .gpg-tabs button {
+    padding: 7px 2px;
+    font-size: 12px;
+  }
+}
