@@ -222,7 +222,7 @@ Referência enviada pelo Lucas: o guia "Evolutions & Unions" do VS e as fichas d
 
 ### 6.6 Heróis refeitos (cada um com uma arma boa que sempre tem evolução)
 
-Regra de desenho: o herói começa com **uma arma que tem evolução e tem um papel diferente**, e uma característica pequena e clara. Todos começam também com a Espada? **Não:** só o Kael. Cada herói começa com a arma dele no lugar da Espada e a Espada passa a ser uma melhoria que pode aparecer depois (decisão a confirmar na seção 9).
+Regra de desenho: o herói começa com **uma arma que tem evolução e tem um papel diferente**, e uma característica pequena e clara. **Decidido (Lucas, 15/11/2026):** só o Kael começa com a Espada. Cada um dos outros heróis começa com a arma dele no lugar dela, e a Espada passa a ser uma arma comum que pode aparecer nas escolhas durante a partida.
 
 | Herói | Preço | Arma inicial (evolução) | Característica | Por que escolher |
 | --- | --- | --- | --- | --- |
