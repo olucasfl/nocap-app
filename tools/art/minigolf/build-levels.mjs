@@ -78,7 +78,7 @@ class Level {
     this.quad([x0, y0, z0], [x0, y1, z0], [x1, y1, z0], [x1, y0, z0], ms);
   }
   /** Parede entre dois pontos alinhados aos eixos, com espessura `t`. */
-  wall(x0, z0, x1, z1, yTop, t = 0.25, yBot = -0.3) {
+  wall(x0, z0, x1, z1, yTop, t = 0.25, yBot = yTop - 2) {
     const hx = x0 === x1 ? t / 2 : 0, hz = z0 === z1 ? t / 2 : 0;
     this.box(Math.min(x0, x1) - hx, yBot, Math.min(z0, z1) - hz, Math.max(x0, x1) + hx, yTop, Math.max(z0, z1) + hz);
   }
