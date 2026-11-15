@@ -378,6 +378,9 @@ export class NhWorld {
   private projDamage: number;
   private projPierces: number;
   private heroDmg: number;
+  private heroSwift = 0;
+  private heroDur = 0;
+  private heroAttract = 0;
   private heroCd: number;
   private heroArmor: number;
   private heroGold: number;
@@ -450,7 +453,11 @@ export class NhWorld {
     this.skips = 1 + b('skip', meta.skip);
     this.banishes = 1 + b('banish', meta.banish);
     this.launchers.halo.cooldown = PLAYER_SETTINGS.haloLauncher.launcher.cooldown;
-    this.levels.sword = 1; // a espada é a arma de todo herói; as outras vêm das escolhas
+    // só o Kael começa com a Espada; os outros começam com a arma própria (a Espada pode aparecer depois)
+    this.levels.sword = hero.sword ? 1 : 0;
+    this.heroSwift = hero.swift ?? 0;
+    this.heroDur = hero.dur ?? 0;
+    this.heroAttract = hero.attract ?? 0;
     if (hero.start) this.applyUpgrade(hero.start);
   }
 
@@ -647,7 +654,7 @@ export class NhWorld {
   }
   /** Duração das zonas, poças, anéis e bumerangues: passivo Duração, +15% por nível. */
   get durMult(): number {
-    return 1 + 0.15 * this.levels.duration;
+    return 1 + 0.15 * this.levels.duration + this.heroDur;
   }
   /** Projéteis, bombas e golpes a mais (passivo Quantidade, só 2 níveis). */
   get amountBonus(): number {
@@ -659,14 +666,14 @@ export class NhWorld {
   }
   /** Alcance de atração dos itens: base 70, +40% por nível do passivo Imã. */
   get attractRadius(): number {
-    return ATTRACT_BASE * (1 + 0.4 * this.levels.magnet);
+    return ATTRACT_BASE * (1 + 0.4 * this.levels.magnet + this.heroAttract);
   }
   get goldMult(): number {
     return this.heroGold * (1 + 0.1 * this.levels.greed) * this.curseXp;
   }
   /** Velocidade dos projéteis e dos orbes. */
   get swiftMult(): number {
-    return 1 + 0.1 * this.levels.swift;
+    return 1 + 0.1 * this.levels.swift + this.heroSwift;
   }
   /** Informa a zona visível da câmera (o cliente chama a cada quadro). */
   setView(halfW: number, halfH: number): void {
@@ -843,6 +850,7 @@ export class NhWorld {
 
   private tickWeapon(dt: number): void {
     const w = this.weapon;
+    if (this.levels.sword <= 0) return; // sem a Espada (só o Kael começa com ela)
     w.timer += dt;
     if (w.timer >= this.strikeDelay()) {
       w.timer = 0;
@@ -982,7 +990,7 @@ export class NhWorld {
     const L = PLAYER_SETTINGS;
     switch (id) {
       case 'sword':
-        this.weapon.damage++;
+        if (this.levels.sword > 1) this.weapon.damage++;
         this.weapon.lengthLevel = Math.min(SWORD_BOXES.length - 1, this.levels.sword - 1);
         this.weapon.inContact.clear();
         break;

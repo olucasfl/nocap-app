@@ -318,12 +318,18 @@ export interface HeroDef {
   armor: number;
   gold: number;
   xp: number;
-  /** Arma inicial além da espada. */
+  /** Arma inicial (no lugar da Espada, que só o Kael tem). */
   start?: UpgradeId;
   /** Giro de matiz (graus) aplicado aos sprites do guerreiro para diferenciar os heróis. */
   hue: number;
   /** Preço em ouro para liberar. */
   price: number;
+  /** Só o Kael começa com a Espada; os outros começam com a arma própria. */
+  sword?: boolean;
+  /** Bônus próprios: velocidade de projétil, duração e alcance de atração (fração). */
+  swift?: number;
+  dur?: number;
+  attract?: number;
 }
 export const HEROES: Record<string, HeroDef> = {
   kael: {
@@ -334,22 +340,37 @@ export const HEROES: Record<string, HeroDef> = {
     cooldown: 1,
     armor: 0,
     gold: 1,
-    xp: 1.25,
+    xp: 1.2,
     hue: 0,
     price: 0,
+    sword: true,
+  },
+  vesper: {
+    id: 'vesper',
+    hp: 1.2,
+    speed: 1,
+    damage: 1.05,
+    cooldown: 1,
+    armor: 0,
+    gold: 1,
+    xp: 1,
+    start: 'whip',
+    hue: 330,
+    price: 600,
   },
   mara: {
     id: 'mara',
-    hp: 1.1,
-    speed: 1.15,
+    hp: 0.9,
+    speed: 1,
     damage: 1,
     cooldown: 1,
     armor: 0,
     gold: 1,
     xp: 1,
-    start: 'horizontal',
+    start: 'wand',
     hue: 300,
-    price: 600,
+    price: 1200,
+    swift: 0.15,
   },
   brann: {
     id: 'brann',
@@ -360,9 +381,37 @@ export const HEROES: Record<string, HeroDef> = {
     armor: 0,
     gold: 1,
     xp: 1,
-    start: 'orbit',
+    start: 'garlic',
     hue: 110,
-    price: 1500,
+    price: 1800,
+  },
+  dorian: {
+    id: 'dorian',
+    hp: 1,
+    speed: 1,
+    damage: 1,
+    cooldown: 1,
+    armor: 0,
+    gold: 1,
+    xp: 1,
+    start: 'magma',
+    hue: 20,
+    price: 2400,
+    dur: 0.15,
+    attract: 0.2,
+  },
+  selene: {
+    id: 'selene',
+    hp: 0.85,
+    speed: 1,
+    damage: 1.12,
+    cooldown: 1,
+    armor: 0,
+    gold: 1,
+    xp: 1,
+    start: 'embers',
+    hue: 170,
+    price: 3000,
   },
   ysolde: {
     id: 'ysolde',
@@ -372,10 +421,10 @@ export const HEROES: Record<string, HeroDef> = {
     cooldown: 0.88,
     armor: 0,
     gold: 1,
-    xp: 1.1,
+    xp: 1,
     start: 'lightning',
     hue: 250,
-    price: 2500,
+    price: 3600,
   },
   rurik: {
     id: 'rurik',
@@ -388,7 +437,7 @@ export const HEROES: Record<string, HeroDef> = {
     xp: 1,
     start: 'axe',
     hue: 40,
-    price: 4000,
+    price: 4200,
   },
 };
 export const HERO_IDS = Object.keys(HEROES);

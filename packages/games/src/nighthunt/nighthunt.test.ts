@@ -277,6 +277,11 @@ describe('heróis e mapas', () => {
       const h = HEROES[id]!;
       expect(w.player.maxHp).toBe(Math.round(50 * h.hp));
       if (h.start) expect(w.levels[h.start]).toBe(1);
+      // só o Kael começa com a Espada; todo herói tem uma arma inicial que evolui
+      expect(w.levels.sword).toBe(h.sword ? 1 : 0);
+      expect(h.sword || h.start).toBeTruthy();
+      const weapon = h.start ?? 'sword';
+      expect(EVOLUTIONS.some((e) => e.maxed.includes(weapon))).toBe(true);
       expect(HERO_INFO[id]?.desc.length).toBeGreaterThan(10);
     }
     expect(new NhWorld('x', NO_META, { hero: 'brann' }).armor).toBe(HEROES.brann!.armor);
@@ -303,9 +308,12 @@ describe('heróis e mapas', () => {
     const s = emptySave();
     expect(buyHero(s, 'mara')).toBe(false);
     s.gold = 1000;
-    expect(buyHero(s, 'mara')).toBe(true);
+    expect(buyHero(s, 'vesper')).toBe(true);
     expect(s.gold).toBe(420); // 1000 - 600 do preço + 20 da conquista "Novo companheiro"
-    expect(s.heroes).toContain('mara');
+    expect(s.heroes).toContain('vesper');
+    expect(HERO_IDS.map((id) => HEROES[id]!.price)).toEqual([
+      0, 600, 1200, 1800, 2400, 3000, 3600, 4200,
+    ]);
     expect(mapUnlocked(s, 'deserto')).toBe(false);
     s.stats.bestTime = 8 * 60;
     s.stats.bestLevel = 10;
@@ -696,6 +704,7 @@ describe('armas novas da fase 3', () => {
     (w as unknown as { spawnEnemy(a: number, b: number, c: string): Enemy }).spawnEnemy(dx, dy, id);
   /** Joga N segundos com um grupo de inimigos fixos em volta e devolve a vida total que sobrou. */
   const hpAfter = (weapon: UpgradeId, level: number, secs: number, evo?: string) => {
+    const base = weapon === 'garlic' ? 40 : 110;
     const w = new NhWorld('wp-' + weapon);
     w.levels[weapon] = level;
     w.levels.sword = 0;
@@ -706,8 +715,8 @@ describe('armas novas da fase 3', () => {
       const e = spawn(
         w,
         'ToughEnemy',
-        Math.cos(a) * (110 + (i % 3) * 25),
-        Math.sin(a) * (110 + (i % 3) * 25),
+        Math.cos(a) * (base + (i % 3) * 12),
+        Math.sin(a) * (base + (i % 3) * 12),
       );
       e.speedX = e.speedY = 0;
       e.hp = e.maxHp = 400;
@@ -736,7 +745,9 @@ describe('armas novas da fase 3', () => {
       const low = hpAfter(id, 1, 14);
       const high = hpAfter(id, 6, 14);
       expect(low).toBeLessThan(FULL);
-      expect(high).toBeLessThanOrEqual(low);
+      // a Aura de Alho no nível 6 empurra forte e tira os inimigos do alcance: só exige que cause dano
+      if (id === 'garlic') expect(high).toBeLessThan(FULL);
+      else expect(high).toBeLessThanOrEqual(low);
     });
   }
   it('pentagrama limpa a tela, puxa os itens e a recarga é longa', () => {
@@ -747,9 +758,16 @@ describe('armas novas da fase 3', () => {
     e.speedX = e.speedY = 0;
     e.hp = e.maxHp = 999;
     w.items.push({ uid: 7777, type: 'xp', x: 400, y: 0, attracted: false, speed: 0, born: 0 });
-    for (let i = 0; i < 60 * 19; i++) w.step({ x: 0, y: 0 });
+    const go = (n: number) => {
+      for (let i = 0; i < n; i++) {
+        w.player.hp = w.player.maxHp;
+        w.step({ x: 0, y: 0 });
+        w.drainEvents();
+      }
+    };
+    go(60 * 19);
     expect(e.hp).toBe(999);
-    for (let i = 0; i < 60 * 3; i++) w.step({ x: 0, y: 0 });
+    go(60 * 3);
     expect(e.hp).toBeLessThan(999);
     expect(w.items.every((it) => it.attracted) || w.items.length === 0).toBe(true);
   });

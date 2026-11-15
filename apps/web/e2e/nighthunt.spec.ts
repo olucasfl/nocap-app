@@ -189,7 +189,7 @@ test.describe('Night Hunt', () => {
     await page.evaluate(() => window.__nh.gold(1000));
     await tap(page, 255, 333); // JOGAR (lista de heróis)
     await screenIs(page, 'heroes');
-    await page.evaluate(() => window.__nh.buyHero('mara'));
+    await page.evaluate(() => window.__nh.buyHero('vesper'));
     const saved = await page.evaluate(
       () =>
         JSON.parse(localStorage.getItem('nighthunt:save:v1') ?? '{}') as {
@@ -197,8 +197,8 @@ test.describe('Night Hunt', () => {
           pick?: { hero: string };
         },
     );
-    expect(saved.heroes).toContain('mara');
-    expect(saved.pick?.hero).toBe('mara');
+    expect(saved.heroes).toContain('vesper');
+    expect(saved.pick?.hero).toBe('vesper');
     expect(errors).toEqual([]);
   });
 
