@@ -6,7 +6,8 @@ import { golfHit, golfNewBall, golfStep, GolfLevel, GOLF_DT, type GolfBall, type
  * Robô que joga (spec 082): procura uma sequência de tacadas que encaçapa, para provar que cada fase nova tem solução.
  * Busca melhor-primeiro: de cada ponto de parada tenta ângulos x forças e segue pelos que ficaram mais perto do buraco.
  */
-const load = (n: number) => new GolfLevel(JSON.parse(readFileSync(new URL(`./levels/level-${n}.json`, import.meta.url), 'utf8')) as GolfLevelData);
+const DIR = process.env.GOLF_DIR; // pasta alternativa (fases ainda fora da campanha)
+const load = (n: number) => new GolfLevel(JSON.parse(readFileSync(DIR ? `${DIR}/level-${n}.json` : new URL(`./levels/level-${n}.json`, import.meta.url), 'utf8')) as GolfLevelData);
 
 function run(lv: GolfLevel, from: [number, number, number], angle: number, power: number, t0: number) {
   const b: GolfBall = golfNewBall(lv.data);
@@ -61,7 +62,7 @@ export function solve(lv: GolfLevel, maxStrokes: number): number | null {
 
 const ONLY = (process.env.GOLF_ONLY ?? '').split(',').filter(Boolean).map(Number);
 const ALL: [number, number][] = Array.from({ length: 40 }, (_, i) => [i + 1, 8] as [number, number]);
-const NEW_LEVELS = ONLY.length ? ALL.filter(([n]) => ONLY.includes(n)) : ALL;
+const NEW_LEVELS = DIR && ONLY.length ? ONLY.map((n) => [n, 8] as [number, number]) : ONLY.length ? ALL.filter(([n]) => ONLY.includes(n)) : ALL;
 
 describe('Mini Golf: as fases novas têm solução', () => {
   for (const [n, limit] of NEW_LEVELS) {

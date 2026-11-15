@@ -125,6 +125,37 @@ class Level {
     const m = sub.solid.m.map((i) => this.mi(sub.mats[i].name));
     this.moving.push({ name, movement, base: { p: base.p, s: [1, 1, 1], r: base.r ?? [0, 0, 0, 1] }, t: sub.solid.t.map(r4), m, f: sub.solid.f.map(() => 0) });
   }
+  /**
+   * O loop da fase 9 do Open Golf (MIT), copiado para `loop-piece.json`: a bola entra por um lado, sobe em espiral, passa por cima
+   * e sai 3,9 m ao lado. `k` gira em quartos de volta (0 = entra indo ao norte), `flip` espelha (sai para a esquerda).
+   */
+  loop(ox, oy, oz, k = 0, flip = false) {
+    for (const piece of LOOP_PIECE) {
+      const pts = [];
+      for (let i = 0; i < 3; i++) {
+        let x = piece.t[i * 3], z = piece.t[i * 3 + 2];
+        if (flip) x = -x;
+        for (let q = 0; q < k; q++) [x, z] = [-z, x];
+        pts.push([ox + x, oy + piece.t[i * 3 + 1] + 0.5, oz + z]);
+      }
+      if (flip) pts.reverse();
+      this.tri(pts[0], pts[1], pts[2], piece.m);
+    }
+    // pistas de entrada e de saída até a borda do bloco (3 m do centro), com mureta dos dois lados
+    const T = (lx, lz) => {
+      let x = flip ? -lx : lx, z = lz;
+      for (let q = 0; q < k; q++) [x, z] = [-z, x];
+      return [ox + x, oz + z];
+    };
+    for (const [cx, sgn] of [[LOOP_SHIFT, -1]]) {
+      const [ax, az] = T(cx - LOOP_LANE, 0), [bx, bz] = T(cx + LOOP_LANE, 3 * sgn);
+      this.floor(ax, az, bx, bz, oy);
+      for (const sx of [-LOOP_LANE, LOOP_LANE]) {
+        const [px, pz] = T(cx + sx, 2.3 * sgn), [qx, qz] = T(cx + sx, 3 * sgn);
+        this.wall(px, pz, qx, qz, oy + 1, 0.25, oy - 0.3);
+      }
+    }
+  }
   /** Chão externo (fora dos limites): quem cai nele volta ao ponto da tacada. */
   outside(cx, cz, y) {
     const H = 80;
@@ -162,6 +193,10 @@ function loadHole() {
 }
 
 const LEVELS = [];
+const LOOP_PIECE = JSON.parse(fs.readFileSync(new URL('./loop-piece.json', import.meta.url), 'utf8'));
+// letras do loop: giro (quartos de volta) e espelho. L/M entram indo ao norte, N/O ao leste, P/Q ao sul, R/S ao oeste
+const LOOP_SHIFT = 3.86, LOOP_LANE = 1.1; // deslocamento da saída e meia largura da pista
+const LOOP_CH = { L: [0, 0], M: [0, 1], N: [1, 0], O: [1, 1], P: [2, 0], Q: [2, 1], R: [3, 0], S: [3, 1] };
 
 
 // ---------- fases por mapa de texto (células de 3 m) ----------
@@ -207,6 +242,50 @@ function gridLevel(id, rows, movers = []) {
       q.push([nc, nr]);
     }
   }
+  // loops: cada letra marca um bloco (3x2 ou 2x3 células) sem chão; a peça traz as pistas de entrada e de saída
+  const loops = [], openings = [];
+  for (const k of Object.keys(LOOP_CH)) {
+    const cells = [];
+    for (let r = 0; r < R; r++) for (let c = 0; c < Wd; c++) if (ch(c, r) === k) cells.push([c, r]);
+    if (!cells.length) continue;
+    const [rot, flip] = LOOP_CH[k];
+    const c0 = Math.min(...cells.map((a) => a[0])), r0 = Math.min(...cells.map((a) => a[1]));
+    const w = rot % 2 === 0 ? 3 : 2, h = rot % 2 === 0 ? 2 : 3;
+    if (cells.length !== w * h - 1) throw new Error(`loop ${k} da fase ${id}: o bloco tem ${w}x${h} células menos a de entrada (${w * h - 1})`);
+    let ox, oz;
+    if (rot === 0) [ox, oz] = [(flip ? c0 + 2 : c0) * C, r0 * C + C / 2];
+    else if (rot === 1) [ox, oz] = [c0 * C + C / 2, (flip ? r0 + 2 : r0) * C];
+    else if (rot === 2) [ox, oz] = [(flip ? c0 : c0 + 2) * C, r0 * C + C / 2];
+    else [ox, oz] = [c0 * C + C / 2, (flip ? r0 : r0 + 2) * C];
+    const y = low.get(cells[0].join()) ?? 0;
+    const lp = { rot, flip: !!flip, ox, oz, y };
+    loops.push(lp);
+    const T = (lx, lz) => {
+      let x = lp.flip ? -lx : lx, z = lz;
+      for (let q = 0; q < rot; q++) [x, z] = [-z, x];
+      return [ox + x, oz + z];
+    };
+    openings.push([T(-1.6, 0), T(1.6, 0)], [T(LOOP_SHIFT - LOOP_LANE - 0.15, -3), T(LOOP_SHIFT + LOOP_LANE + 0.15, -3)]);
+  }
+  const isLoop = (c, r) => !!LOOP_CH[ch(c, r)];
+  // muro que deixa livres as bocas das pistas do loop
+  const wallSeg = (x0, z0, x1, z1, top) => {
+    let segs = [[x0, z0, x1, z1]];
+    for (const [a, b] of openings) {
+      const horiz = z0 === z1;
+      if (horiz ? Math.abs(a[1] - z0) > 0.01 || Math.abs(b[1] - z0) > 0.01 : Math.abs(a[0] - x0) > 0.01 || Math.abs(b[0] - x0) > 0.01) continue;
+      const lo = Math.min(horiz ? a[0] : a[1], horiz ? b[0] : b[1]), hi = Math.max(horiz ? a[0] : a[1], horiz ? b[0] : b[1]);
+      const out = [];
+      for (const [sx0, sz0, sx1, sz1] of segs) {
+        const s0 = horiz ? sx0 : sz0, s1 = horiz ? sx1 : sz1;
+        if (hi <= s0 || lo >= s1) { out.push([sx0, sz0, sx1, sz1]); continue; }
+        if (lo > s0) out.push(horiz ? [sx0, sz0, lo, sz1] : [sx0, sz0, sx1, lo]);
+        if (hi < s1) out.push(horiz ? [hi, sz0, sx1, sz1] : [sx0, hi, sx1, sz1]);
+      }
+      segs = out;
+    }
+    for (const [a, b, c2, d] of segs) L.wall(a, b, c2, d, top);
+  };
   const yTop = (c, r) => {
     const l = low.get([c, r].join()) ?? 0;
     return ramp(c, r) ? l + RISE : l;
@@ -216,7 +295,7 @@ function gridLevel(id, rows, movers = []) {
   for (let r = 0; r < R; r++) {
     for (let c = 0; c < Wd; c++) {
       const k = ch(c, r);
-      if (!solid(c, r)) continue;
+      if (!solid(c, r) || isLoop(c, r)) continue;
       const cx = c * C, cz = r * C, x0 = cx - C / 2, x1 = cx + C / 2, z0 = cz - C / 2, z1 = cz + C / 2;
       const y = low.get([c, r].join()) ?? 0;
       if (k === 'H') { L.hole = [cx, y, cz]; L.floorWithHole(x0, z0, x1, z1, y, cx, cz); }
@@ -242,13 +321,14 @@ function gridLevel(id, rows, movers = []) {
           if (yn < y - 0.05) L.wall(wx0, wz0, wx1, wz1, y + 0.5, 0.25, yn - 0.3);
         }
       }
-      const edge = (cc, rr) => !solid(cc, rr) && ch(cc, rr) !== '_';
-      if (edge(c, r - 1)) L.wall(x0, z0, x1, z0, top);
-      if (edge(c, r + 1)) L.wall(x0, z1, x1, z1, top);
-      if (edge(c - 1, r)) L.wall(x0, z0, x0, z1, top);
-      if (edge(c + 1, r)) L.wall(x1, z0, x1, z1, top);
+      const edge = (cc, rr) => (!solid(cc, rr) || isLoop(cc, rr)) && ch(cc, rr) !== '_';
+      if (edge(c, r - 1)) wallSeg(x0, z0, x1, z0, top);
+      if (edge(c, r + 1)) wallSeg(x0, z1, x1, z1, top);
+      if (edge(c - 1, r)) wallSeg(x0, z0, x0, z1, top);
+      if (edge(c + 1, r)) wallSeg(x1, z0, x1, z1, top);
     }
   }
+  for (const lp of loops) L.loop(lp.ox, lp.y, lp.oz, lp.rot, lp.flip);
   for (const m of movers) {
     const y = low.get([m.col, m.row].join()) ?? 0;
     const p = [m.col * C, y, m.row * C];
@@ -436,6 +516,14 @@ serp(137, 9, ['@..U.....', '...bb.D..', '.s...U_A.', '..D.....H'], [{ kind: 'spi
 serp(138, 12, ['@...U.......', '.....i.iiD..', '....s..bb..U', '...D.o..iiii', '..U........H'], [{ kind: 'spinner', lane: 0, col: 8, length: 4 }, { ...GATE, lane: 1, col: 3, t0: 0.4 }, { kind: 'pendulum', lane: 2, col: 4, along: 'x', t0: 0.9 }, { ...GATE, lane: 3, col: 8, t0: 1.7 }]);
 // 139 Ida e volta: portão, ponte curta, giratório e uma descida longa até o copo
 serp(139, 10, ['@..U......', '..D...bb..', '....U..o..', '..D......H'], [{ ...GATE, lane: 0, col: 6, t0: 0.3 }, { kind: 'spinner', lane: 1, col: 3, length: 4, t0: 0.8 }, { kind: 'pendulum', lane: 3, col: 5, along: 'x', t0: 1.2 }]);
+// 140 O loop: entra na diagonal, sobe a espiral e sai ao lado (peça do Open Golf)
+G(140, ['#.H..#', '#LLL##', '..LL##', '@...##']);
+// 141 Loop com giratório: corrida até a rampa em espiral e, depois dela, um pino antes do buraco
+G(141, ['#######H#', '####..o..', '###LLL###', '....LL###', '.o.....##', '@........'], [{ kind: 'spinner', col: 5, row: 5, length: 4 }]);
+// 142 Loop espelhado: sai pela esquerda; o caminho de volta tem pino e giratório
+G(142, ['##H######', '.o....###', '###MMM###', '###MM....', '#........', '#.o.....@'], [{ kind: 'spinner', col: 4, row: 4, length: 4, t0: 0.7 }]);
+// 143 Loop para o leste: o corredor começa no alto, passa pelo loop e desce até o buraco
+G(143, ['@..o.####', '....N####', '###NN.o..', '###NN....', '########H'], [{ kind: 'pendulum', col: 7, row: 3, along: 'x', t0: 0.3 }]);
 
 const holeModel = loadHole();
 fs.mkdirSync(out, { recursive: true });
