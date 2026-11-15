@@ -283,19 +283,22 @@ G(101, ['@....#', '####.#', '####H#']);
 G(102, ['@..>..>..#', '########.#', '#H.......#']);
 // 103 Areia e gelo: a areia segura, o gelo solta
 G(103, ['@...s....#', '#######.##', '#H..s....#']);
-// 104 Pinos: sala aberta com rebatedores
-G(104, ['@.....o..#', '..o.o....#', '.....o..H#']);
+// 104 Pinos: um corredor em S com rebatedores no meio do caminho
+G(104, ['@..o..>.#', '#######.#', '#H.o.>..#']);
+
 // 105 Ponte dupla: duas tábuas sobre a água
 G(105, ['@..bbb..#', '#######.#', '#H..bb..#']);
 // 106 Primeiro salto: rampa, vão aberto e patamar do outro lado
 G(106, ['@...>_Ass...#', '###########.#', '#H.........#']);
-// 107 Dois moinhos: sala larga com dois giratórios
-G(107, ['.........#', '@........H', '.........#'], [
-  { kind: 'spinner', col: 3, row: 1, length: 4 },
-  { kind: 'spinner', col: 6, row: 1, length: 4, t0: 0.5 },
+// 107 Dois moinhos: corredor em S, um giratório em cada faixa
+G(107, ['@...>..#', '######.#', '#H.>...#'], [
+  { kind: 'spinner', col: 2, row: 0, length: 4 },
+  { kind: 'spinner', col: 5, row: 2, length: 4, t0: 0.6 },
 ]);
-// 108 Pista de gelo: escorrega entre pinos
-G(108, ['@iiioii..#', '.iioiiii.#', '..iiiiioH#']);
+
+// 108 Pista de gelo: duas faixas escorregadias ligadas por uma curva
+G(108, ['@ii>iii.#', '#######.#', '#H.iii>.#']);
+
 // 109 Escada de portões: três rampas, pêndulo, giratório e dois portões
 G(109, ['@.>..>..>.#', '#########.#', '#H........#'], [
   { kind: 'pendulum', col: 3, row: 0, along: 'x', t0: 0.3 },
@@ -339,21 +342,17 @@ G(114, [
   { kind: 'gate', col: 6, row: 4, span: [0, 2.4], half: [0.2, 0.8], t0: 0.8 },
 ]);
 // 115 Dois saltos: a rampa lança até o patamar, e a segunda lança até a ilha final
-G(115, ['@..>>__B..>_Css.H#'], [
-  { kind: 'pendulum', col: 9, row: 0, along: 'x', t0: 0.2 },
-  { kind: 'spinner', col: 14, row: 0, length: 3.4 },
+G(115, ['@..>>__B.#', '########.#', '#H..C_<..#'], [
+  { kind: 'spinner', col: 8, row: 0, length: 3.4 },
+  { kind: 'pendulum', col: 3, row: 2, along: 'x', t0: 0.2 },
 ]);
-// 116 Fortaleza: sala cheia de pinos e giratórios, com o buraco no alto da muralha
-G(116, [
-  '#####AAAH#',
-  '.o...^.o..',
-  '@...o...o.',
-  '..o.....o.',
-  '.....o....',
-], [
-  { kind: 'spinner', col: 2, row: 2, length: 4 },
-  { kind: 'spinner', col: 7, row: 3, length: 4, t0: 0.7 },
+
+// 116 Fortaleza: sobe pela rampa, vira e sobe de novo até o buraco, com giratório e pêndulo
+G(116, ['@..>..#', '#####.#', '#H.<..#'], [
+  { kind: 'spinner', col: 4, row: 0, length: 3.4 },
+  { kind: 'pendulum', col: 4, row: 2, along: 'x', t0: 0.5 },
 ]);
+
 // 117 Cascata: o gramado desce em degraus, e cada degrau é um salto para baixo
 G(117, ['@...._x...#', '#########.#', '#H...y_...#']);
 // 118 Grande final: salto, portões, pista de gelo com pino e travessia por tábuas
@@ -367,16 +366,9 @@ G(118, [
   { kind: 'gate', col: 6, row: 2, span: [0, 2.2], half: [0.2, 0.7], t0: 0.3 },
   { kind: 'pendulum', col: 9, row: 4, along: 'x', t0: 0.9 },
 ]);
-// 119 Pinball gigante: campo de pinos em xadrez, o buraco no canto oposto
-G(119, [
-  '@.o...o...o',
-  '...o...o...',
-  '.o...o...o.',
-  '...o...o...',
-  '.o...o...o.',
-  '...o...o...',
-  'o...o...o.H',
-]);
+// 119 Pinball: dois corredores com rebatedores no caminho
+G(119, ['@.o.o.>..#', '########.#', '#H.o.o.>.#']);
+
 // 120 Dois caminhos: o atalho pelo salto ou a volta por gelo, ponte e pino
 G(120, [
   '@...>_A...H',
@@ -386,7 +378,8 @@ G(120, [
 
 
 // 121 Gelo longo: dois corredores escorregadios ligados por uma curva
-G(121, ['@..iiii..#', '#######.##', '#H..iii..#']);
+G(121, ['@..>iii..#', '########.#', '#H.iii>..#']);
+
 // 122 Salto e curva: rampa, vão aberto e uma volta até o buraco
 G(122, ['@...>_A.....#', '###########.#', '#H..........#']);
 // 123 Serpentina curta: três faixas, cada uma com a sua armadilha

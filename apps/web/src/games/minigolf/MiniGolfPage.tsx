@@ -149,10 +149,35 @@ export function MiniGolfPage() {
         return true;
       };
       // esquerdo em cima da bola puxa a tacada; esquerdo em qualquer outro lugar gira a câmera; direito só cancela a tacada
+      // pinça com dois dedos (celular): aproxima e afasta a câmera
+      const touches = new Map<number, { x: number; y: number }>();
+      let pinch: number | null = null;
+      const touchDist = () => {
+        const [a, b] = [...touches.values()];
+        return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0;
+      };
+      const onWheel = (e: WheelEvent) => {
+        e.preventDefault();
+        sc.zoomBy(Math.exp(e.deltaY * 0.0012));
+      };
       const onDown = (e: PointerEvent) => {
         if (e.button === 2 || (e.pointerType === 'mouse' && e.button !== 0)) {
           cancelAim();
           return;
+        }
+        if (e.pointerType === 'touch') {
+          touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+          // segundo dedo com a câmera girando (não com uma puxada): vira pinça
+          if (touches.size === 2 && st.drag && st.right) {
+            st.drag = null;
+            st.right = false;
+            pinch = touchDist();
+            return;
+          }
+          if (touches.size === 2 && !st.drag) {
+            pinch = touchDist();
+            return;
+          }
         }
         // um segundo toque (ou clique) com a puxada em andamento cancela a tacada
         if (st.drag) {
@@ -166,6 +191,15 @@ export function MiniGolfPage() {
         (e.target as Element).setPointerCapture?.(e.pointerId);
       };
       const onMove = (e: PointerEvent) => {
+        if (e.pointerType === 'touch' && touches.has(e.pointerId)) {
+          touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+          if (pinch !== null && touches.size === 2) {
+            const d = touchDist();
+            if (d > 0 && pinch > 0) sc.zoomBy(pinch / d);
+            pinch = d;
+            return;
+          }
+        }
         if (!st.drag || e.pointerId !== st.drag.id) return;
         if (e.buttons & 2 && cancelAim()) return;
         const dx = e.clientX - st.drag.x, dy = e.clientY - st.drag.y;
@@ -191,6 +225,8 @@ export function MiniGolfPage() {
         setPower(p);
       };
       const onUp = (e: PointerEvent) => {
+        touches.delete(e.pointerId);
+        if (touches.size < 2) pinch = null;
         if (!st.drag || e.pointerId !== st.drag.id) return;
         const wasRight = st.right;
         st.drag = null;
@@ -219,6 +255,7 @@ export function MiniGolfPage() {
         cancelAim();
       };
       const cv = canvasRef.current;
+      cv.addEventListener('wheel', onWheel, { passive: false });
       cv.addEventListener('pointerdown', onDown);
       cv.addEventListener('pointermove', onMove);
       cv.addEventListener('pointerup', onUp);
@@ -291,6 +328,7 @@ export function MiniGolfPage() {
       raf = requestAnimationFrame(loop);
       // limpeza guardada para o retorno do efeito
       (loop as unknown as { off: () => void }).off = () => {
+        cv.removeEventListener('wheel', onWheel);
         cv.removeEventListener('pointerdown', onDown);
         cv.removeEventListener('pointermove', onMove);
         cv.removeEventListener('pointerup', onUp);

@@ -13,15 +13,35 @@ export const GOLF_ROOM_TIERS = ['mix', 'easy', 'medium', 'hard'] as const;
 export type GolfRoomTier = (typeof GOLF_ROOM_TIERS)[number];
 export const GOLF_ROOM_DEFAULTS = { holes: 9, tier: 'mix' as GolfRoomTier, seconds: 180, collide: true };
 
-/** As fases da partida: sorteadas pela seed (sempre as mesmas para todos), sem repetir, da dificuldade escolhida. */
-export function golfPickLevels(seed: string, count: number, tier: GolfRoomTier): number[] {
-  const pool = tier === 'mix' ? Array.from({ length: GOLF_LEVELS }, (_, i) => i + 1) : [...GOLF_TIERS[tier as GolfTier]];
+/**
+ * As fases da partida: não há escolha de dificuldade, só de quantos buracos. As fases são sorteadas pela seed (iguais para
+ * todos) de forma proporcional às três dificuldades (12 buracos = 4 fáceis, 4 médias, 4 difíceis; 40 = todas) e jogadas
+ * da mais fácil para a mais difícil (os números das fases já seguem a dificuldade).
+ */
+export function golfPickLevels(seed: string, count: number, _tier?: GolfRoomTier): number[] {
+  const tiers: GolfTier[] = ['easy', 'medium', 'hard'];
+  const want = Math.max(0, Math.min(count, GOLF_LEVELS));
+  // método do maior resto: cota de cada dificuldade proporcional ao tamanho dela
+  const raw = tiers.map((t) => (want * GOLF_TIERS[t].length) / GOLF_LEVELS);
+  const take = raw.map((x) => Math.floor(x));
+  let left = want - take.reduce((n, x) => n + x, 0);
+  [...raw.keys()].sort((x, y) => raw[y]! - Math.floor(raw[y]!) - (raw[x]! - Math.floor(raw[x]!)) || x - y).forEach((i) => {
+    if (left > 0 && take[i]! < GOLF_TIERS[tiers[i]!].length) {
+      take[i]!++;
+      left--;
+    }
+  });
   const rng = createRng(`golf:${seed}`);
-  for (let i = pool.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [pool[i], pool[j]] = [pool[j]!, pool[i]!];
-  }
-  return pool.slice(0, Math.min(count, pool.length));
+  const out: number[] = [];
+  tiers.forEach((t, k) => {
+    const pool = [...GOLF_TIERS[t]];
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [pool[i], pool[j]] = [pool[j]!, pool[i]!];
+    }
+    out.push(...pool.slice(0, take[k]));
+  });
+  return out.sort((x, y) => x - y);
 }
 
 /** Colisão entre duas bolas (massas iguais, quase elástica). Devolve a força do choque, ou 0 se não encostaram. */

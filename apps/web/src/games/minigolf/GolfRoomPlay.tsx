@@ -62,6 +62,7 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   snapRef.current = snapshot;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
+  const namesRef = useRef<HTMLDivElement>(null);
   const keys = useRef({ l: false, r: false });
   const [power, setPower] = useState<number | null>(null);
   const [board, setBoard] = useState(false);
@@ -211,10 +212,34 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         return true;
       };
       // esquerdo em cima da bola puxa a tacada; esquerdo em qualquer outro lugar gira a câmera; direito só cancela a tacada
+      // pinça com dois dedos (celular): aproxima e afasta a câmera
+      const touches = new Map<number, { x: number; y: number }>();
+      let pinch: number | null = null;
+      const touchDist = () => {
+        const [a, b] = [...touches.values()];
+        return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0;
+      };
+      const onWheel = (e: WheelEvent) => {
+        e.preventDefault();
+        sc.zoomBy(Math.exp(e.deltaY * 0.0012));
+      };
       const onDown = (e: PointerEvent) => {
         if (e.button === 2 || (e.pointerType === 'mouse' && e.button !== 0)) {
           cancelAim();
           return;
+        }
+        if (e.pointerType === 'touch') {
+          touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+          if (touches.size === 2 && drag && right) {
+            drag = null;
+            right = false;
+            pinch = touchDist();
+            return;
+          }
+          if (touches.size === 2 && !drag) {
+            pinch = touchDist();
+            return;
+          }
         }
         // um segundo toque (ou clique) com a puxada em andamento cancela a tacada
         if (drag) {
@@ -228,6 +253,15 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         cv.setPointerCapture?.(e.pointerId);
       };
       const onMove = (e: PointerEvent) => {
+        if (e.pointerType === 'touch' && touches.has(e.pointerId)) {
+          touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+          if (pinch !== null && touches.size === 2) {
+            const d = touchDist();
+            if (d > 0 && pinch > 0) sc.zoomBy(pinch / d);
+            pinch = d;
+            return;
+          }
+        }
         if (!drag || e.pointerId !== drag.id) return;
         if (e.buttons & 2 && cancelAim()) return;
         const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
@@ -251,6 +285,8 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         setPower(p);
       };
       const onUp = (e: PointerEvent) => {
+        touches.delete(e.pointerId);
+        if (touches.size < 2) pinch = null;
         if (!drag || e.pointerId !== drag.id) return;
         const wasRight = right;
         drag = null;
@@ -276,12 +312,14 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         e.preventDefault();
         cancelAim();
       };
+      cv.addEventListener('wheel', onWheel, { passive: false });
       cv.addEventListener('pointerdown', onDown);
       cv.addEventListener('pointermove', onMove);
       cv.addEventListener('pointerup', onUp);
       cv.addEventListener('pointercancel', onUp);
       cv.addEventListener('contextmenu', noMenu);
       offs.push(() => {
+        cv.removeEventListener('wheel', onWheel);
         cv.removeEventListener('pointerdown', onDown);
         cv.removeEventListener('pointermove', onMove);
         cv.removeEventListener('pointerup', onUp);
@@ -291,6 +329,7 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
 
       const holePos = lv.data.holes[0]!.p;
       let last = performance.now();
+      const labels = new Map<number, HTMLDivElement>();
       const loop = (nowMs: number) => {
         if (!alive) return;
         raf = requestAnimationFrame(loop);
@@ -337,6 +376,35 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         myPos = focus;
         sc.setAim({ pos: focus } as GolfBall, canAim() ? aim : null);
         sc.renderOnline(balls, focus, holeT, dt);
+        // o nome de cada pessoa em cima da bola (também para quem está assistindo)
+        const box = namesRef.current;
+        if (box) {
+          const slotUser = new Map(Object.entries(inf.slots).map(([uid, sl]) => [sl, uid]));
+          const seenSlots = new Set<number>();
+          for (const b of balls) {
+            const uid = slotUser.get(b.slot);
+            const m = uid ? snapRef.current.members.find((x) => x.id === uid) : undefined;
+            if (!m || b.hidden) continue;
+            seenSlots.add(b.slot);
+            let el = labels.get(b.slot);
+            if (!el) {
+              el = document.createElement('div');
+              el.className = 'mg-name';
+              el.textContent = nameOf(m.id, m.username);
+              box.appendChild(el);
+              labels.set(b.slot, el);
+            }
+            const p = sc.project([b.pos[0], b.pos[1] + 0.32, b.pos[2]]);
+            el.style.opacity = p.ok ? '1' : '0';
+            el.style.transform = `translate(${p.x}px, ${p.y}px) translate(-50%, -100%)`;
+            el.classList.toggle('me', m.id === me);
+          }
+          for (const [sl, el] of labels) {
+            if (seenSlots.has(sl)) continue;
+            el.remove();
+            labels.delete(sl);
+          }
+        }
       };
       raf = requestAnimationFrame(loop);
     });
@@ -364,6 +432,7 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   return (
     <div className="mg" ref={boxRef} data-testid="golf-play">
       <canvas ref={canvasRef} />
+      <div className="mg-names" ref={namesRef} aria-hidden="true" />
       {loading && <div className="mg-load">Carregando a fase</div>}
       <div className="mg-top">
         <div className="mg-hud" style={{ position: 'static', display: 'flex', gap: 14 }}>

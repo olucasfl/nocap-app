@@ -5,14 +5,18 @@ import { GOLF_TIERS } from './rules';
 import { golfServerLevel } from './server-levels';
 
 describe('Mini Golf online', () => {
-  it('sorteia as fases pela seed, sem repetir e na dificuldade escolhida', () => {
-    const a = golfPickLevels('abc', 9, 'mix');
-    expect(a).toEqual(golfPickLevels('abc', 9, 'mix'));
-    expect(new Set(a).size).toBe(9);
-    expect(golfPickLevels('outra', 9, 'mix')).not.toEqual(a);
-    const easy = golfPickLevels('abc', 30, 'easy');
-    expect([...easy].sort((x, y) => x - y)).toEqual([...GOLF_TIERS.easy].sort((x, y) => x - y));
-    expect(golfPickLevels('abc', 30, 'mix')).toHaveLength(30);
+  it('sorteia as fases pela seed, sem repetir, proporcional às dificuldades e em ordem crescente', () => {
+    const a = golfPickLevels('abc', 12);
+    expect(a).toEqual(golfPickLevels('abc', 12));
+    expect(new Set(a).size).toBe(12);
+    expect(a).toEqual([...a].sort((x, y) => x - y));
+    expect(golfPickLevels('outra', 12)).not.toEqual(a);
+    // 12 buracos: 4 fáceis, 4 médias, 4 difíceis
+    const count = (t: 'easy' | 'medium' | 'hard') => a.filter((n) => (GOLF_TIERS[t] as readonly number[]).includes(n)).length;
+    expect([count('easy'), count('medium'), count('hard')]).toEqual([4, 4, 4]);
+    for (const n of [3, 6, 9, 18, 30]) expect(golfPickLevels('abc', n)).toHaveLength(n);
+    // 40 buracos: todas, na ordem do offline
+    expect(golfPickLevels('abc', 40)).toEqual(Array.from({ length: 40 }, (_, i) => i + 1));
   });
 
   it('duas bolas que se encontram trocam velocidade e se separam', () => {

@@ -209,7 +209,7 @@ export function rulesSummary(s: RoomSnapshot): string {
   if (s.game === 'desmorona') return 'Desmorona! · Último de pé';
   if (s.game === 'golf') {
     const g = s.settings as unknown as { holes?: number; tier?: string };
-    return `Mini Golf · ${g.holes ?? 9} buracos · ${g.tier === 'easy' ? 'Fácil' : g.tier === 'medium' ? 'Média' : g.tier === 'hard' ? 'Difícil' : 'Mista'}`;
+    return `Mini Golf · ${g.holes ?? 9} buracos`;
   }
   if (s.game === 'foxgp')
     return s.foxgp?.physics === 'arcade'
@@ -320,16 +320,7 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
         current: String(g.holes ?? 9),
         format: (v) => `${v} buracos`,
         patch: (v) => ({ holes: Number(v) }),
-        note: 'Sorteados entre as 40 fases, sem repetir.',
-      },
-      {
-        id: 'tier',
-        label: 'DIFICULDADE',
-        values: ['mix', 'easy', 'medium', 'hard'],
-        current: g.tier ?? 'mix',
-        format: (v) => (v === 'easy' ? 'Fácil' : v === 'medium' ? 'Média' : v === 'hard' ? 'Difícil' : 'Mista'),
-        patch: (v) => ({ tier: v }),
-        note: 'Só há 9 fases fáceis e 10 difíceis; se pedir mais buracos, a partida usa todas as da dificuldade.',
+        note: 'As fases são sorteadas proporcionalmente (fáceis, médias e difíceis) e jogadas da mais fácil para a mais difícil. Com 40, são todas, na ordem do offline.',
       },
       {
         id: 'seconds',

@@ -34,6 +34,11 @@ export class GolfScene {
   readonly camera = new THREE.PerspectiveCamera(55, 1, 0.05, 220);
   /** Ângulo da câmera ao redor da bola (rad). A tacada "para frente" é para onde a câmera olha. */
   yaw = 0;
+  /** Distância da câmera à bola (1 = padrão): a roda do mouse e a pinça do celular mudam, entre bem perto e um limite longe. */
+  zoom = 1;
+  zoomBy(f: number) {
+    this.zoom = Math.max(0.28, Math.min(2.6, this.zoom * f));
+  }
   /** Câmera de perto no copo (a bola está caindo no buraco). */
   focusHole = false;
   private ballMesh: THREE.Mesh;
@@ -52,7 +57,7 @@ export class GolfScene {
     private level: GolfLevel,
     look: GolfBallLook,
   ) {
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, stencil: true, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -134,14 +139,19 @@ export class GolfScene {
       this.movers.push({ mesh: holder, i });
       group.add(holder);
     });
-    // copo: paredes do modelo e o fundo físico, e a bandeira
-    const cup = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.9, side: THREE.DoubleSide });
+    // copo: um buraco de verdade. Paredes claras e fundo de terra por dentro (dá para ver a bola caindo), aro branco por fora.
+    // Nas fases em que o piso do modelo passa por cima do copo (Open Golf), uma máscara de estêncil recorta o piso no círculo
+    // do buraco, e assim o copo aparece por baixo; nas fases com o piso já vazado a máscara não muda nada.
+    const wall = new THREE.MeshStandardMaterial({ color: 0xe6eaec, roughness: 0.7, side: THREE.DoubleSide });
+    const bottom = new THREE.MeshStandardMaterial({ color: 0x6a5233, roughness: 0.95, side: THREE.DoubleSide });
+    const cutMats: THREE.Material[] = [];
+    group.traverse((o) => {
+      const m = (o as THREE.Mesh).material as THREE.Material | undefined;
+      if (m) cutMats.push(m);
+    });
     d.holes.forEach((h, i) => {
-      group.add(mk(d.holeTris[i]!, cup, 2, false));
-      group.add(mk(this.level.holeFloors[i]!, cup, 2, false));
-      // o buraco precisa aparecer: aro claro e boca escura no nível do gramado. Quando o piso do modelo passa por cima
-      // do copo (fases do Open Golf), a boca escura cobre esse pedaço; nas fases com o piso vazado ela some e só fica o aro.
-      const covered = this.floorCovers(d.solid.t, h.p[0], h.p[2], h.p[1]);
+      group.add(mk(d.holeTris[i]!, wall, 2, false));
+      group.add(mk(this.level.holeFloors[i]!, bottom, 2, false));
       const rim = new THREE.Mesh(
         new THREE.RingGeometry(h.r * 0.96, h.r * 1.14, 40),
         new THREE.MeshStandardMaterial({ color: 0xf4f1e6, roughness: 0.55, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6 }),
@@ -150,15 +160,15 @@ export class GolfScene {
       rim.position.set(h.p[0], h.p[1] + 0.006, h.p[2]);
       rim.receiveShadow = true;
       group.add(rim);
-      if (covered) {
-        const mouth = new THREE.Mesh(
-          new THREE.CircleGeometry(h.r * 0.97, 40),
-          new THREE.MeshBasicMaterial({ color: 0x070908, polygonOffset: true, polygonOffsetFactor: -5, polygonOffsetUnits: -5 }),
-        );
-        mouth.rotation.x = -Math.PI / 2;
-        mouth.position.set(h.p[0], h.p[1] + 0.005, h.p[2]);
-        group.add(mouth);
-      }
+      // máscara: escreve 1 no estêncil dentro do buraco (sem pintar nada); o piso não desenha onde o estêncil vale 1
+      const mask = new THREE.Mesh(
+        new THREE.CircleGeometry(h.r * 0.97, 40),
+        new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false, stencilWrite: true, stencilRef: 1, stencilFunc: THREE.AlwaysStencilFunc, stencilZPass: THREE.ReplaceStencilOp }),
+      );
+      mask.rotation.x = -Math.PI / 2;
+      mask.position.set(h.p[0], h.p[1] + 0.004, h.p[2]);
+      mask.renderOrder = -10;
+      group.add(mask);
       const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 1.05, 8), new THREE.MeshStandardMaterial({ color: 0xf4f4ef, metalness: 0.5, roughness: 0.3 }));
       pole.position.set(h.p[0], h.p[1] + 0.52, h.p[2]);
       const flag = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.26), new THREE.MeshStandardMaterial({ color: 0xff5a3c, roughness: 0.8, side: THREE.DoubleSide }));
@@ -166,6 +176,11 @@ export class GolfScene {
       pole.castShadow = flag.castShadow = true;
       group.add(pole, flag);
     });
+    for (const m of new Set(cutMats)) {
+      m.stencilWrite = true;
+      m.stencilRef = 1;
+      m.stencilFunc = THREE.NotEqualStencilFunc;
+    }
     this.scene.add(group);
   }
 
@@ -200,7 +215,7 @@ export class GolfScene {
   }
 
   private snapCamera(target: THREE.Vector3) {
-    const off = new THREE.Vector3(-Math.sin(this.yaw) * 3.4, 1.9, -Math.cos(this.yaw) * 3.4);
+    const off = new THREE.Vector3(-Math.sin(this.yaw) * 3.4 * this.zoom, 1.9 * this.zoom, -Math.cos(this.yaw) * 3.4 * this.zoom);
     this.camPos.copy(target).add(off);
     this.camLook.copy(target).add(new THREE.Vector3(Math.sin(this.yaw) * 1.2, 0.1, Math.cos(this.yaw) * 1.2));
     this.camera.position.copy(this.camPos);
@@ -220,6 +235,13 @@ export class GolfScene {
       if (!((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0))) return true;
     }
     return false;
+  }
+
+  /** Onde um ponto do mundo cai na tela (px, relativos ao quadro); `ok` falso se está atrás da câmera. */
+  project(pos: [number, number, number]): { x: number; y: number; ok: boolean } {
+    const el = this.renderer.domElement;
+    const v = new THREE.Vector3(pos[0], pos[1], pos[2]).project(this.camera);
+    return { x: ((v.x + 1) / 2) * el.clientWidth, y: ((1 - v.y) / 2) * el.clientHeight, ok: v.z < 1 };
   }
 
   /** O ponto da tela (relativo ao quadro) está em cima da bola? Com folga, para o dedo também acertar. */
@@ -266,7 +288,7 @@ export class GolfScene {
     const hole = this.level.data.holes[0]!.p;
     const want = this.focusHole
       ? new THREE.Vector3(hole[0] - Math.sin(this.yaw) * 1.1, hole[1] + 0.85, hole[2] - Math.cos(this.yaw) * 1.1)
-      : new THREE.Vector3(-Math.sin(this.yaw) * 3.4, 1.9, -Math.cos(this.yaw) * 3.4).add(target);
+      : new THREE.Vector3(-Math.sin(this.yaw) * 3.4 * this.zoom, 1.9 * this.zoom, -Math.cos(this.yaw) * 3.4 * this.zoom).add(target);
     const k = 1 - Math.pow(this.focusHole ? 0.02 : 0.0001, dt);
     this.camPos.lerp(want, k);
     this.camLook.lerp(
