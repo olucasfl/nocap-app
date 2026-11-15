@@ -77,6 +77,6 @@
 | 080 | [Fox GP v2](080-fox-gp-v2.md) | 5 | implementada na `feat/fox-gp` (11/11/2026); falta medir celular como líder com 20 carros |
 | 081 | [Fox GP v3](081-fox-gp-v3.md) | 5 | implementada na `feat/fox-gp-v3` (12/11/2026); falta calibrar jogando e medir celular como líder |
 | 082 | [Mini Golf](082-mini-golf.md) | 5 | feito (14/11/2026): física portada, 20 fases do Open Golf, garagem da bola, melhor marca na conta e sala online; falta validar em aparelhos reais |
-| 083 | [Night Hunt](083-night-hunt.md) | 5 | fase 1 feita (15/11/2026): motor portado do Slash, 1 herói, 1 mapa, itens, 32 conquistas, telas e transições; falta confirmar a licença da arte, save na conta e ranking |
+| 083 | [Night Hunt](083-night-hunt.md) | 5 | fase 2 feita (15/11/2026): 5 heróis, 3 mapas, 15 melhorias, 7 evoluções, reroll/pular/banir, 51 conquistas, save na conta, robô e testes de tela; falta confirmar a licença da arte e ranking/Daily |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.

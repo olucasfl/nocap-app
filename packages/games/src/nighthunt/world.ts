@@ -1,17 +1,28 @@
 import { createRng } from '../core/rng';
 import { overlaps, type Shape } from './geometry';
 import {
+  ENEMY_BOX,
+  EVOLUTIONS,
+  HEROES,
   ITEM_ATTRACT_ACCEL,
   ITEM_SHAPES,
   MAGNET_RADIUS,
+  MAPS,
+  MAX_PASSIVE_SLOTS,
+  MAX_WEAPON_SLOTS,
+  PASSIVE_IDS,
   PLAYER_BOX,
   PROJECTILE_SHAPE,
   SWORD_ANIM_DURATION,
   SWORD_BOXES,
   SWORD_PIVOT_Y,
   UPGRADE_IDS,
+  UPGRADE_MAX,
+  WEAPON_IDS,
+  slotOf,
   swordAngleDeg,
-  ENEMY_BOX,
+  type ChoiceId,
+  type EvoId,
   type ItemType,
   type ProjectileKind,
   type UpgradeId,
@@ -26,7 +37,6 @@ import {
   META_SETTINGS,
   PERIODIC_FOLLOW,
   PLAYER_SETTINGS,
-  UPGRADE_LIMITS,
   WAVE_SPAWNERS,
   type EnemySettings,
 } from './settings';
@@ -41,6 +51,10 @@ export interface MetaLevels {
   movementSpeed: number;
   xpGatherer: number;
   goldGatherer: number;
+  /** Extras do Night Hunt (estilo Vampire Survivors): quantos rerolls, pulos e banimentos a mais por partida. */
+  reroll: number;
+  skip: number;
+  banish: number;
 }
 export const NO_META: MetaLevels = {
   health: 0,
@@ -49,11 +63,18 @@ export const NO_META: MetaLevels = {
   movementSpeed: 0,
   xpGatherer: 0,
   goldGatherer: 0,
+  reroll: 0,
+  skip: 0,
+  banish: 0,
 };
 
 export interface NhInput {
   x: number;
   y: number;
+}
+export interface NhOptions {
+  hero?: string;
+  map?: string;
 }
 
 export interface Enemy {
@@ -86,15 +107,17 @@ export interface Item {
 export interface Projectile {
   x: number;
   y: number;
-  dx: number;
-  dy: number;
+  vx: number;
+  vy: number;
+  /** Gravidade (só o machado giratório). */
+  gy: number;
   kind: ProjectileKind;
-  speed: number;
   expire: number;
   damage: number;
   pierces: number;
   angle: number;
   hostile: boolean;
+  big: boolean;
   hit: Set<number>;
 }
 
@@ -107,9 +130,11 @@ export type NhEvent =
   | { k: 'playerDeath' }
   | { k: 'pickup'; type: ItemType; x: number; y: number }
   | { k: 'levelUp' }
-  | { k: 'fire'; kind: 'horizontal' | 'diagonal' | 'halo' };
+  | { k: 'fire'; kind: 'horizontal' | 'diagonal' | 'halo' | 'axe' }
+  | { k: 'bolt'; x: number; y: number }
+  | { k: 'evolve'; id: EvoId };
 
-export type Pending = { kind: 'levelUp' | 'chest'; options: UpgradeId[] };
+export type Pending = { kind: 'levelUp' | 'chest'; options: ChoiceId[] };
 
 export interface RunResult {
   score: number;
@@ -117,11 +142,16 @@ export interface RunResult {
   gold: number;
   level: number;
   upgrades: Partial<Record<UpgradeId, number>>;
+  evolutions: EvoId[];
+  hero: string;
+  map: string;
   bossKills: number;
   finalBossKills: number;
   chests: number;
   magnets: number;
   damageTaken: number;
+  banishesUsed: number;
+  rerollsUsed: number;
   won: boolean;
 }
 
@@ -130,13 +160,44 @@ const PERIODIC = new Map<string, { followTime: number; waitTime: number }>(
   PERIODIC_FOLLOW.map((p) => [p.enemyIdToAffect, p]),
 );
 const r1 = (n: number) => Math.round(n * 10) / 10;
+/**
+ * Chance de baú dos chefes. No Slash só os chefes difíceis soltam baú (e pouco); no Night Hunt toda evolução vem de um baú,
+ * então os chefes soltam com mais frequência (o resto da tabela do Slash não muda).
+ */
+const BOSS_CHEST: Record<string, number> = {
+  BasicBoss: 0.6,
+  StandardBoss: 0.7,
+  HardBoss: 0.8,
+  HarderBoss: 0.8,
+  HardestBoss: 0.9,
+  FinalBoss: 1,
+};
+
+export const EXTRA_META = {
+  reroll: { costs: [60, 160, 300], bonuses: [1, 2, 3] },
+  skip: { costs: [60, 160, 300], bonuses: [1, 2, 3] },
+  banish: { costs: [80, 200, 360], bonuses: [1, 2, 3] },
+} as const;
+type SlimMetaKey = keyof typeof META_SETTINGS | keyof typeof EXTRA_META;
+const metaTable = (key: SlimMetaKey) =>
+  key in EXTRA_META
+    ? EXTRA_META[key as keyof typeof EXTRA_META]
+    : META_SETTINGS[key as keyof typeof META_SETTINGS];
+export function metaCost(key: SlimMetaKey, level: number): number | null {
+  return (metaTable(key).costs as readonly number[])[level] ?? null;
+}
+export function metaBonus(key: SlimMetaKey, level: number): number {
+  return level <= 0 ? 0 : ((metaTable(key).bonuses as readonly number[])[level - 1] ?? 0);
+}
 
 export class NhWorld {
   readonly rng: () => number;
+  readonly heroId: string;
+  readonly mapId: string;
   t = 0;
   tick = 0;
   alive = true;
-  player = { x: 0, y: 0, hp: 0, maxHp: 0, speed: 0, face: -1, moving: false, damageMult: 0 };
+  player = { x: 0, y: 0, hp: 0, maxHp: 0, speed: 0, face: -1, moving: false };
   level = 0;
   xp = 0;
   xpMult = 1;
@@ -149,20 +210,21 @@ export class NhWorld {
     lengthLevel: 0,
     inContact: new Set<number>(),
   };
-  magnet = { active: false, left: 0, inRange: new Set<number>() };
-  levels: Record<UpgradeId, number> = {
-    weaponLength: 0,
-    weaponDamage: 0,
-    horizontal: 0,
-    diagonal: 0,
-    halo: 0,
-    regeneration: 0,
-  };
+  magnet = { active: false, left: 0 };
+  levels: Record<UpgradeId, number> = Object.fromEntries(UPGRADE_IDS.map((u) => [u, 0])) as Record<
+    UpgradeId,
+    number
+  >;
+  evolved = new Set<EvoId>();
   launchers = {
-    horizontal: { timer: 0, waves: 0, burst: 0, burstLeft: 0, burstTimer: 0 },
-    diagonal: { timer: 0, waves: 0, burst: 0, burstLeft: 0, burstTimer: 0 },
+    horizontal: { timer: 0, waves: 0, burstLeft: 0, burstTimer: 0 },
+    diagonal: { timer: 0, waves: 0, burstLeft: 0, burstTimer: 0 },
     halo: { timer: 0, cooldown: 0 },
+    axe: { timer: 0 },
+    lightning: { timer: 0 },
   };
+  orbAngle = 0;
+  orbHit = new Map<number, number>();
   enemies: Enemy[] = [];
   items: Item[] = [];
   projectiles: Projectile[] = [];
@@ -173,47 +235,78 @@ export class NhWorld {
   chests = 0;
   magnets = 0;
   damageTaken = 0;
+  /** Reroll, pular e banir (estilo Vampire Survivors). */
+  rerolls = 0;
+  skips = 0;
+  banishes = 0;
+  rerollsUsed = 0;
+  banishesUsed = 0;
+  banished = new Set<UpgradeId>();
   pending: Pending | null = null;
   queue: Pending[] = [];
   events: NhEvent[] = [];
   private nextUid = 1;
   private collisionTimer = 0;
   private playerContacts = new Set<number>();
-  private projContacts = new Set<string>();
   private spawnerTime = 0;
   private spawnTimers: number[];
   private waveLastPos: { x: number; y: number } | null = null;
   private waveLastDir = { x: 0, y: 0 };
-  private projPierceDamage: number;
+  private projDamage: number;
   private projPierces: number;
+  private dmgMult: number;
+  private heroCd: number;
+  private heroArmor: number;
+  private goldMult: number;
+  private baseHp: number;
+  private baseSpeed: number;
+  private mapDef;
 
   constructor(
     seed: string,
     private meta: MetaLevels = NO_META,
+    opts: NhOptions = {},
   ) {
     this.rng = createRng('nighthunt:' + seed);
-    const bonus = (levels: number, key: keyof typeof META_SETTINGS) =>
-      levels <= 0 ? 0 : ((META_SETTINGS[key].bonuses as readonly number[])[levels - 1] ?? 0);
-    this.player.maxHp = PLAYER_SETTINGS.defaultHP + bonus(meta.health, 'health');
-    this.player.hp = this.player.maxHp;
-    this.player.speed = PLAYER_SETTINGS.speed + bonus(meta.movementSpeed, 'movementSpeed');
-    this.xpMult = 1 + bonus(meta.xpGatherer, 'xpGatherer');
-    this.weapon.damage = PLAYER_SETTINGS.weapon.damage + bonus(meta.overallDamage, 'overallDamage');
-    this.projPierceDamage = 1 + bonus(meta.overallDamage, 'overallDamage');
-    this.projPierces = 1 + bonus(meta.projectilePiercing, 'projectilePiercing');
-    this.weapon.timer = 0;
+    const hero = HEROES[opts.hero ?? 'kael'] ?? HEROES.kael!;
+    this.heroId = hero.id;
+    this.mapDef = MAPS[opts.map ?? 'campo'] ?? MAPS.campo!;
+    this.mapId = this.mapDef.id;
+    const b = (key: SlimMetaKey, lv: number) => metaBonus(key, lv);
+    this.baseHp = Math.round((PLAYER_SETTINGS.defaultHP + b('health', meta.health)) * hero.hp);
+    this.baseSpeed = (PLAYER_SETTINGS.speed + b('movementSpeed', meta.movementSpeed)) * hero.speed;
+    this.player.maxHp = this.baseHp;
+    this.player.hp = this.baseHp;
+    this.player.speed = this.baseSpeed;
+    this.xpMult = (1 + b('xpGatherer', meta.xpGatherer)) * hero.xp * this.mapDef.xp;
+    this.dmgMult = hero.damage;
+    this.heroCd = hero.cooldown;
+    this.heroArmor = hero.armor;
+    this.goldMult = hero.gold * this.mapDef.gold;
+    this.weapon.damage = PLAYER_SETTINGS.weapon.damage + b('overallDamage', meta.overallDamage);
+    this.projDamage = 1 + b('overallDamage', meta.overallDamage);
+    this.projPierces = 1 + b('projectilePiercing', meta.projectilePiercing);
+    this.rerolls = 1 + b('reroll', meta.reroll);
+    this.skips = 1 + b('skip', meta.skip);
+    this.banishes = 1 + b('banish', meta.banish);
     this.spawnTimers = [
       ...INDIVIDUAL_SPAWNERS.map(() => 0),
       ...CIRCULAR_SPAWNERS.map(() => 0),
       ...WAVE_SPAWNERS.map(() => 0),
     ];
     this.launchers.halo.cooldown = PLAYER_SETTINGS.haloLauncher.launcher.cooldown;
-    this.launchers.horizontal.timer = 0;
+    if (hero.start) this.applyUpgrade(hero.start);
   }
 
   // ---- API do cliente ----
   get requiredXp(): number | null {
     return (PLAYER_SETTINGS.requiredXP as readonly number[])[this.level] ?? null;
+  }
+  get cdMult(): number {
+    return Math.max(0.4, this.heroCd * (1 - 0.08 * this.levels.tome));
+  }
+  get armor(): number {
+    return this.heroArmor + this.levels.armor;
   }
   drainEvents(): NhEvent[] {
     const e = this.events;
@@ -223,23 +316,72 @@ export class NhWorld {
   get weaponAngle(): number {
     return swordAngleDeg(this.weapon.t);
   }
+  has(id: UpgradeId): boolean {
+    return this.levels[id] > 0;
+  }
+  private slots(list: readonly UpgradeId[]): Set<string> {
+    return new Set(list.filter((u) => this.levels[u] > 0).map(slotOf));
+  }
+  /** Melhorias que ainda podem ser escolhidas (respeita o máximo, os espaços 6+6 e os itens banidos). */
   availableUpgrades(): UpgradeId[] {
-    const max: Record<UpgradeId, number> = {
-      weaponLength: UPGRADE_LIMITS.maxWeaponLengthUpgrades,
-      weaponDamage: UPGRADE_LIMITS.maxWeaponDamageUpgrades,
-      horizontal: UPGRADE_LIMITS.maxHorizontalProjectileUpgrades,
-      diagonal: UPGRADE_LIMITS.maxDiagonalProjectileUpgrades,
-      halo: UPGRADE_LIMITS.maxHaloProjectileUpgrades,
-      regeneration: UPGRADE_LIMITS.maxRegenerationUpgrades,
-    };
-    return UPGRADE_IDS.filter((u) => this.levels[u] < max[u]);
+    const w = this.slots(WEAPON_IDS);
+    const p = this.slots(PASSIVE_IDS);
+    return UPGRADE_IDS.filter((u) => {
+      if (this.levels[u] >= UPGRADE_MAX[u] || this.banished.has(u)) return false;
+      if (this.levels[u] > 0) return true;
+      const slot = slotOf(u);
+      if (WEAPON_IDS.includes(u)) return w.has(slot) || w.size < MAX_WEAPON_SLOTS;
+      return p.has(slot) || p.size < MAX_PASSIVE_SLOTS;
+    });
+  }
+  availableEvolutions(): EvoId[] {
+    return EVOLUTIONS.filter(
+      (e) =>
+        !this.evolved.has(e.id) &&
+        e.maxed.every((u) => this.levels[u] >= UPGRADE_MAX[u]) &&
+        this.levels[e.passive] > 0,
+    ).map((e) => e.id);
   }
 
   /** O jogador escolheu uma opção da janela de nível ou do baú. */
-  choose(id: UpgradeId): void {
+  choose(id: ChoiceId): void {
     if (!this.pending || !this.pending.options.includes(id)) return;
-    this.applyUpgrade(id);
+    if (id.startsWith('evo')) this.applyEvolution(id as EvoId);
+    else this.applyUpgrade(id as UpgradeId);
     this.pending = this.queue.shift() ?? null;
+  }
+
+  /** Sorteia de novo as opções da janela de nível. */
+  reroll(): boolean {
+    if (!this.pending || this.pending.kind !== 'levelUp' || this.rerolls <= 0) return false;
+    this.rerolls--;
+    this.rerollsUsed++;
+    this.pending.options = this.drawOptions(this.pending.options.length);
+    return true;
+  }
+  /** Fecha a janela de nível sem escolher (rende um pouco de ouro). */
+  skip(): boolean {
+    if (!this.pending || this.pending.kind !== 'levelUp' || this.skips <= 0) return false;
+    this.skips--;
+    this.gold += 5;
+    this.pending = this.queue.shift() ?? null;
+    return true;
+  }
+  /** Tira um item do jogo até o fim da partida. */
+  banish(id: UpgradeId): boolean {
+    if (
+      !this.pending ||
+      this.pending.kind !== 'levelUp' ||
+      this.banishes <= 0 ||
+      !this.pending.options.includes(id)
+    )
+      return false;
+    this.banishes--;
+    this.banishesUsed++;
+    this.banished.add(id);
+    const n = this.pending.options.length;
+    this.pending.options = this.drawOptions(n);
+    return true;
   }
 
   result(won = false): RunResult {
@@ -249,11 +391,16 @@ export class NhWorld {
       gold: this.gold,
       level: this.level,
       upgrades: { ...this.levels },
+      evolutions: [...this.evolved],
+      hero: this.heroId,
+      map: this.mapId,
       bossKills: this.bossKills,
       finalBossKills: this.finalBossKills,
       chests: this.chests,
       magnets: this.magnets,
       damageTaken: this.damageTaken,
+      banishesUsed: this.banishesUsed,
+      rerollsUsed: this.rerollsUsed,
       won,
     };
   }
@@ -270,9 +417,10 @@ export class NhWorld {
     this.tickSpawners(dt);
     this.moveEnemies(dt);
     this.tickLaunchers(dt);
+    this.tickNewWeapons(dt);
     this.tickEnemyLaunchers(dt);
     this.moveItems(dt);
-    this.resolveContacts(dt);
+    this.resolveContacts();
     this.t += dt;
     for (const e of this.enemies) if (e.flash > 0) e.flash -= dt;
     this.enemies = this.enemies.filter((e) => !e.dead);
@@ -285,16 +433,26 @@ export class NhWorld {
     p.moving = len > 0;
     if (!p.moving) return;
     const k = len > 1 ? 1 / len : 1;
-    p.x += input.x * k * dt * p.speed;
-    p.y += input.y * k * dt * p.speed;
+    const sp = p.speed * (1 + 0.08 * this.levels.boots);
+    p.x += input.x * k * dt * sp;
+    p.y += input.y * k * dt * sp;
     if (input.x < 0) p.face = -1;
     else if (input.x > 0) p.face = 1;
+  }
+
+  private strikeDelay(): number {
+    return (
+      PLAYER_SETTINGS.weapon.strikeDelay * this.cdMult * (this.evolved.has('evoSword') ? 0.6 : 1)
+    );
+  }
+  private swordDamage(): number {
+    return this.weapon.damage * this.dmgMult * (this.evolved.has('evoSword') ? 2 : 1);
   }
 
   private tickWeapon(dt: number): void {
     const w = this.weapon;
     w.timer += dt;
-    if (w.timer >= PLAYER_SETTINGS.weapon.strikeDelay) {
+    if (w.timer >= this.strikeDelay()) {
       w.timer = 0;
       w.active = true;
       w.t = 0;
@@ -348,9 +506,10 @@ export class NhWorld {
 
   private hurtPlayer(dmg: number): void {
     if (!this.alive) return;
-    this.player.hp -= dmg;
-    this.damageTaken += dmg;
-    this.events.push({ k: 'playerHit', dmg });
+    const d = Math.max(1, dmg - this.armor);
+    this.player.hp -= d;
+    this.damageTaken += d;
+    this.events.push({ k: 'playerHit', dmg: d });
     if (this.player.hp <= 0) {
       this.alive = false;
       this.events.push({ k: 'playerDeath' });
@@ -369,20 +528,37 @@ export class NhWorld {
     }
   }
 
-  private openModal(kind: 'levelUp' | 'chest'): void {
-    const avail = this.availableUpgrades();
-    if (avail.length === 0) return;
-    let options: UpgradeId[];
-    if (kind === 'levelUp') {
-      const a = avail.slice();
-      for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(this.rng() * (i + 1));
-        [a[i], a[j]] = [a[j]!, a[i]!];
-      }
-      options = a.slice(0, 3);
-    } else {
-      options = [avail[Math.floor(this.rng() * avail.length)]!];
+  private shuffled(list: UpgradeId[]): UpgradeId[] {
+    const a = list.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(this.rng() * (i + 1));
+      [a[i], a[j]] = [a[j]!, a[i]!];
     }
+    return a;
+  }
+
+  /** O Trevo da Lua dá 10% por nível de chance de uma 4ª opção. */
+  private optionCount(): number {
+    return 3 + (this.rng() < 0.1 * this.levels.clover ? 1 : 0);
+  }
+
+  private drawOptions(n: number): ChoiceId[] {
+    return this.shuffled(this.availableUpgrades()).slice(0, n);
+  }
+
+  private openModal(kind: 'levelUp' | 'chest'): void {
+    let options: ChoiceId[];
+    if (kind === 'levelUp') {
+      options = this.drawOptions(this.optionCount());
+    } else {
+      const evo = this.availableEvolutions();
+      if (evo.length) options = [evo[0]!];
+      else {
+        const avail = this.availableUpgrades();
+        options = avail.length ? [avail[Math.floor(this.rng() * avail.length)]!] : [];
+      }
+    }
+    if (options.length === 0) return;
     const p: Pending = { kind, options };
     if (this.pending) this.queue.push(p);
     else this.pending = p;
@@ -415,7 +591,22 @@ export class NhWorld {
         this.regen.amount++;
         this.regen.timer = 0;
         break;
+      case 'heart': {
+        const old = this.player.maxHp;
+        this.player.maxHp = Math.round(this.baseHp * (1 + 0.2 * this.levels.heart));
+        this.player.hp += this.player.maxHp - old;
+        break;
+      }
+      default:
+        break; // axe, orbit, lightning, armor, boots, magnet, clover e tome agem pelo nível
     }
+  }
+
+  private applyEvolution(id: EvoId): void {
+    this.evolved.add(id);
+    this.events.push({ k: 'evolve', id });
+    if (id === 'evoHalo') this.launchers.halo.timer = 0;
+    if (id === 'evoHorizontal') this.launchers.horizontal.waves += 1;
   }
 
   // ---- inimigos ----
@@ -429,9 +620,9 @@ export class NhWorld {
       s,
       x: this.player.x + dx,
       y: this.player.y + dy,
-      hp: s.health,
-      speedX: lo + this.rng() * (s.speed - lo),
-      speedY: lo + this.rng() * (s.speed - lo),
+      hp: Math.max(1, Math.round(s.health * this.mapDef.enemyHp)),
+      speedX: (lo + this.rng() * (s.speed - lo)) * this.mapDef.enemySpeed,
+      speedY: (lo + this.rng() * (s.speed - lo)) * this.mapDef.enemySpeed,
       life: s.lifetime,
       faceX: 1,
       flash: 0,
@@ -458,7 +649,6 @@ export class NhWorld {
       e.dirX = dir.x;
       e.dirY = dir.y;
     }
-    if ((AXE_LAUNCHER.enemyIds as readonly string[]).includes(id)) e.shootTimer = 0;
     this.enemies.push(e);
     return e;
   }
@@ -469,49 +659,41 @@ export class NhWorld {
     let n = 0;
     const active = (start: number, stop: number) =>
       start <= now && now <= (stop === -1 ? Infinity : stop);
+    const due = (i: number, cooldown: number): boolean => {
+      this.spawnTimers[i] = (this.spawnTimers[i] ?? 0) + dt;
+      if ((this.spawnTimers[i] ?? 0) >= cooldown) {
+        this.spawnTimers[i] = 0;
+        return true;
+      }
+      return false;
+    };
     for (const sp of INDIVIDUAL_SPAWNERS) {
       const i = n++;
       const c = sp.common;
-      if (!active(c.startDelay, c.stopDelay)) continue;
-      this.spawnTimers[i] = (this.spawnTimers[i] ?? 0) + dt;
-      if ((this.spawnTimers[i] ?? 0) >= c.cooldown) {
-        this.spawnTimers[i] = 0;
-        const sx = this.rng() < 0.5 ? 1 : -1;
-        const sy = this.rng() < 0.5 ? 1 : -1;
-        this.spawnEnemy((300 + this.rng() * 300) * sx, (300 + this.rng() * 300) * sy, c.enemyId);
-      }
+      if (!active(c.startDelay, c.stopDelay) || !due(i, c.cooldown)) continue;
+      const sx = this.rng() < 0.5 ? 1 : -1;
+      const sy = this.rng() < 0.5 ? 1 : -1;
+      this.spawnEnemy((300 + this.rng() * 300) * sx, (300 + this.rng() * 300) * sy, c.enemyId);
     }
     for (const sp of CIRCULAR_SPAWNERS) {
       const i = n++;
       const c = sp.common;
-      if (!active(c.startDelay, c.stopDelay)) continue;
-      this.spawnTimers[i] = (this.spawnTimers[i] ?? 0) + dt;
-      if ((this.spawnTimers[i] ?? 0) >= c.cooldown) {
-        this.spawnTimers[i] = 0;
-        const angle = (2 * Math.PI) / sp.enemiesToSpawn;
-        for (let k = 0; k < sp.enemiesToSpawn; k++)
-          this.spawnEnemy(r1(Math.sin(angle * k)) * 600, r1(Math.cos(angle * k)) * 600, c.enemyId);
-      }
+      if (!active(c.startDelay, c.stopDelay) || !due(i, c.cooldown)) continue;
+      const angle = (2 * Math.PI) / sp.enemiesToSpawn;
+      for (let k = 0; k < sp.enemiesToSpawn; k++)
+        this.spawnEnemy(r1(Math.sin(angle * k)) * 600, r1(Math.cos(angle * k)) * 600, c.enemyId);
     }
     for (const sp of WAVE_SPAWNERS) {
       const i = n++;
       const c = sp.common;
-      if (!active(c.startDelay, c.stopDelay)) continue;
-      this.spawnTimers[i] = (this.spawnTimers[i] ?? 0) + dt;
-      if ((this.spawnTimers[i] ?? 0) >= c.cooldown) {
-        this.spawnTimers[i] = 0;
-        const bx = (500 + this.rng() * 100) * (this.rng() < 0.5 ? 1 : -1);
-        const by = this.rng() * 500 * (this.rng() < 0.5 ? 1 : -1);
-        const side = Math.ceil(Math.sqrt(sp.enemiesToSpawn));
-        for (let k = 0; k < sp.enemiesToSpawn; k++) {
-          const ox = -20 + this.rng() * 40;
-          const oy = -20 + this.rng() * 40;
-          this.spawnEnemy(
-            bx + ox + 50 * (k % side),
-            by + oy + 50 * Math.floor(k / side),
-            c.enemyId,
-          );
-        }
+      if (!active(c.startDelay, c.stopDelay) || !due(i, c.cooldown)) continue;
+      const bx = (500 + this.rng() * 100) * (this.rng() < 0.5 ? 1 : -1);
+      const by = this.rng() * 500 * (this.rng() < 0.5 ? 1 : -1);
+      const side = Math.ceil(Math.sqrt(sp.enemiesToSpawn));
+      for (let k = 0; k < sp.enemiesToSpawn; k++) {
+        const ox = -20 + this.rng() * 40;
+        const oy = -20 + this.rng() * 40;
+        this.spawnEnemy(bx + ox + 50 * (k % side), by + oy + 50 * Math.floor(k / side), c.enemyId);
       }
     }
   }
@@ -524,7 +706,7 @@ export class NhWorld {
         if (e.dead || e.s.moveType !== mt) continue;
         let mx = 0;
         let my = 0;
-        if (mt === 'Follow') {
+        const chase = () => {
           const dx = p.x - e.x;
           const dy = p.y - e.y;
           const l = Math.hypot(dx, dy);
@@ -532,7 +714,9 @@ export class NhWorld {
             mx = dx / l;
             my = dy / l;
           }
-        } else if (mt === 'Launch') {
+        };
+        if (mt === 'Follow') chase();
+        else if (mt === 'Launch') {
           mx = e.dirX;
           my = e.dirY;
         } else {
@@ -544,15 +728,7 @@ export class NhWorld {
               e.stateLeft = e.follow ? per.followTime : per.waitTime;
             }
           }
-          if (e.follow) {
-            const dx = p.x - e.x;
-            const dy = p.y - e.y;
-            const l = Math.hypot(dx, dy);
-            if (l > 0) {
-              mx = dx / l;
-              my = dy / l;
-            }
-          }
+          if (e.follow) chase();
         }
         e.x += mx * e.speedX * dt;
         e.y += my * e.speedY * dt;
@@ -585,14 +761,15 @@ export class NhWorld {
     for (let i = 0; i < s.xpReward; i++) this.dropItem('xp', ...jitter());
     if (s.goldReward > 0) {
       if (s.goldReward < 1) {
-        if (this.rng() < s.goldReward) this.dropItem('gold', e.x, e.y);
+        if (this.rng() < s.goldReward * this.goldMult) this.dropItem('gold', e.x, e.y);
       } else {
-        for (let i = 0; i < s.goldReward; i++) this.dropItem('gold', ...jitter());
+        for (let i = 0; i < s.goldReward * this.goldMult; i++) this.dropItem('gold', ...jitter());
       }
     }
     if (this.rng() < s.healthPotionRewardChance) this.dropItem('health', ...jitter());
     if (this.rng() < s.magnetRewardChance) this.dropItem('magnet', ...jitter());
-    if (this.rng() < s.chestRewardChance) this.dropItem('chest', ...jitter());
+    if (this.rng() < Math.max(s.chestRewardChance, BOSS_CHEST[s.id] ?? 0))
+      this.dropItem('chest', ...jitter());
   }
 
   private dropItem(type: ItemType, x: number, y: number): void {
@@ -610,21 +787,23 @@ export class NhWorld {
     damage: number,
     pierces: number,
     hostile: boolean,
+    extra: { gy?: number; big?: boolean } = {},
   ): void {
     for (const [dx, dy] of dirs) {
       const l = Math.hypot(dx, dy) || 1;
       this.projectiles.push({
         x,
         y,
-        dx: dx / l,
-        dy: dy / l,
+        vx: (dx / l) * speed,
+        vy: (dy / l) * speed,
+        gy: extra.gy ?? 0,
         kind,
-        speed,
         expire: this.t + life,
         damage,
         pierces,
         angle: Math.atan2(dy, dx),
         hostile,
+        big: extra.big ?? false,
         hit: new Set(),
       });
     }
@@ -634,6 +813,7 @@ export class NhWorld {
     const P = PLAYER_SETTINGS;
     const px = this.player.x;
     const py = this.player.y;
+    const dm = this.dmgMult;
     type WaveCfg = {
       launcher: {
         projectileLifetime: number;
@@ -642,11 +822,17 @@ export class NhWorld {
         cooldown: number;
       };
     };
-    const wave = (key: 'horizontal' | 'diagonal', cfg: WaveCfg, dirs: [number, number][]) => {
+    const wave = (
+      key: 'horizontal' | 'diagonal',
+      cfg: WaveCfg,
+      dirs: [number, number][],
+      cdScale: number,
+      pierceBonus: number,
+    ) => {
       const l = this.launchers[key];
       if (this.levels[key] === 0) return;
       l.timer += dt;
-      if (l.timer >= cfg.launcher.cooldown) {
+      if (l.timer >= cfg.launcher.cooldown * this.cdMult * cdScale) {
         l.timer = 0;
         l.burstLeft = l.waves;
         l.burstTimer = 0;
@@ -663,29 +849,59 @@ export class NhWorld {
             dirs,
             cfg.launcher.projectileSpeed,
             cfg.launcher.projectileLifetime,
-            this.projPierceDamage,
-            this.projPierces,
+            this.projDamage * dm,
+            this.projPierces + pierceBonus,
             false,
           );
           this.events.push({ k: 'fire', kind: key });
         }
       }
     };
-    wave('horizontal', P.horizontalLauncher, [
-      [0, 1],
-      [-0.1, 0.8],
-      [0.1, 0.8],
-    ]);
-    wave('diagonal', P.diagonalLauncher, [
-      [-0.5, -0.5],
-      [0.5, -0.5],
-    ]);
+    const evoH = this.evolved.has('evoHorizontal');
+    wave(
+      'horizontal',
+      P.horizontalLauncher,
+      evoH
+        ? [
+            [0, 1],
+            [-0.1, 0.8],
+            [0.1, 0.8],
+            [-0.28, 0.7],
+            [0.28, 0.7],
+          ]
+        : [
+            [0, 1],
+            [-0.1, 0.8],
+            [0.1, 0.8],
+          ],
+      evoH ? 0.75 : 1,
+      evoH ? 2 : 0,
+    );
+    const evoD = this.evolved.has('evoDiagonal');
+    wave(
+      'diagonal',
+      P.diagonalLauncher,
+      evoD
+        ? [
+            [-0.5, -0.5],
+            [0.5, -0.5],
+            [-0.5, 0.5],
+            [0.5, 0.5],
+          ]
+        : [
+            [-0.5, -0.5],
+            [0.5, -0.5],
+          ],
+      evoD ? 0.7 : 1,
+      evoD ? 2 : 0,
+    );
     const h = this.launchers.halo;
     if (this.levels.halo > 0) {
+      const evo = this.evolved.has('evoHalo');
       h.timer += dt;
-      if (h.timer >= h.cooldown) {
+      if (h.timer >= h.cooldown * this.cdMult * (evo ? 0.5 : 1)) {
         h.timer = 0;
-        const n = P.haloLauncher.projectilesToSpawn;
+        const n = evo ? P.haloLauncher.projectilesToSpawn * 2 : P.haloLauncher.projectilesToSpawn;
         const a = (2 * Math.PI) / n;
         const dirs: [number, number][] = [];
         for (let i = 0; i < n; i++) dirs.push([r1(Math.sin(a * i)), r1(Math.cos(a * i))]);
@@ -695,19 +911,116 @@ export class NhWorld {
           py,
           dirs,
           P.haloLauncher.launcher.projectileSpeed,
-          P.haloLauncher.launcher.projectileLifetime,
-          this.projPierceDamage,
-          this.projPierces,
+          P.haloLauncher.launcher.projectileLifetime * (evo ? 1.6 : 1),
+          this.projDamage * dm * (evo ? 1.5 : 1),
+          this.projPierces + (evo ? 2 : 0),
           false,
         );
         this.events.push({ k: 'fire', kind: 'halo' });
       }
     }
     for (const q of this.projectiles) {
-      q.x += q.dx * q.speed * dt;
-      q.y += q.dy * q.speed * dt;
+      q.vy += q.gy * dt;
+      q.x += q.vx * dt;
+      q.y += q.vy * dt;
     }
     this.projectiles = this.projectiles.filter((q) => q.expire > this.t && q.pierces > 0);
+  }
+
+  // ---- armas novas (Machado giratório, Orbes guardiões, Raio lunar) ----
+  /** Posições dos orbes guardiões (para o desenho e a colisão). */
+  orbs(): { x: number; y: number; r: number }[] {
+    const lv = this.levels.orbit;
+    if (lv <= 0) return [];
+    const evo = this.evolved.has('evoOrbit');
+    const n = 1 + lv + (evo ? 3 : 0);
+    const radius = evo ? 112 : 78 + lv * 3;
+    const out: { x: number; y: number; r: number }[] = [];
+    for (let i = 0; i < n; i++) {
+      const a = this.orbAngle + (i * Math.PI * 2) / n;
+      out.push({
+        x: this.player.x + Math.cos(a) * radius,
+        y: this.player.y + 6 + Math.sin(a) * radius,
+        r: evo ? 24 : 17,
+      });
+    }
+    return out;
+  }
+
+  private tickNewWeapons(dt: number): void {
+    const dm = this.dmgMult;
+    const px = this.player.x;
+    const py = this.player.y;
+    // Machado giratório: sobe em arco e cai, atravessando quem estiver no caminho
+    const ax = this.levels.axe;
+    if (ax > 0) {
+      const l = this.launchers.axe;
+      l.timer += dt;
+      const evo = this.evolved.has('evoAxe');
+      if (l.timer >= 2.8 * this.cdMult) {
+        l.timer = 0;
+        const n = 1 + Math.floor(ax / 2) + (evo ? 3 : 0);
+        for (let i = 0; i < n; i++) {
+          const vx = (this.rng() * 2 - 1) * 120;
+          this.fire(
+            'pAxe',
+            px,
+            py + 10,
+            [[vx, 360 + this.rng() * 60]],
+            Math.hypot(vx, 380),
+            3.4,
+            (4 + ax) * dm * (evo ? 2 : 1),
+            99,
+            false,
+            { gy: -760, big: evo },
+          );
+        }
+        this.events.push({ k: 'fire', kind: 'axe' });
+      }
+    }
+    // Orbes guardiões
+    if (this.levels.orbit > 0) {
+      const evo = this.evolved.has('evoOrbit');
+      this.orbAngle += dt * (2.6 + this.levels.orbit * 0.25);
+      for (const o of this.orbs()) {
+        const shape: Shape = { kind: 'circle', cx: o.x, cy: o.y, r: o.r };
+        for (const e of this.enemies) {
+          if (e.dead || (this.orbHit.get(e.uid) ?? 0) > this.t) continue;
+          if (overlaps(shape, this.enemyShape(e))) {
+            this.orbHit.set(e.uid, this.t + 0.45);
+            this.damageEnemy(e, (2 + this.levels.orbit * 0.7) * dm * (evo ? 2 : 1));
+          }
+        }
+      }
+      if (this.tick % 600 === 0)
+        for (const [k, v] of this.orbHit) if (v < this.t) this.orbHit.delete(k);
+    }
+    // Raio lunar: cai sobre inimigos da tela
+    const lg = this.levels.lightning;
+    if (lg > 0) {
+      const l = this.launchers.lightning;
+      l.timer += dt;
+      const evo = this.evolved.has('evoLightning');
+      if (l.timer >= 2.4 * this.cdMult) {
+        l.timer = 0;
+        const view = this.enemies.filter(
+          (e) => !e.dead && Math.abs(e.x - px) < 255 && Math.abs(e.y - py) < 340,
+        );
+        const n = 1 + Math.floor(lg / 2) + (evo ? 2 : 0);
+        for (let i = 0; i < n && view.length; i++) {
+          const idx = Math.floor(this.rng() * view.length);
+          const t = view.splice(idx, 1)[0]!;
+          const dmg = (8 + lg * 2) * dm * (evo ? 1.5 : 1);
+          this.events.push({ k: 'bolt', x: t.x, y: t.y });
+          if (evo) {
+            for (const o of this.enemies)
+              if (o !== t && !o.dead && Math.hypot(o.x - t.x, o.y - t.y) < 90)
+                this.damageEnemy(o, dmg * 0.6);
+          }
+          this.damageEnemy(t, dmg);
+        }
+      }
+    }
   }
 
   private tickEnemyLaunchers(dt: number): void {
@@ -797,9 +1110,9 @@ export class NhWorld {
     return { kind: 'box', cx: e.x + b.ox, cy: e.y + b.oy, w: b.w, h: b.h };
   }
 
-  private resolveContacts(_dt: number): void {
+  private resolveContacts(): void {
     const ps = this.playerShape();
-    // espada x inimigos (hit no início do contato)
+    // espada x inimigos (acerta no começo do contato)
     if (this.weapon.active) {
       const sw = this.swordShape();
       for (const e of this.enemies) {
@@ -807,28 +1120,25 @@ export class NhWorld {
         const hit = overlaps(sw, this.enemyShape(e));
         if (hit && !this.weapon.inContact.has(e.uid)) {
           this.weapon.inContact.add(e.uid);
-          this.damageEnemy(e, this.weapon.damage);
+          this.damageEnemy(e, this.swordDamage());
         } else if (!hit) this.weapon.inContact.delete(e.uid);
       }
     }
-    // projéteis do jogador x inimigos; projéteis inimigos x jogador
+    // projéteis do jogador x inimigos
     for (const q of this.projectiles) {
-      if (q.pierces <= 0) continue;
-      const qs = PROJECTILE_SHAPE[q.kind](q.x, q.y, q.angle);
-      if (!q.hostile) {
-        for (const e of this.enemies) {
-          if (e.dead || q.pierces <= 0 || q.hit.has(e.uid)) continue;
-          if (overlaps(qs, this.enemyShape(e))) {
-            q.hit.add(e.uid);
-            this.damageEnemy(e, q.damage);
-            q.pierces--;
-          }
+      if (q.pierces <= 0 || q.hostile) continue;
+      const qs = PROJECTILE_SHAPE[q.kind](q.x, q.y, q.angle, q.big);
+      for (const e of this.enemies) {
+        if (e.dead || q.pierces <= 0 || q.hit.has(e.uid)) continue;
+        if (overlaps(qs, this.enemyShape(e))) {
+          q.hit.add(e.uid);
+          this.damageEnemy(e, q.damage);
+          q.pierces--;
         }
       }
     }
-    // jogador x (inimigos, projéteis inimigos, itens)
+    // jogador x inimigos (no começo do contato e a cada 0,5 s) e x projéteis inimigos
     const now = new Set<number>();
-    const begin: Array<() => void> = [];
     const resolveAll = this.collisionTimer >= PLAYER_SETTINGS.collisionDelay;
     if (resolveAll) this.collisionTimer = 0;
     const damageNow: Array<() => void> = [];
@@ -843,37 +1153,34 @@ export class NhWorld {
     this.playerContacts = now;
     for (const q of this.projectiles) {
       if (!q.hostile || q.pierces <= 0) continue;
-      if (overlaps(ps, PROJECTILE_SHAPE[q.kind](q.x, q.y, q.angle))) {
+      if (overlaps(ps, PROJECTILE_SHAPE[q.kind](q.x, q.y, q.angle, false))) {
         q.pierces--;
         damageNow.push(() => this.hurtPlayer(q.damage));
       }
     }
     for (const d of damageNow) d();
-    void begin;
-    // itens: o contato com o jogador coleta na hora; o ímã atrai
+    // itens: tocar no jogador coleta; o ímã (e o passivo Pedra Atrativa) atrai
+    const pull = this.levels.magnet > 0 ? 40 + this.levels.magnet * 38 : 0;
+    const magnetShape: Shape = {
+      kind: 'circle',
+      cx: this.player.x,
+      cy: this.player.y,
+      r: MAGNET_RADIUS,
+    };
+    const passiveShape: Shape = { kind: 'circle', cx: this.player.x, cy: this.player.y, r: pull };
     for (const it of this.items) {
       const sh = this.itemShape(it);
       if (this.alive && overlaps(ps, sh)) {
         it.speed = -1; // marca coletado
         this.pickup(it);
-        if (this.pending) {
-          // janela aberta: o resto do passo continua só para limpar o que já foi coletado
-        }
       } else if (
-        this.magnet.active &&
         !it.attracted &&
-        overlaps({ kind: 'circle', cx: this.player.x, cy: this.player.y, r: MAGNET_RADIUS }, sh)
+        ((this.magnet.active && overlaps(magnetShape, sh)) ||
+          (pull > 0 && overlaps(passiveShape, sh)))
       ) {
         it.attracted = true;
       }
     }
     this.items = this.items.filter((it) => it.speed !== -1);
   }
-}
-
-export function metaCost(key: keyof typeof META_SETTINGS, level: number): number | null {
-  return (META_SETTINGS[key].costs as readonly number[])[level] ?? null;
-}
-export function metaBonus(key: keyof typeof META_SETTINGS, level: number): number {
-  return level <= 0 ? 0 : ((META_SETTINGS[key].bonuses as readonly number[])[level - 1] ?? 0);
 }

@@ -1,4 +1,6 @@
 /** Carrega o atlas de sprites, as animações de quadros e as fontes bitmap do Night Hunt (extraídos do Slash por tools/art/nighthunt). */
+import { extendAtlas } from './extra-art';
+
 const BASE = '/nighthunt';
 
 interface Rect {
@@ -35,7 +37,7 @@ export interface BitmapFont {
 }
 
 export interface Atlas {
-  img: HTMLImageElement;
+  img: HTMLCanvasElement;
   white: HTMLCanvasElement;
   tints: Map<string, HTMLCanvasElement>;
   frames: Record<string, Rect>;
@@ -110,9 +112,10 @@ export async function loadAtlas(): Promise<Atlas> {
     loadFont('square'),
     loadFont('bonk'),
   ]);
+  const big = extendAtlas(img, meta.frames, meta.bgs);
   return {
-    img,
-    white: silhouette(img, img.width, img.height, '#ffffff'),
+    img: big,
+    white: silhouette(big, big.width, big.height, '#ffffff'),
     tints: new Map(),
     frames: meta.frames,
     anims: meta.anims,

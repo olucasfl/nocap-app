@@ -6,6 +6,8 @@ Leia este arquivo primeiro. Ele diz onde o projeto parou e como voltar a trabalh
 
 Tudo está em `main` e publicado (API no Render, web na Vercel, banco no Supabase). O Lucas escreve em português, muitas vezes em caixa alta; responda em português e trabalhe direto na `main` (commit só quando ele pedir; mensagem em inglês, Conventional Commits, com `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`).
 
+**Night Hunt (15/11/2026, spec 083):** jogo de sobrevivência estilo Vampire Survivors sobre o Slash The Hordes, tudo em canvas (rota `/nighthunt`). Motor em `packages/games/src/nighthunt` (`NhWorld`, determinístico), telas em `apps/web/src/games/nighthunt`, arte e áudio do Slash extraídos por `tools/art/nighthunt/extract.py` para `apps/web/public/nighthunt`. Tem 5 heróis, 3 mapas, 15 melhorias, 7 evoluções, reroll/pular/banir, 51 conquistas, save em `user_prefs` (`/me/prefs/nighthunt`, sem migração), robô e simulador (`pnpm --filter @nocap/games sim`) e testes de tela (`e2e/nighthunt.spec.ts`; no Linux use `PLAYWRIGHT_CHROMIUM_PATH`). **Licença da arte e do som do Slash NÃO confirmada** (`docs/ASSETS-NIGHTHUNT.md`): não publicar antes. Falta ranking/Daily no servidor.
+
 **Aperta! removido (09/11/2026, spec 076):** todo o código, as telas, os testes e as specs dele saíram; a tabela `aperta_saves` só some do banco quando se aplicar a migration `0011_remove_aperta.sql` (`pnpm db:migrate`), que é destrutiva e espera o "sim" do Lucas.
 
 **Pronto e no ar** (detalhes em `specs/010-daily-rankings-profile.md`, que é atualizada a cada mudança):

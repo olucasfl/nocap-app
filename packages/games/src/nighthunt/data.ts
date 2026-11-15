@@ -79,28 +79,233 @@ export const ITEM_SHAPES: Record<ItemType, NhItemDef> = {
 export const MAGNET_RADIUS = 260;
 export const ITEM_ATTRACT_ACCEL = 100;
 
-export type ProjectileKind = 'horizontal' | 'diagonal' | 'halo' | 'axe' | 'orb';
+export type ProjectileKind = 'horizontal' | 'diagonal' | 'halo' | 'axe' | 'orb' | 'pAxe';
 export const PROJECTILE_SHAPE: Record<
   ProjectileKind,
-  (x: number, y: number, rot: number) => Shape
+  (x: number, y: number, rot: number, big?: boolean) => Shape
 > = {
   horizontal: (x, y) => ({ kind: 'circle', cx: x, cy: y, r: 26 }),
   diagonal: (x, y) => ({ kind: 'circle', cx: x, cy: y, r: 26 }),
   halo: (x, y, rot) => ({ kind: 'box', cx: x, cy: y, w: 16, h: 8, rot }),
   axe: (x, y) => ({ kind: 'box', cx: x, cy: y, w: 25.2, h: 25.2 }),
   orb: (x, y) => ({ kind: 'box', cx: x, cy: y, w: 16, h: 16 }),
+  pAxe: (x, y, _rot, big) => ({ kind: 'circle', cx: x, cy: y, r: big ? 36 : 24 }),
 };
 
 export const VIEW_WIDTH = 510;
 export const VIEW_HEIGHT = 680;
 
 export type UpgradeId =
-  'weaponLength' | 'weaponDamage' | 'horizontal' | 'diagonal' | 'halo' | 'regeneration';
+  | 'weaponLength'
+  | 'weaponDamage'
+  | 'horizontal'
+  | 'diagonal'
+  | 'halo'
+  | 'regeneration'
+  | 'axe'
+  | 'orbit'
+  | 'lightning'
+  | 'armor'
+  | 'boots'
+  | 'magnet'
+  | 'heart'
+  | 'clover'
+  | 'tome';
 export const UPGRADE_IDS: readonly UpgradeId[] = [
   'weaponLength',
   'weaponDamage',
   'horizontal',
   'diagonal',
   'halo',
+  'axe',
+  'orbit',
+  'lightning',
   'regeneration',
+  'armor',
+  'boots',
+  'magnet',
+  'heart',
+  'clover',
+  'tome',
 ];
+/** Armas (a espada conta como uma só: Lâmina Longa e Lâmina Afiada) e passivos, como nos slots do Vampire Survivors. */
+export const WEAPON_IDS: readonly UpgradeId[] = [
+  'weaponLength',
+  'weaponDamage',
+  'horizontal',
+  'diagonal',
+  'halo',
+  'axe',
+  'orbit',
+  'lightning',
+];
+export const PASSIVE_IDS: readonly UpgradeId[] = [
+  'regeneration',
+  'armor',
+  'boots',
+  'magnet',
+  'heart',
+  'clover',
+  'tome',
+];
+export const MAX_WEAPON_SLOTS = 6;
+export const MAX_PASSIVE_SLOTS = 6;
+export const UPGRADE_MAX: Record<UpgradeId, number> = {
+  weaponLength: 5,
+  weaponDamage: 10,
+  horizontal: 6,
+  diagonal: 6,
+  halo: 6,
+  regeneration: 6,
+  axe: 6,
+  orbit: 6,
+  lightning: 6,
+  armor: 5,
+  boots: 5,
+  magnet: 5,
+  heart: 5,
+  clover: 5,
+  tome: 5,
+};
+/** Identificador do "espaço" que o item ocupa (a espada é um espaço só). */
+export const slotOf = (id: UpgradeId): string =>
+  id === 'weaponLength' || id === 'weaponDamage' ? 'sword' : id;
+
+export type EvoId =
+  'evoHorizontal' | 'evoDiagonal' | 'evoHalo' | 'evoAxe' | 'evoOrbit' | 'evoLightning' | 'evoSword';
+export type ChoiceId = UpgradeId | EvoId;
+export interface Evolution {
+  id: EvoId;
+  /** Itens que precisam estar no nível máximo. */
+  maxed: UpgradeId[];
+  /** Passivo exigido (qualquer nível). */
+  passive: UpgradeId;
+}
+/** Arma no máximo + passivo certo + abrir um baú = evolução (regra do Vampire Survivors). */
+export const EVOLUTIONS: readonly Evolution[] = [
+  { id: 'evoHorizontal', maxed: ['horizontal'], passive: 'boots' },
+  { id: 'evoDiagonal', maxed: ['diagonal'], passive: 'tome' },
+  { id: 'evoHalo', maxed: ['halo'], passive: 'heart' },
+  { id: 'evoAxe', maxed: ['axe'], passive: 'armor' },
+  { id: 'evoOrbit', maxed: ['orbit'], passive: 'magnet' },
+  { id: 'evoLightning', maxed: ['lightning'], passive: 'clover' },
+  { id: 'evoSword', maxed: ['weaponLength'], passive: 'regeneration' },
+];
+
+export interface HeroDef {
+  id: string;
+  hp: number;
+  speed: number;
+  damage: number;
+  cooldown: number;
+  armor: number;
+  gold: number;
+  xp: number;
+  /** Arma inicial além da espada. */
+  start?: UpgradeId;
+  /** Giro de matiz (graus) aplicado aos sprites do guerreiro para diferenciar os heróis. */
+  hue: number;
+  /** Preço em ouro para liberar. */
+  price: number;
+}
+export const HEROES: Record<string, HeroDef> = {
+  kael: {
+    id: 'kael',
+    hp: 1,
+    speed: 1,
+    damage: 1,
+    cooldown: 1,
+    armor: 0,
+    gold: 1,
+    xp: 1.25,
+    hue: 0,
+    price: 0,
+  },
+  mara: {
+    id: 'mara',
+    hp: 1.1,
+    speed: 1.15,
+    damage: 1,
+    cooldown: 1,
+    armor: 0,
+    gold: 1,
+    xp: 1,
+    start: 'horizontal',
+    hue: 300,
+    price: 150,
+  },
+  brann: {
+    id: 'brann',
+    hp: 1.25,
+    speed: 0.92,
+    damage: 1,
+    cooldown: 1,
+    armor: 0,
+    gold: 1,
+    xp: 1,
+    start: 'orbit',
+    hue: 110,
+    price: 300,
+  },
+  ysolde: {
+    id: 'ysolde',
+    hp: 0.8,
+    speed: 1,
+    damage: 1,
+    cooldown: 0.88,
+    armor: 0,
+    gold: 1,
+    xp: 1.1,
+    start: 'lightning',
+    hue: 250,
+    price: 500,
+  },
+  rurik: {
+    id: 'rurik',
+    hp: 1.1,
+    speed: 1,
+    damage: 1.18,
+    cooldown: 1,
+    armor: 0,
+    gold: 1.15,
+    xp: 1,
+    start: 'axe',
+    hue: 40,
+    price: 800,
+  },
+};
+export const HERO_IDS = Object.keys(HEROES);
+
+export interface MapDef {
+  id: string;
+  enemyHp: number;
+  enemySpeed: number;
+  gold: number;
+  xp: number;
+  /** Cor do chão (r, g, b). */
+  ground: [number, number, number];
+  /** Matiz e saturação aplicados à decoração do fundo. */
+  hue: number;
+}
+export const MAPS: Record<string, MapDef> = {
+  campo: { id: 'campo', enemyHp: 1, enemySpeed: 1, gold: 1, xp: 1, ground: [75, 109, 59], hue: 0 },
+  deserto: {
+    id: 'deserto',
+    enemyHp: 1,
+    enemySpeed: 1.1,
+    gold: 1.3,
+    xp: 1,
+    ground: [156, 126, 76],
+    hue: 70,
+  },
+  gelo: {
+    id: 'gelo',
+    enemyHp: 1.25,
+    enemySpeed: 1,
+    gold: 1,
+    xp: 1.2,
+    ground: [150, 178, 196],
+    hue: 190,
+  },
+};
+export const MAP_IDS = Object.keys(MAPS);

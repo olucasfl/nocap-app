@@ -76,8 +76,12 @@ export const gpSchema = z
     garage: z
       .record(z.string().max(20), z.unknown())
       .refine((g) => JSON.stringify(g).length <= 3000),
-    binds: z.record(z.string().max(20), z.array(z.string().max(30)).length(2)).refine((b) => Object.keys(b).length <= 30),
-    best: z.record(z.string().max(30), z.number().int().min(1).max(3_600_000)).refine((b) => Object.keys(b).length <= 10),
+    binds: z
+      .record(z.string().max(20), z.array(z.string().max(30)).length(2))
+      .refine((b) => Object.keys(b).length <= 30),
+    best: z
+      .record(z.string().max(30), z.number().int().min(1).max(3_600_000))
+      .refine((b) => Object.keys(b).length <= 10),
     shake: z.boolean(),
     physics: z.enum(['arcade', 'real']),
     vehicle: z.enum(['kart', 'f1']),
@@ -93,17 +97,94 @@ export const golfSchema = z
       .object({
         color: z.number().int().min(0).max(0xffffff),
         color2: z.number().int().min(0).max(0xffffff).optional(),
-        finish: z.enum(['liso', 'listras', 'pontos', 'metade', 'estrela', 'xadrez', 'espiral', 'zigue', 'degrade', 'galaxia', 'camuflagem', 'tenis']),
-        trail: z.enum(['nenhum', 'faiscas', 'fogo', 'neve', 'arcoiris', 'estrelas', 'bolhas', 'raio', 'cometa']),
+        finish: z.enum([
+          'liso',
+          'listras',
+          'pontos',
+          'metade',
+          'estrela',
+          'xadrez',
+          'espiral',
+          'zigue',
+          'degrade',
+          'galaxia',
+          'camuflagem',
+          'tenis',
+        ]),
+        trail: z.enum([
+          'nenhum',
+          'faiscas',
+          'fogo',
+          'neve',
+          'arcoiris',
+          'estrelas',
+          'bolhas',
+          'raio',
+          'cometa',
+        ]),
       })
       .strict(),
-    best: z.record(z.string().max(4), z.number().int().min(1).max(18)).refine((b) => Object.keys(b).length <= 60),
+    best: z
+      .record(z.string().max(4), z.number().int().min(1).max(18))
+      .refine((b) => Object.keys(b).length <= 60),
   })
   .partial()
   .strict();
 export type GolfSaved = z.infer<typeof golfSchema>;
 
-type StoredPrefs = PrefsInput & { blocksRun?: BlocksRun; gp?: GpSaved; golf?: GolfSaved };
+/**
+ * O que o Night Hunt guarda na conta (spec 083): ouro, melhorias permanentes, heróis comprados, conquistas, recordes e opções.
+ * Sem migration: vive em `user_prefs`. O aparelho manda o save inteiro com um contador `rev` (sobe a cada gravação);
+ * o servidor só aceita se o `rev` não for mais velho que o da conta, para um aparelho parado não desfazer o progresso.
+ */
+export const nhSchema = z
+  .object({
+    v: z.literal(1),
+    rev: z.number().int().min(0).max(1_000_000_000),
+    gold: z.number().int().min(0).max(100_000_000),
+    highscore: z.number().min(0).max(36_000),
+    meta: z
+      .object({
+        health: z.number().int().min(0).max(3),
+        overallDamage: z.number().int().min(0).max(3),
+        projectilePiercing: z.number().int().min(0).max(3),
+        movementSpeed: z.number().int().min(0).max(3),
+        xpGatherer: z.number().int().min(0).max(3),
+        goldGatherer: z.number().int().min(0).max(3),
+        reroll: z.number().int().min(0).max(3),
+        skip: z.number().int().min(0).max(3),
+        banish: z.number().int().min(0).max(3),
+      })
+      .partial()
+      .strict(),
+    stats: z
+      .record(z.string().max(30), z.unknown())
+      .refine((o) => JSON.stringify(o).length <= 6000),
+    achievements: z
+      .record(z.string().max(30), z.number().min(0))
+      .refine((o) => Object.keys(o).length <= 150),
+    seen: z.array(z.string().max(20)).max(40),
+    heroes: z.array(z.string().max(12)).max(12),
+    pick: z.object({ hero: z.string().max(12), map: z.string().max(12) }).strict(),
+    music: z.boolean(),
+    sound: z.boolean(),
+    damageNumbers: z.boolean(),
+    flashes: z.boolean(),
+  })
+  .strict();
+export type NhSaved = z.infer<typeof nhSchema>;
+
+/** Aceita o save novo, a não ser que a conta já tenha um mais recente (o `rev` maior vence). */
+export function mergeNh(old: NhSaved | undefined, next: NhSaved): NhSaved {
+  return old && old.rev > next.rev ? old : next;
+}
+
+type StoredPrefs = PrefsInput & {
+  blocksRun?: BlocksRun;
+  gp?: GpSaved;
+  golf?: GolfSaved;
+  nh?: NhSaved;
+};
 
 /** Troca (ou apaga, com `null`) a partida guardada sem tocar nas preferências. */
 export function withBlocksRun(data: StoredPrefs | undefined, run: BlocksRun | null): StoredPrefs {
@@ -118,6 +199,7 @@ export function keepBlocksRun(existing: StoredPrefs | undefined, next: PrefsInpu
   if (existing?.blocksRun) out.blocksRun = existing.blocksRun;
   if (existing?.gp) out.gp = existing.gp;
   if (existing?.golf) out.golf = existing.golf;
+  if (existing?.nh) out.nh = existing.nh;
   return out;
 }
 
@@ -126,7 +208,8 @@ export function mergeGp(old: GpSaved | undefined, next: GpSaved): GpSaved {
   const merged: GpSaved = { ...(old ?? {}), ...next };
   if (old?.best || next.best) {
     const best: Record<string, number> = { ...(old?.best ?? {}) };
-    for (const [k, v] of Object.entries(next.best ?? {})) best[k] = best[k] === undefined ? v : Math.min(best[k]!, v);
+    for (const [k, v] of Object.entries(next.best ?? {}))
+      best[k] = best[k] === undefined ? v : Math.min(best[k]!, v);
     merged.best = best;
   }
   return merged;
@@ -137,7 +220,8 @@ export function mergeGolf(old: GolfSaved | undefined, next: GolfSaved): GolfSave
   const merged: GolfSaved = { ...(old ?? {}), ...next };
   if (old?.best || next.best) {
     const best: Record<string, number> = { ...(old?.best ?? {}) };
-    for (const [k, v] of Object.entries(next.best ?? {})) best[k] = best[k] === undefined ? v : Math.min(best[k]!, v);
+    for (const [k, v] of Object.entries(next.best ?? {}))
+      best[k] = best[k] === undefined ? v : Math.min(best[k]!, v);
     merged.best = best;
   }
   return merged;
@@ -223,7 +307,10 @@ export class PrefsController {
   @Put('golf')
   @HttpCode(200)
   @RateLimit({ limit: 60, windowMs: 60_000 })
-  async saveGolf(@Req() req: AuthedRequest, @Body(new ZodValidationPipe(golfSchema)) body: GolfSaved) {
+  async saveGolf(
+    @Req() req: AuthedRequest,
+    @Body(new ZodValidationPipe(golfSchema)) body: GolfSaved,
+  ) {
     const [row] = await this.db
       .select({ data: userPrefs.data })
       .from(userPrefs)
@@ -235,6 +322,33 @@ export class PrefsController {
       .values({ userId: req.user.id, data })
       .onConflictDoUpdate({ target: userPrefs.userId, set: { data, updatedAt: new Date() } });
     return { golf: data.golf };
+  }
+
+  @Get('nighthunt')
+  @RateLimit({ limit: 60, windowMs: 60_000 })
+  async loadNh(@Req() req: AuthedRequest): Promise<{ nighthunt: NhSaved | null }> {
+    const [row] = await this.db
+      .select({ data: userPrefs.data })
+      .from(userPrefs)
+      .where(eq(userPrefs.userId, req.user.id));
+    return { nighthunt: (row?.data as StoredPrefs | undefined)?.nh ?? null };
+  }
+
+  @Put('nighthunt')
+  @HttpCode(200)
+  @RateLimit({ limit: 60, windowMs: 60_000 })
+  async saveNh(@Req() req: AuthedRequest, @Body(new ZodValidationPipe(nhSchema)) body: NhSaved) {
+    const [row] = await this.db
+      .select({ data: userPrefs.data })
+      .from(userPrefs)
+      .where(eq(userPrefs.userId, req.user.id));
+    const old = row?.data as StoredPrefs | undefined;
+    const data: StoredPrefs = { ...(old ?? {}), nh: mergeNh(old?.nh, body) };
+    await this.db
+      .insert(userPrefs)
+      .values({ userId: req.user.id, data })
+      .onConflictDoUpdate({ target: userPrefs.userId, set: { data, updatedAt: new Date() } });
+    return { nighthunt: data.nh };
   }
 
   @Get('blocks-run')

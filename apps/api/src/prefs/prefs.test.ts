@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { blocksRunSchema, golfSchema, gpSchema, keepBlocksRun, mergeGolf, mergeGp, prefsSchema, withBlocksRun } from './prefs.controller';
+import {
+  blocksRunSchema,
+  golfSchema,
+  gpSchema,
+  keepBlocksRun,
+  mergeGolf,
+  mergeGp,
+  mergeNh,
+  nhSchema,
+  prefsSchema,
+  withBlocksRun,
+} from './prefs.controller';
 
 describe('prefsSchema', () => {
   it('aceita opções válidas e parciais', () => {
@@ -67,7 +78,10 @@ describe('Fox GP na conta (14/11/2026)', () => {
   });
 
   it('a melhor volta nunca piora ao mesclar, e salvar preferências não apaga o Fox GP', () => {
-    const merged = mergeGp({ best: { marina: 70000, interlagos: 90000 } }, { best: { marina: 72000, interlagos: 88000 } });
+    const merged = mergeGp(
+      { best: { marina: 70000, interlagos: 90000 } },
+      { best: { marina: 72000, interlagos: 88000 } },
+    );
     expect(merged.best).toEqual({ marina: 70000, interlagos: 88000 });
     expect(keepBlocksRun({ gp: merged }, { mute: true }).gp).toEqual(merged);
   });
@@ -75,12 +89,50 @@ describe('Fox GP na conta (14/11/2026)', () => {
   it('Mini Golf: aceita bola e melhores marcas, recusa lixo, a menor marca nunca piora e outras preferências não apagam', () => {
     const ok = { ball: { color: 0x2f5bff, finish: 'estrela', trail: 'fogo' }, best: { '3': 2 } };
     expect(golfSchema.safeParse(ok).success).toBe(true);
-    expect(golfSchema.safeParse({ ball: { ...ok.ball, finish: 'inexistente' } }).success).toBe(false);
+    expect(golfSchema.safeParse({ ball: { ...ok.ball, finish: 'inexistente' } }).success).toBe(
+      false,
+    );
     expect(golfSchema.safeParse({ best: { '3': 0 } }).success).toBe(false);
     expect(golfSchema.safeParse({ best: { '3': 19 } }).success).toBe(false);
     expect(golfSchema.safeParse({ ...ok, extra: 1 }).success).toBe(false);
     const merged = mergeGolf({ best: { '3': 2, '4': 5 } }, { best: { '3': 4, '4': 3 } });
     expect(merged.best).toEqual({ '3': 2, '4': 3 });
     expect(keepBlocksRun({ golf: merged }, { mute: true }).golf).toEqual(merged);
+  });
+});
+
+describe('Night Hunt na conta (spec 083)', () => {
+  const ok = {
+    v: 1 as const,
+    rev: 5,
+    gold: 120,
+    highscore: 301.5,
+    meta: { health: 2, reroll: 1 },
+    stats: { runs: 3, kills: 200, upgradeBest: { halo: 6 } },
+    achievements: { 'first-blood': 1731700000000 },
+    seen: ['halo', 'axe'],
+    heroes: ['kael', 'mara'],
+    pick: { hero: 'mara', map: 'campo' },
+    music: true,
+    sound: true,
+    damageNumbers: true,
+    flashes: true,
+  };
+  it('valida formato e limites', () => {
+    expect(nhSchema.safeParse(ok).success).toBe(true);
+    expect(nhSchema.safeParse({ ...ok, gold: -1 }).success).toBe(false);
+    expect(nhSchema.safeParse({ ...ok, gold: 1e12 }).success).toBe(false);
+    expect(nhSchema.safeParse({ ...ok, meta: { health: 9 } }).success).toBe(false);
+    expect(nhSchema.safeParse({ ...ok, extra: 1 }).success).toBe(false);
+    expect(nhSchema.safeParse({ ...ok, heroes: Array(30).fill('x') }).success).toBe(false);
+  });
+  it('um aparelho desatualizado não desfaz o progresso da conta', () => {
+    const newer = { ...ok, rev: 9, gold: 500 };
+    expect(mergeNh(newer, ok)).toBe(newer);
+    expect(mergeNh(ok, newer)).toBe(newer);
+    expect(mergeNh(undefined, ok)).toBe(ok);
+  });
+  it('gravar as preferências não apaga o save do Night Hunt', () => {
+    expect(keepBlocksRun({ nh: ok }, { mute: true }).nh).toEqual(ok);
   });
 });

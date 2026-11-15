@@ -1,3 +1,4 @@
+import type React from 'react';
 import { FoxBody } from './HubArt';
 import './hub-art.css';
 
@@ -9,7 +10,12 @@ import './hub-art.css';
  */
 const INK = '#111111';
 const PAPER = '#f4f4ef';
-const stroke = { stroke: INK, strokeWidth: 3.5, strokeLinejoin: 'round' as const, strokeLinecap: 'round' as const };
+const stroke = {
+  stroke: INK,
+  strokeWidth: 3.5,
+  strokeLinejoin: 'round' as const,
+  strokeLinecap: 'round' as const,
+};
 const thin = { ...stroke, strokeWidth: 2.5 };
 const hard = { fill: INK };
 
@@ -37,8 +43,18 @@ export function CounterFoxArt() {
       <g className="ha-scope">
         <circle cx="100" cy="76" r="50" fill="none" stroke={INK} strokeWidth="11" />
         <circle cx="100" cy="76" r="50" fill="none" stroke="#ff7d26" strokeWidth="6" />
-        <path d="M100 18v22M100 112v22M42 76h22M136 76h22" stroke={INK} strokeWidth="9" strokeLinecap="round" />
-        <path d="M100 18v22M100 112v22M42 76h22M136 76h22" stroke="#ff7d26" strokeWidth="4.5" strokeLinecap="round" />
+        <path
+          d="M100 18v22M100 112v22M42 76h22M136 76h22"
+          stroke={INK}
+          strokeWidth="9"
+          strokeLinecap="round"
+        />
+        <path
+          d="M100 18v22M100 112v22M42 76h22M136 76h22"
+          stroke="#ff7d26"
+          strokeWidth="4.5"
+          strokeLinecap="round"
+        />
       </g>
       <g className="ha-bob">
         <Fox x={100} y={84} s={1.12} />
@@ -61,10 +77,21 @@ export function BolaArt() {
       <g transform="translate(118 20)">
         <path d="M0 0h58v52H0z" fill="rgba(255,255,255,.18)" />
         <path d="M0 52V0h58v52" fill="none" {...stroke} stroke={PAPER} />
-        <path d="M0 13h58M0 26h58M0 39h58M14.5 0v52M29 0v52M43.5 0v52" stroke={PAPER} strokeWidth="1.4" opacity=".6" />
+        <path
+          d="M0 13h58M0 26h58M0 39h58M14.5 0v52M29 0v52M43.5 0v52"
+          stroke={PAPER}
+          strokeWidth="1.4"
+          opacity=".6"
+        />
       </g>
       <ellipse cx="100" cy="134" rx="84" ry="11" fill="#1c8f5e" {...stroke} />
-      <path d="M30 134h28M142 134h28" stroke={PAPER} strokeWidth="3" strokeLinecap="round" opacity=".7" />
+      <path
+        d="M30 134h28M142 134h28"
+        stroke={PAPER}
+        strokeWidth="3"
+        strokeLinecap="round"
+        opacity=".7"
+      />
       <g className="ha-lines">
         <path d="M60 90h20M54 102h26M64 114h16" {...stroke} stroke={PAPER} strokeWidth="3" />
       </g>
@@ -84,7 +111,14 @@ export function BolaArt() {
               <path d={patch} transform="translate(-30 -10) scale(.8) rotate(72)" />
             </g>
           </g>
-          <path d="M-22 -26a36 36 0 0 1 30 -10" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round" opacity=".8" />
+          <path
+            d="M-22 -26a36 36 0 0 1 30 -10"
+            fill="none"
+            stroke="#fff"
+            strokeWidth="4"
+            strokeLinecap="round"
+            opacity=".8"
+          />
         </g>
       </g>
     </svg>
@@ -98,7 +132,11 @@ export function FoxGpArt() {
       <circle r={r} fill="#1b1b1f" {...stroke} />
       <g className="ha-spin fast">
         <circle r={r * 0.5} fill="#ffd23a" {...thin} />
-        <path d={`M0 ${-r * 0.5}V${r * 0.5}M${-r * 0.5} 0H${r * 0.5}`} stroke={INK} strokeWidth="2.6" />
+        <path
+          d={`M0 ${-r * 0.5}V${r * 0.5}M${-r * 0.5} 0H${r * 0.5}`}
+          stroke={INK}
+          strokeWidth="2.6"
+        />
       </g>
     </g>
   );
@@ -126,7 +164,14 @@ export function FoxGpArt() {
         {wheel(66, 17)}
         {wheel(146, 15)}
       </g>
-      <path d="M0 140h200" stroke={PAPER} strokeWidth="3" strokeDasharray="14 9" strokeLinecap="round" className="ha-road" />
+      <path
+        d="M0 140h200"
+        stroke={PAPER}
+        strokeWidth="3"
+        strokeDasharray="14 9"
+        strokeLinecap="round"
+        className="ha-road"
+      />
     </svg>
   );
 }
@@ -144,9 +189,21 @@ export function AtravessaArt() {
         <rect x="22" y="22" width="156" height="106" rx="24" {...hard} transform="translate(5 6)" />
         <g clipPath="url(#atr-clip)">
           <rect x="20" y="20" width="160" height="38" fill="#7ed957" />
-          <path d="M34 46l5-8 5 8M120 44l4-7 4 7" fill="none" stroke="#3fa535" strokeWidth="3" strokeLinecap="round" />
+          <path
+            d="M34 46l5-8 5 8M120 44l4-7 4 7"
+            fill="none"
+            stroke="#3fa535"
+            strokeWidth="3"
+            strokeLinecap="round"
+          />
           <rect x="20" y="58" width="160" height="34" fill="#3d3d44" />
-          <path d="M20 75h160" stroke={PAPER} strokeWidth="3" strokeDasharray="12 9" className="ha-road" />
+          <path
+            d="M20 75h160"
+            stroke={PAPER}
+            strokeWidth="3"
+            strokeDasharray="12 9"
+            className="ha-road"
+          />
           <rect x="20" y="92" width="160" height="38" fill="#4aa8ff" />
           <g className="ha-waves" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round">
             <path d="M34 106q5-5 10 0t10 0M126 118q5-5 10 0t10 0M70 112q5-5 10 0t10 0" />
@@ -179,13 +236,23 @@ export function PingArt() {
       <g>
         <path d="M96 106V84M168 106V84" stroke={INK} strokeWidth="6" strokeLinecap="round" />
         <path d="M96 106h72V87H96z" fill="rgba(255,255,255,.55)" {...stroke} />
-        <path d="M96 93h72M96 100h72M114 87v19M132 87v19M150 87v19" stroke="#9db4ff" strokeWidth="1.3" />
+        <path
+          d="M96 93h72M96 100h72M114 87v19M132 87v19M150 87v19"
+          stroke="#9db4ff"
+          strokeWidth="1.3"
+        />
       </g>
       <Fox x={150} y={94} s={0.9} />
       <g className="ha-bounce">
         <ellipse cx="62" cy="128" rx="9" ry="2.6" fill="rgba(0,0,0,.28)" className="ha-bshadow" />
         <circle cx="62" cy="42" r="11" fill="#fff" {...stroke} />
-        <path d="M55 38q7-5 14 0" fill="none" stroke="#ff7d26" strokeWidth="3" strokeLinecap="round" />
+        <path
+          d="M55 38q7-5 14 0"
+          fill="none"
+          stroke="#ff7d26"
+          strokeWidth="3"
+          strokeLinecap="round"
+        />
       </g>
       <g className="ha-swing">
         <g transform="translate(32 96) rotate(-24)">
@@ -193,7 +260,14 @@ export function PingArt() {
           <circle r="28" {...hard} transform="translate(4 4)" />
           <circle r="28" fill="#ff4a4a" {...stroke} />
           <circle r="19" fill="#ff6a6a" {...thin} />
-          <path d="M-12 -10q8-9 18-5" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" opacity=".8" />
+          <path
+            d="M-12 -10q8-9 18-5"
+            fill="none"
+            stroke="#fff"
+            strokeWidth="3.5"
+            strokeLinecap="round"
+            opacity=".8"
+          />
         </g>
       </g>
     </svg>
@@ -202,10 +276,11 @@ export function PingArt() {
 
 /** Desmorona!: a raposa num ladrilho hexagonal, os vizinhos se soltando e a lava embaixo. */
 export function DesmoronaArt() {
-  const hexPts = (r: number) => Array.from({ length: 6 }, (_, i) => {
-    const a = (Math.PI / 3) * i - Math.PI / 2;
-    return `${(Math.cos(a) * r).toFixed(1)},${(Math.sin(a) * r).toFixed(1)}`;
-  }).join(' ');
+  const hexPts = (r: number) =>
+    Array.from({ length: 6 }, (_, i) => {
+      const a = (Math.PI / 3) * i - Math.PI / 2;
+      return `${(Math.cos(a) * r).toFixed(1)},${(Math.sin(a) * r).toFixed(1)}`;
+    }).join(' ');
   const tile = (x: number, y: number, cls: string, fill = '#9b6bff', top = '#b891ff') => (
     <g transform={`translate(${x} ${y})`}>
       <g className={cls}>
@@ -217,10 +292,19 @@ export function DesmoronaArt() {
   );
   return (
     <svg className="ha ha-dsm" viewBox="0 0 200 150" aria-hidden="true">
-      <path d="M-4 138q14-9 28 0t28 0 28 0 28 0 28 0 28 0 28 0V154H-4Z" fill="#ffd23a" {...stroke} className="ha-lava" />
+      <path
+        d="M-4 138q14-9 28 0t28 0 28 0 28 0 28 0 28 0 28 0V154H-4Z"
+        fill="#ffd23a"
+        {...stroke}
+        className="ha-lava"
+      />
       <path d="M-4 146q14-7 28 0t28 0 28 0 28 0 28 0 28 0 28 0V154H-4Z" fill="#ff5a2a" />
-      <g className="ha-ember a"><circle cx="40" cy="126" r="4" fill="#ffd23a" {...thin} /></g>
-      <g className="ha-ember b"><circle cx="150" cy="122" r="3.4" fill="#ffd23a" {...thin} /></g>
+      <g className="ha-ember a">
+        <circle cx="40" cy="126" r="4" fill="#ffd23a" {...thin} />
+      </g>
+      <g className="ha-ember b">
+        <circle cx="150" cy="122" r="3.4" fill="#ffd23a" {...thin} />
+      </g>
       {tile(60, 106, 'ha-fall a', '#8a55f0', '#a77aff')}
       {tile(140, 104, 'ha-fall b', '#8a55f0', '#a77aff')}
       {tile(52, 64, 'ha-tile a')}
@@ -231,7 +315,9 @@ export function DesmoronaArt() {
           <Fox x={100} y={62} s={0.82} />
         </g>
       </g>
-      <g className="ha-spark"><path d="M30 28l3 6 6 3-6 3-3 6-3-6-6-3 6-3z" fill="#fff3a0" {...thin} /></g>
+      <g className="ha-spark">
+        <path d="M30 28l3 6 6 3-6 3-3 6-3-6-6-3 6-3z" fill="#fff3a0" {...thin} />
+      </g>
     </svg>
   );
 }
@@ -260,42 +346,109 @@ export function MiniGolfArt() {
         <path d="M162 122V70" {...stroke} stroke={PAPER} strokeWidth="3" />
         <path d="M162 70l26 9-26 9z" fill="#ff5a3c" {...thin} />
       </g>
-      <path d="M72 92Q104 56 150 92" fill="none" stroke={PAPER} strokeWidth="3.5" strokeDasharray="1 9" strokeLinecap="round" className="ha-dots" />
+      <path
+        d="M72 92Q104 56 150 92"
+        fill="none"
+        stroke={PAPER}
+        strokeWidth="3.5"
+        strokeDasharray="1 9"
+        strokeLinecap="round"
+        className="ha-dots"
+      />
       <g className="ha-float">
         <ellipse cx="58" cy="120" rx="12" ry="3.5" fill="rgba(0,0,0,.3)" />
         <g transform="translate(58 100)">
           <circle r="15" {...hard} transform="translate(3.5 3.5)" />
           <circle r="15" fill={PAPER} {...stroke} />
           <g fill="#c9c9c0">
-            <circle cx="-5" cy="-5" r="1.7" /><circle cx="2" cy="-7" r="1.7" /><circle cx="7" cy="-1" r="1.7" />
-            <circle cx="-8" cy="2" r="1.7" /><circle cx="-1" cy="1" r="1.7" /><circle cx="4" cy="7" r="1.7" />
+            <circle cx="-5" cy="-5" r="1.7" />
+            <circle cx="2" cy="-7" r="1.7" />
+            <circle cx="7" cy="-1" r="1.7" />
+            <circle cx="-8" cy="2" r="1.7" />
+            <circle cx="-1" cy="1" r="1.7" />
+            <circle cx="4" cy="7" r="1.7" />
             <circle cx="-6" cy="8" r="1.7" />
           </g>
-          <path d="M-9 -8q5-6 11-5" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" />
+          <path
+            d="M-9 -8q5-6 11-5"
+            fill="none"
+            stroke="#fff"
+            strokeWidth="2.6"
+            strokeLinecap="round"
+          />
         </g>
       </g>
     </svg>
   );
 }
 
-/** Night Hunt: lua grande, a espada girando em arco e o morcego, na noite azul do jogo. */
+/** Recorte do atlas do Slash (public/nighthunt/atlas.png), desenhado sem suavização dentro do SVG da capa. */
+function AtlasSprite({
+  x,
+  y,
+  w,
+  h,
+  at,
+  scale,
+  flip,
+  className,
+  style,
+}: {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  at: [number, number];
+  scale: number;
+  flip?: boolean;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  const W = w * scale;
+  const H = h * scale;
+  return (
+    <svg
+      x={at[0] - W / 2}
+      y={at[1] - H}
+      width={W}
+      height={H}
+      viewBox={`${x} ${y} ${w} ${h}`}
+      overflow="hidden"
+      className={className}
+      style={{ imageRendering: 'pixelated', ...style }}
+    >
+      <g transform={flip ? `translate(${x * 2 + w} 0) scale(-1 1)` : undefined}>
+        <image
+          href="/nighthunt/atlas.png"
+          width="1024"
+          height="1024"
+          style={{ imageRendering: 'pixelated' }}
+        />
+      </g>
+    </svg>
+  );
+}
+
+/** Night Hunt: a capa usa a arte do próprio jogo (herói, orc, morcegos, sol e a horda do menu), no azul do Slash. */
 export function NightHuntArt() {
   return (
     <svg className="ha ha-nighthunt" viewBox="0 0 200 150" aria-hidden="true">
-      <circle cx="152" cy="40" r="26" {...hard} transform="translate(4 4)" />
-      <circle cx="152" cy="40" r="26" fill="#e9f1ff" {...stroke} />
-      <circle cx="144" cy="34" r="6" fill="#c9d8f0" />
-      <circle cx="160" cy="50" r="4" fill="#c9d8f0" />
-      <path d="M0 150V112Q40 96 80 112T160 108T200 112V150z" fill="#1e4d92" {...stroke} />
-      <g className="ha-spin slow" style={{ transformOrigin: '70px 92px' }}>
-        <path d="M70 92L28 70" {...stroke} strokeWidth="9" stroke={INK} />
-        <path d="M70 92L28 70" fill="none" stroke="#dfe8f5" strokeWidth="5" strokeLinecap="round" />
-        <rect x="64" y="86" width="12" height="12" rx="3" fill="#ff5a3c" {...thin} />
+      <circle cx="100" cy="128" r="58" fill="#ff9a3c" />
+      <circle cx="100" cy="128" r="58" fill="none" stroke={INK} strokeWidth="3.5" />
+      <g style={{ filter: 'brightness(0) opacity(.85)' }}>
+        <AtlasSprite x={0} y={227} w={320} h={149} at={[100, 150]} scale={0.7} />
       </g>
+      <g className="ha-float c">
+        <AtlasSprite x={725} y={665} w={26} h={22} at={[40, 40]} scale={1.5} />
+        <AtlasSprite x={779} y={665} w={26} h={22} at={[160, 30]} scale={1.3} />
+      </g>
+      <AtlasSprite x={714} y={459} w={60} h={64} at={[152, 128]} scale={0.95} flip />
       <g className="ha-float">
-        <path d="M118 78q12-14 24 0q6-10 14-8q-4 10-14 14q-8 6-12 0q-4 6-12 0q-10-4-14-14q8-2 14 8z" fill={INK} />
-        <circle cx="132" cy="80" r="2" fill="#ff5a5a" />
+        <AtlasSprite x={99} y={632} w={32} h={32} at={[66, 130]} scale={1.9} flip />
       </g>
+      <AtlasSprite x={367} y={697} w={95} h={14} at={[110, 106]} scale={0.55} />
+      <AtlasSprite x={68} y={697} w={16} h={16} at={[100, 136]} scale={0.7} />
+      <AtlasSprite x={68} y={697} w={16} h={16} at={[30, 142]} scale={0.6} />
     </svg>
   );
 }

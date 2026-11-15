@@ -1,9 +1,16 @@
-import { SWORD_BOXES, VIEW_HEIGHT, VIEW_WIDTH, type Enemy, type NhWorld } from '@nocap/games';
+import {
+  HEROES,
+  MAPS,
+  SWORD_BOXES,
+  VIEW_HEIGHT,
+  VIEW_WIDTH,
+  type Enemy,
+  type NhWorld,
+} from '@nocap/games';
 import { animFrame, drawFrame, type Atlas } from './assets';
 
 export const CX = VIEW_WIDTH / 2;
 export const CY = VIEW_HEIGHT / 2;
-const GROUND = '#4b6d3b';
 
 /** Efeitos de tela (morte de inimigo, coleta de item): só desenho, nada disso entra na simulação. */
 export interface Fx {
@@ -46,8 +53,15 @@ function hash(a: number, b: number): number {
   return ((h ^ (h >>> 16)) >>> 0) / 4294967295;
 }
 
-function drawBackground(g: CanvasRenderingContext2D, a: Atlas, camX: number, camY: number): void {
-  g.fillStyle = GROUND;
+function drawBackground(
+  g: CanvasRenderingContext2D,
+  a: Atlas,
+  camX: number,
+  camY: number,
+  mapId: string,
+): void {
+  const m = MAPS[mapId] ?? MAPS.campo!;
+  g.fillStyle = `rgb(${m.ground[0]},${m.ground[1]},${m.ground[2]})`;
   g.fillRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
   const I0 = Math.floor((camX - CX - 280) / 512);
   const I1 = Math.ceil((camX + CX + 280) / 512);
@@ -59,9 +73,23 @@ function drawBackground(g: CanvasRenderingContext2D, a: Atlas, camX: number, cam
       const tx = i * 512;
       const ty = j * 512;
       for (const it of tile)
-        drawFrame(g, a, it.f, CX + tx + it.x - camX, CY - (ty + it.y - camY), { s: it.s });
+        drawFrame(g, a, mapFrame(a, mapId, it.f), CX + tx + it.x - camX, CY - (ty + it.y - camY), {
+          s: it.s,
+        });
     }
   }
+}
+
+/** Decoração do chão com o matiz do mapa (se o mapa tiver um). */
+export function mapFrame(a: Atlas, mapId: string, name: string): string {
+  const v = `Background/${mapId}/${name.slice(11)}`;
+  return a.frames[v] ? v : name;
+}
+/** Sprite do guerreiro no matiz do herói. */
+export function heroFrame(a: Atlas, heroId: string, name: string | null): string | null {
+  if (!name || !HEROES[heroId]?.hue) return name;
+  const v = `Player/${heroId}/${name.slice(7)}`;
+  return a.frames[v] ? v : name;
 }
 
 function enemyAnimKey(e: Enemy, touching: boolean): string {
@@ -83,6 +111,8 @@ export interface WorldDrawState {
   healFlash: number;
   fx: Fx[];
   dropT: Map<number, number>;
+  hero: string;
+  map: string;
 }
 
 /** Desenha o mundo do Night Hunt na tela lógica de 510x680, com o jogador sempre no centro (câmera do Slash). */
@@ -97,7 +127,7 @@ export function drawWorld(
   const sx = (x: number) => CX + x - camX;
   const sy = (y: number) => CY - (y - camY);
   const t = st.time;
-  drawBackground(g, a, camX, camY);
+  drawBackground(g, a, camX, camY, st.map);
 
   // itens (com um pulinho ao cair, como o DropStart do Slash)
   for (const it of w.items) {
@@ -137,7 +167,7 @@ export function drawWorld(
     playerDone = true;
     const p = w.player;
     const key = st.deadFor >= 0 ? 'Player/Die' : p.moving ? 'Player/Move' : 'Player/Idle';
-    const frame = animFrame(a, key, st.deadFor >= 0 ? st.deadFor : t);
+    const frame = heroFrame(a, st.hero, animFrame(a, key, st.deadFor >= 0 ? st.deadFor : t));
     g.save();
     g.globalAlpha = 0.25;
     g.fillStyle = '#000';
@@ -185,11 +215,39 @@ export function drawWorld(
     if (x < -60 || x > VIEW_WIDTH + 60 || y < -60 || y > VIEW_HEIGHT + 60) continue;
     if (q.kind === 'orb') drawFrame(g, a, animFrame(a, 'Enemies/DarkRaven/Projectile', t), x, y);
     else if (q.kind === 'axe') drawFrame(g, a, PROJ_FRAME.axe!, x, y, { rot: t * 12 });
+    else if (q.kind === 'pAxe')
+      drawFrame(g, a, PROJ_FRAME.axe!, x, y, {
+        rot: -t * 14,
+        s: q.big ? 3.6 : 2.2,
+        tint: q.big ? '#ffd94a' : undefined,
+        tintAlpha: 0.35,
+      });
     else drawFrame(g, a, PROJ_FRAME[q.kind]!, x, y, { rot: -q.angle });
+  }
+
+  // orbes guardiões
+  for (const [i, o] of w.orbs().entries()) {
+    const k = o.r / 17;
+    g.save();
+    g.globalAlpha = 0.25;
+    g.fillStyle = '#000';
+    g.beginPath();
+    g.ellipse(sx(o.x), sy(o.y) + 20 * k, 12 * k, 4 * k, 0, 0, Math.PI * 2);
+    g.fill();
+    g.restore();
+    drawFrame(g, a, `X/orb${Math.floor(t * 9 + i) % 4}`, sx(o.x), sy(o.y), {
+      s: 2 * k,
+      tint: w.evolved.has('evoOrbit') ? '#ffd94a' : undefined,
+      tintAlpha: 0.3,
+    });
   }
 
   // efeitos
   for (const f of st.fx) {
+    if (f.key === 'bolt') {
+      drawBolt(g, sx(f.x), sy(f.y), f.t / f.dur, f.x * 7 + f.y);
+      continue;
+    }
     const key = animFrame(a, f.key, f.t);
     drawFrame(g, a, key, sx(f.x), sy(f.y));
   }
@@ -243,7 +301,46 @@ function drawSword(
 }
 
 /** Atualiza os efeitos de tela a partir dos eventos da simulação. */
-export function pushFx(fx: Fx[], k: 'enemyDeath' | 'pickup', x: number, y: number): void {
-  if (k === 'enemyDeath') fx.push({ key: 'Effects/DeathEffect', x, y, t: 0, dur: 0.36 });
+export function pushFx(fx: Fx[], k: 'enemyDeath' | 'pickup' | 'bolt', x: number, y: number): void {
+  if (k === 'bolt') fx.push({ key: 'bolt', x, y, t: 0, dur: 0.3 });
+  else if (k === 'enemyDeath') fx.push({ key: 'Effects/DeathEffect', x, y, t: 0, dur: 0.36 });
   else fx.push({ key: 'Effects/PickBonus', x, y, t: 0, dur: 0.45 });
+}
+
+/** Raio lunar: faísca em zigue-zague do alto da tela até o alvo, com clarão no chão. */
+function drawBolt(
+  g: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  p: number,
+  seed: number,
+): void {
+  const a = Math.max(0, 1 - p);
+  g.save();
+  g.globalAlpha = a;
+  const pts: [number, number][] = [];
+  const top = -20;
+  const n = 9;
+  for (let i = 0; i <= n; i++) {
+    const t = i / n;
+    const jx = i === n ? 0 : Math.sin(seed + i * 12.9898) * 22;
+    pts.push([x + jx * (1 - t * 0.5), top + (y - top) * t]);
+  }
+  for (const [w, c] of [
+    [9, 'rgba(120,170,255,.45)'],
+    [5, '#bcd4ff'],
+    [2.4, '#ffffff'],
+  ] as const) {
+    g.strokeStyle = c;
+    g.lineWidth = w;
+    g.lineJoin = 'round';
+    g.beginPath();
+    pts.forEach(([px, py], i) => (i ? g.lineTo(px, py) : g.moveTo(px, py)));
+    g.stroke();
+  }
+  g.fillStyle = 'rgba(190,215,255,.55)';
+  g.beginPath();
+  g.ellipse(x, y + 4, 34 * (0.6 + p), 12 * (0.6 + p), 0, 0, Math.PI * 2);
+  g.fill();
+  g.restore();
 }

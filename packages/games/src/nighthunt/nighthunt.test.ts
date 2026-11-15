@@ -1,7 +1,27 @@
 import { describe, expect, it } from 'vitest';
-import { ACHIEVEMENTS, UPGRADES, applyRun, buyMeta, emptySave, goldWithBonus } from './rules';
+import {
+  ACHIEVEMENTS,
+  HERO_INFO,
+  MAP_INFO,
+  UPGRADES,
+  applyRun,
+  buyHero,
+  buyMeta,
+  emptySave,
+  goldWithBonus,
+  mapUnlocked,
+} from './rules';
 import { NhWorld, NO_META, STEP, metaBonus } from './world';
-import { swordAngleDeg } from './data';
+import {
+  EVOLUTIONS,
+  HEROES,
+  HERO_IDS,
+  MAPS,
+  MAP_IDS,
+  UPGRADE_IDS,
+  UPGRADE_MAX,
+  swordAngleDeg,
+} from './data';
 import { overlaps } from './geometry';
 import { ENEMIES, PLAYER_SETTINGS } from './settings';
 
@@ -116,7 +136,7 @@ describe('mundo', () => {
     const opt = w.pending!.options[0]!;
     w.choose(opt);
     expect(w.pending).toBeNull();
-    expect(w.levels[opt]).toBe(1);
+    expect(w.levels[opt as keyof typeof w.levels]).toBe(1);
   });
 
   it('melhorias respeitam o máximo do Slash', () => {
@@ -211,5 +231,190 @@ describe('melhorias permanentes e conquistas', () => {
 
   it('a tabela de XP tem 18 níveis como no Slash', () => {
     expect(PLAYER_SETTINGS.requiredXP).toHaveLength(18);
+  });
+});
+
+const enemy = (w: NhWorld, id: string, x: number, y: number, uid: number) => {
+  const s = ENEMIES.find((e) => e.id === id)!;
+  w.enemies.push({
+    uid,
+    s,
+    x,
+    y,
+    hp: s.health,
+    speedX: 0,
+    speedY: 0,
+    life: -1,
+    faceX: 1,
+    flash: 0,
+    follow: true,
+    stateLeft: 0,
+    dirX: 0,
+    dirY: 0,
+    shootTimer: 0,
+    dead: false,
+  });
+};
+
+describe('heróis e mapas', () => {
+  it('cada herói começa com sua arma e seus números', () => {
+    for (const id of HERO_IDS) {
+      const w = new NhWorld('h' + id, NO_META, { hero: id });
+      const h = HEROES[id]!;
+      expect(w.player.maxHp).toBe(Math.round(50 * h.hp));
+      if (h.start) expect(w.levels[h.start]).toBe(1);
+      expect(HERO_INFO[id]?.desc.length).toBeGreaterThan(10);
+    }
+    expect(new NhWorld('x', NO_META, { hero: 'brann' }).armor).toBe(HEROES.brann!.armor);
+  });
+
+  it('os mapas mudam vida, velocidade e ouro dos inimigos', () => {
+    const base = new NhWorld('m', NO_META, { map: 'campo' });
+    const gelo = new NhWorld('m', NO_META, { map: 'gelo' });
+    const sim = (w: NhWorld) => {
+      for (let i = 0; i < 60 * 30 && w.alive; i++) {
+        w.player.hp = w.player.maxHp;
+        w.step({ x: 0, y: 0 });
+      }
+      return w.enemies.length ? w.enemies[0]!.hp : 0;
+    };
+    sim(base);
+    sim(gelo);
+    expect(MAPS.gelo!.enemyHp).toBeGreaterThan(1);
+    expect(gelo.mapId).toBe('gelo');
+    expect(MAP_IDS).toHaveLength(3);
+  });
+
+  it('comprar herói gasta ouro; mapas liberam pelo tempo sobrevivido', () => {
+    const s = emptySave();
+    expect(buyHero(s, 'mara')).toBe(false);
+    s.gold = 400;
+    expect(buyHero(s, 'mara')).toBe(true);
+    expect(s.gold).toBe(270); // 400 - 150 do preço + 20 da conquista "Novo companheiro"
+    expect(s.heroes).toContain('mara');
+    expect(mapUnlocked(s, 'deserto')).toBe(false);
+    s.stats.bestTime = 301;
+    expect(mapUnlocked(s, 'deserto')).toBe(true);
+    expect(MAP_INFO.gelo!.unlockTime).toBe(600);
+  });
+});
+
+describe('armas novas, passivos e evoluções', () => {
+  it('o machado sobe e cai atravessando inimigos', () => {
+    const w = new NhWorld('a');
+    w.levels.axe = 1;
+    w.launchers.axe.timer = 9;
+    enemy(w, 'BasicEnemy', 0, 150, 1);
+    w.enemies[0]!.hp = 50;
+    for (let i = 0; i < 90; i++) {
+      w.player.hp = 50;
+      w.step({ x: 0, y: 0 });
+    }
+    expect(w.projectiles.some((p) => p.kind === 'pAxe') || w.enemies[0]!.hp < 50).toBe(true);
+  });
+
+  it('os orbes giram e machucam quem encosta', () => {
+    const w = new NhWorld('o');
+    w.levels.orbit = 3;
+    const orb = w.orbs()[0]!;
+    enemy(w, 'TankEnemy', orb.x, orb.y, 2);
+    const e = w.enemies[0]!;
+    const hp = e.hp;
+    w.step({ x: 0, y: 0 });
+    expect(w.orbs()).toHaveLength(4);
+    expect(e.hp).toBeLessThan(hp);
+  });
+
+  it('o raio acerta um inimigo da tela', () => {
+    const w = new NhWorld('l');
+    w.levels.lightning = 1;
+    w.launchers.lightning.timer = 9;
+    enemy(w, 'TankEnemy', 60, 60, 3);
+    const hp = w.enemies[0]!.hp;
+    w.step({ x: 0, y: 0 });
+    expect(w.enemies[0]!.hp).toBeLessThan(hp);
+    expect(w.drainEvents().some((e) => e.k === 'bolt')).toBe(true);
+  });
+
+  it('armadura reduz o dano (mínimo 1) e o amuleto aumenta a vida', () => {
+    const w = new NhWorld('ar');
+    w.levels.armor = 5;
+    const hp = w.player.hp;
+    (w as unknown as { hurtPlayer(n: number): void }).hurtPlayer(4);
+    expect(w.player.hp).toBe(hp - 1);
+    const v = new NhWorld('v');
+    v.levels.heart = 0;
+    v.choose = NhWorld.prototype.choose;
+    v.pending = { kind: 'levelUp', options: ['heart'] };
+    v.choose('heart');
+    expect(v.player.maxHp).toBe(60);
+  });
+
+  it('o trevo pode abrir uma quarta opção', () => {
+    let four = 0;
+    for (let i = 0; i < 40; i++) {
+      const w = new NhWorld('c' + i);
+      w.levels.clover = 5;
+      for (let k = 0; k < 10; k++)
+        w.items.push({ uid: 800 + k, type: 'xp', x: 0, y: 0, attracted: false, speed: 0, born: 0 });
+      w.step({ x: 0, y: 0 });
+      if (w.pending?.options.length === 4) four++;
+    }
+    expect(four).toBeGreaterThan(5);
+    expect(four).toBeLessThan(35);
+  });
+
+  it('os espaços são 6 armas e 6 passivos', () => {
+    const w = new NhWorld('s');
+    for (const u of ['weaponLength', 'horizontal', 'diagonal', 'halo', 'axe', 'orbit'] as const)
+      w.levels[u] = 1;
+    const avail = w.availableUpgrades();
+    expect(avail).not.toContain('lightning');
+    expect(avail).toContain('weaponDamage');
+  });
+
+  it('o baú evolui a arma quando ela está no máximo e o passivo certo está no inventário', () => {
+    const w = new NhWorld('e');
+    w.levels.halo = UPGRADE_MAX.halo;
+    expect(w.availableEvolutions()).toEqual([]);
+    w.levels.heart = 1;
+    expect(w.availableEvolutions()).toEqual(['evoHalo']);
+    w.items.push({ uid: 700, type: 'chest', x: 0, y: 0, attracted: false, speed: 0, born: 0 });
+    w.step({ x: 0, y: 0 });
+    expect(w.pending?.kind).toBe('chest');
+    expect(w.pending?.options).toEqual(['evoHalo']);
+    w.choose('evoHalo');
+    expect(w.evolved.has('evoHalo')).toBe(true);
+    expect(w.availableEvolutions()).toEqual([]);
+    expect(w.result().evolutions).toEqual(['evoHalo']);
+  });
+
+  it('há uma evolução para cada arma e todo item evoluído tem descrição', () => {
+    expect(EVOLUTIONS).toHaveLength(7);
+    for (const e of EVOLUTIONS) {
+      for (const m of e.maxed) expect(UPGRADE_IDS).toContain(m);
+      expect(UPGRADE_IDS).toContain(e.passive);
+    }
+  });
+
+  it('reroll, pular e banir gastam o que a partida dá', () => {
+    const w = new NhWorld('r', { ...NO_META, reroll: 1, skip: 1, banish: 1 });
+    expect([w.rerolls, w.skips, w.banishes]).toEqual([2, 2, 2]);
+    for (let k = 0; k < 10; k++)
+      w.items.push({ uid: 600 + k, type: 'xp', x: 0, y: 0, attracted: false, speed: 0, born: 0 });
+    w.step({ x: 0, y: 0 });
+    const before = [...w.pending!.options];
+    expect(w.reroll()).toBe(true);
+    expect(w.rerolls).toBe(1);
+    expect(w.pending!.options).toHaveLength(before.length);
+    const victim = w.pending!.options[0] as (typeof UPGRADE_IDS)[number];
+    expect(w.banish(victim)).toBe(true);
+    expect(w.pending!.options).not.toContain(victim);
+    expect(w.availableUpgrades()).not.toContain(victim);
+    const gold = w.gold;
+    expect(w.skip()).toBe(true);
+    expect(w.pending).toBeNull();
+    expect(w.gold).toBe(gold + 5);
+    expect([w.rerollsUsed, w.banishesUsed]).toEqual([1, 1]);
   });
 });

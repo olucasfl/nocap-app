@@ -109,3 +109,5 @@ Ainda sem prioridade definida contra as salas do Ecooo. Cada item tem a sua spec
 - [ ] Cloudflare Pages (web), Fly.io (api + Colyseus), Upstash (Redis), domínio, monitoramento
 
 - Night Hunt (spec 083), 15/11/2026: fase 1 feita (motor do Slash, 1 herói, 1 mapa, 32 conquistas, telas e transições). Próximo: confirmar licença da arte, save na conta, ranking, mais heróis e mapas.
+
+- Night Hunt (spec 083), 15/11/2026, fase 2: 5 heróis, 3 mapas, 15 melhorias, 7 evoluções, reroll/pular/banir, 51 conquistas, save na conta (`user_prefs`), robô e simulador, testes de tela. Falta: licença da arte, ranking e Daily no servidor.

@@ -156,3 +156,5 @@ A aba e a tela de Histórico, `GET /me/matches`, `GET /me/matches/:id/room` e a 
 ## Night Hunt (spec 083)
 
 `packages/games/src/nighthunt` tem a simulação determinística (`NhWorld`, passo 1/60 s, semente por partida) portada do Slash The Hordes; `apps/web/src/games/nighthunt` desenha tudo em canvas (atlas e fonte bitmap do Slash em `public/nighthunt`, gerados por `tools/art/nighthunt/extract.py`). Rota `/nighthunt`.
+
+Night Hunt, fase 2: `NhWorld` ganhou heróis, mapas, armas e passivos novos, evoluções por baú e reroll/pular/banir; `bot.ts` e `nighthunt.sim.ts` formam o simulador; o save vai para `user_prefs` (`/me/prefs/nighthunt`, `rev` mais novo vence) via `nighthunt-account.ts`; `extra-art.ts` gera a arte nova (matizes, ícones) sobre o atlas do Slash.

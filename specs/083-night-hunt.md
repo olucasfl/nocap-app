@@ -1,47 +1,54 @@
 # 083 Night Hunt
 
-Status: **fase 1 implementada** (15/11/2026). Protótipo de design original: `docs/reference/night-hunt-prototype.html`.
+Status: **fase 2 implementada** (15/11/2026). Protótipo de design original: `docs/reference/night-hunt-prototype.html`.
 
 ## 1. Objetivo
 
-Jogo de sobrevivência em arena no estilo Vampire Survivors, construído sobre o **Slash The Hordes** (decisão do Lucas): mesma arte, animações, sons, música, regras de dano, vida, XP, hordas e chefes. O jogador só anda; a espada e as demais armas atacam sozinhas; sobe de nível, escolhe uma entre 3 melhorias, abre baús de chefe e tenta durar o máximo. Celular e PC, retrato (tela lógica de 510×680 como no Slash).
+Jogo de sobrevivência em arena no estilo Vampire Survivors, construído sobre o **Slash The Hordes** (decisão do Lucas): mesma arte, animações, sons, música, regras de dano, vida, XP, hordas e chefes. O jogador só anda; a espada e as demais armas atacam sozinhas; sobe de nível, escolhe uma entre 3 (ou 4) melhorias, abre baús de chefe e tenta durar o máximo. Celular e PC, retrato (tela lógica de 510×680 como no Slash).
 
-## 2. Escopo desta fase (pedido do Lucas)
+## 2. O que existe
 
-- **1 herói** (o guerreiro do Slash), **1 mapa** (campo infinito do Slash), **6 melhorias de partida** com descrição, **melhorias permanentes** com ouro, **32 conquistas**.
-- Transições de tela (fade), janelas que abrem com animação, morte com animação, vinheta vermelha e título "VOCÊ CAIU", resultado com contagem de ouro, itens da partida e conquistas liberadas.
-- Fora desta fase: mais heróis e mapas, evoluções de arma, reroll/pular/banir, ranking e Daily com validação no servidor, save na conta (migração só com "sim" explícito), online.
+- **5 heróis** (Kael, Mara, Brann, Ysolde, Rurik): o guerreiro do Slash com outro matiz de cor, cada um com arma inicial e números próprios. Kael é de graça; os outros se compram com ouro (150, 300, 500, 800).
+- **3 mapas**: Campo Verde (o do Slash), Deserto Seco (inimigos 10% mais rápidos, 30% mais ouro; libera com 5 min sobrevividos) e Planície Gelada (inimigos com 25% mais vida, 20% mais XP; libera com 10 min). A decoração do chão muda de matiz por mapa.
+- **15 melhorias de partida** (as 6 do Slash + 9 novas), com descrição em pt-BR e o que muda a cada nível:
+  - Armas: Lâmina Longa e Lâmina Afiada (a espada, 1 espaço), Adagas Voadoras, Tiro Arcano, Nova Ígnea (todas do Slash), **Machado Giratório** (sobe em arco e cai atravessando), **Orbes Guardiões** (orbitam o herói), **Raio Lunar** (cai sobre inimigos da tela).
+  - Passivos: Regeneração (Slash), **Armadura** (-1 de dano recebido por nível), **Botas de Caçador** (+8% de velocidade), **Pedra Atrativa** (puxa itens ao alcance), **Amuleto Vital** (+20% de vida), **Trevo da Lua** (10% por nível de uma 4ª opção), **Diário de Caça** (-8% de recarga).
+  - Espaços como no Vampire Survivors: no máximo 6 armas (a espada conta como uma) e 6 passivos.
+- **7 evoluções** (arma no máximo + passivo certo + abrir um baú): Adagas Fantasma, Arcano Total, Supernova, Machado Titã, Eclipse, Tempestade e Lâmina Real. O baú de chefe dá a evolução quando ela está disponível; senão, uma melhoria garantida (como no Slash). No Night Hunt os chefes soltam baú com mais frequência (sem isso a evolução nunca apareceria; o resto da tabela do Slash não mudou).
+- **Reroll, Pular e Banir** na janela de nível (R, X e B no teclado): 1 de cada por partida, e as melhorias permanentes Reroll, Pular e Banir somam usos. Pular rende 5 de ouro; banir tira o item até o fim da partida.
+- **Melhorias permanentes com ouro**: as 6 do Slash + Reroll, Pular e Banir.
+- **51 conquistas** (progresso, prêmio em ouro, notificação ao liberar).
+- **Conta**: o save (ouro, melhorias, heróis comprados, conquistas, recordes, opções) vai para `user_prefs` em `/me/prefs/nighthunt`, **sem migração de banco**. O aparelho manda o save inteiro com um contador `rev`; o servidor só aceita se o `rev` não for mais velho que o da conta. Sem conta, vale no aparelho (`localStorage`).
+- **Telas** (todas em canvas, arte do Slash): menu, heróis, mapas, partida (HUD com armas e passivos), nível (3 ou 4 cartas, reroll/pular/banir), baú e evolução, pausa, opções de som, resultado (contagem de ouro, itens e evoluções da partida, conquistas liberadas), melhorias, itens (coleção com armas, passivos, evoluções e itens do chão) e conquistas. Transições de tela por fade, janelas que abrem com animação, morte com animação e vinheta.
 
-## 3. Regras (portadas do Slash, `packages/games/src/nighthunt`)
+## 3. Regras portadas do Slash (`packages/games/src/nighthunt`)
 
-- Passo fixo de 1/60 s e semente por partida (`NhWorld`); no Slash o tempo é variável.
-- Jogador: vida 50, velocidade 100, XP por nível `10, 20, 30 … 220` (18 níveis), espada a cada 2 s (dano 2, gira de 170° a ~370° em 1,3 s, colisor de 6 tamanhos), regeneração 5 s ÷ nível, ímã 6 s.
-- Dano de contato: no começo do contato e a cada 0,5 s; sem invulnerabilidade extra.
-- Melhorias: Lâmina Longa (5), Lâmina Afiada (10), Adagas Voadoras (6 salvas), Tiro Arcano (6), Nova Ígnea (6), Regeneração (6). Janela de nível com 3 opções sorteadas; baú de chefe dá 1 melhoria garantida.
-- Inimigos, chefes e hordas: tabelas completas do Slash (`settings.ts`): geradores individual, circular e de onda por linha do tempo, chefes a cada ~100 s, chefe final aos ~1100 s, atiradores (machado e orbe), perseguição periódica.
-- Itens do chão: XP, ouro, poção (+10), ímã (atrai tudo no raio de 260), baú.
-- Melhorias permanentes: tabela do Slash (vida, dano geral, perfuração, velocidade, coletor de XP, coletor de ouro). **Diferença:** o coletor de ouro agora vale (multiplica o ouro no fim da partida).
-- Descrições em pt-BR de todos os itens (pedido do Lucas); no Slash eram vazias.
+Passo fixo de 1/60 s e semente por partida (o Slash usa tempo variável). Jogador: vida 50, velocidade 100, XP `10, 20, 30 … 220` (18 níveis), espada a cada 2 s com a curva de rotação do original, dano de contato no início do contato e a cada 0,5 s, ímã de 6 s. Inimigos, chefes, geradores individual, circular e de onda e atiradores: as tabelas completas do Slash (`settings.ts`). Diferenças deliberadas:
+- Coletor de ouro vale (no Slash era calculado e nunca usado).
+- Chefes soltam baú com mais frequência (evoluções).
+- Heróis, mapas, armas e passivos novos, evoluções e reroll/pular/banir (Vampire Survivors).
 
-## 4. Telas (todas em canvas, arte do Slash)
+## 4. Arte
 
-Menu (Jogar, Melhorias, Itens, Conquistas, Opções de som, Voltar ao Hub) → Partida (HUD: barra de XP, tempo, ouro, melhorias em uso, pausa) → Subir de nível (3 cartas com descrição e o que muda) / Baú (animação de abertura) / Pausa (Continuar, Opções, Desistir) → Fim de jogo (resultado). Mais: Melhorias (compra com ouro), Itens (coleção com "?" até descobrir), Conquistas (lista com barra de progresso e prêmio em ouro), Opções (música, efeitos, flashes).
+Tudo do Slash (`tools/art/nighthunt/extract.py` gera o atlas) mais arte nova no mesmo estilo, gerada ao carregar (`extra-art.ts`): variações de matiz do guerreiro por herói (a pele é preservada) e da decoração do chão por mapa, ícones novos com contorno escuro (raio, armadura, ímã, trevo, diário, reroll, pular, banir), orbes azuis, moldura dourada com estrela nas evoluções. Capa do Hub: recorte do atlas (herói, orc, morcegos, sol e horda do menu). Licença do material do Slash **não confirmada**: ver `docs/ASSETS-NIGHTHUNT.md`.
 
-Entrada: WASD/setas ou joystick flutuante em qualquer ponto livre da tela; Esc pausa; 1, 2, 3 escolhem a melhoria. Pausa automática ao perder o foco.
+## 5. Robô e simulador
 
-## 5. Arquitetura
+`packages/games/src/nighthunt/bot.ts` joga uma partida sozinho (foge, recolhe itens, foca no que já tem, evolui no baú, usa reroll e banir). `pnpm --filter @nocap/games sim` roda `nighthunt.sim.ts` e imprime tempo mediano, nível, abates, evoluções e melhorias mais usadas por herói e mapa (NH_RUNS, NH_SECONDS, NH_HEROES, NH_MAPS). Usado para calibrar os heróis; resultados na seção 7.
 
-```
-packages/games/src/nighthunt/   settings (dados do Slash) · data (colisores, espada) · geometry · world (NhWorld) · rules (itens, conquistas, save) · testes
-apps/web/src/games/nighthunt/   assets (atlas, fonte bitmap) · audio · save · view (mundo) · app (telas, entrada, transições) · NightHuntPage
-apps/web/public/nighthunt/      atlas.png/json, fontes, áudio (gerados por tools/art/nighthunt/extract.py)
-```
+## 6. Testes
 
-Rota `/nighthunt`; cartão no Hub (Ação). Save do aparelho em `localStorage` (`nighthunt:save:v1`).
+- `nighthunt.test.ts`: 28 testes de motor (determinismo, espada, hordas, níveis, armas novas, passivos, evoluções, reroll/pular/banir, heróis, mapas, conquistas, compra).
+- `apps/api/src/prefs/prefs.test.ts`: validação do save do Night Hunt e regra do `rev`.
+- `apps/web/e2e/nighthunt.spec.ts`: telas pelo canvas (fluxo menu a partida, pausa, nível, baú de evolução, morte e resultado, compra de herói, telas de lista) em celular em pé, paisagem e computador.
 
-## 6. Pendências e riscos
+## 7. Calibração com o robô
 
-1. **Licença da arte e do som do Slash não confirmada** (ver `docs/ASSETS-NIGHTHUNT.md`): confirmar com a Y8.com e o autor, ou trocar, antes de publicar.
-2. Save na conta e ranking/Daily (servidor refaz a partida pela semente e entradas; a simulação já é determinística): fases 4 e 8 do plano, com "sim" para a migração.
-3. Equilíbrio medido só jogando; simulador de robôs fica para a próxima fase.
-4. Medir desempenho em celular fraco com 300+ inimigos.
+Veja a seção "Resultados do simulador" abaixo.
+
+## 8. Pendências
+
+1. **Licença da arte e do som do Slash** (ver `docs/ASSETS-NIGHTHUNT.md`): confirmar com a Y8.com e o autor, ou trocar, antes de publicar.
+2. Ranking e Daily com validação no servidor (a simulação já é determinística; falta gravar as entradas e a rota).
+3. Equilíbrio fino jogando (o robô é um jogador só) e desempenho em celular fraco com 300+ inimigos.
+4. Sons próprios para as armas novas (hoje reaproveitam os do Slash).
