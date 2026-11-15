@@ -21,6 +21,8 @@ import {
   STEP,
   UPGRADES,
   UPGRADE_IDS,
+  MAX_PASSIVE_SLOTS,
+  MAX_WEAPON_SLOTS,
   VIEW_HEIGHT,
   VIEW_WIDTH,
   applyRun,
@@ -1733,7 +1735,17 @@ export class NhApp {
     drawText(g, a, String(w.gold), 46, 46, { size: 24, color: '#ffd44a' });
     this.smallBtn('pause', W - 56, 36, 42, () => this.openModal('pause'));
     // armas na primeira fileira e passivos na segunda; evoluídas ganham moldura dourada
-    const row = (ids: readonly UpgradeId[], y: number) => {
+    const row = (ids: readonly UpgradeId[], y: number, slots: number) => {
+      // slots vazios sempre à vista; os itens vão preenchendo da esquerda para a direita
+      g.save();
+      for (let s = 0; s < slots; s++) {
+        g.fillStyle = 'rgba(8,12,24,.55)';
+        g.fillRect(14 + s * 38, y, 34, 34);
+        g.strokeStyle = 'rgba(120,150,210,.45)';
+        g.lineWidth = 2;
+        g.strokeRect(15 + s * 38, y + 1, 32, 32);
+      }
+      g.restore();
       let i = 0;
       for (const id of ids) {
         const lv = w.levels[id];
@@ -1758,8 +1770,8 @@ export class NhApp {
         i++;
       }
     };
-    row(WEAPON_IDS, 84);
-    row(PASSIVE_IDS, 124);
+    row(WEAPON_IDS, 84, MAX_WEAPON_SLOTS);
+    row(PASSIVE_IDS, 124, MAX_PASSIVE_SLOTS);
   }
 
   private drawLevelUp(): void {
