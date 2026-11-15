@@ -1194,11 +1194,12 @@ function level23() {
   y = 3; // andar do meio: área de manobra e loop
   const OX = 1.5, OZ = -18.3, CX1 = OX - 1.5;
   K.lane(CX1, -8.6, 9.5, { y, W: 6 });
-  K.cap(CX1, OZ, 6, y, false); // fecha o norte da área de manobra (com a boca do loop aberta logo abaixo)
+  K.block(CX1 - 3.5, OX - 1.6, OZ - 0.5, OZ, y, 0.375); // fecha o norte da área de manobra, deixando a boca da pista do loop aberta
   L.loop(OX, y, OZ, 0, false);
   const XE = OX + 3.86;
   K.lane(XE, OZ - 3, 7, { y });
-  K.cap(XE, OZ - 3, 5, y); // fecha o sul da pista de saída (a boca da pista fica aberta)
+  K.block(XE - 3, XE - 1.15, OZ - 3, OZ - 3 + 0.5, y, 0.375); // fecha o sul da pista de saída, deixando a boca aberta
+  K.block(XE + 1.15, XE + 3, OZ - 3, OZ - 3 + 0.5, y, 0.375);
   K.spinner(XE, OZ - 3 - 3.5, y);
   K.plank(XE, OZ - 10.2, y, 3, 7);
   y = 6; // andar de cima: janela, duas paredes que deslizam e o copo
@@ -1255,12 +1256,13 @@ function level25() {
   // ilha 3: área de manobra e loop
   const OX = 1.5, OZ = -18.8, CX1 = 0;
   K.lane(CX1, -10.8, 8, { y, W: 6 });
-  K.cap(CX1, OZ, 6, y, false);
+  K.block(CX1 - 3.5, OX - 1.6, OZ - 0.5, OZ, y, 0.375);
   L.loop(OX, y, OZ, 0, false);
   const XE = OX + 3.86;
   // saída do loop: rampa para o andar de cima (3 m em 10 m) e uma ilha com o moinho
   K.lane(XE, OZ - 3, 11, { y, ramps: [{ s0: 1, len: 9, dh: 3 }] });
-  K.cap(XE, OZ - 3, 5, y);
+  K.block(XE - 3, XE - 1.15, OZ - 3, OZ - 3 + 0.5, y, 0.375);
+  K.block(XE + 1.15, XE + 3, OZ - 3, OZ - 3 + 0.5, y, 0.375);
   y = 3;
   K.lane(XE, OZ - 14, 4, { y });
   bridge2(L, XE, OZ - 18, y, 1.5);
