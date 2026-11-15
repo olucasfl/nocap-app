@@ -329,4 +329,5 @@ export const MAPS: Record<string, MapDef> = {
     hue: 190,
   },
 };
-export const MAP_IDS = Object.keys(MAPS);
+/** Mapas jogáveis. Deserto e gelo ficam guardados em `MAPS` (arte, regras e exigências prontas) mas fora do jogo por ora, a pedido do Lucas (15/11/2026). */
+export const MAP_IDS: readonly string[] = ['campo'];

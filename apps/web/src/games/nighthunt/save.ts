@@ -19,7 +19,7 @@ function normalize(s: Partial<NhSave>): NhSave {
     achievements: s.achievements ?? {},
     seen: s.seen ?? [],
     heroes: s.heroes?.length ? s.heroes : base.heroes,
-    pick: { ...base.pick, ...s.pick },
+    pick: { ...base.pick, ...s.pick, map: 'campo' }, // só há um mapa por enquanto
   };
 }
 

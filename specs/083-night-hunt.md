@@ -81,3 +81,5 @@ Leitura: **o equilíbrio ainda não está bom.** Quem começa com Orbes, Raio ou
 - **Armas x passivos:** 6 slots de armas (Espada, Adagas, Tiro Arcano, Nova Ígnea, Machado, Orbes, Raio Lunar; a Espada agora é uma arma com 6 níveis) e 6 de passivos. Passivos globais: Poder (+12% de dano de tudo por nível), Alcance (+10% de tamanho de espada, tiros, orbes e raios), Ligeireza (+10% de velocidade de projétil), Sabedoria (+8% XP), Ganância (+10% ouro), além de Armadura, Botas, Imã, Coração, Trevo, Diário e Regeneração. Evolução da Espada: Espada no máximo + Poder.
 - **Economia:** custos da loja e dos heróis 15 vezes os do Slash (heróis: 600, 1500, 2500, 4000).
 - **Mapas:** Deserto exige nível 10, 8 min e 3 chefes; Gelo exige nível 25, 15 min e 2 evoluções.
+
+- **Mapas (15/11/2026):** por pedido do Lucas só o Campo Verde está no jogo por enquanto; Deserto e Gelo ficam guardados em `MAPS`/`MAP_INFO` (com as exigências de desbloqueio) fora de `MAP_IDS`.

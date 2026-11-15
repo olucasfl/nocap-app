@@ -1264,7 +1264,7 @@ export class NhApp {
       this.go('heroes'),
     );
     this.goldCounter(W / 2, 30, 'center');
-    const rh = (f.h - 8) / MAP_IDS.length;
+    const rh = Math.min(190, (f.h - 8) / MAP_IDS.length);
     MAP_IDS.forEach((id, i) => {
       const y = f.y + 4 + i * rh;
       const m = MAPS[id]!;

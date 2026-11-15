@@ -284,7 +284,7 @@ describe('heróis e mapas', () => {
     sim(gelo);
     expect(MAPS.gelo!.enemyHp).toBeGreaterThan(1);
     expect(gelo.mapId).toBe('gelo');
-    expect(MAP_IDS).toHaveLength(3);
+    expect(MAP_IDS).toEqual(['campo']);
   });
 
   it('comprar herói gasta ouro; mapas liberam pelo tempo sobrevivido', () => {
