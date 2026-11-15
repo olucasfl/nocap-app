@@ -9,7 +9,7 @@ import { BallPreview } from './BallPreview';
 import { loadBest, loadLook } from './golf-save';
 import './minigolf.css';
 
-/** Tela inicial do Mini Golf (spec 082): jogar online (criar sala ou entrar por código), offline com 40 fases, personalizar a bola. */
+/** Tela inicial do Mini Golf (spec 082): jogar online (criar sala ou entrar por código), offline com 20 fases, personalizar a bola. */
 export function MiniGolfHome() {
   useTouchGuard();
   const navigate = useNavigate();
@@ -29,7 +29,7 @@ export function MiniGolfHome() {
         <div className="mgh-grid">
           <div className="mgh-left">
             <h1 className="mg-disp mgh-title">Mini<br />Golf</h1>
-            <p className="mgh-mut mgh-lead">40 fases para treinar sozinho, em três dificuldades. Menos tacadas ganha.</p>
+            <p className="mgh-mut mgh-lead">20 fases para treinar sozinho, em três dificuldades. Menos tacadas ganha.</p>
             <div className="mgh-btns">
               <button type="button" className="mg-pill pri mgh-big" onClick={() => setOnline((o) => !o)} aria-expanded={online} data-testid="mg-online">Jogar online</button>
               {online && (

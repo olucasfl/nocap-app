@@ -28,7 +28,7 @@ function aceFraction(lv: GolfLevel) {
 
 const out: Record<number, unknown> = {};
 describe('ranking de dificuldade', () => {
-  const [LO, HI] = (process.env.GOLF_RANGE ?? '1-40').split('-').map(Number) as [number, number];
+  const [LO, HI] = (process.env.GOLF_RANGE ?? '1-20').split('-').map(Number) as [number, number];
   for (let n = LO; n <= HI; n++) {
     it(`fase ${n}`, () => {
       const lv = load(n);

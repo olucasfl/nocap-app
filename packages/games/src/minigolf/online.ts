@@ -8,14 +8,14 @@ export const GOLF_ROOM_MAX = 8;
 export const GOLF_INTRO_MS = 3500;
 export const GOLF_CLEARED_MS = 3800;
 /** Quantos buracos a sala aceita, quais dificuldades e quanto tempo cada buraco dura (s). */
-export const GOLF_ROOM_HOLES = [3, 6, 9, 12, 18, 30, 40] as const;
+export const GOLF_ROOM_HOLES = [3, 6, 9, 12, 18, 20] as const;
 export const GOLF_ROOM_TIERS = ['mix', 'easy', 'medium', 'hard'] as const;
 export type GolfRoomTier = (typeof GOLF_ROOM_TIERS)[number];
 export const GOLF_ROOM_DEFAULTS = { holes: 9, tier: 'mix' as GolfRoomTier, seconds: 180, collide: true };
 
 /**
  * As fases da partida: não há escolha de dificuldade, só de quantos buracos. As fases são sorteadas pela seed (iguais para
- * todos) de forma proporcional às três dificuldades (12 buracos = 4 fáceis, 4 médias, 4 difíceis; 40 = todas) e jogadas
+ * todos) de forma proporcional às três dificuldades (12 buracos = 4 fáceis, 4 médias, 4 difíceis; 20 = todas) e jogadas
  * da mais fácil para a mais difícil (os números das fases já seguem a dificuldade).
  */
 export function golfPickLevels(seed: string, count: number, _tier?: GolfRoomTier): number[] {

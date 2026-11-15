@@ -78,7 +78,7 @@ describe('Mini Golf: física portada do Open Golf', () => {
   }
 
   it('bola devagar rolando para o buraco cai e só conta depois de assentar no fundo', () => {
-    const r = approach(1, 1.0, 3.0);
+    const r = approach(3, 1.0, 3.0);
     expect(r.b.inHole).toBe(true);
     expect(r.b.holed).toBe(true);
     // entre cair e valer passa um tempo (a bola cai, quica e assenta)
@@ -86,13 +86,13 @@ describe('Mini Golf: física portada do Open Golf', () => {
   });
 
   it('bola rápida passa por cima do buraco sem cair', () => {
-    // fase 40: a do Open Golf em que o buraco fica no meio, sem muro logo atrás (a bola não volta e cai)
-    const r = approach(40, 1.0, 12);
+    // fase 1: a do Open Golf em que o buraco fica no meio, sem muro logo atrás (a bola não volta e cai)
+    const r = approach(1, 1.0, 12);
     expect(r.b.holed).toBe(false);
   });
 
   it('bola que passa longe do buraco não cai', () => {
-    const r = approach(1, 1.0, 3.0, 0.9);
+    const r = approach(3, 1.0, 3.0, 0.9);
     expect(r.b.holed).toBe(false);
   });
 });

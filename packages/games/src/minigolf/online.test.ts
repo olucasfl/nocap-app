@@ -14,9 +14,9 @@ describe('Mini Golf online', () => {
     // 12 buracos: 4 fáceis, 4 médias, 4 difíceis
     const count = (t: 'easy' | 'medium' | 'hard') => a.filter((n) => (GOLF_TIERS[t] as readonly number[]).includes(n)).length;
     expect([count('easy'), count('medium'), count('hard')]).toEqual([4, 4, 4]);
-    for (const n of [3, 6, 9, 18, 30]) expect(golfPickLevels('abc', n)).toHaveLength(n);
-    // 40 buracos: todas, na ordem do offline
-    expect(golfPickLevels('abc', 40)).toEqual(Array.from({ length: 40 }, (_, i) => i + 1));
+    for (const n of [3, 6, 9, 18]) expect(golfPickLevels('abc', n)).toHaveLength(n);
+    // 20 buracos: todas, na ordem do offline
+    expect(golfPickLevels('abc', 20)).toEqual(Array.from({ length: 20 }, (_, i) => i + 1));
   });
 
   it('duas bolas que se encontram trocam velocidade e se separam', () => {
@@ -56,7 +56,7 @@ describe('Mini Golf online', () => {
   });
 
   it('a bola que cai no copo vale o acerto e libera o buraco', () => {
-    const data = golfServerLevel(21);
+    const data = golfServerLevel(3);
     const sim = new GolfHoleSim(data, ['a'], { collide: false, seconds: 60 });
     const h = data.holes[0]!.p;
     const p = sim.players.get('a')!;

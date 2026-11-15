@@ -76,6 +76,6 @@
 | 079 | [Fox GP, atualização](079-fox-gp-atualizacao.md) | 5 | implementada na `feat/fox-gp`; teste online com duas janelas verde (11/11/2026) |
 | 080 | [Fox GP v2](080-fox-gp-v2.md) | 5 | implementada na `feat/fox-gp` (11/11/2026); falta medir celular como líder com 20 carros |
 | 081 | [Fox GP v3](081-fox-gp-v3.md) | 5 | implementada na `feat/fox-gp-v3` (12/11/2026); falta calibrar jogando e medir celular como líder |
-| 082 | [Mini Golf](082-mini-golf.md) | 5 | feito (14/11/2026): física portada, 40 fases, garagem da bola, melhor marca na conta e sala online; falta validar em aparelhos reais |
+| 082 | [Mini Golf](082-mini-golf.md) | 5 | feito (14/11/2026): física portada, 20 fases do Open Golf, garagem da bola, melhor marca na conta e sala online; falta validar em aparelhos reais |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.

@@ -8,18 +8,16 @@ const [og, news] = process.argv.slice(2);
 const dir = path.resolve('packages/games/src/minigolf/levels');
 // ordem final: 1 a 4 bem simples; depois cresce em tamanho, obstáculos e truques (o = Open Golf, n = nova)
 const ORDER = [
-  'o3', 'o2', 'o4', 'n101', 'n205', 'o5', 'n201', 'o7', 'o9', 'n202',
-  'n204', 'n140', 'n206', 'o8', 'n209', 'n214', 'o13', 'n208', 'o12', 'n141',
-  'n211', 'o10', 'n212', 'n142', 'n216', 'n213', 'n218', 'n143', 'o15', 'n223',
-  'o16', 'n221', 'o17', 'n219', 'o18', 'o11', 'n224', 'n222', 'o20', 'o1'
+  'o1', 'o2', 'o3', 'o4', 'o5', 'o6', 'o7', 'o8', 'o9', 'o10',
+  'o11', 'o12', 'o13', 'o14', 'o15', 'o16', 'o17', 'o18', 'o19', 'o20'
 ];
-if (ORDER.length !== 40 || new Set(ORDER).size !== 40) throw new Error('ordem inválida');
+if (ORDER.length !== 20 || new Set(ORDER).size !== 20) throw new Error('ordem inválida');
 ORDER.forEach((k, i) => {
   const from = k[0] === 'o' ? path.join(og, `level-${k.slice(1)}.json`) : path.join(news, `level-${k.slice(1)}.json`);
   const j = JSON.parse(fs.readFileSync(from, 'utf8'));
   j.id = i + 1;
   fs.writeFileSync(path.join(dir, `level-${i + 1}.json`), JSON.stringify(j));
 });
-for (let n = 101; n <= 240; n++) fs.rmSync(path.join(dir, `level-${n}.json`), { force: true });
+for (let n = 21; n <= 240; n++) fs.rmSync(path.join(dir, `level-${n}.json`), { force: true });
 fs.writeFileSync('tools/art/minigolf/campaign-order.json', JSON.stringify(ORDER));
 console.log('ok:', ORDER.map((k, i) => `${i + 1}=${k}`).join(' '));
