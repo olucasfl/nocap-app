@@ -44,7 +44,17 @@ Tudo do Slash (`tools/art/nighthunt/extract.py` gera o atlas) mais arte nova no 
 
 ## 7. Calibração com o robô
 
-Veja a seção "Resultados do simulador" abaixo.
+Robô, mapa Campo Verde, 5 partidas por herói, limite de 12 min (15/11/2026, depois dos ajustes de Kael, Mara e Brann):
+
+| herói | tempo mediano | nível médio | abates | morreu antes dos 12 min |
+|---|---|---|---|---|
+| Kael | 3:50 | 3,8 | 139 | 5/5 |
+| Mara | 4:43 | 5,0 | 270 | 5/5 |
+| Brann | 10:11 | 10,0 | 953 | 5/5 |
+| Ysolde | 11:59 | 16,0 | 1758 | 2/5 |
+| Rurik | 10:14 | 14,0 | 1488 | 3/5 |
+
+Leitura: **o equilíbrio ainda não está bom.** Quem começa com Orbes, Raio ou Machado aguenta o triplo de quem começa só com a espada (Kael) ou com Adagas (Mara). O robô é um jogador só, então isto é um indício, não uma sentença, mas o próximo ajuste é fortalecer Kael e Mara (ou enfraquecer o início de Brann, Ysolde e Rurik) e rodar de novo com mais partidas.
 
 ## 8. Pendências
 
