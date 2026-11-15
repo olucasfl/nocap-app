@@ -8,6 +8,7 @@ import {
   GOLF_TIER_LABEL,
   golfHit,
   golfNewBall,
+  golfParOf,
   golfScoreName,
   golfStep,
   golfTierOf,
@@ -444,29 +445,51 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
               </div>
               <button type="button" className="mg-pill" onClick={() => setBoard(false)}>Fechar</button>
             </div>
-            <div className="mg-board-rows">
-              {ranked.map((m, i) => {
-                const tag = ranked.length > 1 && i === 0 ? 'Em primeiro' : ranked.length > 1 && i === ranked.length - 1 ? 'Em último' : '';
-                return (
-                  <div key={m.id} className={`mg-brow${m.id === me ? ' me' : ''}`}>
-                    <span className="mg-num">{i + 1}</span>
-                    <span className="mg-lobby-ball" style={{ background: hex(info.looks[m.id]?.color ?? 0xffc83d) }} aria-hidden="true" />
-                    <span className="mg-lobby-name">{nameOf(m.id, m.username)}</span>
-                    {tag && <span className={`mg-tag ${i === 0 ? 'mg-ace' : 'mg-bad'}`}>{tag}</span>}
-                    <span className="mg-cells">
-                      {info.results.map((r, k) => {
-                        const row = r.rows[m.id];
-                        const n = row ? golfScoreName(row.s, r.par, row.h) : null;
-                        return <span key={k} className={`mg-cell ${n ? nameClass(n) : 'mg-mut'}`}>{row ? row.s : '-'}</span>;
+            <div className="mg-sheet" data-testid="golf-sheet">
+              <table>
+                <thead>
+                  <tr>
+                    <th className="mg-sheet-name">Buraco</th>
+                    {info.levels.map((lv, k) => (
+                      <th key={k} className={k === hole ? 'now' : ''}>{k + 1}</th>
+                    ))}
+                    <th className="mg-sheet-total">Total</th>
+                  </tr>
+                  <tr className="mg-sheet-par">
+                    <th className="mg-sheet-name">Par</th>
+                    {info.levels.map((lv, k) => (
+                      <th key={k} className={k === hole ? 'now' : ''}>{info.results[k]?.par ?? golfParOf(lv)}</th>
+                    ))}
+                    <th className="mg-sheet-total">{info.levels.reduce((n, lv, k) => n + (info.results[k]?.par ?? golfParOf(lv)), 0)}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ranked.map((m, i) => (
+                    <tr key={m.id} className={m.id === me ? 'me' : ''}>
+                      <td className="mg-sheet-name">
+                        <span className="mg-num">{i + 1}</span>
+                        <span className="mg-lobby-ball" style={{ background: hex(info.looks[m.id]?.color ?? 0xffc83d) }} aria-hidden="true" />
+                        <span className="mg-lobby-name">{nameOf(m.id, m.username)}</span>
+                      </td>
+                      {info.levels.map((lv, k) => {
+                        const r = info.results[k];
+                        const row = r?.rows[m.id];
+                        if (row) {
+                          const n = golfScoreName(row.s, r!.par, row.h);
+                          return <td key={k} className={`mg-cell ${nameClass(n)}`}>{row.h ? row.s : 'X'}</td>;
+                        }
+                        // o buraco em andamento mostra as tacadas de agora, apagadas, até fechar
+                        const live = k === hole && !r && info.stage === 'play' ? info.strokes[m.id] : 0;
+                        return <td key={k} className="mg-cell mg-mut">{live ? live : ''}</td>;
                       })}
-                    </span>
-                    <span className="mg-total">{info.totals[m.id] ?? 0}</span>
-                  </div>
-                );
-              })}
+                      <td className="mg-sheet-total">{info.totals[m.id] ?? 0}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
-              <span className="mg-tag">Verde: abaixo do par · vermelho: acima</span>
+              <span className="mg-tag">Verde: abaixo do par · vermelho: acima · X: não encaçapou</span>
               <span style={{ flex: 1 }} />
               {snapshot.hostId === me && <button type="button" className="mg-pill ghost" onClick={() => sendRoom('gend')} data-testid="golf-end">Encerrar partida</button>}
               <button type="button" className="mg-pill ghost" onClick={leave}>Sair da partida</button>

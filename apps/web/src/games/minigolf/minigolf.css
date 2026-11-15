@@ -805,7 +805,7 @@
   animation: mg-fade 0.2s ease-out both;
 }
 .mg-board-card {
-  width: min(880px, 100%);
+  width: min(1100px, 100%);
   max-height: 100%;
   overflow: auto;
   padding: 18px 20px;
@@ -940,4 +940,152 @@
   margin: 0;
   color: #ff8a6a;
   font-size: 14px;
+}
+
+/* Placar em tabela (TAB): uma coluna por buraco, o par embaixo do número, a coluna do nome fixa ao rolar para o lado */
+.mg-sheet {
+  margin-top: 10px;
+  overflow-x: auto;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.22);
+}
+.mg-sheet table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.mg-sheet th,
+.mg-sheet td {
+  min-width: 30px;
+  padding: 6px 4px;
+  text-align: center;
+  font-family: var(--mg-disp);
+  font-size: 20px;
+  border-bottom: 1px solid var(--mg-line);
+}
+.mg-sheet thead th {
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mg-mut);
+}
+.mg-sheet thead th.now {
+  color: var(--mg-lime);
+}
+.mg-sheet .mg-sheet-par th {
+  font-size: 20px;
+  color: var(--mg-ink, #f4efe6);
+}
+.mg-sheet tbody td:not(.mg-sheet-name):not(.mg-sheet-total):nth-child(even) {
+  background: rgba(255, 255, 255, 0.04);
+}
+.mg-sheet .mg-sheet-name {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  display: table-cell;
+  min-width: 150px;
+  max-width: 190px;
+  padding-left: 10px;
+  text-align: left;
+  white-space: nowrap;
+  background: #14301f;
+}
+.mg-sheet .mg-sheet-name > * {
+  vertical-align: middle;
+  margin-right: 8px;
+}
+.mg-sheet .mg-sheet-name .mg-lobby-name {
+  display: inline-block;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mg-sheet .mg-sheet-total {
+  min-width: 56px;
+  padding-right: 10px;
+  font-size: 26px;
+  text-align: right;
+}
+.mg-sheet tr.me .mg-sheet-name {
+  background: #1d4a2c;
+}
+.mg-sheet .mg-cell {
+  min-width: 30px;
+}
+@media (max-width: 700px) {
+  .mg-sheet th,
+  .mg-sheet td {
+    font-size: 16px;
+    min-width: 26px;
+  }
+  .mg-sheet .mg-sheet-name {
+    min-width: 110px;
+  }
+  .mg-sheet .mg-sheet-name .mg-lobby-name {
+    max-width: 62px;
+  }
+}
+.mg-sheet .mg-sheet-name .mg-lobby-ball {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+}
+.mg-sheet thead .mg-sheet-total {
+  font-size: 14px;
+}
+.mg-sheet .mg-sheet-par .mg-sheet-total {
+  font-size: 20px;
+}
+
+/* Cabeçalho (buraco e par) com cara própria, para não se confundir com as notas das pessoas */
+.mg-sheet thead th {
+  background: #0a1510;
+  border-bottom: 0;
+}
+.mg-sheet thead tr:first-child th:not(.mg-sheet-name):not(.mg-sheet-total) {
+  padding-top: 10px;
+  color: var(--mg-lime);
+  font-size: 15px;
+}
+.mg-sheet thead tr:first-child th.now {
+  color: #0a1510;
+}
+.mg-sheet thead tr:first-child th.now::before {
+  content: '';
+  position: absolute;
+}
+.mg-sheet thead th.now {
+  background: var(--mg-lime);
+  color: #0a1510;
+}
+.mg-sheet .mg-sheet-par th:not(.mg-sheet-name):not(.mg-sheet-total) {
+  padding-bottom: 10px;
+  color: #ffc83d;
+  font-size: 20px;
+  border-bottom: 3px solid var(--mg-lime);
+}
+.mg-sheet .mg-sheet-par th.now {
+  color: #0a1510;
+}
+.mg-sheet thead .mg-sheet-name,
+.mg-sheet thead .mg-sheet-total {
+  background: #0a1510;
+  color: var(--mg-lime);
+  letter-spacing: 0.12em;
+}
+.mg-sheet .mg-sheet-par .mg-sheet-name {
+  border-bottom: 3px solid var(--mg-lime);
+  color: #ffc83d;
+}
+.mg-sheet .mg-sheet-par .mg-sheet-total {
+  border-bottom: 3px solid var(--mg-lime);
+  color: #ffc83d;
+}
+.mg-sheet tbody td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.mg-sheet thead th.now {
+  color: #0a1510 !important;
+  font-size: 22px;
 }
