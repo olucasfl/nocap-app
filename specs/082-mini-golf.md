@@ -53,8 +53,15 @@ licenças das texturas e modelos do repositório (conferir antes de copiar arte;
 
 ## Campanha (decisão do Lucas em 14/11/2026)
 
-A campanha tem as **20 fases do Open Golf, exatamente como no original** (geometria, muros de madeira, obstáculos e movimento), na ordem original (1 a 20), mais a **fase 21, o Grande Circuito**, nossa, feita só com peças do Open Golf (as fases 21 a 40 que tínhamos feito foram removidas).
+A campanha tem as **20 fases do Open Golf, exatamente como no original** (geometria, muros de madeira, obstáculos e movimento), na ordem original (1 a 20), mais a **fase 21, o Grande Circuito**, nossa, feita só com peças do Open Golf, e as **fases 22 a 25** (A Janela, Gangorra, Longa Distância e Pulo em Pulo), nossas, com peças novas (as fases 21 a 40 que tínhamos feito foram removidas).
 
 **Grande Circuito (fase 21):** circuito que desce em andares (começa 3 m acima do deque da fase 5), com corredores de 5 m e muros no tamanho do original (0,5 m de espessura, 0,375 m de altura). Em ordem: reta com os dois pêndulos da fase 6 (os vãos dos lados são fechados com blocos, então a bola tem de passar pelo pêndulo), o loop da fase 9 (entrada na diagonal, a partir de uma área de manobra de 6 m), reta com as lombadas da fase 4 e um giratório da fase 1 com os lados fechados, curva arredondada, reta com o rio da fase 7 (corrente 5x empurrando a bola para o muro), descida suave de 3 m e as quatro paredes deslizantes da fase 18, duas curvas em S, colina de 1,5 m com um giratório no alto e, por fim, a fase 5 inteira (rampa suave, espiral que desce 6 m e câmara redonda do buraco). Montada em `tools/art/minigolf/build-levels.mjs` (`grandCircuit`).
 
 As dificuldades agrupam as fases em 7, 7 e 7 (fácil 1 a 7, média 8 a 14, difícil 15 a 21); a sala online sorteia proporcional entre elas (21 buracos = todas). As ferramentas de `tools/art/minigolf/` ficam como histórico de trabalho.
+
+**Peças novas (fases 22 a 25), em `build-levels.mjs` (`kit`):**
+- **Janela na parede:** muro de 1,2 m com abertura de 0,5 m x 0,35 m no chão (a bola tem 0,24 m); pode ser fixa ou deslizar de lado.
+- **Moinho:** base com túnel de 0,75 x 0,65 m e oito pás que giram na vertical na frente da porta. É a peça móvel nova `rotor` da engine (`physics.ts`: giro completo ao redor de um eixo qualquer; o Open Golf só tem giro no eixo vertical, pêndulo, rampa e linear).
+- **Redemoinho:** disco de água em que cada fatia empurra a bola em volta (corrente tangencial) e um pouco para o centro; usa a água do Open Golf.
+- **Tubo:** a bola rola por dentro de um cilindro de 12 lados (faces viradas para dentro), reto ou descendo.
+- **Gangorra e ponte:** tábua que levanta e desce (peça `ramp` do Open Golf), com muretas juntas; a ponte fica aberta 2,4 s e fechada 2,4 s.

@@ -1,14 +1,14 @@
 /** Regras do Mini Golf (spec 082): par de cada fase, limite de tacadas, tempo e os nomes do golfe. */
 
-/** Par de cada fase (índice 0 = fase 1). As 20 primeiras são as do Open Golf, na ordem original; a 21 (Grande Circuito) é nossa, feita só com peças do Open Golf (spec 082). */
-export const GOLF_PARS = [2, 2, 3, 3, 3, 3, 3, 4, 3, 4, 3, 4, 3, 4, 4, 4, 4, 5, 5, 5, 5] as const;
+/** Par de cada fase (índice 0 = fase 1). As 20 primeiras são as do Open Golf, na ordem original; as 21 a 25 (Grande Circuito, A Janela, Gangorra, Longa Distância e Pulo em Pulo) são nossas, feita só com peças do Open Golf (spec 082). */
+export const GOLF_PARS = [2, 2, 3, 3, 3, 3, 3, 4, 3, 4, 3, 4, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5] as const;
 export const GOLF_LEVELS = GOLF_PARS.length;
 export type GolfTier = 'easy' | 'medium' | 'hard';
 /** As fases de cada dificuldade, na ordem em que se joga (a "próxima fase" segue esta ordem). */
 export const GOLF_TIERS: Record<GolfTier, readonly number[]> = {
   easy: [1, 2, 3, 4, 5, 6, 7],
   medium: [8, 9, 10, 11, 12, 13, 14],
-  hard: [15, 16, 17, 18, 19, 20, 21],
+  hard: [15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25],
 };
 export const GOLF_TIER_LABEL: Record<GolfTier, string> = { easy: 'Fácil', medium: 'Média', hard: 'Difícil' };
 /** A "próxima fase" segue a ordem do Open Golf (1 a 20). */
@@ -25,7 +25,7 @@ export const GOLF_FAIL_STROKES = GOLF_STROKE_LIMIT + GOLF_FAIL_EXTRA;
 export const GOLF_HOLE_SECONDS = [60, 180, 300] as const;
 export const GOLF_HOLE_SECONDS_DEFAULT = 180;
 /** Quantidade de buracos que a sala pode escolher. */
-export const GOLF_HOLE_COUNTS = [3, 6, 9, 12, 18, 21] as const;
+export const GOLF_HOLE_COUNTS = [3, 6, 9, 12, 18, 25] as const;
 
 export const golfParOf = (level: number): number => GOLF_PARS[Math.max(1, Math.min(GOLF_LEVELS, level)) - 1]!;
 

@@ -13,7 +13,7 @@ export interface GolfMaterial {
   v: number;
 }
 export interface GolfMovement {
-  type: 'linear' | 'spinner' | 'pendulum' | 'ramp';
+  type: 'linear' | 'spinner' | 'pendulum' | 'ramp' | 'rotor';
   t0: number;
   length: number;
   p0?: V3;
@@ -161,6 +161,10 @@ export function golfApplyMovement(base: Tf, m: GolfMovement, tIn: number): Tf {
     }
     case 'spinner':
       out.r = qMul(qAxis([0, 1, 0], 2 * Math.PI * (t / l)), base.r);
+      break;
+    case 'rotor':
+      // pás de moinho (nossa, fora do Open Golf): giro completo ao redor de um eixo qualquer, no ponto-base da peça
+      out.r = qMul(qAxis(m.axis!, 2 * Math.PI * (t / l)), base.r);
       break;
     case 'pendulum': {
       let a = 2 * (t / l);

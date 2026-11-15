@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { golfHit, golfNewBall, golfStep, golfStrokeSpeed, GolfLevel, GOLF_DT, type GolfLevelData } from './physics';
+import { golfApplyMovement, golfHit, golfNewBall, golfStep, golfStrokeSpeed, GolfLevel, GOLF_DT, type GolfLevelData } from './physics';
 
 const load = (n: number) =>
   new GolfLevel(JSON.parse(readFileSync(new URL(`./levels/level-${n}.json`, import.meta.url), 'utf8')) as GolfLevelData);
@@ -94,5 +94,18 @@ describe('Mini Golf: física portada do Open Golf', () => {
   it('bola que passa longe do buraco não cai', () => {
     const r = approach(3, 1.0, 3.0, 0.9);
     expect(r.b.holed).toBe(false);
+  });
+
+  it('rotor: pás de moinho dão uma volta completa no eixo horizontal e voltam ao começo', () => {
+    const base = { p: [0, 1, 0] as [number, number, number], s: [1, 1, 1] as [number, number, number], r: [0, 0, 0, 1] as [number, number, number, number] };
+    const m = { type: 'rotor' as const, t0: 0, length: 4, axis: [0, 0, 1] as [number, number, number] };
+    const q0 = golfApplyMovement(base, m, 0).r;
+    const q1 = golfApplyMovement(base, m, 1).r; // um quarto de volta
+    const q2 = golfApplyMovement(base, m, 2).r; // meia volta
+    const q4 = golfApplyMovement(base, m, 4 - 1e-9).r;
+    expect(q0[3]).toBeCloseTo(1, 6);
+    expect(q1[2]).toBeCloseTo(Math.sin(Math.PI / 4), 6); // eixo z, 90 graus
+    expect(q2[2]).toBeCloseTo(1, 6); // 180 graus
+    expect(Math.abs(q4[3])).toBeCloseTo(1, 4); // volta completa = sem giro
   });
 });

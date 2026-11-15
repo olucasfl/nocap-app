@@ -56,7 +56,7 @@ interface Result {
 }
 
 
-/** Mini Golf offline (spec 082): 21 fases abertas, em três dificuldades; cai no buraco e escolhe próxima, repetir, escolher fase ou menu. */
+/** Mini Golf offline (spec 082): 25 fases abertas, em três dificuldades; cai no buraco e escolhe próxima, repetir, escolher fase ou menu. */
 export function MiniGolfPage() {
   useTouchGuard();
   const navigate = useNavigate();
