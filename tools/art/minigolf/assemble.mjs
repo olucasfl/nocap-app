@@ -9,8 +9,8 @@ const dir = path.resolve('packages/games/src/minigolf/levels');
 // ordem final: 1 a 4 bem simples; depois cresce em tamanho, obstáculos e truques (o = Open Golf, n = nova)
 const ORDER = [
   'o3', 'o2', 'o4', 'n101', 'n130', 'o5', 'n131', 'n132', 'o9', 'n116',
-  'n133', 'o10', 'n115', 'n105', 'o6', 'n111', 'n113', 'n134', 'n120', 'o11',
-  'n135', 'n124', 'n136', 'o13', 'n102', 'n137', 'n139', 'o7', 'o15', 'n123',
+  'n133', 'n140', 'n115', 'n105', 'o6', 'n111', 'n113', 'n134', 'n120', 'n141',
+  'n135', 'n124', 'n136', 'n142', 'n102', 'n137', 'n139', 'n143', 'o15', 'n123',
   'o16', 'n122', 'o17', 'n112', 'o18', 'n117', 'n138', 'n109', 'o20', 'o1'
 ];
 if (ORDER.length !== 40 || new Set(ORDER).size !== 40) throw new Error('ordem inválida');
