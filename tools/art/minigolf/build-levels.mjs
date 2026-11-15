@@ -1197,7 +1197,7 @@ function level23() {
   K.block(CX1 - 3.5, OX - 1.6, OZ - 0.5, OZ, y, 0.375); // fecha o norte da área de manobra, deixando a boca da pista do loop aberta
   L.loop(OX, y, OZ, 0, false);
   const XE = OX + 3.86;
-  K.lane(XE, OZ - 3, 7, { y });
+  K.lane(XE, OZ - 3, 7, { y, gaps: [[1, 6]] });
   K.block(XE - 3, XE - 1.15, OZ - 3, OZ - 3 + 0.5, y, 0.375); // fecha o sul da pista de saída, deixando a boca aberta
   K.block(XE + 1.15, XE + 3, OZ - 3, OZ - 3 + 0.5, y, 0.375);
   K.spinner(XE, OZ - 3 - 3.5, y);
@@ -1217,16 +1217,23 @@ function level23() {
 function level24() {
   const L = new Level(253), K = kit(L);
   let y = 0;
-  K.lane(0, 9, 11, { y });
+  K.lane(0, 9, 11, { y, gaps: [[1.5, 6.5]] }); // sem piso embaixo da plataforma do giratório
   K.cap(0, 9, 5, y);
   K.spinner(0, 5, y);
   // rampa longa e estreita: 4 m de altura em 26 m
+  // emenda da pista larga (5 m) com a rampa estreita (3,6 m): blocos fecham o vão de piso que sobra dos lados
+  K.block(-3.0, -1.8, -2.0, -1.5, 0, 0.375);
+  K.block(1.8, 3.0, -2.0, -1.5, 0, 0.375);
   K.lane(0, -2, 26, { y, W: 3.6, ramps: [{ s0: 1, len: 24, dh: 4 }] });
   y = 4;
   K.lane(0, -28, 10, { y });
   K.windmill({ cx: 0, zc: -34, y, depth: 3.4 });
   // tubo que desce 5 m em 14 m e vai dar na ilha do redemoinho
+  K.block(-3.0, -1.0, -38.0, -37.5, y, 0.375); // emenda da pista larga com o trecho estreito do tubo
+  K.block(1.0, 3.0, -38.0, -37.5, y, 0.375);
   K.lane(0, -38, 2.5, { y, W: 2 });
+  K.block(-1.5, -0.62, -40.5, -40.0, y, 1.3); // parede em volta da boca do tubo
+  K.block(0.62, 1.5, -40.5, -40.0, y, 1.3);
   K.tube(0, [-40.5, y], [-54.5, 0], 0.7);
   K.lane(0, -54.5, 14, { y: 0 });
   K.whirlpool(0, -61.5, 0, 3.0, { swirl: 1.0, pull: 0.2 });
@@ -1250,7 +1257,7 @@ function level25() {
       b.box(2.5, -0.125, -4, 3, 0.375, 0, 'wall-top', 'wall-side');
     });
   bridge(2.2, 0);
-  K.lane(0, -1.8, 5, { y }); // ilha 2: giratório
+  K.lane(0, -1.8, 5, { y, gaps: [[0, 5]] }); // ilha 2: giratório (a plataforma dele é o piso)
   K.spinner(0, -4.3, y);
   bridge(-6.8, 3);
   // ilha 3: área de manobra e loop
