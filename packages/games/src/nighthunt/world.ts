@@ -42,7 +42,14 @@ export interface MetaLevels {
   xpGatherer: number;
   goldGatherer: number;
 }
-export const NO_META: MetaLevels = { health: 0, overallDamage: 0, projectilePiercing: 0, movementSpeed: 0, xpGatherer: 0, goldGatherer: 0 };
+export const NO_META: MetaLevels = {
+  health: 0,
+  overallDamage: 0,
+  projectilePiercing: 0,
+  movementSpeed: 0,
+  xpGatherer: 0,
+  goldGatherer: 0,
+};
 
 export interface NhInput {
   x: number;
@@ -119,7 +126,9 @@ export interface RunResult {
 }
 
 const BY_ID = new Map(ENEMIES.map((e) => [e.id, e]));
-const PERIODIC = new Map<string, { followTime: number; waitTime: number }>(PERIODIC_FOLLOW.map((p) => [p.enemyIdToAffect, p]));
+const PERIODIC = new Map<string, { followTime: number; waitTime: number }>(
+  PERIODIC_FOLLOW.map((p) => [p.enemyIdToAffect, p]),
+);
 const r1 = (n: number) => Math.round(n * 10) / 10;
 
 export class NhWorld {
@@ -127,14 +136,28 @@ export class NhWorld {
   t = 0;
   tick = 0;
   alive = true;
-  player = { x: 0, y: 0, hp: 0, maxHp: 0, speed: 0, face: 1, moving: false, damageMult: 0 };
+  player = { x: 0, y: 0, hp: 0, maxHp: 0, speed: 0, face: -1, moving: false, damageMult: 0 };
   level = 0;
   xp = 0;
   xpMult = 1;
   regen = { amount: 0, timer: 0, delay: PLAYER_SETTINGS.regenerationDelay };
-  weapon = { timer: 0, active: false, t: 0, damage: 0, lengthLevel: 0, inContact: new Set<number>() };
+  weapon = {
+    timer: 0,
+    active: false,
+    t: 0,
+    damage: 0,
+    lengthLevel: 0,
+    inContact: new Set<number>(),
+  };
   magnet = { active: false, left: 0, inRange: new Set<number>() };
-  levels: Record<UpgradeId, number> = { weaponLength: 0, weaponDamage: 0, horizontal: 0, diagonal: 0, halo: 0, regeneration: 0 };
+  levels: Record<UpgradeId, number> = {
+    weaponLength: 0,
+    weaponDamage: 0,
+    horizontal: 0,
+    diagonal: 0,
+    halo: 0,
+    regeneration: 0,
+  };
   launchers = {
     horizontal: { timer: 0, waves: 0, burst: 0, burstLeft: 0, burstTimer: 0 },
     diagonal: { timer: 0, waves: 0, burst: 0, burstLeft: 0, burstTimer: 0 },
@@ -169,7 +192,8 @@ export class NhWorld {
     private meta: MetaLevels = NO_META,
   ) {
     this.rng = createRng('nighthunt:' + seed);
-    const bonus = (levels: number, key: keyof typeof META_SETTINGS) => (levels <= 0 ? 0 : ((META_SETTINGS[key].bonuses as readonly number[])[levels - 1] ?? 0));
+    const bonus = (levels: number, key: keyof typeof META_SETTINGS) =>
+      levels <= 0 ? 0 : ((META_SETTINGS[key].bonuses as readonly number[])[levels - 1] ?? 0);
     this.player.maxHp = PLAYER_SETTINGS.defaultHP + bonus(meta.health, 'health');
     this.player.hp = this.player.maxHp;
     this.player.speed = PLAYER_SETTINGS.speed + bonus(meta.movementSpeed, 'movementSpeed');
@@ -292,7 +316,14 @@ export class NhWorld {
     const s = Math.sin(a);
     const px = this.player.x;
     const py = this.player.y + SWORD_PIVOT_Y;
-    return { kind: 'box', cx: px + b.ox * c - b.oy * s, cy: py + b.ox * s + b.oy * c, w: b.w, h: b.h, rot: a };
+    return {
+      kind: 'box',
+      cx: px + b.ox * c - b.oy * s,
+      cy: py + b.ox * s + b.oy * c,
+      w: b.w,
+      h: b.h,
+      rot: a,
+    };
   }
 
   private tickMagnet(dt: number): void {
@@ -376,7 +407,9 @@ export class NhWorld {
         break;
       case 'halo':
         this.launchers.halo.timer = 0;
-        this.launchers.halo.cooldown = L.haloLauncher.launcher.cooldown / (L.haloLauncher.cooldownDivisorPerUpgrade * this.levels.halo);
+        this.launchers.halo.cooldown =
+          L.haloLauncher.launcher.cooldown /
+          (L.haloLauncher.cooldownDivisorPerUpgrade * this.levels.halo);
         break;
       case 'regeneration':
         this.regen.amount++;
@@ -434,7 +467,8 @@ export class NhWorld {
     this.spawnerTime += dt;
     const now = this.spawnerTime;
     let n = 0;
-    const active = (start: number, stop: number) => start <= now && now <= (stop === -1 ? Infinity : stop);
+    const active = (start: number, stop: number) =>
+      start <= now && now <= (stop === -1 ? Infinity : stop);
     for (const sp of INDIVIDUAL_SPAWNERS) {
       const i = n++;
       const c = sp.common;
@@ -455,7 +489,8 @@ export class NhWorld {
       if ((this.spawnTimers[i] ?? 0) >= c.cooldown) {
         this.spawnTimers[i] = 0;
         const angle = (2 * Math.PI) / sp.enemiesToSpawn;
-        for (let k = 0; k < sp.enemiesToSpawn; k++) this.spawnEnemy(r1(Math.sin(angle * k)) * 600, r1(Math.cos(angle * k)) * 600, c.enemyId);
+        for (let k = 0; k < sp.enemiesToSpawn; k++)
+          this.spawnEnemy(r1(Math.sin(angle * k)) * 600, r1(Math.cos(angle * k)) * 600, c.enemyId);
       }
     }
     for (const sp of WAVE_SPAWNERS) {
@@ -471,7 +506,11 @@ export class NhWorld {
         for (let k = 0; k < sp.enemiesToSpawn; k++) {
           const ox = -20 + this.rng() * 40;
           const oy = -20 + this.rng() * 40;
-          this.spawnEnemy(bx + ox + 50 * (k % side), by + oy + 50 * Math.floor(k / side), c.enemyId);
+          this.spawnEnemy(
+            bx + ox + 50 * (k % side),
+            by + oy + 50 * Math.floor(k / side),
+            c.enemyId,
+          );
         }
       }
     }
@@ -561,7 +600,17 @@ export class NhWorld {
   }
 
   // ---- projéteis ----
-  private fire(kind: ProjectileKind, x: number, y: number, dirs: [number, number][], speed: number, life: number, damage: number, pierces: number, hostile: boolean): void {
+  private fire(
+    kind: ProjectileKind,
+    x: number,
+    y: number,
+    dirs: [number, number][],
+    speed: number,
+    life: number,
+    damage: number,
+    pierces: number,
+    hostile: boolean,
+  ): void {
     for (const [dx, dy] of dirs) {
       const l = Math.hypot(dx, dy) || 1;
       this.projectiles.push({
@@ -585,7 +634,14 @@ export class NhWorld {
     const P = PLAYER_SETTINGS;
     const px = this.player.x;
     const py = this.player.y;
-    type WaveCfg = { launcher: { projectileLifetime: number; projectileSpeed: number; wavesDelayMs: number; cooldown: number } };
+    type WaveCfg = {
+      launcher: {
+        projectileLifetime: number;
+        projectileSpeed: number;
+        wavesDelayMs: number;
+        cooldown: number;
+      };
+    };
     const wave = (key: 'horizontal' | 'diagonal', cfg: WaveCfg, dirs: [number, number][]) => {
       const l = this.launchers[key];
       if (this.levels[key] === 0) return;
@@ -600,7 +656,17 @@ export class NhWorld {
         if (l.burstTimer <= 0) {
           l.burstLeft--;
           l.burstTimer = cfg.launcher.wavesDelayMs / 1000;
-          this.fire(key, px, py, dirs, cfg.launcher.projectileSpeed, cfg.launcher.projectileLifetime, this.projPierceDamage, this.projPierces, false);
+          this.fire(
+            key,
+            px,
+            py,
+            dirs,
+            cfg.launcher.projectileSpeed,
+            cfg.launcher.projectileLifetime,
+            this.projPierceDamage,
+            this.projPierces,
+            false,
+          );
           this.events.push({ k: 'fire', kind: key });
         }
       }
@@ -623,7 +689,17 @@ export class NhWorld {
         const a = (2 * Math.PI) / n;
         const dirs: [number, number][] = [];
         for (let i = 0; i < n; i++) dirs.push([r1(Math.sin(a * i)), r1(Math.cos(a * i))]);
-        this.fire('halo', px, py, dirs, P.haloLauncher.launcher.projectileSpeed, P.haloLauncher.launcher.projectileLifetime, this.projPierceDamage, this.projPierces, false);
+        this.fire(
+          'halo',
+          px,
+          py,
+          dirs,
+          P.haloLauncher.launcher.projectileSpeed,
+          P.haloLauncher.launcher.projectileLifetime,
+          this.projPierceDamage,
+          this.projPierces,
+          false,
+        );
         this.events.push({ k: 'fire', kind: 'halo' });
       }
     }
@@ -637,13 +713,27 @@ export class NhWorld {
   private tickEnemyLaunchers(dt: number): void {
     for (const e of this.enemies) {
       if (e.dead) continue;
-      const cfg = (AXE_LAUNCHER.enemyIds as readonly string[]).includes(e.s.id) ? ('axe' as const) : (MAGIC_ORB_LAUNCHER.enemyIds as readonly string[]).includes(e.s.id) ? ('orb' as const) : null;
+      const cfg = (AXE_LAUNCHER.enemyIds as readonly string[]).includes(e.s.id)
+        ? ('axe' as const)
+        : (MAGIC_ORB_LAUNCHER.enemyIds as readonly string[]).includes(e.s.id)
+          ? ('orb' as const)
+          : null;
       if (!cfg) continue;
       const L = cfg === 'axe' ? AXE_LAUNCHER : MAGIC_ORB_LAUNCHER;
       e.shootTimer += dt;
       if (e.shootTimer >= L.cooldown) {
         e.shootTimer = 0;
-        this.fire(cfg, e.x, e.y, [[this.player.x - e.x, this.player.y - e.y]], L.projectileSpeed, L.projectileLifetime, L.projectileDamage, 1, true);
+        this.fire(
+          cfg,
+          e.x,
+          e.y,
+          [[this.player.x - e.x, this.player.y - e.y]],
+          L.projectileSpeed,
+          L.projectileLifetime,
+          L.projectileDamage,
+          1,
+          true,
+        );
       }
     }
   }
@@ -694,7 +784,13 @@ export class NhWorld {
 
   // ---- contatos ----
   private playerShape(): Shape {
-    return { kind: 'box', cx: this.player.x + PLAYER_BOX.ox, cy: this.player.y + PLAYER_BOX.oy, w: PLAYER_BOX.w, h: PLAYER_BOX.h };
+    return {
+      kind: 'box',
+      cx: this.player.x + PLAYER_BOX.ox,
+      cy: this.player.y + PLAYER_BOX.oy,
+      w: PLAYER_BOX.w,
+      h: PLAYER_BOX.h,
+    };
   }
   enemyShape(e: Enemy): Shape {
     const b = ENEMY_BOX[e.s.graphicsType] ?? ENEMY_BOX.Skeleton!;
@@ -740,7 +836,8 @@ export class NhWorld {
       if (e.dead) continue;
       if (overlaps(ps, this.enemyShape(e))) {
         now.add(e.uid);
-        if (!this.playerContacts.has(e.uid) || resolveAll) damageNow.push(() => this.hurtPlayer(e.s.damage));
+        if (!this.playerContacts.has(e.uid) || resolveAll)
+          damageNow.push(() => this.hurtPlayer(e.s.damage));
       }
     }
     this.playerContacts = now;
@@ -762,7 +859,11 @@ export class NhWorld {
         if (this.pending) {
           // janela aberta: o resto do passo continua só para limpar o que já foi coletado
         }
-      } else if (this.magnet.active && !it.attracted && overlaps({ kind: 'circle', cx: this.player.x, cy: this.player.y, r: MAGNET_RADIUS }, sh)) {
+      } else if (
+        this.magnet.active &&
+        !it.attracted &&
+        overlaps({ kind: 'circle', cx: this.player.x, cy: this.player.y, r: MAGNET_RADIUS }, sh)
+      ) {
         it.attracted = true;
       }
     }

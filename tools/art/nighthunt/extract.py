@@ -103,4 +103,10 @@ for k, v in amap.items():
     shutil.copy(os.path.join(media, 'Audio', 'Game', k), os.path.join(adir, v))
 shutil.copy(os.path.join(media, 'Audio', 'Menu', 'Special_Powerup_09.mp3'), os.path.join(adir, 'menu-open.mp3'))
 shutil.copy(os.path.join(media, 'Audio', 'Shared', 'UI_Click_1.mp3'), os.path.join(adir, 'click.mp3'))
+# fontes bitmap (BMFont): Square (latim completo) e Bonk Fatty (títulos, sem acentos)
+fdir = os.path.join(out, 'fonts')
+os.makedirs(fdir, exist_ok=True)
+for fnt, png, name in (('Square/Square.fnt', 'Square/Square_0.png', 'square'), ('Bitmap/bonkfat.fnt', 'Bitmap/bonkfat_0.png', 'bonk')):
+    shutil.copy(os.path.join(media, 'Fonts', fnt), os.path.join(fdir, name + '.fnt'))
+    shutil.copy(os.path.join(media, 'Fonts', png), os.path.join(fdir, name + '.png'))
 print('frames', len(frames), 'atlas', W, H, 'anims', len(anims))

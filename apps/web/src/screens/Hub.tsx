@@ -8,6 +8,7 @@ import {
   EcoArt,
   FoxGpArt,
   MiniGolfArt,
+  NightHuntArt,
   PingArt,
   TimeArt,
 } from '@/components/HubArt';
@@ -141,6 +142,7 @@ const GAMES: GameDef[] = [
   { id: 'atravessa', section: 'action', to: '/fox-cap', search: { jogo: 'atravessa' }, cls: 'hub-card-atravessa', art: <AtravessaArt />, name: 'Atravessa!', tag: 'Reflexo', size: 'long' },
   { id: 'pingpong', section: 'sport', to: '/fox-cap', search: { jogo: 'pingpong' }, cls: 'hub-card-ping', art: <PingArt />, name: 'Ping Fox!', tag: 'Duelo' },
   { id: 'desmorona', section: 'action', to: '/fox-cap', search: { jogo: 'desmorona' }, cls: 'hub-card-desmorona', art: <DesmoronaArt />, name: 'Desmorona!', tag: 'Sobrevivência', size: 'long' },
+  { id: 'nighthunt', section: 'action', to: '/nighthunt', cls: 'hub-card-nighthunt', art: <NightHuntArt />, name: 'Night Hunt', tag: 'Sobrevivência', badge: 'NOVO', size: 'long' },
   { id: 'minigolf', section: 'sport', to: '/minigolf', cls: 'hub-card-golf', art: <MiniGolfArt />, name: 'Mini Golf', tag: 'Golfe', badge: 'NOVO' },
   { id: 'words', section: 'brain', to: '/words', cls: 'hub-card-words', art: <WordsHubArt />, name: "Word's", tag: 'Palavras' },
   { id: 'blocks', section: 'brain', to: '/blocks', cls: 'hub-card-blocks', art: <BlocksArt />, name: "Block's", tag: 'Blocos' },

@@ -1,14 +1,14 @@
 import type { Shape } from './geometry';
 
 /** Tamanhos de colisão lidos dos prefabs do Slash (nó raiz com escala 2: tamanho e deslocamento já multiplicados por 2). */
-export interface BoxDef {
+export interface NhBoxDef {
   w: number;
   h: number;
   ox: number;
   oy: number;
 }
 
-export const ENEMY_BOX: Record<string, BoxDef> = {
+export const ENEMY_BOX: Record<string, NhBoxDef> = {
   Barbarian: { w: 44, h: 50.2, ox: 0, oy: 0.8 },
   Bat: { w: 38.8, h: 21.4, ox: -0.8, oy: 7.6 },
   BossOrcKing: { w: 83.8, h: 87, ox: 2.2, oy: -12 },
@@ -22,10 +22,10 @@ export const ENEMY_BOX: Record<string, BoxDef> = {
 };
 
 /** Colisor do jogador (escala 1). */
-export const PLAYER_BOX: BoxDef = { w: 37.3, h: 49.9, ox: 0.3, oy: 2.1 };
+export const PLAYER_BOX: NhBoxDef = { w: 37.3, h: 49.9, ox: 0.3, oy: 2.1 };
 
 /** Os 6 colisores da espada (escala 2): comprimento e deslocamento já ao dobro. A espada gira em torno de (0, 4). */
-export const SWORD_BOXES: readonly BoxDef[] = [
+export const SWORD_BOXES: readonly NhBoxDef[] = [
   { w: 60, h: 20, ox: -59.8, oy: 0 },
   { w: 80, h: 20, ox: -70, oy: 0 },
   { w: 100, h: 20, ox: -80, oy: 0 },
@@ -55,10 +55,12 @@ export function swordAngleDeg(t: number): number {
   const m1 = (b.ml ?? 0) * dt;
   const s2 = s * s;
   const s3 = s2 * s;
-  return (2 * s3 - 3 * s2 + 1) * a.v + (s3 - 2 * s2 + s) * m0 + (-2 * s3 + 3 * s2) * b.v + (s3 - s2) * m1;
+  return (
+    (2 * s3 - 3 * s2 + 1) * a.v + (s3 - 2 * s2 + s) * m0 + (-2 * s3 + 3 * s2) * b.v + (s3 - s2) * m1
+  );
 }
 
-export interface ItemDef {
+export interface NhItemDef {
   shape: 'circle' | 'box';
   r?: number;
   w?: number;
@@ -67,7 +69,7 @@ export interface ItemDef {
   oy: number;
 }
 export type ItemType = 'xp' | 'gold' | 'health' | 'magnet' | 'chest';
-export const ITEM_SHAPES: Record<ItemType, ItemDef> = {
+export const ITEM_SHAPES: Record<ItemType, NhItemDef> = {
   xp: { shape: 'circle', r: 16, ox: 0, oy: 0 },
   gold: { shape: 'box', w: 36, h: 40, ox: 0, oy: 8 },
   health: { shape: 'circle', r: 16, ox: 1, oy: -6.8 },
@@ -78,7 +80,10 @@ export const MAGNET_RADIUS = 260;
 export const ITEM_ATTRACT_ACCEL = 100;
 
 export type ProjectileKind = 'horizontal' | 'diagonal' | 'halo' | 'axe' | 'orb';
-export const PROJECTILE_SHAPE: Record<ProjectileKind, (x: number, y: number, rot: number) => Shape> = {
+export const PROJECTILE_SHAPE: Record<
+  ProjectileKind,
+  (x: number, y: number, rot: number) => Shape
+> = {
   horizontal: (x, y) => ({ kind: 'circle', cx: x, cy: y, r: 26 }),
   diagonal: (x, y) => ({ kind: 'circle', cx: x, cy: y, r: 26 }),
   halo: (x, y, rot) => ({ kind: 'box', cx: x, cy: y, w: 16, h: 8, rot }),
@@ -89,5 +94,13 @@ export const PROJECTILE_SHAPE: Record<ProjectileKind, (x: number, y: number, rot
 export const VIEW_WIDTH = 510;
 export const VIEW_HEIGHT = 680;
 
-export type UpgradeId = 'weaponLength' | 'weaponDamage' | 'horizontal' | 'diagonal' | 'halo' | 'regeneration';
-export const UPGRADE_IDS: readonly UpgradeId[] = ['weaponLength', 'weaponDamage', 'horizontal', 'diagonal', 'halo', 'regeneration'];
+export type UpgradeId =
+  'weaponLength' | 'weaponDamage' | 'horizontal' | 'diagonal' | 'halo' | 'regeneration';
+export const UPGRADE_IDS: readonly UpgradeId[] = [
+  'weaponLength',
+  'weaponDamage',
+  'horizontal',
+  'diagonal',
+  'halo',
+  'regeneration',
+];

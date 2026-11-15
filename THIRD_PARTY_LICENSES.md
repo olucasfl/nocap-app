@@ -43,3 +43,8 @@ https://github.com/mgerdes/Open-Golf (MIT, Copyright (c) 2020 Michael Gerdes)
 
 O Mini Golf (spec 082) porta a física, o formato de fase e as 20 fases deste projeto. Texturas, modelos e sons do
 repositório só entram depois de conferida a licença de cada um.
+
+
+## Night Hunt: Slash The Hordes (licença NÃO confirmada)
+
+Arte, animações, sons, música, fontes bitmap e números de regra do Night Hunt vêm de `github.com/MartinKral/Slash-The-Hordes` (aberto "with the courtesy of Y8.com"; o repositório não traz licença). Uso por decisão do Lucas para desenvolvimento. **Confirmar com a Y8.com e o autor, ou trocar o material, antes de publicar.** Detalhes em `docs/ASSETS-NIGHTHUNT.md`.

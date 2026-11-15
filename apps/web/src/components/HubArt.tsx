@@ -730,4 +730,4 @@ export function FoxAvatar({ fur, cap = '#2f5bff' }: { fur: string; cap?: string 
 }
 
 // as capas dos jogos soltos moram em `FoxCapCovers.tsx` (as do Palavras, Cores e Mente ficam aqui)
-export { AtravessaArt, BolaArt, CounterFoxArt, DesmoronaArt, FoxGpArt, MiniGolfArt, PingArt } from './FoxCapCovers';
+export { AtravessaArt, BolaArt, CounterFoxArt, DesmoronaArt, FoxGpArt, MiniGolfArt, NightHuntArt, PingArt } from './FoxCapCovers';

@@ -263,6 +263,12 @@ const miniGolfBallRoute = createRoute({
   component: lazyRouteComponent(() => import('@/games/minigolf/MiniGolfBall'), 'MiniGolfBall'),
 });
 
+const nightHuntRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/nighthunt',
+  component: lazyRouteComponent(() => import('@/games/nighthunt/NightHuntPage'), 'NightHuntPage'),
+});
+
 const blocksRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/blocks',
@@ -367,6 +373,7 @@ const routeTree = rootRoute.addChildren([
   miniGolfLevelsRoute,
   miniGolfPlayRoute,
   miniGolfBallRoute,
+  nightHuntRoute,
   desmoronaRoute,
   bolaRoute,
   blocksRoute,

@@ -277,3 +277,25 @@ export function MiniGolfArt() {
     </svg>
   );
 }
+
+/** Night Hunt: lua grande, a espada girando em arco e o morcego, na noite azul do jogo. */
+export function NightHuntArt() {
+  return (
+    <svg className="ha ha-nighthunt" viewBox="0 0 200 150" aria-hidden="true">
+      <circle cx="152" cy="40" r="26" {...hard} transform="translate(4 4)" />
+      <circle cx="152" cy="40" r="26" fill="#e9f1ff" {...stroke} />
+      <circle cx="144" cy="34" r="6" fill="#c9d8f0" />
+      <circle cx="160" cy="50" r="4" fill="#c9d8f0" />
+      <path d="M0 150V112Q40 96 80 112T160 108T200 112V150z" fill="#1e4d92" {...stroke} />
+      <g className="ha-spin slow" style={{ transformOrigin: '70px 92px' }}>
+        <path d="M70 92L28 70" {...stroke} strokeWidth="9" stroke={INK} />
+        <path d="M70 92L28 70" fill="none" stroke="#dfe8f5" strokeWidth="5" strokeLinecap="round" />
+        <rect x="64" y="86" width="12" height="12" rx="3" fill="#ff5a3c" {...thin} />
+      </g>
+      <g className="ha-float">
+        <path d="M118 78q12-14 24 0q6-10 14-8q-4 10-14 14q-8 6-12 0q-4 6-12 0q-10-4-14-14q8-2 14 8z" fill={INK} />
+        <circle cx="132" cy="80" r="2" fill="#ff5a5a" />
+      </g>
+    </svg>
+  );
+}

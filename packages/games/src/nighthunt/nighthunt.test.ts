@@ -11,7 +11,15 @@ const run = (w: NhWorld, seconds: number, input = { x: 0, y: 0 }) => {
     w.step(input);
   }
 };
-const snapshot = (w: NhWorld) => JSON.stringify([w.t, w.player, w.enemies.map((e) => [e.x, e.y, e.hp]), w.items.length, w.kills, w.level]);
+const snapshot = (w: NhWorld) =>
+  JSON.stringify([
+    w.t,
+    w.player,
+    w.enemies.map((e) => [e.x, e.y, e.hp]),
+    w.items.length,
+    w.kills,
+    w.level,
+  ]);
 
 describe('geometria', () => {
   it('caixa girada encosta onde a caixa alinhada não encosta', () => {
@@ -21,8 +29,15 @@ describe('geometria', () => {
     expect(overlaps({ ...a, rot: 0 }, b)).toBe(false);
   });
   it('círculo e caixa', () => {
-    expect(overlaps({ kind: 'circle', cx: 0, cy: 0, r: 5 }, { kind: 'box', cx: 9, cy: 0, w: 10, h: 10 })).toBe(true);
-    expect(overlaps({ kind: 'circle', cx: 0, cy: 0, r: 5 }, { kind: 'box', cx: 12, cy: 0, w: 10, h: 10 })).toBe(false);
+    expect(
+      overlaps({ kind: 'circle', cx: 0, cy: 0, r: 5 }, { kind: 'box', cx: 9, cy: 0, w: 10, h: 10 }),
+    ).toBe(true);
+    expect(
+      overlaps(
+        { kind: 'circle', cx: 0, cy: 0, r: 5 },
+        { kind: 'box', cx: 12, cy: 0, w: 10, h: 10 },
+      ),
+    ).toBe(false);
   });
 });
 
@@ -89,7 +104,8 @@ describe('mundo', () => {
 
   it('XP vira nível e abre a janela com 3 opções; o mundo para até escolher', () => {
     const w = new NhWorld('xp');
-    for (let i = 0; i < 10; i++) w.items.push({ uid: 900 + i, type: 'xp', x: 0, y: 0, attracted: false, speed: 0, born: 0 });
+    for (let i = 0; i < 10; i++)
+      w.items.push({ uid: 900 + i, type: 'xp', x: 0, y: 0, attracted: false, speed: 0, born: 0 });
     w.step({ x: 0, y: 0 });
     expect(w.level).toBe(1);
     expect(w.pending?.kind).toBe('levelUp');
@@ -114,7 +130,24 @@ describe('mundo', () => {
     const w = new NhWorld('sw');
     w.weapon.timer = 1.99;
     const e = ENEMIES.find((x) => x.id === 'BasicEnemySkeleton')!;
-    w.enemies.push({ uid: 5000, s: e, x: 70, y: 4, hp: 4, speedX: 0, speedY: 0, life: -1, faceX: 1, flash: 0, follow: true, stateLeft: 0, dirX: 0, dirY: 0, shootTimer: 0, dead: false });
+    w.enemies.push({
+      uid: 5000,
+      s: e,
+      x: 70,
+      y: 4,
+      hp: 4,
+      speedX: 0,
+      speedY: 0,
+      life: -1,
+      faceX: 1,
+      flash: 0,
+      follow: true,
+      stateLeft: 0,
+      dirX: 0,
+      dirY: 0,
+      shootTimer: 0,
+      dead: false,
+    });
     w.step({ x: 0, y: 0 });
     w.step({ x: 0, y: 0 });
     expect(w.enemies.find((x) => x.uid === 5000)!.hp).toBe(2);
@@ -150,7 +183,7 @@ describe('melhorias permanentes e conquistas', () => {
     const w = new NhWorld('c');
     w.kills = 3;
     w.t = 75;
-    w.level = 6;
+    w.level = 5;
     w.levels.horizontal = 6;
     const { unlocked } = applyRun(s, w.result());
     const ids = unlocked.map((a) => a.id);

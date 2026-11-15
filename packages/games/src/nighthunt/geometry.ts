@@ -21,12 +21,14 @@ function corners(b: BoxShape): [number, number][] {
   const s = Math.sin(b.rot ?? 0);
   const hw = b.w / 2;
   const hh = b.h / 2;
-  return ([
-    [-hw, -hh],
-    [hw, -hh],
-    [hw, hh],
-    [-hw, hh],
-  ] as [number, number][]).map(([x, y]) => [b.cx + x * c - y * s, b.cy + x * s + y * c] as [number, number]);
+  return (
+    [
+      [-hw, -hh],
+      [hw, -hh],
+      [hw, hh],
+      [-hw, hh],
+    ] as [number, number][]
+  ).map(([x, y]) => [b.cx + x * c - y * s, b.cy + x * s + y * c] as [number, number]);
 }
 
 function project(pts: [number, number][], ax: number, ay: number): [number, number] {
@@ -75,6 +77,7 @@ function circleBox(c: CircleShape, b: BoxShape): boolean {
 
 export function overlaps(a: Shape, b: Shape): boolean {
   if (a.kind === 'box' && b.kind === 'box') return boxBox(a, b);
-  if (a.kind === 'circle' && b.kind === 'circle') return (a.cx - b.cx) ** 2 + (a.cy - b.cy) ** 2 <= (a.r + b.r) ** 2;
+  if (a.kind === 'circle' && b.kind === 'circle')
+    return (a.cx - b.cx) ** 2 + (a.cy - b.cy) ** 2 <= (a.r + b.r) ** 2;
   return a.kind === 'circle' ? circleBox(a, b as BoxShape) : circleBox(b as CircleShape, a);
 }

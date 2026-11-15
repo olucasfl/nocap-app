@@ -13,7 +13,8 @@ export interface UpgradeInfo {
   icon: string;
 }
 
-const cd = (n: number) => (PLAYER_SETTINGS.haloLauncher.launcher.cooldown / n).toFixed(1).replace('.', ',');
+const cd = (n: number) =>
+  (PLAYER_SETTINGS.haloLauncher.launcher.cooldown / n).toFixed(1).replace('.', ',');
 const rg = (n: number) => (PLAYER_SETTINGS.regenerationDelay / n).toFixed(1).replace('.', ',');
 
 export const UPGRADES: Record<UpgradeId, UpgradeInfo> = {
@@ -38,7 +39,8 @@ export const UPGRADES: Record<UpgradeId, UpgradeInfo> = {
     name: 'Adagas Voadoras',
     desc: 'Lança três adagas para cima a cada 4 segundos. Cada nível adiciona mais uma salva.',
     max: 6,
-    level: (n) => (n === 1 ? 'Desbloqueia: 1 salva de 3 adagas.' : `+1 salva (${n} salvas por disparo).`),
+    level: (n) =>
+      n === 1 ? 'Desbloqueia: 1 salva de 3 adagas.' : `+1 salva (${n} salvas por disparo).`,
     icon: 'UI/UpgradeIcons/HorizontalProjectile',
   },
   diagonal: {
@@ -46,7 +48,8 @@ export const UPGRADES: Record<UpgradeId, UpgradeInfo> = {
     name: 'Tiro Arcano',
     desc: 'Dispara dois tiros em diagonal para baixo a cada 4 segundos. Cada nível adiciona uma salva.',
     max: 6,
-    level: (n) => (n === 1 ? 'Desbloqueia: 1 salva de 2 tiros.' : `+1 salva (${n} salvas por disparo).`),
+    level: (n) =>
+      n === 1 ? 'Desbloqueia: 1 salva de 2 tiros.' : `+1 salva (${n} salvas por disparo).`,
     icon: 'UI/UpgradeIcons/DiagonalProjectile',
   },
   halo: {
@@ -54,7 +57,8 @@ export const UPGRADES: Record<UpgradeId, UpgradeInfo> = {
     name: 'Nova Ígnea',
     desc: 'Solta um anel de 20 projéteis em volta de você. Cada nível reduz o tempo de recarga.',
     max: 6,
-    level: (n) => (n === 1 ? `Desbloqueia: anel de 20 projéteis a cada ${cd(1)} s.` : `Recarga: ${cd(n)} s.`),
+    level: (n) =>
+      n === 1 ? `Desbloqueia: anel de 20 projéteis a cada ${cd(1)} s.` : `Recarga: ${cd(n)} s.`,
     icon: 'UI/UpgradeIcons/HaloProjectile',
   },
   regeneration: {
@@ -62,7 +66,8 @@ export const UPGRADES: Record<UpgradeId, UpgradeInfo> = {
     name: 'Regeneração',
     desc: 'Recupera 1 de vida de tempos em tempos. Cada nível acelera a cura.',
     max: 6,
-    level: (n) => (n === 1 ? `Desbloqueia: +1 de vida a cada ${rg(1)} s.` : `+1 de vida a cada ${rg(n)} s.`),
+    level: (n) =>
+      n === 1 ? `Desbloqueia: +1 de vida a cada ${rg(1)} s.` : `+1 de vida a cada ${rg(n)} s.`,
     icon: 'UI/UpgradeIcons/Regeneration',
   },
 };
@@ -75,12 +80,42 @@ export interface MetaInfo {
   desc(bonus: number): string;
 }
 export const META_LIST: readonly MetaInfo[] = [
-  { key: 'health', name: 'Vida', icon: 'UI/MetaUpgradeIcons/Health', desc: (b) => `Aumenta a vida máxima em ${b}.` },
-  { key: 'overallDamage', name: 'Dano geral', icon: 'UI/MetaUpgradeIcons/OverallDamage', desc: (b) => `Aumenta o dano de espada e projéteis em ${String(b).replace('.', ',')}.` },
-  { key: 'projectilePiercing', name: 'Perfuração', icon: 'UI/MetaUpgradeIcons/ProjectilePiercing', desc: (b) => `Projéteis atravessam ${b} inimigo${b > 1 ? 's' : ''} a mais.` },
-  { key: 'movementSpeed', name: 'Velocidade', icon: 'UI/MetaUpgradeIcons/MovementSpeed', desc: (b) => `Aumenta a velocidade de movimento em ${b}.` },
-  { key: 'xpGatherer', name: 'Coletor de XP', icon: 'UI/MetaUpgradeIcons/XpGatherer', desc: (b) => `Ganha ${Math.round(b * 100)}% mais experiência.` },
-  { key: 'goldGatherer', name: 'Coletor de ouro', icon: 'UI/MetaUpgradeIcons/GoldGatherer', desc: (b) => `Ganha ${Math.round(b * 100)}% mais ouro ao fim da partida.` },
+  {
+    key: 'health',
+    name: 'Vida',
+    icon: 'UI/MetaUpgradeIcons/Health',
+    desc: (b) => `Aumenta a vida máxima em ${b}.`,
+  },
+  {
+    key: 'overallDamage',
+    name: 'Dano geral',
+    icon: 'UI/MetaUpgradeIcons/OverallDamage',
+    desc: (b) => `Aumenta o dano de espada e projéteis em ${String(b).replace('.', ',')}.`,
+  },
+  {
+    key: 'projectilePiercing',
+    name: 'Perfuração',
+    icon: 'UI/MetaUpgradeIcons/ProjectilePiercing',
+    desc: (b) => `Projéteis atravessam ${b} inimigo${b > 1 ? 's' : ''} a mais.`,
+  },
+  {
+    key: 'movementSpeed',
+    name: 'Velocidade',
+    icon: 'UI/MetaUpgradeIcons/MovementSpeed',
+    desc: (b) => `Aumenta a velocidade de movimento em ${b}.`,
+  },
+  {
+    key: 'xpGatherer',
+    name: 'Coletor de XP',
+    icon: 'UI/MetaUpgradeIcons/XpGatherer',
+    desc: (b) => `Ganha ${Math.round(b * 100)}% mais experiência.`,
+  },
+  {
+    key: 'goldGatherer',
+    name: 'Coletor de ouro',
+    icon: 'UI/MetaUpgradeIcons/GoldGatherer',
+    desc: (b) => `Ganha ${Math.round(b * 100)}% mais ouro ao fim da partida.`,
+  },
 ];
 
 /** Ouro creditado ao fim da partida: o Coletor de ouro (que no Slash não chega a valer) multiplica o total. */
@@ -138,7 +173,14 @@ export function emptySave(): NhSave {
       bestLevel: 0,
       bestKills: 0,
       noHitBest: 0,
-      upgradeBest: { weaponLength: 0, weaponDamage: 0, horizontal: 0, diagonal: 0, halo: 0, regeneration: 0 },
+      upgradeBest: {
+        weaponLength: 0,
+        weaponDamage: 0,
+        horizontal: 0,
+        diagonal: 0,
+        halo: 0,
+        regeneration: 0,
+      },
       metaBought: 0,
     },
     achievements: {},
@@ -162,7 +204,14 @@ export interface Achievement {
 }
 
 const maxUp = (id: UpgradeId) => UPGRADES[id].max;
-const mk = (id: string, name: string, desc: string, reward: number, icon: string, progress: Achievement['progress']): Achievement => ({ id, name, desc, reward, icon, progress });
+const mk = (
+  id: string,
+  name: string,
+  desc: string,
+  reward: number,
+  icon: string,
+  progress: Achievement['progress'],
+): Achievement => ({ id, name, desc, reward, icon, progress });
 const minutes = (m: number) => m * 60;
 const ICON = {
   gold: 'UI/GoldIcon',
@@ -175,42 +224,177 @@ const ICON = {
 };
 
 export const ACHIEVEMENTS: readonly Achievement[] = [
-  mk('first-blood', 'Primeiro sangue', 'Derrote seu primeiro inimigo.', 5, ICON.skull, (s) => [Math.min(1, s.stats.kills), 1]),
-  mk('kills-100', 'Caçador', 'Derrote 100 inimigos.', 10, ICON.skull, (s) => [Math.min(100, s.stats.kills), 100]),
-  mk('kills-1000', 'Exterminador', 'Derrote 1.000 inimigos.', 30, ICON.skull, (s) => [Math.min(1000, s.stats.kills), 1000]),
-  mk('kills-5000', 'Flagelo da noite', 'Derrote 5.000 inimigos.', 80, ICON.skull, (s) => [Math.min(5000, s.stats.kills), 5000]),
-  mk('run-kills-300', 'Onda de sangue', 'Derrote 300 inimigos em uma só partida.', 20, ICON.skull, (s) => [Math.min(300, s.stats.bestKills), 300]),
-  mk('time-1', 'Ainda de pé', 'Sobreviva 1 minuto.', 5, ICON.heart, (s) => [Math.min(60, s.stats.bestTime), 60]),
-  mk('time-3', 'Resistente', 'Sobreviva 3 minutos.', 10, ICON.heart, (s) => [Math.min(minutes(3), s.stats.bestTime), minutes(3)]),
-  mk('time-5', 'Veterano', 'Sobreviva 5 minutos.', 20, ICON.heart, (s) => [Math.min(minutes(5), s.stats.bestTime), minutes(5)]),
-  mk('time-10', 'Insone', 'Sobreviva 10 minutos.', 40, ICON.heart, (s) => [Math.min(minutes(10), s.stats.bestTime), minutes(10)]),
-  mk('time-15', 'Madrugada', 'Sobreviva 15 minutos.', 70, ICON.heart, (s) => [Math.min(minutes(15), s.stats.bestTime), minutes(15)]),
-  mk('time-20', 'Amanhecer', 'Sobreviva 20 minutos.', 120, ICON.heart, (s) => [Math.min(minutes(20), s.stats.bestTime), minutes(20)]),
-  mk('level-5', 'Aprendiz', 'Chegue ao nível 5.', 5, ICON.xp, (s) => [Math.min(5, s.stats.bestLevel), 5]),
-  mk('level-10', 'Experiente', 'Chegue ao nível 10.', 15, ICON.xp, (s) => [Math.min(10, s.stats.bestLevel), 10]),
-  mk('level-max', 'Lenda', `Chegue ao nível máximo (${PLAYER_SETTINGS.requiredXP.length}).`, 60, ICON.xp, (s) => [Math.min(PLAYER_SETTINGS.requiredXP.length, s.stats.bestLevel), PLAYER_SETTINGS.requiredXP.length]),
-  mk('gold-100', 'Bolso cheio', 'Junte 100 de ouro no total.', 5, ICON.gold, (s) => [Math.min(100, s.stats.gold), 100]),
-  mk('gold-500', 'Tesoureiro', 'Junte 500 de ouro no total.', 15, ICON.gold, (s) => [Math.min(500, s.stats.gold), 500]),
-  mk('gold-2000', 'Dragão', 'Junte 2.000 de ouro no total.', 50, ICON.gold, (s) => [Math.min(2000, s.stats.gold), 2000]),
-  mk('chest-1', 'Primeiro baú', 'Abra um baú.', 10, 'Drops/Chest00', (s) => [Math.min(1, s.stats.chests), 1]),
-  mk('chest-10', 'Saqueador', 'Abra 10 baús.', 40, 'Drops/Chest00', (s) => [Math.min(10, s.stats.chests), 10]),
-  mk('magnet-5', 'Atração fatal', 'Pegue 5 ímãs.', 15, ICON.pierce, (s) => [Math.min(5, s.stats.magnets), 5]),
-  mk('boss-1', 'Caça-chefes', 'Derrote um chefe.', 15, ICON.skull, (s) => [Math.min(1, s.stats.bossKills), 1]),
-  mk('boss-10', 'Quebra-trono', 'Derrote 10 chefes.', 60, ICON.skull, (s) => [Math.min(10, s.stats.bossKills), 10]),
-  mk('final-boss', 'Rei da noite', 'Derrote o chefe final.', 200, ICON.skull, (s) => [Math.min(1, s.stats.finalBossKills), 1]),
-  mk('sword-long', 'Alcance total', 'Leve a Lâmina Longa ao nível máximo.', 25, UPGRADES.weaponLength.icon, (s) => [s.stats.upgradeBest.weaponLength, maxUp('weaponLength')]),
-  mk('sword-sharp', 'Gume perfeito', 'Leve a Lâmina Afiada ao nível 10.', 40, UPGRADES.weaponDamage.icon, (s) => [s.stats.upgradeBest.weaponDamage, maxUp('weaponDamage')]),
-  mk('daggers', 'Chuva de adagas', 'Leve as Adagas Voadoras ao nível máximo.', 35, UPGRADES.horizontal.icon, (s) => [s.stats.upgradeBest.horizontal, maxUp('horizontal')]),
-  mk('arcane', 'Arcanista', 'Leve o Tiro Arcano ao nível máximo.', 35, UPGRADES.diagonal.icon, (s) => [s.stats.upgradeBest.diagonal, maxUp('diagonal')]),
-  mk('nova', 'Supernova', 'Leve a Nova Ígnea ao nível máximo.', 35, UPGRADES.halo.icon, (s) => [s.stats.upgradeBest.halo, maxUp('halo')]),
-  mk('regen', 'Imortal (quase)', 'Leve a Regeneração ao nível máximo.', 35, UPGRADES.regeneration.icon, (s) => [s.stats.upgradeBest.regeneration, maxUp('regeneration')]),
-  mk('untouched', 'Intocável', 'Sobreviva 2 minutos sem tomar dano.', 30, ICON.heart, (s) => [Math.min(120, s.stats.noHitBest), 120]),
-  mk('first-upgrade', 'Primeira melhoria', 'Compre uma melhoria permanente.', 10, ICON.gather, (s) => [Math.min(1, s.stats.metaBought), 1]),
-  mk('shopper', 'Cliente fiel', 'Compre 6 melhorias permanentes.', 40, ICON.gather, (s) => [Math.min(6, s.stats.metaBought), 6]),
+  mk('first-blood', 'Primeiro sangue', 'Derrote seu primeiro inimigo.', 5, ICON.skull, (s) => [
+    Math.min(1, s.stats.kills),
+    1,
+  ]),
+  mk('kills-100', 'Caçador', 'Derrote 100 inimigos.', 10, ICON.skull, (s) => [
+    Math.min(100, s.stats.kills),
+    100,
+  ]),
+  mk('kills-1000', 'Exterminador', 'Derrote 1.000 inimigos.', 30, ICON.skull, (s) => [
+    Math.min(1000, s.stats.kills),
+    1000,
+  ]),
+  mk('kills-5000', 'Flagelo da noite', 'Derrote 5.000 inimigos.', 80, ICON.skull, (s) => [
+    Math.min(5000, s.stats.kills),
+    5000,
+  ]),
+  mk(
+    'run-kills-300',
+    'Onda de sangue',
+    'Derrote 300 inimigos em uma só partida.',
+    20,
+    ICON.skull,
+    (s) => [Math.min(300, s.stats.bestKills), 300],
+  ),
+  mk('time-1', 'Ainda de pé', 'Sobreviva 1 minuto.', 5, ICON.heart, (s) => [
+    Math.min(60, s.stats.bestTime),
+    60,
+  ]),
+  mk('time-3', 'Resistente', 'Sobreviva 3 minutos.', 10, ICON.heart, (s) => [
+    Math.min(minutes(3), s.stats.bestTime),
+    minutes(3),
+  ]),
+  mk('time-5', 'Veterano', 'Sobreviva 5 minutos.', 20, ICON.heart, (s) => [
+    Math.min(minutes(5), s.stats.bestTime),
+    minutes(5),
+  ]),
+  mk('time-10', 'Insone', 'Sobreviva 10 minutos.', 40, ICON.heart, (s) => [
+    Math.min(minutes(10), s.stats.bestTime),
+    minutes(10),
+  ]),
+  mk('time-15', 'Madrugada', 'Sobreviva 15 minutos.', 70, ICON.heart, (s) => [
+    Math.min(minutes(15), s.stats.bestTime),
+    minutes(15),
+  ]),
+  mk('time-20', 'Amanhecer', 'Sobreviva 20 minutos.', 120, ICON.heart, (s) => [
+    Math.min(minutes(20), s.stats.bestTime),
+    minutes(20),
+  ]),
+  mk('level-5', 'Aprendiz', 'Chegue ao nível 5.', 5, ICON.xp, (s) => [
+    Math.min(5, s.stats.bestLevel),
+    5,
+  ]),
+  mk('level-10', 'Experiente', 'Chegue ao nível 10.', 15, ICON.xp, (s) => [
+    Math.min(10, s.stats.bestLevel),
+    10,
+  ]),
+  mk(
+    'level-max',
+    'Lenda',
+    `Chegue ao nível máximo (${PLAYER_SETTINGS.requiredXP.length + 1}).`,
+    60,
+    ICON.xp,
+    (s) => [
+      Math.min(PLAYER_SETTINGS.requiredXP.length + 1, s.stats.bestLevel),
+      PLAYER_SETTINGS.requiredXP.length + 1,
+    ],
+  ),
+  mk('gold-100', 'Bolso cheio', 'Junte 100 de ouro no total.', 5, ICON.gold, (s) => [
+    Math.min(100, s.stats.gold),
+    100,
+  ]),
+  mk('gold-500', 'Tesoureiro', 'Junte 500 de ouro no total.', 15, ICON.gold, (s) => [
+    Math.min(500, s.stats.gold),
+    500,
+  ]),
+  mk('gold-2000', 'Dragão', 'Junte 2.000 de ouro no total.', 50, ICON.gold, (s) => [
+    Math.min(2000, s.stats.gold),
+    2000,
+  ]),
+  mk('chest-1', 'Primeiro baú', 'Abra um baú.', 10, 'Drops/Chest00', (s) => [
+    Math.min(1, s.stats.chests),
+    1,
+  ]),
+  mk('chest-10', 'Saqueador', 'Abra 10 baús.', 40, 'Drops/Chest00', (s) => [
+    Math.min(10, s.stats.chests),
+    10,
+  ]),
+  mk('magnet-5', 'Atração fatal', 'Pegue 5 ímãs.', 15, ICON.pierce, (s) => [
+    Math.min(5, s.stats.magnets),
+    5,
+  ]),
+  mk('boss-1', 'Caça-chefes', 'Derrote um chefe.', 15, ICON.skull, (s) => [
+    Math.min(1, s.stats.bossKills),
+    1,
+  ]),
+  mk('boss-10', 'Quebra-trono', 'Derrote 10 chefes.', 60, ICON.skull, (s) => [
+    Math.min(10, s.stats.bossKills),
+    10,
+  ]),
+  mk('final-boss', 'Rei da noite', 'Derrote o chefe final.', 200, ICON.skull, (s) => [
+    Math.min(1, s.stats.finalBossKills),
+    1,
+  ]),
+  mk(
+    'sword-long',
+    'Alcance total',
+    'Leve a Lâmina Longa ao nível máximo.',
+    25,
+    UPGRADES.weaponLength.icon,
+    (s) => [s.stats.upgradeBest.weaponLength, maxUp('weaponLength')],
+  ),
+  mk(
+    'sword-sharp',
+    'Gume perfeito',
+    'Leve a Lâmina Afiada ao nível 10.',
+    40,
+    UPGRADES.weaponDamage.icon,
+    (s) => [s.stats.upgradeBest.weaponDamage, maxUp('weaponDamage')],
+  ),
+  mk(
+    'daggers',
+    'Chuva de adagas',
+    'Leve as Adagas Voadoras ao nível máximo.',
+    35,
+    UPGRADES.horizontal.icon,
+    (s) => [s.stats.upgradeBest.horizontal, maxUp('horizontal')],
+  ),
+  mk(
+    'arcane',
+    'Arcanista',
+    'Leve o Tiro Arcano ao nível máximo.',
+    35,
+    UPGRADES.diagonal.icon,
+    (s) => [s.stats.upgradeBest.diagonal, maxUp('diagonal')],
+  ),
+  mk('nova', 'Supernova', 'Leve a Nova Ígnea ao nível máximo.', 35, UPGRADES.halo.icon, (s) => [
+    s.stats.upgradeBest.halo,
+    maxUp('halo'),
+  ]),
+  mk(
+    'regen',
+    'Imortal (quase)',
+    'Leve a Regeneração ao nível máximo.',
+    35,
+    UPGRADES.regeneration.icon,
+    (s) => [s.stats.upgradeBest.regeneration, maxUp('regeneration')],
+  ),
+  mk('untouched', 'Intocável', 'Sobreviva 2 minutos sem tomar dano.', 30, ICON.heart, (s) => [
+    Math.min(120, s.stats.noHitBest),
+    120,
+  ]),
+  mk(
+    'first-upgrade',
+    'Primeira melhoria',
+    'Compre uma melhoria permanente.',
+    10,
+    ICON.gather,
+    (s) => [Math.min(1, s.stats.metaBought), 1],
+  ),
+  mk('shopper', 'Cliente fiel', 'Compre 6 melhorias permanentes.', 40, ICON.gather, (s) => [
+    Math.min(6, s.stats.metaBought),
+    6,
+  ]),
 ];
 
 /** Aplica o resultado de uma partida no save e devolve as conquistas liberadas (com o ouro do prêmio já somado). */
-export function applyRun(save: NhSave, r: RunResult, now = 0): { unlocked: Achievement[]; goldGained: number } {
+export function applyRun(
+  save: NhSave,
+  r: RunResult,
+  now = 0,
+): { unlocked: Achievement[]; goldGained: number } {
   const st = save.stats;
   const gained = goldWithBonus(r.gold, save.meta);
   save.gold += gained;
@@ -223,7 +407,7 @@ export function applyRun(save: NhSave, r: RunResult, now = 0): { unlocked: Achie
   st.chests += r.chests;
   st.magnets += r.magnets;
   st.bestTime = Math.max(st.bestTime, r.score);
-  st.bestLevel = Math.max(st.bestLevel, r.level);
+  st.bestLevel = Math.max(st.bestLevel, r.level + 1);
   st.bestKills = Math.max(st.bestKills, r.kills);
   if (r.damageTaken === 0) st.noHitBest = Math.max(st.noHitBest, r.score);
   for (const id of UPGRADE_IDS) {

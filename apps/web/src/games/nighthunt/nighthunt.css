@@ -1,0 +1,20 @@
+/* Night Hunt: o jogo inteiro é um canvas em tela cheia (a arte e os sons vêm do Slash, ver docs/ASSETS-NIGHTHUNT.md). */
+.nh-root {
+  position: fixed;
+  inset: 0;
+  background: #0c0e15;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.nh-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: pixelated;
+  touch-action: none;
+  outline: none;
+}

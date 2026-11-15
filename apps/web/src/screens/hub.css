@@ -1140,6 +1140,12 @@ a.hz-today:active {
   }
 }
 
+/* Night Hunt: noite azul do Slash, a lua e a espada */
+.hub-card-nighthunt {
+  background: #1e4d92;
+  color: #f2e6c8;
+}
+
 /* Mini Golf: gramado escuro, o verde-lima do jogo */
 .hub-card-golf {
   background: #b8f03a;
