@@ -46,6 +46,9 @@ export class GolfScene {
   private head: THREE.Mesh;
   private sun = new THREE.DirectionalLight(0xfff2d6, 2.2);
   private movers: { mesh: THREE.Object3D; i: number }[] = [];
+  /** Os tracinhos brancos em volta da bola parada (como no Open Golf): aparecem quando dá para bater. As telas ligam e desligam. */
+  readyHint = false;
+  private readonly readyRing = new THREE.Group();
   private camPos = new THREE.Vector3();
   private camLook = new THREE.Vector3();
   private spin = new THREE.Quaternion();
@@ -80,6 +83,21 @@ export class GolfScene {
     this.trail.setKind(look.trail, look.color);
     this.scene.add(this.trail.points);
     this.scene.add(this.ballMesh);
+    {
+      const dash = new THREE.PlaneGeometry(0.1, 0.022);
+      const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
+      const N = 14;
+      for (let i = 0; i < N; i++) {
+        const a = (i / N) * Math.PI * 2;
+        const m = new THREE.Mesh(dash, mat);
+        m.rotation.x = -Math.PI / 2;
+        m.rotation.z = -a; // o tracinho fica na tangente do círculo
+        m.position.set(Math.cos(a) * 0.3, 0, Math.sin(a) * 0.3);
+        this.readyRing.add(m);
+      }
+      this.readyRing.visible = false;
+      this.scene.add(this.readyRing);
+    }
 
     const dotGeo = new THREE.SphereGeometry(0.045, 10, 8);
     for (let i = 0; i < 16; i++) {
@@ -297,6 +315,13 @@ export class GolfScene {
     );
     this.camera.position.copy(this.camPos);
     this.camera.lookAt(this.camLook);
+    this.readyRing.visible = this.readyHint && this.ballMesh.visible;
+    if (this.readyRing.visible) {
+      // só transform: gira devagar e respira
+      this.readyRing.position.set(p[0], p[1] - GOLF_BALL_RADIUS + 0.025, p[2]);
+      this.readyRing.rotation.y = time * 0.7;
+      this.readyRing.scale.setScalar(1 + 0.07 * Math.sin(time * 4));
+    }
     this.sun.position.set(target.x + 14, target.y + 24, target.z + 8);
     this.sun.target.position.copy(target);
     this.renderer.render(this.scene, this.camera);

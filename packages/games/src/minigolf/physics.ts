@@ -42,8 +42,8 @@ const GRAVITY = -9.8;
 
 // ---- constantes do game.cfg do Open Golf ----
 const CFG = {
-  holeForceDistance: 0.35,
-  holeForce: 0.04,
+  holeForceDistance: 0.5,
+  holeForce: 0.05,
   inHoleDelta: [0, -0.3, 0] as V3,
   inHoleRadius: 0.35,
   ballRotScale: 0.5,
@@ -220,7 +220,6 @@ export class GolfLevel {
   readonly holeDepth: number[];
 
   constructor(data: GolfLevelData) {
-    // a areia freia, mas sem parar a bola quase na hora (o valor original do Open Golf era forte demais): atrito e perda de velocidade menores
     // copo raso (metade da profundidade do Open Golf): a bola cai à vista e não some num poço
     this.data = {
       ...data,
@@ -228,7 +227,6 @@ export class GolfLevel {
         const hy = data.holes[i]!.p[1];
         return ht.map((v, k) => (k % 3 === 1 ? hy + (v - hy) * 0.5 : v));
       }),
-      materials: data.materials.map((m) => (m.name === 'sand' ? { ...m, f: Math.min(m.f, 0.45), v: Math.max(m.v, 0.992) } : m)),
     };
     data = this.data;
     this.t = Float64Array.from(data.solid.t);

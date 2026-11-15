@@ -142,7 +142,8 @@ for (let n = 1; n <= 20; n++) {
         let f = oob | (isWater ? 2 : 0);
         fl.push(f);
         if (isWater) {
-          const d = rotate(w.rotation, it.water ?? [0, 0, 0]);
+          // como no Open Golf (bvh.c): a direção da água passa pela matriz do modelo inteira, escala incluída (a corrente vale a escala)
+          const d = rotate(w.rotation, (it.water ?? [0, 0, 0]).map((v, k) => v * w.scale[k]));
           (result.waterDirs ??= []).push(d.map(r4));
         }
       }

@@ -323,6 +323,7 @@ export function MiniGolfPage() {
           }
         }
         sc.setAim(ball, st.phase === 'aim' ? st.aim : null);
+        sc.readyHint = st.phase === 'aim' && !ball.moving;
         sc.render(ball, st.t, dt);
       };
       raf = requestAnimationFrame(loop);

@@ -375,6 +375,7 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         }
         myPos = focus;
         sc.setAim({ pos: focus } as GolfBall, canAim() ? aim : null);
+        sc.readyHint = canAim();
         sc.renderOnline(balls, focus, holeT, dt);
         // o nome de cada pessoa em cima da bola (também para quem está assistindo)
         const box = namesRef.current;
