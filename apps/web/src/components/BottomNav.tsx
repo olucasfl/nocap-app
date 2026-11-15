@@ -15,7 +15,7 @@ const tabs = [
 ] as const;
 
 /**
- * O menu principal (barra de baixo no celular, menu lateral no computador). Quando a conta está numa sala aparece o
+ * O menu principal (barra de baixo no celular, menu lateral no computador). O item "Sala" só aparece quando a conta está numa sala (amarelo): o
  * item "Sala" logo depois de "Jogos": um toque volta para a tela da sala (lobby ou partida), sem perder a sala ao
  * visitar Ranking, Amigos ou Perfil.
  */
@@ -37,13 +37,6 @@ export function BottomNav({ railOnly = false }: { railOnly?: boolean }) {
       </div>
       {[first, ...others].map(({ to, label, Icon, sfx }, i) => (
         <Fragment key={to}>
-          {i === 2 && !(inRoom && room) && (
-            // sem sala: o item "Sala" leva à tela de criar sala ou entrar com o código
-            <Link to="/sala" className="tab room idle-room" data-sfx="roomJoin" activeProps={{ className: 'tab room idle-room on', 'aria-current': 'page' }}>
-              <Door />
-              Sala
-            </Link>
-          )}
           {i === 2 && inRoom && room && (
             <Link
               to="/sala/$code"

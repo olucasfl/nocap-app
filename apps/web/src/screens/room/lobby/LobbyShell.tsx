@@ -215,7 +215,7 @@ export function LobbyShell({
     wordsTheme ? (
       <LobbyFrame game={WORDS_ROOM[snapshot.game]!}>{content}</LobbyFrame>
     ) : (
-      <LobbyFrame game={(snapshot.game in GAME_LANDING ? snapshot.game : 'foxcap') as ThemeGame}>{content}</LobbyFrame>
+      <LobbyFrame game={(snapshot.game === 'golf' ? 'golf' : snapshot.game in GAME_LANDING ? snapshot.game : 'foxcap') as ThemeGame}>{content}</LobbyFrame>
     ),
     document.body,
   );
@@ -227,7 +227,8 @@ const WORDS_ROOM: Record<string, WordsGame | undefined> = { color: 'color', impo
 /** Jogos que pertencem ao Fox Cap! (e a sala sem jogo escolhido). */
 const FOX_CAP_GAMES: string[] = ['foxcap', 'atravessa', 'desmorona', 'foxgp', 'golf', 'bola', 'pingpong', 'foxshot'];
 
-const FC_THEME = { line1: 'FOX', line2: 'CAP!', a: '#ffb347', b: '#3a1f45' };
+const FC_THEME = { line1: 'SALA', line2: 'NOCAP', a: '#ffb347', b: '#3a1f45' };
+const GOLF_THEME = { line1: 'MINI', line2: 'GOLF', a: '#b8f03a', b: '#0a1510' };
 const FONTS = 'https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Saira+Stencil+One&display=swap';
 
 /**
@@ -236,7 +237,7 @@ const FONTS = 'https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;70
  */
 function LobbyFrame({ game, children }: { game: ThemeGame | WordsGame; children: ReactNode }) {
   const words = game === 'color' || game === 'time' || game === 'eco';
-  const t = words ? WORDS_LANDING[game] : game === 'foxcap' ? FC_THEME : GAME_LANDING[game as LandingGame];
+  const t = words ? WORDS_LANDING[game] : game === 'foxcap' ? FC_THEME : game === 'golf' ? GOLF_THEME : GAME_LANDING[game as LandingGame];
   useEffect(() => {
     if (!document.querySelector('link[data-cfh-fonts]')) {
       const l = document.createElement('link');

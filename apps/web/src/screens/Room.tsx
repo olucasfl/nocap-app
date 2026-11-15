@@ -79,7 +79,7 @@ const GAME_NAME: Record<RoomGame, string> = {
   bola: 'Fut Fox',
   pingpong: 'Ping Fox!',
   foxshot: 'Counter Fox',
-  foxcap: 'Fox Cap!',
+  foxcap: 'Sala',
   color: 'Mesmíssima',
   time: 'Já Deu?',
   impostor: 'Intruso',
@@ -91,7 +91,7 @@ const ENTRY_LEAD: Record<RoomGame, string> = {
   foxshot:
     'Counter Fox com os amigos: mata-mata no mapa Duna, de 2 a 10 minutos, abate vale 10 pontos e assistência 5. Até 10 jogadores na sala, com bots para completar.',
   foxcap:
-    'Sala do Fox Cap!: a sala nasce sem jogo. Dentro dela você convida a galera e escolhe (e troca) o jogo: Fut Fox, Ping Fox!, Fox GP, Atravessa! ou Desmorona!.',
+    'Sala: ela nasce sem jogo. Dentro dela você convida a galera e escolhe (e troca) o jogo: Counter Fox, Fox GP, Fut Fox, Ping Fox!, Mini Golf, Atravessa!, Desmorona! e os de palavras, cores e mente.',
   bola: 'Fut Fox com os amigos: futebol de raposas com 2, 3 ou 4 times, até 15 pessoas na sala (12 jogam e o resto assiste). Você escolhe o formato e completa os times com bots dentro da sala.',
   pingpong:
     'Ping Fox! com os amigos: pingue-pongue 1 contra 1 até 11 pontos, com a raquete batendo de verdade (força, lob e efeito). Os 2 primeiros da sala jogam e o resto assiste. Até 8 pessoas.',
@@ -273,7 +273,14 @@ function RoomPageInner({ code, game = 'color' }: { code?: string; game?: RoomGam
       // (quem já esteve e a sala acabou, ou foi encerrada, não volta a ficar "entrando" para sempre)
       (!!code && !autoTried && !autoJoined.current && !entry.error && !entry.nick.open));
 
-  if (authStatus === 'loading' || resuming) {
+  // Não existe tela para criar sala ou entrar com código: sem sala (e sem link com código), o endereço /sala leva ao início.
+  // Sala se cria dentro de um jogo ou em "Monte uma sala com a galera", e entra-se por link ou pelo código no início.
+  const noRoomHere = !code && !snapshot && !resuming && !entry.busy && (status === 'idle' || status === 'closed');
+  useEffect(() => {
+    if (noRoomHere && !lastGame) void navigate({ to: '/', replace: true });
+  }, [noRoomHere, lastGame, navigate]);
+
+  if (authStatus === 'loading' || resuming || (noRoomHere && !lastGame)) {
     return (
       <Page>
         <Header />

@@ -1145,3 +1145,204 @@ a.hz-today:active {
   background: #b8f03a;
   color: #0a1510;
 }
+
+/* ===== Organização do início (15/11/2026) =====
+   Celular: tudo em coluna, na ordem de sempre (sala, resumo, daily, amigos, jogos).
+   Computador: todos os jogos à esquerda, perto do menu lateral; à direita a sala com a galera, os dailys que faltam e os amigos online. */
+.hz-side,
+.hz-games {
+  display: contents;
+}
+.hz-roomtop { order: 1; }
+.hz-games .hz-hello { order: 2; }
+.hz-today-sec { order: 3; }
+.hz-online-sec { order: 4; }
+.hz-games .hz-sec { order: 5; }
+@media (min-width: 1000px) {
+  .hz {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 330px;
+    grid-auto-flow: row dense;
+    align-items: start;
+    column-gap: 28px;
+    row-gap: 22px;
+  }
+  .hz > header.top,
+  .hz > .hz-search,
+  .hz > .rb {
+    grid-column: 1 / -1;
+  }
+  .hz-games {
+    grid-column: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    min-width: 0;
+  }
+  .hz-side {
+    grid-column: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    position: sticky;
+    top: 16px;
+  }
+  .hz-roomtop,
+  .hz-games .hz-hello,
+  .hz-today-sec,
+  .hz-online-sec,
+  .hz-games .hz-sec {
+    order: 0;
+  }
+  /* a coluna dos jogos fica mais compacta: os cartões não precisam ser enormes */
+  .hz-games .hz-grid {
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 14px;
+  }
+  .hz-games .hub-card,
+  .hz-games .hub-card.wide {
+    min-height: 220px;
+  }
+  .hz-games .hub-card.wide .hub-card-name {
+    font-size: 30px;
+  }
+  .hz-side .hz-dailies {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1000px) {
+  /* o início usa a largura toda ao lado do menu: jogos colados no menu, painel à direita */
+  .tabs-app > main.hub.hz {
+    max-width: none;
+    margin-inline: 0;
+  }
+}
+
+/* ===== Painel da direita (computador): amigos online e sala com a galera, no desenho do convite ===== */
+.hz-room:not(.open) { display: none; }
+.hz-ver { margin-left: auto; font-size: 11px; text-decoration: none; color: inherit; opacity: 0.7; }
+.hz-friend-txt { display: grid; min-width: 0; gap: 1px; text-align: left; }
+.hz-friend-st { font: 600 10.5px var(--font-mono); opacity: 0.65; text-transform: none; }
+.hz-friend-plus { display: none; }
+@media (min-width: 1000px) {
+  .hz-room:not(.open) { display: flex; }
+  /* sala: um cartão azul só, sempre aberto */
+  .hz-roomtop {
+    gap: 0;
+    padding: 18px;
+    border-radius: 18px;
+    background: var(--blue);
+    color: var(--on-blue);
+    box-shadow: 5px 5px 0 var(--ink);
+    border: var(--border);
+    order: 2;
+  }
+  .hz-roomtop-btn {
+    min-height: 0;
+    padding: 0 0 12px;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    color: inherit;
+    font: italic 900 24px/1.05 var(--font-display);
+    pointer-events: none;
+    cursor: default;
+  }
+  .hz-roomtop-btn svg,
+  .hz-roomtop-btn span { display: none; }
+  .hz-roomtop .hz-room {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    gap: 12px;
+  }
+  .hz-roomtop .hz-room > .btn {
+    background: #0b0d14;
+    color: #fff;
+    border-color: #0b0d14;
+    box-shadow: none;
+  }
+  .hz-roomtop .hz-room-join { flex-direction: row; align-items: flex-end; gap: 8px; flex-wrap: wrap; }
+  .hz-roomtop .hz-room-join > :first-child { flex: 1 1 120px; }
+  .hz-roomtop .hz-room-join .btn { background: var(--orange); color: #111; border-color: var(--orange); box-shadow: none; }
+  /* amigos online: cartão escuro com linhas e botão + */
+  .hz-online-sec {
+    order: 1;
+    padding: 14px;
+    border: 1px solid #232b45;
+    border-radius: 16px;
+    background: #12172b;
+    color: #e8ecf8;
+  }
+  .hz-online-sec .hz-h { font: 800 11px var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: #aab3d4; }
+  .hz-online-sec .hz-h small { display: none; }
+  .hz-online-sec .hz-online { grid-template-columns: 1fr; gap: 8px; }
+  .hz-online-sec .hz-friend {
+    min-height: 54px;
+    border: 0;
+    border-radius: 12px;
+    background: #1a2038;
+    color: #e8ecf8;
+    padding: 0 10px;
+  }
+  .hz-online-sec .hz-friend-av { width: 34px; height: 34px; border: 0; border-radius: 9px; color: #12172b; font-weight: 900; }
+  .hz-online-sec .hz-friend-av[data-c='0'] { background: #ff8fb8; }
+  .hz-online-sec .hz-friend-av[data-c='1'] { background: #f4f6fb; }
+  .hz-online-sec .hz-friend-av[data-c='2'] { background: #9fb4ff; }
+  .hz-online-sec .hz-friend-av[data-c='3'] { background: #e8b27a; }
+  .hz-online-sec .hz-friend-av[data-c='4'] { background: #8de0a8; }
+  .hz-online-sec .hz-friend-av i { display: none; }
+  .hz-online-sec .hz-friend-plus {
+    display: grid; place-items: center; margin-left: auto; width: 34px; height: 34px;
+    border-radius: 9px; background: #232b45; color: #e8ecf8; font: 700 20px var(--font-display);
+  }
+  .hz-today-sec { order: 0; }
+}
+@media (min-width: 1000px) {
+  .hz-roomtop .hz-room > button.btn,
+  .hz-roomtop .hz-room > button.btn:hover { color: #fff !important; }
+  .hz-roomtop .hz-room-join { flex-direction: column; flex-wrap: nowrap; align-items: stretch; }
+  .hz-roomtop .hz-room-join .btn { width: 100%; }
+}
+}
+
+/* Daily com cara de calendário (não de jogo): faixa com "argolas", o dia do mês bem grande e o símbolo do jogo pequeno no canto */
+.hz-dt-band::before,
+.hz-dt-band::after {
+  content: '';
+  position: absolute;
+  top: 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--paper, #f4f1e6);
+}
+.hz-dt-band::before { left: 14%; }
+.hz-dt-band::after { right: 14%; }
+.hz-dt-day {
+  position: absolute;
+  left: 8%;
+  bottom: 6px;
+  z-index: 1;
+  font: 900 clamp(30px, 5.2vw, 56px) / 1 var(--font-display);
+  letter-spacing: -0.04em;
+  color: #fff;
+  -webkit-text-stroke: 2px #111;
+  paint-order: stroke fill;
+  text-shadow: 3px 3px 0 #111;
+}
+.hz-dt-art {
+  inset: 28px 3% auto auto !important;
+  width: 50%;
+  height: 46%;
+}
+.hz-dt-art .ha {
+  transform: scale(1.05) rotate(-6deg) !important;
+}
+.hz-dt.is-done .hz-dt-day { color: #111; -webkit-text-stroke: 0; text-shadow: none; opacity: 0.35; }
+.hz-dt { background-image: repeating-linear-gradient(135deg, rgba(0,0,0,.09) 0 2px, transparent 2px 14px); }
+
+.hz-dt-mark.todo { display: none; }

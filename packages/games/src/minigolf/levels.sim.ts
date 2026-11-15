@@ -25,7 +25,7 @@ function run(lv: GolfLevel, from: [number, number, number], angle: number, power
 
 const FINE = !!process.env.GOLF_FINE;
 const ANG = FINE ? 96 : 48;
-const POWERS = FINE ? [0.12, 0.2, 0.28, 0.36, 0.44, 0.5, 0.56, 0.62, 0.7, 0.8, 0.9, 1] : [0.1, 0.18, 0.28, 0.4, 0.55, 0.7, 0.9];
+const POWERS = FINE ? [0.12, 0.2, 0.28, 0.36, 0.44, 0.5, 0.56, 0.62, 0.7, 0.8, 0.9, 1] : [0.1, 0.18, 0.28, 0.4, 0.5, 0.58, 0.62, 0.66, 0.7, 0.8, 0.9, 1];
 
 export function solve(lv: GolfLevel, maxStrokes: number): number | null {
   const h = lv.data.holes[0]!.p;

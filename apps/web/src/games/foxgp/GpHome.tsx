@@ -105,7 +105,7 @@ export function GpHome({
       <div className="gph-main" data-screen={screen}>
         <div className="gph-head">
           <div className="gph-brand">
-            <span className="gph-tag">Fox Cap</span>
+            <span className="gph-tag">Corrida</span>
             <span className="gp-kicker">Um jogo da nocap</span>
           </div>
           <h1 className="gp-title gph-title">

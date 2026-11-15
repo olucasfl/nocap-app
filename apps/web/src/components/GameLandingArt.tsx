@@ -3,7 +3,7 @@ import type { CSSProperties, ReactNode } from 'react';
 /** Jogos com tela própria no Fox Cap! (spec 058, seção 10). */
 export type LandingGame = 'atravessa' | 'bola' | 'pingpong' | 'desmorona' | 'foxgp';
 /** O Fox Cap! sem jogo escolhido (sala nova) também tem tema. */
-export type ThemeGame = LandingGame | 'foxcap';
+export type ThemeGame = LandingGame | 'foxcap' | 'golf';
 
 /** Emblema (símbolo) de cada jogo: desenhado só para ele, não uma letra. */
 export function Emblem({ game }: { game: ThemeGame }) {
@@ -82,6 +82,19 @@ export function Emblem({ game }: { game: ThemeGame }) {
         <path d="M80 74h10" stroke="#2f5bff" strokeWidth="5" strokeLinecap="round" />
       </>
     ),
+    // mini golf: gramado, buraco com bandeira e a bola
+    golf: (
+      <>
+        <circle cx="50" cy="50" r="44" fill="#b8f03a" />
+        <ellipse cx="50" cy="74" rx="34" ry="12" fill="#2bb36a" />
+        <ellipse cx="62" cy="72" rx="9" ry="3.5" fill="#0a1510" />
+        <path d="M62 72V28" stroke="#0a1510" strokeWidth="3" strokeLinecap="round" />
+        <path d="M62 28 82 35 62 42Z" fill="#ff5a3c" />
+        <circle cx="36" cy="66" r="9" fill="#fff" stroke="#0a1510" strokeWidth="3" />
+        <circle cx="33" cy="63" r="1.4" fill="#0a1510" opacity=".4" />
+        <circle cx="38" cy="67" r="1.4" fill="#0a1510" opacity=".4" />
+      </>
+    ),
     // chão de ladrilhos que racha e cai
     desmorona: (
       <>
@@ -122,6 +135,24 @@ export function Backdrop({ game }: { game: ThemeGame }) {
           <path d="M0 220 Q200 120 420 200 T820 170 T1200 210 V300 H0Z" fill="#2a1630" />
           <path d="M0 262 Q260 190 520 250 T1000 240 T1200 262 V300 H0Z" fill="#120b1c" />
         </svg>
+        <div className="glb-vig" />
+      </div>
+    );
+  }
+  if (game === 'golf') {
+    return (
+      <div className="glb glb-golf" aria-hidden="true">
+        <div className="glb-cloud c1" />
+        <div className="glb-cloud c2" />
+        <svg className="glb-hills" viewBox="0 0 1200 300" preserveAspectRatio="none" style={{ bottom: '24%', height: '24%' }}>
+          <path d="M0 220 Q200 120 420 200 T820 170 T1200 210 V300 H0Z" fill="#1f6b3a" />
+        </svg>
+        <div className="glb-lawn">
+          <i className="mow" />
+          <b className="hole" />
+          <u className="flag" />
+          <b className="ball" />
+        </div>
         <div className="glb-vig" />
       </div>
     );

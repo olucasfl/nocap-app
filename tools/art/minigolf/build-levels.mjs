@@ -232,7 +232,7 @@ function gridLevel(id, rows, movers = []) {
       if (k === '@') L.ballStart = [cx, y, cz];
       if (k === 'o') L.bumper(cx, cz, 0.55, y - 0.3, y + 0.5);
       // paredes nas bordas com o vazio
-      const top = yTop(c, r) + 0.5;
+      const top = yTop(c, r) + 1.0;
       // degrau entre pisos de alturas diferentes (sem rampa): uma mureta no lado mais alto
       if (!ramp(c, r)) {
         for (const [dc, dr, wx0, wz0, wx1, wz1] of [[0, -1, x0, z0, x1, z0], [0, 1, x0, z1, x1, z1], [-1, 0, x0, z0, x0, z1], [1, 0, x1, z0, x1, z1]]) {
@@ -282,7 +282,7 @@ G(101, ['@....#', '####.#', '####H#']);
 // 102 Duas rampas: sobe duas vezes e vira
 G(102, ['@..>..>..#', '########.#', '#H.......#']);
 // 103 Areia e gelo: a areia segura, o gelo solta
-G(103, ['@..ss....#', '#######.##', '#H..ii...#']);
+G(103, ['@...s....#', '#######.##', '#H..s....#']);
 // 104 Pinos: sala aberta com rebatedores
 G(104, ['@.....o..#', '..o.o....#', '.....o..H#']);
 // 105 Ponte dupla: duas tábuas sobre a água
@@ -302,8 +302,8 @@ G(109, ['@.>..>..>.#', '#########.#', '#H........#'], [
   { kind: 'gate', col: 5, row: 2, span: [0, 2.2], half: [0.2, 0.7], t0: 0.2 },
 ]);
 // 110 Salto alto: duas rampas, vão de duas casas e patamar mais alto, com pêndulo
-G(110, ['@..>>__Bss...#', '############.#', '#H...........#'], [
-  { kind: 'pendulum', col: 11, row: 0, along: 'x', t0: 0.4 },
+G(110, ['@..>>__B....#', '###########.#', '#H..........#'], [
+  { kind: 'pendulum', col: 6, row: 2, along: 'x', t0: 0.4 },
 ]);
 // 111 Labirinto: caminhos que se cruzam, com giratórios nos corredores longos
 G(111, [
@@ -332,15 +332,11 @@ G(114, [
   '##########.',
   '...........',
   '.##########',
-  '...........',
-  '##########.',
   'H..........',
-], [
+].map((r, i) => (i === 4 ? '...........' : r)).map((r, i) => (i === 4 ? '..........H' : r)), [
   { kind: 'spinner', col: 5, row: 0, length: 4 },
   { kind: 'pendulum', col: 5, row: 2, along: 'x', t0: 0.5 },
   { kind: 'gate', col: 6, row: 4, span: [0, 2.4], half: [0.2, 0.8], t0: 0.8 },
-  { kind: 'spinner', col: 3, row: 6, length: 4, t0: 0.3 },
-  { kind: 'pendulum', col: 7, row: 6, along: 'x', t0: 1.2 },
 ]);
 // 115 Dois saltos: a rampa lança até o patamar, e a segunda lança até a ilha final
 G(115, ['@..>>__B..>_Css.H#'], [
@@ -366,12 +362,10 @@ G(118, [
   '###########.#',
   '#...........#',
   '#.###########',
-  '#.iiiiioiii.#',
-  '###########.#',
   '#H..bb.bb...#',
 ], [
   { kind: 'gate', col: 6, row: 2, span: [0, 2.2], half: [0.2, 0.7], t0: 0.3 },
-  { kind: 'pendulum', col: 6, row: 4, along: 'x', t0: 0.9 },
+  { kind: 'pendulum', col: 9, row: 4, along: 'x', t0: 0.9 },
 ]);
 // 119 Pinball gigante: campo de pinos em xadrez, o buraco no canto oposto
 G(119, [
@@ -390,6 +384,20 @@ G(120, [
   '..i.bb.o...',
 ]);
 
+
+// 121 Gelo longo: dois corredores escorregadios ligados por uma curva
+G(121, ['@..iiii..#', '#######.##', '#H..iii..#']);
+// 122 Salto e curva: rampa, vão aberto e uma volta até o buraco
+G(122, ['@...>_A.....#', '###########.#', '#H..........#']);
+// 123 Serpentina curta: três faixas, cada uma com a sua armadilha
+G(123, ['@..........', '##########.', 'H..........'], [
+  { kind: 'spinner', col: 5, row: 0, length: 4 },
+  { kind: 'pendulum', col: 5, row: 2, along: 'x', t0: 0.5 },
+]);
+// 124 Pontes e portão: duas travessias de tábua e uma parede que se mexe
+G(124, ['@..bb.....#', '#########.#', '#H..bb....#'], [
+  { kind: 'gate', col: 7, row: 2, span: [0, 2.2], half: [0.2, 0.7], t0: 0.6 },
+]);
 
 const holeModel = loadHole();
 fs.mkdirSync(out, { recursive: true });

@@ -262,6 +262,7 @@ export function Hub() {
 
       <RoomBanner />
 
+      <aside className="hz-side">
       {!q && (
         <section className="hz-roomtop" aria-label="Sala com a galera">
           <button
@@ -275,8 +276,8 @@ export function Hub() {
             Monte uma sala com a galera
             <span aria-hidden="true">{roomOpen ? '−' : '+'}</span>
           </button>
-          {roomOpen && (
-            <div className="hz-room">
+          {(
+            <div className={`hz-room${roomOpen ? ' open' : ''}`}>
               {entry.error && (
                 <p className="acc-failure mono" role="alert">
                   {entry.error}
@@ -317,19 +318,6 @@ export function Hub() {
 
       {!q && (
         <>
-          <section className="hz-hello" aria-label="Resumo">
-            <div>
-              <h1>{firstName ? `Olá, ${firstName}!` : 'Bora jogar?'}</h1>
-              {!user && authStatus === 'ready' && (
-                <p className="mono">ENTRE PARA GUARDAR RECORDES E DAILYS</p>
-              )}
-            </div>
-            {streak > 0 && (
-              <span className="hz-streak mono" title="Dias seguidos entrando no NoCap">
-                <b>{streak}</b> {streakLabel(streak).replace(/^\d+ /, '').toUpperCase()} SEGUIDOS
-              </span>
-            )}
-          </section>
 
           <section className="hz-sec hz-today-sec" aria-label="Desafio do dia">
             <h2 className="hz-h">
@@ -352,6 +340,9 @@ export function Hub() {
                     <span className="hz-dt-band mono" aria-hidden="true">
                       {d.done ? <><Check size={12} /> FEITO</> : 'DAILY'}
                     </span>
+                    <span className="hz-dt-day" aria-hidden="true">
+                      {new Date().getDate()}
+                    </span>
                     <span className="hz-dt-art" aria-hidden="true">
                       {d.art}
                     </span>
@@ -364,19 +355,28 @@ export function Hub() {
           </section>
 
           {online.length > 0 && (
-            <section className="hz-sec" aria-label="Amigos online">
+            <section className="hz-sec hz-online-sec" aria-label="Amigos online">
               <h2 className="hz-h">
                 Amigos online <small className="mono">{online.length} AGORA</small>
+                <Link to="/amigos" className="hz-ver mono">
+                  Ver
+                </Link>
               </h2>
               <ul className="hz-online" data-testid="hub-online">
-                {online.slice(0, 6).map((f) => (
+                {online.slice(0, 6).map((f, i) => (
                   <li key={f.username}>
                     <Link to="/amigos/$username" params={{ username: f.username }} className="hz-friend">
-                      <span className="hz-friend-av" aria-hidden="true">
+                      <span className="hz-friend-av" data-c={i % 5} aria-hidden="true">
                         {f.username.charAt(0).toUpperCase()}
                         <i />
                       </span>
-                      <span className="hz-friend-name">@{f.username}</span>
+                      <span className="hz-friend-txt">
+                        <span className="hz-friend-name">@{f.username}</span>
+                        <small className="hz-friend-st">online</small>
+                      </span>
+                      <span className="hz-friend-plus" aria-hidden="true">
+                        +
+                      </span>
                     </Link>
                   </li>
                 ))}
@@ -390,7 +390,24 @@ export function Hub() {
           )}
         </>
       )}
+      </aside>
 
+      <div className="hz-games">
+      {!q && (
+        <section className="hz-hello" aria-label="Resumo">
+          <div>
+            <h1>{firstName ? `Olá, ${firstName}!` : 'Bora jogar?'}</h1>
+            {!user && authStatus === 'ready' && (
+              <p className="mono">ENTRE PARA GUARDAR RECORDES E DAILYS</p>
+            )}
+          </div>
+          {streak > 0 && (
+            <span className="hz-streak mono" title="Dias seguidos entrando no NoCap">
+              <b>{streak}</b> {streakLabel(streak).replace(/^\d+ /, '').toUpperCase()} SEGUIDOS
+            </span>
+          )}
+        </section>
+      )}
       {actionGames.length > 0 && (
         <section className="hz-sec" aria-label="Ação">
           <h2 className="hz-h">
@@ -418,6 +435,7 @@ export function Hub() {
         </section>
       )}
 
+      </div>
       {q && actionGames.length === 0 && sportGames.length === 0 && brainGames.length === 0 && (
         <p className="hz-empty mono" data-testid="hub-search-empty">
           NENHUM JOGO COM “{query.trim().toUpperCase()}”

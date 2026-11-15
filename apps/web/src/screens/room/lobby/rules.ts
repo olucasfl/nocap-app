@@ -61,7 +61,7 @@ export const GAME_NAME: Record<RoomGame, string> = {
   bola: 'Fut Fox',
   pingpong: 'Ping Fox!',
   foxshot: 'Counter Fox',
-  foxcap: 'Fox Cap!',
+  foxcap: 'Sala',
   color: 'Mesmíssima',
   time: 'Já Deu?',
   impostor: 'Intruso',
@@ -81,7 +81,7 @@ export const GAME_OF: Record<RoomGame, string> = {
   bola: 'do Fut Fox',
   pingpong: 'do Ping Fox!',
   foxshot: 'do Counter Fox',
-  foxcap: 'do Fox Cap!',
+  foxcap: 'da Sala',
 };
 
 /** Tamanhos do mapa do Checkpoint, em metros (o servidor tem a mesma tabela). */
@@ -205,7 +205,7 @@ export const modeOf = (s: RoomSnapshot) => MODES[s.game].find((m) => m.id === s.
 
 /** Uma linha: "Cor · Clássico · 3 rodadas". */
 export function rulesSummary(s: RoomSnapshot): string {
-  if (s.game === 'foxcap') return 'Fox Cap! · sem jogo escolhido';
+  if (s.game === 'foxcap') return 'Sala · sem jogo escolhido';
   if (s.game === 'desmorona') return 'Desmorona! · Último de pé';
   if (s.game === 'golf') {
     const g = s.settings as unknown as { holes?: number; tier?: string };

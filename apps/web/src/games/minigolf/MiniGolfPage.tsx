@@ -55,11 +55,6 @@ interface Result {
   record: boolean;
 }
 
-const Chevron = ({ dir }: { dir: 'l' | 'r' }) => (
-  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d={dir === 'l' ? 'M15 5l-7 7 7 7' : 'M9 5l7 7-7 7'} />
-  </svg>
-);
 
 /** Mini Golf offline (spec 082): 40 fases abertas, em três dificuldades; cai no buraco e escolhe próxima, repetir, escolher fase ou menu. */
 export function MiniGolfPage() {
@@ -77,7 +72,6 @@ export function MiniGolfPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
   const keys = useRef({ l: false, r: false });
-  const api = useRef<{ rotate: (d: number) => void }>({ rotate: () => {} });
 
   useEffect(() => {
     let alive = true;
@@ -232,7 +226,6 @@ export function MiniGolfPage() {
       cv.addEventListener('contextmenu', noMenu);
       window.addEventListener('keydown', kd);
       window.addEventListener('keyup', ku);
-      api.current.rotate = (d) => (sc.yaw += d);
 
       let last = performance.now();
       const loop = (now: number) => {
@@ -358,8 +351,6 @@ export function MiniGolfPage() {
           <div className="bar"><i style={{ transform: `scaleX(${power})` }} /></div>
         </div>
       )}
-      <div className="mg-rot l"><button type="button" aria-label="Girar a câmera para a esquerda" onPointerDown={() => api.current.rotate(-0.35)}><Chevron dir="l" /></button></div>
-      <div className="mg-rot r"><button type="button" aria-label="Girar a câmera para a direita" onPointerDown={() => api.current.rotate(0.35)}><Chevron dir="r" /></button></div>
 
       {result && (
         <div className="mg-score" data-testid="mg-result">

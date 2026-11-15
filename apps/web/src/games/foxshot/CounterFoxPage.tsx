@@ -849,7 +849,7 @@ function CounterFoxGate() {
                 data-sfx="back"
                 data-testid="cfh-gate-back"
               >
-                Voltar ao Fox Cap!
+                Voltar aos jogos
               </Link>
             </div>
           </section>

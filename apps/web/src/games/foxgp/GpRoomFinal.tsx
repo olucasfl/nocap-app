@@ -30,10 +30,16 @@ export function GpRoomFinal({ snapshot }: { snapshot: RoomSnapshot }) {
   const { rows, fastest } = useMemo(() => {
     const final = [...(snapshot.final ?? [])].sort((a, b) => a.placement - b.placement);
     const names = new Map(final.map((r) => [r.userId, nameOf(r.userId, r.username)]));
+    const arcade = info?.physics === 'arcade';
     const out: GpFinalRow[] = final.map((r) => ({
       id: r.userId,
       name: nameOf(r.userId, r.username),
-      color: info?.colors[r.userId] ?? '#ff7d26',
+      // o quadradinho mostra a cor do carro de verdade (carroceria do kart no Arcade, do F1 no Realista)
+      color: (() => {
+        const car = carFromRoom(info?.paints?.[r.userId]);
+        const body = (arcade ? car?.kart?.body : car?.f1?.body) ?? undefined;
+        return body !== undefined ? `#${body.toString(16).padStart(6, '0')}` : (info?.colors[r.userId] ?? '#ff7d26');
+      })(),
       fur: carFromRoom(info?.paints?.[r.userId])?.fur ?? hexNum(info?.colors[r.userId]),
       paint: carFromRoom(info?.paints?.[r.userId])?.f1 ?? null,
       kart: carFromRoom(info?.paints?.[r.userId])?.kart ?? null,

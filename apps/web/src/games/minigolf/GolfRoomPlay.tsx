@@ -46,11 +46,6 @@ const clock = (ms: number) => {
 };
 const nameClass = (n: GolfScoreName) => (n === 'ace' ? 'mg-ace' : n === 'albatross' || n === 'eagle' ? 'mg-eagle' : n === 'birdie' ? 'mg-ok' : n === 'par' ? '' : 'mg-calm');
 
-const Chevron = ({ dir }: { dir: 'l' | 'r' }) => (
-  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d={dir === 'l' ? 'M15 5l-7 7 7 7' : 'M9 5l7 7-7 7'} />
-  </svg>
-);
 
 /**
  * O Mini Golf em sala (spec 082). O servidor simula todas as bolas; aqui desenhamos: as bolas dos quadros do servidor
@@ -68,7 +63,6 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
   const keys = useRef({ l: false, r: false });
-  const rotate = useRef<(d: number) => void>(() => {});
   const [power, setPower] = useState<number | null>(null);
   const [board, setBoard] = useState(false);
   const [held, setHeld] = useState(false);
@@ -294,7 +288,6 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         cv.removeEventListener('pointercancel', onUp);
         cv.removeEventListener('contextmenu', noMenu);
       });
-      rotate.current = (d) => (sc.yaw += d);
 
       const holePos = lv.data.holes[0]!.p;
       let last = performance.now();
@@ -418,8 +411,6 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
           <div className="bar"><i style={{ transform: `scaleX(${power})` }} /></div>
         </div>
       )}
-      <div className="mg-rot l"><button type="button" aria-label="Girar a câmera para a esquerda" onPointerDown={() => rotate.current(-0.35)}><Chevron dir="l" /></button></div>
-      <div className="mg-rot r"><button type="button" aria-label="Girar a câmera para a direita" onPointerDown={() => rotate.current(0.35)}><Chevron dir="r" /></button></div>
 
       {stage === 'intro' && (
         <div className="mg-score" data-testid="golf-intro">

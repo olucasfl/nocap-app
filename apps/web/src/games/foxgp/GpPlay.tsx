@@ -815,7 +815,7 @@ export function GpPlay({
         return {
           id,
           name: c?.name ?? '',
-          color: css(c?.paint?.body ?? c?.color ?? 0xff7d26),
+          color: css(carBody(c, mode === 'arcade')),
           ms: (online && l ? l.quali[id] : c?.qualiMs) ?? null,
           you: id === meId,
         };
@@ -1173,9 +1173,10 @@ export function GpPlay({
               st.map((r) => ({
                 id: r.car.id,
                 name: r.car.name,
-                color: css(r.car.color),
+                color: css(carBody(r.car, mode === 'arcade')),
                 fur: r.car.color,
                 paint: r.car.paint,
+                kart: r.car.kart,
                 you: r.car.id === meId,
                 bot: r.car.bot,
                 ms: r.car.finishMs,
@@ -1283,7 +1284,7 @@ export function GpPlay({
               id: r.car.id,
               pos: r.pos,
               name: r.car.name,
-              color: css(r.car.paint?.body ?? r.car.color),
+              color: css(carBody(r.car, mode === 'arcade')),
               // diferença para o carro da frente (não para o líder): é o que se disputa na pista
               gap: r.car.gone
                 ? 'fora'
@@ -2062,6 +2063,10 @@ export function GpPlay({
     </div>
   );
 }
+
+/** A cor do carro de verdade (a carroceria do kart no Arcade, a do F1 no Realista), para os quadradinhos das tabelas. */
+const carBody = (c: { kart?: { body: number } | null; paint?: { body: number } | null; color: number } | undefined, arcade: boolean, fallback = 0xff7d26): number =>
+  (arcade ? c?.kart?.body : undefined) ?? c?.paint?.body ?? c?.color ?? fallback;
 
 function initialHud(): Hud {
   return {

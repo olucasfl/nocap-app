@@ -18,7 +18,7 @@ const GAME_NAME: Record<RoomGame, string> = {
   bola: 'Fut Fox',
   pingpong: 'Ping Fox!',
   foxshot: 'Counter Fox',
-  foxcap: 'Fox Cap!',
+  foxcap: 'Sala',
 };
 
 const phaseText = (phase: Phase) =>

@@ -143,30 +143,6 @@
   padding: 6px 12px;
   pointer-events: none;
 }
-.mg-rot {
-  position: absolute;
-  bottom: max(22px, env(safe-area-inset-bottom));
-  display: flex;
-  gap: 8px;
-}
-.mg-rot.l {
-  left: max(14px, env(safe-area-inset-left));
-}
-.mg-rot.r {
-  right: max(14px, env(safe-area-inset-right));
-}
-.mg-rot button {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
-  border: 2px solid var(--mg-line);
-  background: rgba(10, 21, 16, 0.86);
-  color: var(--mg-text);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-}
 .mg-score {
   position: absolute;
   inset: 0;

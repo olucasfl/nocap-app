@@ -49,6 +49,8 @@
 }
 .tab.room:not(.on) {
   background: var(--yellow, #ffd23f);
+  box-shadow: 0 0 0 3px #111, 0 4px 0 3px #111;
+  font-weight: 900;
   /* texto escuro fixo: no tema escuro o texto padrão é claro e sumiria no amarelo */
   color: #111;
 }
@@ -85,10 +87,4 @@
   .bottom-nav[data-n='5'] .tab {
     font-size: 9.5px;
   }
-}
-
-/* "Sala" sem estar numa sala: um item comum no meio da barra (amarelo só quando a conta está numa sala) */
-.tab.idle-room:not(.on) {
-  background: transparent;
-  color: var(--ink);
 }

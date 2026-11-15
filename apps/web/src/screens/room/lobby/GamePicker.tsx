@@ -10,19 +10,73 @@ interface PickGame {
 /** Os jogos que se pode jogar com amigos em uma sala, por categoria (spec 070). Toda sala troca entre eles. */
 export const GAME_CATEGORIES: { id: string; title: string; games: PickGame[] }[] = [
   {
-    id: 'reflexo',
-    title: 'Reflexo e precisão',
+    id: 'acao',
+    title: 'Ação',
     games: [
       {
-        id: 'color',
-        name: 'Mesmíssima',
-        note: 'Recrie de memória a cor que apareceu e sumiu.',
+        id: 'foxshot',
+        name: 'Counter Fox',
+        note: 'Mata-mata em primeira pessoa no mapa Duna, com bots.',
+        cap: 'até 10',
+      },
+      {
+        id: 'foxgp',
+        name: 'Fox GP',
+        note: 'Corrida de F1 das raposas: classificação, 3 voltas, DRS, vácuo e box. Física Arcade ou Realista.',
         cap: 'até 12',
       },
+      {
+        id: 'atravessa',
+        name: 'Atravessa!',
+        note: 'Atravesse estrada e rio, cada um com a sua cor.',
+        cap: 'até 8',
+      },
+      {
+        id: 'desmorona',
+        name: 'Desmorona!',
+        note: 'O chão some a cada passo; vence o último de pé.',
+        cap: 'até 8',
+      },
+    ],
+  },
+  {
+    id: 'esportes',
+    title: 'Esportes e duelos',
+    games: [
+      {
+        id: 'bola',
+        name: 'Fut Fox',
+        note: 'Futebol de raposas com 2 a 4 times e bots.',
+        cap: 'até 15',
+      },
+      {
+        id: 'pingpong',
+        name: 'Ping Fox!',
+        note: 'Pingue-pongue 1 contra 1: a raquete bate de verdade.',
+        cap: 'até 8',
+      },
+      {
+        id: 'golf',
+        name: 'Mini Golf',
+        note: 'Mini golfe em 3D: todos jogam juntos, as bolas se empurram e vence quem fizer menos tacadas.',
+        cap: 'até 8',
+      },
+    ],
+  },
+  {
+    id: 'mente',
+    title: 'Palavras, cores e mente',
+    games: [
       {
         id: 'time',
         name: 'Já Deu?',
         note: 'Conte o tempo de cabeça e pare na hora certa.',
+        cap: 'até 12',
+      },
+      {
+        id: 'color',
+        name: 'Mesmíssima',
+        note: 'Recrie de memória a cor que apareceu e sumiu.',
         cap: 'até 12',
       },
       {
@@ -45,61 +99,13 @@ export const GAME_CATEGORIES: { id: string; title: string; games: PickGame[] }[]
       },
     ],
   },
-  {
-    id: 'foxcap',
-    title: 'Fox Cap!',
-    games: [
-      {
-        id: 'foxshot',
-        name: 'Counter Fox',
-        note: 'Mata-mata em primeira pessoa no mapa Duna, com bots.',
-        cap: 'até 10',
-      },
-      {
-        id: 'bola',
-        name: 'Fut Fox',
-        note: 'Futebol de raposas com 2 a 4 times e bots.',
-        cap: 'até 15',
-      },
-      {
-        id: 'pingpong',
-        name: 'Ping Fox!',
-        note: 'Pingue-pongue 1 contra 1: a raquete bate de verdade.',
-        cap: 'até 8',
-      },
-      {
-        id: 'foxgp',
-        name: 'Fox GP',
-        note: 'Corrida de F1 das raposas: classificação, 3 voltas, DRS, vácuo e box. Física Arcade ou Realista.',
-        cap: 'até 12',
-      },
-      {
-        id: 'golf',
-        name: 'Mini Golf',
-        note: 'Mini golfe em 3D: todos jogam juntos, as bolas se empurram e vence quem fizer menos tacadas.',
-        cap: 'até 8',
-      },
-      {
-        id: 'atravessa',
-        name: 'Atravessa!',
-        note: 'Atravesse estrada e rio, cada um com a sua cor.',
-        cap: 'até 8',
-      },
-      {
-        id: 'desmorona',
-        name: 'Desmorona!',
-        note: 'O chão some a cada passo; vence o último de pé.',
-        cap: 'até 8',
-      },
-    ],
-  },
 ];
 
 /** Compatibilidade: a lista plana de jogos. */
 export const FOX_GAMES: readonly PickGame[] = GAME_CATEGORIES.flatMap((c) => c.games);
 
 /**
- * "Jogo da sala": só aparece na sala do Fox Cap!. O líder escolhe e troca; ao trocar, as regras e a tela do lobby
+ * "Jogo da sala": só aparece na sala sem jogo escolhido. O líder escolhe e troca; ao trocar, as regras e a tela do lobby
  * se adaptam ao jogo. Quem não é o líder só vê qual é.
  */
 export function GamePicker({ snapshot, me }: { snapshot: RoomSnapshot; me: string | undefined }) {
