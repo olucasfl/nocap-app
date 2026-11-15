@@ -139,6 +139,26 @@ export class GolfScene {
     d.holes.forEach((h, i) => {
       group.add(mk(d.holeTris[i]!, cup, 2, false));
       group.add(mk(this.level.holeFloors[i]!, cup, 2, false));
+      // o buraco precisa aparecer: aro claro e boca escura no nível do gramado. Quando o piso do modelo passa por cima
+      // do copo (fases do Open Golf), a boca escura cobre esse pedaço; nas fases com o piso vazado ela some e só fica o aro.
+      const covered = this.floorCovers(d.solid.t, h.p[0], h.p[2], h.p[1]);
+      const rim = new THREE.Mesh(
+        new THREE.RingGeometry(h.r * 0.96, h.r * 1.14, 40),
+        new THREE.MeshStandardMaterial({ color: 0xf4f1e6, roughness: 0.55, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6 }),
+      );
+      rim.rotation.x = -Math.PI / 2;
+      rim.position.set(h.p[0], h.p[1] + 0.006, h.p[2]);
+      rim.receiveShadow = true;
+      group.add(rim);
+      if (covered) {
+        const mouth = new THREE.Mesh(
+          new THREE.CircleGeometry(h.r * 0.97, 40),
+          new THREE.MeshBasicMaterial({ color: 0x070908, polygonOffset: true, polygonOffsetFactor: -5, polygonOffsetUnits: -5 }),
+        );
+        mouth.rotation.x = -Math.PI / 2;
+        mouth.position.set(h.p[0], h.p[1] + 0.005, h.p[2]);
+        group.add(mouth);
+      }
       const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 1.05, 8), new THREE.MeshStandardMaterial({ color: 0xf4f4ef, metalness: 0.5, roughness: 0.3 }));
       pole.position.set(h.p[0], h.p[1] + 0.52, h.p[2]);
       const flag = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.26), new THREE.MeshStandardMaterial({ color: 0xff5a3c, roughness: 0.8, side: THREE.DoubleSide }));
@@ -188,6 +208,32 @@ export class GolfScene {
   }
 
   /** Um quadro (offline): a bola local, peças móveis, câmera suave e luz de sombra seguindo a bola. */
+  /** Algum triângulo do piso passa por cima do ponto (x, z), perto da altura `y`? */
+  private floorCovers(t: number[], x: number, z: number, y: number): boolean {
+    for (let i = 0; i < t.length; i += 9) {
+      const ay = (t[i + 1]! + t[i + 4]! + t[i + 7]!) / 3;
+      if (Math.abs(ay - y) > 0.3) continue;
+      const sg = (px: number, pz: number, qx: number, qz: number, rx: number, rz: number) => (px - rx) * (qz - rz) - (qx - rx) * (pz - rz);
+      const d1 = sg(x, z, t[i]!, t[i + 2]!, t[i + 3]!, t[i + 5]!);
+      const d2 = sg(x, z, t[i + 3]!, t[i + 5]!, t[i + 6]!, t[i + 8]!);
+      const d3 = sg(x, z, t[i + 6]!, t[i + 8]!, t[i]!, t[i + 2]!);
+      if (!((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0))) return true;
+    }
+    return false;
+  }
+
+  /** O ponto da tela (relativo ao quadro) está em cima da bola? Com folga, para o dedo também acertar. */
+  ballHit(pos: [number, number, number], x: number, y: number): boolean {
+    const el = this.renderer.domElement;
+    const w = el.clientWidth, h = el.clientHeight;
+    const c = new THREE.Vector3(pos[0], pos[1] + 0.04, pos[2]).project(this.camera);
+    if (c.z > 1) return false;
+    const sx = ((c.x + 1) / 2) * w, sy = ((1 - c.y) / 2) * h;
+    const side = new THREE.Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw)).multiplyScalar(0.05).add(new THREE.Vector3(pos[0], pos[1] + 0.04, pos[2])).project(this.camera);
+    const rad = Math.max(34, Math.hypot(((side.x - c.x) / 2) * w, ((side.y - c.y) / 2) * h) * 2.4);
+    return Math.hypot(x - sx, y - sy) <= rad;
+  }
+
   render(ball: GolfBall, time: number, dt: number, drawPos?: [number, number, number]) {
     const p = drawPos ?? ball.pos;
     this.gm.tick(dt);
@@ -250,7 +296,7 @@ export class GolfScene {
     const seen = new Set<number>();
     for (const b of balls) {
       seen.add(b.slot);
-      const key = `${b.look.color}:${b.look.finish}`;
+      const key = `${b.look.color}:${b.look.color2 ?? ''}:${b.look.finish}`;
       let o = this.others.get(b.slot);
       if (!o) {
         const mesh = buildBallMesh(b.look);

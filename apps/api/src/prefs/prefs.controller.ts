@@ -92,6 +92,7 @@ export const golfSchema = z
     ball: z
       .object({
         color: z.number().int().min(0).max(0xffffff),
+        color2: z.number().int().min(0).max(0xffffff).optional(),
         finish: z.enum(['liso', 'listras', 'pontos', 'metade', 'estrela']),
         trail: z.enum(['nenhum', 'faiscas', 'fogo', 'neve']),
       })

@@ -6,7 +6,7 @@ import { ballColorMap, ballNormal } from './textures';
 export function buildBallMesh(look: GolfBallLook): THREE.Mesh {
   const mat = new THREE.MeshPhysicalMaterial({
     color: 0xffffff,
-    map: ballColorMap(look.color, look.finish),
+    map: ballColorMap(look.color, look.finish, look.color2),
     roughness: 0.32,
     metalness: 0.02,
     clearcoat: 0.7,
@@ -23,6 +23,6 @@ export function buildBallMesh(look: GolfBallLook): THREE.Mesh {
 export function applyBallLook(mesh: THREE.Mesh, look: GolfBallLook) {
   const mat = mesh.material as THREE.MeshPhysicalMaterial;
   mat.map?.dispose();
-  mat.map = ballColorMap(look.color, look.finish);
+  mat.map = ballColorMap(look.color, look.finish, look.color2);
   mat.needsUpdate = true;
 }

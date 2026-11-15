@@ -711,3 +711,273 @@
   width: 100%;
   height: 100%;
 }
+
+/* ====== Organização nova (15/11/2026): capas dos jogos, filtros ao lado e classificação à direita ====== */
+.rkp {
+  max-width: 1120px;
+}
+/* a fileira de jogos: capa de cada jogo (mesma arte da tela inicial), com o nome no computador */
+.rkp-games {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+.rkp-games button {
+  aspect-ratio: auto;
+  display: grid;
+  gap: 5px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--white);
+  overflow: visible;
+}
+.rkp-games button[aria-selected='true'] {
+  background: var(--white);
+  outline: 3px solid var(--orange);
+  outline-offset: 1px;
+}
+.rkp-games-name {
+  display: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 800 11px var(--font-display);
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+.rkp-games button[aria-selected='true'] .rkp-games-name {
+  color: var(--orange);
+}
+.rkp-cover {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 3;
+  width: 100%;
+  overflow: hidden;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: var(--accent);
+}
+.rkp-cover.color {
+  background: var(--orange);
+}
+.rkp-cover.time {
+  background: var(--blue);
+}
+.rkp-cover.eco {
+  background: var(--green);
+}
+.rkp-cover.atravessa {
+  background: var(--eco-red);
+}
+.rkp-cover.wclassic {
+  background: var(--eco-cyan);
+}
+.rkp-cover.blocks {
+  background: var(--yellow);
+}
+.rkp-cover .ha {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  transform: scale(1.1);
+}
+
+.rkp-layout {
+  display: grid;
+  gap: 14px;
+  align-items: start;
+}
+.rkp-side {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: var(--border);
+  border-radius: 18px;
+  background: var(--white);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.rkp-main {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+/* o cabeçalho do jogo: no celular só o nome (a capa já está na fileira de cima) */
+.rkp-hero {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--ink);
+}
+.rkp-hero .rkp-cover {
+  display: none;
+}
+.rkp-hero-text .mono {
+  color: var(--muted);
+}
+.rkp-hero-text b {
+  font-size: clamp(26px, 7vw, 34px);
+}
+.rkp-group {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  flex: 1 1 200px;
+}
+.rkp-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+.rkp-row2 .rkp-seg,
+.rkp-row2 .rkp-seg.who {
+  flex: none;
+  width: 100%;
+}
+.rkp-me {
+  bottom: calc(86px + env(safe-area-inset-bottom));
+}
+.rkp-me-kick {
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  opacity: 0.75;
+}
+
+@media (min-width: 520px) {
+  .rkp-games-name {
+    display: block;
+  }
+  .rkp-games {
+    gap: 10px;
+  }
+}
+
+/* computador: filtros e "sua posição" numa coluna fixa à esquerda, pódio e lista à direita */
+@media (min-width: 900px) {
+  .rkp-layout {
+    grid-template-columns: 300px minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    gap: 16px 20px;
+  }
+  .rkp-side {
+    grid-column: 1;
+    grid-row: 1;
+    padding: 14px;
+  }
+  .rkp-main {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+  .rkp-me {
+    grid-column: 1;
+    grid-row: 2;
+    position: sticky;
+    top: 16px;
+    bottom: auto;
+    align-self: start;
+  }
+  .rkp-hero .rkp-cover {
+    display: block;
+  }
+  .rkp-hero-text b {
+    font-size: 30px;
+  }
+  .rkp-podium {
+    padding: 22px 18px 0;
+    gap: 14px;
+  }
+  .rkp-row {
+    padding: 11px 16px;
+    grid-template-columns: 40px auto 1fr auto;
+  }
+  .rkp-score {
+    font-size: 19px;
+  }
+}
+@media (min-width: 900px) and (max-width: 1100px) {
+  .rkp-layout {
+    grid-template-columns: 270px minmax(0, 1fr);
+  }
+}
+
+/* computador: tudo menor (a versão anterior ficou grande demais) */
+@media (min-width: 900px) {
+  .rkp {
+    max-width: 960px;
+  }
+  .rkp-head h1 {
+    font-size: 34px;
+  }
+  .rkp-games {
+    max-width: 700px;
+    gap: 8px;
+  }
+  .rkp-games button {
+    padding: 3px;
+    gap: 3px;
+    border-radius: 11px;
+  }
+  .rkp-games-name {
+    font-size: 9.5px;
+  }
+  .rkp-cover {
+    border-width: 1.5px;
+    border-radius: 8px;
+  }
+  .rkp-layout {
+    grid-template-columns: 250px minmax(0, 1fr);
+    gap: 14px 16px;
+  }
+  .rkp-side {
+    gap: 10px;
+    padding: 12px;
+  }
+  .rkp-hero {
+    grid-template-columns: 76px 1fr;
+    align-items: center;
+    gap: 10px;
+  }
+  .rkp-hero-text b {
+    font-size: 19px;
+    overflow-wrap: anywhere;
+  }
+  .rkp-cats button {
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+  .rkp-seg button {
+    height: 34px;
+    font-size: 11.5px;
+  }
+  .rkp-h {
+    font-size: 17px;
+  }
+  .rkp-podium {
+    padding: 16px 14px 0;
+    gap: 10px;
+  }
+  .rkp-pod-score {
+    font-size: 15px;
+  }
+  .rkp-step {
+    font-size: 15px;
+  }
+  .rkp-row {
+    padding: 8px 12px;
+    grid-template-columns: 32px auto 1fr auto;
+  }
+  .rkp-score {
+    font-size: 16px;
+  }
+  .rkp-me-pos {
+    min-width: 42px;
+    font-size: 18px;
+  }
+}

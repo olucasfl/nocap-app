@@ -78,7 +78,7 @@ export function MiniGolfHome() {
                   </form>
                 </div>
               )}
-              <button type="button" className="mg-pill mgh-mid" onClick={() => void navigate({ to: '/minigolf/jogar' })} data-testid="mg-offline">Offline: {GOLF_LEVELS} fases</button>
+              <button type="button" className="mg-pill mgh-mid" onClick={() => void navigate({ to: '/minigolf/fases' })} data-testid="mg-offline">Offline: {GOLF_LEVELS} fases</button>
               <button type="button" className="mg-pill ghost mgh-mid" onClick={() => void navigate({ to: '/minigolf/bola' })} data-testid="mg-customize">Personalizar bola</button>
             </div>
           </div>

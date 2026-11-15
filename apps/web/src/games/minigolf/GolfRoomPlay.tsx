@@ -36,7 +36,7 @@ const DELAY_MS = 90;
 /** No PC a câmera gira com o botão direito do mouse; no celular, pelas setas da tela. */
 const HINT =
   typeof window !== 'undefined' && window.matchMedia?.('(pointer: fine)').matches
-    ? 'Arraste para trás e solte para tacar · Botão direito do mouse (arrastando) gira a câmera · TAB mostra o placar'
+    ? 'Puxe a bola para tacar · Arraste em outro lugar para girar a câmera · Botão direito cancela · TAB mostra o placar'
     : 'Arraste para trás e solte para tacar · Setas giram a câmera · Placar mostra a tabela';
 const hex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
 const nameOf = (id: string, username: string) => (id.startsWith('guest:') ? username : at(username));
@@ -44,7 +44,7 @@ const clock = (ms: number) => {
   const s = Math.max(0, Math.ceil(ms / 1000));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 };
-const nameClass = (n: GolfScoreName) => (n === 'ace' ? 'mg-ace' : n === 'albatross' || n === 'eagle' ? 'mg-eagle' : n === 'birdie' ? 'mg-ok' : n === 'par' ? '' : 'mg-bad');
+const nameClass = (n: GolfScoreName) => (n === 'ace' ? 'mg-ace' : n === 'albatross' || n === 'eagle' ? 'mg-eagle' : n === 'birdie' ? 'mg-ok' : n === 'par' ? '' : 'mg-calm');
 
 const Chevron = ({ dir }: { dir: 'l' | 'r' }) => (
   <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -204,22 +204,34 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       // ---- mira (arrastar para trás e soltar) ----
       let drag: { x: number; y: number; id: number } | null = null;
       let right = false;
+      let myPos: V3 = startPos;
       let aim: { dir: [number, number]; power: number } | null = null;
       const myStatus = () => infoRef.current.status[me] ?? 0;
       const canAim = () => infoRef.current.stage === 'play' && myStatus() === 0 && performance.now() - lastShot > 400;
+      // botão direito no meio da puxada cancela a tacada (sem bater e sem girar a câmera)
+      const cancelAim = () => {
+        if (!drag || right) return false;
+        drag = null;
+        aim = null;
+        setPower(null);
+        return true;
+      };
+      // esquerdo em cima da bola puxa a tacada; esquerdo em qualquer outro lugar gira a câmera; direito só cancela a tacada
       const onDown = (e: PointerEvent) => {
-        if (e.pointerType === 'mouse' && e.button !== 0) {
-          right = true;
-          drag = { x: e.clientX, y: e.clientY, id: e.pointerId };
-          cv.setPointerCapture?.(e.pointerId);
+        if (e.button === 2 || (e.pointerType === 'mouse' && e.button !== 0)) {
+          cancelAim();
           return;
         }
-        if (!canAim() || drag) return;
+        if (drag) return;
+        const r = cv.getBoundingClientRect();
+        const onBall = canAim() && sc.ballHit(myPos, e.clientX - r.left, e.clientY - r.top);
+        right = !onBall;
         drag = { x: e.clientX, y: e.clientY, id: e.pointerId };
         cv.setPointerCapture?.(e.pointerId);
       };
       const onMove = (e: PointerEvent) => {
         if (!drag || e.pointerId !== drag.id) return;
+        if (e.buttons & 2 && cancelAim()) return;
         const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
         if (right) {
           sc.yaw -= dx * 0.006;
@@ -262,7 +274,10 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         pred = { ball, until: performance.now() + 380, t: holeClock ? holeClock.t + (performance.now() - holeClock.at) / 1000 : 0, acc: 0 };
         blend = null;
       };
-      const noMenu = (e: Event) => e.preventDefault();
+      const noMenu = (e: Event) => {
+        e.preventDefault();
+        cancelAim();
+      };
       cv.addEventListener('pointerdown', onDown);
       cv.addEventListener('pointermove', onMove);
       cv.addEventListener('pointerup', onUp);
@@ -322,6 +337,7 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
           }
           balls.push({ slot, look: parseGolfBall(inf.looks[id]), pos, vel });
         }
+        myPos = focus;
         sc.setAim({ pos: focus } as GolfBall, canAim() ? aim : null);
         sc.renderOnline(balls, focus, holeT, dt);
       };
@@ -384,14 +400,14 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
             <div key={m.id} className={`mg-pl${m.id === me ? ' me' : ''}`}>
               <span className="mg-lobby-ball" style={{ background: hex(info.looks[m.id]?.color ?? 0xffc83d) }} aria-hidden="true" />
               <span className="mg-pl-name">{nameOf(m.id, m.username)}</span>
-              <span className={`mg-pl-st${st === 2 ? ' mg-ace' : st === 3 ? ' mg-bad' : ''}`}>{st === 2 ? 'No buraco' : st === 3 ? 'Estourou' : info.strokes[m.id] ?? 0}</span>
+              <span className={`mg-pl-st${st === 2 ? ' mg-ace' : st === 3 ? ' mg-calm' : ''}`}>{st === 2 ? 'No buraco' : st === 3 ? 'Fim das tacadas' : info.strokes[m.id] ?? 0}</span>
             </div>
           );
         })}
       </div>
 
       {stage === 'play' && power === null && myStatus === 0 && !loading && <div className="mg-hint">{HINT}</div>}
-      {stage === 'play' && myStatus >= 2 && <div className="mg-hint">{myStatus === 2 ? 'No buraco! Esperando os outros...' : 'Estourou. Esperando os outros...'}</div>}
+      {stage === 'play' && myStatus >= 2 && <div className="mg-hint">{myStatus === 2 ? 'No buraco! Esperando os outros...' : 'Fim das tacadas neste buraco. Esperando os outros...'}</div>}
       {power !== null && (
         <div className="mg-power" aria-hidden="true">
           <div className="mg-kick" style={{ textAlign: 'center' }}>Força {Math.round(power * 100)}%</div>
@@ -489,7 +505,7 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
               </table>
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
-              <span className="mg-tag">Verde: abaixo do par · vermelho: acima · X: não encaçapou</span>
+              <span className="mg-tag">Verde: abaixo do par · X: acabaram as tacadas</span>
               <span style={{ flex: 1 }} />
               {snapshot.hostId === me && <button type="button" className="mg-pill ghost" onClick={() => sendRoom('gend')} data-testid="golf-end">Encerrar partida</button>}
               <button type="button" className="mg-pill ghost" onClick={leave}>Sair da partida</button>

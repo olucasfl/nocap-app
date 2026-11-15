@@ -62,3 +62,22 @@ export function saveLook(look: GolfBallLook) {
   }
   golfNotify();
 }
+
+const PROGRESS = 'nocap-golf-progress';
+/** A fase que a pessoa começou e ainda não terminou (buraco feito ou limite de tacadas), para mostrar "em andamento". */
+export function loadProgress(): number | null {
+  try {
+    const n = Number(localStorage.getItem(PROGRESS));
+    return Number.isInteger(n) && n > 0 ? n : null;
+  } catch {
+    return null;
+  }
+}
+export function setProgress(level: number | null) {
+  try {
+    if (level === null) localStorage.removeItem(PROGRESS);
+    else localStorage.setItem(PROGRESS, String(level));
+  } catch {
+    /* sem armazenamento */
+  }
+}

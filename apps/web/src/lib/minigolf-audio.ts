@@ -89,7 +89,7 @@ export const golfSfx = {
     noise(2400, 400, 0.6, 0.45, 0.2, 0, 'bandpass');
     tone('sine', 300, 120, 0.2, 0.08);
   },
-  /** Letreiro: ACE e Albatross soam mais; Bogey e pior soam tristes. */
+  /** Letreiro: ACE e Albatross soam mais; acima do par soa neutro (sem julgar). */
   score(name: string) {
     const up = (notes: number[], step = 0.09, peak = 0.16) =>
       notes.forEach((f, i) => {
@@ -102,8 +102,11 @@ export const golfSfx = {
     else if (name === 'birdie') up([440, 554, 659], 0.09);
     else if (name === 'par') up([392, 494], 0.1, 0.12);
     else {
-      tone('sawtooth', 220, 150, 0.35, 0.09);
-      tone('sawtooth', 165, 110, 0.4, 0.08, 0.18);
+      // acima do par ou sem tacadas: duas notas macias no mesmo tom, neutras (informam o fim do buraco, sem julgar)
+      [330, 330].forEach((f, i) => {
+        tone('triangle', f, f, 0.24, 0.1, i * 0.14);
+        tone('sine', f * 2, f * 2, 0.16, 0.03, i * 0.14);
+      });
     }
   },
   tick() {

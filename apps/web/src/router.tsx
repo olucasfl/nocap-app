@@ -242,6 +242,11 @@ const miniGolfRoute = createRoute({
   path: '/minigolf',
   component: lazyRouteComponent(() => import('@/games/minigolf/MiniGolfHome'), 'MiniGolfHome'),
 });
+const miniGolfLevelsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/minigolf/fases',
+  component: lazyRouteComponent(() => import('@/games/minigolf/MiniGolfLevels'), 'MiniGolfLevels'),
+});
 const miniGolfPlayRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/minigolf/jogar',
@@ -359,6 +364,7 @@ const routeTree = rootRoute.addChildren([
   atravessaRoute,
   foxCapRoute,
   miniGolfRoute,
+  miniGolfLevelsRoute,
   miniGolfPlayRoute,
   miniGolfBallRoute,
   desmoronaRoute,

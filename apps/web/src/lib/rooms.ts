@@ -169,7 +169,7 @@ export interface DesmoronaRoomState {
 export interface GolfRoomState {
   me: string | null;
   /** A bola de cada pessoa (cor, acabamento e rastro). */
-  looks: Record<string, { color: number; finish: string; trail: string }>;
+  looks: Record<string, { color: number; color2?: number; finish: string; trail: string }>;
   /** Vaga de cada pessoa nos quadros de posição. */
   slots: Record<string, number>;
   /** As fases da partida, na ordem. */

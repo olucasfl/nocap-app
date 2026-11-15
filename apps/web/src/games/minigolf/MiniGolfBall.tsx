@@ -60,6 +60,18 @@ export function MiniGolfBall() {
               </div>
             </section>
             <section>
+              <div className="mg-kick">Cor secundária <span className="mgh-mut">(listras, pontos, metade e estrela)</span></div>
+              <div className="mgh-sw">
+                <button type="button" className={`mgh-swatch mgh-auto${look.color2 === undefined ? ' on' : ''}`} aria-label="Automática" aria-pressed={look.color2 === undefined} onClick={() => set({ color2: undefined })} data-testid="mg-color2-auto">Auto</button>
+                {GOLF_BALL_COLORS.map((c, i) => (
+                  <button key={c} type="button" className={`mgh-swatch${look.color2 === c ? ' on' : ''}`} style={{ background: hex(c) }} aria-label={`Secundária ${GOLF_BALL_COLOR_NAMES[i]}`} aria-pressed={look.color2 === c} onClick={() => set({ color2: c })} />
+                ))}
+                <label className="mgh-swatch mgh-free" aria-label="Cor secundária livre">
+                  <input type="color" value={hex(look.color2 ?? 0xffffff)} onChange={(e) => set({ color2: parseInt(e.target.value.slice(1), 16) })} />
+                </label>
+              </div>
+            </section>
+            <section>
               <div className="mg-kick">Acabamento</div>
               <div className="mgh-chips" role="radiogroup" aria-label="Acabamento">
                 {GOLF_FINISHES.map((f) => (

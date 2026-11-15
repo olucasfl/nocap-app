@@ -53,7 +53,7 @@ export const GOLF_SCORE_LABEL: Record<GolfScoreName, string> = {
   bogey: 'Bogey',
   double: 'Double Bogey',
   triple: 'Triple Bogey',
-  fail: 'Estourou',
+  fail: 'Fim das tacadas',
 };
 
 /** Tacadas que contam na pontuação: as feitas, ou o máximo mais 2 se não encaçapou. */

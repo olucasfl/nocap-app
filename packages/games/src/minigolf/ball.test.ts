@@ -14,4 +14,9 @@ describe('Mini Golf: a bola', () => {
     expect(parseGolfBall(null)).toEqual(GOLF_BALL_DEFAULT);
     expect(parseGolfBall('x')).toEqual(GOLF_BALL_DEFAULT);
   });
+  it('lê a cor secundária só quando vale', () => {
+    expect(parseGolfBall({ color: 1, color2: 0xff0000 }).color2).toBe(0xff0000);
+    expect(parseGolfBall({ color: 1, color2: -4 }).color2).toBeUndefined();
+    expect(parseGolfBall({ color: 1 })).not.toHaveProperty('color2');
+  });
 });

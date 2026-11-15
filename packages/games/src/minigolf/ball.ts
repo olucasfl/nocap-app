@@ -12,6 +12,8 @@ export const GOLF_TRAIL_LABEL: Record<GolfTrail, string> = { nenhum: 'Nenhum', f
 
 export interface GolfBallLook {
   color: number;
+  /** Cor das listras, pontos, metade e estrela; sem ela o acabamento usa branco (ou cinza em bola clara). */
+  color2?: number;
   finish: GolfFinish;
   trail: GolfTrail;
 }
@@ -21,7 +23,9 @@ export const GOLF_BALL_DEFAULT: GolfBallLook = { color: 0xffc83d, finish: 'liso'
 export function parseGolfBall(v: unknown): GolfBallLook {
   const o = (v && typeof v === 'object' ? v : {}) as Record<string, unknown>;
   const c = o.color;
+  const c2 = o.color2;
   return {
+    ...(typeof c2 === 'number' && Number.isInteger(c2) && c2 >= 0 && c2 <= 0xffffff ? { color2: c2 } : {}),
     color: typeof c === 'number' && Number.isInteger(c) && c >= 0 && c <= 0xffffff ? c : GOLF_BALL_DEFAULT.color,
     finish: (GOLF_FINISHES as readonly unknown[]).includes(o.finish) ? (o.finish as GolfFinish) : GOLF_BALL_DEFAULT.finish,
     trail: (GOLF_TRAILS as readonly unknown[]).includes(o.trail) ? (o.trail as GolfTrail) : GOLF_BALL_DEFAULT.trail,

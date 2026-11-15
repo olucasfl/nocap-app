@@ -295,14 +295,14 @@ export function ballNormal(): THREE.CanvasTexture {
 }
 
 /** Textura de cor da bola: a cor escolhida com o acabamento (listras, pontos, metade ou estrela). */
-export function ballColorMap(color: number, finish: GolfFinish): THREE.CanvasTexture {
+export function ballColorMap(color: number, finish: GolfFinish, color2?: number): THREE.CanvasTexture {
   const c = document.createElement('canvas');
   c.width = 1024;
   c.height = 512;
   const ctx = c.getContext('2d')!;
   const css = `#${color.toString(16).padStart(6, '0')}`;
   const lum = ((color >> 16) & 255) * 0.3 + ((color >> 8) & 255) * 0.59 + (color & 255) * 0.11;
-  const accent = lum > 200 ? '#3a3f45' : '#ffffff';
+  const accent = color2 !== undefined ? `#${color2.toString(16).padStart(6, '0')}` : lum > 200 ? '#3a3f45' : '#ffffff';
   ctx.fillStyle = css;
   ctx.fillRect(0, 0, 1024, 512);
   ctx.fillStyle = accent;

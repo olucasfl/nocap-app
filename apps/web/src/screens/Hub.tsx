@@ -349,16 +349,13 @@ export function Hub() {
                     data-testid={`daily-${d.game}`}
                     aria-label={`${d.name}: daily ${d.done ? 'feito' : 'para jogar'}`}
                   >
+                    <span className="hz-dt-band mono" aria-hidden="true">
+                      {d.done ? <><Check size={12} /> FEITO</> : 'DAILY'}
+                    </span>
                     <span className="hz-dt-art" aria-hidden="true">
                       {d.art}
                     </span>
-                    {d.done ? (
-                      <span className="hz-dt-mark done" aria-hidden="true">
-                        <Check size={14} />
-                      </span>
-                    ) : (
-                      !loading && <span className="hz-dt-mark todo mono" aria-hidden="true">JOGAR</span>
-                    )}
+                    {!d.done && !loading && <span className="hz-dt-mark todo mono" aria-hidden="true">JOGAR</span>}
                   </Link>
                   <span className="hz-dt-name">{d.name}</span>
                 </li>

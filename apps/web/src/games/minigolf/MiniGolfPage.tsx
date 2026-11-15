@@ -23,17 +23,17 @@ import { golfSfx } from '@/lib/minigolf-audio';
 import { useTouchGuard } from '../foxgp/touch-guard';
 import { GolfScene } from './GolfScene';
 import { loadLevel } from './level-loader';
-import { loadBest, loadLook, saveBest } from './golf-save';
+import { loadBest, loadLook, saveBest, setProgress } from './golf-save';
 import './minigolf.css';
 
 /** No PC a câmera gira com o botão direito do mouse; no celular, pelas setas da tela. */
 const HINT =
   typeof window !== 'undefined' && window.matchMedia?.('(pointer: fine)').matches
-    ? 'Arraste para trás e solte para tacar · Botão direito do mouse (arrastando) gira a câmera'
+    ? 'Puxe a bola para tacar · Arraste em outro lugar para girar a câmera · Botão direito cancela'
     : 'Arraste para trás e solte para tacar · Use as setas para girar a câmera';
 
 const clampLevel = (n: number | undefined) => Math.max(1, Math.min(GOLF_LEVELS, Math.trunc(n ?? 1) || 1));
-const nameClass = (n: GolfScoreName) => (n === 'ace' ? 'mg-ace' : n === 'albatross' || n === 'eagle' ? 'mg-eagle' : n === 'birdie' ? 'mg-ok' : n === 'par' ? '' : 'mg-bad');
+const nameClass = (n: GolfScoreName) => (n === 'ace' ? 'mg-ace' : n === 'albatross' || n === 'eagle' ? 'mg-eagle' : n === 'birdie' ? 'mg-ok' : n === 'par' ? '' : 'mg-calm');
 const SUBTITLE: Record<GolfScoreName, string> = {
   ace: 'Direto no buraco!',
   albatross: '3 abaixo do par',
@@ -42,8 +42,8 @@ const SUBTITLE: Record<GolfScoreName, string> = {
   par: 'No par',
   bogey: '1 acima do par',
   double: '2 acima do par',
-  triple: 'Muitas tacadas',
-  fail: 'Passou do limite de tacadas',
+  triple: '3 ou mais acima do par',
+  fail: 'Acabaram as tacadas deste buraco',
 };
 
 type Phase = 'aim' | 'roll' | 'sink' | 'result';
@@ -68,8 +68,6 @@ export function MiniGolfPage() {
   const wanted = useSearch({ strict: false }) as { fase?: number };
   const [fase, setFase] = useState(clampLevel(wanted.fase));
   const [round, setRound] = useState(0);
-  const [picking, setPicking] = useState(false);
-  const [tier, setTier] = useState<GolfTier>(golfTierOf(clampLevel(wanted.fase)));
   const [loading, setLoading] = useState(true);
   const [strokes, setStrokes] = useState(0);
   const [phase, setPhase] = useState<Phase>('aim');
@@ -92,12 +90,15 @@ export function MiniGolfPage() {
     setPhase('aim');
     setPower(null);
 
+    setProgress(fase);
     void loadLevel(fase).then((level) => {
       if (!alive || !canvasRef.current || !boxRef.current) return;
       const box = boxRef.current;
       scene = new GolfScene(canvasRef.current, level, loadLook());
       const sc = scene;
+      if (import.meta.env.DEV) (window as unknown as { __mgScene?: unknown; __mgBall?: unknown }).__mgScene = sc;
       const ball: GolfBall = golfNewBall(level.data);
+      if (import.meta.env.DEV) (window as unknown as { __mgBall?: unknown }).__mgBall = ball;
       const st = {
         phase: 'aim' as Phase,
         strokes: 0,
@@ -124,6 +125,7 @@ export function MiniGolfPage() {
       const finish = (holed: boolean) => {
         st.phase = 'result';
         setPhase('result');
+        setProgress(null);
         const name = golfScoreName(st.strokes, golfParOf(fase), holed);
         const counted = golfCountedStrokes(st.strokes, holed);
         const prev = loadBest()[fase] ?? null;
@@ -144,19 +146,30 @@ export function MiniGolfPage() {
         ball.inWater = false;
       };
 
+      // botão direito no meio da puxada cancela a tacada (sem bater e sem girar a câmera)
+      const cancelAim = () => {
+        if (!st.drag || st.right) return false;
+        st.drag = null;
+        st.aim = null;
+        setPower(null);
+        return true;
+      };
+      // esquerdo em cima da bola puxa a tacada; esquerdo em qualquer outro lugar gira a câmera; direito só cancela a tacada
       const onDown = (e: PointerEvent) => {
-        if (e.button === 2 || e.pointerType === 'mouse' && e.button !== 0) {
-          st.right = true;
-          st.drag = { x: e.clientX, y: e.clientY, id: e.pointerId };
-          (e.target as Element).setPointerCapture?.(e.pointerId);
+        if (e.button === 2 || (e.pointerType === 'mouse' && e.button !== 0)) {
+          cancelAim();
           return;
         }
-        if (st.phase !== 'aim' || st.drag) return;
+        if (st.drag) return;
+        const r = canvasRef.current!.getBoundingClientRect();
+        const onBall = st.phase === 'aim' && sc.ballHit(ball.pos, e.clientX - r.left, e.clientY - r.top);
+        st.right = !onBall;
         st.drag = { x: e.clientX, y: e.clientY, id: e.pointerId };
         (e.target as Element).setPointerCapture?.(e.pointerId);
       };
       const onMove = (e: PointerEvent) => {
         if (!st.drag || e.pointerId !== st.drag.id) return;
+        if (e.buttons & 2 && cancelAim()) return;
         const dx = e.clientX - st.drag.x, dy = e.clientY - st.drag.y;
         if (st.right) {
           sc.yaw -= dx * 0.006;
@@ -203,7 +216,10 @@ export function MiniGolfPage() {
       };
       const kd = (e: KeyboardEvent) => onKey(e, true);
       const ku = (e: KeyboardEvent) => onKey(e, false);
-      const noMenu = (e: Event) => e.preventDefault();
+      const noMenu = (e: Event) => {
+        e.preventDefault();
+        cancelAim();
+      };
       const cv = canvasRef.current;
       cv.addEventListener('pointerdown', onDown);
       cv.addEventListener('pointermove', onMove);
@@ -303,7 +319,6 @@ export function MiniGolfPage() {
   const go = (n: number) => {
     setFase(clampLevel(n));
     setRound((r) => r + 1);
-    setPicking(false);
   };
 
   return (
@@ -326,7 +341,7 @@ export function MiniGolfPage() {
           <div className="mg-kick">Tacadas</div>
           <div className="n">{strokes}<small>/{GOLF_STROKE_LIMIT}</small></div>
         </div>
-        <button type="button" className="mg-pill ghost" onClick={() => { setTier(golfTierOf(fase)); setPicking(true); }} data-testid="mg-levels">Fases</button>
+        <button type="button" className="mg-pill ghost" onClick={() => void navigate({ to: '/minigolf/fases' })} data-testid="mg-levels">Fases</button>
         <button type="button" className="mg-pill ghost" onClick={() => void navigate({ to: '/minigolf' })} data-testid="mg-menu">Menu</button>
       </div>
 
@@ -354,35 +369,8 @@ export function MiniGolfPage() {
           <div className="row">
             {golfNextLevel(fase) !== null && <button type="button" className="mg-pill pri" onClick={() => go(golfNextLevel(fase)!)} data-testid="mg-next">Próxima fase</button>}
             <button type="button" className="mg-pill" onClick={() => go(fase)} data-testid="mg-retry">Repetir</button>
-            <button type="button" className="mg-pill" onClick={() => { setTier(golfTierOf(fase)); setPicking(true); }}>Escolher fase</button>
+            <button type="button" className="mg-pill" onClick={() => void navigate({ to: '/minigolf/fases' })}>Escolher fase</button>
             <button type="button" className="mg-pill ghost" onClick={() => void navigate({ to: '/minigolf' })}>Menu</button>
-          </div>
-        </div>
-      )}
-
-      {picking && (
-        <div className="mg-pick" data-testid="mg-pick">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, maxWidth: 880, margin: '0 auto' }}>
-            <div style={{ flex: 1 }}>
-              <div className="mg-kick">Offline</div>
-              <h2 className="mg-disp" style={{ fontSize: 44 }}>{GOLF_LEVELS} fases</h2>
-            </div>
-            <button type="button" className="mg-pill" onClick={() => setPicking(false)}>Fechar</button>
-          </div>
-          <div className="mg-tabs" role="tablist" aria-label="Dificuldade">
-            {(Object.keys(GOLF_TIERS) as GolfTier[]).map((t) => (
-              <button key={t} type="button" role="tab" aria-selected={tier === t} className={`mg-tab${tier === t ? ' on' : ''}`} onClick={() => setTier(t)} data-testid={`mg-tier-${t}`}>
-                {GOLF_TIER_LABEL[t]}
-                <small>{GOLF_TIERS[t].filter((n) => bests[n]).length}/{GOLF_TIERS[t].length}</small>
-              </button>
-            ))}
-          </div>
-          <div className="mg-pick-grid">
-            {GOLF_TIERS[tier].map((n) => (
-              <button key={n} type="button" className={`mg-lv${n === fase ? ' on' : ''}${bests[n] ? ' done' : ''}`} onClick={() => go(n)}>
-                <b>{n}</b>
-              </button>
-            ))}
           </div>
         </div>
       )}

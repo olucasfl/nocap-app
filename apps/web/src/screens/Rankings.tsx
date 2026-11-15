@@ -1,7 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, type ReactElement } from 'react';
 import { Link, getRouteApi, useNavigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { GAME_LABEL, GameArt } from '@/components/GameArt';
+import { GAME_LABEL } from '@/components/GameArt';
+import { AtravessaArt, BlocksArt, ColorArt, EcoArt, TimeArt } from '@/components/HubArt';
+import { WordsHubArt } from '@/games/words/words-art';
 import { Crown, Trophy } from '@/components/icons';
 import { LoadFailed } from '@/components/LoadFailed';
 import { Score } from '@/components/RankingPanel';
@@ -26,6 +28,24 @@ import { countUnit, dailyMax, streakLabel, type CountUnit } from '@/lib/stats';
 import './rankings.css';
 
 const route = getRouteApi('/tabs/ranking');
+
+/** A capa de cada jogo (a mesma arte do cartão da tela inicial), num quadro com a cor dele. */
+const COVER: Record<Game, () => ReactElement> = {
+  wclassic: WordsHubArt,
+  blocks: BlocksArt,
+  atravessa: AtravessaArt,
+  color: ColorArt,
+  time: TimeArt,
+  eco: EcoArt,
+};
+function Cover({ game }: { game: Game }) {
+  const Art = COVER[game];
+  return (
+    <span className={`rkp-cover ${game}`} aria-hidden="true">
+      <Art />
+    </span>
+  );
+}
 
 /** Para onde levar quem ainda não jogou o modo. */
 const GAME_PATH = {
@@ -186,6 +206,38 @@ function RankingView({ game }: { game: Game }) {
         ? passText(game, near.above.gap, counts, near.above.username)
         : `${query.data?.total ?? 0} ${query.data?.total === 1 ? 'pessoa' : 'pessoas'} no ranking`;
 
+  const myCard =
+    user && query.isSuccess && me ? (
+      <aside
+        className={`rkp-me${me.rank === 1 ? ' first' : ''}`}
+        aria-label="Sua posição"
+        data-testid="my-rank"
+      >
+        <span className="rkp-me-pos">{me.rank}º</span>
+        <span className="rkp-me-body">
+          <span className="rkp-me-kick mono">SUA POSIÇÃO</span>
+          <b>
+            Você · <Score entry={me} {...score} />
+          </b>
+          <span className="mono">
+            {dailySum && me.days !== undefined && `${streakLabel(me.days).toUpperCase()} · `}
+            {meLine}
+          </span>
+        </span>
+      </aside>
+    ) : user && query.isSuccess && !me && entries.length > 0 ? (
+      <aside className="rkp-me out" aria-label="Sua posição">
+        <span className="rkp-me-body">
+          <span className="rkp-me-kick mono">SUA POSIÇÃO</span>
+          <b>Você ainda não está aqui</b>
+          <span className="mono">Jogue esta categoria neste período para entrar.</span>
+        </span>
+        <Link to={GAME_PATH[game]} className="rkp-play" data-sfx="start">
+          Jogar
+        </Link>
+      </aside>
+    ) : null;
+
   return (
     <main className={`rkp ${game}`}>
       <header className="rkp-head">
@@ -193,7 +245,7 @@ function RankingView({ game }: { game: Game }) {
         <p className="mono">Quem joga melhor no NoCap</p>
       </header>
 
-      {/* Troca rápida de jogo, sem voltar à lista */}
+      {/* Troca rápida de jogo: a capa de cada um (só a capa no celular, com o nome no computador) */}
       <div className="rkp-games" role="tablist" aria-label="Jogo do ranking">
         {GAMES.map((g) => (
           <button
@@ -206,159 +258,142 @@ function RankingView({ game }: { game: Game }) {
             aria-selected={g.id === game}
             onClick={() => go({ jogo: g.id, modo: undefined, periodo: undefined })}
           >
-            <GameArt game={g.id} size="sm" />
+            <Cover game={g.id} />
+            <span className="rkp-games-name">{GAME_LABEL[g.id]}</span>
           </button>
         ))}
       </div>
 
-      {/* 1. O jogo */}
-      <section className="rkp-hero" aria-label="Jogo do ranking">
-        <div className="rkp-hero-art" aria-hidden="true">
-          <GameArt game={game} size="md" />
-        </div>
-        <div className="rkp-hero-text">
-          <span className="mono">RANKING DE</span>
-          <b>{GAME_LABEL[game]}</b>
-          <span className="rkp-chip mono">{boardLabel}</span>
-        </div>
-      </section>
+      <div className="rkp-layout">
+        {/* Esquerda no computador, em cima no celular: o jogo e os filtros */}
+        <section className="rkp-side" aria-label="Filtros do ranking">
+          <div className="rkp-hero">
+            <Cover game={game} />
+            <div className="rkp-hero-text">
+              <span className="mono">RANKING DE</span>
+              <b>{GAME_LABEL[game]}</b>
+            </div>
+          </div>
 
-      {/* 2. Os filtros */}
-      <section className="rkp-filters" aria-label="Filtros do ranking">
-        {choices.length > 1 && (
-          <div className="rkp-cats" role="tablist" aria-label="Categoria">
-            {choices.map((b) => (
-              <button
-                key={b.id}
-                type="button"
-                role="tab"
-                data-sfx="select"
-                className={b.id === 'daily' ? 'daily' : ''}
-                aria-selected={board === b.id}
-                onClick={() => go({ modo: b.id, periodo: undefined })}
-              >
-                {b.label}
-              </button>
-            ))}
-          </div>
-        )}
-        <div className="rkp-row2">
-          <div className="rkp-seg" role="radiogroup" aria-label="Período">
-            {PERIODS.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                role="radio"
-                data-sfx="select"
-                aria-checked={period === p.id}
-                onClick={() => go({ periodo: p.id === defaultPeriod(board) ? undefined : p.id })}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
-          {user && (
-            <div className="rkp-seg who" role="radiogroup" aria-label="Quem aparece">
-              <button
-                type="button"
-                role="radio"
-                data-sfx="select"
-                aria-checked={scope === 'all'}
-                onClick={() => go({ quem: undefined })}
-              >
-                Todos
-              </button>
-              <button
-                type="button"
-                role="radio"
-                data-sfx="select"
-                aria-checked={scope === 'friends'}
-                onClick={() => go({ quem: 'friends' })}
-              >
-                Amigos
-              </button>
+          {choices.length > 1 && (
+            <div className="rkp-group">
+              <span className="rkp-label mono">CATEGORIA</span>
+              <div className="rkp-cats" role="tablist" aria-label="Categoria">
+                {choices.map((b) => (
+                  <button
+                    key={b.id}
+                    type="button"
+                    role="tab"
+                    data-sfx="select"
+                    className={b.id === 'daily' ? 'daily' : ''}
+                    aria-selected={board === b.id}
+                    onClick={() => go({ modo: b.id, periodo: undefined })}
+                  >
+                    {b.label}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
-        </div>
-        <p className="mono rkp-note">{note}</p>
-      </section>
-
-      {/* 3. A classificação */}
-      {query.isPending && query.fetchStatus !== 'paused' && <Skeleton />}
-      {(query.isError || (query.isPending && query.fetchStatus === 'paused')) && (
-        <LoadFailed
-          what="o ranking"
-          onRetry={() => void query.refetch()}
-          offlineText="O ranking só carrega online. Você ainda pode jogar nos Modos de partida."
-        />
-      )}
-
-      {query.isSuccess && entries.length === 0 && (
-        <div className="rkp-empty" data-testid="ranking-empty">
-          <Trophy size={34} aria-hidden="true" />
-          <b>Ninguém no ranking ainda</b>
-          <span className="mono">
-            {scope === 'friends'
-              ? 'Nem você nem seus amigos jogaram esta categoria neste período.'
-              : 'Ninguém jogou esta categoria neste período. Seja a primeira pessoa!'}
-          </span>
-          <Link to={GAME_PATH[game]} className="btn alt" data-sfx="start">
-            Jogar agora
-          </Link>
-        </div>
-      )}
-
-      {entries.length > 0 && (
-        <section className="rkp-board" aria-label="Classificação">
-          <h2 className="rkp-h">
-            Classificação{' '}
-            <small className="mono">{query.data?.total ?? entries.length} NO TOTAL</small>
-          </h2>
-          <Podium top={entries.slice(0, 3)} {...score} />
-          {rest.length > 0 && <Rows rows={rest} {...score} />}
+          <div className="rkp-row2">
+            <div className="rkp-group">
+              <span className="rkp-label mono">PERÍODO</span>
+              <div className="rkp-seg" role="radiogroup" aria-label="Período">
+                {PERIODS.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    role="radio"
+                    data-sfx="select"
+                    aria-checked={period === p.id}
+                    onClick={() => go({ periodo: p.id === defaultPeriod(board) ? undefined : p.id })}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {user && (
+              <div className="rkp-group">
+                <span className="rkp-label mono">QUEM APARECE</span>
+                <div className="rkp-seg who" role="radiogroup" aria-label="Quem aparece">
+                  <button
+                    type="button"
+                    role="radio"
+                    data-sfx="select"
+                    aria-checked={scope === 'all'}
+                    onClick={() => go({ quem: undefined })}
+                  >
+                    Todos
+                  </button>
+                  <button
+                    type="button"
+                    role="radio"
+                    data-sfx="select"
+                    aria-checked={scope === 'friends'}
+                    onClick={() => go({ quem: 'friends' })}
+                  >
+                    Amigos
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+          <p className="mono rkp-note">
+            {boardLabel} · {note}
+          </p>
         </section>
-      )}
 
-      {query.isSuccess && !user && authStatus === 'ready' && (
-        <p className="rkp-guest">
-          O ranking é só de quem tem conta.{' '}
-          <Link to="/criar-conta" className="rp-link">
-            Crie a sua
-          </Link>{' '}
-          para aparecer aqui.
-        </p>
-      )}
+        {/* A classificação */}
+        <div className="rkp-main">
+          {query.isPending && query.fetchStatus !== 'paused' && <Skeleton />}
+          {(query.isError || (query.isPending && query.fetchStatus === 'paused')) && (
+            <LoadFailed
+              what="o ranking"
+              onRetry={() => void query.refetch()}
+              offlineText="O ranking só carrega online. Você ainda pode jogar nos Modos de partida."
+            />
+          )}
 
-      {/* 4. Sua posição, fixa embaixo */}
-      {user && query.isSuccess && me && (
-        <aside
-          className={`rkp-me${me.rank === 1 ? ' first' : ''}`}
-          aria-label="Sua posição"
-          data-testid="my-rank"
-        >
-          <span className="rkp-me-pos">{me.rank}º</span>
-          <span className="rkp-me-body">
-            <b>
-              Você · <Score entry={me} {...score} />
-            </b>
-            <span className="mono">
-              {dailySum && me.days !== undefined && `${streakLabel(me.days).toUpperCase()} · `}
-              {meLine}
-            </span>
-          </span>
-        </aside>
-      )}
-      {user && query.isSuccess && !me && entries.length > 0 && (
-        <aside className="rkp-me out" aria-label="Sua posição">
-          <span className="rkp-me-body">
-            <b>Você ainda não está aqui</b>
-            <span className="mono">Jogue esta categoria neste período para entrar.</span>
-          </span>
-          <Link to={GAME_PATH[game]} className="rkp-play" data-sfx="start">
-            Jogar
-          </Link>
-        </aside>
-      )}
+          {query.isSuccess && entries.length === 0 && (
+            <div className="rkp-empty" data-testid="ranking-empty">
+              <Trophy size={34} aria-hidden="true" />
+              <b>Ninguém no ranking ainda</b>
+              <span className="mono">
+                {scope === 'friends'
+                  ? 'Nem você nem seus amigos jogaram esta categoria neste período.'
+                  : 'Ninguém jogou esta categoria neste período. Seja a primeira pessoa!'}
+              </span>
+              <Link to={GAME_PATH[game]} className="btn alt" data-sfx="start">
+                Jogar agora
+              </Link>
+            </div>
+          )}
+
+          {entries.length > 0 && (
+            <section className="rkp-board" aria-label="Classificação">
+              <h2 className="rkp-h">
+                Classificação{' '}
+                <small className="mono">{query.data?.total ?? entries.length} NO TOTAL</small>
+              </h2>
+              <Podium top={entries.slice(0, 3)} {...score} />
+              {rest.length > 0 && <Rows rows={rest} {...score} />}
+            </section>
+          )}
+
+          {query.isSuccess && !user && authStatus === 'ready' && (
+            <p className="rkp-guest">
+              O ranking é só de quem tem conta.{' '}
+              <Link to="/criar-conta" className="rp-link">
+                Crie a sua
+              </Link>{' '}
+              para aparecer aqui.
+            </p>
+          )}
+        </div>
+
+        {myCard}
+      </div>
     </main>
   );
 }
