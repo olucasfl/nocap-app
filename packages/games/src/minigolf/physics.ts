@@ -220,7 +220,12 @@ export class GolfLevel {
   readonly holeDepth: number[];
 
   constructor(data: GolfLevelData) {
-    this.data = data;
+    // a areia freia, mas sem parar a bola quase na hora (o valor original do Open Golf era forte demais): atrito e perda de velocidade menores
+    this.data = {
+      ...data,
+      materials: data.materials.map((m) => (m.name === 'sand' ? { ...m, f: Math.min(m.f, 0.45), v: Math.max(m.v, 0.992) } : m)),
+    };
+    data = this.data;
     this.t = Float64Array.from(data.solid.t);
     const n = data.solid.m.length;
     this.stamp = new Int32Array(n);

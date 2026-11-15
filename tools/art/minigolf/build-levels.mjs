@@ -392,6 +392,51 @@ G(124, ['@..bb.....#', '#########.#', '#H..bb....#'], [
   { kind: 'gate', col: 7, row: 2, span: [0, 2.2], half: [0.2, 0.7], t0: 0.6 },
 ]);
 
+
+// ===== Circuitos em serpentina (ids 130 em diante) =====
+// Cada faixa é escrita na ordem em que se anda: U sobe a rampa, D desce, i gelo, s areia, o pino, b ponte, _ vão, A a E patamar.
+// Faixas pares vão da esquerda para a direita, ímpares da direita para a esquerda; a ligação entre faixas fica na ponta.
+function serp(id, W, lanes, movers = []) {
+  const rows = [];
+  const flip = (c, west) => (west ? ({ U: '<', D: '>' }[c] ?? c) : ({ U: '>', D: '<' }[c] ?? c));
+  lanes.forEach((ln, i) => {
+    const west = i % 2 === 1;
+    let cells = [...ln].map((c) => flip(c, west));
+    if (west) cells = cells.reverse();
+    rows.push(cells.join(''));
+    if (i < lanes.length - 1) {
+      const at = west ? 0 : W - 1;
+      rows.push([...'#'.repeat(W)].map((c, k) => (k === at ? '.' : c)).join(''));
+    }
+  });
+  const ms = movers.map((m) => {
+    const west = m.lane % 2 === 1;
+    return { ...m, col: west ? W - 1 - m.col : m.col, row: m.lane * 2 };
+  });
+  LEVELS.push(gridLevel(id, rows, ms));
+}
+const GATE = { kind: 'gate', span: [0, 2.2], half: [0.2, 0.7] };
+// 130 Primeiro circuito: pêndulo, rampa para subir e rampa para descer
+serp(130, 9, ['@...U....', '....D....', '....o...H'], [{ kind: 'pendulum', lane: 0, col: 2, along: 'x', t0: 0.3 }, { ...GATE, lane: 2, col: 2, t0: 0.5 }]);
+// 131 Dois moinhos: um giratório em cada faixa e uma subida no meio
+serp(131, 9, ['@....U...', '...D.....', '........H'], [{ kind: 'spinner', lane: 0, col: 2, length: 4 }, { kind: 'spinner', lane: 1, col: 6, length: 4, t0: 0.6 }, { kind: 'spinner', lane: 2, col: 4, length: 4, t0: 1.1 }]);
+// 132 Gelo de verdade: a faixa do meio é toda de gelo, com portões antes e depois
+serp(132, 9, ['@..U.....', 'iiiiiiiii', '...D....H'], [{ ...GATE, lane: 0, col: 6, t0: 0.2 }, { ...GATE, lane: 2, col: 5, t0: 1.4 }]);
+// 133 Pinball: pinos nas três faixas e uma rampa que lança para baixo
+serp(133, 9, ['@.o.o.U..', '..o.D.o..', '..o.o...H'], [{ ...GATE, lane: 1, col: 7, t0: 0.9 }]);
+// 134 Circuito das pontes: duas pontes, gelo no fim e pêndulos
+serp(134, 10, ['@..U......', '....bb..D.', '..i.ii.U..', '..o...D..H'], [{ kind: 'pendulum', lane: 0, col: 6, along: 'x', t0: 0.2 }, { kind: 'pendulum', lane: 3, col: 4, along: 'x', t0: 1.0 }]);
+// 135 Gelo e rampas: gelo em duas faixas, subida e descida entre elas
+serp(135, 11, ['@..Uiiii...', '...iiiiD...', '.D.iiii...H'], [{ ...GATE, lane: 0, col: 9, t0: 0.4 }, { kind: 'spinner', lane: 2, col: 8, length: 3.4 }]);
+// 136 Salto no meio: uma faixa lança a bola por cima de um vão para o patamar
+serp(136, 10, ['@.o...o...', '.....U_A..', '..D......H'], [{ ...GATE, lane: 0, col: 5, t0: 0.7 }, { kind: 'pendulum', lane: 2, col: 5, along: 'x', t0: 0.4 }]);
+// 137 Quatro faixas: giratório, portão, ponte e um salto final
+serp(137, 9, ['@..U.....', '...bb.D..', '.s...U_A.', '..D.....H'], [{ kind: 'spinner', lane: 0, col: 6, length: 4 }, { ...GATE, lane: 1, col: 6, t0: 0.5 }]);
+// 138 Grande circuito: cinco faixas com tudo: rampas, gelo, ponte, portões e giratórios
+serp(138, 12, ['@...U.......', '.....i.iiD..', '....s..bb..U', '...D.o..iiii', '..U........H'], [{ kind: 'spinner', lane: 0, col: 8, length: 4 }, { ...GATE, lane: 1, col: 3, t0: 0.4 }, { kind: 'pendulum', lane: 2, col: 4, along: 'x', t0: 0.9 }, { ...GATE, lane: 3, col: 8, t0: 1.7 }]);
+// 139 Ida e volta: portão, ponte curta, giratório e uma descida longa até o copo
+serp(139, 10, ['@..U......', '..D...bb..', '....U..o..', '..D......H'], [{ ...GATE, lane: 0, col: 6, t0: 0.3 }, { kind: 'spinner', lane: 1, col: 3, length: 4, t0: 0.8 }, { kind: 'pendulum', lane: 3, col: 5, along: 'x', t0: 1.2 }]);
+
 const holeModel = loadHole();
 fs.mkdirSync(out, { recursive: true });
 for (const L of LEVELS) {

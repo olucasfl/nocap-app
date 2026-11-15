@@ -8,10 +8,10 @@ const [og, news] = process.argv.slice(2);
 const dir = path.resolve('packages/games/src/minigolf/levels');
 // ordem final: 1 a 4 bem simples; depois cresce em tamanho, obstáculos e truques (o = Open Golf, n = nova)
 const ORDER = [
-  'o3', 'o2', 'o4', 'n101', 'n104', 'o5', 'n107', 'n108', 'o9', 'n116',
-  'n119', 'o10', 'n115', 'n105', 'o6', 'n111', 'n113', 'o8', 'n120', 'o11',
-  'n121', 'n124', 'o12', 'o13', 'n102', 'o14', 'n106', 'o7', 'o15', 'n123',
-  'o16', 'n122', 'o17', 'n112', 'o18', 'n117', 'o19', 'n109', 'o20', 'o1',
+  'o3', 'o2', 'o4', 'n101', 'n130', 'o5', 'n131', 'n132', 'o9', 'n116',
+  'n133', 'o10', 'n115', 'n105', 'o6', 'n111', 'n113', 'n134', 'n120', 'o11',
+  'n135', 'n124', 'n136', 'o13', 'n102', 'n137', 'n139', 'o7', 'o15', 'n123',
+  'o16', 'n122', 'o17', 'n112', 'o18', 'n117', 'n138', 'n109', 'o20', 'o1'
 ];
 if (ORDER.length !== 40 || new Set(ORDER).size !== 40) throw new Error('ordem inválida');
 ORDER.forEach((k, i) => {
@@ -20,6 +20,6 @@ ORDER.forEach((k, i) => {
   j.id = i + 1;
   fs.writeFileSync(path.join(dir, `level-${i + 1}.json`), JSON.stringify(j));
 });
-for (let n = 101; n <= 120; n++) fs.rmSync(path.join(dir, `level-${n}.json`), { force: true });
+for (let n = 101; n <= 140; n++) fs.rmSync(path.join(dir, `level-${n}.json`), { force: true });
 fs.writeFileSync('tools/art/minigolf/campaign-order.json', JSON.stringify(ORDER));
 console.log('ok:', ORDER.map((k, i) => `${i + 1}=${k}`).join(' '));
