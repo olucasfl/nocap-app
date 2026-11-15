@@ -14,6 +14,7 @@ interface Nh {
   xp(n: number): void;
   chest(): void;
   brk(): number;
+  give(id: string, n: number): void;
   saveExit(): void;
   buyHero(id: string): void;
   resume(): void;

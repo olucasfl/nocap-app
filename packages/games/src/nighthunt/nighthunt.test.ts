@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   ACHIEVEMENTS,
+  EVO_INFO,
   HERO_INFO,
   MAP_INFO,
   UPGRADES,
@@ -20,7 +21,10 @@ import {
   HERO_IDS,
   MAPS,
   MAP_IDS,
+  PASSIVE_IDS,
   UPGRADE_IDS,
+  WEAPON_IDS,
+  type UpgradeId,
   UPGRADE_MAX,
   swordAngleDeg,
 } from './data';
@@ -421,7 +425,7 @@ describe('armas novas, passivos e evoluções', () => {
   });
 
   it('há uma evolução para cada arma e todo item evoluído tem descrição', () => {
-    expect(EVOLUTIONS).toHaveLength(7);
+    expect(EVOLUTIONS).toHaveLength(17);
     for (const e of EVOLUTIONS) {
       for (const m of e.maxed) expect(UPGRADE_IDS).toContain(m);
       expect(UPGRADE_IDS).toContain(e.passive);
@@ -684,5 +688,104 @@ describe('sistemas da fase 3: empurrão, separação, obstáculos, coleta e vit�
     i.kills = 321;
     applyRun(s, i.result(), 2000);
     expect(s.stats.mapRecords.campo).toMatchObject({ t: 900, kills: 321 });
+  });
+});
+
+describe('armas novas da fase 3', () => {
+  const spawn = (w: NhWorld, id: string, dx: number, dy: number) =>
+    (w as unknown as { spawnEnemy(a: number, b: number, c: string): Enemy }).spawnEnemy(dx, dy, id);
+  /** Joga N segundos com um grupo de inimigos fixos em volta e devolve a vida total que sobrou. */
+  const hpAfter = (weapon: UpgradeId, level: number, secs: number, evo?: string) => {
+    const w = new NhWorld('wp-' + weapon);
+    w.levels[weapon] = level;
+    w.levels.sword = 0;
+    if (evo) w.evolved.add(evo as never);
+    const es: Enemy[] = [];
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2;
+      const e = spawn(
+        w,
+        'ToughEnemy',
+        Math.cos(a) * (110 + (i % 3) * 25),
+        Math.sin(a) * (110 + (i % 3) * 25),
+      );
+      e.speedX = e.speedY = 0;
+      e.hp = e.maxHp = 400;
+      es.push(e);
+    }
+    for (let i = 0; i < secs * 60; i++) {
+      w.player.hp = w.player.maxHp;
+      w.step({ x: 0, y: 0 });
+      w.drainEvents();
+    }
+    return es.reduce((a, e) => a + Math.max(0, e.hp), 0);
+  };
+  const FULL = 12 * 400;
+  for (const id of [
+    'whip',
+    'wand',
+    'garlic',
+    'magma',
+    'embers',
+    'cross',
+    'bone',
+    'runes',
+    'bomb',
+  ] as const) {
+    it(`${id} causa dano nos inimigos e melhora com os níveis`, () => {
+      const low = hpAfter(id, 1, 14);
+      const high = hpAfter(id, 6, 14);
+      expect(low).toBeLessThan(FULL);
+      expect(high).toBeLessThanOrEqual(low);
+    });
+  }
+  it('pentagrama limpa a tela, puxa os itens e a recarga é longa', () => {
+    const w = new NhWorld('wp-pent');
+    w.levels.pentagram = 1;
+    w.levels.sword = 0;
+    const e = spawn(w, 'ToughEnemy', 150, 50);
+    e.speedX = e.speedY = 0;
+    e.hp = e.maxHp = 999;
+    w.items.push({ uid: 7777, type: 'xp', x: 400, y: 0, attracted: false, speed: 0, born: 0 });
+    for (let i = 0; i < 60 * 19; i++) w.step({ x: 0, y: 0 });
+    expect(e.hp).toBe(999);
+    for (let i = 0; i < 60 * 3; i++) w.step({ x: 0, y: 0 });
+    expect(e.hp).toBeLessThan(999);
+    expect(w.items.every((it) => it.attracted) || w.items.length === 0).toBe(true);
+  });
+  it('quantidade soma projéteis, maldição reforça inimigos e dá XP, duração estica as poças', () => {
+    const w = new NhWorld('wp-pass');
+    w.levels.wand = 1;
+    w.levels.amount = 2;
+    expect(w.amountBonus).toBe(2);
+    w.levels.curse = 3;
+    const e = spawn(w, 'BasicEnemy', 500, 500);
+    const base = new NhWorld('wp-pass2');
+    const b = spawn(base, 'BasicEnemy', 500, 500);
+    expect(e.maxHp).toBeGreaterThanOrEqual(b.maxHp);
+    expect(w.curseXp).toBeCloseTo(1.3);
+    w.levels.duration = 4;
+    expect(w.durMult).toBeCloseTo(1.6);
+  });
+  it('cada arma nova tem uma evolução com passivo, texto e ícone', () => {
+    for (const id of [
+      'whip',
+      'wand',
+      'garlic',
+      'magma',
+      'embers',
+      'cross',
+      'bone',
+      'runes',
+      'pentagram',
+      'bomb',
+    ] as const) {
+      const ev = EVOLUTIONS.find((x) => x.maxed.includes(id));
+      expect(ev, id).toBeTruthy();
+      expect(EVO_INFO[ev!.id].desc.length).toBeGreaterThan(20);
+      expect(UPGRADES[id].icon.startsWith('X/')).toBe(true);
+      expect(WEAPON_IDS).toContain(id);
+    }
+    expect(PASSIVE_IDS).toEqual(expect.arrayContaining(['duration', 'amount', 'curse']));
   });
 });

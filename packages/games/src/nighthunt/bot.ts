@@ -7,6 +7,16 @@ import type { NhInput, NhWorld } from './world';
  * recolhe cristais, moedas, poções e baús, e escolhe melhorias por uma lista de prioridade.
  */
 export const BOT_PRIORITY: readonly UpgradeId[] = [
+  'garlic',
+  'wand',
+  'whip',
+  'cross',
+  'bomb',
+  'magma',
+  'embers',
+  'bone',
+  'runes',
+  'pentagram',
   'halo',
   'horizontal',
   'sword',
@@ -24,6 +34,8 @@ export const BOT_PRIORITY: readonly UpgradeId[] = [
   'swift',
   'growth',
   'greed',
+  'duration',
+  'amount',
   'magnet',
   'clover',
 ];

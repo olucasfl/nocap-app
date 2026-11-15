@@ -27,6 +27,173 @@ const cd = (n: number) =>
 const rg = (n: number) => (PLAYER_SETTINGS.regenerationDelay / n).toFixed(1).replace('.', ',');
 
 export const UPGRADES: Record<UpgradeId, UpgradeInfo> = {
+  whip: {
+    id: 'whip',
+    name: 'Chicote',
+    desc: 'Estala para a frente e para trás, em linha larga. Cada nível acrescenta mais um corte em sequência.',
+    max: 6,
+    level: (n) =>
+      n === 1
+        ? 'Desbloqueia: dois cortes (frente e trás).'
+        : [
+            '',
+            'Dano +30%.',
+            '+1 corte.',
+            'Dano +30%.',
+            '+1 corte.',
+            '+1 corte e golpe mais longo.',
+          ][n - 1]!,
+    icon: 'X/whip',
+  },
+  wand: {
+    id: 'wand',
+    name: 'Varinha Arcana',
+    desc: 'Escolhe sozinha inimigos aleatórios por perto e dispara um projétil rápido em cada um.',
+    max: 6,
+    level: (n) =>
+      n === 1
+        ? 'Desbloqueia: 1 projétil por salva.'
+        : [
+            '',
+            '+1 projétil.',
+            'Recarga -15%.',
+            '+1 projétil.',
+            'Dano +40%.',
+            '+1 projétil e atravessa 1 inimigo.',
+          ][n - 1]!,
+    icon: 'X/wand',
+  },
+  garlic: {
+    id: 'garlic',
+    name: 'Aura de Alho',
+    desc: 'Um círculo em volta de você que fere e empurra todos que estiverem dentro, o tempo todo.',
+    max: 6,
+    level: (n) =>
+      n === 1
+        ? 'Desbloqueia: aura de raio 70.'
+        : [
+            '',
+            'Raio +10%.',
+            'Raio +15%.',
+            'Dano +50%.',
+            'Raio +20%.',
+            'Empurrão forte e golpes mais rápidos.',
+          ][n - 1]!,
+    icon: 'X/garlic',
+  },
+  magma: {
+    id: 'magma',
+    name: 'Poças de Magma',
+    desc: 'Frascos de magma criam poças que queimam quem pisar nelas por alguns segundos.',
+    max: 6,
+    level: (n) =>
+      n === 1
+        ? 'Desbloqueia: 1 poça por vez.'
+        : ['', 'Área +30%.', '+1 poça.', 'Dano +40%.', 'Duração +25%.', '+1 poça.'][n - 1]!,
+    icon: 'X/magma',
+  },
+  embers: {
+    id: 'embers',
+    name: 'Círculo de Brasas',
+    desc: 'Um anel de bolas de fogo nasce em volta de você, gira por alguns segundos e some.',
+    max: 6,
+    level: (n) =>
+      n === 1
+        ? 'Desbloqueia: 3 bolas de fogo.'
+        : ['', '+1 bola.', 'Dano +30%.', '+1 bola.', 'Duração +25%.', '+2 bolas.'][n - 1]!,
+    icon: 'X/embers',
+  },
+  cross: {
+    id: 'cross',
+    name: 'Cruz',
+    desc: 'Lança uma cruz que vai, desacelera, volta e atravessa tudo no caminho, nos dois sentidos.',
+    max: 6,
+    level: (n) =>
+      n === 1
+        ? 'Desbloqueia: 1 cruz.'
+        : ['', 'Velocidade +20%.', '+1 cruz.', 'Dano +40%.', 'Tamanho +25%.', '+1 cruz.'][n - 1]!,
+    icon: 'X/cross',
+  },
+  bone: {
+    id: 'bone',
+    name: 'Osso',
+    desc: 'Arremessa um osso que, ao acertar, quica para o inimigo mais perto.',
+    max: 6,
+    level: (n) =>
+      n === 1
+        ? 'Desbloqueia: 1 osso, 2 quicadas.'
+        : ['', 'Dano +25%.', '+1 osso.', '+1 quicada.', 'Dano +30%.', '+1 osso e +1 quicada.'][
+            n - 1
+          ]!,
+    icon: 'X/bone',
+  },
+  runes: {
+    id: 'runes',
+    name: 'Rastreador de Runas',
+    desc: 'Esferas de runa ricocheteiam nas bordas da tela e atravessam os inimigos.',
+    max: 6,
+    level: (n) =>
+      n === 1
+        ? 'Desbloqueia: 1 esfera.'
+        : ['', 'Velocidade +20%.', '+1 esfera.', 'Duração +25%.', 'Dano +40%.', '+1 esfera.'][
+            n - 1
+          ]!,
+    icon: 'X/runes',
+  },
+  pentagram: {
+    id: 'pentagram',
+    name: 'Pentagrama',
+    desc: 'De tempos em tempos varre a tela: dano grande em todos os inimigos e puxa todos os itens para você.',
+    max: 6,
+    level: (n) =>
+      n === 1
+        ? 'Desbloqueia: dano 15 a cada 20 s.'
+        : [
+            '',
+            'Recarga -10%.',
+            'Dano +30%.',
+            'Recarga -10%.',
+            'Dano +30%.',
+            'Alcance x2 e recarga 12 s.',
+          ][n - 1]!,
+    icon: 'X/pentagram',
+  },
+  bomb: {
+    id: 'bomb',
+    name: 'Bomba de Cereja',
+    desc: 'Lança uma bomba que quica pelo chão, explode em área e solta estilhaços.',
+    max: 6,
+    level: (n) =>
+      n === 1
+        ? 'Desbloqueia: 1 bomba.'
+        : ['', 'Raio +20%.', '+1 bomba.', 'Dano +40%.', '+2 estilhaços.', '+1 bomba.'][n - 1]!,
+    icon: 'X/bomb',
+  },
+  duration: {
+    id: 'duration',
+    name: 'Duração',
+    desc: 'Poças, anéis, bumerangues e esferas duram mais tempo.',
+    max: 5,
+    level: (n) => `Duração de tudo +${n * 15}% (nível ${n}).`,
+    icon: 'X/duration',
+  },
+  amount: {
+    id: 'amount',
+    name: 'Quantidade',
+    desc: 'Mais um projétil, bomba, corte ou bola de fogo nas armas que têm quantidade. Raro.',
+    max: 2,
+    level: (n) => `+${n} em tudo que tem quantidade (nível ${n}).`,
+    icon: 'X/amount',
+  },
+  curse: {
+    id: 'curse',
+    name: 'Maldição',
+    desc: 'Inimigos mais fortes e rápidos, mas você ganha mais XP e mais ouro. Para quem quer risco.',
+    max: 5,
+    level: (n) =>
+      `Inimigos +${n * 8}% de vida e +${n * 5}% de velocidade; XP e ouro +${n * 10}% (nível ${n}).`,
+    icon: 'X/curse',
+  },
   sword: {
     id: 'sword',
     name: 'Espada',
@@ -874,6 +1041,76 @@ export interface EvoInfo {
   passive: UpgradeId;
 }
 export const EVO_INFO: Record<EvoId, EvoInfo> = {
+  evoWhip: {
+    id: 'evoWhip',
+    name: 'Laceração Sangrenta',
+    desc: 'Evolução do Chicote. Golpe duas vezes mais longo, 40% mais rápido, causa dano crítico e absorve vida.',
+    from: 'whip',
+    passive: 'heart',
+  },
+  evoWand: {
+    id: 'evoWand',
+    name: 'Santa Varinha',
+    desc: 'Evolução da Varinha Arcana. Dispara quase sem pausa, com projéteis dourados que atravessam 2 inimigos a mais.',
+    from: 'wand',
+    passive: 'tome',
+  },
+  evoGarlic: {
+    id: 'evoGarlic',
+    name: 'Devorador de Almas',
+    desc: 'Evolução da Aura de Alho. Aura roxa 60% maior, o dobro de dano e cura 1 de vida a cada 5 inimigos atingidos.',
+    from: 'garlic',
+    passive: 'regeneration',
+  },
+  evoMagma: {
+    id: 'evoMagma',
+    name: 'Lava Viva',
+    desc: 'Evolução das Poças de Magma. As poças deslizam, crescem com o tempo e duram o dobro.',
+    from: 'magma',
+    passive: 'magnet',
+  },
+  evoEmbers: {
+    id: 'evoEmbers',
+    name: 'Anel Infernal',
+    desc: 'Evolução do Círculo de Brasas. Dois anéis girando em sentidos opostos, mais rápidos.',
+    from: 'embers',
+    passive: 'swift',
+  },
+  evoCross: {
+    id: 'evoCross',
+    name: 'Espada Celestial',
+    desc: 'Evolução da Cruz. Espada dourada maior que vai e volta duas vezes, com 60% mais dano.',
+    from: 'cross',
+    passive: 'clover',
+  },
+  evoBone: {
+    id: 'evoBone',
+    name: 'Osso Maldito',
+    desc: 'Evolução do Osso. Quica 2 vezes a mais e causa 50% mais dano.',
+    from: 'bone',
+    passive: 'armor',
+  },
+  evoRunes: {
+    id: 'evoRunes',
+    name: 'Sem Futuro',
+    desc: 'Evolução do Rastreador de Runas. Esferas maiores que explodem quando o tempo acaba.',
+    from: 'runes',
+    passive: 'duration',
+  },
+  evoPentagram: {
+    id: 'evoPentagram',
+    name: 'Lua Esplêndida',
+    desc: 'Evolução do Pentagrama. 50% mais dano e recarga menor.',
+    from: 'pentagram',
+    passive: 'growth',
+  },
+  evoBomb: {
+    id: 'evoBomb',
+    name: 'Bomba Cerejão',
+    desc: 'Evolução da Bomba de Cereja. Cada estilhaço vira uma bomba menor que também explode.',
+    from: 'bomb',
+    passive: 'amount',
+  },
   evoHorizontal: {
     id: 'evoHorizontal',
     name: 'Adagas Fantasma',

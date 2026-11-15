@@ -304,6 +304,10 @@ export class NhApp {
         }
       },
       resume: () => this.startGame(true),
+      give: (id: string, n: number) => {
+        const w = this.world;
+        if (w) (w.levels as Record<string, number>)[id] = n;
+      },
       brk: () => {
         const w = this.world;
         const b = w?.breakables[0];

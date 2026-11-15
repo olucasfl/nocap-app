@@ -84,7 +84,19 @@ export const BREAKABLE_HP = 3;
 export const BREAKABLE_RADIUS = 22;
 export const ITEM_ATTRACT_ACCEL = 100;
 
-export type ProjectileKind = 'horizontal' | 'diagonal' | 'halo' | 'axe' | 'orb' | 'pAxe';
+export type ProjectileKind =
+  | 'horizontal'
+  | 'diagonal'
+  | 'halo'
+  | 'axe'
+  | 'orb'
+  | 'pAxe'
+  | 'wand'
+  | 'cross'
+  | 'bone'
+  | 'rune'
+  | 'bomb'
+  | 'spark';
 export const PROJECTILE_SHAPE: Record<
   ProjectileKind,
   (x: number, y: number, rot: number, big?: boolean) => Shape
@@ -95,12 +107,31 @@ export const PROJECTILE_SHAPE: Record<
   axe: (x, y) => ({ kind: 'box', cx: x, cy: y, w: 25.2, h: 25.2 }),
   orb: (x, y) => ({ kind: 'box', cx: x, cy: y, w: 16, h: 16 }),
   pAxe: (x, y, _rot, big) => ({ kind: 'circle', cx: x, cy: y, r: big ? 36 : 24 }),
+  wand: (x, y, _rot, big) => ({ kind: 'circle', cx: x, cy: y, r: big ? 16 : 12 }),
+  cross: (x, y, _rot, big) => ({ kind: 'circle', cx: x, cy: y, r: big ? 30 : 22 }),
+  bone: (x, y) => ({ kind: 'circle', cx: x, cy: y, r: 16 }),
+  rune: (x, y, _rot, big) => ({ kind: 'circle', cx: x, cy: y, r: big ? 28 : 20 }),
+  bomb: (x, y) => ({ kind: 'circle', cx: x, cy: y, r: 8 }),
+  spark: (x, y) => ({ kind: 'circle', cx: x, cy: y, r: 10 }),
 };
 
 export const VIEW_WIDTH = 510;
 export const VIEW_HEIGHT = 680;
 
 export type UpgradeId =
+  | 'whip'
+  | 'wand'
+  | 'garlic'
+  | 'magma'
+  | 'embers'
+  | 'cross'
+  | 'bone'
+  | 'runes'
+  | 'pentagram'
+  | 'bomb'
+  | 'duration'
+  | 'amount'
+  | 'curse'
   | 'sword'
   | 'growth'
   | 'greed'
@@ -121,6 +152,19 @@ export type UpgradeId =
   | 'clover'
   | 'tome';
 export const UPGRADE_IDS: readonly UpgradeId[] = [
+  'whip',
+  'wand',
+  'garlic',
+  'magma',
+  'embers',
+  'cross',
+  'bone',
+  'runes',
+  'pentagram',
+  'bomb',
+  'duration',
+  'amount',
+  'curse',
   'sword',
   'growth',
   'greed',
@@ -150,6 +194,16 @@ export const WEAPON_IDS: readonly UpgradeId[] = [
   'axe',
   'orbit',
   'lightning',
+  'whip',
+  'wand',
+  'garlic',
+  'magma',
+  'embers',
+  'cross',
+  'bone',
+  'runes',
+  'pentagram',
+  'bomb',
 ];
 /** Passivos: só beneficiam (dano, alcance, vida, velocidade...), nunca atacam. Os globais valem para todas as armas. */
 export const PASSIVE_IDS: readonly UpgradeId[] = [
@@ -165,10 +219,26 @@ export const PASSIVE_IDS: readonly UpgradeId[] = [
   'growth',
   'greed',
   'swift',
+  'duration',
+  'amount',
+  'curse',
 ];
 export const MAX_WEAPON_SLOTS = 6;
 export const MAX_PASSIVE_SLOTS = 6;
 export const UPGRADE_MAX: Record<UpgradeId, number> = {
+  whip: 6,
+  wand: 6,
+  garlic: 6,
+  magma: 6,
+  embers: 6,
+  cross: 6,
+  bone: 6,
+  runes: 6,
+  pentagram: 6,
+  bomb: 6,
+  duration: 5,
+  amount: 2,
+  curse: 5,
   sword: 6,
   growth: 5,
   greed: 5,
@@ -193,7 +263,23 @@ export const UPGRADE_MAX: Record<UpgradeId, number> = {
 export const slotOf = (id: UpgradeId): string => id;
 
 export type EvoId =
-  'evoHorizontal' | 'evoDiagonal' | 'evoHalo' | 'evoAxe' | 'evoOrbit' | 'evoLightning' | 'evoSword';
+  | 'evoHorizontal'
+  | 'evoDiagonal'
+  | 'evoHalo'
+  | 'evoAxe'
+  | 'evoOrbit'
+  | 'evoLightning'
+  | 'evoSword'
+  | 'evoWhip'
+  | 'evoWand'
+  | 'evoGarlic'
+  | 'evoMagma'
+  | 'evoEmbers'
+  | 'evoCross'
+  | 'evoBone'
+  | 'evoRunes'
+  | 'evoPentagram'
+  | 'evoBomb';
 export type ChoiceId = UpgradeId | EvoId;
 export interface Evolution {
   id: EvoId;
@@ -211,6 +297,16 @@ export const EVOLUTIONS: readonly Evolution[] = [
   { id: 'evoOrbit', maxed: ['orbit'], passive: 'magnet' },
   { id: 'evoLightning', maxed: ['lightning'], passive: 'clover' },
   { id: 'evoSword', maxed: ['sword'], passive: 'weaponDamage' },
+  { id: 'evoWhip', maxed: ['whip'], passive: 'heart' },
+  { id: 'evoWand', maxed: ['wand'], passive: 'tome' },
+  { id: 'evoGarlic', maxed: ['garlic'], passive: 'regeneration' },
+  { id: 'evoMagma', maxed: ['magma'], passive: 'magnet' },
+  { id: 'evoEmbers', maxed: ['embers'], passive: 'swift' },
+  { id: 'evoCross', maxed: ['cross'], passive: 'clover' },
+  { id: 'evoBone', maxed: ['bone'], passive: 'armor' },
+  { id: 'evoRunes', maxed: ['runes'], passive: 'duration' },
+  { id: 'evoPentagram', maxed: ['pentagram'], passive: 'growth' },
+  { id: 'evoBomb', maxed: ['bomb'], passive: 'amount' },
 ];
 
 export interface HeroDef {

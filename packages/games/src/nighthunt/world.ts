@@ -12,6 +12,7 @@ import {
   type HordeEvent,
 } from './hordes';
 import { ALL_ENEMIES, MONSTER_BY_ID } from './monsters';
+import { BOMB, BONE, CROSS, EMBERS, GARLIC, MAGMA, PENTAGRAM, RUNES, WAND, WHIP } from './weapons';
 import { overlaps, type Shape } from './geometry';
 import {
   ENEMY_BOX,
@@ -166,6 +167,48 @@ export interface Projectile {
   hostile: boolean;
   big: boolean;
   hit: Set<number>;
+  /** Comportamento especial das armas novas. */
+  mode?: 'cross' | 'bone' | 'rune' | 'bomb' | 'wand' | 'spark';
+  born?: number;
+  life?: number;
+  /** Origem, direção e velocidade de saída (bumerangue). */
+  ox?: number;
+  oy?: number;
+  v0?: number;
+  /** Quicadas que sobram (osso), ciclos (cruz), fase/relógio (cruz, runas), geração (bomba). */
+  n?: number;
+  aux?: number;
+  /** Para onde a bomba vai e o raio da explosão. */
+  tx?: number;
+  ty?: number;
+  r?: number;
+  evo?: boolean;
+}
+
+/** Estados de desenho e de dano das armas novas (o desenho lê daqui). */
+export interface Cut {
+  born: number;
+  side: number;
+  len: number;
+  evo: boolean;
+  at: number;
+}
+export interface Pool {
+  x: number;
+  y: number;
+  r: number;
+  born: number;
+  dur: number;
+  tick: number;
+  vx: number;
+  vy: number;
+  evo: boolean;
+}
+export interface Blast {
+  x: number;
+  y: number;
+  r: number;
+  born: number;
 }
 
 /** Eventos que o desenho e o som consomem (não afetam a simulação). */
@@ -348,6 +391,17 @@ export class NhWorld {
   private baseHp: number;
   private baseSpeed: number;
   private mapDef;
+  /** Armas novas: cortes do chicote, poças de magma, anel de brasas, explosões e o pentagrama (o desenho lê daqui). */
+  cuts: Cut[] = [];
+  pools: Pool[] = [];
+  blasts: Blast[] = [];
+  emb = { cd: 0, left: 0, dur: 0, ang: 0 };
+  pent: { born: number } | null = null;
+  garlicHits = 0;
+  private wTimers: Record<string, number> = {};
+  private embHit = new Map<number, number>();
+  private aimX = 1;
+  private aimY = 0;
   breakables: Breakable[] = [];
   obstacles: Obstacle[] = [];
   private obsCells = new Set<string>();
@@ -591,12 +645,24 @@ export class NhWorld {
   get area(): number {
     return 1 + 0.1 * this.levels.weaponLength;
   }
+  /** Duração das zonas, poças, anéis e bumerangues: passivo Duração, +15% por nível. */
+  get durMult(): number {
+    return 1 + 0.15 * this.levels.duration;
+  }
+  /** Projéteis, bombas e golpes a mais (passivo Quantidade, só 2 níveis). */
+  get amountBonus(): number {
+    return this.levels.amount;
+  }
+  /** Maldição: inimigos mais fortes, em troca de XP e ouro. */
+  get curseXp(): number {
+    return 1 + 0.1 * this.levels.curse;
+  }
   /** Alcance de atração dos itens: base 70, +40% por nível do passivo Imã. */
   get attractRadius(): number {
     return ATTRACT_BASE * (1 + 0.4 * this.levels.magnet);
   }
   get goldMult(): number {
-    return this.heroGold * (1 + 0.1 * this.levels.greed);
+    return this.heroGold * (1 + 0.1 * this.levels.greed) * this.curseXp;
   }
   /** Velocidade dos projéteis e dos orbes. */
   get swiftMult(): number {
@@ -736,6 +802,7 @@ export class NhWorld {
     this.solveObstacles();
     this.tickLaunchers(dt);
     this.tickNewWeapons(dt);
+    this.tickWeapons2(dt);
     this.tickEnemyLaunchers(dt);
     this.tickBreakables();
     this.moveItems(dt);
@@ -761,6 +828,8 @@ export class NhWorld {
     p.y += input.y * k * dt * sp;
     if (input.x < 0) p.face = -1;
     else if (input.x > 0) p.face = 1;
+    this.aimX = input.x / len;
+    this.aimY = input.y / len;
   }
 
   private strikeDelay(): number {
@@ -841,7 +910,7 @@ export class NhWorld {
 
   // ---- níveis e melhorias ----
   private addXp(points: number): void {
-    this.xp += points * this.xpMult * (1 + 0.08 * this.levels.growth);
+    this.xp += points * this.xpMult * (1 + 0.08 * this.levels.growth) * this.curseXp;
     while (this.xp >= xpToNext(this.level)) {
       this.xp -= xpToNext(this.level);
       this.level++;
@@ -942,10 +1011,20 @@ export class NhWorld {
       y: this.player.y + dy,
       hp: Math.max(
         1,
-        Math.round((hp ?? s.health * hpScale(this.spawnerTime)) * this.mapDef.enemyHp),
+        Math.round(
+          (hp ?? s.health * hpScale(this.spawnerTime)) *
+            this.mapDef.enemyHp *
+            (1 + 0.08 * this.levels.curse),
+        ),
       ),
-      speedX: (lo + this.rng() * (s.speed - lo)) * this.mapDef.enemySpeed,
-      speedY: (lo + this.rng() * (s.speed - lo)) * this.mapDef.enemySpeed,
+      speedX:
+        (lo + this.rng() * (s.speed - lo)) *
+        this.mapDef.enemySpeed *
+        (1 + 0.05 * this.levels.curse),
+      speedY:
+        (lo + this.rng() * (s.speed - lo)) *
+        this.mapDef.enemySpeed *
+        (1 + 0.05 * this.levels.curse),
       life: s.lifetime,
       faceX: 1,
       flash: 0,
@@ -1191,6 +1270,493 @@ export class NhWorld {
       }
     }
     return mult;
+  }
+
+  // ---- armas novas (spec 084) ----
+  private lv<T extends readonly number[]>(table: T, level: number): number {
+    return table[Math.min(table.length, Math.max(1, level)) - 1]!;
+  }
+
+  /** Inimigos vivos perto de (x, y), do mais perto ao mais longe. */
+  private nearestEnemies(x: number, y: number, range: number): Enemy[] {
+    return this.enemies
+      .filter((e) => !e.dead && Math.hypot(e.x - x, e.y - y) <= range)
+      .sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y));
+  }
+
+  /** Dá dano numa área (círculo) a inimigos e objetos do cenário. */
+  private blast(x: number, y: number, r: number, dmg: number, knock: number): void {
+    this.blasts.push({ x, y, r, born: this.t });
+    for (const e of this.enemies) {
+      if (e.dead) continue;
+      if (Math.hypot(e.x - x, e.y - y) <= r + 14) {
+        this.damageEnemy(e, dmg);
+        if (knock > 0) this.knock(e, x, y, 160 * knock);
+      }
+    }
+    for (const b of this.breakables)
+      if (b.hp > 0 && Math.hypot(b.x - x, b.y - y) <= r + BREAKABLE_RADIUS)
+        this.damageBreakable(b, dmg);
+  }
+
+  private explodeBomb(q: Projectile): void {
+    const lv = this.levels.bomb;
+    const gen = q.n ?? 0;
+    const r = (q.r ?? this.lv(BOMB.r, lv)) * this.area;
+    this.blast(q.x, q.y, r, q.damage, 0.6);
+    q.pierces = 0;
+    const shards = gen > 0 ? 0 : this.lv(BOMB.shards, lv);
+    for (let i = 0; i < shards; i++) {
+      const a = (i / shards) * Math.PI * 2 + 0.4;
+      if (q.evo) {
+        // Bomba Cerejão: cada estilhaço vira uma bomba menor
+        this.throwBomb(
+          q.x,
+          q.y,
+          q.x + Math.cos(a) * 90,
+          q.y + Math.sin(a) * 90,
+          q.damage * 0.5,
+          45,
+          1,
+          true,
+        );
+      } else {
+        this.fire(
+          'spark',
+          q.x,
+          q.y,
+          [[Math.cos(a), Math.sin(a)]],
+          210,
+          0.6,
+          this.dmgMult,
+          1,
+          false,
+        );
+        const sp = this.projectiles[this.projectiles.length - 1]!;
+        sp.mode = 'spark';
+      }
+    }
+  }
+
+  private throwBomb(
+    x: number,
+    y: number,
+    tx: number,
+    ty: number,
+    dmg: number,
+    r: number,
+    gen: number,
+    evo: boolean,
+  ): void {
+    this.projectiles.push({
+      x,
+      y,
+      vx: (tx - x) / BOMB.fly,
+      vy: (ty - y) / BOMB.fly,
+      gy: 0,
+      kind: 'bomb',
+      expire: this.t + BOMB.fuse,
+      damage: dmg,
+      pierces: 99,
+      angle: 0,
+      hostile: false,
+      big: false,
+      hit: new Set(),
+      mode: 'bomb',
+      born: this.t,
+      tx,
+      ty,
+      r,
+      n: gen,
+      evo,
+    });
+  }
+
+  /** Osso: depois de acertar, vai para o inimigo mais perto que ainda não levou. */
+  private boneBounce(q: Projectile, e: Enemy): void {
+    q.n = (q.n ?? 0) - 1;
+    if ((q.n ?? 0) < 0) {
+      q.pierces = 0;
+      return;
+    }
+    const next = this.nearestEnemies(e.x, e.y, 300).find((o) => o !== e && !q.hit.has(o.uid));
+    if (!next) {
+      q.pierces = 0;
+      return;
+    }
+    const dx = next.x - q.x;
+    const dy = next.y - q.y;
+    const l = Math.hypot(dx, dy) || 1;
+    const sp = Math.hypot(q.vx, q.vy) || BONE.speed;
+    q.vx = (dx / l) * sp;
+    q.vy = (dy / l) * sp;
+    q.expire = this.t + 1.6;
+  }
+
+  private tickWeapons2(dt: number): void {
+    const px = this.player.x;
+    const py = this.player.y;
+    const dm = this.dmgMult;
+    const L = this.levels;
+    const t = this.t;
+    const tick = (key: string, cd: number): boolean => {
+      this.wTimers[key] = (this.wTimers[key] ?? 0) + dt;
+      if ((this.wTimers[key] ?? 0) >= cd) {
+        this.wTimers[key] = 0;
+        return true;
+      }
+      return false;
+    };
+    const amt = this.amountBonus;
+
+    // Chicote: cortes em sequência, frente e trás
+    if (L.whip > 0) {
+      const evo = this.evolved.has('evoWhip');
+      if (tick('whip', WHIP.cd * this.cdMult * (evo ? 0.6 : 1))) {
+        const n = this.lv(WHIP.cuts, L.whip) + amt;
+        const dir = this.player.face === 0 ? 1 : this.player.face;
+        for (let i = 0; i < n; i++)
+          this.cuts.push({
+            born: 0,
+            at: t + i * WHIP.gap,
+            side: i % 2 === 0 ? dir : -dir,
+            len: 0,
+            evo,
+          });
+      }
+    }
+    for (const c of this.cuts) {
+      if (c.born > 0 || t < c.at) continue;
+      c.born = t;
+      const evo = c.evo;
+      const len = this.lv(WHIP.len, L.whip) * this.area * (evo ? 2 : 1);
+      c.len = len;
+      const h = 44 * this.area;
+      const cx = px + c.side * (len / 2 + 8);
+      const cy = py + 8;
+      this.events.push({ k: 'swing' });
+      const shape: Shape = { kind: 'box', cx, cy, w: len, h };
+      const base = this.lv(WHIP.dmg, L.whip) * dm * (evo ? 1.3 : 1);
+      for (const e of this.enemies) {
+        if (e.dead || !overlaps(shape, this.enemyShape(e))) continue;
+        const crit = evo && this.rng() < 0.15;
+        const d = base * (crit ? 2 : 1);
+        this.damageEnemy(e, d);
+        this.knock(e, px, py, 90);
+        if (evo) this.heal(Math.max(0, Math.round(d * 0.01 * 10) / 10));
+      }
+      for (const b of this.breakables)
+        if (b.hp > 0 && overlaps(shape, this.breakableShape(b))) this.damageBreakable(b, base);
+    }
+    this.cuts = this.cuts.filter((c) => c.born === 0 || t - c.born < 0.3);
+
+    // Varinha Arcana: alvos aleatórios por perto
+    if (L.wand > 0) {
+      const evo = this.evolved.has('evoWand');
+      const cd = Math.max(
+        evo ? 0.35 : 0.5,
+        this.lv(WAND.cd, L.wand) * this.cdMult * (evo ? 0.5 : 1),
+      );
+      this.wTimers.wand = (this.wTimers.wand ?? 0) + dt;
+      if ((this.wTimers.wand ?? 0) >= cd) {
+        const pool = this.nearestEnemies(px, py, WAND.range);
+        if (pool.length) {
+          this.wTimers.wand = 0;
+          const n = this.lv(WAND.n, L.wand) + amt;
+          const chosen: Enemy[] = [];
+          const bag = pool.slice();
+          for (let i = 0; i < n; i++) {
+            if (bag.length === 0) bag.push(...pool);
+            const k = Math.floor(this.rng() * bag.length);
+            chosen.push(bag.splice(k, 1)[0]!);
+          }
+          for (const e of chosen) {
+            this.fire(
+              'wand',
+              px,
+              py,
+              [[e.x - px, e.y - py]],
+              380,
+              1.4,
+              this.lv(WAND.dmg, L.wand) * dm * (evo ? 1.3 : 1),
+              this.lv(WAND.pierce, L.wand) + (evo ? 2 : 0),
+              false,
+              { big: evo },
+            );
+            this.projectiles[this.projectiles.length - 1]!.mode = 'wand';
+          }
+          this.events.push({ k: 'fire', kind: 'diagonal' });
+        } else this.wTimers.wand = cd;
+      }
+    }
+
+    // Aura de Alho: dano contínuo e empurrão
+    if (L.garlic > 0) {
+      const evo = this.evolved.has('evoGarlic');
+      if (tick('garlic', this.lv(GARLIC.every, L.garlic))) {
+        const r = this.garlicRadius;
+        const d = this.lv(GARLIC.dmg, L.garlic) * dm * (evo ? 2 : 1);
+        for (const e of this.enemies) {
+          if (e.dead || Math.hypot(e.x - px, e.y - py) > r + 14) continue;
+          this.damageEnemy(e, d);
+          this.knock(e, px, py, this.lv(GARLIC.knock, L.garlic));
+          if (evo && ++this.garlicHits % 5 === 0) this.heal(1);
+        }
+        for (const b of this.breakables)
+          if (b.hp > 0 && Math.hypot(b.x - px, b.y - py) <= r + BREAKABLE_RADIUS)
+            this.damageBreakable(b, d);
+      }
+    }
+
+    // Poças de Magma
+    if (L.magma > 0) {
+      const evo = this.evolved.has('evoMagma');
+      if (tick('magma', MAGMA.cd * this.cdMult)) {
+        const n = this.lv(MAGMA.n, L.magma) + amt;
+        for (let i = 0; i < n; i++) {
+          const a = this.rng() * Math.PI * 2;
+          const d = Math.sqrt(this.rng()) * MAGMA.spread;
+          this.pools.push({
+            x: px + Math.cos(a) * d,
+            y: py + Math.sin(a) * d,
+            r: this.lv(MAGMA.r, L.magma) * this.area,
+            born: t,
+            dur: this.lv(MAGMA.dur, L.magma) * this.durMult * (evo ? 2 : 1),
+            tick: 0,
+            vx: evo ? (this.rng() - 0.5) * 36 : 0,
+            vy: evo ? (this.rng() - 0.5) * 36 : 0,
+            evo,
+          });
+        }
+        this.events.push({ k: 'fire', kind: 'axe' });
+      }
+    }
+    for (const p of this.pools) {
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      if (p.evo) p.r += 4 * dt;
+      if (t - p.born < 0.35) continue; // o frasco ainda está no ar
+      p.tick += dt;
+      if (p.tick >= MAGMA.tick) {
+        p.tick = 0;
+        const d = this.lv(MAGMA.dmg, L.magma) * dm;
+        for (const e of this.enemies)
+          if (!e.dead && Math.hypot(e.x - p.x, e.y - p.y) <= p.r + 10) this.damageEnemy(e, d);
+        for (const b of this.breakables)
+          if (b.hp > 0 && Math.hypot(b.x - p.x, b.y - p.y) <= p.r + BREAKABLE_RADIUS)
+            this.damageBreakable(b, d);
+      }
+    }
+    this.pools = this.pools.filter((p) => t - p.born < p.dur);
+
+    // Círculo de Brasas: anel que nasce, gira e some
+    if (L.embers > 0) {
+      const evo = this.evolved.has('evoEmbers');
+      const E = this.emb;
+      if (E.left > 0) {
+        E.left -= dt;
+        E.ang += dt * 3.2 * this.swiftMult * (evo ? 1.2 : 1);
+        for (const b of this.embersBalls()) {
+          for (const e of this.enemies) {
+            if (e.dead || (this.embHit.get(e.uid) ?? 0) > t) continue;
+            if (Math.hypot(e.x - b.x, e.y - b.y) <= b.r + 16) {
+              this.embHit.set(e.uid, t + EMBERS.hit);
+              this.damageEnemy(e, this.lv(EMBERS.dmg, L.embers) * dm);
+            }
+          }
+          for (const o of this.breakables)
+            if (o.hp > 0 && Math.hypot(o.x - b.x, o.y - b.y) <= b.r + BREAKABLE_RADIUS)
+              this.damageBreakable(o, this.lv(EMBERS.dmg, L.embers) * dm);
+        }
+        if (this.tick % 600 === 0)
+          for (const [k, v] of this.embHit) if (v < t) this.embHit.delete(k);
+      } else {
+        E.cd += dt;
+        if (E.cd >= EMBERS.cd * this.cdMult) {
+          E.cd = 0;
+          E.dur = this.lv(EMBERS.dur, L.embers) * this.durMult;
+          E.left = E.dur;
+          E.ang = this.rng() * Math.PI * 2;
+          this.events.push({ k: 'fire', kind: 'halo' });
+        }
+      }
+    }
+
+    // Cruz: bumerangue
+    if (L.cross > 0) {
+      const evo = this.evolved.has('evoCross');
+      if (tick('cross', CROSS.cd * this.cdMult)) {
+        const n = this.lv(CROSS.n, L.cross) + amt;
+        const tg = this.nearestEnemies(px, py, 420)[0];
+        const base = tg ? Math.atan2(tg.y - py, tg.x - px) : Math.atan2(this.aimY, this.aimX);
+        for (let i = 0; i < n; i++) {
+          const off = (i % 2 === 0 ? 1 : -1) * Math.ceil(i / 2) * 0.55;
+          const a = base + off;
+          this.fire(
+            'cross',
+            px,
+            py,
+            [[Math.cos(a), Math.sin(a)]],
+            CROSS.base * this.lv(CROSS.speed, L.cross),
+            CROSS.life * this.durMult * (evo ? 2 : 1),
+            this.lv(CROSS.dmg, L.cross) * dm * (evo ? 1.6 : 1),
+            99,
+            false,
+            { big: evo },
+          );
+          const q = this.projectiles[this.projectiles.length - 1]!;
+          q.mode = 'cross';
+          q.born = t;
+          q.life = CROSS.life * this.durMult * (evo ? 2 : 1);
+          q.ox = px;
+          q.oy = py;
+          q.v0 = Math.hypot(q.vx, q.vy);
+          q.n = evo ? 2 : 1;
+          q.aux = 0;
+        }
+        this.events.push({ k: 'fire', kind: 'axe' });
+      }
+    }
+
+    // Osso: quica entre inimigos
+    if (L.bone > 0) {
+      const evo = this.evolved.has('evoBone');
+      if (tick('bone', BONE.cd * this.cdMult)) {
+        const list = this.nearestEnemies(px, py, BONE.range);
+        if (list.length) {
+          const n = this.lv(BONE.n, L.bone) + amt;
+          for (let i = 0; i < n; i++) {
+            const e = list[i % list.length]!;
+            this.fire(
+              'bone',
+              px,
+              py,
+              [[e.x - px, e.y - py]],
+              BONE.speed,
+              3,
+              this.lv(BONE.dmg, L.bone) * dm * (evo ? 1.5 : 1),
+              99,
+              false,
+            );
+            const q = this.projectiles[this.projectiles.length - 1]!;
+            q.mode = 'bone';
+            q.n = this.lv(BONE.bounces, L.bone) + (evo ? 2 : 0);
+            q.evo = evo;
+          }
+          this.events.push({ k: 'fire', kind: 'diagonal' });
+        }
+      }
+    }
+
+    // Rastreador de Runas: ricochete nas bordas da tela
+    if (L.runes > 0) {
+      const evo = this.evolved.has('evoRunes');
+      if (tick('runes', RUNES.cd * this.cdMult)) {
+        const n = this.lv(RUNES.n, L.runes) + amt;
+        for (let i = 0; i < n; i++) {
+          const a = this.rng() * Math.PI * 2;
+          this.fire(
+            'rune',
+            px,
+            py,
+            [[Math.cos(a), Math.sin(a)]],
+            RUNES.base * this.lv(RUNES.speed, L.runes),
+            this.lv(RUNES.dur, L.runes) * this.durMult,
+            this.lv(RUNES.dmg, L.runes) * dm * (evo ? 1.3 : 1),
+            99,
+            false,
+            { big: evo },
+          );
+          const q = this.projectiles[this.projectiles.length - 1]!;
+          q.mode = 'rune';
+          q.evo = evo;
+          q.aux = 0;
+        }
+        this.events.push({ k: 'fire', kind: 'halo' });
+      }
+    }
+
+    // Bomba de Cereja
+    if (L.bomb > 0) {
+      const evo = this.evolved.has('evoBomb');
+      if (tick('bomb', BOMB.cd * this.cdMult)) {
+        const n = this.lv(BOMB.n, L.bomb) + amt;
+        for (let i = 0; i < n; i++) {
+          const a = this.rng() * Math.PI * 2;
+          const d = 80 + Math.sqrt(this.rng()) * BOMB.spread;
+          this.throwBomb(
+            px,
+            py,
+            px + Math.cos(a) * d,
+            py + Math.sin(a) * d,
+            this.lv(BOMB.dmg, L.bomb) * dm * (evo ? 1.2 : 1),
+            this.lv(BOMB.r, L.bomb),
+            0,
+            evo,
+          );
+        }
+        this.events.push({ k: 'fire', kind: 'axe' });
+      }
+    }
+
+    // Pentagrama: limpa a tela e puxa os itens
+    if (L.pentagram > 0) {
+      const evo = this.evolved.has('evoPentagram');
+      const cd = this.lv(PENTAGRAM.cd, L.pentagram) * this.cdMult * (evo ? 0.85 : 1);
+      if (tick('pentagram', cd)) {
+        const sc = this.lv(PENTAGRAM.scale, L.pentagram);
+        const d = this.lv(PENTAGRAM.dmg, L.pentagram) * dm * (evo ? 1.5 : 1);
+        this.pent = { born: t };
+        for (const e of this.enemies) {
+          if (e.dead || e.s.id === 'FinalBoss' || e.s.id.endsWith('FinalBoss')) continue;
+          if (Math.abs(e.x - px) <= this.viewHW * sc && Math.abs(e.y - py) <= this.viewHH * sc)
+            this.damageEnemy(e, d);
+        }
+        for (const it of this.items) {
+          if (!it.attracted) {
+            it.attracted = true;
+            it.speed = 320;
+          }
+        }
+        this.events.push({ k: 'levelUp' });
+      }
+    }
+    if (this.pent && t - this.pent.born > 1.2) this.pent = null;
+    this.blasts = this.blasts.filter((b) => t - b.born < 0.5);
+  }
+
+  /** Raio atual da Aura de Alho (0 se a pessoa não tem a arma). */
+  get garlicRadius(): number {
+    if (this.levels.garlic <= 0) return 0;
+    return (
+      this.lv(GARLIC.radius, this.levels.garlic) *
+      this.area *
+      (this.evolved.has('evoGarlic') ? 1.6 : 1)
+    );
+  }
+
+  /** Posições das bolas de fogo do Círculo de Brasas (para o desenho e a colisão). */
+  embersBalls(): { x: number; y: number; r: number }[] {
+    const E = this.emb;
+    if (E.left <= 0 || this.levels.embers <= 0) return [];
+    const evo = this.evolved.has('evoEmbers');
+    const n = this.lv(EMBERS.n, this.levels.embers) + this.amountBonus;
+    const prog = 1 - E.left / Math.max(0.01, E.dur);
+    const radius = (EMBERS.radius + prog * EMBERS.grow) * this.area;
+    const out: { x: number; y: number; r: number }[] = [];
+    const ring = (count: number, rad: number, dir: number, off: number) => {
+      for (let i = 0; i < count; i++) {
+        const a = off + dir * E.ang + (i * Math.PI * 2) / count;
+        out.push({
+          x: this.player.x + Math.cos(a) * rad,
+          y: this.player.y + 6 + Math.sin(a) * rad,
+          r: 12 * this.area,
+        });
+      }
+    };
+    ring(n, radius, 1, 0);
+    if (evo) ring(Math.max(3, Math.floor(n / 2)), radius * 0.6, -1, 0.5);
+    return out;
   }
 
   // ---- empurrão, separação e obstáculos ----
@@ -1549,9 +2115,57 @@ export class NhWorld {
       }
     }
     for (const q of this.projectiles) {
+      if (q.mode === 'cross') {
+        // bumerangue: vai, desacelera, volta (e repete nos ciclos); a cada meia volta acerta de novo
+        const T = (q.life ?? 2) / (q.n ?? 1);
+        const age = this.t - (q.born ?? 0);
+        const ph = age % T;
+        const out = ((q.v0 ?? 300) * T) / Math.PI;
+        const u = Math.sin((Math.PI * ph) / T) * out;
+        const dx = q.vx / (Math.hypot(q.vx, q.vy) || 1);
+        const dy = q.vy / (Math.hypot(q.vx, q.vy) || 1);
+        q.x = (q.ox ?? 0) + dx * u;
+        q.y = (q.oy ?? 0) + dy * u;
+        const half = Math.floor((age / T) * 2);
+        if (half !== q.aux) {
+          q.aux = half;
+          q.hit.clear();
+        }
+        q.angle += dt * 12;
+        continue;
+      }
+      if (q.mode === 'bomb') {
+        const age = this.t - (q.born ?? 0);
+        if (age >= BOMB.fly) {
+          q.vx = 0;
+          q.vy = 0;
+        }
+      }
+      if (q.mode === 'rune') {
+        // ricocheteia nas bordas da tela e só acerta o mesmo inimigo de novo depois de um instante
+        const px = this.player.x;
+        const py = this.player.y;
+        if (q.x - px > this.viewHW) q.vx = -Math.abs(q.vx);
+        else if (q.x - px < -this.viewHW) q.vx = Math.abs(q.vx);
+        if (q.y - py > this.viewHH) q.vy = -Math.abs(q.vy);
+        else if (q.y - py < -this.viewHH) q.vy = Math.abs(q.vy);
+        q.aux = (q.aux ?? 0) + dt;
+        if (q.aux >= RUNES.hit) {
+          q.aux = 0;
+          q.hit.clear();
+        }
+        q.angle += dt * 5;
+      }
       q.vy += q.gy * dt;
       q.x += q.vx * dt;
       q.y += q.vy * dt;
+    }
+    // bombas e runas evoluídas explodem ao fim do tempo
+    for (const q of this.projectiles) {
+      if (q.expire > this.t || q.pierces <= 0) continue;
+      if (q.mode === 'bomb') this.explodeBomb(q);
+      else if (q.mode === 'rune' && q.evo)
+        this.blast(q.x, q.y, 90 * this.area, (q.damage ?? 2) * 2, 1.0);
     }
     this.projectiles = this.projectiles.filter((q) => q.expire > this.t && q.pierces > 0);
   }
@@ -1885,14 +2499,16 @@ export class NhWorld {
     }
     // projéteis do jogador x inimigos
     for (const q of this.projectiles) {
-      if (q.pierces <= 0 || q.hostile) continue;
+      if (q.pierces <= 0 || q.hostile || q.mode === 'bomb') continue;
       const qs = scaleShape(PROJECTILE_SHAPE[q.kind](q.x, q.y, q.angle, q.big), this.area);
       for (const e of this.enemies) {
         if (e.dead || q.pierces <= 0 || q.hit.has(e.uid)) continue;
         if (overlaps(qs, this.enemyShape(e))) {
           q.hit.add(e.uid);
           this.damageEnemy(e, e.s.trait === 'shell' ? q.damage * 0.5 : q.damage);
-          q.pierces--;
+          if (q.mode === 'bone') this.boneBounce(q, e);
+          else if (q.mode === 'cross' || q.mode === 'rune') this.knock(e, q.x, q.y, 40);
+          else q.pierces--;
         }
       }
       for (const b of this.breakables) {
