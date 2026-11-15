@@ -524,6 +524,8 @@ G(141, ['#######H#', '####..o..', '###LLL###', '....LL###', '.o.....##', '@.....
 G(142, ['##H######', '.o....###', '###MMM###', '###MM....', '#........', '#.o.....@'], [{ kind: 'spinner', col: 4, row: 4, length: 4, t0: 0.7 }]);
 // 143 Loop para o leste: o corredor começa no alto, passa pelo loop e desce até o buraco
 G(143, ['@..o.####', '....N####', '###NN.o..', '###NN....', '########H'], [{ kind: 'pendulum', col: 7, row: 3, along: 'x', t0: 0.3 }]);
+// 144 Dois loops: o primeiro sobe para o norte, o corredor com giratório leva ao segundo, que vira para o leste e termina no buraco
+G(144, ['#########', '#########', '####..###', '####..N##', '##...NN..', '#LLL#NN.H', '..LL#####', '@.#######'], [{ kind: 'spinner', col: 3, row: 4, length: 3.4 }]);
 
 const holeModel = loadHole();
 fs.mkdirSync(out, { recursive: true });
