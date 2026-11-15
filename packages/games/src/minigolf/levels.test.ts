@@ -4,8 +4,8 @@ import { golfNewBall, golfStep, GolfLevel, GOLF_DT, type GolfLevelData } from '.
 
 const load = (n: number) => new GolfLevel(JSON.parse(readFileSync(new URL(`./levels/level-${n}.json`, import.meta.url), 'utf8')) as GolfLevelData);
 
-describe('Mini Golf: as 20 fases são jogáveis', () => {
-  for (let n = 1; n <= 20; n++) {
+describe('Mini Golf: as 21 fases são jogáveis', () => {
+  for (let n = 1; n <= 21; n++) {
     it(`fase ${n}: um buraco, geometria válida e a bola parada no início fica no chão`, () => {
       const lv = load(n);
       expect(lv.data.holes).toHaveLength(1);

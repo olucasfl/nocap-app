@@ -15,8 +15,8 @@ describe('Mini Golf online', () => {
     const count = (t: 'easy' | 'medium' | 'hard') => a.filter((n) => (GOLF_TIERS[t] as readonly number[]).includes(n)).length;
     expect([count('easy'), count('medium'), count('hard')]).toEqual([4, 4, 4]);
     for (const n of [3, 6, 9, 18]) expect(golfPickLevels('abc', n)).toHaveLength(n);
-    // 20 buracos: todas, na ordem do offline
-    expect(golfPickLevels('abc', 20)).toEqual(Array.from({ length: 20 }, (_, i) => i + 1));
+    // 21 buracos: todas, na ordem do offline
+    expect(golfPickLevels('abc', 21)).toEqual(Array.from({ length: 21 }, (_, i) => i + 1));
   });
 
   it('duas bolas que se encontram trocam velocidade e se separam', () => {

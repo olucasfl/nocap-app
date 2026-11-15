@@ -53,4 +53,8 @@ licenças das texturas e modelos do repositório (conferir antes de copiar arte;
 
 ## Campanha (decisão do Lucas em 14/11/2026)
 
-A campanha tem só as **20 fases do Open Golf, exatamente como no original** (geometria, muros de madeira, obstáculos e movimento); as fases que fizemos (21 a 40) foram removidas. A ordem é a do Open Golf (1 a 20); as dificuldades agrupam as fases (fácil 1 a 7, média 8 a 13, difícil 14 a 20) e a sala online sorteia de forma proporcional entre elas (20 buracos = todas). As ferramentas `tools/art/minigolf/` ficam só como histórico de trabalho.
+A campanha tem as **20 fases do Open Golf, exatamente como no original** (geometria, muros de madeira, obstáculos e movimento), na ordem original (1 a 20), mais a **fase 21, o Grande Circuito**, nossa, feita só com peças do Open Golf (as fases 21 a 40 que tínhamos feito foram removidas).
+
+**Grande Circuito (fase 21):** circuito de cerca de 150 m com corredores de 5 m e muros no tamanho do original (0,5 m de espessura, 0,375 m de altura). Em ordem: reta com os pêndulos da fase 6, o loop da fase 9 (entrada na diagonal, a partir de uma área de manobra de 6 m), reta com dois giratórios da fase 1, curva arredondada, reta com as quatro paredes deslizantes da fase 18, duas curvas em S, uma colina (sobe 1,5 m e desce) e, por fim, a fase 5 inteira: rampa suave, espiral que desce 6 m e câmara redonda do buraco. Dificuldade: difícil. Montada em `tools/art/minigolf/build-levels.mjs` (`grandCircuit`).
+
+As dificuldades agrupam as fases em 7, 7 e 7 (fácil 1 a 7, média 8 a 14, difícil 15 a 21); a sala online sorteia proporcional entre elas (21 buracos = todas). As ferramentas de `tools/art/minigolf/` ficam como histórico de trabalho.

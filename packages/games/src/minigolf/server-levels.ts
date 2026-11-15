@@ -1,5 +1,5 @@
 /**
- * As 20 fases embutidas, para o servidor simular as salas do Mini Golf (spec 082). O app web NÃO usa isto: ele baixa cada
+ * As 21 fases embutidas, para o servidor simular as salas do Mini Golf (spec 082). O app web NÃO usa isto: ele baixa cada
  * fase sob demanda (`import.meta.glob`); o pacote é `sideEffects: false`, então o bundle do web descarta estes dados.
  */
 import l1 from './levels/level-1.json';
@@ -22,11 +22,12 @@ import l17 from './levels/level-17.json';
 import l18 from './levels/level-18.json';
 import l19 from './levels/level-19.json';
 import l20 from './levels/level-20.json';
+import l21 from './levels/level-21.json';
 import type { GolfLevelData } from './physics';
 
-const ALL = [l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18, l19, l20] as unknown as GolfLevelData[];
+const ALL = [l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18, l19, l20, l21] as unknown as GolfLevelData[];
 
-/** Dados da fase `n` (1 a 20). */
+/** Dados da fase `n` (1 a 21). */
 export function golfServerLevel(n: number): GolfLevelData {
   const d = ALL[n - 1];
   if (!d) throw new Error(`fase ${n} não existe`);

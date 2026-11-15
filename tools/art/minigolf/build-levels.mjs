@@ -761,9 +761,206 @@ maze(222, 'hard', 5, 5, 11, ['spinner', 'i', 'o', 'gate', 's', 'spinner']);
 T(223, 'hard', ['###############.H.', '###############..o', '##########........', '##########...#####', '#####........#####', '#####...##########', '........##########', '.@.###############', '...###############'], [HG(3, 6, 0.3), SP(6, 5), { kind: 'pendulum', col: 8, row: 4, along: 'x', t0: 0.5 }, SP(11, 3, 0.9), { kind: 'pendulum', col: 13, row: 2, along: 'x', t0: 0.2 }]);
 maze(224, 'hard', 6, 5, 3, ['i', 'spinner', 's', 'gate', 'spinner', 'o', 'i', 'pendulum']);
 
+// ===== Fase 21: Grande Circuito (spec 082) =====
+// Junta peças do Open Golf numa fase só: pêndulos da 6, loop da 9, giratórios da 1, paredes deslizantes da 18, a colina,
+// curvas arredondadas e, no fim, a fase 5 inteira (rampa suave, espiral que desce e câmara redonda do buraco).
+// Muros no tamanho do original: 0,5 m de espessura e 0,375 m de altura; corredores de 5 m.
+function grandCircuit() {
+  const dir = new URL('../../../packages/games/src/minigolf/levels/', import.meta.url);
+  const rd = (n) => JSON.parse(fs.readFileSync(new URL(`level-${n}.json`, dir), 'utf8'));
+  const og5 = rd(5), og6 = rd(6), og1 = rd(1), og18 = rd(18);
+  const FY = 8.625, OGF = -0.375, DY = FY - OGF;
+  const L = new Level(250);
+  const mats = og5.materials.map((m) => ({ ...m }));
+  const mid = (name, src) => {
+    let i = mats.findIndex((m) => m.name === name);
+    if (i < 0) {
+      const sm = src.materials.find((m) => m.name === name);
+      mats.push({ name, f: sm?.f ?? 0, r: sm?.r ?? 0, v: sm?.v ?? 0 });
+      i = mats.length - 1;
+    }
+    return i;
+  };
+  L.mi = (name) => mid(name, og5);
+  // o final da fase 5 vem inteiro; só sai a tampa leste do deque (é por onde o circuito novo chega)
+  const base = JSON.parse(JSON.stringify(og5));
+  {
+    const keep = { t: [], m: [], f: [] };
+    for (let i = 0; i < base.solid.m.length; i++) {
+      const v = base.solid.t.slice(i * 9, i * 9 + 9);
+      const nm = base.materials[base.solid.m[i]].name;
+      if ((nm === 'wall-top' || nm === 'wall-side') && Math.min(v[0], v[3], v[6]) >= 22.9 && Math.max(v[1], v[4], v[7]) > 8) continue;
+      keep.t.push(...v); keep.m.push(base.solid.m[i]); keep.f.push(base.solid.f[i]);
+    }
+    base.solid = keep;
+  }
+  const sub3 = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  const cross3 = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  // quadrilátero com a normal virada para `want` (a física ignora faces viradas ao contrário)
+  const qo = (a, b, c, d, want, mat) => {
+    const n = cross3(sub3(b, a), sub3(c, a));
+    if (n[0] * want[0] + n[1] * want[1] + n[2] * want[2] < 0) L.quad(a, d, c, b, mat);
+    else L.quad(a, b, c, d, mat);
+  };
+  const WALL_H = 0.375, WALL_T = 0.5;
+  const V = (p, y) => [p[0], y, p[1]];
+  // muro entre duas seções: (a0,b0) no começo e (a1,b1) no fim, pontos [x,z]; h0 e h1 = altura do piso em cada ponta
+  const wallSeg = (a0, b0, a1, b1, h0, h1) => {
+    const yb0 = h0 - 0.125, yt0 = h0 + WALL_H, yb1 = h1 - 0.125, yt1 = h1 + WALL_H;
+    const cx = (a0[0] + b0[0] + a1[0] + b1[0]) / 4, cz = (a0[1] + b0[1] + a1[1] + b1[1]) / 4;
+    qo(V(a0, yt0), V(b0, yt0), V(b1, yt1), V(a1, yt1), [0, 1, 0], 'wall-top');
+    const sa = [(a0[0] + a1[0]) / 2 - cx, 0, (a0[1] + a1[1]) / 2 - cz], sb = [(b0[0] + b1[0]) / 2 - cx, 0, (b0[1] + b1[1]) / 2 - cz];
+    qo(V(a0, yb0), V(a1, yb1), V(a1, yt1), V(a0, yt0), sa, 'wall-side');
+    qo(V(b0, yb0), V(b1, yb1), V(b1, yt1), V(b0, yt0), sb, 'wall-side');
+  };
+  const floorSeg = (l0, r0, l1, r1, h0, h1) => qo(V(l0, h0), V(r0, h0), V(r1, h1), V(l1, h1), [0, 1, 0], 'ground');
+  const hv = (phi) => ({ d: [-Math.sin(phi), -Math.cos(phi)], r: [Math.cos(phi), -Math.sin(phi)] });
+  const W = 5;
+  // trecho reto: `gaps` = intervalos sem piso (onde entram as plataformas copiadas); `hump` = colina suave
+  let P = [0, 0], PHI = 0;
+  const straight = (len, o = {}) => {
+    const w = o.W ?? W, gaps = o.gaps ?? [], hump = o.hump;
+    const { d, r } = hv(PHI);
+    const step = hump ? 0.25 : 1;
+    const hAt = (s) => {
+      if (!hump) return 0;
+      const u = (s - hump.s0) / hump.up;
+      if (s < hump.s0) return 0;
+      if (s < hump.s0 + hump.up) return (hump.rise * (1 - Math.cos(Math.PI * u))) / 2;
+      if (s < hump.s0 + hump.up + hump.flat) return hump.rise;
+      const e = (s - hump.s0 - hump.up - hump.flat) / hump.down;
+      return e < 1 ? (hump.rise * (1 + Math.cos(Math.PI * e))) / 2 : 0;
+    };
+    const at = (s, off) => [P[0] + d[0] * s + r[0] * off, P[1] + d[1] * s + r[1] * off];
+    for (let s = 0; s < len - 1e-6; s += step) {
+      const e = Math.min(len, s + step);
+      const h0 = FY + hAt(s), h1 = FY + hAt(e);
+      if (!gaps.some(([g0, g1]) => s >= g0 - 1e-6 && e <= g1 + 1e-6)) floorSeg(at(s, -w / 2), at(s, w / 2), at(e, -w / 2), at(e, w / 2), h0, h1);
+      wallSeg(at(s, -w / 2 - WALL_T), at(s, -w / 2), at(e, -w / 2 - WALL_T), at(e, -w / 2), h0, h1);
+      wallSeg(at(s, w / 2), at(s, w / 2 + WALL_T), at(e, w / 2), at(e, w / 2 + WALL_T), h0, h1);
+    }
+    const end = at(len, 0);
+    P = end;
+    return { from: (s, off = 0) => at(s, off), end };
+  };
+  // curva de 90 graus (turn = +1 esquerda, -1 direita) com raio R na linha central
+  const arc = (turn, R, w = W) => {
+    const { r } = hv(PHI);
+    const C = [P[0] - r[0] * R * turn, P[1] - r[1] * R * turn];
+    const N = 24;
+    const pt = (a, off) => {
+      const rr = hv(PHI + turn * a).r;
+      return [C[0] + turn * (R + off) * rr[0], C[1] + turn * (R + off) * rr[1]];
+    };
+    for (let k = 0; k < N; k++) {
+      const a0 = ((k / N) * Math.PI) / 2, a1 = (((k + 1) / N) * Math.PI) / 2;
+      floorSeg(pt(a0, -w / 2), pt(a0, w / 2), pt(a1, -w / 2), pt(a1, w / 2), FY, FY);
+      wallSeg(pt(a0, -w / 2 - WALL_T), pt(a0, -w / 2), pt(a1, -w / 2 - WALL_T), pt(a1, -w / 2), FY, FY);
+      wallSeg(pt(a0, w / 2), pt(a0, w / 2 + WALL_T), pt(a1, w / 2), pt(a1, w / 2 + WALL_T), FY, FY);
+    }
+    P = pt(Math.PI / 2, 0);
+    PHI += turn * (Math.PI / 2);
+  };
+  // peças copiadas do Open Golf (já convertidas em levels/level-N.json)
+  const copySolid = (src, pick, dx, dy, dz) => {
+    const t = src.solid.t, m = src.solid.m, f = src.solid.f;
+    for (let i = 0; i < m.length; i++) {
+      if (f[i] & 1) continue;
+      const v = t.slice(i * 9, i * 9 + 9), nm = src.materials[m[i]].name;
+      if (!pick(v, nm)) continue;
+      for (let k = 0; k < 9; k += 3) L.solid.t.push(r4(v[k] + dx), r4(v[k + 1] + dy), r4(v[k + 2] + dz));
+      L.solid.m.push(mid(nm, src));
+      L.solid.f.push(0);
+    }
+  };
+  const copyMover = (mv, src, dx, dy, dz) =>
+    L.moving.push({ name: mv.name, movement: mv.movement, base: { p: [mv.base.p[0] + dx, mv.base.p[1] + dy, mv.base.p[2] + dz], s: mv.base.s, r: mv.base.r }, t: mv.t, m: mv.m.map((i) => mid(src.materials[i].name, src)), f: mv.f });
+
+  // ---- o percurso, de trás para a frente (o final fixo é o deque da fase 5, em x = 23,25, z = -13,75, virado para o oeste) ----
+  const R = 7.5;
+  const OX = 87.64, OZ = -3; // entrada do loop (centro da pista de entrada)
+  const CX1 = OX - 1.5; // corredor de subida: 6 m de largura, com a "área de manobra" para a tacada em diagonal do loop
+  const Z0 = 16;
+  // 1) reta norte com dois pêndulos da fase 6; começa numa plataforma com muro atrás
+  P = [CX1, Z0]; PHI = 0;
+  {
+    const w1 = 6, { d, r } = hv(0);
+    const st = straight(Z0 - OZ, { W: w1 });
+    const cap = (z, x0, x1) => L.box(x0, FY - 0.125, z, x1, FY + WALL_H, z + WALL_T, 'wall-top', 'wall-side');
+    cap(Z0, CX1 - w1 / 2 - WALL_T, CX1 + w1 / 2 + WALL_T); // muro atrás da largada
+    cap(OZ - WALL_T, CX1 - w1 / 2 - WALL_T, OX - 1.6); // muro ao norte, com a boca da pista do loop aberta
+    void d; void r; void st;
+    for (const [tz, src] of [[10, -12.675], [4, -6.675]]) {
+      const dx = CX1 - 7.75, dz = tz - src;
+      copySolid(og6, (v, nm) => v[0] > 5 && v[0] < 10.6 && Math.min(v[2], v[5], v[8]) >= src - 0.15 && Math.max(v[2], v[5], v[8]) <= src + 0.75 && (nm === 'default' || Math.max(v[1], v[4], v[7]) > 0.1), dx, DY, dz);
+      copyMover(og6.moving.find((m) => Math.abs(m.base.p[2] - src) < 0.05), og6, dx, DY, dz);
+    }
+  }
+  // 2) o loop da fase 9 (a bola entra na diagonal, sobe a espiral e sai 3,9 m ao lado)
+  L.loop(OX, FY, OZ, 0, false);
+  // 3) reta norte (saída do loop) com dois giratórios da fase 1 sobre as plataformas de 5x5
+  P = [OX + 3.86, OZ - 3]; PHI = 0;
+  {
+    const pads = [13, 22];
+    const st = straight(21.25, { gaps: pads.map((z) => [z - 6 - 2.5 + 0.0, z - 6 + 2.5]) });
+    void st;
+    const cap = (x0, x1) => L.box(x0, FY - 0.125, OZ - 3, x1, FY + WALL_H, OZ - 3 + WALL_T, 'wall-top', 'wall-side');
+    cap(OX + 3.86 - W / 2 - WALL_T, OX + 3.86 - 1.15);
+    cap(OX + 3.86 + 1.15, OX + 3.86 + W / 2 + WALL_T);
+    for (const zc of pads) {
+      const dx = OX + 3.86 - 14.5, dz = -zc + 20.7;
+      void dz;
+      const dzz = -zc - -20.7;
+      copySolid(og1, (v, nm) => nm === 'ground_spinner_platform' && v[0] > 11 && v[0] < 17.5 && v[2] > -23.5 && v[2] < -18, dx, DY, dzz);
+      copyMover(og1.moving[0], og1, dx, DY, dzz);
+    }
+  }
+  // 4) curva à esquerda (norte -> oeste)
+  arc(1, R);
+  // 5) reta oeste com as quatro paredes deslizantes da fase 18 (8 m de plataformas)
+  {
+    const x0 = P[0], z0 = P[1];
+    straight(28, { gaps: [[10, 18]] });
+    const xc = x0 - 14; // meio do bloco de plataformas
+    for (const mv of og18.moving) copyMover(mv, og18, xc - 4.5, DY, z0);
+    copySolid(og18, (v, nm) => nm === 'ground_mover_platform', xc - 4.5, DY, z0);
+  }
+  // 6) curva à esquerda (oeste -> sul), reta curta, curva à direita (sul -> oeste)
+  arc(1, R);
+  straight(6);
+  arc(-1, R);
+  // 7) reta final até o deque da fase 5, com uma colina: sobe 1,5 m, planalto e desce
+  straight(17.75, { hump: { s0: 2, up: 5, flat: 2, down: 5, rise: 1.5 } });
+
+  const end = P;
+  void end;
+  // a fase pronta = fase 5 (sem a tampa) + o circuito novo
+  const out = base;
+  const off = out.materials.length;
+  void off;
+  // junta materiais novos
+  const remap = (i) => i; // os índices de L.solid já apontam para `mats` (que começa igual à lista da fase 5)
+  for (let i = 0; i < L.solid.m.length; i++) {
+    out.solid.t.push(...L.solid.t.slice(i * 9, i * 9 + 9));
+    out.solid.m.push(remap(L.solid.m[i]));
+    out.solid.f.push(L.solid.f[i]);
+  }
+  out.materials = mats;
+  out.moving = [...(out.moving ?? []), ...L.moving];
+  out.ballStart = [CX1, FY, Z0 - 1.2];
+  out.cameraZones = [];
+  out.begin = null;
+  out.id = 250;
+  return out;
+}
+
 fs.writeFileSync(new URL('./level-stats.json', import.meta.url), JSON.stringify(STATS, null, 1));
+const grand = grandCircuit();
 const holeModel = loadHole();
 fs.mkdirSync(out, { recursive: true });
+fs.mkdirSync(out, { recursive: true });
+fs.writeFileSync(path.join(out, 'level-250.json'), JSON.stringify(grand));
+console.log(`level-250: ${grand.solid.m.length} tris, ${grand.moving.length} móveis`);
 for (const L of LEVELS) {
   fs.writeFileSync(path.join(out, `level-${L.id}.json`), JSON.stringify(L.json(holeModel)));
   console.log(`level-${L.id}: ${L.solid.m.length} tris, ${L.moving.length} móveis`);

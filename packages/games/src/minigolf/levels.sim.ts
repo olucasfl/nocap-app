@@ -61,7 +61,7 @@ export function solve(lv: GolfLevel, maxStrokes: number): number | null {
 }
 
 const ONLY = (process.env.GOLF_ONLY ?? '').split(',').filter(Boolean).map(Number);
-const ALL: [number, number][] = Array.from({ length: 20 }, (_, i) => [i + 1, 8] as [number, number]);
+const ALL: [number, number][] = Array.from({ length: 21 }, (_, i) => [i + 1, 8] as [number, number]);
 const NEW_LEVELS = DIR && ONLY.length ? ONLY.map((n) => [n, 8] as [number, number]) : ONLY.length ? ALL.filter(([n]) => ONLY.includes(n)) : ALL;
 
 describe('Mini Golf: as fases novas têm solução', () => {
