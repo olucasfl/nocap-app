@@ -423,6 +423,7 @@ export class NhApp {
       }
       if (this.modal === 'chest' && (key === 'enter' || key === ' ') && this.chestT > 1.6)
         this.pickUpgrade(this.chestPick!);
+      if (this.modal === 'chest' && key === 'escape' && this.chestT > 1.6) this.pickUpgrade(null);
     } else if (this.screen === 'menu' && (key === 'enter' || key === ' ')) this.go('heroes');
     else if (this.screen === 'heroes' && (key === 'enter' || key === ' ')) this.go('maps');
     else if (this.screen === 'maps' && (key === 'enter' || key === ' ')) this.startGame();
@@ -655,11 +656,14 @@ export class NhApp {
     writeSave(this.save);
   }
 
-  private pickUpgrade(id: ChoiceId): void {
+  private pickUpgrade(id: ChoiceId | null): void {
     if (!this.world) return;
-    this.world.choose(id);
-    if (!id.startsWith('evo') && !this.save.seen.includes(id as UpgradeId))
-      this.save.seen.push(id as UpgradeId);
+    if (id === null) this.world.decline();
+    else {
+      this.world.choose(id);
+      if (!id.startsWith('evo') && !this.save.seen.includes(id as UpgradeId))
+        this.save.seen.push(id as UpgradeId);
+    }
     this.audio.play('click');
     this.modal = null;
     this.banishMode = false;
@@ -2007,8 +2011,11 @@ export class NhApp {
       }
       g.restore();
     }
-    if (t > 1.8 && this.chestPick)
-      this.btn('OK', cx - 90, 590, 180, 56, () => this.pickUpgrade(this.chestPick!), 'main');
+    if (t > 1.8 && this.chestPick) {
+      // o prêmio pode ser pego ou recusado
+      this.btn('PEGAR', cx - 162, 590, 156, 56, () => this.pickUpgrade(this.chestPick!), 'main');
+      this.btn('RECUSAR', cx + 6, 590, 156, 56, () => this.pickUpgrade(null), 'danger');
+    }
   }
 
   private drawPause(): void {

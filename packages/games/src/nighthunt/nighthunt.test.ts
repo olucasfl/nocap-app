@@ -389,6 +389,19 @@ describe('armas novas, passivos e evoluções', () => {
     expect(w.result().evolutions).toEqual(['evoHalo']);
   });
 
+  it('recusar o baú não muda nada e a evolução volta no próximo baú', () => {
+    const w = new NhWorld('e');
+    w.levels.halo = UPGRADE_MAX.halo;
+    w.levels.heart = 1;
+    w.items.push({ uid: 701, type: 'chest', x: 0, y: 0, attracted: false, speed: 0, born: 0 });
+    w.step({ x: 0, y: 0 });
+    expect(w.decline()).toBe(true);
+    expect(w.pending).toBeNull();
+    expect(w.evolved.size).toBe(0);
+    expect(w.availableEvolutions()).toEqual(['evoHalo']);
+    expect(w.decline()).toBe(false);
+  });
+
   it('há uma evolução para cada arma e todo item evoluído tem descrição', () => {
     expect(EVOLUTIONS).toHaveLength(7);
     for (const e of EVOLUTIONS) {

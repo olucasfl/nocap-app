@@ -367,6 +367,12 @@ export class NhWorld {
     this.pending = this.queue.shift() ?? null;
     return true;
   }
+  /** Recusa o prêmio do baú: nada muda, e uma evolução recusada volta a aparecer no próximo baú. */
+  decline(): boolean {
+    if (!this.pending || this.pending.kind !== 'chest') return false;
+    this.pending = this.queue.shift() ?? null;
+    return true;
+  }
   /** Tira um item do jogo até o fim da partida. */
   banish(id: UpgradeId): boolean {
     if (
