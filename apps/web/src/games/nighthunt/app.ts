@@ -77,6 +77,9 @@ type Modal = null | 'levelUp' | 'chest' | 'pause' | 'audio' | 'confirmQuit';
 type Style = 'main' | 'danger' | 'blue' | 'dis';
 
 // Telas de menu desenham numa caixa de 510x680 centrada; o jogo usa a largura inteira. W e H valem para a tela que está sendo desenhada.
+/** Tamanho máximo da caixa dos menus (em unidades lógicas): acima disso sobra só o fundo. */
+const MENU_MAX_W = 1000;
+const MENU_MAX_H = 820;
 let W = VIEW_WIDTH;
 let H = VIEW_HEIGHT;
 const NAVY = '#191d2b';
@@ -290,6 +293,14 @@ export class NhApp {
         st.bossKills = Math.max(st.bossKills, 5);
         if (st.evolutions.length < 2) st.evolutions = ['evoHalo', 'evoAxe'];
       },
+      saveExit: () => this.saveAndExit(),
+      buyHero: (id: string) => {
+        if (buyHero(this.save, id)) {
+          this.save.pick.hero = id;
+          writeSave(this.save);
+        }
+      },
+      resume: () => this.startGame(true),
       brk: () => {
         const w = this.world;
         const b = w?.breakables[0];
@@ -654,11 +665,21 @@ export class NhApp {
     this.joy = null;
   }
 
-  private startGame(): void {
+  private startGame(resume = false): void {
     this.go('game');
-    const { hero, map } = this.save.pick;
+    let { hero, map } = this.save.pick;
     this.runSeed = (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0;
-    this.world = new NhWorld(String(this.runSeed), this.save.meta, { hero, map });
+    const back =
+      resume && this.save.run ? NhWorld.restore(this.save.run.snap, this.save.meta) : null;
+    if (back) {
+      hero = back.heroId;
+      map = back.mapId;
+      this.world = back;
+    } else {
+      this.world = new NhWorld(String(this.runSeed), this.save.meta, { hero, map });
+      // começar outra partida apaga a guardada
+      this.save.run = null;
+    }
     this.acc = 0;
     this.fx.length = 0;
     this.draw = {
@@ -705,6 +726,7 @@ export class NhApp {
     if (!this.world || this.screen !== 'game' || this.fade.to) return;
     const r = this.world.result();
     const before = this.save.highscore;
+    this.save.run = null; // a partida terminou: não há mais o que continuar
     const { unlocked, goldGained } = applyRun(this.save, r, Date.now());
     writeSave(this.save);
     this.result = {
@@ -931,10 +953,11 @@ export class NhApp {
     }
     const inGame = this.screen === 'game';
     // menus: caixa 510x680 no centro; jogo: largura inteira, HUD no topo, janelas centradas na vertical
-    W = inGame ? this.fw : VIEW_WIDTH;
-    H = VIEW_HEIGHT;
-    this.bx = inGame ? 0 : (this.fw - VIEW_WIDTH) / 2;
-    this.by = inGame ? 0 : (this.fh - VIEW_HEIGHT) / 2;
+    // menus: a caixa cresce para os lados (e um pouco para baixo) quando há espaço e encolhe junto com a tela quando não há
+    W = inGame ? this.fw : Math.min(this.fw, MENU_MAX_W);
+    H = inGame ? VIEW_HEIGHT : Math.min(this.fh, MENU_MAX_H);
+    this.bx = inGame ? 0 : (this.fw - W) / 2;
+    this.by = inGame ? 0 : (this.fh - H) / 2;
     this.my = inGame && this.modal ? Math.max(0, (this.fh - VIEW_HEIGHT) / 2) : 0;
     this.ox = this.bx * this.k;
     this.oy = (this.by + this.my) * this.k;
@@ -1054,15 +1077,76 @@ export class NhApp {
     });
     const bx = W / 2 - 125;
     const slide = (i: number) => (1 - ease((this.screenT - 0.12 * i) / 0.4)) * 70;
-    this.btn('JOGAR', bx, 300 + slide(0), 250, 66, () => this.go('heroes'));
-    this.btn('MELHORIAS', bx, 378 + slide(1), 250, 54, () => this.go('upgrades'), 'blue');
-    this.btn('ITENS', bx, 444 + slide(2), 250, 54, () => this.go('items'), 'blue');
-    this.btn('CONQUISTAS', bx, 510 + slide(3), 250, 54, () => this.go('achievements'), 'blue');
+    // partida guardada com "Sair e salvar": cartão para continuar, com herói, mapa, tempo, nível e abates
+    const run = this.save.run;
+    let o = 0;
+    if (run) {
+      o = 96;
+      const hn = HERO_INFO[run.hero]?.name ?? run.hero;
+      const mn = MAP_INFO[run.map]?.name ?? run.map;
+      this.btn('CONTINUAR', bx, 290 + slide(0), 250, 56, () => this.startGame(true), 'main');
+      drawText(g, a, `${hn} - ${mn}`, W / 2, 350 + slide(0), {
+        size: 15,
+        align: 'center',
+        color: '#ffd44a',
+      });
+      drawText(
+        g,
+        a,
+        `${fmtTime(run.t)} - nível ${run.level} - ${run.kills} abates`,
+        W / 2,
+        368 + slide(0),
+        { size: 14, align: 'center', color: '#c9d3ea' },
+      );
+    }
+    this.btn(
+      run ? 'NOVA PARTIDA' : 'JOGAR',
+      bx,
+      300 + o + slide(0),
+      250,
+      run ? 56 : 66,
+      () => this.go('heroes'),
+      run ? 'blue' : 'main',
+    );
+    this.btn(
+      'MELHORIAS',
+      bx,
+      378 + o - (run ? 18 : 0) + slide(1),
+      250,
+      54,
+      () => this.go('upgrades'),
+      'blue',
+    );
+    this.btn(
+      'ITENS',
+      bx,
+      444 + o - (run ? 28 : 0) + slide(2),
+      250,
+      54,
+      () => this.go('items'),
+      'blue',
+    );
+    this.btn(
+      'CONQUISTAS',
+      bx,
+      510 + o - (run ? 38 : 0) + slide(3),
+      250,
+      54,
+      () => this.go('achievements'),
+      'blue',
+    );
     const done = Object.keys(this.save.achievements).length;
-    drawText(g, a, `${done}/${ACHIEVEMENTS.length}`, bx + 250 + 14, 510 + slide(3) + 15, {
-      size: 18,
-      color: '#ffd44a',
-    });
+    drawText(
+      g,
+      a,
+      `${done}/${ACHIEVEMENTS.length}`,
+      bx + 250 + 14,
+      510 + o - (run ? 38 : 0) + slide(3) + 15,
+      {
+        size: 18,
+        color: '#ffd44a',
+      },
+    );
     this.goldCounter(14, 16);
     this.smallBtn('sound', W - 56, 14, 42, () => this.go('audio'));
     this.btn('VOLTAR', 14, H - 58, 120, 44, () => this.hooks.exit(), 'danger');
@@ -1505,7 +1589,7 @@ export class NhApp {
         kind: 'Item do chão',
       })),
     ];
-    const cols = 5;
+    const cols = Math.max(5, Math.floor(f.w / 104));
     const gap = 10;
     const ts = (f.w - 8 - gap * (cols - 1)) / cols;
     const gx = f.x + 4;
@@ -2059,7 +2143,7 @@ export class NhApp {
     const px = (W - pw) / 2;
     const pop = ease(this.modalT / 0.25);
     const confirm = this.modal === 'confirmQuit';
-    const f = this.windowFrame(confirm ? 'DESISTIR?' : 'PAUSA', px, 190, pw, 330, pop);
+    const f = this.windowFrame(confirm ? 'DESISTIR?' : 'PAUSA', px, 170, pw, 390, pop);
     if (confirm) {
       drawText(g, this.a, 'A partida acaba e o ouro', W / 2, f.y + 14, {
         size: 20,
@@ -2078,16 +2162,40 @@ export class NhApp {
         color: '#c9d3ea',
       });
     this.btn('CONTINUAR', px + 40, f.y + 40, pw - 80, 62, () => this.closeModal(), 'main');
-    this.btn('OPÇÕES', px + 40, f.y + 116, pw - 80, 54, () => this.openModal('audio'), 'blue');
+    this.btn('OPÇÕES', px + 40, f.y + 114, pw - 80, 52, () => this.openModal('audio'), 'blue');
+    this.btn('SAIR E SALVAR', px + 40, f.y + 176, pw - 80, 52, () => this.saveAndExit(), 'blue');
     this.btn(
       'DESISTIR',
       px + 40,
-      f.y + 184,
+      f.y + 238,
       pw - 80,
-      54,
+      52,
       () => (this.modal = 'confirmQuit'),
       'danger',
     );
+  }
+
+  /** Guarda a partida na conta (e no aparelho) e volta ao início: ela aparece lá para continuar depois. */
+  private saveAndExit(): void {
+    const w = this.world;
+    if (!w || !w.alive) return;
+    let snap = w.snapshot();
+    for (const n of [160, 80, 30]) if (snap.length > 60_000) snap = w.snapshot(n);
+    this.save.run = {
+      at: Date.now(),
+      hero: w.heroId,
+      map: w.mapId,
+      t: Math.floor(w.t),
+      level: w.level + 1,
+      kills: w.kills,
+      snap,
+    };
+    writeSave(this.save);
+    this.modal = null;
+    this.audio.stopMusic();
+    this.world = null;
+    this.go('menu');
+    this.toastQ.push({ text: 'Partida salva', sub: 'Continue pelo início do jogo', t: 0 });
   }
 
   private quitRun(): void {

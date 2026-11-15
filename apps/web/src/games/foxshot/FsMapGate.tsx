@@ -19,7 +19,11 @@ const TIPS = [
 const base = () => `${import.meta.env.BASE_URL ?? '/'}models/foxshot/`.replace('//', '/');
 
 /** Baixa um arquivo contando os bytes (o navegador guarda no cache, então a cena carrega o mesmo arquivo de graça depois). */
-async function fetchCounting(url: string, planBytes: number, onBytes: (n: number) => void): Promise<void> {
+async function fetchCounting(
+  url: string,
+  planBytes: number,
+  onBytes: (n: number) => void,
+): Promise<void> {
   const res = await fetch(url);
   if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
   const total = Number(res.headers.get('content-length')) || planBytes;
@@ -37,7 +41,13 @@ async function fetchCounting(url: string, planBytes: number, onBytes: (n: number
  * Tela de carregamento do mapa: para mapas pesados (Duna) baixa o modelo com barra de verdade, carrega os dados de colisão e só então mostra
  * o jogo. Os outros mapas passam direto, sem piscar. Anima só transform e opacity.
  */
-export function FsMapGate({ mapId, children }: { mapId: FsMapId | string | undefined; children: ReactNode }) {
+export function FsMapGate({
+  mapId,
+  children,
+}: {
+  mapId: FsMapId | string | undefined;
+  children: ReactNode;
+}) {
   const heavy = HEAVY[mapId as FsMapId];
   const [ready, setReady] = useState(!heavy);
   const [pct, setPct] = useState(0);
@@ -56,7 +66,11 @@ export function FsMapGate({ mapId, children }: { mapId: FsMapId | string | undef
       const b = base();
       // 1) o desenho (barra real) e a planta; 2) os dados da colisão e da navegação
       const planP = fetch(b + heavy.plan).then((r) => r.blob());
-      await fetchCounting(b + heavy.glb, heavy.bytes, (f) => run.current === my && setPct(Math.round(f * 88)));
+      await fetchCounting(
+        b + heavy.glb,
+        heavy.bytes,
+        (f) => run.current === my && setPct(Math.round(f * 88)),
+      );
       await planP;
       if (run.current !== my) return;
       setStage(1);
@@ -95,16 +109,29 @@ export function FsMapGate({ mapId, children }: { mapId: FsMapId | string | undef
         <CounterFoxEmblem size={92} />
         <p className="fmg-kicker">Carregando mapa</p>
         <h2 className="fmg-name">{name}</h2>
-        <div className="fmg-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}>
+        <div
+          className="fmg-bar"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={pct}
+        >
           <i style={{ transform: `scaleX(${pct / 100})` }} />
           <b />
         </div>
         <div className="fmg-row">
-          <span data-testid="fmg-stage">{error ? 'Não foi possível baixar o mapa' : stages[stage]}</span>
+          <span data-testid="fmg-stage">
+            {error ? 'Não foi possível baixar o mapa' : stages[stage]}
+          </span>
           <span className="fmg-pct">{pct}%</span>
         </div>
         {error ? (
-          <button type="button" className="fmg-retry" onClick={() => void load()} data-testid="fmg-retry">
+          <button
+            type="button"
+            className="fmg-retry"
+            onClick={() => void load()}
+            data-testid="fmg-retry"
+          >
             Tentar de novo
           </button>
         ) : (

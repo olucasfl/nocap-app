@@ -229,6 +229,8 @@ export class NhWorld {
   readonly rng: () => number;
   readonly heroId: string;
   readonly mapId: string;
+  /** Semente da partida (para guardar e continuar depois). */
+  readonly seedId: string;
   t = 0;
   tick = 0;
   alive = true;
@@ -314,6 +316,7 @@ export class NhWorld {
     private meta: MetaLevels = NO_META,
     opts: NhOptions = {},
   ) {
+    this.seedId = seed;
     this.rng = createRng('nighthunt:' + seed);
     // fluxo próprio: os objetos do cenário não mexem na sorte dos inimigos
     this.brkRng = createRng('nighthunt:brk:' + seed);
@@ -342,6 +345,184 @@ export class NhWorld {
     this.launchers.halo.cooldown = PLAYER_SETTINGS.haloLauncher.launcher.cooldown;
     this.levels.sword = 1; // a espada é a arma de todo herói; as outras vêm das escolhas
     if (hero.start) this.applyUpgrade(hero.start);
+  }
+
+  // ---- guardar e continuar depois ----
+  /**
+   * Guarda a partida inteira num texto compacto (inimigos, itens, tiros, objetos, níveis...). Ao continuar, os sorteios seguintes
+   * usam uma sequência nova (a partida não é reproduzida igual, só retomada do mesmo ponto).
+   */
+  snapshot(maxEnemies = 320): string {
+    const skip = new Set([
+      'rng',
+      'brkRng',
+      'events',
+      'meta',
+      'mapDef',
+      'enemies',
+      'items',
+      'projectiles',
+      'breakables',
+    ]);
+    const state: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(this))
+      if (!skip.has(k) && typeof v !== 'function') state[k] = v;
+    const near = (x: number, y: number) => Math.hypot(x - this.player.x, y - this.player.y) < 1100;
+    const out = {
+      v: 1,
+      seed: this.seedId,
+      hero: this.heroId,
+      map: this.mapId,
+      state,
+      enemies: this.enemies
+        .filter((e) => !e.dead && near(e.x, e.y))
+        .slice(0, maxEnemies)
+        .map((e) => [
+          ENEMIES.findIndex((q) => q.id === e.s.id),
+          e.x,
+          e.y,
+          e.hp,
+          e.speedX,
+          e.speedY,
+          e.life,
+          e.faceX,
+          e.follow ? 1 : 0,
+          e.stateLeft,
+          e.dirX,
+          e.dirY,
+          e.shootTimer,
+        ]),
+      items: this.items
+        .filter((i) => i.speed !== -1)
+        .map((i) => [i.type, i.x, i.y, i.attracted ? 1 : 0, i.value ?? 1]),
+      projectiles: this.projectiles
+        .filter((q) => q.pierces > 0)
+        .map((q) => [
+          q.x,
+          q.y,
+          q.vx,
+          q.vy,
+          q.gy,
+          q.kind,
+          q.expire,
+          q.damage,
+          q.pierces,
+          q.angle,
+          q.hostile ? 1 : 0,
+          q.big ? 1 : 0,
+        ]),
+      breakables: this.breakables.map((b) => [b.x, b.y, b.hp, b.kind, b.cell]),
+    };
+    return JSON.stringify(out, (_k, v: unknown) => {
+      if (v instanceof Set) return { $s: [...v] };
+      if (v instanceof Map) return { $m: [...v] };
+      if (typeof v === 'number') return Number.isFinite(v) ? Math.round(v * 100) / 100 : 0;
+      return v;
+    });
+  }
+
+  /** Reconstrói uma partida guardada por `snapshot()`; devolve null se o texto não servir. */
+  static restore(text: string, meta: MetaLevels = NO_META): NhWorld | null {
+    try {
+      const o = JSON.parse(text, (_k, v: unknown) => {
+        if (v && typeof v === 'object') {
+          const r = v as { $s?: unknown[]; $m?: [unknown, unknown][] };
+          if (Array.isArray(r.$s)) return new Set(r.$s);
+          if (Array.isArray(r.$m)) return new Map(r.$m);
+        }
+        return v;
+      }) as {
+        v: number;
+        seed: string;
+        hero: string;
+        map: string;
+        state: Record<string, unknown>;
+        enemies: number[][];
+        items: [ItemType, number, number, number, number][];
+        projectiles: [
+          number,
+          number,
+          number,
+          number,
+          number,
+          ProjectileKind,
+          number,
+          number,
+          number,
+          number,
+          number,
+          number,
+        ][];
+        breakables: [number, number, number, number, string][];
+      };
+      if (o.v !== 1) return null;
+      const w = new NhWorld(o.seed, meta, { hero: o.hero, map: o.map });
+      Object.assign(w, o.state);
+      w.enemies = o.enemies.map((a) => {
+        const s = ENEMIES[a[0]!]!;
+        return {
+          uid: w.nextUid++,
+          s,
+          x: a[1]!,
+          y: a[2]!,
+          hp: a[3]!,
+          speedX: a[4]!,
+          speedY: a[5]!,
+          life: a[6]!,
+          faceX: a[7]!,
+          flash: 0,
+          follow: a[8] === 1,
+          stateLeft: a[9]!,
+          dirX: a[10]!,
+          dirY: a[11]!,
+          shootTimer: a[12]!,
+          dead: false,
+        } as Enemy;
+      });
+      w.items = o.items.map((a) => ({
+        uid: w.nextUid++,
+        type: a[0],
+        x: a[1],
+        y: a[2],
+        attracted: a[3] === 1,
+        speed: a[3] === 1 ? 200 : 0,
+        born: -10,
+        value: a[4],
+      }));
+      w.projectiles = o.projectiles.map((a) => ({
+        x: a[0],
+        y: a[1],
+        vx: a[2],
+        vy: a[3],
+        gy: a[4],
+        kind: a[5],
+        expire: a[6],
+        damage: a[7],
+        pierces: a[8],
+        angle: a[9],
+        hostile: a[10] === 1,
+        big: a[11] === 1,
+        hit: new Set<number>(),
+      }));
+      w.breakables = o.breakables.map((a) => ({
+        uid: w.nextUid++,
+        x: a[0],
+        y: a[1],
+        hp: a[2],
+        kind: a[3],
+        flash: 0,
+        cell: a[4],
+      }));
+      // sorteios novos a partir deste ponto
+      (w as { rng: () => number }).rng = createRng(`nighthunt:${o.seed}:r${w.tick}`);
+      (w as unknown as { brkRng: () => number }).brkRng = createRng(
+        `nighthunt:brk:${o.seed}:r${w.tick}`,
+      );
+      w.events = [];
+      return w;
+    } catch {
+      return null;
+    }
   }
 
   // ---- API do cliente ----

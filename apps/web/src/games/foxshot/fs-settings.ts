@@ -33,9 +33,35 @@ export type FsAction = (typeof FS_ACTIONS)[number]['id'];
 
 /** Os comandos agrupados por categoria (a ordem é a da tela de Comandos). */
 export const FS_CATS: { id: string; label: string; ids: FsAction[] }[] = [
-  { id: 'move', label: 'Movimento', ids: ['forward', 'back', 'left', 'right', 'jump', 'crouch', 'walk'] },
-  { id: 'weapons', label: 'Armas', ids: ['fire', 'ads', 'reload', 'inspect', 'slot1', 'slot2', 'slot3', 'next', 'drop', 'pickup', 'bombSlot', 'bomb', 'buy'] },
-  { id: 'grenades', label: 'Granadas', ids: ['grenade', 'grenadeFrag', 'grenadeFlash', 'grenadeSmoke'] },
+  {
+    id: 'move',
+    label: 'Movimento',
+    ids: ['forward', 'back', 'left', 'right', 'jump', 'crouch', 'walk'],
+  },
+  {
+    id: 'weapons',
+    label: 'Armas',
+    ids: [
+      'fire',
+      'ads',
+      'reload',
+      'inspect',
+      'slot1',
+      'slot2',
+      'slot3',
+      'next',
+      'drop',
+      'pickup',
+      'bombSlot',
+      'bomb',
+      'buy',
+    ],
+  },
+  {
+    id: 'grenades',
+    label: 'Granadas',
+    ids: ['grenade', 'grenadeFrag', 'grenadeFlash', 'grenadeSmoke'],
+  },
   { id: 'general', label: 'Geral', ids: ['scoreboard', 'map'] },
 ];
 
@@ -68,7 +94,19 @@ export const FS_DEFAULT_BINDS: Record<FsAction, string> = {
   map: 'KeyM',
 };
 
-export type CrosshairColor = 'white' | 'green' | 'lime' | 'yellow' | 'orange' | 'red' | 'pink' | 'purple' | 'blue' | 'cyan' | 'black' | 'custom';
+export type CrosshairColor =
+  | 'white'
+  | 'green'
+  | 'lime'
+  | 'yellow'
+  | 'orange'
+  | 'red'
+  | 'pink'
+  | 'purple'
+  | 'blue'
+  | 'cyan'
+  | 'black'
+  | 'custom';
 export const CROSS_COLORS: Record<CrosshairColor, string> = {
   white: '#ffffff',
   green: '#4dff7c',
@@ -85,7 +123,8 @@ export const CROSS_COLORS: Record<CrosshairColor, string> = {
   custom: '#ff3b3b',
 };
 /** A cor da mira de agora (uma da lista ou a que a pessoa escolheu). */
-export const crossHex = (s: { crossColor: CrosshairColor; crossCustom?: string }) => (s.crossColor === 'custom' ? s.crossCustom || CROSS_COLORS.custom : CROSS_COLORS[s.crossColor]);
+export const crossHex = (s: { crossColor: CrosshairColor; crossCustom?: string }) =>
+  s.crossColor === 'custom' ? s.crossCustom || CROSS_COLORS.custom : CROSS_COLORS[s.crossColor];
 
 export interface FsSettings {
   /** Graus por pixel do mouse. */
@@ -105,6 +144,8 @@ export interface FsSettings {
   crossDynamic: boolean;
   showTelemetry: boolean;
   showMinimap: boolean;
+  /** Celular: atira sozinho quando a mira passa por cima de um inimigo (o botão de atirar continua valendo). */
+  autoFire: boolean;
   /** Tamanho do mapa pequeno no canto. */
   minimapSize: 'small' | 'medium' | 'large';
   /** Joga em tela cheia e trava as teclas do navegador (Ctrl+W, Ctrl+R, Ctrl+T...) enquanto joga. */
@@ -128,6 +169,7 @@ export const FS_DEFAULTS: FsSettings = {
   crossDynamic: true,
   showTelemetry: false,
   showMinimap: true,
+  autoFire: true,
   minimapSize: 'medium',
   fullscreenLock: true,
   quality: 'auto',

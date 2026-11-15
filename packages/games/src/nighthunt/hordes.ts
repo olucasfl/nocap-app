@@ -199,6 +199,9 @@ export const HORDE_EVENTS: readonly HordeEvent[] = [
     quiet: 0,
   },
 ];
-/** Vida dos chefes: bem maior que a do Slash, e cresce a cada leva. */
+/**
+ * Vida dos chefes: bem maior que a do Slash, mas o primeiro (2:30) morre em cerca de 15 s com uma build inicial;
+ * cresce de forma proporcional com o tempo e com o tipo do chefe, como a dos inimigos comuns.
+ */
 export const bossHp = (baseHealth: number, t: number): number =>
-  Math.round(baseHealth * (24 + t / 18));
+  Math.round(baseHealth * (7 + t / 45));

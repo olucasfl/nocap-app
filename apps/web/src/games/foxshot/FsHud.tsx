@@ -49,7 +49,10 @@ export interface MinimapData {
   yaw: number;
   targets: { x: number; z: number; alive: boolean; armor: number }[];
   /** Paredes e caixas do mapa (padrão: a arena de teste). */
-  boxes?: readonly { min: readonly [number, number, number]; max: readonly [number, number, number] }[];
+  boxes?: readonly {
+    min: readonly [number, number, number];
+    max: readonly [number, number, number];
+  }[];
   /** A planta do mapa desenhada uma vez (substitui as caixas nos mapas grandes). */
   plan?: FsPlan;
   /** Nomes das áreas, para o mapa grande. */
@@ -74,7 +77,13 @@ export interface FsIntelDot {
  * Pontos do radar: aliado = azul com a direção para onde olha; inimigo visto = vermelho cheio com anel branco; tiro escutado =
  * vermelho com ondas se espalhando enquanto atira; passos escutados = vermelho menor com anel tracejado. Fica no último lugar e some devagar.
  */
-function drawIntel(g: CanvasRenderingContext2D, dots: readonly FsIntelDot[], at: (x: number, z: number) => [number, number], big: boolean, rot = 0) {
+function drawIntel(
+  g: CanvasRenderingContext2D,
+  dots: readonly FsIntelDot[],
+  at: (x: number, z: number) => [number, number],
+  big: boolean,
+  rot = 0,
+) {
   const R = big ? 8 : 4.6;
   const t = performance.now() / 1000;
   for (const d of dots) {
@@ -171,7 +180,15 @@ const BASE_TEXT = { CT: '#8fbaff', T: '#ffab72' } as const;
  * bombas como um círculo com a letra. `at` leva metros ao canvas; `k` é pixels por metro; `big` mostra os nomes por extenso;
  * `rot` desfaz a rotação do radar para as letras ficarem em pé.
  */
-function drawMarks(g: CanvasRenderingContext2D, marks: readonly FsMapMark[], at: (x: number, z: number) => [number, number], k: number, big: boolean, rot = 0, pass: 'area' | 'text' = 'area') {
+function drawMarks(
+  g: CanvasRenderingContext2D,
+  marks: readonly FsMapMark[],
+  at: (x: number, z: number) => [number, number],
+  k: number,
+  big: boolean,
+  rot = 0,
+  pass: 'area' | 'text' = 'area',
+) {
   for (const m of marks) {
     const [ax, az] = at(m.x0, m.z0);
     const [bx, bz] = at(m.x1, m.z1);
@@ -247,12 +264,18 @@ export function FsTopBar({
 }) {
   // mata-mata: todos em fila, do que tem mais pontos para o que tem menos, cada um com a pontuação embaixo (como o CS2)
   if (players.some((p) => p.points !== undefined)) {
-    const ranked = [...players].sort((a, b) => (b.points ?? 0) - (a.points ?? 0) || b.kills - a.kills || a.deaths - b.deaths);
+    const ranked = [...players].sort(
+      (a, b) => (b.points ?? 0) - (a.points ?? 0) || b.kills - a.kills || a.deaths - b.deaths,
+    );
     return (
       <div className="fsh-top" data-testid="fs-topbar">
         <ul className="fsh-rank" aria-label="Pontuação dos jogadores" data-testid="fs-rank">
           {ranked.map((p) => (
-            <li key={p.id} className={`${p.alive ? '' : 'dead'}${p.you ? ' you' : ''}${p.armor > 0 ? ' vest' : ''}${p.team ? ` ${p.team}` : ''}`} data-testid={`fs-rank-${p.id}`}>
+            <li
+              key={p.id}
+              className={`${p.alive ? '' : 'dead'}${p.you ? ' you' : ''}${p.armor > 0 ? ' vest' : ''}${p.team ? ` ${p.team}` : ''}`}
+              data-testid={`fs-rank-${p.id}`}
+            >
               <span className="fsh-rk-av">
                 {p.you ? 'EU' : p.name.replace(/\D/g, '') || p.name.slice(0, 2)}
                 {!p.alive && <SkullIcon className="fsh-skull" />}
@@ -281,7 +304,11 @@ export function FsTopBar({
               key={i}
               className={`${p ? (p.alive ? 'on' : 'dead') : 'empty'}${p?.you ? ' you' : ''}${p && p.armor > 0 ? ' vest' : ''}${p?.team ? ` ${p.team}` : ''}`}
             >
-              {p ? <span>{p.you ? 'EU' : p.name.replace(/\D/g, '') || p.name.slice(0, 2)}</span> : <span>?</span>}
+              {p ? (
+                <span>{p.you ? 'EU' : p.name.replace(/\D/g, '') || p.name.slice(0, 2)}</span>
+              ) : (
+                <span>?</span>
+              )}
               {p && !p.alive && <SkullIcon className="fsh-skull" />}
             </li>
           ))}
@@ -302,7 +329,11 @@ export function FsKillFeed({ items }: { items: FeedItem[] }) {
   return (
     <ul className="fsh-feed" aria-live="polite" data-testid="fs-feed">
       {items.map((f) => (
-        <li key={f.key} className={f.you || f.youAssist || f.youVictim ? 'mine' : 'other'} data-testid={f.you || f.youAssist || f.youVictim ? 'fs-feed-mine' : 'fs-feed-other'}>
+        <li
+          key={f.key}
+          className={f.you || f.youAssist || f.youVictim ? 'mine' : 'other'}
+          data-testid={f.you || f.youAssist || f.youVictim ? 'fs-feed-mine' : 'fs-feed-other'}
+        >
           {f.blindKiller && <KillIcon id="blind" className="fsh-ki" />}
           <b>{f.killer}</b>
           {f.assist && <span className="fsh-assist"> + {f.assist}</span>}
@@ -347,9 +378,15 @@ export function FsMinimap({ get }: { get: () => MinimapData }) {
         g.imageSmoothingEnabled = true;
         g.drawImage(d.plan.canvas, d.plan.x0 * k, d.plan.z0 * k, d.plan.w * k, d.plan.h * k);
       }
-      for (const b of d.plan ? [] : d.boxes ?? FS_ARENA) {
+      for (const b of d.plan ? [] : (d.boxes ?? FS_ARENA)) {
         // mapas grandes: só o que cabe no radar
-        if (b.max[0] < d.x - R - 2 || b.min[0] > d.x + R + 2 || b.max[2] < d.z - R - 2 || b.min[2] > d.z + R + 2) continue;
+        if (
+          b.max[0] < d.x - R - 2 ||
+          b.min[0] > d.x + R + 2 ||
+          b.max[2] < d.z - R - 2 ||
+          b.min[2] > d.z + R + 2
+        )
+          continue;
         g.fillRect(
           b.min[0] * k,
           b.min[2] * k,
@@ -462,7 +499,10 @@ export function FsAmmo({
 }) {
   const binds = useFsSettings((st) => st.binds);
   return (
-    <div className={`fsh-ammo${ammo === 0 && mag > 0 && !reloading ? ' empty' : ''}`} data-testid="fs-ammo">
+    <div
+      className={`fsh-ammo${ammo === 0 && mag > 0 && !reloading ? ' empty' : ''}`}
+      data-testid="fs-ammo"
+    >
       <div className="fsh-ammo-n">
         <b>{mag > 0 ? (reloading ? '...' : ammo) : ''}</b>
         {mag > 0 && <span>/ {mag}</span>}
@@ -470,7 +510,11 @@ export function FsAmmo({
       <ul className="fsh-slots" aria-label="Armas">
         {slots.map((s, i) =>
           s.id ? (
-            <li key={s.key} className={i === current && !heldNade && !c4?.held ? 'on' : ''} data-testid={`fs-slot-${s.key}`}>
+            <li
+              key={s.key}
+              className={i === current && !heldNade && !c4?.held ? 'on' : ''}
+              data-testid={`fs-slot-${s.key}`}
+            >
               <i>{bindLabel(binds[`slot${s.key}` as 'slot1'])}</i>
               <WeaponIcon id={s.id} className="fsh-w" />
               {i === current && !heldNade && !c4?.held && <small>{s.name}</small>}
@@ -488,7 +532,15 @@ export function FsAmmo({
         {c4 && (
           <li className={c4.held ? 'on' : ''} data-testid="fs-slot-c4">
             <i>{bindLabel(binds.bombSlot)}</i>
-            <span className="fs-wi fsh-w" style={{ WebkitMaskImage: `url(${import.meta.env.BASE_URL}icons/foxshot/c4.png)`, maskImage: `url(${import.meta.env.BASE_URL}icons/foxshot/c4.png)` }} aria-hidden="true" data-weapon="c4" />
+            <span
+              className="fs-wi fsh-w"
+              style={{
+                WebkitMaskImage: `url(${import.meta.env.BASE_URL}icons/foxshot/c4.png)`,
+                maskImage: `url(${import.meta.env.BASE_URL}icons/foxshot/c4.png)`,
+              }}
+              aria-hidden="true"
+              data-weapon="c4"
+            />
             {c4.held && <small>C4</small>}
           </li>
         )}
@@ -558,15 +610,37 @@ export function FsCrosshair({ spreadPx }: { spreadPx: number }) {
 }
 
 /** Placar (Tab): todos os jogadores com abates, mortes, % de cabeça e dano, como o do CS. */
-export function FsScoreboard({ players, timeLeft, title = 'Treino · Mapa de Treino', bomb }: { players: FsPlayerRow[]; timeLeft: number; title?: string; bomb?: { mySide: 'tr' | 'ct'; tr: number; ct: number } }) {
+export function FsScoreboard({
+  players,
+  timeLeft,
+  title = 'Treino · Mapa de Treino',
+  bomb,
+}: {
+  players: FsPlayerRow[];
+  timeLeft: number;
+  title?: string;
+  bomb?: { mySide: 'tr' | 'ct'; tr: number; ct: number };
+}) {
   const binds = useFsSettings((st) => st.binds);
   const withPts = players.some((p) => p.points !== undefined);
-  const rows = [...players].sort((a, b) => (b.points ?? 0) - (a.points ?? 0) || b.kills - a.kills || a.deaths - b.deaths);
+  const rows = [...players].sort(
+    (a, b) => (b.points ?? 0) - (a.points ?? 0) || b.kills - a.kills || a.deaths - b.deaths,
+  );
   if (bomb) {
     const mine = bomb.mySide === 'tr' ? 't' : 'ct';
     const groups: { key: 't' | 'ct'; label: string; score: number; ally: boolean }[] = [
-      { key: mine, label: mine === 't' ? 'Terroristas' : 'Contra-terroristas', score: mine === 't' ? bomb.tr : bomb.ct, ally: true },
-      { key: mine === 't' ? 'ct' : 't', label: mine === 't' ? 'Contra-terroristas' : 'Terroristas', score: mine === 't' ? bomb.ct : bomb.tr, ally: false },
+      {
+        key: mine,
+        label: mine === 't' ? 'Terroristas' : 'Contra-terroristas',
+        score: mine === 't' ? bomb.tr : bomb.ct,
+        ally: true,
+      },
+      {
+        key: mine === 't' ? 'ct' : 't',
+        label: mine === 't' ? 'Contra-terroristas' : 'Terroristas',
+        score: mine === 't' ? bomb.ct : bomb.tr,
+        ally: false,
+      },
     ];
     return (
       <div className="fsh-board" role="dialog" aria-label="Placar" data-testid="fs-board">
@@ -578,9 +652,16 @@ export function FsScoreboard({ players, timeLeft, title = 'Treino · Mapa de Tre
           {groups.map((g) => {
             const list = rows.filter((p) => p.team === g.key);
             return (
-              <section key={g.key} className={`fsh-team ${g.key}${g.ally ? ' ally' : ' foe'}`} data-testid={`fs-team-${g.ally ? 'ally' : 'foe'}`}>
+              <section
+                key={g.key}
+                className={`fsh-team ${g.key}${g.ally ? ' ally' : ' foe'}`}
+                data-testid={`fs-team-${g.ally ? 'ally' : 'foe'}`}
+              >
                 <h5>
-                  <span>{g.label}{g.ally ? ' · seu time' : ''}</span>
+                  <span>
+                    {g.label}
+                    {g.ally ? ' · seu time' : ''}
+                  </span>
                   <b>{g.score}</b>
                 </h5>
                 <table>
@@ -605,7 +686,9 @@ export function FsScoreboard({ players, timeLeft, title = 'Treino · Mapa de Tre
                           {p.name}
                           {p.you ? ' (você)' : ''}
                         </td>
-                        <td className="money" data-testid={g.ally ? 'fs-money' : undefined}>{g.ally && p.money !== undefined ? `$${p.money}` : ''}</td>
+                        <td className="money" data-testid={g.ally ? 'fs-money' : undefined}>
+                          {g.ally && p.money !== undefined ? `$${p.money}` : ''}
+                        </td>
                         <td>{p.kills}</td>
                         <td>{p.assists}</td>
                         <td>{p.deaths}</td>
@@ -652,7 +735,11 @@ export function FsScoreboard({ players, timeLeft, title = 'Treino · Mapa de Tre
                   {p.name}
                   {p.you ? ' (você)' : ''}
                 </td>
-                {withPts && <td><b>{p.points}</b></td>}
+                {withPts && (
+                  <td>
+                    <b>{p.points}</b>
+                  </td>
+                )}
                 <td>{p.kills}</td>
                 <td>{p.assists}</td>
                 <td>{p.deaths}</td>
@@ -693,8 +780,11 @@ export function FsBigMap({ get, title }: { get: () => MinimapData; title: string
     const g = c.getContext('2d')!;
     const draw = () => {
       const d = get();
-      const boxes = d.plan ? [] : d.boxes ?? [];
-      let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9;
+      const boxes = d.plan ? [] : (d.boxes ?? []);
+      let x0 = 1e9,
+        x1 = -1e9,
+        z0 = 1e9,
+        z1 = -1e9;
       if (d.plan) {
         x0 = d.plan.x0;
         x1 = d.plan.x0 + d.plan.w;
@@ -732,12 +822,30 @@ export function FsBigMap({ get, title }: { get: () => MinimapData; title: string
       }
       if (d.marks) drawMarks(g, d.marks, at, k, true, 0, 'area');
       // pisos elevados e vidro primeiro, depois caixotes e as paredes por cima
-      const layer = (b: (typeof boxes)[number]) => (b.max[1] <= 1.1 && b.min[1] <= 0.01 && b.max[0] - b.min[0] > 2.5 && b.max[2] - b.min[2] > 2.5 ? 0 : b.max[1] > 2.6 ? 2 : 1);
+      const layer = (b: (typeof boxes)[number]) =>
+        b.max[1] <= 1.1 &&
+        b.min[1] <= 0.01 &&
+        b.max[0] - b.min[0] > 2.5 &&
+        b.max[2] - b.min[2] > 2.5
+          ? 0
+          : b.max[1] > 2.6
+            ? 2
+            : 1;
       for (const pass of [0, 1, 2]) {
         for (const b of boxes) {
           if (layer(b) !== pass) continue;
-          g.fillStyle = pass === 0 ? 'rgba(120,160,200,.35)' : pass === 1 ? 'rgba(190,130,70,.85)' : 'rgba(205,213,230,.88)';
-          g.fillRect(ox + b.min[0] * k, oz + b.min[2] * k, Math.max(1, (b.max[0] - b.min[0]) * k), Math.max(1, (b.max[2] - b.min[2]) * k));
+          g.fillStyle =
+            pass === 0
+              ? 'rgba(120,160,200,.35)'
+              : pass === 1
+                ? 'rgba(190,130,70,.85)'
+                : 'rgba(205,213,230,.88)';
+          g.fillRect(
+            ox + b.min[0] * k,
+            oz + b.min[2] * k,
+            Math.max(1, (b.max[0] - b.min[0]) * k),
+            Math.max(1, (b.max[2] - b.min[2]) * k),
+          );
         }
       }
       g.font = '700 13px Rajdhani, system-ui, sans-serif';

@@ -3,7 +3,8 @@ import { Link } from '@tanstack/react-router';
 import { toggleMute, useMuted } from '@/lib/sfx';
 import { closeRoom, sendRoom, useMeId, useRoom } from '@/lib/rooms';
 import {
-  FS_ACTIONS, FS_CATS,
+  FS_ACTIONS,
+  FS_CATS,
   bindLabel,
   useFsSettings,
   CROSS_COLORS,
@@ -148,65 +149,75 @@ export function Commands({ touch }: { touch: boolean }) {
   return (
     <div data-testid="fsm-commands">
       <p className="fsm-hint mono">
-        Clique numa ação e aperte a nova tecla (ou botão do mouse). Esc cancela, Backspace tira a tecla. Setas também andam.
+        Clique numa ação e aperte a nova tecla (ou botão do mouse). Esc cancela, Backspace tira a
+        tecla. Setas também andam.
       </p>
       {FS_CATS.map((cat) => (
-      <section key={cat.id} className="fsm-cat" data-testid={`cat-${cat.id}`}>
-      <h4>{cat.label}</h4>
-      <ul className="fsm-binds">
-        {cat.ids.map((id) => FS_ACTIONS.find((x) => x.id === id)!).map((a) => {
-          // pegar do chão e a bomba dividem o E de propósito (uma serve para cada situação): não é conflito
-          const twin = (x: string, y: string) => (x === 'pickup' && y === 'bomb') || (x === 'bomb' && y === 'pickup');
-          const clash = FS_ACTIONS.filter((o) => o.id !== a.id && !twin(a.id, o.id) && binds[a.id] !== '' && binds[o.id] === binds[a.id]);
-          return (
-          <li key={a.id} className={clash.length ? 'conflict' : ''}>
-            <span>
-              {a.label}
-              {clash.length > 0 && (
-                <small className="fsm-warn" role="alert" data-testid={`conflict-${a.id}`}>
-                  Em conflito com: {clash.map((c) => c.label).join(', ')}
-                </small>
-              )}
-            </span>
-            <button
-              type="button"
-              className={listen === a.id ? 'listen' : ''}
-              onClick={() => setListen(a.id)}
-              data-testid={`bind-${a.id}`}
-            >
-              {listen === a.id ? 'Aperte...' : bindLabel(binds[a.id])}
-            </button>
-            <button
-              type="button"
-              className="fsm-unbind"
-              disabled={!binds[a.id]}
-              onClick={() => {
-                bind(a.id, '');
-                setListen(null);
-              }}
-              title="Tirar o comando (fica vazio)"
-              aria-label={`Tirar o comando de ${a.label}`}
-              data-testid={`unbind-${a.id}`}
-            >
-              Tirar
-            </button>
-          </li>
-          );
-        })}
-        {cat.id === 'general' && (
-          <li className="fixed">
-            <span>Soltar o mouse / abrir este menu</span>
-            <b className="mono">Esc</b>
-          </li>
-        )}
-        {cat.id === 'weapons' && (
-          <li className="fixed">
-            <span>Passar pelas armas e granadas</span>
-            <b className="mono">Roda do mouse</b>
-          </li>
-        )}
-      </ul>
-      </section>
+        <section key={cat.id} className="fsm-cat" data-testid={`cat-${cat.id}`}>
+          <h4>{cat.label}</h4>
+          <ul className="fsm-binds">
+            {cat.ids
+              .map((id) => FS_ACTIONS.find((x) => x.id === id)!)
+              .map((a) => {
+                // pegar do chão e a bomba dividem o E de propósito (uma serve para cada situação): não é conflito
+                const twin = (x: string, y: string) =>
+                  (x === 'pickup' && y === 'bomb') || (x === 'bomb' && y === 'pickup');
+                const clash = FS_ACTIONS.filter(
+                  (o) =>
+                    o.id !== a.id &&
+                    !twin(a.id, o.id) &&
+                    binds[a.id] !== '' &&
+                    binds[o.id] === binds[a.id],
+                );
+                return (
+                  <li key={a.id} className={clash.length ? 'conflict' : ''}>
+                    <span>
+                      {a.label}
+                      {clash.length > 0 && (
+                        <small className="fsm-warn" role="alert" data-testid={`conflict-${a.id}`}>
+                          Em conflito com: {clash.map((c) => c.label).join(', ')}
+                        </small>
+                      )}
+                    </span>
+                    <button
+                      type="button"
+                      className={listen === a.id ? 'listen' : ''}
+                      onClick={() => setListen(a.id)}
+                      data-testid={`bind-${a.id}`}
+                    >
+                      {listen === a.id ? 'Aperte...' : bindLabel(binds[a.id])}
+                    </button>
+                    <button
+                      type="button"
+                      className="fsm-unbind"
+                      disabled={!binds[a.id]}
+                      onClick={() => {
+                        bind(a.id, '');
+                        setListen(null);
+                      }}
+                      title="Tirar o comando (fica vazio)"
+                      aria-label={`Tirar o comando de ${a.label}`}
+                      data-testid={`unbind-${a.id}`}
+                    >
+                      Tirar
+                    </button>
+                  </li>
+                );
+              })}
+            {cat.id === 'general' && (
+              <li className="fixed">
+                <span>Soltar o mouse / abrir este menu</span>
+                <b className="mono">Esc</b>
+              </li>
+            )}
+            {cat.id === 'weapons' && (
+              <li className="fixed">
+                <span>Passar pelas armas e granadas</span>
+                <b className="mono">Roda do mouse</b>
+              </li>
+            )}
+          </ul>
+        </section>
       ))}
       <button type="button" className="fsm-link" onClick={reset}>
         Restaurar tudo ao padrão
@@ -224,130 +235,159 @@ export function Customize({ only }: { only?: 'aim' | 'screen' } = {}) {
     <div data-testid="fsm-custom">
       {aim && (
         <>
-      <h3>Mira e câmera</h3>
-      <Slider
-        label="Sensibilidade"
-        value={s.sens}
-        min={0.02}
-        max={0.4}
-        step={0.005}
-        onChange={(v) => s.set({ sens: v })}
-        fmt={(v) => v.toFixed(3)}
-      />
-      <Slider
-        label="Sensibilidade ao mirar"
-        value={s.adsSens}
-        min={0.3}
-        max={1.5}
-        step={0.05}
-        onChange={(v) => s.set({ adsSens: v })}
-        fmt={(v) => `${v.toFixed(2)}x`}
-      />
-      <Slider
-        label="Campo de visão"
-        value={s.fov}
-        min={60}
-        max={100}
-        step={1}
-        onChange={(v) => s.set({ fov: v })}
-        fmt={(v) => `${v}°`}
-      />
-      <Toggle
-        label="Inverter o mouse (cima e baixo)"
-        value={s.invertY}
-        onChange={(v) => s.set({ invertY: v })}
-      />
-      <h3>Mira</h3>
-      <div className="fsm-preview" aria-hidden="true">
-        <FsCrosshair spreadPx={0} />
-      </div>
-      <Seg<CrosshairColor>
-        label="Cor"
-        value={s.crossColor}
-        options={(Object.keys(CROSS_COLORS) as CrosshairColor[]).map((c) => [
-          c,
-          ({ white: 'Branca', green: 'Verde', lime: 'Limão', yellow: 'Amarela', orange: 'Laranja', red: 'Vermelha', pink: 'Rosa', purple: 'Roxa', blue: 'Azul', cyan: 'Ciano', black: 'Preta', custom: 'Outra...' } as Record<CrosshairColor, string>)[c],
-        ])}
-        onChange={(v) => s.set({ crossColor: v })}
-      />
-      {s.crossColor === 'custom' && (
-        <label className="fsm-color">
-          <span>Escolha a cor</span>
-          <input type="color" value={s.crossCustom} onChange={(e) => s.set({ crossCustom: e.target.value })} data-testid="cross-custom" />
-        </label>
-      )}
-      <Slider
-        label="Tamanho"
-        value={s.crossSize}
-        min={3}
-        max={18}
-        step={1}
-        onChange={(v) => s.set({ crossSize: v })}
-      />
-      <Slider
-        label="Espessura"
-        value={s.crossThick}
-        min={1}
-        max={5}
-        step={1}
-        onChange={(v) => s.set({ crossThick: v })}
-      />
-      <Slider
-        label="Vão do centro"
-        value={s.crossGap}
-        min={0}
-        max={14}
-        step={1}
-        onChange={(v) => s.set({ crossGap: v })}
-      />
-      <Toggle label="Ponto no centro" value={s.crossDot} onChange={(v) => s.set({ crossDot: v })} />
-      <Toggle
-        label="Abrir com a dispersão"
-        value={s.crossDynamic}
-        onChange={(v) => s.set({ crossDynamic: v })}
-      />
+          <h3>Mira e câmera</h3>
+          <Slider
+            label="Sensibilidade"
+            value={s.sens}
+            min={0.02}
+            max={0.4}
+            step={0.005}
+            onChange={(v) => s.set({ sens: v })}
+            fmt={(v) => v.toFixed(3)}
+          />
+          <Slider
+            label="Sensibilidade ao mirar"
+            value={s.adsSens}
+            min={0.3}
+            max={1.5}
+            step={0.05}
+            onChange={(v) => s.set({ adsSens: v })}
+            fmt={(v) => `${v.toFixed(2)}x`}
+          />
+          <Slider
+            label="Campo de visão"
+            value={s.fov}
+            min={60}
+            max={100}
+            step={1}
+            onChange={(v) => s.set({ fov: v })}
+            fmt={(v) => `${v}°`}
+          />
+          <Toggle
+            label="Inverter o mouse (cima e baixo)"
+            value={s.invertY}
+            onChange={(v) => s.set({ invertY: v })}
+          />
+          <h3>Mira</h3>
+          <div className="fsm-preview" aria-hidden="true">
+            <FsCrosshair spreadPx={0} />
+          </div>
+          <Seg<CrosshairColor>
+            label="Cor"
+            value={s.crossColor}
+            options={(Object.keys(CROSS_COLORS) as CrosshairColor[]).map((c) => [
+              c,
+              (
+                {
+                  white: 'Branca',
+                  green: 'Verde',
+                  lime: 'Limão',
+                  yellow: 'Amarela',
+                  orange: 'Laranja',
+                  red: 'Vermelha',
+                  pink: 'Rosa',
+                  purple: 'Roxa',
+                  blue: 'Azul',
+                  cyan: 'Ciano',
+                  black: 'Preta',
+                  custom: 'Outra...',
+                } as Record<CrosshairColor, string>
+              )[c],
+            ])}
+            onChange={(v) => s.set({ crossColor: v })}
+          />
+          {s.crossColor === 'custom' && (
+            <label className="fsm-color">
+              <span>Escolha a cor</span>
+              <input
+                type="color"
+                value={s.crossCustom}
+                onChange={(e) => s.set({ crossCustom: e.target.value })}
+                data-testid="cross-custom"
+              />
+            </label>
+          )}
+          <Slider
+            label="Tamanho"
+            value={s.crossSize}
+            min={3}
+            max={18}
+            step={1}
+            onChange={(v) => s.set({ crossSize: v })}
+          />
+          <Slider
+            label="Espessura"
+            value={s.crossThick}
+            min={1}
+            max={5}
+            step={1}
+            onChange={(v) => s.set({ crossThick: v })}
+          />
+          <Slider
+            label="Vão do centro"
+            value={s.crossGap}
+            min={0}
+            max={14}
+            step={1}
+            onChange={(v) => s.set({ crossGap: v })}
+          />
+          <Toggle
+            label="Ponto no centro"
+            value={s.crossDot}
+            onChange={(v) => s.set({ crossDot: v })}
+          />
+          <Toggle
+            label="Abrir com a dispersão"
+            value={s.crossDynamic}
+            onChange={(v) => s.set({ crossDynamic: v })}
+          />
         </>
       )}
       {screen && (
         <>
-      <h3>Tela e som</h3>
-      <Seg<FsSettingsQuality>
-        label="Qualidade gráfica"
-        value={s.quality}
-        options={[
-          ['auto', 'Automática'],
-          ['low', 'Baixa'],
-          ['mid', 'Média'],
-          ['high', 'Alta'],
-        ]}
-        onChange={(v) => s.set({ quality: v })}
-      />
-      <Toggle
-        label="Tela cheia e travar teclas (Ctrl+W não fecha o jogo)"
-        value={s.fullscreenLock}
-        onChange={(v) => s.set({ fullscreenLock: v })}
-      />
-      <Seg<'small' | 'medium' | 'large'>
-        label="Tamanho do mapa no canto"
-        value={s.minimapSize}
-        options={[
-          ['small', 'Pequeno'],
-          ['medium', 'Médio'],
-          ['large', 'Grande'],
-        ]}
-        onChange={(v) => s.set({ minimapSize: v })}
-      />
-      <Toggle
-        label="Mapa no canto"
-        value={s.showMinimap}
-        onChange={(v) => s.set({ showMinimap: v })}
-      />
-      <Toggle
-        label="Desempenho (fps)"
-        value={s.showTelemetry}
-        onChange={(v) => s.set({ showTelemetry: v })}
-      />
-      <Toggle label="Som" value={!muted} onChange={() => toggleMute()} />
+          <h3>Tela e som</h3>
+          <Seg<FsSettingsQuality>
+            label="Qualidade gráfica"
+            value={s.quality}
+            options={[
+              ['auto', 'Automática'],
+              ['low', 'Baixa'],
+              ['mid', 'Média'],
+              ['high', 'Alta'],
+            ]}
+            onChange={(v) => s.set({ quality: v })}
+          />
+          <Toggle
+            label="Tela cheia e travar teclas (Ctrl+W não fecha o jogo)"
+            value={s.fullscreenLock}
+            onChange={(v) => s.set({ fullscreenLock: v })}
+          />
+          <Seg<'small' | 'medium' | 'large'>
+            label="Tamanho do mapa no canto"
+            value={s.minimapSize}
+            options={[
+              ['small', 'Pequeno'],
+              ['medium', 'Médio'],
+              ['large', 'Grande'],
+            ]}
+            onChange={(v) => s.set({ minimapSize: v })}
+          />
+          <Toggle
+            label="Celular: atirar sozinho quando a mira passa por um inimigo"
+            value={s.autoFire}
+            onChange={(v) => s.set({ autoFire: v })}
+          />
+          <Toggle
+            label="Mapa no canto"
+            value={s.showMinimap}
+            onChange={(v) => s.set({ showMinimap: v })}
+          />
+          <Toggle
+            label="Desempenho (fps)"
+            value={s.showTelemetry}
+            onChange={(v) => s.set({ showTelemetry: v })}
+          />
+          <Toggle label="Som" value={!muted} onChange={() => toggleMute()} />
         </>
       )}
     </div>
@@ -401,7 +441,14 @@ export function FsMenu({
   const roomPaused = useRoom((st) => st.snapshot?.pause?.at != null);
   const leader = !!online && !!meId && hostId === meId;
   /** Itens que pedem um segundo toque para valer. */
-  const armed = (id: string, label: string, armedLabel: string, run: () => void, extra = '', testId?: string) => (
+  const armed = (
+    id: string,
+    label: string,
+    armedLabel: string,
+    run: () => void,
+    extra = '',
+    testId?: string,
+  ) => (
     <button
       type="button"
       className={`fsm-item${extra}${sure === id ? ' sure' : ''}`}
@@ -423,7 +470,12 @@ export function FsMenu({
           <h2>Counter Fox</h2>
           {view !== 'jogo' && (
             <nav role="tablist" aria-label="Seções">
-              <button type="button" onClick={() => setView('jogo')} data-testid="fsm-tab-jogo" data-sfx="back">
+              <button
+                type="button"
+                onClick={() => setView('jogo')}
+                data-testid="fsm-tab-jogo"
+                data-sfx="back"
+              >
                 ‹ Voltar
               </button>
               {TABS.map(([id, label]) => (
@@ -445,7 +497,12 @@ export function FsMenu({
         <div className="fsm-body">
           {view === 'jogo' && (
             <div className="fsm-game">
-              <button type="button" className="fsm-main" onClick={onResume} data-testid="fsm-resume">
+              <button
+                type="button"
+                className="fsm-main"
+                onClick={onResume}
+                data-testid="fsm-resume"
+              >
                 Continuar jogando
               </button>
               {leader && pausable && (
@@ -462,33 +519,95 @@ export function FsMenu({
                 </button>
               )}
               {online
-                ? leader && armed('end', 'Encerrar a partida', 'Toque de novo para encerrar', () => (onResume(), sendRoom('fsend')), '', 'fsm-end')
+                ? leader &&
+                  armed(
+                    'end',
+                    'Encerrar a partida',
+                    'Toque de novo para encerrar',
+                    () => (onResume(), sendRoom('fsend')),
+                    '',
+                    'fsm-end',
+                  )
                 : armed('end', endLabel, 'Toque de novo para confirmar', onEnd, '', 'fsm-end')}
-              {onSuicide && armed('suicide', 'Se matar', 'Toque de novo para confirmar', () => (onResume(), onSuicide()), ' danger', 'fsm-suicide')}
-              <button type="button" className="fsm-item" onClick={() => setView('personalizar')} data-testid="fsm-open-personalizar">
+              {onSuicide &&
+                armed(
+                  'suicide',
+                  'Se matar',
+                  'Toque de novo para confirmar',
+                  () => (onResume(), onSuicide()),
+                  ' danger',
+                  'fsm-suicide',
+                )}
+              <button
+                type="button"
+                className="fsm-item"
+                onClick={() => setView('personalizar')}
+                data-testid="fsm-open-personalizar"
+              >
                 Personalizar
               </button>
-              <button type="button" className="fsm-item" onClick={() => setView('comandos')} data-testid="fsm-open-comandos">
+              <button
+                type="button"
+                className="fsm-item"
+                onClick={() => setView('comandos')}
+                data-testid="fsm-open-comandos"
+              >
                 Comandos
               </button>
               {children}
-              <button type="button" className="fsm-item" onClick={() => toggleMute()} aria-pressed={muted} data-testid="fsm-sound">
+              <button
+                type="button"
+                className="fsm-item"
+                onClick={() => toggleMute()}
+                aria-pressed={muted}
+                data-testid="fsm-sound"
+              >
                 Som: {muted ? 'desligado' : 'ligado'}
               </button>
-              {online && armed('leave', 'Sair da sala', 'Toque de novo para sair', online.onLeave, ' danger', 'fsm-leave')}
-              {online && leader && armed('close', 'Encerrar a sala (tira todo mundo)', 'Toque de novo para encerrar a sala', () => void closeRoom(), ' danger', 'fsm-close-room')}
+              {online &&
+                armed(
+                  'leave',
+                  'Sair da sala',
+                  'Toque de novo para sair',
+                  online.onLeave,
+                  ' danger',
+                  'fsm-leave',
+                )}
+              {online &&
+                leader &&
+                armed(
+                  'close',
+                  'Encerrar a sala (tira todo mundo)',
+                  'Toque de novo para encerrar a sala',
+                  () => void closeRoom(),
+                  ' danger',
+                  'fsm-close-room',
+                )}
               {!online && onBack && (
-                <button type="button" className="fsm-item" data-sfx="back" onClick={onBack} data-testid="fsm-back">
+                <button
+                  type="button"
+                  className="fsm-item"
+                  data-sfx="back"
+                  onClick={onBack}
+                  data-testid="fsm-back"
+                >
                   {backLabel}
                 </button>
               )}
               {!online && exitTo && (
-                <Link to={exitTo} className="fsm-item danger" data-sfx="back" data-testid="fsm-exit">
+                <Link
+                  to={exitTo}
+                  className="fsm-item danger"
+                  data-sfx="back"
+                  data-testid="fsm-exit"
+                >
                   {exitLabel}
                 </Link>
               )}
               <p className="fsm-hint mono">
-                {touch ? 'Toque em Continuar jogando para voltar. ' : 'Esc abre e fecha este menu. '}
+                {touch
+                  ? 'Toque em Continuar jogando para voltar. '
+                  : 'Esc abre e fecha este menu. '}
                 {'As suas configurações valem na sua conta (e neste aparelho).'}
               </p>
             </div>

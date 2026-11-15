@@ -18,11 +18,22 @@ export function FsPreMatch({
 }) {
   const bomb = kind === 'bomb';
   return (
-    <div className={`fsp-intro${bomb ? ' bomb' : ''}${side ? ` ${side}` : ''}`} data-testid="fsp-intro">
-      <small className="fsp-chip">{pvp ? 'MODO PVP' : bomb ? 'MODO BOMBA' : 'MATA-MATA'} · {map.toUpperCase()}</small>
+    <div
+      className={`fsp-intro${bomb ? ' bomb' : ''}${side ? ` ${side}` : ''}`}
+      data-testid="fsp-intro"
+    >
+      <small className="fsp-chip">
+        {pvp ? 'MODO PVP' : bomb ? 'MODO BOMBA' : 'MATA-MATA'} · {map.toUpperCase()}
+      </small>
       {bomb && (
         <div className="fsp-side">
-          <b>{side === 'tr' ? 'Você é Terrorista' : side === 'ct' ? 'Você é Contra-terrorista' : 'Você vai assistir'}</b>
+          <b>
+            {side === 'tr'
+              ? 'Você é Terrorista'
+              : side === 'ct'
+                ? 'Você é Contra-terrorista'
+                : 'Você vai assistir'}
+          </b>
           <span>
             {pvp
               ? side
@@ -34,7 +45,11 @@ export function FsPreMatch({
                   ? 'Impeça a plantação. Se a C4 for plantada, desarme segurando E antes que exploda.'
                   : 'Acompanhe os aliados até o fim do round.'}
           </span>
-          <span>{pvp ? `Primeiro a ${winRounds} pontos vence. Dinheiro infinito: compre qualquer arma (tecla B) quando quiser, mas só na sua base.` : `Primeiro a ${winRounds} rounds vence. Compre na base durante a fase de compra.`}</span>
+          <span>
+            {pvp
+              ? `Primeiro a ${winRounds} pontos vence. Dinheiro infinito: compre qualquer arma (tecla B) quando quiser, mas só na sua base.`
+              : `Primeiro a ${winRounds} rounds vence. Compre na base durante a fase de compra.`}
+          </span>
         </div>
       )}
       {!bomb && (

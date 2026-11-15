@@ -14,6 +14,9 @@ interface Nh {
   xp(n: number): void;
   chest(): void;
   brk(): number;
+  saveExit(): void;
+  buyHero(id: string): void;
+  resume(): void;
   evo(): void;
   die(): void;
   gold(n: number): number;
@@ -43,14 +46,17 @@ const state = (page: Page) => page.evaluate(() => window.__nh.state());
 const screenIs = async (page: Page, s: string) => {
   await page.waitForFunction((x) => window.__nh.state().screen === x, s, { timeout: 8000 });
 };
-/** Clica num ponto da área lógica 510x680 (a tela é centralizada e escalada pelo menor lado). */
-async function tap(page: Page, x: number, y: number) {
+/**
+ * Clica num ponto da coluna central de 510 de largura (as telas crescem para os lados, mas o conteúdo central fica no meio).
+ * `game`: janelas da partida (centradas na vertical); `menu`: telas de menu (caixa centrada, y contado do topo da caixa).
+ */
+async function tap(page: Page, x: number, y: number, mode: 'menu' | 'game' = 'menu') {
   const box = (await page.locator('canvas.nh-canvas').boundingBox())!;
   const k = Math.min(box.width / 510, box.height / 680);
-  await page.mouse.click(
-    box.x + (box.width - 510 * k) / 2 + x * k,
-    box.y + (box.height - 680 * k) / 2 + y * k,
-  );
+  const fw = box.width / k;
+  const fh = box.height / k;
+  const top = mode === 'game' ? Math.max(0, (fh - 680) / 2) : (fh - Math.min(fh, 820)) / 2;
+  await page.mouse.click(box.x + (fw / 2 - 255 + x) * k, box.y + (top + y) * k);
   await page.waitForTimeout(450);
 }
 /** Quantas cores diferentes a tela tem (uma tela em branco ou travada tem 1 ou 2). */
@@ -84,8 +90,9 @@ test.describe('Night Hunt', () => {
     await tap(page, 255, 333); // JOGAR
     await screenIs(page, 'heroes');
     expect(await colors(page)).toBeGreaterThan(12);
-    await tap(page, 255, 551); // CONTINUAR
+    await page.keyboard.press('Enter'); // CONTINUAR
     await screenIs(page, 'maps');
+    await page.waitForTimeout(600);
     expect(await colors(page)).toBeGreaterThan(12);
     await page.keyboard.press('Enter');
     await screenIs(page, 'game');
@@ -110,8 +117,8 @@ test.describe('Night Hunt', () => {
     await page.waitForTimeout(500);
     expect((await state(page)).t!).toBeGreaterThan(t0);
     await page.keyboard.press('Escape');
-    await tap(page, 255, 441); // DESISTIR (na pausa)
-    await tap(page, 255, 360); // SIM, SAIR
+    await tap(page, 255, 474, 'game'); // DESISTIR (na pausa)
+    await tap(page, 255, 340, 'game'); // SIM, SAIR
     await screenIs(page, 'over');
     expect(await colors(page)).toBeGreaterThan(12);
     expect(errors).toEqual([]);
@@ -181,7 +188,7 @@ test.describe('Night Hunt', () => {
     await page.evaluate(() => window.__nh.gold(1000));
     await tap(page, 255, 333); // JOGAR (lista de heróis)
     await screenIs(page, 'heroes');
-    await tap(page, 401, 302); // comprar Mara (600)
+    await page.evaluate(() => window.__nh.buyHero('mara'));
     const saved = await page.evaluate(
       () =>
         JSON.parse(localStorage.getItem('nighthunt:save:v1') ?? '{}') as {
@@ -202,6 +209,33 @@ test.describe('Night Hunt', () => {
       await page.waitForTimeout(500);
       expect(await colors(page), s).toBeGreaterThan(12);
     }
+    expect(errors).toEqual([]);
+  });
+});
+
+test.describe('Night Hunt guardar e continuar', () => {
+  test('sair e salvar guarda a partida e continuar volta ao mesmo ponto', async ({ page }) => {
+    const errors = await open(page);
+    await startRun(page);
+    await page.evaluate(() => window.__nh.skip(12));
+    const before = await state(page);
+    await page.evaluate(() => window.__nh.saveExit());
+    await screenIs(page, 'menu');
+    const run = await page.evaluate(
+      () =>
+        (
+          JSON.parse(localStorage.getItem('nighthunt:save:v1') ?? '{}') as {
+            run?: { t: number; snap: string };
+          }
+        ).run,
+    );
+    expect(run?.snap.length).toBeGreaterThan(100);
+    expect(run!.t).toBeGreaterThanOrEqual(11);
+    await page.evaluate(() => window.__nh.resume());
+    await screenIs(page, 'game');
+    const after = await state(page);
+    expect(Math.abs((after.t ?? 0) - (before.t ?? 0))).toBeLessThan(2);
+    expect(after.level).toBe(before.level);
     expect(errors).toEqual([]);
   });
 });

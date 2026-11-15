@@ -54,7 +54,7 @@ export const UPGRADES: Record<UpgradeId, UpgradeInfo> = {
   },
   growth: {
     id: 'growth',
-    name: 'Crescimento',
+    name: 'Sabedoria',
     desc: 'Você ganha mais experiência de cada cristal.',
     max: 5,
     level: (n) => `XP ganho +${n * 8}% (nível ${n}).`,
@@ -284,6 +284,19 @@ export interface NhStats {
   banishes: number;
   rerolls: number;
 }
+/** Partida guardada com "Sair e salvar" (a conta guarda junto com o resto do save). */
+export interface SavedRun {
+  /** Quando foi guardada (ms). */
+  at: number;
+  hero: string;
+  map: string;
+  /** Tempo de jogo (s), nível e abates, para mostrar na tela inicial. */
+  t: number;
+  level: number;
+  kills: number;
+  /** Texto de `NhWorld.snapshot()`. */
+  snap: string;
+}
 export interface NhSave {
   v: 1;
   /** Sobe a cada gravação; a conta guarda o save de maior `rev` (ver prefs.controller). */
@@ -299,6 +312,8 @@ export interface NhSave {
   /** Heróis comprados com ouro e escolhas da última partida. */
   heroes: string[];
   pick: { hero: string; map: string };
+  /** Partida em andamento guardada para continuar depois (uma só). */
+  run?: SavedRun | null;
   music: boolean;
   sound: boolean;
   damageNumbers: boolean;

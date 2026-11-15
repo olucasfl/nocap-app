@@ -98,15 +98,23 @@ export function FsShop({
   return (
     <div className="fss" role="dialog" aria-label="Loja" data-testid="fs-shop">
       {toast && (
-        <div key={toast.key} className={`fss-toast${toast.warn ? ' warn' : ''}`} role="status" data-testid="fs-shop-toast">
+        <div
+          key={toast.key}
+          className={`fss-toast${toast.warn ? ' warn' : ''}`}
+          role="status"
+          data-testid="fs-shop-toast"
+        >
           {toast.text}
         </div>
       )}
       <header className="fss-head">
         <b>Loja</b>
-        <span className="fss-money mono" data-testid="fs-shop-money">{money === null ? '$ ∞' : `$ ${money}`}</span>
+        <span className="fss-money mono" data-testid="fs-shop-money">
+          {money === null ? '$ ∞' : `$ ${money}`}
+        </span>
         <span className="mono fss-key">
-          {col === null ? 'Aperte 1 a 5 para escolher a seção' : 'Aperte o número do item'} · {bindLabel(buyKey)} fecha
+          {col === null ? 'Aperte 1 a 5 para escolher a seção' : 'Aperte o número do item'} ·{' '}
+          {bindLabel(buyKey)} fecha
         </span>
       </header>
 
@@ -151,7 +159,9 @@ export function FsShop({
                         )}
                       </span>
                       <span className="fss-name">{it.name}</span>
-                      <em className="fss-price mono">{it.soon ? 'em breve' : own ? 'em uso' : `$${price}`}</em>
+                      <em className="fss-price mono">
+                        {it.soon ? 'em breve' : own ? 'em uso' : `$${price}`}
+                      </em>
                       {own && <span className="fss-tag">em uso</span>}
                     </button>
                   </li>
@@ -181,7 +191,9 @@ export function FsShop({
         {nades.map((n) => (
           <span key={n.id} className="fss-chip" data-testid={`fs-shop-nade-${n.id}`}>
             <WeaponIcon id={n.id} className="fss-chip-ico" />
-            <b>{n.name} x{n.count}</b>
+            <b>
+              {n.name} x{n.count}
+            </b>
           </span>
         ))}
         <span className={`fss-chip${armor > 0 ? '' : ' empty'}`}>

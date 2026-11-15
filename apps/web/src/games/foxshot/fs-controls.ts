@@ -46,11 +46,25 @@ export class FsControls {
   private keys = new Set<string>();
   private mouse = { left: false, right: false, middle: false };
   private touchBtn = { fire: false, ads: false, jump: false, reload: false, use: false };
+  private touchCrouch = false;
+  /** O cliente diz a cada quadro se a mira está em cima de um inimigo (tiro automático no celular). */
+  autoTarget = false;
   private pickKey = -1;
   private cycleQueued = false;
   private reloadQueued = false;
   private jumpQueued = false;
-  private once = { map: false, inspect: false, buy: false, drop: false, pickup: false, bombSlot: false, grenade: false, grenadeFrag: false, grenadeFlash: false, grenadeSmoke: false };
+  private once = {
+    map: false,
+    inspect: false,
+    buy: false,
+    drop: false,
+    pickup: false,
+    bombSlot: false,
+    grenade: false,
+    grenadeFrag: false,
+    grenadeFlash: false,
+    grenadeSmoke: false,
+  };
   private dx = 0;
   private dy = 0;
   private stick: { id: number; ox: number; oy: number; x: number; y: number } | null = null;
@@ -125,15 +139,17 @@ export class FsControls {
     // movimento "cru" do mouse: sem a aceleração do sistema, então a mira anda sempre a mesma distância por centímetro
     const plain = () => {
       try {
-        void (root.requestPointerLock() as unknown as Promise<void> | undefined)?.catch?.(() => undefined);
+        void (root.requestPointerLock() as unknown as Promise<void> | undefined)?.catch?.(
+          () => undefined,
+        );
       } catch {
         /* sem permissão: o próximo clique tenta de novo */
       }
     };
     try {
-      const p = root.requestPointerLock({ unadjustedMovement: true } as unknown as undefined) as unknown as
-        | Promise<void>
-        | undefined;
+      const p = root.requestPointerLock({
+        unadjustedMovement: true,
+      } as unknown as undefined) as unknown as Promise<void> | undefined;
       if (p && typeof p.catch === 'function') p.catch(plain);
     } catch {
       plain();
@@ -144,7 +160,20 @@ export class FsControls {
     if (document.pointerLockElement) document.exitPointerLock();
   }
 
-  setTouch(name: keyof FsControls['touchBtn'] | 'cycle' | 'buy' | 'bombslot', down: boolean) {
+  /** Giro vindo de um botão (arrastar o dedo no botão de atirar também mira). */
+  addLook(dx: number, dy: number) {
+    this.dx += dx;
+    this.dy += dy;
+  }
+
+  setTouch(
+    name: keyof FsControls['touchBtn'] | 'cycle' | 'buy' | 'bombslot' | 'crouch',
+    down: boolean,
+  ) {
+    if (name === 'crouch') {
+      if (down) this.touchCrouch = !this.touchCrouch;
+      return;
+    }
     if (name === 'bombslot') {
       if (down) this.once.bombSlot = true;
       return;
@@ -217,20 +246,46 @@ export class FsControls {
     const pick = this.pickKey;
     this.pickKey = -1;
     const on = this.enabled;
-    const { inspect, buy, drop, pickup, bombSlot, grenade, grenadeFrag, grenadeFlash, grenadeSmoke, map } = this.once;
-    this.once = { map: false, inspect: false, buy: false, drop: false, pickup: false, bombSlot: false, grenade: false, grenadeFrag: false, grenadeFlash: false, grenadeSmoke: false };
+    const {
+      inspect,
+      buy,
+      drop,
+      pickup,
+      bombSlot,
+      grenade,
+      grenadeFrag,
+      grenadeFlash,
+      grenadeSmoke,
+      map,
+    } = this.once;
+    this.once = {
+      map: false,
+      inspect: false,
+      buy: false,
+      drop: false,
+      pickup: false,
+      bombSlot: false,
+      grenade: false,
+      grenadeFrag: false,
+      grenadeFlash: false,
+      grenadeSmoke: false,
+    };
     return {
       fwd: on ? fwd : 0,
       strafe: on ? strafe : 0,
       jump: on && jump,
-      trigger: on && (this.held('fire') || this.touchBtn.fire),
+      trigger:
+        on &&
+        (this.held('fire') ||
+          this.touchBtn.fire ||
+          (this.touch && fsSettings().autoFire && this.autoTarget)),
       ads: on && (this.held('ads') || this.touchBtn.ads),
       use: on && (this.held('bomb') || this.touchBtn.use),
       reload: on && reload,
       pick: on ? pick : -1,
       cycle: on && cycle,
       board: this.held('scoreboard'),
-      crouch: on && this.held('crouch'),
+      crouch: on && (this.held('crouch') || this.touchCrouch),
       walk: on && this.held('walk'),
       inspect: on && inspect,
       grenade: on && grenade,
@@ -249,6 +304,7 @@ export class FsControls {
     this.keys.clear();
     this.mouse.left = this.mouse.right = this.mouse.middle = false;
     this.touchBtn = { fire: false, ads: false, jump: false, reload: false, use: false };
+    this.touchCrouch = false;
     this.stick = null;
     this.look = null;
     this.onStick?.(null);
@@ -277,7 +333,8 @@ export class FsControls {
     else if (e.code === b.slot3) this.pickKey = 2;
     else if (e.code === b.next) this.cycleQueued = true;
     // teclas do jogo não rolam a página nem mudam o foco (Tab abre o placar)
-    if (this.captureOn && (Object.values(b).includes(e.code) || e.code.startsWith('Arrow'))) e.preventDefault();
+    if (this.captureOn && (Object.values(b).includes(e.code) || e.code.startsWith('Arrow')))
+      e.preventDefault();
     this.keys.add(e.code);
   };
   private ku = (e: KeyboardEvent) => this.keys.delete(e.code);

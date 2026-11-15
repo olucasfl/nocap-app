@@ -8,7 +8,18 @@ import { CounterFoxLogo } from './CounterFoxLogo';
 import { FsBombEnd } from './FsBombEnd';
 import './counterfox-hub.css';
 
-const FUR = ['#ff7d26', '#4aa8ff', '#7ed957', '#ff5fa8', '#ffd23a', '#8b5cf6', '#26c6c0', '#ff4a3a', '#d9d9d2', '#c89a62'];
+const FUR = [
+  '#ff7d26',
+  '#4aa8ff',
+  '#7ed957',
+  '#ff5fa8',
+  '#ffd23a',
+  '#8b5cf6',
+  '#26c6c0',
+  '#ff4a3a',
+  '#d9d9d2',
+  '#c89a62',
+];
 /** Quem quer jogar de novo: cada pessoa da sala com uma raposa de cor própria. */
 function votePlayers(snapshot: RoomSnapshot, me: string | undefined): RematchPlayer[] {
   return snapshot.members.map((m, i) => ({
@@ -25,7 +36,9 @@ function votePlayers(snapshot: RoomSnapshot, me: string | undefined): RematchPla
 export function FoxShotRoomFinal({ snapshot }: { snapshot: RoomSnapshot }) {
   const me = useMeId();
   const rows = snapshot.foxshot?.score
-    ? [...snapshot.foxshot.score].sort((a, b) => b.points - a.points || b.kills - a.kills || a.deaths - b.deaths)
+    ? [...snapshot.foxshot.score].sort(
+        (a, b) => b.points - a.points || b.kills - a.kills || a.deaths - b.deaths,
+      )
     : [];
   const final = snapshot.final ?? [];
   const place = (id: string) => final.find((f) => f.userId === id)?.placement ?? 0;
@@ -51,7 +64,16 @@ export function FoxShotRoomFinal({ snapshot }: { snapshot: RoomSnapshot }) {
         mySide={mySide}
         mapName={FS_MAP_NAMES[snapshot.foxshot?.pvp ? 'pvp' : 'duna']}
         pvp={!!snapshot.foxshot?.pvp}
-        rows={rows.map((r) => ({ id: r.id, name: r.name, side: bomb.sides[r.id] ?? 'ct', kills: r.kills, assists: r.assists, deaths: r.deaths, points: r.points, me: r.id === me }))}
+        rows={rows.map((r) => ({
+          id: r.id,
+          name: r.name,
+          side: bomb.sides[r.id] ?? 'ct',
+          kills: r.kills,
+          assists: r.assists,
+          deaths: r.deaths,
+          points: r.points,
+          me: r.id === me,
+        }))}
         exitLabel="Sair da sala"
         onExit={() => void leaveRoom()}
         againLabel={voted ? 'Esperando os outros' : 'Jogar de novo'}
@@ -78,7 +100,11 @@ export function FoxShotRoomFinal({ snapshot }: { snapshot: RoomSnapshot }) {
             <h2 className="cfh-fin-title" data-testid="fsr-final-title">
               {won ? 'Você venceu!' : `${rows[0]?.name ?? ''} venceu`}
             </h2>
-            {mine && <p className="cfl-note">Você fez {mine.points} pontos: {mine.kills} abates e {mine.assists} assistências.</p>}
+            {mine && (
+              <p className="cfl-note">
+                Você fez {mine.points} pontos: {mine.kills} abates e {mine.assists} assistências.
+              </p>
+            )}
             <table className="cfx-table cfh-table">
               <thead>
                 <tr>
@@ -92,10 +118,16 @@ export function FoxShotRoomFinal({ snapshot }: { snapshot: RoomSnapshot }) {
               </thead>
               <tbody>
                 {rows.map((r) => (
-                  <tr key={r.id} className={`${r.id === me ? 'you' : ''}${place(r.id) === 1 ? ' win' : ''}`} data-testid={`fsr-row-${r.id}`}>
+                  <tr
+                    key={r.id}
+                    className={`${r.id === me ? 'you' : ''}${place(r.id) === 1 ? ' win' : ''}`}
+                    data-testid={`fsr-row-${r.id}`}
+                  >
                     <td>{place(r.id)}</td>
                     <td>{r.name}</td>
-                    <td><b>{r.points}</b></td>
+                    <td>
+                      <b>{r.points}</b>
+                    </td>
                     <td>{r.kills}</td>
                     <td>{r.assists}</td>
                     <td>{r.deaths}</td>
@@ -109,11 +141,23 @@ export function FoxShotRoomFinal({ snapshot }: { snapshot: RoomSnapshot }) {
           </div>
         </section>
         <footer className="cfl-foot">
-          <button type="button" className="cfh-btn danger" onClick={() => void leaveRoom()} data-sfx="back" data-testid="fsr-final-leave">
+          <button
+            type="button"
+            className="cfh-btn danger"
+            onClick={() => void leaveRoom()}
+            data-sfx="back"
+            data-testid="fsr-final-leave"
+          >
             <span>Sair da sala</span>
           </button>
           <span className="cfl-spacer" />
-          <button type="button" className={`cfh-btn main${voted ? ' on' : ''}`} onClick={() => sendRoom('vote', { again: !voted })} data-sfx="start" data-testid="fsr-final-again">
+          <button
+            type="button"
+            className={`cfh-btn main${voted ? ' on' : ''}`}
+            onClick={() => sendRoom('vote', { again: !voted })}
+            data-sfx="start"
+            data-testid="fsr-final-again"
+          >
             <span>{voted ? 'Esperando os outros' : 'Jogar de novo'}</span>
             <small>{voted ? 'toque para desistir' : 'volta ao lobby da sala'}</small>
           </button>

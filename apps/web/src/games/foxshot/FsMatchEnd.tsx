@@ -14,7 +14,11 @@ export function FsMatchEnd({
 }) {
   const me = rows.find((r) => r.id === 'me');
   const winners = rows.filter((r) => r.winner);
-  const title = me?.winner ? (winners.length > 1 ? 'Empate na frente!' : 'Você venceu!') : `${winners.map((w) => w.name).join(' e ')} venceu`;
+  const title = me?.winner
+    ? winners.length > 1
+      ? 'Empate na frente!'
+      : 'Você venceu!'
+    : `${winners.map((w) => w.name).join(' e ')} venceu`;
   return (
     <div className="fsm cfx-end" role="dialog" aria-label="Fim da partida" data-testid="fs-end">
       <div className="fsm-card">
@@ -36,12 +40,13 @@ export function FsMatchEnd({
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.id} className={`${r.id === 'me' ? 'you' : ''}${r.winner ? ' win' : ''}`} data-testid={`fs-end-row-${r.id}`}>
+                <tr
+                  key={r.id}
+                  className={`${r.id === 'me' ? 'you' : ''}${r.winner ? ' win' : ''}`}
+                  data-testid={`fs-end-row-${r.id}`}
+                >
                   <td>{r.place}</td>
-                  <td>
-                    {r.name}
-                    
-                  </td>
+                  <td>{r.name}</td>
                   <td>
                     <b>{r.points}</b>
                   </td>

@@ -166,6 +166,19 @@ export const nhSchema = z
     seen: z.array(z.string().max(20)).max(40),
     heroes: z.array(z.string().max(12)).max(12),
     pick: z.object({ hero: z.string().max(12), map: z.string().max(12) }).strict(),
+    run: z
+      .object({
+        at: z.number().min(0),
+        hero: z.string().max(12),
+        map: z.string().max(12),
+        t: z.number().min(0).max(36_000),
+        level: z.number().int().min(0).max(1000),
+        kills: z.number().int().min(0).max(10_000_000),
+        snap: z.string().max(70_000),
+      })
+      .strict()
+      .nullable()
+      .optional(),
     music: z.boolean(),
     sound: z.boolean(),
     damageNumbers: z.boolean(),

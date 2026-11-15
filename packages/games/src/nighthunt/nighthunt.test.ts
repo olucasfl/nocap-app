@@ -487,3 +487,35 @@ describe('objetos quebráveis do cenário', () => {
     expect(w.items.filter((i) => i.type === 'xp').every((i) => i.attracted)).toBe(true);
   });
 });
+
+describe('guardar e continuar a partida', () => {
+  it('o texto guardado volta a ser a mesma partida e cabe no limite da conta', () => {
+    const w = new NhWorld('save1', NO_META, { hero: 'mara', map: 'deserto' });
+    w.levels.halo = 3;
+    for (let i = 0; i < 60 * 240; i++) {
+      if (w.pending) w.choose(w.pending.options[0]!);
+      w.player.hp = w.player.maxHp;
+      w.step({ x: Math.cos(i / 200), y: Math.sin(i / 200) });
+      w.drainEvents();
+    }
+    const text = w.snapshot();
+    expect(text.length).toBeLessThan(60_000);
+    const r = NhWorld.restore(text)!;
+    expect(r).not.toBeNull();
+    expect(r.heroId).toBe('mara');
+    expect(r.mapId).toBe('deserto');
+    expect(r.t).toBeCloseTo(w.t, 1);
+    expect(r.level).toBe(w.level);
+    expect(r.kills).toBe(w.kills);
+    expect(r.levels.halo).toBe(3);
+    expect(r.enemies.length).toBeGreaterThan(0);
+    expect(r.evolved.size).toBe(w.evolved.size);
+    for (let i = 0; i < 600; i++) {
+      r.player.hp = r.player.maxHp;
+      r.step({ x: 1, y: 0 });
+      r.drainEvents();
+    }
+    expect(r.t).toBeGreaterThan(w.t + 9);
+    expect(NhWorld.restore('lixo')).toBeNull();
+  });
+});
