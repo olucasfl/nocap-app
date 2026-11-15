@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { GP_LAP_OPTIONS, GP_MAX_PLAYERS, type GpPhysicsMode } from '@nocap/games';
 import { GpGarage } from './GpGarage';
-import { loadBest, loadLaps, loadPhysics, loadTrack, saveLaps, savePhysics, saveTrack } from './gp-best';
+import { loadBest, loadLaps, loadPhysics, loadPowers, loadTrack, saveLaps, savePhysics, savePowers, saveTrack } from './gp-best';
 import { lapClock } from './format';
 import { GP_TRACK_CHOICES, gpTrackName, gpVehicleFor } from './vehicles';
 import './theme.css';
@@ -30,6 +30,11 @@ export function GpPicker({
   const [garage, setGarage] = useState(false);
   const [physics, setPhysics] = useState<GpPhysicsMode>(() => loadPhysics());
   const [track, setTrack] = useState(() => loadTrack());
+  const [powers, setPowers] = useState(() => loadPowers());
+  const pickPowers = (on: boolean) => {
+    setPowers(on);
+    savePowers(on);
+  };
   const [laps, setLaps] = useState(() => loadLaps());
   const pickLaps = (n: number) => {
     setLaps(n);
@@ -78,6 +83,27 @@ export function GpPicker({
             );
           })}
         </div>
+
+        {physics === 'arcade' && (
+          <div className="gp-pick-bots-section">
+            <span className="gp-kicker">Modo do Arcade</span>
+            <div className="gp-chips" role="radiogroup" aria-label="Modo do Arcade">
+              {([false, true] as const).map((on) => (
+                <button
+                  key={String(on)}
+                  type="button"
+                  role="radio"
+                  aria-checked={powers === on}
+                  className={`gp-chip${powers === on ? ' is-on' : ''}`}
+                  onClick={() => pickPowers(on)}
+                  data-testid={`gp-powers-${on ? 'on' : 'off'}`}
+                >
+                  {on ? 'Poderes (com itens)' : 'Corrida'}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {physics === 'real' && (
           <div className="gp-pick-bots-section gp-pick-track">

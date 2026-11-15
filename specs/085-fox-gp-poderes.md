@@ -1,6 +1,6 @@
 # 085: Fox GP, Arcade com poderes
 
-Status: rascunho aprovado (15/11/2026). Etapa 0 (vitrine dos itens) feita; falta o resto.
+Status: etapas 0 a 3 feitas no treino offline (15/11/2026); faltam cometa/bomba afinados jogando, sons, online e docs.
 
 ## 1. Decisão do Lucas (15/11/2026)
 
@@ -45,11 +45,11 @@ quem lidera. Com 2 a 20 carros a posição vira faixa (frente, meio, trás).
 ## 5. Etapas
 
 0. **Vitrine dos itens no Fox GP** (feito): 12 modelos 3D e página de prévia.
-1. Lógica pura: catálogo, pesos, efeitos, testes.
-2. Caixas na pista, slot do item no HUD, escolha dos dois modos (Corrida e Poderes).
-3. Casca, bola, turbo, Superfox, orbitar e lançar.
-4. Cometa, Cometa azul e bomba (perseguição pela linha da pista).
-5. Bots usando itens, sons, online, testes de tela e docs.
+1. Lógica pura (feito): `packages/games/src/foxgp/items.ts` com 17 testes.
+2. Caixas na pista, slot do item no HUD, escolha dos dois modos (feito): chips "Corrida" e "Poderes" na tela antes de correr (só no Arcade, treino offline).
+3. Casca, bola, turbo, Superfox, orbitar e lançar (feito, `gp-items-layer.ts`). Tecla **F** ou **Shift** usa o item (E continua sendo o turbo do drift); no celular, toque no cartão do item.
+4. Cometa, Cometa azul e bomba (feito, falta calibrar jogando).
+5. Bots usando itens (feito, simples: usam depois de uma espera sorteada). Falta: sons próprios, online (servidor decide), botão de toque melhor, testes de tela no celular e docs.
 
 ## 6. Perguntas abertas
 

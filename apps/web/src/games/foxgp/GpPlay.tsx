@@ -39,6 +39,8 @@ import {
   type GpEvent,
   type GpInput,
   type GpPaint,
+  GpItemSystem,
+  gpItemKind,
   type GpPhysicsMode,
   type GpPlayerInfo,
   gpTrackDefFor,
@@ -67,7 +69,8 @@ import { GpCommands } from './GpCommands';
 import { css, gapText, lapClock } from './format';
 import { drawMinimap } from './minimap';
 import { GpNoticeQueue, NOTICE_FADE_MS, type GpNotice, type GpNoticeKind } from './notices';
-import { PHYSICS_NAME, saveBest } from './gp-best';
+import { PHYSICS_NAME, loadPowers, saveBest } from './gp-best';
+import { GP_ITEMS } from './item-models';
 import { gpTrackName } from './vehicles';
 import { useTouchGuard } from './touch-guard';
 import { gpActionOf, gpKeyName, useGpAutoGas, useGpControls, useGpShake, type GpBinds } from './gp-settings';
@@ -430,6 +433,10 @@ export function GpPlay({
   const binds = useGpControls((st) => st.binds);
   const [notice, setNotice] = useState<GpNotice | null>(null);
   const mode: GpPhysicsMode = online?.physics ?? physics;
+  /** Arcade com poderes (spec 085): só no treino do Arcade, escolhido na tela antes de correr. */
+  const powers = !online && mode === 'arcade' && loadPowers();
+  const [itemHud, setItemHud] = useState<{ id: string; left: number; star: number; stun: number } | null>(null);
+  const useItemRef = useRef<() => void>(() => undefined);
   const laps = gpLapsOr(online?.laps ?? lapsProp);
   const trackId = gpTrackDefFor(mode, online?.track ?? track).id;
   /** O kart só baixa quando o Arcade é jogado (spec 081, Fase 6): a cena espera ele. */
@@ -557,6 +564,19 @@ export function GpPlay({
     const spectator = !!online && !world.car(meId);
     if (online && !isHost) world.goOnline(meId);
     if (isHost) world.autoEnd = false;
+    const itemSys = powers ? new GpItemSystem(world) : null;
+    let itemQ = false;
+    const botWait = new Map<string, number>();
+    let itemKey = '';
+    useItemRef.current = () => {
+      itemQ = true;
+    };
+    const onItemKey = (e: KeyboardEvent) => {
+      if (e.code === 'KeyF' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') itemQ = true;
+    };
+    if (itemSys) window.addEventListener('keydown', onItemKey);
+    if (import.meta.env.DEV)
+      (window as unknown as { __gpItems?: GpItemSystem | null }).__gpItems = itemSys;
     if (import.meta.env.DEV) (window as unknown as { __gp?: GpWorld }).__gp = world;
     const rng = createRng(`${seed}:bots`);
     // cada bot com o seu perfil (Agressivo, Consistente, Defensivo, Rápido e errático, Novato), pela seed
@@ -581,6 +601,7 @@ export function GpPlay({
       const scene = new GpScene(el, world, meId, { reduced, quality: qualityRef.current });
       scene.setCamMode(read(CAM_KEY, CAMS, 'chase'));
       scene.shakeOn = useGpShake.getState().on;
+      scene.setItems(itemSys);
       sceneRef.current = scene;
       if (import.meta.env.DEV) (window as unknown as { __gpScene?: GpScene }).__gpScene = scene;
       const resize = () => {
@@ -1054,12 +1075,44 @@ export function GpPlay({
               if (c.bot) inputs[c.id] = gpBotInput(world, c, mem.get(c.id)!, rng);
             const s0 = clock();
             world.step(GP_DT, inputs);
+            if (itemSys) {
+              const use: Record<string, boolean> = { [meId]: itemQ };
+              itemQ = false;
+              // os bots usam o item depois de uma espera sorteada (some o ar de robô)
+              for (const c of world.cars) {
+                if (!c.bot) continue;
+                const st = itemSys.state(c.id);
+                if (!st.id) {
+                  botWait.delete(c.id);
+                  continue;
+                }
+                const left = (botWait.get(c.id) ?? 0.8 + rng() * 3.2) - GP_DT;
+                botWait.set(c.id, left);
+                if (left <= 0) {
+                  use[c.id] = true;
+                  botWait.set(c.id, 0.8 + rng() * 3.2);
+                }
+              }
+              itemSys.step(GP_DT, use);
+              for (const e of itemSys.drainEvents()) {
+                if (e.type === 'hit' && e.id === meId) say('Acertado!', 1400, 'info');
+                if (e.type === 'pickup' && e.id === meId) gpSfx.noTurbo();
+              }
+            }
             if (perf) {
               perf.add('bots', s0 - b0);
               perf.add('sim', clock() - s0);
             }
           }
           remember();
+        }
+        if (itemSys) {
+          const st = itemSys.state(meId);
+          const k = `${st.id ?? ''}|${st.left}|${st.star > 0 ? 1 : 0}|${st.stun > 0 ? 1 : 0}`;
+          if (k !== itemKey) {
+            itemKey = k;
+            setItemHud(st.id ? { id: st.id, left: st.left, star: st.star, stun: st.stun } : null);
+          }
         }
         alpha = Math.max(0, Math.min(1, acc / GP_DT));
         client?.frame(dt, now);
@@ -1368,6 +1421,7 @@ export function GpPlay({
       hostLink?.dispose();
       peerLink?.dispose();
       controls.detach();
+      window.removeEventListener('keydown', onItemKey);
       gpSfx.engine.stop();
       ro?.disconnect();
       sceneRef.current?.dispose();
@@ -1652,6 +1706,30 @@ export function GpPlay({
                 </span>
               </div>
             </div>
+          )}
+          {driving && powers && (
+            <button
+              type="button"
+              className="gpx-item"
+              data-has={itemHud ? '1' : undefined}
+              data-kind={itemHud ? gpItemKind(itemHud.id as never) : undefined}
+              onPointerDown={(e) => {
+                e.preventDefault();
+                useItemRef.current();
+              }}
+              aria-label={
+                itemHud
+                  ? `Usar item: ${GP_ITEMS.find((i) => i.id === itemHud.id)?.name ?? ''}`
+                  : 'Sem item'
+              }
+              data-testid="gp-item-slot"
+            >
+              <span className="gpx-item-name">
+                {itemHud ? (GP_ITEMS.find((i) => i.id === itemHud.id)?.name ?? itemHud.id) : 'Sem item'}
+              </span>
+              {itemHud && itemHud.left > 1 && <b className="gpx-item-n">x{itemHud.left}</b>}
+              <small>{touchDevice ? 'Toque' : 'F'}</small>
+            </button>
           )}
           {driving && mode === 'arcade' && h.boost > 0 && (
             <div className="gpx-boost" data-level={h.boost} aria-hidden="true">

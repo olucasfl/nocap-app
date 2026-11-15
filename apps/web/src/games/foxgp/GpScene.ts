@@ -37,11 +37,13 @@ import {
   gpTowerSlots,
   type GpCar,
   type GpEvent,
+  type GpItemSystem,
   type GpWorld,
 } from '@nocap/games';
 import { mapEdge } from '../atravessa/models';
 import { buildCar, type CarModel } from './car-model';
 import { buildKart, kartReady, type KartModel } from './kart-model';
+import { GpItemsLayer } from './gp-items-layer';
 
 export type GpCamMode = 'far' | 'chase' | 'cockpit';
 export type GpQuality = 'low' | 'medium' | 'high';
@@ -227,6 +229,8 @@ function labelTexture(
 export class GpScene {
   private renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
+  /** Itens do Arcade com poderes (spec 085); vazio na Corrida. */
+  private itemsLayer: GpItemsLayer | null = null;
   private camera = new THREE.PerspectiveCamera(FAR_FOV, 1, 2, 900);
   private composer: EffectComposer | null = null;
   private afterimage: AfterimagePass | null = null;
@@ -1706,6 +1710,12 @@ export class GpScene {
     }
   }
 
+  /** Liga os itens do Arcade com poderes (caixas, tiros, armadilhas) a esta cena. */
+  setItems(sys: GpItemSystem | null) {
+    this.itemsLayer?.dispose();
+    this.itemsLayer = sys ? new GpItemsLayer(this.scene, sys) : null;
+  }
+
   resize(w: number, h: number) {
     if (w === this.size.w && h === this.size.h) return;
     this.size = { w, h };
@@ -2077,6 +2087,7 @@ export class GpScene {
       }
     }
 
+    this.itemsLayer?.update(dt, w.cars, pose);
     const t0 = import.meta.env.DEV ? performance.now() : 0;
     if (this.composer) this.composer.render(dt);
     else this.renderer.render(this.scene, this.camera);
@@ -2220,6 +2231,7 @@ export class GpScene {
   }
 
   dispose() {
+    this.itemsLayer?.dispose();
     for (const t of this.textures) t.dispose();
     for (const v of this.cars.values()) v.m.dispose();
     this.scene.traverse((o) => {

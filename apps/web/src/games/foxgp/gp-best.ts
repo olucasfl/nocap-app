@@ -165,3 +165,21 @@ export function gpTakeBack(): boolean {
     return false;
   }
 }
+
+const POWERS_KEY = 'nocap-gp-powers';
+/** Arcade com poderes (spec 085): ligado, o Arcade tem caixas de item; desligado é a Corrida de sempre. */
+export function loadPowers(): boolean {
+  try {
+    return localStorage.getItem(POWERS_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+export function savePowers(on: boolean) {
+  try {
+    localStorage.setItem(POWERS_KEY, on ? '1' : '0');
+  } catch {
+    /* sem armazenamento */
+  }
+  gpNotify();
+}

@@ -1174,3 +1174,55 @@
   width: 38px;
   height: 8px;
 }
+
+/* item do Arcade com poderes (spec 085): fica acima do turbo, à direita */
+.gpx-item {
+  position: absolute;
+  right: max(14px, env(safe-area-inset-right));
+  bottom: calc(max(14px, env(safe-area-inset-bottom)) + 196px);
+  z-index: 5;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-width: 96px;
+  padding: 8px 12px;
+  border: 2px solid var(--gp-line-2, #3a4560);
+  border-radius: 12px;
+  background: var(--gp-hud, rgba(11, 14, 23, 0.88));
+  color: var(--gp-text, #f4f6fb);
+  font:
+    800 14px 'Saira Condensed',
+    system-ui,
+    sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.gpx-item[data-has='1'] {
+  border-color: var(--gp-accent, #ff7d26);
+  box-shadow: 0 0 0 2px var(--gp-accent-bg, rgba(255, 125, 38, 0.18));
+}
+.gpx-item:not([data-has]) {
+  opacity: 0.6;
+}
+.gpx-item-n {
+  font-size: 18px;
+  color: var(--gp-yellow, #ffd23a);
+}
+.gpx-item small {
+  font:
+    700 11px 'Inter',
+    system-ui,
+    sans-serif;
+  color: var(--gp-muted, #a9b2c7);
+}
+
+@media (pointer: coarse) {
+  .gpx-item {
+    bottom: auto;
+    top: 42%;
+    min-width: 84px;
+    padding: 6px 10px;
+  }
+}
