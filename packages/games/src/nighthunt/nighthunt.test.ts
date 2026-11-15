@@ -431,3 +431,49 @@ describe('armas novas, passivos e evoluções', () => {
     expect([w.rerollsUsed, w.banishesUsed]).toEqual([1, 1]);
   });
 });
+
+describe('objetos quebráveis do cenário', () => {
+  const walk = (w: NhWorld, n: number) => {
+    for (let i = 0; i < n; i++) {
+      w.player.hp = w.player.maxHp;
+      w.step({ x: 1, y: 0 });
+      w.drainEvents();
+    }
+  };
+  it('nascem pelo hash da seed, iguais em duas partidas, e nunca no ponto de partida', () => {
+    const a = new NhWorld('brk');
+    const b = new NhWorld('brk');
+    walk(a, 600);
+    walk(b, 600);
+    expect(a.breakables.length).toBeGreaterThan(3);
+    expect(a.breakables.map((o) => [o.x, o.y, o.kind])).toEqual(
+      b.breakables.map((o) => [o.x, o.y, o.kind]),
+    );
+    expect(a.breakables.every((o) => Math.hypot(o.x, o.y) >= 130)).toBe(true);
+  });
+  it('quebrar solta item e conta no resultado', () => {
+    const w = new NhWorld('brk2');
+    walk(w, 60);
+    const o = w.breakables[0]!;
+    const before = w.items.length;
+    (w as unknown as { damageBreakable(b: unknown, d: number): void }).damageBreakable(o, 99);
+    expect(w.items.length).toBeGreaterThan(before);
+    expect(w.result().broken).toBe(1);
+  });
+  it('o ímã puxa todos os itens do mapa', () => {
+    const w = new NhWorld('brk3');
+    for (let i = 0; i < 5; i++)
+      w.items.push({
+        uid: 900 + i,
+        type: 'xp',
+        x: 2000 + i,
+        y: 0,
+        attracted: false,
+        speed: 0,
+        born: 0,
+      });
+    w.items.push({ uid: 950, type: 'magnet', x: 0, y: 0, attracted: false, speed: 0, born: 0 });
+    w.step({ x: 0, y: 0 });
+    expect(w.items.filter((i) => i.type === 'xp').every((i) => i.attracted)).toBe(true);
+  });
+});

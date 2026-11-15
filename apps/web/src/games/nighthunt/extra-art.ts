@@ -121,6 +121,83 @@ const PAL: Record<string, string> = {
   P: '#9a6fe0',
   e: '#3ad0e8',
   k: '#10131c',
+  a: '#b8bcc8',
+  A: '#7a7f92',
+  N: '#5a3a20',
+  t: '#c8683a',
+  T: '#8a3f22',
+  i: '#d8f4ff',
+  I: '#8ed0f0',
+  J: '#4a8fc0',
+  c: '#f4f8ff',
+};
+
+/**
+ * Objeto quebrável de cada mapa (um por mapa, pequeno como as tochas do Vampire Survivors, 12x15 px ampliados 2x):
+ * campo = lampião de ferro num poste, deserto = urna de argila com faixa dourada, gelo = cristal de gelo sobre uma rocha.
+ */
+export const BREAKABLE_ART: Record<string, string[]> = {
+  campo: [
+    '....AAAA....',
+    '...AAaaAA...',
+    '...AywwyA...',
+    '...AoyyoA...',
+    '...AooooA...',
+    '...AAAAAA...',
+    '.....nN.....',
+    '.....nN.....',
+    '.....nN.....',
+    '.....nN.....',
+    '.....nN.....',
+    '....nnNN....',
+    '...nnnNNN...',
+    '..aaaaaAAA..',
+    '..AAAAAAAA..',
+  ],
+  deserto: [
+    '...TTTTTT...',
+    '...TyyyyT...',
+    '....tttt....',
+    '...tttttt...',
+    '..tttttttT..',
+    '.tttwttttTT.',
+    '.ttwtttttTT.',
+    '.yyyyyyyyyy.',
+    '.tttttttttT.',
+    '.ttttttttTT.',
+    '..ttttttTT..',
+    '...tttTTT...',
+    '....tTTT....',
+    '....TTTT....',
+  ],
+  gelo: [
+    '.....ii.....',
+    '....iiII....',
+    '....iIIJ....',
+    '...iiIIIJ...',
+    '.i.iIwIJJ.i.',
+    '.iIiIIIIJiJ.',
+    '.iIIIIIIJJJ.',
+    '..iIIIIIJJ..',
+    '..iIIIIIJJ..',
+    '...IIIIJJ...',
+    '..aaIIJaaa..',
+    '.aaaaaAAAAa.',
+    '.aAaaAAAAAA.',
+    '..AAAAAAAA..',
+  ],
+};
+/** Cor do brilho de cada objeto (aura suave desenhada por baixo). */
+export const BREAKABLE_GLOW: Record<string, string> = {
+  campo: '255,190,80',
+  deserto: '255,150,60',
+  gelo: '120,215,255',
+};
+/** Cor dos cacos de cada mapa ao quebrar. */
+export const BREAKABLE_DEBRIS: Record<string, string[]> = {
+  campo: ['#b8bcc8', '#7a7f92', '#8a5a32', '#ffd94a'],
+  deserto: ['#c8683a', '#8a3f22', '#ffd94a', '#ff9a2a'],
+  gelo: ['#d8f4ff', '#8ed0f0', '#4a8fc0', '#f4f8ff'],
 };
 const ICONS: Record<string, string[]> = {
   lightning: [
@@ -287,10 +364,11 @@ const ICONS: Record<string, string[]> = {
   ],
 };
 
-function paint(map: string[], scale: number): HTMLCanvasElement {
+function paint(map: string[], scale: number, cols = 16): HTMLCanvasElement {
   const c = document.createElement('canvas');
-  c.width = 16 * scale;
-  c.height = 16 * scale;
+  c.width = cols * scale;
+  c.height =
+    map.length >= 16 || cols === 16 ? Math.max(16, map.length) * scale : map.length * scale;
   const q = c.getContext('2d')!;
   map.forEach((row, j) =>
     [...row].forEach((ch, i) => {
@@ -343,6 +421,9 @@ export function extendAtlas(
   // orbes do jogador: as bolas do corvo em azul
   for (let i = 0; i < 4; i++)
     add(`X/orb${i}`, shifted(crop(`Enemies/DarkRaven/Ball0${i}`), 140, 1.2));
+  // objetos quebráveis do cenário
+  for (const [mapId, map] of Object.entries(BREAKABLE_ART))
+    add(`X/brk/${mapId}`, outlined(paint(map, 2, 12), '#0f1424', 2));
   // ícones novos
   const base32 = (id: string) => outlined(paint(ICONS[id]!, 2), '#0f2233', 2);
   for (const id of Object.keys(ICONS)) add(`X/${id}`, base32(id));

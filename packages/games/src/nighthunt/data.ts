@@ -77,6 +77,11 @@ export const ITEM_SHAPES: Record<ItemType, NhItemDef> = {
   chest: { shape: 'box', w: 36, h: 36, ox: 2.2, oy: 0 },
 };
 export const MAGNET_RADIUS = 260;
+/** Objetos quebráveis do cenário: uma grade de células, cada uma com chance de ter um objeto (hash da seed). */
+export const BREAKABLE_CELL = 420;
+export const BREAKABLE_CHANCE = 0.62;
+export const BREAKABLE_HP = 3;
+export const BREAKABLE_RADIUS = 22;
 export const ITEM_ATTRACT_ACCEL = 100;
 
 export type ProjectileKind = 'horizontal' | 'diagonal' | 'halo' | 'axe' | 'orb' | 'pAxe';

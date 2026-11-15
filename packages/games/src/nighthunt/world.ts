@@ -6,6 +6,10 @@ import {
   HEROES,
   ITEM_ATTRACT_ACCEL,
   ITEM_SHAPES,
+  BREAKABLE_CELL,
+  BREAKABLE_CHANCE,
+  BREAKABLE_HP,
+  BREAKABLE_RADIUS,
   MAGNET_RADIUS,
   MAPS,
   MAX_PASSIVE_SLOTS,
@@ -104,6 +108,17 @@ export interface Item {
   speed: number;
   born: number;
 }
+/** Objeto do cenário que se quebra (e solta item). A aparência depende do mapa; a regra é a mesma em todos. */
+export interface Breakable {
+  uid: number;
+  x: number;
+  y: number;
+  hp: number;
+  /** 0 ou 1: qual dos dois modelos do mapa. */
+  kind: number;
+  flash: number;
+  cell: string;
+}
 export interface Projectile {
   x: number;
   y: number;
@@ -132,6 +147,8 @@ export type NhEvent =
   | { k: 'levelUp' }
   | { k: 'fire'; kind: 'horizontal' | 'diagonal' | 'halo' | 'axe' }
   | { k: 'bolt'; x: number; y: number }
+  | { k: 'breakHit'; x: number; y: number }
+  | { k: 'break'; x: number; y: number; kind: number }
   | { k: 'evolve'; id: EvoId };
 
 export type Pending = { kind: 'levelUp' | 'chest'; options: ChoiceId[] };
@@ -139,6 +156,7 @@ export type Pending = { kind: 'levelUp' | 'chest'; options: ChoiceId[] };
 export interface RunResult {
   score: number;
   kills: number;
+  broken: number;
   gold: number;
   level: number;
   upgrades: Partial<Record<UpgradeId, number>>;
@@ -261,6 +279,13 @@ export class NhWorld {
   private baseHp: number;
   private baseSpeed: number;
   private mapDef;
+  breakables: Breakable[] = [];
+  private brkCells = new Set<string>();
+  private brkDone = new Set<string>();
+  private brkSeed: number;
+  private brkRng: () => number;
+  private brkSwing = new Set<number>();
+  brokenCount = 0;
 
   constructor(
     seed: string,
@@ -268,6 +293,9 @@ export class NhWorld {
     opts: NhOptions = {},
   ) {
     this.rng = createRng('nighthunt:' + seed);
+    // fluxo próprio: os objetos do cenário não mexem na sorte dos inimigos
+    this.brkRng = createRng('nighthunt:brk:' + seed);
+    this.brkSeed = [...seed].reduce((h, c) => (Math.imul(h, 31) + c.charCodeAt(0)) | 0, 7);
     const hero = HEROES[opts.hero ?? 'kael'] ?? HEROES.kael!;
     this.heroId = hero.id;
     this.mapDef = MAPS[opts.map ?? 'campo'] ?? MAPS.campo!;
@@ -394,6 +422,7 @@ export class NhWorld {
     return {
       score: this.t,
       kills: this.kills,
+      broken: this.brokenCount,
       gold: this.gold,
       level: this.level,
       upgrades: { ...this.levels },
@@ -425,6 +454,7 @@ export class NhWorld {
     this.tickLaunchers(dt);
     this.tickNewWeapons(dt);
     this.tickEnemyLaunchers(dt);
+    this.tickBreakables();
     this.moveItems(dt);
     this.resolveContacts();
     this.t += dt;
@@ -772,8 +802,9 @@ export class NhWorld {
         for (let i = 0; i < s.goldReward * this.goldMult; i++) this.dropItem('gold', ...jitter());
       }
     }
-    if (this.rng() < s.healthPotionRewardChance) this.dropItem('health', ...jitter());
-    if (this.rng() < s.magnetRewardChance) this.dropItem('magnet', ...jitter());
+    // poções e ímãs só saem dos objetos do cenário (decisão do Lucas em 15/11/2026): aqui os rolls seguem consumidos para não mudar a sorte da partida
+    this.rng();
+    this.rng();
     if (this.rng() < Math.max(s.chestRewardChance, BOSS_CHEST[s.id] ?? 0))
       this.dropItem('chest', ...jitter());
   }
@@ -997,6 +1028,13 @@ export class NhWorld {
             this.damageEnemy(e, (2 + this.levels.orbit * 0.7) * dm * (evo ? 2 : 1));
           }
         }
+        for (const b of this.breakables) {
+          if ((this.orbHit.get(b.uid) ?? 0) > this.t) continue;
+          if (overlaps(shape, this.breakableShape(b))) {
+            this.orbHit.set(b.uid, this.t + 0.45);
+            this.damageBreakable(b, (2 + this.levels.orbit * 0.7) * dm);
+          }
+        }
       }
       if (this.tick % 600 === 0)
         for (const [k, v] of this.orbHit) if (v < this.t) this.orbHit.delete(k);
@@ -1058,6 +1096,72 @@ export class NhWorld {
   }
 
   // ---- itens ----
+  // ---- objetos do cenário ----
+  private cellHash(i: number, j: number, salt: number): number {
+    let h = (this.brkSeed ^ Math.imul(i, 374761393) ^ Math.imul(j, 668265263) ^ salt) | 0;
+    h = Math.imul(h ^ (h >>> 13), 1274126177);
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+  }
+
+  /** Gera objetos nas células ao redor do jogador (por hash da célula, sempre iguais para a mesma seed) e solta os que ficaram longe. */
+  private tickBreakables(): void {
+    if (this.tick % 15 !== 1) return;
+    const px = this.player.x;
+    const py = this.player.y;
+    const ci = Math.floor(px / BREAKABLE_CELL);
+    const cj = Math.floor(py / BREAKABLE_CELL);
+    for (let j = cj - 2; j <= cj + 2; j++)
+      for (let i = ci - 2; i <= ci + 2; i++) {
+        const key = i + ',' + j;
+        if (this.brkCells.has(key) || this.brkDone.has(key)) continue;
+        this.brkCells.add(key);
+        if (this.cellHash(i, j, 1) > BREAKABLE_CHANCE) continue;
+        const x = (i + 0.15 + this.cellHash(i, j, 2) * 0.7) * BREAKABLE_CELL;
+        const y = (j + 0.15 + this.cellHash(i, j, 3) * 0.7) * BREAKABLE_CELL;
+        if (Math.hypot(x, y) < 130) continue; // nada em cima do ponto de partida
+        this.breakables.push({
+          uid: this.nextUid++,
+          x,
+          y,
+          hp: BREAKABLE_HP,
+          kind: 0,
+          flash: 0,
+          cell: key,
+        });
+      }
+    this.breakables = this.breakables.filter((b) => {
+      const far = Math.hypot(b.x - px, b.y - py) > BREAKABLE_CELL * 3.2;
+      if (far) this.brkCells.delete(b.cell);
+      return !far;
+    });
+  }
+
+  private breakableShape(b: Breakable): Shape {
+    return { kind: 'circle', cx: b.x, cy: b.y, r: BREAKABLE_RADIUS };
+  }
+
+  private damageBreakable(b: Breakable, dmg: number): void {
+    if (b.hp <= 0) return;
+    b.hp -= dmg;
+    b.flash = 0.1;
+    this.events.push({ k: 'breakHit', x: b.x, y: b.y });
+    if (b.hp > 0) return;
+    this.brokenCount++;
+    this.brkDone.add(b.cell);
+    this.events.push({ k: 'break', x: b.x, y: b.y, kind: b.kind });
+    const r = this.brkRng();
+    const at = (): [number, number] => [
+      b.x - 14 + this.brkRng() * 28,
+      b.y - 14 + this.brkRng() * 28,
+    ];
+    if (r < 0.3) {
+      const n = Math.max(1, Math.round((1 + Math.floor(this.brkRng() * 3)) * this.goldMult));
+      for (let i = 0; i < n; i++) this.dropItem('gold', ...at());
+    } else if (r < 0.62) this.dropItem('health', b.x, b.y);
+    else if (r < 0.74) this.dropItem('magnet', b.x, b.y);
+    else for (let i = 0; i < 4; i++) this.dropItem('xp', ...at());
+  }
+
   private moveItems(dt: number): void {
     for (const it of this.items) {
       if (!it.attracted) continue;
@@ -1090,6 +1194,12 @@ export class NhWorld {
         this.heal(ITEM_SETTINGS.healthPerPotion);
         break;
       case 'magnet':
+        // o ímã puxa tudo que estiver no mapa, não só o que está perto
+        for (const o of this.items)
+          if (!o.attracted && o !== it) {
+            o.attracted = true;
+            o.speed = 320;
+          }
         this.magnets++;
         this.magnet.active = true;
         this.magnet.left = PLAYER_SETTINGS.magnetDuration;
@@ -1130,6 +1240,16 @@ export class NhWorld {
         } else if (!hit) this.weapon.inContact.delete(e.uid);
       }
     }
+    if (this.weapon.active) {
+      const sw = this.swordShape();
+      for (const b of this.breakables) {
+        const hit = overlaps(sw, this.breakableShape(b));
+        if (hit && !this.brkSwing.has(b.uid)) {
+          this.brkSwing.add(b.uid);
+          this.damageBreakable(b, this.swordDamage());
+        } else if (!hit) this.brkSwing.delete(b.uid);
+      }
+    }
     // projéteis do jogador x inimigos
     for (const q of this.projectiles) {
       if (q.pierces <= 0 || q.hostile) continue;
@@ -1142,7 +1262,16 @@ export class NhWorld {
           q.pierces--;
         }
       }
+      for (const b of this.breakables) {
+        if (b.hp <= 0 || q.hit.has(b.uid)) continue;
+        if (overlaps(qs, this.breakableShape(b))) {
+          q.hit.add(b.uid);
+          this.damageBreakable(b, q.damage);
+        }
+      }
     }
+    this.breakables = this.breakables.filter((b) => b.hp > 0);
+    for (const b of this.breakables) if (b.flash > 0) b.flash -= STEP;
     // jogador x inimigos (no começo do contato e a cada 0,5 s) e x projéteis inimigos
     const now = new Set<number>();
     const resolveAll = this.collisionTimer >= PLAYER_SETTINGS.collisionDelay;

@@ -62,3 +62,12 @@ Leitura: **o equilíbrio ainda não está bom.** Quem começa com Orbes, Raio ou
 2. Ranking e Daily com validação no servidor (a simulação já é determinística; falta gravar as entradas e a rota).
 3. Equilíbrio fino jogando (o robô é um jogador só) e desempenho em celular fraco com 300+ inimigos.
 4. Sons próprios para as armas novas (hoje reaproveitam os do Slash).
+
+
+## Objetos quebráveis do cenário (15/11/2026)
+
+- Células de 420 px com 62% de chance de ter um objeto (hash da seed, sem usar o rng dos inimigos), nunca a menos de 130 px da partida; as células longe do jogador são descartadas e voltam a nascer, as quebradas não.
+- 3 de vida. Espada, projéteis (sem gastar perfuração) e orbes guardiões quebram; o raio lunar não.
+- Drops (rng próprio): 30% moedas, 32% coração (cura), 12% ímã, 26% cristais de XP. Os inimigos não soltam mais poção nem ímã (só XP, moedas e baú); essas duas coisas vêm só dos objetos.
+- O ímã (dos objetos e dos inimigos) agora puxa todos os itens do mapa.
+- Aparência por mapa, só visual: campo (lampião de ferro num poste), deserto (urna de argila com faixa dourada), gelo (cristal de gelo sobre uma rocha), pequenos como as tochas do Vampire Survivors e com aura suave, com cacos nas cores do mapa. Arte em `apps/web/src/games/nighthunt/extra-art.ts`.

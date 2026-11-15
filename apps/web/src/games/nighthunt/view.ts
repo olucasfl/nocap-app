@@ -1,5 +1,6 @@
 import { HEROES, MAPS, SWORD_BOXES, type Enemy, type NhWorld } from '@nocap/games';
 import { animFrame, drawFrame, type Atlas } from './assets';
+import { BREAKABLE_DEBRIS, BREAKABLE_GLOW } from './extra-art';
 
 /** Área visível do mundo (em unidades do mundo), recalculada a cada quadro para preencher a tela em pé ou deitada. */
 let CX = 255;
@@ -10,6 +11,9 @@ let VIEW_HEIGHT = 680;
 /** Efeitos de tela (morte de inimigo, coleta de item): só desenho, nada disso entra na simulação. */
 export interface Fx {
   key: string;
+  /** Mapa (só para os cacos). */
+  map?: string;
+  kind?: number;
   x: number;
   y: number;
   t: number;
@@ -149,6 +153,30 @@ export function drawWorld(
     drawFrame(g, a, frame, x, y);
   }
 
+  // objetos quebráveis do cenário (tema do mapa)
+  for (const b of w.breakables) {
+    const x = sx(b.x);
+    const y = sy(b.y);
+    if (x < -60 || x > VIEW_WIDTH + 60 || y < -60 || y > VIEW_HEIGHT + 60) continue;
+    g.save();
+    g.globalAlpha = 0.25;
+    g.fillStyle = '#000';
+    g.beginPath();
+    g.ellipse(x, y + 12, 12, 4, 0, 0, Math.PI * 2);
+    g.fill();
+    g.restore();
+    const wob = b.flash > 0 ? Math.sin(b.flash * 120) * 2 : 0;
+    // aura suave que pulsa, para o objeto se destacar no chão como as tochas do Vampire Survivors
+    const glow = BREAKABLE_GLOW[st.map] ?? BREAKABLE_GLOW.campo!;
+    const pulse = 0.5 + 0.5 * Math.sin(t * 4 + b.uid);
+    const gr = g.createRadialGradient(x, y - 4, 2, x, y - 4, 34);
+    gr.addColorStop(0, `rgba(${glow},${0.34 + 0.16 * pulse})`);
+    gr.addColorStop(1, `rgba(${glow},0)`);
+    g.fillStyle = gr;
+    g.fillRect(x - 36, y - 40, 72, 72);
+    drawFrame(g, a, `X/brk/${st.map}`, x + wob, y - 2, { white: b.flash > 0 });
+  }
+
   // ímã ativo: anel de alcance
   if (w.magnet.active) {
     g.save();
@@ -256,6 +284,26 @@ export function drawWorld(
       drawBolt(g, sx(f.x), sy(f.y), f.t / f.dur, f.x * 7 + f.y);
       continue;
     }
+    if (f.key === 'debris') {
+      const p = f.t / f.dur;
+      const cols = BREAKABLE_DEBRIS[f.map ?? 'campo'] ?? BREAKABLE_DEBRIS.campo!;
+      g.save();
+      g.globalAlpha = 1 - p;
+      for (let i = 0; i < 10; i++) {
+        const ang = (i / 10) * Math.PI * 2 + i * 0.7;
+        const sp = 26 + (i % 3) * 14;
+        g.fillStyle = cols[i % cols.length]!;
+        const s = i % 2 ? 6 : 4;
+        g.fillRect(
+          sx(f.x) + Math.cos(ang) * sp * p - s / 2,
+          sy(f.y) + Math.sin(ang) * sp * p + 90 * p * p - s / 2,
+          s,
+          s,
+        );
+      }
+      g.restore();
+      continue;
+    }
     const key = animFrame(a, f.key, f.t);
     drawFrame(g, a, key, sx(f.x), sy(f.y));
   }
@@ -310,8 +358,15 @@ function drawSword(
 }
 
 /** Atualiza os efeitos de tela a partir dos eventos da simulação. */
-export function pushFx(fx: Fx[], k: 'enemyDeath' | 'pickup' | 'bolt', x: number, y: number): void {
-  if (k === 'bolt') fx.push({ key: 'bolt', x, y, t: 0, dur: 0.3 });
+export function pushFx(
+  fx: Fx[],
+  k: 'enemyDeath' | 'pickup' | 'bolt' | 'debris',
+  x: number,
+  y: number,
+  map?: string,
+): void {
+  if (k === 'debris') fx.push({ key: 'debris', map, x, y, t: 0, dur: 0.5 });
+  else if (k === 'bolt') fx.push({ key: 'bolt', x, y, t: 0, dur: 0.3 });
   else if (k === 'enemyDeath') fx.push({ key: 'Effects/DeathEffect', x, y, t: 0, dur: 0.36 });
   else fx.push({ key: 'Effects/PickBonus', x, y, t: 0, dur: 0.45 });
 }

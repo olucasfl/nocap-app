@@ -13,6 +13,7 @@ interface Nh {
   skip(s: number): void;
   xp(n: number): void;
   chest(): void;
+  brk(): number;
   evo(): void;
   die(): void;
   gold(n: number): number;

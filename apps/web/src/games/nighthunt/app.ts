@@ -284,6 +284,15 @@ export class NhApp {
         if (!this.save.heroes.includes(hero)) this.save.heroes.push(hero);
         this.save.stats.bestTime = Math.max(this.save.stats.bestTime, 700);
       },
+      brk: () => {
+        const w = this.world;
+        const b = w?.breakables[0];
+        if (w && b) {
+          w.player.x = b.x - 70;
+          w.player.y = b.y - 30;
+        }
+        return w?.breakables.length ?? 0;
+      },
       go: (s: Screen) => this.go(s),
     };
   }
@@ -561,6 +570,13 @@ export class NhApp {
           break;
         case 'enemyDeath':
           pushFx(this.fx, 'enemyDeath', e.x, e.y);
+          break;
+        case 'breakHit':
+          snd('enemyHit', 0.7 + Math.random() * 0.15);
+          break;
+        case 'break':
+          pushFx(this.fx, 'debris', e.x, e.y, this.world?.mapId);
+          snd('enemyHit', 0.55);
           break;
         case 'playerHit':
           snd('playerHit');
