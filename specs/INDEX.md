@@ -78,6 +78,6 @@
 | 081 | [Fox GP v3](081-fox-gp-v3.md) | 5 | implementada na `feat/fox-gp-v3` (12/11/2026); falta calibrar jogando e medir celular como líder |
 | 082 | [Mini Golf](082-mini-golf.md) | 5 | feito (14/11/2026): física portada, 20 fases do Open Golf, garagem da bola, melhor marca na conta e sala online; falta validar em aparelhos reais |
 | 083 | [Night Hunt](083-night-hunt.md) | 5 | fase 2 feita (15/11/2026): 5 heróis, 3 mapas, 15 melhorias, 7 evoluções, reroll/pular/banir, 51 conquistas, save na conta, robô e testes de tela; falta confirmar a licença da arte e ranking/Daily |
-| 084 | [Night Hunt, fase 3](084-night-hunt-fase-3.md) | 5 | rascunho (15/11/2026): itens novos no estilo Vampire Survivors, bestiário animado e nova evolução; evolução e uniões como no VS, 5 armas novas com ficha, sistemas (empurrão, separação, obstáculos, vitória por mapa, coleta) e heróis refeitos escritos; aguardando decisões da seção 9 |
+| 084 | [Night Hunt, fase 3](084-night-hunt-fase-3.md) | 5 | rascunho (15/11/2026): itens novos no estilo Vampire Survivors, bestiário animado e nova evolução; evolução e uniões como no VS, 5 armas novas com ficha, sistemas (empurrão, separação, obstáculos, vitória por mapa, coleta) e heróis refeitos escritos; decisões de heróis, preços, chefe final e obstáculos tomadas; faltam a lista de itens e a wiki do VS |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.

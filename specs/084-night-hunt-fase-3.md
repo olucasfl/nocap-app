@@ -1,6 +1,6 @@
 # 084: Night Hunt, fase 3 (itens novos no estilo Vampire Survivors, bestiário e nova evolução)
 
-Status: rascunho, aguardando a lista de itens do Lucas (a regra de evolução e uniões já está descrita). Continuação da [083](083-night-hunt.md).
+Status: rascunho com as decisões de heróis, preços, chefe final e obstáculos já tomadas (seção 9); faltam a lista de itens e a liberação da wiki do VS. Continuação da [083](083-night-hunt.md).
 
 ## 1. Pedido (15/11/2026)
 
@@ -210,7 +210,7 @@ Referência enviada pelo Lucas: o guia "Evolutions & Unions" do VS e as fichas d
 
 - **Primeira vez no mapa, ou enquanto o chefe final ainda não caiu:** a partida corre normal e, num tempo fixo do mapa (proposta: Campo 15 min, Deserto 20 min, Gelo 25 min), **o chefe final do mapa aparece** (com vida pelo `bossHp`, fase de escolta e arena aberta). A partida só vira vitória quando o chefe final morre; se o jogador morrer antes, nada é concluído.
 - **Ao derrotar o chefe final:** tela de vitória (nova, no estilo da de fim de jogo), prêmio em ouro maior, selo "Concluído" no mapa e nova conquista; o jogo oferece **continuar jogando** (modo infinito) ou voltar ao início.
-- **Modo infinito do mapa:** só liberado **depois** de concluir o mapa. Igual ao jogo de hoje (hordas sem fim, chefe a cada 2,5 min). Cada mapa guarda os **recordes** do modo infinito: maior tempo, mais abates e maior nível, mostrados na tela de mapas (e na conta).
+- **Modo infinito do mapa:** só liberado **depois** de concluir o mapa. Igual ao jogo de hoje (hordas sem fim, chefe a cada 2,5 min), mas **sem o chefe final** (decidido: ele só aparece na partida de conclusão do mapa). Cada mapa guarda os **recordes** do modo infinito: maior tempo, mais abates e maior nível, mostrados na tela de mapas (e na conta).
 - Cada mapa tem um **chefe final próprio**, com regra própria: Campo Verde = Golem de Pedra (o `FinalBoss` do Slash, empurrando com pisadas), Deserto Seco = Dragão Dourado maior (anel de orbes mais denso, mergulho), Planície Gelada = Golem de Cristal gigante (estilhaços em anel, fase de gelo). Arte: sprites existentes ampliados com a regra, nunca arte nova copiada.
 - Save: `stats.mapsDone` (mapas concluídos) e `stats.mapRecords` (por mapa: tempo, abates, nível do infinito). A API valida o formato (campo próprio, sem migration).
 
@@ -228,14 +228,14 @@ Regra de desenho: o herói começa com **uma arma que tem evolução e tem um pa
 | --- | --- | --- | --- | --- |
 | Kael, o Guerreiro | 0 | Espada (Lâmina Real, com Poder) | +20% de XP | O simples e equilibrado para aprender |
 | Vesper, a Açoitadora | 600 | Chicote (Laceração Sangrenta, com Coração) | +20% de vida máxima, dano crítico pequeno desde o início | Corpo a corpo largo, ótimo contra hordas dos dois lados |
-| Mara, a Caçadora | 1.500 | Varinha Arcana (Santa Varinha, com Diário de Caça) | +15% de velocidade de projétil, -10% de vida | Alcance e alvo automático para quem quer só desviar |
-| Brann, o Guardião | 2.500 | Aura de Alho (Devorador de Almas, com Regeneração) | +25% de vida, -8% de velocidade | Tanque que aguenta no meio da horda |
-| Dorian, o Alquimista | 3.500 | Poças de Magma (Lava Viva, com Imã) | +15% de duração de zonas e raio de atração +20% | Controle de área: encurrala os inimigos nas poças |
-| Selene, a Piromante | 4.500 | Círculo de Brasas (Anel Infernal, com Ligeireza) | +12% de dano, -15% de vida | Defesa giratória de risco e dano altos |
-| Ysolde, a Tempestade | 6.000 | Raio Lunar (Tempestade, com Trevo) | recarga 12% menor, -20% de vida | Dano alto em alvos aleatórios sem mirar |
-| Rurik, o Lenhador | 8.000 | Machado Giratório (evolução, com Armadura) | +18% de dano, +15% de ouro | Dano em arco que atravessa tudo |
+| Mara, a Caçadora | 1.200 | Varinha Arcana (Santa Varinha, com Diário de Caça) | +15% de velocidade de projétil, -10% de vida | Alcance e alvo automático para quem quer só desviar |
+| Brann, o Guardião | 1.800 | Aura de Alho (Devorador de Almas, com Regeneração) | +25% de vida, -8% de velocidade | Tanque que aguenta no meio da horda |
+| Dorian, o Alquimista | 2.400 | Poças de Magma (Lava Viva, com Imã) | +15% de duração de zonas e raio de atração +20% | Controle de área: encurrala os inimigos nas poças |
+| Selene, a Piromante | 3.000 | Círculo de Brasas (Anel Infernal, com Ligeireza) | +12% de dano, -15% de vida | Defesa giratória de risco e dano altos |
+| Ysolde, a Tempestade | 3.600 | Raio Lunar (Tempestade, com Trevo) | recarga 12% menor, -20% de vida | Dano alto em alvos aleatórios sem mirar |
+| Rurik, o Lenhador | 4.200 | Machado Giratório (evolução, com Armadura) | +18% de dano, +15% de ouro | Dano em arco que atravessa tudo |
 
-Os preços seguem a nova economia (15 vezes a do Slash). As características pequenas ficam em `HEROES` (`data.ts`), e a descrição de cada herói na carta mostra a arma inicial, a evolução e o passivo que ela pede. O robô testa cada herói com a arma inicial dele.
+Preços **nivelados**, de 600 em 600 (600, 1.200, 1.800, 2.400, 3.000, 3.600, 4.200), na economia nova (15 vezes a do Slash). As características pequenas ficam em `HEROES` (`data.ts`), e a descrição de cada herói na carta mostra a arma inicial, a evolução e o passivo que ela pede. O robô testa cada herói com a arma inicial dele.
 
 ## 7. Etapas
 
@@ -253,16 +253,20 @@ Os preços seguem a nova economia (15 vezes a do Slash). As características peq
 - Testes: dados do bestiário (todo inimigo de `ENEMIES` tem entrada), contagem, schema da API, e2e da tela em celular e computador.
 - Nada de lógica de jogo fora de `packages/games`; UI em pt-BR; sem emoji.
 
-## 9. Perguntas abertas (precisam do Lucas)
+## 9. Decisões
 
-1. **A lista de itens** que você quer (a regra de evolução já está na seção 5).
-2. **Pesquisa no VS:** esta sessão não alcança a wiki do VS (a rede bloqueia `vampire-survivors.fandom.com`). Posso trabalhar só com o que conheço, ou você libera esse endereço nas configurações de rede da sessão (ou cola as páginas dos itens)? Os números do VS entram como referência, não como cópia: os itens seguem a identidade própria do Night Hunt.
-3. **Cópia de arte:** os itens novos usam arte nova desenhada por nós no estilo do Slash (e não os sprites do VS). Confirma?
-4. **Bestiário:** só os inimigos do Slash (36 + chefes) ou também criar bichos novos para os itens/mapas novos?
-5. **Slots:** continuam 6 armas e 6 passivos (como no VS)?
-7. **Evolução na janela de nível:** confirma que a evolução entra no lugar da melhoria da arma na próxima janela (e o baú continua podendo entregar também)? E as uniões de 3 itens entram já na primeira leva ou só depois?
-8. **Guia de combinações:** aba dentro de Itens (minha sugestão) ou tela própria?
-6. **Heróis:** a Espada some do começo de todos menos o Kael (e vira uma melhoria que pode aparecer), ou todos começam com a Espada mais a arma deles? Os 8 heróis e os preços da tabela 6.6 estão bons? A Espada sobe de graça para os novos heróis comprados?
-9. **Tempo do chefe final:** Campo 15 min, Deserto 20, Gelo 25 está bom? O chefe final precisa ser vencido na mesma partida em que aparece, ou ele continua vivo no modo infinito até cair?
-10. **Obstáculos:** projéteis e armas passam por cima deles (proposta). Confirma, ou eles devem bloquear tiros?
-11. **Onde o bestiário abre:** botão novo no início (ao lado de Itens), ou dentro da tela de Itens como aba?
+### Respondidas pelo Lucas (15/11/2026)
+
+- **Espada:** só o Kael começa com ela; os outros começam com a arma própria (6.6).
+- **Preços dos heróis:** nivelados, 600 por degrau (6.6).
+- **Chefe final:** tempos aprovados (Campo 15 min, Deserto 20, Gelo 25); **não aparece no modo infinito** (6.4).
+- **Obstáculos:** tiros, armas, aura e poças **passam por cima** deles; só o jogador e os inimigos colidem (6.3).
+
+### Ainda abertas
+
+1. **A lista de itens** além das 5 armas desta spec (a regra de evolução já está na seção 5).
+2. **Wiki do Vampire Survivors:** a rede desta sessão bloqueia `vampire-survivors.fandom.com` (e `medium.com`); libere os endereços ou cole as páginas para a pesquisa por item.
+3. **Bestiário:** só os inimigos do Slash e os 15 do Dungeon Crawl, ou também bichos novos? Abre por botão novo no início (ao lado de Itens, minha sugestão) ou como aba de Itens?
+4. **Evolução na janela de nível:** a evolução entra no lugar da melhoria da arma na próxima janela, e o baú continua podendo entregar também? As uniões de 3 itens entram já na primeira leva?
+5. **Guia de combinações:** aba dentro de Itens (sugestão) ou tela própria?
+6. **Evoluções das armas atuais** (Adagas, Machado, Nova Ígnea): conferir uma a uma com o guia do VS.
