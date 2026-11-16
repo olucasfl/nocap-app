@@ -47,6 +47,10 @@ const golfFinish = (hole: boolean, n: number): Step => async (p) => {
   await p.evaluate(([h, k]) => (window as unknown as { __mgFinish: (h: boolean, n: number) => void }).__mgFinish(h as boolean, k as number), [hole, n]);
   await p.waitForTimeout(2500);
 };
+const typeWord = (w: string): Step => async (p) => {
+  for (const ch of w) await p.getByTestId(`key-${ch}`).click({ timeout: 10_000 });
+  await p.getByTestId('enter').click({ timeout: 10_000 });
+};
 const wait = (ms: number): Step => async (p) => void (await p.waitForTimeout(ms));
 
 const hubPanels = (game: string, url: string, mode: string): [string, string, Step[]][] => [
@@ -92,6 +96,7 @@ const FLOWS: [string, string, Step[]][] = [
   ['foxgp-jogo', '/fox-cap?jogo=foxgp', [click('gl-offline'), click('gp-physics-arcade'), click('gp-start'), wait(6000), tips]],
   ['sala-cor', '/sala?jogo=color', [wait(800)]],
   ['classic-jogo', '/words/classic/fase/classic/1', [wait(800)]],
+  ['classic-fim', '/words/classic/fase/classic/1', [wait(800), typeWord('amigo'), wait(2500)]],
   ['classic-dueto', '/words/classic/fase/dueto/1', [wait(800)]],
   ['bee-jogo', '/words/bee/fase/1', [wait(800)]],
   ['connect-jogo', '/words/connect/fase/1', [wait(800)]],
