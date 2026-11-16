@@ -31,6 +31,10 @@ import {
   VIEW_WIDTH,
   applyRun,
   buyMeta,
+  heroSellValue,
+  metaSellValue,
+  sellHero,
+  sellMeta,
   checkAchievements,
   metaBonus,
   metaCost,
@@ -199,6 +203,8 @@ export class NhApp {
   } | null = null;
 
   // telas de lista
+  /** Venda esperando confirmação (um toque arma, o segundo vende): evita vender sem querer. */
+  private sellArm: { id: string; until: number } | null = null;
   private scroll = 0;
   private scrollMax = 0;
   private selItem = 0;
@@ -1294,6 +1300,9 @@ export class NhApp {
           'UI/GoldIconSmall',
         );
       } else {
+        const sellV = heroSellValue(this.save, id);
+        if (sellV !== null)
+          this.sellBtn(`hero:${id}`, sellV, bx, y + 14, 126, 32, () => sellHero(this.save, id));
         this.btn(
           sel ? 'ESCOLHIDO' : 'ESCOLHER',
           bx,
@@ -1503,21 +1512,51 @@ export class NhApp {
         });
       const bw = 124;
       const bx = f.x + f.w - bw - 6;
-      if (max) this.btn('MÁX', bx, y + rh / 2 - 24, bw, 46, () => undefined, 'dis');
+      const sellV = metaSellValue(this.save, m.key);
+      // comprar fica em cima; vender (devolve 90%) em baixo, só quando há nível para vender
+      const by = sellV === null ? y + rh / 2 - 24 : y + 8;
+      const bh = sellV === null ? 46 : 40;
+      if (max) this.btn('MÁX', bx, by, bw, bh, () => undefined, 'dis');
       else
         this.btn(
           String(cost),
           bx,
-          y + rh / 2 - 24,
+          by,
           bw,
-          46,
+          bh,
           () => this.buyMeta(m.key),
           can ? 'main' : 'dis',
           'UI/GoldIconSmall',
         );
+      if (sellV !== null) this.sellBtn(`meta:${m.key}`, sellV, bx, y + 54, bw, 30, () => sellMeta(this.save, m.key));
     });
     g.restore();
     this.drawScrollbar(f.x + f.w - 4, top, viewH);
+  }
+
+  /** Botão de vender: o 1º toque pede confirmação (3 s), o 2º vende e devolve o ouro (90% do que custou). */
+  private sellBtn(id: string, value: number, x: number, y: number, w: number, h: number, sell: () => number | null): void {
+    const armed = this.sellArm?.id === id && this.sellArm.until > this.time;
+    this.btn(
+      armed ? 'CONFIRMAR' : `VENDER +${value}`,
+      x,
+      y,
+      w,
+      h,
+      () => {
+        if (!armed) {
+          this.sellArm = { id, until: this.time + 3 };
+          this.audio.play('click');
+          return;
+        }
+        this.sellArm = null;
+        if (sell() !== null) {
+          writeSave(this.save);
+          this.audio.play('gold');
+        } else this.audio.play('playerHit');
+      },
+      armed ? 'danger' : 'blue',
+    );
   }
 
   private buyMeta(key: (typeof META_LIST)[number]['key']): void {

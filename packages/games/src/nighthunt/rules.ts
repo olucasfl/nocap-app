@@ -944,6 +944,42 @@ export function buyMeta(save: NhSave, key: MetaKey): boolean {
   return true;
 }
 
+// ---------------- vender o que foi comprado ----------------
+/** Quanto do preço volta ao vender (desconto de 10%, pedido do Lucas em 16/11/2026). */
+export const SELL_RATE = 0.9;
+
+/** Ouro que volta ao vender o último nível comprado de uma melhoria (null = nada para vender). */
+export function metaSellValue(save: NhSave, key: MetaKey): number | null {
+  const lv = save.meta[key];
+  if (lv <= 0) return null;
+  const paid = metaCost(key, lv - 1);
+  return paid === null ? null : Math.floor(paid * SELL_RATE);
+}
+/** Vende o último nível da melhoria: tira o nível e devolve 90% do que ele custou. Devolve o ouro recebido, ou null. */
+export function sellMeta(save: NhSave, key: MetaKey): number | null {
+  const v = metaSellValue(save, key);
+  if (v === null) return null;
+  save.meta[key] = save.meta[key] - 1;
+  save.gold += v;
+  save.stats.metaBought = Math.max(0, save.stats.metaBought - 1);
+  return v;
+}
+
+/** Ouro que volta ao vender um herói comprado (null: o inicial, o que não é seu ou o que está escolhido). */
+export function heroSellValue(save: NhSave, id: string): number | null {
+  const h = HEROES[id];
+  if (!h || h.price <= 0 || !save.heroes.includes(id) || save.pick.hero === id) return null;
+  return Math.floor(h.price * SELL_RATE);
+}
+/** Vende um herói comprado por 90% do preço (ele volta a ficar bloqueado). */
+export function sellHero(save: NhSave, id: string): number | null {
+  const v = heroSellValue(save, id);
+  if (v === null) return null;
+  save.heroes = save.heroes.filter((x) => x !== id);
+  save.gold += v;
+  return v;
+}
+
 // ---------------- heróis e mapas ----------------
 export interface HeroInfo {
   id: string;
