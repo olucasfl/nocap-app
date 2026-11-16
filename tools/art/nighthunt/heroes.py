@@ -10,7 +10,8 @@ FRAMES = ['Idle00', 'Idle01', 'Move00', 'Move01', 'Move02', 'Move03', 'Die00', '
 # deslocamento vertical da cabeça em cada quadro (o corpo balança 1 px)
 # deslocamento (x, y) da cabeça em cada quadro, medido na posição do contorno de cima da cabeça: o guerreiro balança e
 # inclina o corpo ao andar, e a cabeça vai junto (nos quadros de andar ela fica 2 px mais à esquerda)
-HEAD_OFF = {'Idle00': (0, 0), 'Idle01': (-1, 1), 'Move00': (-2, -1), 'Move01': (-2, 0), 'Move02': (-2, -1), 'Move03': (-2, 0)}
+HEAD_OFF = {'Idle00': (0, 0), 'Idle01': (-1, 1), 'Move00': (-2, -1), 'Move01': (-2, 0), 'Move02': (-2, -1), 'Move03': (-2, 0),
+            'Die00': (-3, 1), 'Die01': (-5, 8), 'Die02': (-4, 17)}
 HEAD_DY = {k: v[1] for k, v in HEAD_OFF.items()}
 # onde está a lâmina em cada quadro: (linhas, x0, x1) e as pontas (mão -> ponta)
 BLADE = {

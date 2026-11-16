@@ -815,6 +815,15 @@ export function extendAtlas(
     tome: IA.iconTome,
     armor: IA.iconArmor,
     magnet: IA.iconMagnet,
+    cross: IA.iconCross,
+    embers: () => IA.iconEmbers(false),
+    garlic: IA.iconGarlic,
+    bone: IA.iconBone,
+    magma: () => IA.iconMagma(false),
+    runes: IA.iconRunes,
+    pentagram: IA.iconPentagram,
+    whip: IA.iconWhip,
+    bomb: IA.iconBomb,
   };
   for (const [id, fn] of Object.entries(passive)) add(`X/${id}`, fn());
   add('X/orbit', outlined(shifted(crop('UI/UpgradeIcons/HaloProjectile'), 195, 1.1), '#0f2233', 0));

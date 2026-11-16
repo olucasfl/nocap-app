@@ -717,7 +717,7 @@ export function drawCrossProj(
         // bisel: borda "de cima/esquerda" em coordenadas locais clara, "baixo/direita" escura
         const edgeX = inV ? (lx + 2.6) / 5.2 : 0.5;
         const edgeY = inH ? (ly + 3 + 2.6) / 5.2 : 0.5;
-        let l =
+        const l =
           inV && inH
             ? 0.3 + edgeX * 0.3 + edgeY * 0.2
             : inV

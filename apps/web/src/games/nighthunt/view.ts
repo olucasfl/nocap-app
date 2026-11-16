@@ -1,3 +1,5 @@
+import * as FX from './fx-art';
+import * as FX2 from './fx-art2';
 import { HEROES, MAPS, SWORD_BOXES, type Enemy, type NhWorld, type Obstacle } from '@nocap/games';
 import { animFrame, drawFrame, drawText, type Atlas } from './assets';
 import { BREAKABLE_DEBRIS, BREAKABLE_GLOW } from './extra-art';
@@ -405,21 +407,7 @@ export function drawWorld(
   // Aura de Alho e poças de magma ficam no chão, por baixo de todo mundo
   if (w.garlicRadius > 0) {
     const r = w.garlicRadius * (1 + 0.04 * Math.sin(t * 5));
-    const evo = w.evolved.has('evoGarlic');
-    const gr = g.createRadialGradient(CX, CY + 6, r * 0.35, CX, CY + 6, r);
-    gr.addColorStop(0, evo ? 'rgba(160,90,230,0)' : 'rgba(150,230,140,0)');
-    gr.addColorStop(1, evo ? 'rgba(160,90,230,.38)' : 'rgba(150,230,140,.34)');
-    g.save();
-    g.fillStyle = gr;
-    g.beginPath();
-    g.ellipse(CX, CY + 6, r, r * 0.8, 0, 0, Math.PI * 2);
-    g.fill();
-    g.strokeStyle = evo ? 'rgba(210,150,255,.7)' : 'rgba(200,255,190,.65)';
-    g.lineWidth = 2;
-    g.setLineDash([8, 6]);
-    g.lineDashOffset = -t * 20;
-    g.stroke();
-    g.restore();
+    FX.drawGarlicAura(g, CX, CY + 6, r, t, w.evolved.has('evoGarlic'));
   }
   for (const p of w.pools) {
     const age = w.t - p.born;
@@ -437,31 +425,7 @@ export function drawWorld(
       g.fillRect(fx - 2, fy - 3, 4, 4);
       continue;
     }
-    const open = Math.min(1, (age - 0.35) / 0.25);
-    const fade = Math.min(1, (p.dur - age) / 0.5);
-    const r = p.r * open;
-    const gr = g.createRadialGradient(px, py, r * 0.1, px, py, r);
-    gr.addColorStop(0, p.evo ? 'rgba(255,220,120,.95)' : 'rgba(255,190,70,.9)');
-    gr.addColorStop(0.6, 'rgba(240,90,30,.85)');
-    gr.addColorStop(1, 'rgba(120,20,10,.7)');
-    g.save();
-    g.globalAlpha = Math.max(0, fade);
-    g.fillStyle = gr;
-    g.beginPath();
-    g.ellipse(px, py, r, r * 0.7, 0, 0, Math.PI * 2);
-    g.fill();
-    g.strokeStyle = '#3a0d08';
-    g.lineWidth = 2;
-    g.stroke();
-    // bolhas subindo em laço
-    for (let i = 0; i < 5; i++) {
-      const ph = (t * 1.3 + i * 0.37 + p.x) % 1;
-      const bx = px + Math.sin(i * 2.1 + p.y) * r * 0.55;
-      const by = py - ph * r * 0.7 + r * 0.15;
-      g.fillStyle = `rgba(255,230,140,${0.9 - ph})`;
-      g.fillRect(bx - 2, by - 2, 4, 4);
-    }
-    g.restore();
+    FX.drawMagmaPool(g, px, py, p.r, age - 0.35, p.dur - 0.35, p.evo, p.x * 0.37 + p.y);
   }
 
   // objetos quebráveis do cenário (tema do mapa)
@@ -577,90 +541,47 @@ export function drawWorld(
   // cortes do Chicote
   for (const c of w.cuts) {
     if (c.born === 0) continue;
-    const age = (w.t - c.born) / 0.22;
+    const age = (w.t - c.born) / 0.3;
     if (age > 1) continue;
-    const cx = sx(w.player.x) + c.side * (c.len / 2 + 8);
-    const cy = sy(w.player.y) - 8;
-    g.save();
-    g.globalAlpha = 1 - age;
-    g.strokeStyle = c.evo ? '#ff3a4a' : '#ffffff';
-    g.lineCap = 'round';
-    const grow = 0.5 + age * 0.5;
-    for (let i = 0; i < 3; i++) {
-      g.lineWidth = 7 - i * 2;
-      g.globalAlpha = (1 - age) * (1 - i * 0.28);
-      g.beginPath();
-      g.ellipse(
-        cx,
-        cy + 6 - i * 4,
-        (c.len / 2) * grow,
-        14 - i * 3,
-        0,
-        c.side > 0 ? Math.PI * 1.05 : Math.PI * 1.95,
-        c.side > 0 ? Math.PI * 1.95 : Math.PI * 2.85 - Math.PI,
-      );
-      g.stroke();
-    }
-    g.restore();
+    FX.drawWhipCut(
+      g,
+      sx(w.player.x) + c.side * (c.len / 2 + 8),
+      sy(w.player.y) - 8,
+      c.side,
+      age,
+      c.len,
+      c.evo,
+    );
   }
   // Círculo de Brasas: bolas de fogo girando
-  for (const b of w.embersBalls()) {
+  for (const [i, b] of w.embersBalls().entries()) {
     const x = sx(b.x);
     const y = sy(b.y);
-    const evo = w.evolved.has('evoEmbers');
-    const gl = g.createRadialGradient(x, y, 2, x, y, b.r * 2.4);
-    gl.addColorStop(0, evo ? 'rgba(140,200,255,.6)' : 'rgba(255,170,60,.55)');
-    gl.addColorStop(1, 'rgba(255,120,30,0)');
-    g.fillStyle = gl;
-    g.fillRect(x - b.r * 2.4, y - b.r * 2.4, b.r * 4.8, b.r * 4.8);
-    drawFrame(g, a, 'X/p/ember', x, y, {
-      s: 1.1 * (b.r / 12),
-      tint: evo ? '#5ab4ff' : undefined,
-      tintAlpha: 0.65,
-    });
+    FX.drawEmberBall(
+      g,
+      x,
+      y,
+      Math.atan2(y - CY, x - CX) - Math.PI / 2,
+      t,
+      b.r,
+      w.evolved.has('evoEmbers'),
+      i,
+    );
   }
   // explosões das bombas e das runas
   for (const bl of w.blasts) {
-    const k = (w.t - bl.born) / 0.5;
-    g.save();
-    g.globalAlpha = Math.max(0, 1 - k);
-    g.strokeStyle = '#ffd24a';
-    g.lineWidth = 5 * (1 - k) + 1;
-    g.beginPath();
-    g.arc(sx(bl.x), sy(bl.y), bl.r * (0.4 + 0.6 * Math.min(1, k * 2.2)), 0, Math.PI * 2);
-    g.stroke();
-    g.fillStyle = 'rgba(255,150,50,.35)';
-    g.fill();
-    g.restore();
+    FX.drawBlast(g, sx(bl.x), sy(bl.y), bl.r, (w.t - bl.born) / 0.8, bl.x * 0.13 + bl.y);
   }
   // Pentagrama: o desenho se forma sob o jogador e uma onda varre a tela
-  if (w.pent) {
-    const k = (w.t - w.pent.born) / 1.2;
-    const R = 120;
-    g.save();
-    g.translate(CX, CY + 10);
-    g.globalAlpha = Math.max(0, 1 - k);
-    g.strokeStyle = w.evolved.has('evoPentagram') ? '#ffe08a' : '#b06aff';
-    g.lineWidth = 3;
-    g.beginPath();
-    g.arc(0, 0, R, 0, Math.PI * 2);
-    g.stroke();
-    g.beginPath();
-    for (let i = 0; i <= 5; i++) {
-      const ang = -Math.PI / 2 + ((i * 2) % 5) * ((Math.PI * 2) / 5);
-      const px = Math.cos(ang) * R;
-      const py = Math.sin(ang) * R;
-      if (i === 0) g.moveTo(px, py);
-      else g.lineTo(px, py);
-    }
-    g.stroke();
-    g.lineWidth = 6;
-    g.globalAlpha = Math.max(0, 0.8 - k);
-    g.beginPath();
-    g.arc(0, 0, R + k * Math.max(VIEW_WIDTH, VIEW_HEIGHT), 0, Math.PI * 2);
-    g.stroke();
-    g.restore();
-  }
+  if (w.pent)
+    FX.drawPentagramBurst(
+      g,
+      CX,
+      CY + 10,
+      (w.t - w.pent.born) / 1.2,
+      120,
+      w.evolved.has('evoPentagram'),
+    );
 
   // barra de vida do jogador
   if (st.deadFor < 0) {
@@ -686,14 +607,8 @@ export function drawWorld(
     const y = sy(q.y);
     if (x < -60 || x > VIEW_WIDTH + 60 || y < -60 || y > VIEW_HEIGHT + 60) continue;
     if (q.kind === 'orb') drawFrame(g, a, animFrame(a, 'Enemies/DarkRaven/Projectile', t), x, y);
-    else if (q.kind === 'axe') drawFrame(g, a, PROJ_FRAME.axe!, x, y, { rot: t * 12 });
-    else if (q.kind === 'pAxe')
-      drawFrame(g, a, PROJ_FRAME.axe!, x, y, {
-        rot: -t * 14,
-        s: q.big ? 3.6 : 2.2,
-        tint: q.big ? '#ffd94a' : undefined,
-        tintAlpha: 0.35,
-      });
+    else if (q.kind === 'axe') FX2.drawAxeSpin(g, x, y, t * 12, t, false, 1);
+    else if (q.kind === 'pAxe') FX2.drawAxeSpin(g, x, y, -t * 14, t, q.big, q.big ? 1.6 : 1.1);
     else if (q.kind === 'bomb') {
       // a bomba quica pelo chão: sombra fixa e salto que encolhe a cada quicada
       const age = w.t - (q.born ?? 0);
@@ -705,27 +620,23 @@ export function drawWorld(
       g.ellipse(x, y + 8, 8, 3, 0, 0, Math.PI * 2);
       g.fill();
       g.restore();
-      const fuse = q.expire - w.t < 0.35 && Math.floor(w.t * 20) % 2 === 0;
-      drawFrame(g, a, PROJ_FRAME.bomb!, x, y - hop, { s: 1.2, white: fuse });
-    } else if (q.kind === 'cross' || q.kind === 'rune' || q.kind === 'bone')
-      drawFrame(g, a, PROJ_FRAME[q.kind]!, x, y, {
-        rot: q.angle,
-        s: (q.big ? 1.4 : 1) * w.area,
-        tint: q.big ? '#ffd94a' : undefined,
-        tintAlpha: 0.35,
-      });
+      const fuse = Math.max(0, Math.min(1, 1 - (q.expire - w.t) / 1.2));
+      FX.drawCherryBomb(g, x, y - hop - 6, t, fuse, 1);
+    } else if (q.kind === 'cross')
+      FX.drawCrossProj(g, x, y, q.angle, t, q.big, w.area, q.vx, -q.vy);
+    else if (q.kind === 'bone')
+      FX.drawBoneProj(g, x, y, q.angle, t, w.evolved.has('evoBone'), 0, w.area);
+    else if (q.kind === 'rune')
+      FX.drawRuneOrb(g, x, y, q.vx, -q.vy, t, w.evolved.has('evoRunes'), 0, w.area);
     else if (q.kind === 'wand')
-      drawFrame(g, a, PROJ_FRAME.wand!, x, y, {
-        rot: q.angle,
-        s: (q.big ? 1.3 : 1) * w.area,
-        tint: q.big ? '#ffd94a' : undefined,
-        tintAlpha: 0.5,
-      });
+      FX.drawMagicBolt(g, x, y, Math.atan2(-q.vy, q.vx), t, q.big, w.area);
+    else if (q.kind === 'horizontal')
+      FX2.drawDagger(g, x, y, Math.atan2(-q.vy, q.vx), t, w.evolved.has('evoHorizontal'), 1);
     else drawFrame(g, a, PROJ_FRAME[q.kind]!, x, y, { rot: -q.angle });
   }
 
   // orbes guardiões
-  for (const [i, o] of w.orbs().entries()) {
+  for (const o of w.orbs()) {
     const k = o.r / 17;
     g.save();
     g.globalAlpha = 0.25;
@@ -734,17 +645,41 @@ export function drawWorld(
     g.ellipse(sx(o.x), sy(o.y) + 20 * k, 12 * k, 4 * k, 0, 0, Math.PI * 2);
     g.fill();
     g.restore();
-    drawFrame(g, a, `X/orb${Math.floor(t * 9 + i) % 4}`, sx(o.x), sy(o.y), {
-      s: 2 * k,
-      tint: w.evolved.has('evoOrbit') ? '#ffd94a' : undefined,
-      tintAlpha: 0.3,
-    });
+    FX2.drawGuardOrb(
+      g,
+      sx(o.x),
+      sy(o.y),
+      Math.atan2(sy(o.y) - CY, sx(o.x) - CX),
+      t,
+      w.evolved.has('evoOrbit'),
+      k,
+    );
   }
 
   // efeitos
   for (const f of st.fx) {
     if (f.key === 'bolt') {
-      drawBolt(g, sx(f.x), sy(f.y), f.t / f.dur, f.x * 7 + f.y);
+      FX.drawLunarStrike(g, sx(f.x), sy(f.y), f.t / f.dur, f.x * 7 + f.y);
+      continue;
+    }
+    if (f.key === 'hit') {
+      FX2.drawHitSpark(g, sx(f.x), sy(f.y), f.t / f.dur, (f.v ?? 0) >= 30);
+      continue;
+    }
+    if (f.key === 'death') {
+      FX2.drawDeathBurst(g, sx(f.x), sy(f.y), f.t / f.dur, '#8a6a9a', f.x * 0.21 + f.y);
+      continue;
+    }
+    if (f.key === 'chestOpen') {
+      FX2.drawChestOpen(g, sx(f.x), sy(f.y), f.t / f.dur, false);
+      continue;
+    }
+    if (f.key === 'evolveFx') {
+      FX2.drawEvolveBurst(g, CX, CY - 10, f.t / f.dur);
+      continue;
+    }
+    if (f.key === 'levelFx') {
+      FX2.drawLevelUp(g, CX, CY + 20, f.t / f.dur);
       continue;
     }
     if (f.key === 'dmg') {
@@ -815,19 +750,16 @@ function drawSword(
   const reach = Math.abs(SWORD_BOXES[L]!.ox) + SWORD_BOXES[L]!.w / 2;
   const tipA = ang + Math.PI;
   const trail = Math.min(1.5, Math.max(0, (t - 0.4667) * 3));
-  if (trail > 0 && t < 1.15) {
-    g.save();
-    g.translate(px, py);
-    g.globalAlpha = 0.4 * Math.min(1, (1.25 - t) * 4);
-    g.fillStyle = '#ffffff';
-    g.beginPath();
-    g.moveTo(0, 0);
-    const screenTip = -tipA;
-    g.arc(0, 0, reach, screenTip, screenTip + trail, false);
-    g.closePath();
-    g.fill();
-    g.restore();
-  }
+  if (trail > 0 && t < 1.15)
+    FX2.drawSwordSlash(
+      g,
+      px,
+      py,
+      -tipA,
+      Math.min(1, (t - 0.4667) / 0.6),
+      w.evolved.has('evoSword'),
+      reach,
+    );
   g.save();
   g.translate(px, py);
   g.rotate(-ang);
@@ -845,7 +777,16 @@ function drawSword(
 /** Atualiza os efeitos de tela a partir dos eventos da simulação. */
 export function pushFx(
   fx: Fx[],
-  k: 'enemyDeath' | 'pickup' | 'bolt' | 'debris' | 'dmg',
+  k:
+    | 'enemyDeath'
+    | 'pickup'
+    | 'bolt'
+    | 'debris'
+    | 'dmg'
+    | 'hit'
+    | 'chestOpen'
+    | 'evolveFx'
+    | 'levelFx',
   x: number,
   y: number,
   map?: string,
@@ -857,46 +798,16 @@ export function pushFx(
       fx.push({ key: 'dmg', x, y, t: 0, dur: 0.7, v });
     return;
   }
-  if (k === 'debris') fx.push({ key: 'debris', map, x, y, t: 0, dur: 0.5 });
-  else if (k === 'bolt') fx.push({ key: 'bolt', x, y, t: 0, dur: 0.3 });
-  else if (k === 'enemyDeath') fx.push({ key: 'Effects/DeathEffect', x, y, t: 0, dur: 0.36 });
+  if (k === 'hit') {
+    if (fx.filter((f) => f.key === 'hit').length < 40)
+      fx.push({ key: 'hit', x, y, t: 0, dur: 0.22, v });
+    return;
+  }
+  if (k === 'chestOpen') fx.push({ key: 'chestOpen', x, y, t: 0, dur: 1.2 });
+  else if (k === 'evolveFx') fx.push({ key: 'evolveFx', x, y, t: 0, dur: 1.4 });
+  else if (k === 'levelFx') fx.push({ key: 'levelFx', x, y, t: 0, dur: 1 });
+  else if (k === 'debris') fx.push({ key: 'debris', map, x, y, t: 0, dur: 0.5 });
+  else if (k === 'bolt') fx.push({ key: 'bolt', x, y, t: 0, dur: 0.9 });
+  else if (k === 'enemyDeath') fx.push({ key: 'death', x, y, t: 0, dur: 0.6 });
   else fx.push({ key: 'Effects/PickBonus', x, y, t: 0, dur: 0.45 });
-}
-
-/** Raio lunar: faísca em zigue-zague do alto da tela até o alvo, com clarão no chão. */
-function drawBolt(
-  g: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  p: number,
-  seed: number,
-): void {
-  const a = Math.max(0, 1 - p);
-  g.save();
-  g.globalAlpha = a;
-  const pts: [number, number][] = [];
-  const top = -20;
-  const n = 9;
-  for (let i = 0; i <= n; i++) {
-    const t = i / n;
-    const jx = i === n ? 0 : Math.sin(seed + i * 12.9898) * 22;
-    pts.push([x + jx * (1 - t * 0.5), top + (y - top) * t]);
-  }
-  for (const [w, c] of [
-    [9, 'rgba(120,170,255,.45)'],
-    [5, '#bcd4ff'],
-    [2.4, '#ffffff'],
-  ] as const) {
-    g.strokeStyle = c;
-    g.lineWidth = w;
-    g.lineJoin = 'round';
-    g.beginPath();
-    pts.forEach(([px, py], i) => (i ? g.lineTo(px, py) : g.moveTo(px, py)));
-    g.stroke();
-  }
-  g.fillStyle = 'rgba(190,215,255,.55)';
-  g.beginPath();
-  g.ellipse(x, y + 4, 34 * (0.6 + p), 12 * (0.6 + p), 0, 0, Math.PI * 2);
-  g.fill();
-  g.restore();
 }

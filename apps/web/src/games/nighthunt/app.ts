@@ -624,6 +624,7 @@ export class NhApp {
           break;
         case 'enemyHit':
           snd('enemyHit', 0.9 + Math.random() * 0.2);
+          pushFx(this.fx, 'hit', e.x, e.y, undefined, e.dmg);
           if (this.save.damageNumbers) pushFx(this.fx, 'dmg', e.x, e.y, undefined, e.dmg);
           break;
         case 'enemyDeath':
@@ -647,6 +648,7 @@ export class NhApp {
           break;
         case 'pickup':
           pushFx(this.fx, 'pickup', e.x, e.y);
+          if (e.type === 'chest') pushFx(this.fx, 'chestOpen', e.x, e.y);
           snd(
             ({ xp: 'xp', gold: 'gold', health: 'heal', magnet: 'magnet', chest: 'chest' } as const)[
               e.type
@@ -656,6 +658,7 @@ export class NhApp {
           break;
         case 'levelUp':
           snd('levelUp');
+          pushFx(this.fx, 'levelFx', 0, 0);
           break;
         case 'finalBoss':
           this.toastQ.push({
@@ -678,6 +681,7 @@ export class NhApp {
           break;
         case 'evolve':
           snd('levelUp', 0.8);
+          pushFx(this.fx, 'evolveFx', 0, 0);
           this.screenRed = 0;
           break;
       }
@@ -1274,11 +1278,11 @@ export class NhApp {
         y + 19,
         { size: 15, color: '#9ad0ff' },
       );
-      const fit = fitText(a, info.desc, f.w - 260, rh - 42 - 14, 14);
+      const fit = fitText(a, info.desc, f.w - 290, rh - 42 - 14, 14);
       fit.lines.forEach((l, j) =>
         drawText(g, a, l, f.x + 108, y + 42 + j * fit.lh, { size: fit.size, color: '#e6ecff' }),
       );
-      if (h.start) drawFrame(g, a, UPGRADES[h.start].icon, f.x + f.w - 160, y + 30, { s: 0.55 });
+      if (h.start) drawFrame(g, a, UPGRADES[h.start].icon, f.x + f.w - 168, y + 70, { s: 0.55 });
       const bx = f.x + f.w - 140;
       if (!owned) {
         const can = this.save.gold >= h.price;
@@ -1524,14 +1528,23 @@ export class NhApp {
           can ? 'main' : 'dis',
           'UI/GoldIconSmall',
         );
-      if (sellV !== null) this.sellBtn(`meta:${m.key}`, sellV, bx, y + 54, bw, 30, () => sellMeta(this.save, m.key));
+      if (sellV !== null)
+        this.sellBtn(`meta:${m.key}`, sellV, bx, y + 54, bw, 30, () => sellMeta(this.save, m.key));
     });
     g.restore();
     this.drawScrollbar(f.x + f.w - 4, top, viewH);
   }
 
   /** Botão de vender: o 1º toque pede confirmação (3 s), o 2º vende e devolve o ouro (90% do que custou). */
-  private sellBtn(id: string, value: number, x: number, y: number, w: number, h: number, sell: () => number | null): void {
+  private sellBtn(
+    id: string,
+    value: number,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    sell: () => number | null,
+  ): void {
     const armed = this.sellArm?.id === id && this.sellArm.until > this.time;
     this.btn(
       armed ? 'CONFIRMAR' : `VENDER +${value}`,
@@ -2358,7 +2371,8 @@ export class NhApp {
           const hint = w.comboHint(id);
           if (hint) notes.push({ label: 'Combina com', ids: [hint], color: '#7fe08a' });
           const ign = IGNORES[id as UpgradeId] ?? [];
-          if (ign.length) notes.push({ label: 'Não é afetada por', ids: [...ign], color: '#ffb25a' });
+          if (ign.length)
+            notes.push({ label: 'Não é afetada por', ids: [...ign], color: '#ffb25a' });
         }
       }
       const ICON_W = 20;
@@ -2371,7 +2385,10 @@ export class NhApp {
             { text: UPGRADES[u].name, w: measureText(a, UPGRADES[u].name, { size: 12 }) + 4 },
             { icon: UPGRADES[u].icon, w: ICON_W },
           ]);
-        const label: Seg = { text: `${nt.label}:`, w: measureText(a, `${nt.label}: `, { size: 12 }) };
+        const label: Seg = {
+          text: `${nt.label}:`,
+          w: measureText(a, `${nt.label}: `, { size: 12 }),
+        };
         const one = [label, ...segs(nt.ids)];
         if (one.reduce((sum, sg) => sum + sg.w, 0) <= cw - 16) return [one];
         return [[label], ...nt.ids.map((u) => segs([u]))];
@@ -2390,8 +2407,15 @@ export class NhApp {
       if (!info.evo) {
         // a descrição longa só aparece inteira: tenta o tamanho normal e um menor; se ainda não couber, some (nunca corta no meio)
         for (const [dSize, dLine] of n >= 4
-          ? ([[12, 14], [11, 13]] as const)
-          : ([[13, 16], [12, 14], [11, 13]] as const)) {
+          ? ([
+              [12, 14],
+              [11, 13],
+            ] as const)
+          : ([
+              [13, 16],
+              [12, 14],
+              [11, 13],
+            ] as const)) {
           const lines = wrapText(a, info.desc, cw - 22, { size: dSize });
           if (yy + lines.length * dLine > floor) continue;
           for (const l of lines) {
@@ -2413,7 +2437,11 @@ export class NhApp {
           for (const sg of row) {
             if (sg.icon) drawFrame(g, a, sg.icon, cx + ICON_W / 2, cy + 8, { s: 0.5 });
             else
-              drawText(g, a, sg.text!, cx, cy + 2, { size: 12, align: 'left', color: notes[k]!.color });
+              drawText(g, a, sg.text!, cx, cy + 2, {
+                size: 12,
+                align: 'left',
+                color: notes[k]!.color,
+              });
             cx += sg.w;
           }
         });

@@ -47,7 +47,6 @@ import {
 } from './data';
 import {
   AXE_LAUNCHER,
-  ENEMIES,
   ITEM_SETTINGS,
   MAGIC_ORB_LAUNCHER,
   META_SETTINGS,
@@ -1785,7 +1784,7 @@ export class NhWorld {
       }
     }
     if (this.pent && t - this.pent.born > 1.2) this.pent = null;
-    this.blasts = this.blasts.filter((b) => t - b.born < 0.5);
+    this.blasts = this.blasts.filter((b) => t - b.born < 0.8);
   }
 
   /** Raio atual da Aura de Alho (0 se a pessoa não tem a arma). */
