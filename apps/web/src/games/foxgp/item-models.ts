@@ -175,21 +175,6 @@ function buildBox(): THREE.Group {
   );
   edges.position.y = 0.6;
   g.add(edges);
-  // coluna de luz fraca: dá para achar a caixa de longe
-  const beam = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.32, 0.5, 5, 18, 1, true),
-    new THREE.MeshBasicMaterial({
-      color: 0xffa54a,
-      transparent: true,
-      opacity: 0.16,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-    }),
-  );
-  beam.position.y = 2.6;
-  beam.name = 'beam';
-  g.add(beam);
   g.add(halo(0xff9a3d, 2.8, 0.6));
   g.add(shadow(0.6));
   const tex = questionTexture();
