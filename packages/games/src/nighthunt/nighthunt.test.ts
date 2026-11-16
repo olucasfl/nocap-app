@@ -9,9 +9,7 @@ import {
   mapCompleted,
   buyHero,
   buyMeta,
-  heroSellValue,
   metaSellValue,
-  sellHero,
   sellMeta,
   emptySave,
   goldWithBonus,
@@ -920,7 +918,7 @@ describe('baú dos chefes (16/11/2026)', () => {
   });
 });
 
-describe('vender o que foi comprado, com 10% de desconto', () => {
+describe('vender melhorias compradas, com 10% de desconto (heróis não se vendem)', () => {
   it('melhoria: devolve 90% do custo do último nível e tira o nível', () => {
     const s = emptySave();
     s.gold = 100000;
@@ -942,22 +940,5 @@ describe('vender o que foi comprado, com 10% de desconto', () => {
     // comprar e vender tudo nunca dá lucro
     expect(s.gold).toBeLessThan(before);
     expect(s.stats.metaBought).toBe(0);
-  });
-  it('herói: 90% do preço, volta a bloquear; não vende o inicial nem o escolhido', () => {
-    const s = emptySave();
-    s.gold = 5000;
-    expect(heroSellValue(s, 'kael')).toBeNull();
-    const price = HEROES.vesper!.price;
-    expect(buyHero(s, 'vesper')).toBe(true);
-    // (a compra pode liberar uma conquista com recompensa em ouro: mede a partir daqui)
-    const afterBuy = s.gold;
-    s.pick.hero = 'vesper';
-    expect(sellHero(s, 'vesper')).toBeNull(); // escolhido
-    s.pick.hero = 'kael';
-    expect(sellHero(s, 'vesper')).toBe(Math.floor(price * 0.9));
-    expect(s.gold).toBe(afterBuy + Math.floor(price * 0.9));
-    expect(s.heroes).not.toContain('vesper');
-    expect(sellHero(s, 'vesper')).toBeNull(); // já vendido
-    expect(heroSellValue(s, 'mara')).toBeNull(); // nunca teve
   });
 });

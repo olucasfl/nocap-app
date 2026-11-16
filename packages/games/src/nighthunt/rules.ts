@@ -965,21 +965,6 @@ export function sellMeta(save: NhSave, key: MetaKey): number | null {
   return v;
 }
 
-/** Ouro que volta ao vender um herói comprado (null: o inicial, o que não é seu ou o que está escolhido). */
-export function heroSellValue(save: NhSave, id: string): number | null {
-  const h = HEROES[id];
-  if (!h || h.price <= 0 || !save.heroes.includes(id) || save.pick.hero === id) return null;
-  return Math.floor(h.price * SELL_RATE);
-}
-/** Vende um herói comprado por 90% do preço (ele volta a ficar bloqueado). */
-export function sellHero(save: NhSave, id: string): number | null {
-  const v = heroSellValue(save, id);
-  if (v === null) return null;
-  save.heroes = save.heroes.filter((x) => x !== id);
-  save.gold += v;
-  return v;
-}
-
 // ---------------- heróis e mapas ----------------
 export interface HeroInfo {
   id: string;

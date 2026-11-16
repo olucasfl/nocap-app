@@ -31,9 +31,7 @@ import {
   VIEW_WIDTH,
   applyRun,
   buyMeta,
-  heroSellValue,
   metaSellValue,
-  sellHero,
   sellMeta,
   checkAchievements,
   metaBonus,
@@ -1300,9 +1298,6 @@ export class NhApp {
           'UI/GoldIconSmall',
         );
       } else {
-        const sellV = heroSellValue(this.save, id);
-        if (sellV !== null)
-          this.sellBtn(`hero:${id}`, sellV, bx, y + 14, 126, 32, () => sellHero(this.save, id));
         this.btn(
           sel ? 'ESCOLHIDO' : 'ESCOLHER',
           bx,
