@@ -2309,43 +2309,55 @@ export class NhApp {
       );
       yy += 26;
       const body = info.evo ? info.desc : UPGRADES[id as UpgradeId].level(lv + 1);
-      for (const l of wrapText(a, body, cw - 22, { size: info.evo ? 12 : n >= 4 ? 13 : 15 })) {
-        if (yy > y + lift + h - 84) break;
-        drawText(g, a, l, x + cw / 2, yy, {
-          size: info.evo ? 12 : n >= 4 ? 13 : 15,
-          align: 'center',
-          color: '#ffffff',
-        });
-        yy += info.evo ? 14 : n >= 4 ? 15 : 17;
-      }
-      yy += 6;
-      if (!info.evo)
-        for (const l of wrapText(a, info.desc, cw - 22, { size: n >= 4 ? 12 : 13 })) {
-          if (yy < y + lift + h - 30)
-            drawText(g, a, l, x + cw / 2, yy, {
-              size: n >= 4 ? 12 : 13,
-              align: 'center',
-              color: '#a9b4d0',
-            });
-          yy += n >= 4 ? 14 : 16;
-        }
-      // linhas de apoio: combinação (parceiro que você já tem), o que a arma ignora e, nas evoluções, a receita
-      const note = (txt: string, color: string, dy: number) => {
-        for (const [k, l] of wrapText(a, txt, cw - 18, { size: 12 }).entries())
-          drawText(g, a, l, x + cw / 2, y + lift + h - 70 - dy + k * 14, {
-            size: 12,
-            align: 'center',
-            color,
-          });
-      };
+      // linhas de apoio no pé da carta (combinação, o que a arma ignora, receita da evolução): reservam o espaço delas
+      // antes do texto, para a descrição nunca passar por cima
+      const notes: Array<{ txt: string; color: string }> = [];
       if (info.evo) {
         const ev = EVO_INFO[id as EvoId];
-        note(`Requer: ${UPGRADES[ev.passive].name}.`, '#ffb25a', 0);
+        notes.push({ txt: `Requer: ${UPGRADES[ev.passive].name}.`, color: '#ffb25a' });
       } else {
         const hint = w.comboHint(id);
-        if (hint) note(`Combina com ${UPGRADES[hint].name}`, '#7fe08a', 0);
+        if (hint) notes.push({ txt: `Combina com ${UPGRADES[hint].name}`, color: '#7fe08a' });
         const ign = ignoresText(id as UpgradeId);
-        if (ign) note(`Ignora: ${ign}.`, '#ffb25a', hint ? 18 : 0);
+        if (ign) notes.push({ txt: `Não é afetada por: ${ign}.`, color: '#ffb25a' });
+      }
+      const noteLines = notes.map((nt) => wrapText(a, nt.txt, cw - 18, { size: 12 }));
+      const noteH = noteLines.reduce((sum, ls) => sum + ls.length * 14 + 4, 0);
+      const floor = y + lift + h - 34 - noteH; // o texto da carta termina aqui
+      const bodySize = info.evo ? 12 : n >= 4 ? 13 : 15;
+      const bodyLine = info.evo ? 14 : n >= 4 ? 15 : 17;
+      for (const l of wrapText(a, body, cw - 22, { size: bodySize })) {
+        if (yy + bodyLine > floor) break;
+        drawText(g, a, l, x + cw / 2, yy, { size: bodySize, align: 'center', color: '#ffffff' });
+        yy += bodyLine;
+      }
+      yy += 6;
+      if (!info.evo) {
+        // a descrição longa só aparece inteira: tenta o tamanho normal e um menor; se ainda não couber, some (nunca corta no meio)
+        for (const [dSize, dLine] of n >= 4
+          ? ([[12, 14], [11, 13]] as const)
+          : ([[13, 16], [12, 14], [11, 13]] as const)) {
+          const lines = wrapText(a, info.desc, cw - 22, { size: dSize });
+          if (yy + lines.length * dLine > floor) continue;
+          for (const l of lines) {
+            drawText(g, a, l, x + cw / 2, yy, { size: dSize, align: 'center', color: '#a9b4d0' });
+            yy += dLine;
+          }
+          break;
+        }
+      }
+      // as notas ficam coladas embaixo, de baixo para cima
+      let ny = y + lift + h - 34;
+      for (let k = notes.length - 1; k >= 0; k--) {
+        const ls = noteLines[k]!;
+        ny -= ls.length * 14 + 4;
+        ls.forEach((l, j) =>
+          drawText(g, a, l, x + cw / 2, ny + 4 + j * 14, {
+            size: 12,
+            align: 'center',
+            color: notes[k]!.color,
+          }),
+        );
       }
       drawText(g, a, `[${i + 1}]`, x + cw / 2, y + lift + h - 24, {
         size: 13,
