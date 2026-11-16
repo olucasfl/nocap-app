@@ -276,6 +276,23 @@ describe('efeitos (spec 085)', () => {
     ).toBe(true);
   });
 
+  it('cometa azul alcança o líder mesmo muito longe, andando a 30 m/s', () => {
+    const { w, sys } = race(2);
+    const [a, lead] = w.cars as [GpCar, GpCar];
+    put(w, a, 100, 0, 0);
+    put(w, lead, 1100, 0, 0);
+    sys.give(a.id, 'bolt');
+    run(w, sys, GP_DT, { p0: true });
+    sys.drainEvents();
+    let hit = false;
+    for (let t = 0; t < 12 && !hit; t += GP_DT) {
+      lead.prog += 30 * GP_DT;
+      sys.step(GP_DT);
+      hit = sys.drainEvents().some((e) => e.type === 'hit' && e.id === lead.id);
+    }
+    expect(hit).toBe(true);
+  });
+
   it('cometa azul vai atrás do líder, nunca do dono', () => {
     const { w, sys } = race(3);
     const [a, b, lead] = w.cars as [GpCar, GpCar, GpCar];

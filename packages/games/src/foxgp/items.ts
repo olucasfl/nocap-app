@@ -37,7 +37,7 @@ export const GP_BOMB_RADIUS = 14;
 export const GP_BOMB_FUSE = 2.6;
 export const GP_PEEL_TTL = 60;
 export const GP_SHOT_TTL = 14;
-export const GP_BOLT_TTL = 22;
+export const GP_BOLT_TTL = 30;
 /** Quanto dura o tropeço (s) e a imunidade logo depois (s). */
 export const GP_HIT_STUN = 1.4;
 /** Voltas completas que o kart dá ao ser acertado (inteiro, para voltar de frente). */
@@ -52,7 +52,9 @@ export const GP_USE_GAP = 0.45;
 
 export const GP_BALL_SPEED = GP_ARC_VMAX * 1.5;
 export const GP_SEEKER_SPEED = GP_ARC_VMAX * 1.3;
-export const GP_BOLT_SPEED = GP_ARC_VMAX * 1.75;
+export const GP_BOLT_SPEED = GP_ARC_VMAX * 2.8;
+/** Quanto o cometa azul acelera por metro de distância até o líder (alcança de qualquer lugar da pista). */
+const GP_BOLT_CATCHUP = 0.5;
 const GP_BALL_BOUNCES = 6;
 /** Raio de acerto dos tiros: um pouco maior que o do chão, para a bola e o cometa não passarem por dentro do kart. */
 const GP_SHOT_HIT_RADIUS = 3;
@@ -84,7 +86,7 @@ const WEIGHTS: Record<0 | 1 | 2, readonly (readonly [GpItemId, number])[]> = {
     ['nitro3', 3],
     ['ball3', 2],
     ['star', 3],
-    ['bolt', 3],
+    ['bolt', 1],
     ['bomb', 1],
   ],
 };
@@ -491,7 +493,10 @@ export class GpItemSystem implements GpItemsReadable {
         // perseguidores seguem o traçado da pista e vão para o afastamento do alvo
         const target = sh.target ? this.world.car(sh.target) : undefined;
         const speed = sh.kind === 'bolt' ? GP_BOLT_SPEED : GP_SEEKER_SPEED;
-        sh.prog += speed * dt;
+        // o cometa azul acelera quanto mais longe estiver do líder, para sempre alcançá-lo
+        const extra =
+          sh.kind === 'bolt' && target ? Math.max(0, target.prog - sh.prog) * GP_BOLT_CATCHUP : 0;
+        sh.prog += (speed + extra) * dt;
         if (target && this.active(target)) {
           const gap = target.prog - sh.prog;
           // bem à frente do alvo: não passa dele, espera atrás para acertar
