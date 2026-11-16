@@ -253,3 +253,38 @@
 .gx-open .dsm-chip.is-on { background: var(--pk); color: #0b0d1c; }
 .gx-open .png-btn, .gx-open .dsm-btn { border: 0; border-radius: 0; border-left: 5px solid #fff; background: linear-gradient(90deg, var(--pk), color-mix(in srgb, var(--pk) 55%, #0b0d1c)); color: #0b0d1c; font: 700 18px Rajdhani, sans-serif; letter-spacing: 0.14em; box-shadow: none; }
 .gx-open .png-btn.is-ghost, .gx-open .dsm-btn.is-ghost { background: rgba(255, 255, 255, 0.08); color: #eaf0ff; border-left-color: var(--pk); }
+
+/* Celular deitado (docs/MOBILE-GUIDE.md): o menu do jogo vira duas colunas (o principal ocupa a linha toda), em vez de
+   uma lista de 6 a 7 botões que passa da altura da tela. A frase de apoio sai para caber o nome inteiro. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .gx-menu {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .gx-menu > .gx-btn.main,
+  .gx-menu > .gx-gap {
+    grid-column: 1 / -1;
+  }
+  .gx-gap {
+    display: none;
+  }
+  .gx-btn {
+    min-height: 44px;
+    padding: 8px 14px 8px 14px;
+    align-items: center;
+  }
+  .gx-btn b {
+    font-size: 15px;
+    letter-spacing: 0.1em;
+    white-space: normal;
+  }
+  .gx-btn span {
+    display: none;
+  }
+  .gx-menu > .gx-btn.main span {
+    display: block;
+  }
+  .gx-wrap {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
