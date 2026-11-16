@@ -8,7 +8,10 @@ from PIL import Image
 
 FRAMES = ['Idle00', 'Idle01', 'Move00', 'Move01', 'Move02', 'Move03', 'Die00', 'Die01', 'Die02']
 # deslocamento vertical da cabeça em cada quadro (o corpo balança 1 px)
-HEAD_DY = {'Idle00': 0, 'Idle01': 1, 'Move00': -1, 'Move01': 0, 'Move02': -1, 'Move03': 0}
+# deslocamento (x, y) da cabeça em cada quadro, medido na posição do contorno de cima da cabeça: o guerreiro balança e
+# inclina o corpo ao andar, e a cabeça vai junto (nos quadros de andar ela fica 2 px mais à esquerda)
+HEAD_OFF = {'Idle00': (0, 0), 'Idle01': (-1, 1), 'Move00': (-2, -1), 'Move01': (-2, 0), 'Move02': (-2, -1), 'Move03': (-2, 0)}
+HEAD_DY = {k: v[1] for k, v in HEAD_OFF.items()}
 # onde está a lâmina em cada quadro: (linhas, x0, x1) e as pontas (mão -> ponta)
 BLADE = {
     'Idle00': ((19, 22), 8, 20, (21, 19), (8, 21)),
@@ -74,9 +77,10 @@ class Canvas:
     def __init__(self, im):
         self.im = im
         self.px = im.load()
+        self.ox = 0  # deslocamento horizontal das peças da cabeça
 
     def put(self, x, y, c):
-        x, y = int(x), int(y)
+        x, y = int(x) + self.ox, int(y)
         if 0 <= x < 32 and 0 <= y < 32:
             self.px[x, y] = c if len(c) == 4 else (*c, 255)
 
@@ -84,7 +88,7 @@ class Canvas:
         """Pinta só onde não há corpo (transparente ou contorno): para cabelo e capa que ficam atrás."""
         for j in range(h):
             for i in range(w):
-                xx, yy = int(x + i), int(y + j)
+                xx, yy = int(x + i) + self.ox, int(y + j)
                 if 0 <= xx < 32 and 0 <= yy < 32 and cls(self.px[xx, yy]) in '.#':
                     self.px[xx, yy] = c if len(c) == 4 else (*c, 255)
 
@@ -445,10 +449,12 @@ def make(frames, hid):
         fr = FRAMES.index(n) % 4
         if n in HEAD_DY:
             fn = HEADS[hid]
+            c.ox = HEAD_OFF[n][0]
             if hid == 'selene':
                 fn(c, HEAD_DY[n], fr)
             else:
                 fn(c, HEAD_DY[n])
+            c.ox = 0
         WEAPONS[spec['weapon']](c, hand, tip, fr)
         c.outline()
         out[n] = im
@@ -487,5 +493,6 @@ if __name__ == '__main__':
     made = {h: make(base, h) for h in HEROES}
     sheet(made, base, outdir + '/heroes-mock.png')
     lineup(made, base, outdir + '/heroes-lineup.png')
+    sheet(made, base, outdir + '/heroes-mock2.png', 8, ('Idle01', 'Move00', 'Move02'))
     for h in HEROES:
         sheet({h: made[h]}, base, outdir + f'/hero-{h}.png', 10, ('Idle00', 'Idle01', 'Move00', 'Move01', 'Move02', 'Move03'))
