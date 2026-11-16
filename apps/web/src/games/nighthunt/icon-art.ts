@@ -725,7 +725,7 @@ export function iconGrowth(): HTMLCanvasElement {
       ((x > 3 && x < 16 && y < 27 - (16 - x) * 0.2) ||
         (x >= 16 && x < 29 && y < 27 - (x - 16) * 0.2)),
     ['#ffffff', '#f4ecd0', '#d9cc9a'].map(hex),
-    (x, y) => Math.abs(x - 16) / 14,
+    (x) => Math.abs(x - 16) / 14,
   );
   p.rect(15, 14, 2, 14, hex('#8a5a2a'));
   for (let i = 0; i < 4; i++) {
