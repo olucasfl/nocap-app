@@ -797,7 +797,8 @@ export class GpWorld {
 
   /** Avisos de pneu (spec 081, Fase 10): cada faixa de desgaste uma vez por volta (o crítico repete a cada volta). */
   private tyreWarnings(c: GpCar) {
-    const level = c.wear >= GP_TYRE_CRIT ? 3 : c.wear >= GP_TYRE_ALERT ? 2 : c.wear >= GP_TYRE_WARN ? 1 : 0;
+    const level =
+      c.wear >= GP_TYRE_CRIT ? 3 : c.wear >= GP_TYRE_ALERT ? 2 : c.wear >= GP_TYRE_WARN ? 1 : 0;
     if (level > c.tyreWarn) {
       c.tyreWarn = level;
       this.events.push({ type: 'tyre', id: c.id, level: level as 1 | 2 | 3 });
@@ -832,7 +833,8 @@ export class GpWorld {
       c.hop = GP_ARC_HOP_SEC;
       this.events.push({ type: 'drift', id: c.id, dir: c.driftDir });
     }
-    if (c.driftDir !== 0 && (!held || !road || v < GP_ARC_DRIFT_MIN * GP_ARC_VMAX * 0.7)) c.driftDir = 0;
+    if (c.driftDir !== 0 && (!held || !road || v < GP_ARC_DRIFT_MIN * GP_ARC_VMAX * 0.7))
+      c.driftDir = 0;
     c.driftHeld = held;
     c.driftPress = Math.max(0, c.driftPress - dt);
     c.hop = Math.max(0, c.hop - dt);
@@ -867,7 +869,8 @@ export class GpWorld {
     // ---- direção (a velocidade de antes de virar o nariz fica para o escorregão) ----
     const wx = c.vx - c.kx;
     const wz = c.vz - c.kz;
-    const yawMax = GP_ARC_YAW_LOW + (GP_ARC_YAW_HIGH - GP_ARC_YAW_LOW) * Math.min(1, av / GP_ARC_VMAX);
+    const yawMax =
+      GP_ARC_YAW_LOW + (GP_ARC_YAW_HIGH - GP_ARC_YAW_LOW) * Math.min(1, av / GP_ARC_VMAX);
     const slowK = Math.min(1, av / GP_ARC_YAW_FULL_V);
     let yaw: number;
     let rel = 0;
@@ -902,10 +905,13 @@ export class GpWorld {
     const boosting = c.boostT > 0;
     const target = this.vmaxOf(c) * (drifting ? GP_ARC_DRIFT_SPEED : 1) * (1 + c.boostX);
     if (brk > 0.05 && v > 0.5) v = Math.max(0, v - GP_ARC_BRAKE * brk * dt);
-    else if (brk > 0.1 && v <= 0.5 && !boosting) v = Math.max(-GP_ARC_REVERSE_MAX, v - GP_ARC_REVERSE_ACCEL * brk * dt);
+    else if (brk > 0.1 && v <= 0.5 && !boosting)
+      v = Math.max(-GP_ARC_REVERSE_MAX, v - GP_ARC_REVERSE_ACCEL * brk * dt);
     else if (v < 0) v = Math.min(0, v + GP_ARC_BRAKE * Math.max(thr, 0.3) * dt);
-    else if (boosting && v < target) v = Math.min(target, v + ((target - v) / GP_ARC_BOOST_RISE) * dt + 2 * dt);
-    else if (thr > 0.05 && v < target) v = Math.min(target, v + thr * GP_ARC_ACC_K * (target - v) * dt + 0.5 * dt);
+    else if (boosting && v < target)
+      v = Math.min(target, v + ((target - v) / GP_ARC_BOOST_RISE) * dt + 2 * dt);
+    else if (thr > 0.05 && v < target)
+      v = Math.min(target, v + thr * GP_ARC_ACC_K * (target - v) * dt + 0.5 * dt);
     else if (thr <= 0.05) v -= GP_ARC_COAST * v * dt;
     // acima da máxima da hora (zebra, grama, fim do turbo): perde até ela, sem corte brusco
     if (v > target) v = Math.max(target, v - GP_ARC_OVER_DECEL * dt);
@@ -932,7 +938,8 @@ export class GpWorld {
     vl *= Math.exp(-GP_ARC_LAT_DAMP * dt);
     const latCap = GP_ARC_LAT_MAX * Math.abs(v);
     vl = clamp(vl, -latCap, latCap);
-    if (Math.abs(vl) > 0.3) v -= Math.sign(v) * Math.min(Math.abs(v), GP_ARC_SLIDE_LOSS * Math.abs(vl) * dt);
+    if (Math.abs(vl) > 0.3)
+      v -= Math.sign(v) * Math.min(Math.abs(v), GP_ARC_SLIDE_LOSS * Math.abs(vl) * dt);
 
     c.speed = v;
     // som e desenho: um giro contínuo (sem marchas); fumaça e marcas de pneu no drift e no escorregão
@@ -965,7 +972,12 @@ export class GpWorld {
     const stIn = clamp(input.steer, -1, 1);
     c.rThr += clamp(thrIn - c.rThr, -GP_REAL_THR_FALL * dt, GP_REAL_THR_RISE * dt);
     c.rBrk += clamp(brkIn - c.rBrk, -GP_REAL_BRK_RATE * dt, GP_REAL_BRK_RATE * dt);
-    const rate = stIn === 0 ? GP_REAL_STEER_CENTER : c.rSteer * stIn < 0 ? GP_REAL_STEER_FLIP : GP_REAL_STEER_RISE;
+    const rate =
+      stIn === 0
+        ? GP_REAL_STEER_CENTER
+        : c.rSteer * stIn < 0
+          ? GP_REAL_STEER_FLIP
+          : GP_REAL_STEER_RISE;
     c.rSteer += clamp(stIn - c.rSteer, -rate * dt, rate * dt);
     c.steer = c.rSteer;
     c.wallCd -= dt;
@@ -990,14 +1002,18 @@ export class GpWorld {
     // ---- curva: o que o volante pede, limitado pelo que o pneu aguenta ----
     // o volante todo virado pede no máximo HEADROOM × o pneu (em baixa, o esterço é o limite): toque leve, curva leve
     const yawM = (gpRealLatMax(av) * grip) / Math.max(av, 1);
-    const geo = (av * Math.tan(GP_REAL_STEER_MAX / (1 + av / GP_REAL_STEER_FADE))) / GP_REAL_WHEELBASE;
+    const geo =
+      (av * Math.tan(GP_REAL_STEER_MAX / (1 + av / GP_REAL_STEER_FADE))) / GP_REAL_WHEELBASE;
     const yawD = c.rSteer * Math.sign(v) * Math.min(geo, yawM * GP_REAL_STEER_HEADROOM);
     const yaw = clamp(yawD, -yawM, yawM);
     // carga lateral (0 a 1): o quanto do pneu a curva está usando
     const load = Math.min(1, Math.abs(yaw) / Math.max(yawM, 1e-6));
     if (av > 5) {
       // passou da folga: arrasta (proporcional ao excesso); dentro do pneu, só a perda natural da carga lateral
-      const over = Math.min(GP_REAL_SCRUB_MAX, (Math.abs(yawD) - yawM * (1 + GP_REAL_SCRUB_FREE)) / yawM);
+      const over = Math.min(
+        GP_REAL_SCRUB_MAX,
+        (Math.abs(yawD) - yawM * (1 + GP_REAL_SCRUB_FREE)) / yawM,
+      );
       if (over > 0) {
         v -= Math.sign(v) * over * GP_REAL_SCRUB * dt;
         c.wear += GP_WEAR_SLIP * over * av * 0.25 * dt;
@@ -1008,7 +1024,8 @@ export class GpWorld {
 
     // ---- motor, freio e ré ----
     const brakeK = 1 - c.wear * (1 - GP_BRAKE_MIN);
-    if (v <= 0.5 && c.rBrk > 0.5 && c.rThr < 0.1) v = Math.max(-GP_REVERSE_MAX, v - GP_REVERSE_ACCEL * dt);
+    if (v <= 0.5 && c.rBrk > 0.5 && c.rThr < 0.1)
+      v = Math.max(-GP_REVERSE_MAX, v - GP_REVERSE_ACCEL * dt);
     else if (v < 0) v = Math.min(0, v + (c.rThr * GP_REAL_REVERSE_OUT + GP_REAL_REVERSE_OUT0) * dt);
     else {
       // câmbio automático de verdade: a marcha decide a força; na troca para cima a força corta um instante
@@ -1093,7 +1110,8 @@ export class GpWorld {
       const hit = Math.abs(c.speed);
       c.speed *= GP_REAL_WALL_KEEP;
       c.wallCd = GP_REAL_WALL_CD;
-      if (hit > 4) this.events.push({ type: 'wall', id: c.id, speed: hit, x: c.x + nx, z: c.z + nz });
+      if (hit > 4)
+        this.events.push({ type: 'wall', id: c.id, speed: hit, x: c.x + nx, z: c.z + nz });
     }
     c.kx = 0;
     c.kz = 0;
@@ -1105,7 +1123,14 @@ export class GpWorld {
    * Kart na barreira (spec 081, 6B.4): no muro, batida normal (perde ~35 % e é empurrado para dentro, alinhando um pouco
    * com a pista); na pilha de pneus, quica para trás (a velocidade vira de volta, metade). Cancela o drift.
    */
-  private hitWallKart(c: GpCar, nx: number, nz: number, back: number, i: number, kind: 'metal' | 'tyres') {
+  private hitWallKart(
+    c: GpCar,
+    nx: number,
+    nz: number,
+    back: number,
+    i: number,
+    kind: 'metal' | 'tyres',
+  ) {
     c.x -= nx * back;
     c.z -= nz * back;
     c.kx = 0;
@@ -1125,7 +1150,8 @@ export class GpWorld {
         c.h += Math.atan2(Math.sin(along - c.h), Math.cos(along - c.h)) * GP_REAL_WALL_ALIGN;
       }
       c.wallCd = GP_ARC_WALL_CD;
-      if (hit > 4) this.events.push({ type: 'wall', id: c.id, speed: hit, x: c.x + nx, z: c.z + nz, kind });
+      if (hit > 4)
+        this.events.push({ type: 'wall', id: c.id, speed: hit, x: c.x + nx, z: c.z + nz, kind });
     }
     c.vx = Math.sin(c.h) * c.speed;
     c.vz = -Math.cos(c.h) * c.speed;
@@ -1159,7 +1185,13 @@ export class GpWorld {
     if (!cut && c.stepN % 12 === 0) {
       const g = tr.projectGlobal(c.x, c.z);
       const jump = tr.delta(p.s, g.s);
-      if (Math.abs(jump) > GP_CUT_JUMP && g.dist + 4 < p.dist) cut = true;
+      if (
+        Math.abs(jump) > GP_CUT_JUMP &&
+        g.dist + 4 < p.dist &&
+        !tr.overlap[p.i] &&
+        !tr.overlap[g.i]
+      )
+        cut = true;
     }
     if (cut) {
       const v = c.lastValid;
@@ -1322,7 +1354,10 @@ export class GpWorld {
 
   // ---- entre carros ----
 
-  private testCarObb(a: GpCar, b: GpCar): { overlap: number; nx: number; nz: number; px: number; pz: number } | null {
+  private testCarObb(
+    a: GpCar,
+    b: GpCar,
+  ): { overlap: number; nx: number; nz: number; px: number; pz: number } | null {
     const dx = b.x - a.x;
     const dz = b.z - a.z;
     const dims = gpHitDims(this.mode);
@@ -1540,7 +1575,8 @@ export class GpWorld {
       let gap: number | null = null;
       if (leader && car !== leader) {
         if (this.phase === 'quali') {
-          if (car.qualiMs !== null && leader.qualiMs !== null) gap = (car.qualiMs - leader.qualiMs) / 1000;
+          if (car.qualiMs !== null && leader.qualiMs !== null)
+            gap = (car.qualiMs - leader.qualiMs) / 1000;
         } else if (car.finished && leader.finished)
           gap = ((car.finishMs ?? 0) - (leader.finishMs ?? 0)) / 1000;
         else if (car.prog >= 0) {

@@ -480,7 +480,7 @@ export function GpPlay({
   const [itemToast, setItemToast] = useState<{ id: string; n: number } | null>(null);
   const useItemRef = useRef<() => void>(() => undefined);
   const laps = gpLapsOr(online?.laps ?? lapsProp);
-  const trackId = gpTrackDefFor(mode, online?.track ?? track).id;
+  const trackId = gpTrackDefFor(mode, online?.track ?? track, powers).id;
   /** O kart só baixa quando o Arcade é jogado (spec 081, Fase 6): a cena espera ele. */
   const [kartOk, setKartOk] = useState(() => mode !== 'arcade' || kartReady());
   useEffect(() => {
@@ -598,7 +598,7 @@ export function GpPlay({
       })),
     ];
     const seed = online?.seed ?? seedOf();
-    const world = new GpWorld(seed, infos, gpTrackDefFor(mode, online?.track ?? track), mode, laps);
+    const world = new GpWorld(seed, infos, gpTrackDefFor(mode, online?.track ?? track, powers), mode, laps);
     // a espera com as luzes acesas: sorteada pela seed no treino (na sala, quem sorteia é o servidor)
     const holdSec = gpLightsHold(createRng(`${seed}:lights`)());
     const isHost = !!online && !!online.meId && online.hostId === meId;

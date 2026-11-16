@@ -16,6 +16,7 @@ import {
   type GpSurface,
 } from './constants';
 import { GP_TRACK_BALA } from './track-bala';
+import { GP_TRACK_CASTLE } from './track-castle';
 
 /** A faixa do box: de que lado fica, a que distância do centro, onde abre, onde fica paralela, onde volta e a vaga. */
 export interface GpPitDef {
@@ -63,12 +64,25 @@ export interface GpTrackDef {
    * lado indicado. No resto a barreira é muro (batida normal).
    */
   tyreWalls?: readonly { from: number; to: number; side: 1 | -1 }[];
+  /**
+   * Altura da estrada em cada ponto de controle (m, só desenho: a física é plana). Pistas de modelo (spec 086) têm morro e
+   * ponte; o desenho põe o kart, as caixas e a câmera nessa altura.
+   */
+  heights?: readonly number[];
 }
 
 /** O tipo da barreira: muro (batida normal) ou pilha de pneus (rebate o kart para trás). */
 export type GpWallKind = 'metal' | 'tyres';
 
-const PIT_DEFAULT: GpPitDef = { side: 1, offset: 13, inStart: -95, inEnd: -65, outStart: 20, outEnd: 50, box: -18 };
+const PIT_DEFAULT: GpPitDef = {
+  side: 1,
+  offset: 13,
+  inStart: -95,
+  inEnd: -65,
+  outStart: 20,
+  outEnd: 50,
+  box: -18,
+};
 
 /**
  * Circuito da Toca, a primeira pista (spec 078). Continua aqui para os testes do motor que não dependem do desenho da pista
@@ -296,8 +310,11 @@ export const GP_TRACK_INTERLAGOS: GpTrackDef = {
 
 /** As pistas de cada modo, na ordem da escolha (a primeira é a padrão). */
 export const GP_TRACKS_REAL: readonly GpTrackDef[] = [GP_TRACK_MARINA, GP_TRACK_INTERLAGOS];
+/** Arcade sem poderes. */
 export const GP_TRACKS_ARCADE: readonly GpTrackDef[] = [GP_TRACK_BALA];
-export const GP_TRACK_IDS = ['marina', 'interlagos', 'bala'] as const;
+/** Arcade com poderes (spec 086): as pistas novas, de modelo. A Bala Track fica só no Arcade sem poderes. */
+export const GP_TRACKS_POWERS: readonly GpTrackDef[] = [GP_TRACK_CASTLE];
+export const GP_TRACK_IDS = ['marina', 'interlagos', 'bala', 'castle'] as const;
 export type GpTrackId = (typeof GP_TRACK_IDS)[number];
 export const gpIsTrackId = (v: unknown): v is GpTrackId => GP_TRACK_IDS.includes(v as GpTrackId);
 
@@ -334,7 +351,13 @@ function denseSpline(pts: readonly (readonly [number, number])[], per = 48): num
     const t1 = tj(t0, p0, p1);
     const t2 = tj(t1, p1, p2);
     const t3 = tj(t2, p2, p3);
-    const lerp = (a: readonly number[], b: readonly number[], ta: number, tb: number, t: number) => {
+    const lerp = (
+      a: readonly number[],
+      b: readonly number[],
+      ta: number,
+      tb: number,
+      t: number,
+    ) => {
       const w = (t - ta) / (tb - ta);
       return [a[0]! + (b[0]! - a[0]!) * w, a[1]! + (b[1]! - a[1]!) * w];
     };
@@ -414,6 +437,11 @@ export class GpTrack {
   readonly drsAt: Uint8Array;
   /** Barreira de pilha de pneus em cada amostra: 1 à esquerda, 2 à direita (bits). */
   readonly tyreAt: Uint8Array;
+  /**
+   * 1 nas amostras onde outro trecho da pista cruza este por cima ou por baixo (ponte, spec 086): ali a projeção global
+   * pode cair no outro trecho, então o corte de caminho não vale.
+   */
+  readonly overlap: Uint8Array;
 
   constructor(def: GpTrackDef) {
     this.def = def;
@@ -434,7 +462,10 @@ export class GpTrack {
     {
       const cum = [0];
       for (let i = 1; i < dense.length; i++)
-        cum.push(cum[i - 1]! + Math.hypot(dense[i]![0]! - dense[i - 1]![0]!, dense[i]![1]! - dense[i - 1]![1]!));
+        cum.push(
+          cum[i - 1]! +
+            Math.hypot(dense[i]![0]! - dense[i - 1]![0]!, dense[i]![1]! - dense[i - 1]![1]!),
+        );
       for (let q = 0; q < dense.length; q++) {
         const seg = dense[q]![2]!;
         if (q === 0 || dense[q - 1]![2] !== seg) cp[seg] = cum[q]!;
@@ -525,6 +556,7 @@ export class GpTrack {
       }
     }
     this.buildWalls();
+    this.overlap = this.findCrossings();
     this.drsZones = this.findDrsZones();
     this.drsAt = new Uint8Array(this.n);
     for (const zn of this.drsZones)
@@ -546,10 +578,14 @@ export class GpTrack {
       const s1 = cp[tw.to] ?? 0;
       for (let i = 0; i < n; i++) {
         const s = i * this.ds;
-        if (s0 <= s1 ? s >= s0 && s <= s1 : s >= s0 || s <= s1) this.tyreAt[i]! |= tw.side > 0 ? 2 : 1;
+        if (s0 <= s1 ? s >= s0 && s <= s1 : s >= s0 || s <= s1)
+          this.tyreAt[i]! |= tw.side > 0 ? 2 : 1;
       }
     }
-    const sec = def.sectors ?? [Math.floor(def.points.length / 3), Math.floor((def.points.length * 2) / 3)];
+    const sec = def.sectors ?? [
+      Math.floor(def.points.length / 3),
+      Math.floor((def.points.length * 2) / 3),
+    ];
     this.sectorS = [cp[sec[0]] ?? this.length / 3, cp[sec[1]] ?? (this.length * 2) / 3];
   }
 
@@ -595,6 +631,32 @@ export class GpTrack {
         else this.wallL[i] = Math.max(this.wallL[i]!, need);
       }
     }
+  }
+
+  /** Marca onde a pista se cruza (outro trecho, longe no traçado, passa por cima e em outra direção). */
+  private findCrossings(): Uint8Array {
+    const n = this.n;
+    const out = new Uint8Array(n);
+    const skip = Math.round(70 / this.ds);
+    const reach = 2 * GP_HALF_WIDTH + 6;
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j += 2) {
+        const gap = Math.abs(i - j);
+        if (Math.min(gap, n - gap) < skip) continue;
+        if (Math.hypot(this.x[j]! - this.x[i]!, this.z[j]! - this.z[i]!) > reach) continue;
+        // só cruzamento de verdade: direções bem diferentes (faixas paralelas já têm a barreira no meio)
+        if (Math.abs(this.tx[i]! * this.tx[j]! + this.tz[i]! * this.tz[j]!) < 0.75) {
+          out[i] = 1;
+          break;
+        }
+      }
+    }
+    // alarga um pouco para os dois lados
+    const pad = Math.round(14 / this.ds);
+    const wide = new Uint8Array(n);
+    for (let i = 0; i < n; i++)
+      if (out[i]) for (let o = -pad; o <= pad; o++) wide[(i + o + n) % n] = 1;
+    return wide;
   }
 
   /** Retas com curvatura baixa por um bom trecho viram zona de DRS (começa depois da curva e acaba antes da freada). */
@@ -794,6 +856,31 @@ export class GpTrack {
     return -1;
   }
 
+  /**
+   * Altura da estrada na distância s (m, só desenho): interpola `def.heights` entre os pontos de controle. 0 se a pista não
+   * tem alturas.
+   */
+  yAt(s: number): number {
+    const h = this.def.heights;
+    if (!h || h.length < 2) return 0;
+    const cp = this.cpS;
+    const w = this.wrap(s);
+    // procura o trecho [cp[i], cp[i+1]] que contém w (cp[0] = 0; o último vai até o comprimento)
+    let lo = 0;
+    let hi = cp.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if (cp[mid]! <= w) lo = mid;
+      else hi = mid - 1;
+    }
+    const a = lo;
+    const b = (lo + 1) % cp.length;
+    const sa = cp[a]!;
+    const sb = b === 0 ? this.length : cp[b]!;
+    const f = sb > sa ? (w - sa) / (sb - sa) : 0;
+    return h[a]! + (h[b]! - h[a]!) * Math.min(1, Math.max(0, f));
+  }
+
   /** Ponto do desenho original (pixels) em metros da pista (minimapa, cenário). */
   mapPoint(px: number, pz: number): { x: number; z: number } {
     const k = this.def.scale ?? 1;
@@ -803,8 +890,12 @@ export class GpTrack {
 }
 
 /** A pista de cada modo (spec 081): o kart corre na Bala Track; o F1 na Marina. */
-export function gpTrackDefFor(mode: 'arcade' | 'real', id?: string | null): GpTrackDef {
-  const list = mode === 'arcade' ? GP_TRACKS_ARCADE : GP_TRACKS_REAL;
+export function gpTrackDefFor(
+  mode: 'arcade' | 'real',
+  id?: string | null,
+  powers = false,
+): GpTrackDef {
+  const list = mode === 'arcade' ? (powers ? GP_TRACKS_POWERS : GP_TRACKS_ARCADE) : GP_TRACKS_REAL;
   return list.find((t) => t.id === id) ?? list[0]!;
 }
 

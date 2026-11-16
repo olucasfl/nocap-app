@@ -1494,3 +1494,10 @@ html.gp-playing textarea {
     background: linear-gradient(to top, var(--gp-panel) 82%, transparent);
   }
 }
+
+.gp-pick-power-track {
+  font: 700 11px var(--gp-body);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gp-accent);
+}

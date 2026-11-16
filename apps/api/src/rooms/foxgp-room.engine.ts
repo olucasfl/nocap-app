@@ -99,7 +99,7 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
   private simHost: string | null = null;
   private dirty = false;
   private get lapLength() {
-    return gpTrack(gpTrackDefFor(this.physics, this.trackId)).length;
+    return gpTrack(gpTrackDefFor(this.physics, this.trackId, this.powers)).length;
   }
 
   constructor(opts: EngineOptions) {
@@ -136,7 +136,7 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
   /** A pista da sala: a escolhida, se existe no modo; senão a primeira do modo. */
   get trackId(): string {
     const v = (this.settings as unknown as { track?: unknown }).track;
-    return gpTrackDefFor(this.physics, typeof v === 'string' ? v : null).id;
+    return gpTrackDefFor(this.physics, typeof v === 'string' ? v : null, this.powers).id;
   }
 
   /** Voltas da corrida (2 a 10, padrão 3). */

@@ -72,7 +72,11 @@ export function GpPicker({
     saveTrack(id);
   };
   const trackOf = (m: GpPhysicsMode) =>
-    m === 'arcade' ? 'bala' : (GP_TRACK_CHOICES.real.find((t) => t.id === track)?.id ?? 'marina');
+    m === 'arcade'
+      ? powers
+        ? 'castle'
+        : 'bala'
+      : (GP_TRACK_CHOICES.real.find((t) => t.id === track)?.id ?? 'marina');
   const select = (m: GpPhysicsMode) => {
     setPhysics(m);
     savePhysics(m);
@@ -144,6 +148,9 @@ export function GpPicker({
                       data-testid={`gp-powers-${on ? 'on' : 'off'}`}
                     >
                       <span className="gp-pick-power-title">{on ? 'Poderes' : 'Corrida pura'}</span>
+                      <span className="gp-pick-power-track">
+                        Pista: {on ? 'Castle Circuit' : 'Bala Track'}
+                      </span>
                       <span className="gp-pick-power-desc">
                         {on
                           ? 'Caixas na pista dão itens para atacar e se defender.'
