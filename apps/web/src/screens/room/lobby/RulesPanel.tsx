@@ -1,6 +1,21 @@
 import { Lock } from '@/components/icons';
 import { sendRoom, type RoomSnapshot, at } from '@/lib/rooms';
 import { modeOf, rulesFor, type RuleValue } from './rules';
+import { TrackPreview } from '@/games/foxgp/TrackPreview';
+
+/** Fox GP: a foto da pista escolhida (para o líder e para quem entra). */
+function GpPreview({ snapshot }: { snapshot: RoomSnapshot }) {
+  if (snapshot.game !== 'foxgp') return null;
+  const f = snapshot.foxgp;
+  const physics = f?.physics === 'arcade' ? 'arcade' : 'real';
+  return (
+    <TrackPreview
+      physics={physics}
+      track={(snapshot.settings as unknown as { track?: string }).track}
+      powers={physics === 'arcade' && !!f?.powers}
+    />
+  );
+}
 
 function Options({
   label,
@@ -52,6 +67,7 @@ export function RulesEditor({ snapshot }: { snapshot: RoomSnapshot }) {
   return (
     <div className="lb-rules">
       <ModeNote snapshot={snapshot} />
+      <GpPreview snapshot={snapshot} />
       {rulesFor(snapshot).map((r) => (
         <div key={r.id}>
           <Options
@@ -85,6 +101,7 @@ export function RulesReadOnly({
         </span>
       </p>
       <ModeNote snapshot={snapshot} />
+      <GpPreview snapshot={snapshot} />
       <dl className="lb-readonly">
         {rulesFor(snapshot).map((r) => (
           <div key={r.id}>

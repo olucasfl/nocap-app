@@ -1,0 +1,39 @@
+/* foto da pista (spec 086): 16:9, com o nome e os dados em cima de uma faixa escura */
+.gp-trackprev {
+  position: relative;
+  margin: 0;
+  overflow: hidden;
+  border: 2px solid var(--gp-line-2, #3a4560);
+  background: #0b0e17;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+}
+.gp-trackprev img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.gp-trackprev figcaption {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: grid;
+  gap: 2px;
+  padding: 18px 12px 8px;
+  background: linear-gradient(to top, rgba(11, 14, 23, 0.92), rgba(11, 14, 23, 0));
+  color: #f4f6fb;
+}
+.gp-trackprev figcaption b {
+  font: italic 900 20px/1 'Saira Condensed', system-ui, sans-serif;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.gp-trackprev figcaption span {
+  font: 700 11px 'Inter', system-ui, sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #ffb27a;
+}
+.gp-trackprev[data-compact='1'] figcaption b {
+  font-size: 16px;
+}

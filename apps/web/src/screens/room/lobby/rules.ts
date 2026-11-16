@@ -213,7 +213,7 @@ export function rulesSummary(s: RoomSnapshot): string {
   }
   if (s.game === 'foxgp')
     return s.foxgp?.physics === 'arcade'
-      ? `Fox GP · Bala Track · 3 voltas · Arcade${s.foxgp?.powers ? ' · Poderes' : ''}`
+      ? `Fox GP · ${s.foxgp?.powers ? 'Castle Circuit' : 'Bala Track'} · 3 voltas · Arcade${s.foxgp?.powers ? ' · Poderes' : ''}`
       : `Fox GP · ${s.foxgp?.track === 'interlagos' ? 'Interlagos' : 'Circuito da Marina'} · 3 voltas · Realista`;
   if (s.game === 'pingpong') return 'Ping Fox! · 1 contra 1 · 11 pontos';
   if (s.game === 'foxshot') return `Counter Fox · Mata-mata · ${s.foxshot?.minutes ?? 5} min`;
@@ -240,8 +240,12 @@ export function rulesSummary(s: RoomSnapshot): string {
 export function rulesFor(s: RoomSnapshot): RuleDef[] {
   // Fox GP: a física é da sala inteira (o líder simula todos os carros) e só o líder muda
   if (s.game === 'foxgp') {
-    const cur = (s.settings as unknown as { physics?: string }).physics === 'arcade' ? 'arcade' : 'real';
-    const track = (s.settings as unknown as { track?: string }).track === 'interlagos' ? 'interlagos' : 'marina';
+    const cur =
+      (s.settings as unknown as { physics?: string }).physics === 'arcade' ? 'arcade' : 'real';
+    const track =
+      (s.settings as unknown as { track?: string }).track === 'interlagos'
+        ? 'interlagos'
+        : 'marina';
     const fill = (s.settings as unknown as { fill?: number }).fill ?? 0;
     const rawLaps = (s.settings as unknown as { laps?: number }).laps;
     const laps = Number.isInteger(rawLaps) && rawLaps! >= 2 && rawLaps! <= 10 ? rawLaps! : 3;
@@ -267,13 +271,14 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
               id: 'powers',
               label: 'MODO',
               values: ['off', 'on'],
-              current: (s.settings as unknown as { powers?: boolean }).powers === true ? 'on' : 'off',
+              current:
+                (s.settings as unknown as { powers?: boolean }).powers === true ? 'on' : 'off',
               format: (v: string) => (v === 'on' ? 'Poderes' : 'Corrida'),
               patch: (v: string) => ({ powers: v === 'on' }),
               note:
                 (s.settings as unknown as { powers?: boolean }).powers === true
-                  ? 'Poderes: caixas na pista com itens (casca, bola, cometa, bomba, turbo, Superfox). Quem está atrás ganha itens melhores.'
-                  : 'Corrida: só pilotagem, sem itens.',
+                  ? 'Poderes: pista Castle Circuit, com caixas de itens (casca, bola, cometa, bomba, turbo, escudo, gelo e mais). Quem está atrás ganha itens melhores.'
+                  : 'Corrida: pista Bala Track, só pilotagem, sem itens.',
             } as RuleDef,
           ]
         : []),
@@ -319,7 +324,8 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
               label: 'DIFICULDADE',
               values: ['facil', 'medio', 'dificil'],
               current: level,
-              format: (v: string) => (v === 'facil' ? 'Fácil' : v === 'dificil' ? 'Difícil' : 'Médio'),
+              format: (v: string) =>
+                v === 'facil' ? 'Fácil' : v === 'dificil' ? 'Difícil' : 'Médio',
               patch: (v: string) => ({ botLevel: v }),
               note: 'Os bots largam junto e o líder simula cada um; não entram em ranking.',
             } as RuleDef,
@@ -327,7 +333,12 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
     ];
   }
   if (s.game === 'golf') {
-    const g = s.settings as unknown as { holes?: number; tier?: string; seconds?: number; collide?: boolean };
+    const g = s.settings as unknown as {
+      holes?: number;
+      tier?: string;
+      seconds?: number;
+      collide?: boolean;
+    };
     return [
       {
         id: 'holes',
@@ -358,7 +369,13 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
       },
     ];
   }
-  if (s.game === 'desmorona' || s.game === 'bola' || s.game === 'pingpong' || s.game === 'foxshot' || s.game === 'foxcap')
+  if (
+    s.game === 'desmorona' ||
+    s.game === 'bola' ||
+    s.game === 'pingpong' ||
+    s.game === 'foxshot' ||
+    s.game === 'foxcap'
+  )
     return [];
   const out: RuleDef[] = [];
   const cfg = s.settings;

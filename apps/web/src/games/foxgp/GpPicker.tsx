@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { GP_LAP_OPTIONS, GP_MAX_PLAYERS, type GpPhysicsMode } from '@nocap/games';
 import { GpGarage } from './GpGarage';
 import { GpItemIcon, type GpIconKind } from './GpItemIcon';
+import { TrackPreview } from './TrackPreview';
 import {
   loadBest,
   loadLaps,
@@ -166,6 +167,7 @@ export function GpPicker({
                     </button>
                   ))}
                 </div>
+                <TrackPreview physics="arcade" powers={powers} compact />
               </section>
             )}
 
@@ -189,6 +191,7 @@ export function GpPicker({
                     </button>
                   ))}
                 </div>
+                <TrackPreview physics="real" track={track} powers={false} compact />
               </section>
             )}
           </div>
