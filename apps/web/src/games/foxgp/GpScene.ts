@@ -74,7 +74,11 @@ const STAND = 0xf2c230;
 /** Cores dos 3 níveis do turbo do kart (azul, laranja, rosa) e da faísca antes do 1º terço. */
 const tmpCamO = new THREE.Vector3();
 const tmpCamD = new THREE.Vector3();
+const markDark = new THREE.Color(0x15151a);
+const tmpE = new THREE.Euler();
 const BOOST_COLORS = [0xfff1c8, 0x3aa0ff, 0xff8a1f, 0xff4fd8] as const;
+
+const markCols = [0xfff1c8, 0x3aa0ff, 0xff8a1f, 0xff4fd8].map((h) => new THREE.Color(h));
 
 interface CarView {
   id: string;
@@ -391,13 +395,18 @@ export class GpScene {
     this.marks = new THREE.InstancedMesh(
       markGeo,
       new THREE.MeshBasicMaterial({
-        color: 0x15151a,
+        color: 0xffffff,
         transparent: true,
-        opacity: 0.45,
+        opacity: 0.6,
         depthWrite: false,
+        polygonOffset: true,
+        polygonOffsetFactor: -2,
+        polygonOffsetUnits: -2,
       }),
       Math.max(1, this.markCap),
     );
+    // cor por marca (preta no escorregão comum; azul, laranja e rosa no drift carregando)
+    for (let i = 0; i < Math.max(1, this.markCap); i++) this.marks.setColorAt(i, markDark);
     this.marks.count = 0;
     this.marks.renderOrder = 2;
     this.scene.add(this.marks);
@@ -1917,14 +1926,14 @@ export class GpScene {
     }
   }
 
-  private spark(x: number, z: number, n: number, color = 0xffb347, power = 1) {
+  private spark(x: number, z: number, n: number, color = 0xffb347, power = 1, y = 0) {
     if (this.quality === 'low' || this.reduced) return;
     for (let i = 0; i < n && this.sparks.length < 160; i++) {
       const a = Math.random() * Math.PI * 2;
       const sp = 3 + Math.random() * 6;
       this.sparks.push({
         x,
-        y: 0.4,
+        y: y + 0.4,
         z,
         vx: Math.cos(a) * sp * power,
         vy: (2 + Math.random() * 4) * power,
@@ -1963,11 +1972,15 @@ export class GpScene {
     p.s.visible = true;
   }
 
-  private skidMark(x: number, z: number, h: number) {
+  /** Marca no chão: altura e inclinação do chão sob a roda (pistas de modelo), cor pelo nível do drift. */
+  private skidMark(x: number, z: number, h: number, y: number, pitch: number, roll: number, color: THREE.Color) {
     if (this.markCap === 0) return;
-    tmpQ.setFromAxisAngle(UP, -h);
-    tmpM.compose(tmpP.set(x, 0.035, z), tmpQ, tmpS.set(1, 1, 1));
+    tmpE.set(pitch, -h, roll, 'YXZ');
+    tmpQ.setFromEuler(tmpE);
+    tmpM.compose(tmpP.set(x, y + 0.07, z), tmpQ, tmpS.set(1, 1, 1));
     this.marks.setMatrixAt(this.markNext, tmpM);
+    this.marks.setColorAt(this.markNext, color);
+    if (this.marks.instanceColor) this.marks.instanceColor.needsUpdate = true;
     this.markNext = (this.markNext + 1) % this.markCap;
     this.marks.count = Math.min(this.markCap, this.marks.count + 1);
     this.marks.instanceMatrix.needsUpdate = true;
@@ -2033,7 +2046,7 @@ export class GpScene {
         }
         // faíscas nas rodas de trás no drift, da cor do nível da barra
         // faíscas só a partir do azul: o drift começa sem nada e vai ganhando cor (azul, laranja, rosa)
-        if (c.driftDir !== 0 && c.bar >= 1 && Math.random() < 0.6) {
+        if (c.driftDir !== 0 && c.bar >= 1 && Math.random() < 0.9) {
           const rx = Math.cos(p.h);
           const rz = Math.sin(p.h);
           const bx = p.x - Math.sin(p.h) * GP_CAR_LEN * 0.3 * v.vis;
@@ -2041,7 +2054,7 @@ export class GpScene {
           const lv = Math.min(3, Math.floor(c.bar));
           const side = Math.random() < 0.5 ? 1 : -1;
           const sw = GP_CAR_WID * 0.4 * v.vis;
-          this.spark(bx + rx * side * sw, bz + rz * side * sw, 2, BOOST_COLORS[lv], 0.35);
+          this.spark(bx + rx * side * sw, bz + rz * side * sw, 2 + lv, BOOST_COLORS[lv], 0.35 + lv * 0.15, gy);
         }
       }
       v.m.body.position.x = this.reduced ? 0 : Math.sin(this.t * 60) * v.shake * 0.08;
@@ -2069,7 +2082,8 @@ export class GpScene {
       const moved = Math.hypot(p.x - v.lastX, p.z - v.lastZ);
       v.lastX = p.x;
       v.lastZ = p.z;
-      if (c.skid > 2.2 && Math.abs(c.speed) > 6 && !v.ghost && moved < 3) {
+      const charged = w.mode === 'arcade' && c.driftDir !== 0 && c.bar >= 1;
+      if ((c.skid > 2.2 || charged) && Math.abs(c.speed) > 6 && !v.ghost && moved < 3) {
         v.markAcc += moved;
         if (v.markAcc > 0.5) {
           v.markAcc = 0;
@@ -2079,13 +2093,16 @@ export class GpScene {
           const bx = p.x - Math.sin(p.h) * GP_CAR_LEN * 0.28 * v.vis;
           const bz = p.z + Math.cos(p.h) * GP_CAR_LEN * 0.28 * v.vis;
           const half = GP_CAR_WID * 0.38 * v.vis;
-          this.skidMark(bx + rx * half, bz + rz * half, p.h);
-          this.skidMark(bx - rx * half, bz - rz * half, p.h);
+          const col = charged ? markCols[Math.min(3, Math.floor(c.bar))]! : markDark;
+          const gyAt = (x: number, z: number) =>
+            this.groundMap ? (this.groundMap.sample(x, z, v.gy) ?? v.gy) : v.gy;
+          this.skidMark(bx + rx * half, bz + rz * half, p.h, gyAt(bx + rx * half, bz + rz * half), v.pitch, v.roll, col);
+          this.skidMark(bx - rx * half, bz - rz * half, p.h, gyAt(bx - rx * half, bz - rz * half), v.pitch, v.roll, col);
           // fumaça da traseira: no kart, sai das duas rodas e cresce com o escorregão
           if (Math.random() < (w.mode === 'arcade' ? 0.85 : 0.5))
-            this.puff(bx + rx * half, 0.4, bz + rz * half, 0xdedede, 1 + c.skid * 0.1);
+            this.puff(bx + rx * half, v.gy + 0.4, bz + rz * half, 0xdedede, 1 + c.skid * 0.1);
           if (w.mode === 'arcade' && Math.random() < 0.85)
-            this.puff(bx - rx * half, 0.4, bz - rz * half, 0xdedede, 1 + c.skid * 0.1);
+            this.puff(bx - rx * half, v.gy + 0.4, bz - rz * half, 0xdedede, 1 + c.skid * 0.1);
         }
       }
     }

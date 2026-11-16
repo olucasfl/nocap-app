@@ -145,7 +145,7 @@ ${pts.map(([x, z]) => `    [${r2(x)}, ${r2(z)}],`).join('\n')}
   noCut: [],
   pit: null,
   smooth: 2,
-  vmaxK: 0.62,
+  vmaxK: 0.8,
   limit: 18,
   pads: [
 ${padList.map((p) => `    { s: ${r2(p.s)}, d: ${p.d} },`).join('\n')}
