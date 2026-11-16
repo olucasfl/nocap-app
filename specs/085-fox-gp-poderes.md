@@ -73,3 +73,8 @@ quem lidera. Com 2 a 20 carros a posição vira faixa (frente, meio, trás).
 - **Casca e bomba no chão:** quem acerta dá duas voltas completas (volta de frente), perde velocidade (fica com 25%, e segue freando enquanto dura o tropeço de 1,4 s).
 - **HUD:** cartão com o símbolo (SVG por poder), o nome, a tecla (F no PC, botão Item no celular) e quantos faltam; ao pegar uma caixa, aviso "Novo poder" com nome, descrição e tecla.
 - **Visual:** halos e sombras nos modelos, rastro de brilho nos tiros, anel de aviso da bomba, explosões, faíscas ao pegar, acertar, bloquear e usar, brilho do Superfox.
+
+## 8. Poderes novos e menu (16/11/2026)
+
+- **Escudo bolha** (barra o próximo golpe; estoura sozinho em 8 s), **Raio de gelo** (o kart acertado escorrega por 3,2 s), **Onda de choque** (empurra quem está a 24 m), **Tinta** (suja a tela de quem leva por 4,5 s) e **Troca de lugar** (troca de posição com o kart da frente; sem ninguém na frente, o item fica guardado). O escudo barra todos os golpes, inclusive gelo, tinta, onda e troca; o Superfox barra gelo e tinta.
+- **Menu "Antes de correr":** três passos numerados (1 estilo, 2 modo do Arcade ou pista, 3 voltas e adversários), cartões do modo do Arcade com a lista dos 12 poderes, resumo da escolha e botões sempre à vista no celular.

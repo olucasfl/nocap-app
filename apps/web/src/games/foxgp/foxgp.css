@@ -861,7 +861,7 @@
   background: rgba(11, 14, 23, 0.7);
 }
 .gp-pick-card {
-  width: min(460px, 100%);
+  width: min(480px, 100%);
   max-height: calc(100dvh - 32px);
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -1013,55 +1013,173 @@
     font-size: 17px;
   }
 }
-/* Antes de correr na tela baixa (celular deitado): modos à esquerda, adversários e botões à direita, sem rolagem */
-@media (max-height: 520px) and (orientation: landscape) {
-  .gp-pick {
-    padding: 8px;
-  }
+/* Antes de correr: duas colunas em tela larga ou deitada; uma só (rolando) em tela estreita */
+.gp-pick-head {
+  display: grid;
+  gap: 4px;
+}
+.gp-pick-cols {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr);
+}
+.gp-pick-col {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  grid-auto-rows: max-content;
+}
+.gp-pick-sec {
+  display: grid;
+  gap: 10px;
+}
+.gp-pick-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font: italic 800 15px var(--gp-display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gp-text);
+}
+.gp-pick-step b {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--gp-accent);
+  color: var(--gp-bg);
+  font-style: normal;
+  font-size: 14px;
+}
+.gp-pick-powers {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.gp-pick-power-card {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: 12px;
+  border: 2px solid var(--gp-line-2);
+  background: var(--gp-panel-2);
+  color: var(--gp-text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+.gp-pick-power-card:hover {
+  border-color: var(--gp-accent-soft);
+}
+.gp-pick-power-card.is-on {
+  border-color: var(--gp-accent);
+  background: var(--gp-panel-on);
+  box-shadow: 0 0 10px rgba(255, 125, 38, 0.2);
+}
+.gp-pick-power-title {
+  font: italic 800 17px var(--gp-display);
+  text-transform: uppercase;
+}
+.gp-pick-power-card.is-on .gp-pick-power-title {
+  color: var(--gp-accent);
+}
+.gp-pick-power-desc {
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--gp-text-3);
+}
+.gp-pick-power-icons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+.gp-pick-field {
+  display: grid;
+  gap: 8px;
+}
+.gp-pick-field .gp-kicker em {
+  font-style: normal;
+  color: var(--gp-text-3);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.gp-chips-laps {
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 4px;
+}
+.gp-chips-laps .gp-chip,
+.gp-chips-bots .gp-chip {
+  min-height: 40px;
+  font-size: 17px;
+  padding: 0;
+}
+.gp-pick-garage {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 2px dashed var(--gp-line-2);
+  background: transparent;
+  color: var(--gp-text);
+  font: italic 800 16px var(--gp-display);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.gp-pick-garage:hover {
+  border-color: var(--gp-accent-soft);
+}
+.gp-pick-garage small {
+  font: 500 12px var(--gp-body);
+  text-transform: none;
+  color: var(--gp-text-3);
+}
+.gp-pick-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.gp-pick-summary span {
+  padding: 3px 9px;
+  border: 1px solid var(--gp-line-2);
+  background: var(--gp-panel-2);
+  font: 700 11px var(--gp-body);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--gp-text-3);
+}
+@media (min-width: 760px), (max-height: 520px) and (orientation: landscape) {
   .gp-pick-card {
     width: min(860px, 100%);
-    max-height: calc(100dvh - 16px);
+  }
+  .gp-pick-cols {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  }
+}
+@media (max-height: 520px) and (orientation: landscape) {
+  .gp-pick-card {
     padding: 12px 14px;
-    gap: 8px 14px;
-    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-    align-content: start;
+    gap: 8px;
   }
-  /* o título ocupa a largura toda; os modos ficam à esquerda e as demais seções empilham à direita (sem áreas fixas, para
-     caber qualquer quantidade de seções sem uma cair em cima da outra) */
-  .gp-pick-card > .gp-kicker,
-  .gp-pick-card h2 {
-    grid-column: 1 / -1;
+  .gp-pick-col {
+    gap: 8px;
   }
-  .gp-pick-card h2 {
-    font-size: 22px;
-  }
-  .gp-pick-modes {
-    grid-column: 1;
-    grid-row: 3 / span 8;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 6px;
-  }
-  .gp-pick-mode-card {
-    padding: 8px 10px;
-    gap: 3px;
-  }
-  .gp-pick-mode-desc {
+  .gp-pick-mode-desc,
+  .gp-pick-power-desc {
     display: none;
-  }
-  .gp-pick-bots-section,
-  .gp-pick-card > [data-testid='gp-pick-garage'],
-  .gp-pick-btns {
-    grid-column: 2;
   }
   .gp-pick-card .gp-tbtn {
     height: 36px;
-    padding: 0 10px;
     font-size: 15px;
-    white-space: nowrap;
   }
-  .gp-chip {
-    min-height: 34px;
-    font-size: 16px;
+  .gp-chips-laps .gp-chip,
+  .gp-chips-bots .gp-chip {
+    min-height: 32px;
+    font-size: 15px;
   }
 }
 
@@ -1364,4 +1482,15 @@ html.gp-playing textarea {
 .gp-play button svg,
 .gp-play button img {
   pointer-events: none;
+}
+/* em tela estreita o cartão rola: os botões de largar ficam sempre à vista embaixo */
+@media (max-width: 759px) and (min-height: 521px) {
+  .gp-pick-btns {
+    position: sticky;
+    bottom: -24px;
+    z-index: 2;
+    padding: 10px 0 24px;
+    margin-bottom: -24px;
+    background: linear-gradient(to top, var(--gp-panel) 82%, transparent);
+  }
 }
