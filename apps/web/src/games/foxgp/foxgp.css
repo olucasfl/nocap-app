@@ -857,12 +857,14 @@
   z-index: 50;
   display: grid;
   place-items: center;
-  padding: 16px;
+  /* respeita o notch, a ilha e a barra de gestos: o cartão nunca passa para baixo deles */
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
   background: rgba(11, 14, 23, 0.7);
 }
 .gp-pick-card {
   width: min(480px, 100%);
-  max-height: calc(100dvh - 32px);
+  max-height: calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 24px;
@@ -1108,12 +1110,13 @@
   letter-spacing: 0;
 }
 .gp-chips-laps {
-  grid-template-columns: repeat(9, minmax(0, 1fr));
+  /* os números de voltas quebram em mais de uma linha em vez de ficarem estreitos demais para o dedo */
+  grid-template-columns: repeat(auto-fit, minmax(44px, 1fr));
   gap: 4px;
 }
 .gp-chips-laps .gp-chip,
 .gp-chips-bots .gp-chip {
-  min-height: 40px;
+  min-height: 44px;
   font-size: 17px;
   padding: 0;
 }
@@ -1173,12 +1176,12 @@
     display: none;
   }
   .gp-pick-card .gp-tbtn {
-    height: 36px;
+    height: 44px;
     font-size: 15px;
   }
   .gp-chips-laps .gp-chip,
   .gp-chips-bots .gp-chip {
-    min-height: 32px;
+    min-height: 44px;
     font-size: 15px;
   }
 }
