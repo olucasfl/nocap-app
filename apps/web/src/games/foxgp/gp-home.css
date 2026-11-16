@@ -1028,3 +1028,13 @@
 .gph-panel {
   padding-bottom: max(10px, env(safe-area-inset-bottom));
 }
+@media (max-height: 520px) and (orientation: landscape) {
+  /* painéis da garagem e das pistas rolam por dentro em vez de cortar o que não cabe */
+  .gph-garage-panel.gpg {
+    overflow-y: auto;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  }
+  .gph-panel {
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  }
+}

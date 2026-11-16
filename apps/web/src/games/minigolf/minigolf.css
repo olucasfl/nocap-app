@@ -1101,10 +1101,12 @@
   color: var(--mg-text);
   font-family: 'DM Sans', system-ui, sans-serif;
 }
+/* a lista de fases ocupa a tela toda: respeita o notch, a ilha, a barra de gestos e as laterais (docs/MOBILE-GUIDE.md) */
 .mgl-wrap {
   max-width: 920px;
   margin: 0 auto;
-  padding: 18px 16px 40px;
+  padding: max(18px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+    max(40px, calc(env(safe-area-inset-bottom) + 24px)) max(16px, env(safe-area-inset-left));
 }
 .mgl-head {
   display: flex;

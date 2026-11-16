@@ -211,7 +211,7 @@
   text-transform: uppercase;
 }
 .png-serve-hint span {
-  font: 700 12px var(--font-body, system-ui);
+  font: 700 13px var(--font-body, system-ui);
 }
 
 @keyframes png-pop {
