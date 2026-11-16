@@ -91,3 +91,7 @@ Leitura: **o equilíbrio ainda não está bom.** Quem começa com Orbes, Raio ou
 ## Reset geral (16/11/2026)
 
 A pedido do Lucas, o progresso de todos foi zerado (recorde, mapas, heróis, itens, bestiário, conquistas, ouro, estatísticas). Feito por **geração do save** (`NH_EPOCH = 2` em `packages/games/src/nighthunt/rules.ts` e em `apps/api/src/prefs/prefs.controller.ts`), sem comando no banco: o aparelho descarta saves de outra geração; o servidor devolve `null` para o save antigo da conta, recusa (400) quem manda save sem geração (aparelho com versão velha aberta) e o substitui no primeiro save novo. Os dados antigos continuam nas linhas de `user_prefs` até cada conta salvar de novo (ficam invisíveis). Para apagar de verdade: `UPDATE user_prefs SET data = data - 'nh' WHERE data ? 'nh';` (só com autorização). Para zerar de novo, suba o número nos dois lugares.
+
+### Nível 8 e novo reset (16/11/2026)
+
+As 16 armas passaram a ir até o nível 8 (Regeneração e passivos mantêm 5/6/2), com tabelas de 8 posições, Espada com 8 colisores e Nova Ígnea com recarga própria nos níveis 7 e 8 (`haloCooldown`). A curva de XP segue o Vampire Survivors: passo 10 até o nível 20, 13 até o 40 e 16 depois, com um salto único em cada um; o XP dobra nos níveis 20 e 40 até subir. Com tudo no máximo, subir de nível dá ouro e um pouco de vida (evento `maxedLevel`). Como o balanceamento mudou, o progresso foi zerado de novo: `NH_EPOCH = 3`.

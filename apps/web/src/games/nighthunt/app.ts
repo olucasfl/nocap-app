@@ -679,6 +679,14 @@ export class NhApp {
           pushFx(this.fx, 'bolt', e.x, e.y);
           snd('diagonal', 1.4);
           break;
+        case 'maxedLevel':
+          snd('gold');
+          this.toastQ.push({
+            text: 'TUDO NO MÁXIMO',
+            sub: `+${e.gold} de ouro e um pouco de vida`,
+            t: 0,
+          });
+          break;
         case 'evolve':
           snd('levelUp', 0.8);
           pushFx(this.fx, 'evolveFx', 0, 0);

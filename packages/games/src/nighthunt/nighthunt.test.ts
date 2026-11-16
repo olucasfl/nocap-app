@@ -31,9 +31,10 @@ import {
   type UpgradeId,
   UPGRADE_MAX,
   swordAngleDeg,
+  SWORD_BOXES,
 } from './data';
 import { overlaps } from './geometry';
-import { ENEMIES, PLAYER_SETTINGS } from './settings';
+import { ENEMIES, PLAYER_SETTINGS, xpToNext } from './settings';
 
 const run = (w: NhWorld, seconds: number, input = { x: 0, y: 0 }) => {
   for (let i = 0; i < Math.round(seconds / STEP) && w.alive; i++) {
@@ -219,7 +220,7 @@ describe('melhorias permanentes e conquistas', () => {
     w.kills = 3;
     w.t = 75;
     w.level = 5;
-    w.levels.horizontal = 6;
+    w.levels.horizontal = 8;
     const { unlocked } = applyRun(s, w.result());
     const ids = unlocked.map((a) => a.id);
     expect(ids).toContain('first-blood');
@@ -968,5 +969,68 @@ describe('chefes mais lentos (16/11/2026)', () => {
     expect(Math.max(bat.speedX, bat.speedY)).toBeLessThanOrEqual(
       bat.s.speed * MAPS.campo!.enemySpeed + 1e-9,
     );
+  });
+});
+
+describe('nível máximo 8 nas armas, curva de XP e fim de linha', () => {
+  it('as armas vão até 8 (menos a Regeneração, 6) e as tabelas cobrem os 8 níveis', async () => {
+    const eight = [
+      'sword',
+      'horizontal',
+      'halo',
+      'axe',
+      'orbit',
+      'lightning',
+      'whip',
+      'wand',
+      'garlic',
+      'magma',
+      'embers',
+      'cross',
+      'bone',
+      'runes',
+      'pentagram',
+      'bomb',
+    ] as const;
+    for (const id of eight) expect(UPGRADES[id].max).toBe(8);
+    expect(UPGRADES.regeneration.max).toBe(6);
+    const W = await import('./weapons');
+    for (const t of [
+      W.WHIP.cuts,
+      W.WAND.n,
+      W.GARLIC.radius,
+      W.MAGMA.n,
+      W.EMBERS.n,
+      W.CROSS.n,
+      W.BONE.n,
+      W.RUNES.n,
+      W.PENTAGRAM.dmg,
+      W.BOMB.n,
+    ])
+      expect(t).toHaveLength(8);
+    expect(SWORD_BOXES).toHaveLength(8);
+  });
+
+  it('curva de XP: passo 10 até o nível 20, 13 até o 40 e 16 depois, com um salto só em cada um', () => {
+    expect(xpToNext(19)).toBeGreaterThan(xpToNext(18) + 100);
+    expect(xpToNext(20)).toBeLessThan(xpToNext(19));
+    expect(xpToNext(21) - xpToNext(20)).toBe(13);
+    expect(xpToNext(39)).toBeGreaterThan(xpToNext(38) + 500);
+    expect(xpToNext(40)).toBeLessThan(xpToNext(39));
+    expect(xpToNext(42) - xpToNext(41)).toBe(16);
+  });
+
+  it('com tudo no máximo, o nível vira ouro e vida em vez de abrir a janela', () => {
+    const w = new NhWorld('maxed', NO_META, { hero: 'kael', map: 'campo' });
+    for (const id of Object.keys(UPGRADES) as (keyof typeof UPGRADES)[])
+      w.levels[id] = UPGRADES[id].max;
+    for (const e of EVOLUTIONS) w.evolved.add(e.id);
+    w.player.hp = 1;
+    const gold0 = w.gold;
+    (w as unknown as { addXp(n: number): void }).addXp(1_000_000);
+    expect(w.pending).toBeNull();
+    expect(w.gold).toBeGreaterThan(gold0);
+    expect(w.player.hp).toBeGreaterThan(1);
+    expect(w.drainEvents().some((e) => e.k === 'maxedLevel')).toBe(true);
   });
 });

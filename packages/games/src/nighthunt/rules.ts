@@ -8,7 +8,7 @@ import {
   type EvoId,
   type UpgradeId,
 } from './data';
-import { META_SETTINGS, PLAYER_SETTINGS } from './settings';
+import { haloCooldown, META_SETTINGS, PLAYER_SETTINGS } from './settings';
 import { EXTRA_META, NO_META, metaBonus, metaCost, type MetaLevels, type RunResult } from './world';
 
 export interface UpgradeInfo {
@@ -22,8 +22,7 @@ export interface UpgradeInfo {
   icon: string;
 }
 
-const cd = (n: number) =>
-  (PLAYER_SETTINGS.haloLauncher.launcher.cooldown / n).toFixed(1).replace('.', ',');
+const cd = (n: number) => haloCooldown(n).toFixed(1).replace('.', ',');
 const rg = (n: number) => (PLAYER_SETTINGS.regenerationDelay / n).toFixed(1).replace('.', ',');
 
 /** Passivos globais que NÃO afetam a arma (linha "Ignora: ..." da carta). */
@@ -42,7 +41,7 @@ export const UPGRADES: Record<UpgradeId, UpgradeInfo> = {
     id: 'whip',
     name: 'Chicote',
     desc: 'Estala para a frente e para trás, em linha larga. Cada nível acrescenta mais um corte em sequência.',
-    max: 6,
+    max: 8,
     level: (n) =>
       n === 1
         ? 'Desbloqueia: dois cortes (frente e trás).'
@@ -53,6 +52,8 @@ export const UPGRADES: Record<UpgradeId, UpgradeInfo> = {
             'Dano +30%.',
             '+1 corte.',
             '+1 corte e golpe mais longo.',
+            'Dano +25% e recarga -5%.',
+            '+1 corte e recarga -5%.',
           ][n - 1]!,
     icon: 'X/whip',
   },
@@ -60,7 +61,7 @@ export const UPGRADES: Record<UpgradeId, UpgradeInfo> = {
     id: 'wand',
     name: 'Varinha Arcana',
     desc: 'Escolhe sozinha inimigos aleatórios por perto e dispara um projétil rápido em cada um.',
-    max: 6,
+    max: 8,
     level: (n) =>
       n === 1
         ? 'Desbloqueia: 1 projétil por salva.'
@@ -71,6 +72,8 @@ export const UPGRADES: Record<UpgradeId, UpgradeInfo> = {
             '+1 projétil.',
             'Dano +40%.',
             '+1 projétil e atravessa 1 inimigo.',
+            'Dano +25% e recarga -12%.',
+            '+1 projétil e atravessa mais 1 inimigo.',
           ][n - 1]!,
     icon: 'X/wand',
   },
@@ -78,7 +81,7 @@ export const UPGRADES: Record<UpgradeId, UpgradeInfo> = {
     id: 'garlic',
     name: 'Aura de Alho',
     desc: 'Um círculo em volta de você que fere e empurra todos que estiverem dentro, o tempo todo.',
-    max: 6,
+    max: 8,
     level: (n) =>
       n === 1
         ? 'Desbloqueia: aura de raio 70.'
@@ -89,6 +92,8 @@ export const UPGRADES: Record<UpgradeId, UpgradeInfo> = {
             'Dano +50%.',
             'Raio +20%.',
             'Empurrão forte e golpes mais rápidos.',
+            'Raio +10% e dano +33%.',
+            'Raio +8% e golpes mais rápidos.',
           ][n - 1]!,
     icon: 'X/garlic',
   },
@@ -96,66 +101,107 @@ export const UPGRADES: Record<UpgradeId, UpgradeInfo> = {
     id: 'magma',
     name: 'Poças de Magma',
     desc: 'Frascos de magma criam poças que queimam quem pisar nelas por alguns segundos.',
-    max: 6,
+    max: 8,
     level: (n) =>
       n === 1
         ? 'Desbloqueia: 1 poça por vez.'
-        : ['', 'Área +30%.', '+1 poça.', 'Dano +40%.', 'Duração +25%.', '+1 poça.'][n - 1]!,
+        : [
+            '',
+            'Área +30%.',
+            '+1 poça.',
+            'Dano +40%.',
+            'Duração +25%.',
+            '+1 poça.',
+            'Área +10%.',
+            '+1 poça, dano +33% e duração +20%.',
+          ][n - 1]!,
     icon: 'X/magma',
   },
   embers: {
     id: 'embers',
     name: 'Círculo de Brasas',
     desc: 'Um anel de bolas de fogo nasce em volta de você, gira por alguns segundos e some.',
-    max: 6,
+    max: 8,
     level: (n) =>
       n === 1
         ? 'Desbloqueia: 3 bolas de fogo.'
-        : ['', '+1 bola.', 'Dano +30%.', '+1 bola.', 'Duração +25%.', '+2 bolas.'][n - 1]!,
+        : [
+            '',
+            '+1 bola.',
+            'Dano +30%.',
+            '+1 bola.',
+            'Duração +25%.',
+            '+2 bolas.',
+            'Dano +30%.',
+            '+1 bola e duração +20%.',
+          ][n - 1]!,
     icon: 'X/embers',
   },
   cross: {
     id: 'cross',
     name: 'Cruz',
     desc: 'Lança uma cruz que vai, desacelera, volta e atravessa tudo no caminho, nos dois sentidos.',
-    max: 6,
+    max: 8,
     level: (n) =>
       n === 1
         ? 'Desbloqueia: 1 cruz.'
-        : ['', 'Velocidade +20%.', '+1 cruz.', 'Dano +40%.', 'Tamanho +25%.', '+1 cruz.'][n - 1]!,
+        : [
+            '',
+            'Velocidade +20%.',
+            '+1 cruz.',
+            'Dano +40%.',
+            'Tamanho +25%.',
+            '+1 cruz.',
+            'Dano +30%.',
+            '+1 cruz, velocidade e tamanho +10%.',
+          ][n - 1]!,
     icon: 'X/cross',
   },
   bone: {
     id: 'bone',
     name: 'Osso',
     desc: 'Arremessa um osso que, ao acertar, quica para o inimigo mais perto.',
-    max: 6,
+    max: 8,
     level: (n) =>
       n === 1
         ? 'Desbloqueia: 1 osso, 2 quicadas.'
-        : ['', 'Dano +25%.', '+1 osso.', '+1 quicada.', 'Dano +30%.', '+1 osso e +1 quicada.'][
-            n - 1
-          ]!,
+        : [
+            '',
+            'Dano +25%.',
+            '+1 osso.',
+            '+1 quicada.',
+            'Dano +30%.',
+            '+1 osso e +1 quicada.',
+            'Dano +25% e +1 quicada.',
+            '+1 osso.',
+          ][n - 1]!,
     icon: 'X/bone',
   },
   runes: {
     id: 'runes',
     name: 'Rastreador de Runas',
     desc: 'Esferas de runa ricocheteiam nas bordas da tela e atravessam os inimigos.',
-    max: 6,
+    max: 8,
     level: (n) =>
       n === 1
         ? 'Desbloqueia: 1 esfera.'
-        : ['', 'Velocidade +20%.', '+1 esfera.', 'Duração +25%.', 'Dano +40%.', '+1 esfera.'][
-            n - 1
-          ]!,
+        : [
+            '',
+            'Velocidade +20%.',
+            '+1 esfera.',
+            'Duração +25%.',
+            'Dano +40%.',
+            '+1 esfera.',
+            'Dano +30% e duração +20%.',
+            '+1 esfera e velocidade +10%.',
+          ][n - 1]!,
     icon: 'X/runes',
   },
   pentagram: {
     id: 'pentagram',
     name: 'Pentagrama',
     desc: 'De tempos em tempos varre a tela: dano grande em todos os inimigos. A recarga é sorteada a cada uso, entre 40 e 80 segundos.',
-    max: 6,
+    max: 8,
     level: (n) =>
       n === 1
         ? 'Desbloqueia: dano 15 a cada 40 a 80 s (sorteado).'
@@ -166,6 +212,8 @@ export const UPGRADES: Record<UpgradeId, UpgradeInfo> = {
             'Recarga -5%.',
             'Dano +30%.',
             'Alcance x2 e recarga -5%.',
+            'Dano +25% e recarga -5%.',
+            'Dano +25%.',
           ][n - 1]!,
     icon: 'X/pentagram',
   },
@@ -173,11 +221,20 @@ export const UPGRADES: Record<UpgradeId, UpgradeInfo> = {
     id: 'bomb',
     name: 'Bomba de Cereja',
     desc: 'Lança uma bomba que quica pelo chão, explode em área e solta estilhaços.',
-    max: 6,
+    max: 8,
     level: (n) =>
       n === 1
         ? 'Desbloqueia: 1 bomba.'
-        : ['', 'Raio +20%.', '+1 bomba.', 'Dano +40%.', '+2 estilhaços.', '+1 bomba.'][n - 1]!,
+        : [
+            '',
+            'Raio +20%.',
+            '+1 bomba.',
+            'Dano +40%.',
+            '+2 estilhaços.',
+            '+1 bomba.',
+            'Raio +10% e dano +25%.',
+            '+1 bomba e +2 estilhaços.',
+          ][n - 1]!,
     icon: 'X/bomb',
   },
   duration: {
@@ -209,7 +266,7 @@ export const UPGRADES: Record<UpgradeId, UpgradeInfo> = {
     id: 'sword',
     name: 'Espada',
     desc: 'Gira em volta de você a cada 2 segundos. Cada nível alonga a lâmina e aumenta o dano.',
-    max: 6,
+    max: 8,
     level: (n) =>
       n === 1 ? 'A espada que todo caçador leva.' : `Dano +1 e lâmina mais longa (nível ${n}).`,
     icon: 'UI/UpgradeIcons/WeaponLength',
@@ -258,7 +315,7 @@ export const UPGRADES: Record<UpgradeId, UpgradeInfo> = {
     id: 'horizontal',
     name: 'Adagas Voadoras',
     desc: 'Lança três adagas para cima a cada 4 segundos. Cada nível adiciona mais uma salva.',
-    max: 6,
+    max: 8,
     level: (n) =>
       n === 1 ? 'Desbloqueia: 1 salva de 3 adagas.' : `+1 salva (${n} salvas por disparo).`,
     icon: 'UI/UpgradeIcons/HorizontalProjectile',
@@ -267,7 +324,7 @@ export const UPGRADES: Record<UpgradeId, UpgradeInfo> = {
     id: 'halo',
     name: 'Nova Ígnea',
     desc: 'Solta um anel de 20 projéteis em volta de você. Cada nível reduz o tempo de recarga.',
-    max: 6,
+    max: 8,
     level: (n) =>
       n === 1 ? `Desbloqueia: anel de 20 projéteis a cada ${cd(1)} s.` : `Recarga: ${cd(n)} s.`,
     icon: 'UI/UpgradeIcons/HaloProjectile',
@@ -285,7 +342,7 @@ export const UPGRADES: Record<UpgradeId, UpgradeInfo> = {
     id: 'axe',
     name: 'Machado Giratório',
     desc: 'Arremessa machados para cima em arco. Eles caem girando e atravessam quem estiver no caminho.',
-    max: 6,
+    max: 8,
     level: (n) =>
       n === 1
         ? 'Desbloqueia: 1 machado a cada 2,8 s.'
@@ -296,7 +353,7 @@ export const UPGRADES: Record<UpgradeId, UpgradeInfo> = {
     id: 'orbit',
     name: 'Orbes Guardiões',
     desc: 'Orbes giram em volta de você o tempo todo e ferem quem encostar. Cada nível adiciona um orbe.',
-    max: 6,
+    max: 8,
     level: (n) =>
       n === 1
         ? 'Desbloqueia: 2 orbes em órbita.'
@@ -307,7 +364,7 @@ export const UPGRADES: Record<UpgradeId, UpgradeInfo> = {
     id: 'lightning',
     name: 'Raio Lunar',
     desc: 'Raios caem do céu sobre inimigos aleatórios da tela, com dano alto.',
-    max: 6,
+    max: 8,
     level: (n) =>
       n === 1 ? 'Desbloqueia: 1 raio a cada 2,4 s.' : `Dano +2${n % 2 === 0 ? ' e +1 raio' : ''}.`,
     icon: 'X/lightning',
@@ -474,9 +531,9 @@ export interface SavedRun {
 }
 /**
  * Geração do save. Subir este número zera o progresso de todo mundo: o aparelho descarta saves de outra geração e o
- * servidor (prefs.controller, `NH_EPOCH`) ignora e substitui o que a conta tinha. Zerado em 16/11/2026 (pedido do Lucas).
+ * servidor (prefs.controller, `NH_EPOCH`) ignora e substitui o que a conta tinha. Zerado em 16/11/2026 (pedido do Lucas), de novo no mesmo dia ao subir as armas para o nível 8.
  */
-export const NH_EPOCH = 2;
+export const NH_EPOCH = 3;
 
 export interface NhSave {
   v: 1;

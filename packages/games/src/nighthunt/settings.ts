@@ -58,6 +58,11 @@ export const PLAYER_SETTINGS = {
     },
   },
 } as const;
+/** Recarga da Nova Ígnea no nível n: 10 s dividido pelo nível até o 6; nos níveis 7 e 8 cai só mais 7% do valor do 6 por nível. */
+export function haloCooldown(n: number): number {
+  const base = PLAYER_SETTINGS.haloLauncher.launcher.cooldown;
+  return n <= 6 ? base / n : (base / 6) * (1 - 0.07 * (n - 6));
+}
 export const UPGRADE_LIMITS = {
   maxWeaponLengthUpgrades: 5,
   maxWeaponDamageUpgrades: 10,
@@ -80,7 +85,11 @@ export const META_SETTINGS = {
 export function xpToNext(level: number): number {
   const t = PLAYER_SETTINGS.requiredXP as readonly number[];
   if (level < t.length) return t[level]!;
-  return 220 + (level - 17) * 10 + (level >= 19 ? 150 : 0) + (level >= 39 ? 600 : 0);
+  // como no Vampire Survivors: o passo sobe de 10 para 13 depois do nível 20 e para 16 depois do 40, e cada um desses
+  // níveis (20 e 40, de 1 em diante) pede um salto único a mais (150 e 600 aqui) em vez de pesar em todos os seguintes
+  if (level <= 19) return 220 + (level - 17) * 10 + (level === 19 ? 150 : 0);
+  if (level <= 39) return 240 + (level - 19) * 13 + (level === 39 ? 600 : 0);
+  return 240 + 20 * 13 + (level - 39) * 16;
 }
 export const ITEM_SETTINGS = { healthPerPotion: 10 } as const;
 export const AXE_LAUNCHER = {

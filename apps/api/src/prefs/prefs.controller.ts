@@ -138,7 +138,7 @@ export type GolfSaved = z.infer<typeof golfSchema>;
  * o servidor só aceita se o `rev` não for mais velho que o da conta, para um aparelho parado não desfazer o progresso.
  */
 /** Geração do save do Night Hunt (igual a `NH_EPOCH` de packages/games): save de outra geração é ignorado e substituído. */
-export const NH_EPOCH = 2;
+export const NH_EPOCH = 3;
 
 export const nhSchema = z
   .object({

@@ -104,7 +104,7 @@ describe('Fox GP na conta (14/11/2026)', () => {
 describe('Night Hunt na conta (spec 083)', () => {
   const ok = {
     v: 1 as const,
-    epoch: 2 as const,
+    epoch: 3 as const,
     rev: 5,
     gold: 120,
     highscore: 301.5,

@@ -53,6 +53,7 @@ import {
   PERIODIC_FOLLOW,
   PLAYER_SETTINGS,
   xpToNext,
+  haloCooldown,
   type EnemySettings,
 } from './settings';
 
@@ -227,7 +228,8 @@ export type NhEvent =
   | { k: 'finalBoss' }
   | { k: 'breakHit'; x: number; y: number }
   | { k: 'break'; x: number; y: number; kind: number }
-  | { k: 'evolve'; id: EvoId };
+  | { k: 'evolve'; id: EvoId }
+  | { k: 'maxedLevel'; gold: number };
 
 export type Pending = { kind: 'levelUp' | 'chest'; options: ChoiceId[] };
 
@@ -950,7 +952,9 @@ export class NhWorld {
 
   // ---- níveis e melhorias ----
   private addXp(points: number): void {
-    this.xp += points * this.xpMult * (1 + 0.08 * this.levels.growth) * this.curseXp;
+    // nos níveis 20 e 40 (índice 19 e 39) o XP dobra até passar de nível: compensa o salto da curva, como no Vampire Survivors
+    const spike = this.level === 19 || this.level === 39 ? 2 : 1;
+    this.xp += points * this.xpMult * (1 + 0.08 * this.levels.growth) * this.curseXp * spike;
     while (this.xp >= xpToNext(this.level)) {
       this.xp -= xpToNext(this.level);
       this.level++;
@@ -1023,7 +1027,16 @@ export class NhWorld {
         options = avail.length ? [avail[Math.floor(this.rng() * avail.length)]!] : [];
       }
     }
-    if (options.length === 0) return;
+    if (options.length === 0) {
+      // tudo no máximo: o nível vira ouro e um pouco de vida (como o frango e as moedas do Vampire Survivors)
+      if (kind === 'levelUp') {
+        const gold = 20 + Math.floor(this.level / 2);
+        this.gold += gold;
+        this.heal(Math.round(this.player.maxHp * 0.15));
+        this.events.push({ k: 'maxedLevel', gold });
+      }
+      return;
+    }
     const p: Pending = { kind, options };
     if (this.pending) this.queue.push(p);
     else this.pending = p;
@@ -1043,9 +1056,7 @@ export class NhWorld {
         break;
       case 'halo':
         this.launchers.halo.timer = 0;
-        this.launchers.halo.cooldown =
-          L.haloLauncher.launcher.cooldown /
-          (L.haloLauncher.cooldownDivisorPerUpgrade * this.levels.halo);
+        this.launchers.halo.cooldown = haloCooldown(this.levels.halo);
         break;
       case 'regeneration':
         this.regen.amount++;

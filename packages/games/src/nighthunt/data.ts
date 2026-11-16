@@ -24,7 +24,7 @@ export const ENEMY_BOX: Record<string, NhBoxDef> = {
 /** Colisor do jogador (escala 1). */
 export const PLAYER_BOX: NhBoxDef = { w: 37.3, h: 49.9, ox: 0.3, oy: 2.1 };
 
-/** Os 6 colisores da espada (escala 2): comprimento e deslocamento já ao dobro. A espada gira em torno de (0, 4). */
+/** Os 8 colisores da espada (escala 2): comprimento e deslocamento já ao dobro. A espada gira em torno de (0, 4). */
 export const SWORD_BOXES: readonly NhBoxDef[] = [
   { w: 60, h: 20, ox: -59.8, oy: 0 },
   { w: 80, h: 20, ox: -70, oy: 0 },
@@ -32,6 +32,8 @@ export const SWORD_BOXES: readonly NhBoxDef[] = [
   { w: 120, h: 20, ox: -90, oy: 0 },
   { w: 140, h: 20, ox: -100, oy: 0 },
   { w: 160, h: 20, ox: -110, oy: 0 },
+  { w: 180, h: 20, ox: -120, oy: 0 },
+  { w: 200, h: 20, ox: -130, oy: 0 },
 ];
 export const SWORD_PIVOT_Y = 4;
 export const SWORD_ANIM_DURATION = 1.3;
