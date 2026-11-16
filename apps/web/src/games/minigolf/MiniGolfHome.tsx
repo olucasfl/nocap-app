@@ -9,7 +9,7 @@ import { BallPreview } from './BallPreview';
 import { loadBest, loadLook } from './golf-save';
 import './minigolf.css';
 
-/** Tela inicial do Mini Golf (spec 082): jogar online (criar sala ou entrar por código), offline com 25 fases, personalizar a bola. */
+/** Tela inicial do Mini Golf (spec 082): jogar (25 fases) e jogar online (criar sala ou entrar por código), personalizar a bola. */
 export function MiniGolfHome() {
   useTouchGuard();
   const navigate = useNavigate();
@@ -31,6 +31,7 @@ export function MiniGolfHome() {
             <h1 className="mg-disp mgh-title">Mini<br />Golf</h1>
             <p className="mgh-mut mgh-lead">25 fases para treinar sozinho, em três dificuldades. Menos tacadas ganha.</p>
             <div className="mgh-btns">
+              <button type="button" className="mg-pill pri mgh-big" onClick={() => void navigate({ to: '/minigolf/fases' })} data-testid="mg-offline">Jogar</button>
               <button type="button" className="mg-pill pri mgh-big" onClick={() => setOnline((o) => !o)} aria-expanded={online} data-testid="mg-online">Jogar online</button>
               {online && (
                 <div className="mgh-card mgh-online" data-testid="mg-online-panel">
@@ -78,7 +79,6 @@ export function MiniGolfHome() {
                   </form>
                 </div>
               )}
-              <button type="button" className="mg-pill mgh-mid" onClick={() => void navigate({ to: '/minigolf/fases' })} data-testid="mg-offline">Offline: {GOLF_LEVELS} fases</button>
               <button type="button" className="mg-pill ghost mgh-mid" onClick={() => void navigate({ to: '/minigolf/bola' })} data-testid="mg-customize">Personalizar bola</button>
               <button type="button" className="mg-pill mgh-mid mgh-exit" onClick={() => void navigate({ to: '/' })} data-testid="mg-exit">Sair do jogo</button>
             </div>
