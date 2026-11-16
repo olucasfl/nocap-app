@@ -65,3 +65,10 @@ O motor do Fox GP é plano: o carro anda em (x, z), a pista é uma linha central
 ## 8. Box e pneu (16/11/2026)
 
 O box da Marina e o de Interlagos foram para a metade da volta (Marina a ~51%, Interlagos a ~44%), do lado de fora da curva e logo antes de uma reta rápida, nunca em cima dela. Os avisos de box seguem a distância até a entrada, então valem em qualquer lugar da pista. Interlagos ganhou `wearK: 0.5` (metade do desgaste de pneu), porque gastava 41% por volta; agora gasta cerca de 20%, perto da Marina.
+
+## 9. Chão, paredes, câmera e desempenho da Castle Circuit (16/11/2026)
+
+- **Chão de verdade:** `ground.bin` guarda a altura do chão em células de 1 m (estrada, ponte, túnel, grama e areia, com até dois andares). O kart é posto na altura média das quatro rodas e inclina para frente e de lado pelo chão que pisa (`GroundMap`).
+- **Paredes do modelo:** de cada ponto da linha central, um raio para cada lado achou a primeira parede (`wallsL`/`wallsR`); o kart bate nela, com 1,1 m de folga, em vez de numa barreira invisível mais longe.
+- **Câmera adaptativa:** um raio do kart até a câmera; se há parede, teto de túnel ou ponte no caminho, a câmera chega mais perto (entra na hora, sai devagar). O raio também vale para o verso das faces.
+- **Desempenho:** o cenário é cortado em quadrados de 40 m (a câmera descarta o que não vê) e a altura de efeitos e itens vem do mapa de chão (antes era uma busca na pista inteira a cada partícula, que enchia a memória de lixo). Medido em teste: 167 chamadas e 57 mil triângulos, menos que a Bala Track (129 mil).
