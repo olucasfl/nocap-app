@@ -981,3 +981,15 @@
     letter-spacing: 0.02em;
   }
 }
+@media (max-width: 520px) {
+  /* o nome da raposa passa para duas linhas em vez de ficar cortado, e a dica do saque fica legível */
+  .png-side small {
+    max-width: none;
+    white-space: normal;
+    line-height: 1.05;
+    text-overflow: clip;
+  }
+  .png-serve-hint span {
+    font-size: 12px;
+  }
+}
