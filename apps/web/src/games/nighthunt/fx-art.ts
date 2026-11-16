@@ -4,16 +4,16 @@
  * ampliado sem suavização, para combinar com os sprites do jogo.
  */
 
-type Rgb = [number, number, number];
+export type Rgb = [number, number, number];
 
-const hex = (c: string): Rgb => [
+export const hex = (c: string): Rgb => [
   parseInt(c.slice(1, 3), 16),
   parseInt(c.slice(3, 5), 16),
   parseInt(c.slice(5, 7), 16),
 ];
 
 /** Aleatório determinístico (a mesma explosão sempre sai igual): 0 a 1. */
-function hash(n: number): number {
+export function hash(n: number): number {
   let x = Math.imul(n ^ 0x9e3779b9, 0x85ebca6b);
   x ^= x >>> 13;
   x = Math.imul(x, 0xc2b2ae35);
@@ -21,11 +21,11 @@ function hash(n: number): number {
   return ((x >>> 0) % 100000) / 100000;
 }
 
-const smooth = (a: number, b: number, x: number) => {
+export const smooth = (a: number, b: number, x: number) => {
   const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
   return t * t * (3 - 2 * t);
 };
-const easeOut = (x: number) => 1 - (1 - Math.min(1, Math.max(0, x))) ** 3;
+export const easeOut = (x: number) => 1 - (1 - Math.min(1, Math.max(0, x))) ** 3;
 
 /** Matriz de pontilhado 4x4 (Bayer): decide qual pixel acende numa transição suave sem usar transparência. */
 const BAYER = [
@@ -34,7 +34,7 @@ const BAYER = [
   [3, 11, 1, 9],
   [15, 7, 13, 5],
 ];
-const dither = (x: number, y: number, v: number) => v > (BAYER[y & 3]![x & 3]! + 0.5) / 16;
+export const dither = (x: number, y: number, v: number) => v > (BAYER[y & 3]![x & 3]! + 0.5) / 16;
 
 const FIRE: Rgb[] = ['#fffbe0', '#ffe27a', '#ffb02e', '#ff7a1a', '#d9461a', '#8a2a1a'].map(hex);
 const SMOKE: Rgb[] = ['#6a6270', '#4a4252', '#2f2a38'].map(hex);
@@ -951,4 +951,467 @@ export function drawBoneProj(
   const sc = 2 * scale;
   g.drawImage(c, 0, 0, N, N, x - (N * sc) / 2, y - (N * sc) / 2, N * sc, N * sc);
   g.restore();
+}
+
+// ------------------------------------------------------------------ ferramenta comum aos efeitos novos
+export interface Low {
+  N: number;
+  c: HTMLCanvasElement;
+  put(i: number, j: number, col: Rgb): void;
+  flush(
+    g: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    scale: number,
+    ox?: number,
+    oy?: number,
+  ): void;
+}
+export function lowres(key: string, N: number, M = N): Low {
+  const c = canvas(key, N, M);
+  const q = c.getContext('2d')!;
+  q.clearRect(0, 0, N, M);
+  const img = q.createImageData(N, M);
+  return {
+    N,
+    c,
+    put(i, j, col) {
+      i = Math.round(i);
+      j = Math.round(j);
+      if (i < 0 || j < 0 || i >= N || j >= M) return;
+      const o = (j * N + i) * 4;
+      img.data[o] = col[0];
+      img.data[o + 1] = col[1];
+      img.data[o + 2] = col[2];
+      img.data[o + 3] = 255;
+    },
+    flush(g, x, y, scale, ox = 0, oy = 0) {
+      q.putImageData(img, 0, 0);
+      g.save();
+      g.imageSmoothingEnabled = false;
+      g.drawImage(
+        c,
+        0,
+        0,
+        N,
+        M,
+        x - (N * scale) / 2 + ox,
+        y - (M * scale) / 2 + oy,
+        N * scale,
+        M * scale,
+      );
+      g.restore();
+    },
+  };
+}
+
+// ------------------------------------------------------------------ Poças de Magma
+const LAVA: Rgb[] = ['#fff3a8', '#ffd23f', '#ff9a1a', '#e8561a', '#a8301a', '#4a1a14'].map(hex);
+const LAVA_EVO: Rgb[] = ['#ffffff', '#ffe9a8', '#ffc23a', '#ff8a1a', '#d9461a', '#5a1a14'].map(hex);
+
+/**
+ * Poça de magma: abre como uma mancha de lava com a borda esfriando em crosta escura, bolhas que sobem e estouram com
+ * fagulhas, rachaduras brilhantes e calor tremendo em volta. `age` (s) desde que abriu, `dur` a duração, `evo` = Lava Viva.
+ */
+export function drawMagmaPool(
+  g: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  r: number,
+  age: number,
+  dur: number,
+  evo = false,
+  seed = 1,
+): void {
+  const cell = 3;
+  const N = Math.ceil((r * 2.4) / cell) | 1;
+  const L = lowres('magma', N);
+  const pal = evo ? LAVA_EVO : LAVA;
+  const open = easeOut(age / 0.35);
+  const fade = 1 - smooth(dur - 0.8, dur, age);
+  const R = (r / cell) * open * (0.96 + 0.04 * Math.sin(age * 5));
+  const cx = (N - 1) / 2;
+  const cy = (N - 1) / 2;
+  const sq = 0.78;
+  const ph = [hash(seed) * 6.28, hash(seed + 3) * 6.28];
+  for (let j = 0; j < N; j++)
+    for (let i = 0; i < N; i++) {
+      const dx = i - cx;
+      const dy = (j - cy) / sq;
+      const a = Math.atan2(dy, dx);
+      const edge = R * (1 + 0.1 * Math.sin(a * 4 + ph[0]!) + 0.06 * Math.sin(a * 7 + ph[1]!));
+      const dd = Math.hypot(dx, dy);
+      if (dd > edge) continue;
+      const rho = dd / edge;
+      // desvanecer no fim: a borda some primeiro, pontilhada
+      if (fade < 1 && rho > fade && !dither(i, j, 1 - (rho - fade) * 3)) continue;
+      // tons: centro quente, borda esfriando em crosta
+      let idx = rho < 0.28 ? 1 : rho < 0.5 ? 2 : rho < 0.72 ? 3 : rho < 0.86 ? 4 : 5;
+      const wave = 0.5 + 0.5 * Math.sin(dd * 1.3 - age * 4 + a * 2);
+      if (idx < 4 && dither(i, j, wave * 0.3)) idx -= 1;
+      // placas de crosta escura que andam devagar sobre a lava, com frestas brilhantes entre elas
+      const sx = i + age * 2.2;
+      const sy = j - age * 1.4;
+      // placas redondas de crosta nos pontos de uma grade de 7 células; entre elas fica a lava viva
+      const gx = Math.round(sx / 7);
+      const gy = Math.round(sy / 7);
+      const pr = 1.4 + hash(gx * 31 + gy * 17 + seed) * 2.1;
+      const pd = Math.hypot(
+        sx - gx * 7 + (hash(gx + gy * 7) - 0.5) * 3,
+        sy - gy * 7 + (hash(gy + gx * 5) - 0.5) * 3,
+      );
+      if (rho > 0.25 && pd < pr && hash(gx * 13 + gy * 29 + seed) > 0.35)
+        idx = pd > pr - 0.9 ? 4 : 5;
+      L.put(i, j, pal[Math.max(0, Math.min(5, idx))]!);
+    }
+  // rachaduras brilhantes irradiando
+  for (let s = 0; s < 6; s++) {
+    const a = (s / 6) * Math.PI * 2 + hash(seed + s) * 0.5;
+    for (let st = 4; st < R * 0.8; st += 1) {
+      const px = cx + Math.cos(a + Math.sin(st * 0.4 + s) * 0.12) * st;
+      const py = cy + Math.sin(a + Math.sin(st * 0.4 + s) * 0.12) * st * sq;
+      if ((st + s) % 3) L.put(px, py, pal[0]!);
+    }
+  }
+  // bolhas: sobem do fundo, ficam maiores e estouram
+  for (let b = 0; b < 8; b++) {
+    const life = (age * 0.9 + hash(b * 7 + seed) * 3) % 1;
+    const a = hash(b * 3 + seed) * Math.PI * 2;
+    const rad = Math.sqrt(hash(b * 11 + seed)) * R * 0.75;
+    const bx = cx + Math.cos(a) * rad;
+    const by = cy + Math.sin(a) * rad * sq;
+    if (life < 0.7) {
+      const br = 1 + life * 2.4;
+      for (let jj = -3; jj <= 3; jj++)
+        for (let ii = -3; ii <= 3; ii++) {
+          const d2 = Math.hypot(ii, jj);
+          if (d2 < br && d2 > br - 1.2) L.put(bx + ii, by + jj, pal[1]!);
+        }
+      L.put(bx - 1, by - 1, pal[0]!);
+    } else {
+      // estouro: fagulhas para cima
+      const t2 = (life - 0.7) / 0.3;
+      for (let k = 0; k < 4; k++)
+        L.put(bx + (k - 1.5) * 2 * t2, by - t2 * 6 + (k % 2), pal[t2 < 0.5 ? 0 : 2]!);
+    }
+  }
+  // calor subindo na borda (tremor): pontinhos claros que sobem
+  for (let s = 0; s < 10; s++) {
+    const life = (age * 0.7 + hash(s * 13 + seed) * 4) % 1;
+    const a = hash(s * 5 + seed) * Math.PI * 2;
+    const px = cx + Math.cos(a) * R * 0.95;
+    const py = cy + Math.sin(a) * R * 0.95 * sq - life * 9;
+    if (life < 0.7 && fade > 0.3) L.put(px, py, pal[life < 0.4 ? 1 : 3]!);
+  }
+  L.flush(g, x, y, cell);
+}
+
+// ------------------------------------------------------------------ Rastreador de Runas
+const RUNE_PAL: Rgb[] = ['#ffffff', '#c8f6ff', '#7fe0ff', '#3a9bff', '#4a5de0', '#2a2a8a'].map(hex);
+const RUNE_EVO: Rgb[] = ['#ffffff', '#fff3b0', '#ffd23f', '#ff9a1a', '#d9461a', '#8a2a1a'].map(hex);
+const GLYPHS = [
+  ['.#.', '###', '.#.'],
+  ['#.#', '.#.', '#.#'],
+  ['##.', '.##', '#..'],
+  ['#..', '###', '..#'],
+];
+
+/**
+ * Esfera de runa: orbe luminoso com um anel de glifos girando em volta, pulso de luz e rastro de partículas; ao quicar na
+ * borda ela solta um anel. `bounce` (0 a 1) é o clarão da quicada.
+ */
+export function drawRuneOrb(
+  g: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  vx: number,
+  vy: number,
+  t: number,
+  evo = false,
+  bounce = 0,
+  scale = 1,
+): void {
+  const N = 48;
+  const L = lowres('rune', N);
+  const pal = evo ? RUNE_EVO : RUNE_PAL;
+  const cx = N / 2;
+  const cy = N / 2;
+  const len = Math.hypot(vx, vy) || 1;
+  const dx = vx / len;
+  const dy = vy / len;
+  // rastro de luz: faixa que afina para trás, cintilando
+  for (let s = 3; s < 20; s++) {
+    const w = Math.max(0.5, 4.2 - s * 0.22);
+    const px = cx - dx * s;
+    const py = cy - dy * s;
+    const col = s < 7 ? pal[2]! : s < 12 ? pal[3]! : pal[4]!;
+    for (let j = -4; j <= 4; j++)
+      for (let i = -4; i <= 4; i++)
+        if (Math.hypot(i, j) <= w && (s < 8 || dither(i + s, j, 1 - s / 22)))
+          L.put(px + i, py + j, col);
+  }
+  // orbe
+  const pulse = 0.5 + 0.5 * Math.sin(t * 10);
+  const R = 4.6 + pulse * 0.7;
+  for (let j = 0; j < N; j++)
+    for (let i = 0; i < N; i++) {
+      const dd = Math.hypot(i + 0.5 - cx, j + 0.5 - cy);
+      if (dd < R) L.put(i, j, pal[Math.min(3, Math.floor((dd / R) * 3.2))]!);
+      else if (dd < R + 1.6) L.put(i, j, pal[3]!);
+      else if (dd < R + 3.4 && dither(i, j, 0.45)) L.put(i, j, pal[4]!);
+    }
+  L.put(cx - 1, cy - 2, pal[0]!);
+  // glifos girando em órbita
+  for (let k = 0; k < 4; k++) {
+    const a = t * 2.2 + (k / 4) * Math.PI * 2;
+    const gx = Math.round(cx + Math.cos(a) * 10) - 1;
+    const gy = Math.round(cy + Math.sin(a) * 10) - 1;
+    GLYPHS[k]!.forEach((row, jj) =>
+      [...row].forEach((ch, ii) => {
+        if (ch === '#') L.put(gx + ii, gy + jj, k % 2 ? pal[1]! : pal[0]!);
+      }),
+    );
+  }
+  // anel da quicada
+  if (bounce > 0) {
+    const rr = 6 + (1 - bounce) * 12;
+    for (let s = 0; s < 40; s++)
+      if (s % 2 === 0)
+        L.put(
+          cx + Math.cos((s / 40) * Math.PI * 2) * rr,
+          cy + Math.sin((s / 40) * Math.PI * 2) * rr,
+          bounce > 0.5 ? pal[0]! : pal[2]!,
+        );
+  }
+  L.flush(g, x, y, 2 * scale);
+}
+
+// ------------------------------------------------------------------ Pentagrama
+const PENT: Rgb[] = ['#ffffff', '#f2d8ff', '#c58cf0', '#9a56d6', '#6a2fa0', '#3f1a66'].map(hex);
+const PENT_EVO: Rgb[] = ['#ffffff', '#fff3b0', '#ffd23f', '#ff9a1a', '#d9461a', '#8a2a1a'].map(hex);
+
+/**
+ * Pentagrama: o selo se desenha sob o jogador (círculos e estrela traçados aos poucos, com runas), brilha e solta uma onda
+ * de luz que cruza a tela. `k` de 0 a 1 (1,2 s). Desenha direto na tela (traços de pixel de 3 px).
+ */
+export function drawPentagramBurst(
+  g: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  k: number,
+  R = 110,
+  evo = false,
+): void {
+  if (k < 0 || k >= 1) return;
+  const pal = evo ? PENT_EVO : PENT;
+  const cell = 3;
+  const N = Math.ceil((R * 2.6) / cell) | 1;
+  const L = lowres('pent', N);
+  const cx = (N - 1) / 2;
+  const cy = (N - 1) / 2;
+  const sq = 0.86;
+  const r = R / cell;
+  const draw = smooth(0, 0.35, k); // traçado do selo
+  const fade = 1 - smooth(0.55, 1, k);
+  const pulse = 0.5 + 0.5 * Math.sin(k * 30);
+  const col = (i: number) => pal[Math.min(5, i)]!;
+  // preenchimento escuro e pontilhado sob o selo
+  for (let j = 0; j < N; j++)
+    for (let i = 0; i < N; i++) {
+      const dd = Math.hypot(i - cx, (j - cy) / sq) / r;
+      if (dd < 1 && dither(i, j, (0.25 + 0.1 * pulse) * fade * draw)) L.put(i, j, col(4));
+    }
+  // círculos
+  const circle = (rr: number, c: Rgb, upTo: number) => {
+    const n = 360;
+    for (let s = 0; s < n * upTo; s++) {
+      const a = -Math.PI / 2 + (s / n) * Math.PI * 2;
+      L.put(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * sq, c);
+    }
+  };
+  circle(r, col(2), draw);
+  circle(r * 0.93, col(3), draw);
+  // estrela de cinco pontas, traço a traço
+  const pts: Array<[number, number]> = [];
+  for (let i = 0; i < 5; i++) {
+    const a = -Math.PI / 2 + (i * 2 * Math.PI) / 5;
+    pts.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r * sq]);
+  }
+  for (let e = 0; e < 5; e++) {
+    const part = Math.max(0, Math.min(1, draw * 5 - e));
+    const [x0, y0] = pts[e]!;
+    const [x1, y1] = pts[(e + 2) % 5]!;
+    const n = 80;
+    for (let s = 0; s < n * part; s++) {
+      const px = x0 + ((x1 - x0) * s) / n;
+      const py = y0 + ((y1 - y0) * s) / n;
+      L.put(px, py, col(2));
+      L.put(px, py - 1, col(1));
+    }
+  }
+  // runas girando entre o círculo e a ponta, brilho nas pontas
+  if (draw > 0.9) {
+    for (let s = 0; s < 10; s++) {
+      const a = (s / 10) * Math.PI * 2 + k * 3;
+      L.put(cx + Math.cos(a) * r * 0.97, cy + Math.sin(a) * r * 0.97 * sq, col(s % 2 ? 0 : 1));
+    }
+    for (const [px, py] of pts) {
+      for (const [dx, dy] of [
+        [0, 0],
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ] as const)
+        L.put(px + dx, py + dy, col(pulse > 0.5 ? 0 : 1));
+    }
+  }
+  L.flush(g, x, y, cell);
+  // onda de luz que cruza a tela
+  if (k > 0.3) {
+    const wk = (k - 0.3) / 0.7;
+    const rr = wk * Math.max(g.canvas.width, g.canvas.height) * 0.9;
+    g.save();
+    g.globalAlpha = 0.65 * (1 - wk);
+    g.lineWidth = 8 * (1 - wk) + 2;
+    g.strokeStyle = evo ? '#fff0b8' : '#f2d8ff';
+    g.beginPath();
+    g.ellipse(x, y, rr, rr * sq, 0, 0, Math.PI * 2);
+    g.stroke();
+    g.restore();
+  }
+}
+
+// ------------------------------------------------------------------ Chicote
+/**
+ * Corte do Chicote: arco largo de couro com a ponta estalando (clarão branco e faíscas) e o rastro de ar se desfazendo.
+ * `side` (-1 esquerda, 1 direita), `age` de 0 a 1, `len` o comprimento do golpe em px.
+ */
+export function drawWhipCut(
+  g: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  side: number,
+  age: number,
+  len = 120,
+  evo = false,
+): void {
+  if (age < 0 || age >= 1) return;
+  const cell = 3;
+  const N = Math.ceil((len * 1.2) / cell) | 1;
+  const M = 40;
+  const L = lowres('whip', N, M);
+  const pal = (
+    evo
+      ? ['#ffffff', '#ffd0d8', '#ff5a7a', '#c4143a', '#7a0a24']
+      : ['#ffffff', '#fff0d0', '#e0b878', '#a8683a', '#5a3a1a']
+  ).map(hex);
+  const grow = easeOut(age / 0.35);
+  const fade = 1 - smooth(0.5, 1, age);
+  const L2 = (len / cell) * grow;
+  const sx = side > 0 ? 2 : N - 3;
+  const dirx = side > 0 ? 1 : -1;
+  // arco: cresce da mão até a ponta, curvando para baixo no fim
+  const pts: Array<[number, number]> = [];
+  for (let s = 0; s <= 80; s++) {
+    const t = s / 80;
+    pts.push([sx + dirx * t * L2, M / 2 + Math.sin(t * Math.PI) * -7 + t * t * 5]);
+  }
+  pts.forEach(([px, py], i) => {
+    const t = i / 80;
+    const w = Math.max(1, Math.round(4 * (1 - t) + 1));
+    // faixa grossa que afina, pontilhada na borda conforme desfaz
+    for (let j = -w; j <= w; j++) {
+      const c = Math.abs(j) < w * 0.35 ? pal[1]! : Math.abs(j) < w * 0.7 ? pal[2]! : pal[3]!;
+      if (Math.abs(j) > w * 0.6 && !dither(i, j + 9, fade * 1.1 - t * 0.2)) continue;
+      L.put(px, py + j, c);
+    }
+  });
+  // trançado de couro: riscos curtos cruzados
+  for (let i = 4; i < 76; i += 5) {
+    const [px, py] = pts[Math.min(80, i)]!;
+    if (dither(i, 1, fade)) L.put(px, py - 1, pal[4]!);
+  }
+  // estalo na ponta
+  const [tx, ty] = pts[Math.min(80, Math.floor(grow * 80))]!;
+  const snap = 1 - smooth(0.25, 0.6, age);
+  if (snap > 0) {
+    const rr = 2 + snap * 2;
+    // estrela de quatro pontas no estalo (em vez de um disco)
+    for (let q = -Math.round(rr * 2); q <= Math.round(rr * 2); q++) {
+      const w = 1 - Math.abs(q) / (rr * 2 + 1);
+      if (w > 0.2) {
+        L.put(tx + q, ty, pal[w > 0.5 ? 0 : 1]!);
+        L.put(tx, ty + q, pal[w > 0.5 ? 0 : 1]!);
+      }
+    }
+    L.put(tx, ty, pal[0]!);
+    for (let s = 0; s < 8; s++) {
+      const a = (s / 8) * Math.PI * 2;
+      L.put(
+        tx + Math.cos(a) * (rr + 3 + age * 5),
+        ty + Math.sin(a) * (rr + 3 + age * 5),
+        pal[s % 2 ? 1 : 2]!,
+      );
+    }
+  }
+  L.flush(g, x + (side > 0 ? 1 : -1) * ((N * cell) / 2 - 6), y - 6, cell);
+}
+
+// ------------------------------------------------------------------ Bomba de Cereja (a bomba no ar e no chão)
+/** A bomba de cereja: duas cerejas brilhantes presas pelo cabo, com folha e pavio aceso faiscando mais forte perto de estourar. */
+export function drawCherryBomb(
+  g: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  t: number,
+  fuse = 0,
+  scale = 1,
+): void {
+  const N = 32;
+  const L = lowres('cherry', N);
+  const red = ['#ffd0d8', '#ff7a8a', '#e8344a', '#b01a34', '#6a1024'].map(hex);
+  const ball = (cx: number, cy: number, r: number) => {
+    for (let j = 0; j < N; j++)
+      for (let i = 0; i < N; i++) {
+        const dd = Math.hypot(i + 0.5 - cx, j + 0.5 - cy);
+        if (dd >= r) continue;
+        const l = Math.hypot(i + 0.5 - cx + r * 0.35, j + 0.5 - cy + r * 0.35) / (r * 1.5);
+        L.put(i, j, red[Math.min(4, Math.floor(l * 5))]!);
+      }
+    L.put(cx - r * 0.45, cy - r * 0.45, red[0]!);
+    L.put(cx - r * 0.45 + 1, cy - r * 0.45, red[0]!);
+  };
+  ball(10, 21, 6.4);
+  ball(21, 22, 5.8);
+  const line = (x0: number, y0: number, x1: number, y1: number, c: Rgb) => {
+    const k = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0), 1);
+    for (let s = 0; s <= k; s++) L.put(x0 + ((x1 - x0) * s) / k, y0 + ((y1 - y0) * s) / k, c);
+  };
+  line(10, 15, 15, 8, hex('#4fb85a'));
+  line(21, 17, 16, 8, hex('#2f7d3f'));
+  line(15, 8, 17, 4, hex('#d9c79a'));
+  for (const [dx, dy] of [
+    [-1, 0],
+    [1, 0],
+    [0, 1],
+  ] as const)
+    L.put(17 + dx, 4 + dy, hex('#7a5a2a'));
+  // pavio aceso: faísca que pisca, mais forte e vermelha perto de estourar
+  const fl = Math.floor(t * 20) % 2;
+  const hot = fuse > 0.5;
+  L.put(17, 3, hex('#ffffff'));
+  L.put(16, 3, hex(hot ? '#ff3a1a' : '#ffd23f'));
+  L.put(18, 3, hex(hot ? '#ff3a1a' : '#ffd23f'));
+  L.put(17, 2, hex('#ff9a1a'));
+  if (fl) {
+    L.put(15, 2, hex('#ffd23f'));
+    L.put(19, 2, hex('#ffd23f'));
+    L.put(17, 1, hex('#ffffff'));
+  }
+  if (hot) {
+    L.put(14, 3, hex('#ff9a1a'));
+    L.put(20, 3, hex('#ff9a1a'));
+  }
+  L.flush(g, x, y, 2 * scale);
 }
