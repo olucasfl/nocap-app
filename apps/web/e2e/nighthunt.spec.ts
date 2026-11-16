@@ -9,7 +9,15 @@ import { expect, test, type Page } from '@playwright/test';
 test.setTimeout(120_000);
 
 interface Nh {
-  state(): { screen: string; modal: string | null; t?: number; level?: number; enemies?: number };
+  state(): {
+    screen: string;
+    modal: string | null;
+    t?: number;
+    level?: number;
+    enemies?: number;
+    scroll?: number;
+    scrollMax?: number;
+  };
   skip(s: number): void;
   xp(n: number): void;
   chest(): void;

@@ -277,6 +277,8 @@ export class NhApp {
         enemies: this.world?.enemies.length,
         kills: this.world?.kills,
         hp: this.world?.player.hp,
+        scroll: this.scroll,
+        scrollMax: this.scrollMax,
       }),
       gold: (n: number) => (this.save.gold += n),
       evo: () => {
@@ -369,7 +371,8 @@ export class NhApp {
       if (this.slider === null) this.sliderStart(p.x, p.y);
       if (!h && this.screen === 'game' && !this.modal && this.world?.alive)
         this.joy = { id: e.pointerId, ox: p.x, oy: p.y, x: p.x, y: p.y };
-      else if (!h && this.isListScreen()) this.dragScroll = { y: p.y, s: this.scroll };
+      // lista: o dedo pode começar em cima de um item (a lista toda é feita de itens); só vira clique se não arrastar
+      else if (this.isListScreen()) this.dragScroll = { y: p.y, s: this.scroll };
     });
     on(c, 'pointermove', (e: PointerEvent) => {
       const p = this.pos(e);
@@ -380,7 +383,8 @@ export class NhApp {
         this.joy.y = p.y;
       }
       if (this.slider) this.sliderMove(p.x);
-      if (this.dragScroll)
+      // só rola depois de arrastar um pouco (um toque parado em cima de um item continua sendo um clique)
+      if (this.dragScroll && Math.abs(p.y - this.dragScroll.y) > 8)
         this.scroll = Math.max(
           0,
           Math.min(this.scrollMax, this.dragScroll.s - (p.y - this.dragScroll.y)),
