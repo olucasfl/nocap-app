@@ -359,10 +359,7 @@ export const gpSfx = {
     noise(500, 3200, 0.8, dur, 0.22);
     tone('sawtooth', 120, 60, dur * 0.8, 0.06);
   },
-  /** Kart: sem barra para o turbo (toque seco). */
-  noTurbo() {
-    tone('square', 160, 120, 0.06, 0.12);
-  },
+
   /** Arcade com poderes (spec 085): pegou uma caixa (três notas subindo). */
   itemPickup() {
     tone('square', 523, 523, 0.07, 0.1);

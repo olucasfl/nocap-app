@@ -1,6 +1,8 @@
 import {
   GP_ARC_ACC_K,
-  GP_ARC_BAR_FULL_SEC,
+  GP_ARC_CHARGE_IN,
+  GP_ARC_CHARGE_SEC,
+  GP_ARC_DRIFT_BOOST_SEC,
   GP_ARC_BAR_MAX,
   GP_ARC_BOOST,
   GP_ARC_BOOST_FADE,
@@ -9,8 +11,6 @@ import {
   GP_ARC_BRAKE,
   GP_ARC_COAST,
   GP_ARC_DRIFT_BASE,
-  GP_ARC_DRIFT_FILL,
-  GP_ARC_DRIFT_FILL_IN,
   GP_ARC_DRIFT_GRACE,
   GP_ARC_DRIFT_IN,
   GP_ARC_DRIFT_MIN,
@@ -180,7 +180,7 @@ export interface GpInput {
   lap?: boolean;
   /** Arcade: segurar para derrapar (só entra no drift quando liberado). */
   drift?: boolean;
-  /** Arcade: usar o turbo (toque: gasta a barra toda). */
+  /** Sem uso: o turbo do kart agora vem do drift (spec 086). Fica no formato da rede por compatibilidade. */
   turbo?: boolean;
   /** Arcade com poderes: usar o item (toque). */
   item?: boolean;
@@ -224,7 +224,7 @@ export interface GpCar {
   driftDir: number;
   driftT: number;
   hop: number;
-  /** Arcade: barra de turbo (0 a 3), nível do turbo em uso (0 a 3), quanto falta dele (s) e o ganho de agora (0 a ~0,55). */
+  /** Arcade: carga do drift (0 a 3: azul, laranja, rosa), nível do turbo em uso (0 a 3), quanto falta dele (s) e o ganho de agora (0 a ~0,55). */
   bar: number;
   boostLevel: number;
   boostT: number;
@@ -314,7 +314,6 @@ export type GpEvent =
   | { type: 'drift'; id: string; dir: number }
   | { type: 'bar'; id: string; level: number }
   | { type: 'turbo'; id: string; level: number }
-  | { type: 'noturbo'; id: string }
   | { type: 'pad'; id: string; x: number; z: number }
   | { type: 'tyre'; id: string; level: 1 | 2 | 3 };
 
@@ -811,8 +810,8 @@ export class GpWorld {
   /**
    * O passo do kart (Arcade, spec 081, Fase 5): a velocidade sempre para o nariz (não escorrega de lado), direção muito
    * rápida que quase não perde velocidade, sem marchas. Drift (liberado por regras) muda o raio pelo volante, dá um pouco
-   * de velocidade e enche a barra de turbo mais rápido; o turbo gasta a barra e dá o impulso do nível atingido. Sem
-   * desgaste de pneu, vácuo, box nem DRS.
+   * de velocidade e carrega o turbo (azul, laranja, rosa); soltar o drift solta o turbo do nível atingido. Sem desgaste de
+   * pneu, vácuo, box nem DRS.
    */
   private stepKart(c: GpCar, input: GpInput, dt: number) {
     const thr = clamp(input.throttle, 0, 1);
@@ -836,8 +835,19 @@ export class GpWorld {
       c.hop = GP_ARC_HOP_SEC;
       this.events.push({ type: 'drift', id: c.id, dir: c.driftDir });
     }
+    const wasDrifting = c.driftDir !== 0;
     if (c.driftDir !== 0 && (!held || !road || v < GP_ARC_DRIFT_MIN * GP_ARC_VMAX * 0.7))
       c.driftDir = 0;
+    // soltar o drift na pista dispara o turbo do nível carregado (no mínimo o azul); perder o drift fora dela perde a carga
+    if (wasDrifting && c.driftDir === 0) {
+      if (!held && road && c.bar >= 1) {
+        const level = Math.min(GP_ARC_DRIFT_BOOST_SEC.length, Math.floor(c.bar));
+        c.boostLevel = Math.max(level, c.boostT > 0 ? c.boostLevel : 0);
+        c.boostT = Math.max(c.boostT, GP_ARC_DRIFT_BOOST_SEC[level - 1]!);
+        this.events.push({ type: 'turbo', id: c.id, level });
+      }
+      c.bar = 0;
+    }
     c.driftHeld = held;
     c.driftPress = Math.max(0, c.driftPress - dt);
     c.hop = Math.max(0, c.hop - dt);
@@ -855,20 +865,6 @@ export class GpWorld {
         if (fresh) this.events.push({ type: 'pad', id: c.id, x: c.x, z: c.z });
       }
     }
-    // ---- turbo: gasta a barra toda; o nível é o terço atingido ----
-    const tap = !!input.turbo;
-    if (tap && !c.turboHeld) {
-      if (c.bar < 1) this.events.push({ type: 'noturbo', id: c.id });
-      else {
-        const level = Math.min(GP_ARC_BOOST.length, Math.floor(c.bar));
-        c.bar = 0;
-        c.boostLevel = level;
-        c.boostT = GP_ARC_BOOST[level - 1]!.sec;
-        this.events.push({ type: 'turbo', id: c.id, level });
-      }
-    }
-    c.turboHeld = tap;
-
     // ---- direção (a velocidade de antes de virar o nariz fica para o escorregão) ----
     const wx = c.vx - c.kx;
     const wz = c.vz - c.kz;
@@ -922,15 +918,15 @@ export class GpWorld {
     // curvando quase não perde velocidade
     v -= v * GP_ARC_TURN_LOSS * Math.min(1, Math.abs(yaw) / yawMax) * dt;
 
-    // ---- barra: enche andando; derrapando, bem mais rápido ----
-    if (v > 1 && !boosting) {
-      let rate = (GP_ARC_BAR_MAX / GP_ARC_BAR_FULL_SEC) * Math.min(1, v / GP_ARC_VMAX);
-      if (drifting) rate *= GP_ARC_DRIFT_FILL * (1 + (GP_ARC_DRIFT_FILL_IN - 1) * Math.max(0, rel));
+    // ---- carga do drift: só derrapando (azul, laranja, rosa); fora do drift não há carga ----
+    if (drifting) {
+      const rate =
+        (GP_ARC_BAR_MAX / GP_ARC_CHARGE_SEC) * (1 + (GP_ARC_CHARGE_IN - 1) * Math.max(0, rel));
       const before = Math.floor(c.bar);
       c.bar = Math.min(GP_ARC_BAR_MAX, c.bar + rate * dt);
       const now = Math.floor(c.bar);
       if (now > before) this.events.push({ type: 'bar', id: c.id, level: now });
-    }
+    } else c.bar = 0;
 
     // ---- de lado: o pneu traz a velocidade para o nariz; o que passa do pneu vira escorregão (e fumaça) ----
     const rx = Math.cos(c.h);

@@ -263,7 +263,7 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
         note:
           cur === 'real'
             ? 'Realista: a curva tem limite; pediu demais, o carro abre e perde velocidade (sem escorregar de lado).'
-            : 'Arcade: kart com drift e turbo de 3 níveis; sem pneu, vácuo, box nem DRS.',
+            : 'Arcade: kart com drift que carrega o turbo (azul, laranja, rosa); solte o drift para soltar o turbo. Sem pneu, vácuo, box nem DRS.',
       },
       ...(cur === 'arcade'
         ? [

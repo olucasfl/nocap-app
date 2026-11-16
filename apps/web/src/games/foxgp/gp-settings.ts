@@ -12,7 +12,7 @@ export const GP_ACTIONS = [
   { id: 'brake', label: 'Frear (parado, ré)' },
   { id: 'left', label: 'Virar à esquerda' },
   { id: 'right', label: 'Virar à direita' },
-  { id: 'drs', label: 'DRS (Realista) / turbo (Arcade)' },
+  { id: 'drs', label: 'DRS (Realista) / usar poder (Arcade)' },
   { id: 'drift', label: 'Derrapar (Arcade, segurar)' },
   { id: 'cam', label: 'Trocar a câmera' },
   { id: 'back', label: 'Olhar para trás (segurar)' },
@@ -140,7 +140,7 @@ const SHAKE_KEY = 'nocap-gp-shake';
  */
 const AUTO_KEY = 'nocap-gp-autogas';
 /**
- * Acelerador automático no celular: o polegar da direita fica livre para o drift, o turbo e o DRS (acelerar + drift + turbo
+ * Acelerador automático no celular: o polegar da direita fica livre para o drift, o poder e o DRS (acelerar + drift + poder
  * ao mesmo tempo não cabe em dois polegares). O freio desliga o acelerador. Ligado por padrão; só vale com toque.
  */
 export const useGpAutoGas = create<{ on: boolean; set: (on: boolean) => void }>((set) => ({

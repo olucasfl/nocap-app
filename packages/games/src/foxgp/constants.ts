@@ -24,7 +24,8 @@ export const GP_NET_VERSION = 3;
 /** Voltas padrão da corrida; a sala e o treino escolhem entre `GP_LAP_OPTIONS`. */
 export const GP_LAPS = 3;
 export const GP_LAP_OPTIONS = [2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
-export const gpIsLaps = (v: unknown): v is number => typeof v === 'number' && (GP_LAP_OPTIONS as readonly number[]).includes(v);
+export const gpIsLaps = (v: unknown): v is number =>
+  typeof v === 'number' && (GP_LAP_OPTIONS as readonly number[]).includes(v);
 /** Aceita só uma das opções; qualquer outra coisa vira o padrão. */
 export const gpLapsOr = (v: unknown): number => (gpIsLaps(v) ? v : GP_LAPS);
 
@@ -134,7 +135,10 @@ export const GP_CAR_R = GP_CAR_WID / 2;
  * Caixa de colisão de cada veículo, do tamanho do desenho na pista (o F1 ~6,1 x 2,5 m com as rodas; o kart ~3,9 x 2,5 m).
  * Antes era uma caixa só (6,5 x 3,6) e a batida acontecia longe do carro.
  */
-export const GP_HIT_DIMS = { real: { len: 6.1, wid: 2.5 }, arcade: { len: 3.9, wid: 2.5 } } as const;
+export const GP_HIT_DIMS = {
+  real: { len: 6.1, wid: 2.5 },
+  arcade: { len: 3.9, wid: 2.5 },
+} as const;
 export const gpHitDims = (mode: GpPhysicsMode) => GP_HIT_DIMS[mode];
 export const GP_CAR_HALF = GP_CAR_LEN / 2 - GP_CAR_R;
 /** O carro encosta na barreira com esta parte da meia largura dentro do limite (o resto é a borracha da barreira). */
@@ -377,7 +381,6 @@ export const GP_REAL_WALL_KEEP = 0.7;
 export const GP_REAL_WALL_ALIGN = 0.25;
 export const GP_REAL_WALL_CD = 0.3;
 
-
 /** Aderência lateral máxima do Realista na velocidade dada (m/s²), com pneu novo no asfalto. */
 export const gpRealLatMax = (v: number) => GP_REAL_GRIP0 + GP_REAL_DOWNFORCE * v * v;
 /** Máxima no asfalto (m/s) de cada modo. */
@@ -451,16 +454,19 @@ export const GP_ARC_DRIFT_SPEED = 1.06;
 export const GP_ARC_DRIFT_YAW = 0.2;
 
 /**
- * Barra de turbo de 0 a 3 (três terços: azul, laranja, rosa). Enche sozinha andando (cheia em `BAR_FULL_SEC` na
- * máxima) e `DRIFT_FILL`× mais rápido derrapando, com bônus de até ×`DRIFT_FILL_IN` com o volante todo para dentro.
+ * Carga do drift (spec 086, mecânica nova do Lucas, 16/11/2026): só existe derrapando. Começa em 0 a cada drift e sobe até
+ * 3 em `CHARGE_SEC` (o 1 é o azul, o 2 o laranja, o 3 o rosa); com o volante todo para dentro sobe até ×`CHARGE_IN` mais
+ * rápido. Soltar o drift com pelo menos o azul solta um turbo automático desse nível; sem chegar ao azul, nada.
  */
 export const GP_ARC_BAR_MAX = 3;
-export const GP_ARC_BAR_FULL_SEC = 45;
-export const GP_ARC_DRIFT_FILL = 3.5;
-export const GP_ARC_DRIFT_FILL_IN = 1.4;
+export const GP_ARC_CHARGE_SEC = 3.2;
+export const GP_ARC_CHARGE_IN = 1.35;
+/** Duração (s) do turbo do drift por nível: curto, bem menos que o turbo das placas e dos itens. */
+export const GP_ARC_DRIFT_BOOST_SEC: readonly number[] = [0.55, 0.95, 1.5];
 /**
- * Turbo: gasta a barra toda e o nível é o terço atingido. Duração (s) e quanto a máxima sobe em cada nível; chega à
- * velocidade do turbo em ~`BOOST_RISE` s e volta à normal numa rampa de `BOOST_FADE` s. Fora do asfalto, metade do ganho.
+ * Turbo (placas da pista e itens): `extra` é quanto a máxima sobe em cada nível (o do drift usa a mesma subida, mas dura
+ * menos); chega à velocidade do turbo em ~`BOOST_RISE` s e volta à normal numa rampa de `BOOST_FADE` s. Fora do asfalto,
+ * metade do ganho.
  */
 export const GP_ARC_BOOST: readonly { sec: number; extra: number }[] = [
   { sec: 0.9, extra: 0.35 },
@@ -472,8 +478,8 @@ export const GP_ARC_BOOST_FADE = 0.4;
 export const GP_ARC_BOOST_OFFROAD = 0.5;
 
 /**
- * Placas de turbo da Bala Track (spec 081, 6B.4): passar por cima dá o turbo de nível 1 na hora, sem gastar a barra
- * (passar de novo só renova a duração). Comprimento e meia largura da placa (m).
+ * Placas de turbo das pistas (spec 081, 6B.4): passar por cima dá o turbo de nível 1 na hora (passar de novo só renova a
+ * duração). Comprimento e meia largura da placa (m).
  */
 export const GP_PAD_LEN = 9;
 export const GP_PAD_HALF = 2.6;

@@ -1996,7 +1996,8 @@ export class GpScene {
           v.flame.scale.set(1, 1, f * (0.7 + c.boostLevel * 0.3));
         }
         // faíscas nas rodas de trás no drift, da cor do nível da barra
-        if (c.driftDir !== 0 && Math.random() < 0.6) {
+        // faíscas só a partir do azul: o drift começa sem nada e vai ganhando cor (azul, laranja, rosa)
+        if (c.driftDir !== 0 && c.bar >= 1 && Math.random() < 0.6) {
           const rx = Math.cos(p.h);
           const rz = Math.sin(p.h);
           const bx = p.x - Math.sin(p.h) * GP_CAR_LEN * 0.3 * v.vis;

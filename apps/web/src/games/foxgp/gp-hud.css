@@ -653,77 +653,6 @@
   background: #ffd23a;
   color: #2a2100;
 }
-.gpx-turbo {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 10px;
-  border: 2px solid #444b5e;
-  background: var(--gp-hud);
-}
-.gpx-third {
-  position: relative;
-  width: 64px;
-  height: 14px;
-  overflow: hidden;
-  background: #1b2233;
-  border: 1px solid #2b3348;
-}
-.gpx-third b {
-  position: absolute;
-  inset: 0;
-  transform-origin: left center;
-  transition: transform 0.12s linear;
-}
-.gpx-third.is-1 b {
-  background: #3aa0ff;
-}
-.gpx-third.is-2 b {
-  background: #ff8a1f;
-}
-.gpx-third.is-3 b {
-  background: #ff4fd8;
-}
-.gpx-third[data-full='1'] {
-  border-color: #fff;
-}
-.gpx-turbo-key {
-  margin-left: 6px;
-  font: italic 800 13px var(--gp-display);
-  color: var(--gp-text);
-  text-transform: uppercase;
-  animation: gpx-turbo-pop 0.4s var(--gp-ease);
-}
-@keyframes gpx-turbo-pop {
-  from {
-    transform: scale(1.4);
-    opacity: 0.4;
-  }
-}
-/* sem turbo: a barra balança */
-.gpx-turbo[data-no='1'] {
-  animation: gpx-turbo-no 0.35s ease;
-}
-@keyframes gpx-turbo-no {
-  25% {
-    transform: translateX(-5px);
-  }
-  50% {
-    transform: translateX(5px);
-  }
-  75% {
-    transform: translateX(-3px);
-  }
-}
-.gpx-turbo[data-boost='1'] {
-  border-color: #3aa0ff;
-}
-.gpx-turbo[data-boost='2'] {
-  border-color: #ff8a1f;
-}
-.gpx-turbo[data-boost='3'] {
-  border-color: #ff4fd8;
-}
 /* linhas de velocidade nas bordas durante o turbo (cor do nível) */
 .gpx-boost {
   position: absolute;
@@ -807,28 +736,13 @@
   background: #ffd23a;
   color: #2a2100;
 }
-.gp-pad.is-turbo {
-  grid-area: turbo;
-  width: 70px;
-  height: 70px;
-  font-size: 15px;
-  font-style: italic;
-  color: #7d8597;
-}
-.gp-pad.is-turbo[data-ready='1'] {
-  border-color: #3aa0ff;
-  color: #3aa0ff;
-}
 .gp-play[data-physics='arcade'] .gp-pads-r {
   grid-template-columns: auto auto;
   grid-template-areas:
     'drs turbo'
     'brake gas';
 }
-@media (prefers-reduced-motion: reduce) {
-  .gpx-boost,
-  .gpx-turbo[data-no='1'],
-  .gpx-turbo-key {
+@media (prefers-reduced-motion: reduce) {.gpx-boost {
     animation: none;
   }
   .gpx-boost {
@@ -883,12 +797,6 @@
   width: 96px;
   height: 96px;
   font-size: 17px;
-}
-.gp-pads-r[data-auto='1'] .is-turbo {
-  grid-area: turbo;
-  justify-self: end;
-  width: 72px;
-  height: 72px;
 }
 .gp-play[data-physics='real'] .gp-pads-r[data-auto='1'] {
   grid-template-areas:
@@ -1140,10 +1048,6 @@
   grid-area: drs;
   justify-self: end;
 }
-.gp-play[data-physics] .gp-pads-r[data-auto='1'] .is-turbo {
-  grid-area: turbo;
-  justify-self: end;
-}
 .gp-play[data-physics] .gp-pads-r[data-auto='1'] .is-brake {
   grid-area: brake;
   justify-self: end;
@@ -1160,19 +1064,8 @@
   transform: translateX(-50%);
   bottom: calc(max(8px, env(safe-area-inset-bottom)) + 50px);
   gap: 0;
-}
-.gp-play.gp-play[data-touch='1'] .gpx-drift,
-.gp-play.gp-play[data-touch='1'] .gpx-turbo-key {
+}.gp-play.gp-play[data-touch='1'] .gpx-drift {
   display: none;
-}
-.gp-play.gp-play[data-touch='1'] .gpx-turbo {
-  padding: 3px 6px;
-  gap: 3px;
-  border-radius: 999px;
-}
-.gp-play.gp-play[data-touch='1'] .gpx-third {
-  width: 38px;
-  height: 8px;
 }
 
 /* item do Arcade com poderes (spec 085): cartão com símbolo, nome e tecla, acima do turbo, à direita */

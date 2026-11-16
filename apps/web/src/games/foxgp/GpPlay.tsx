@@ -184,15 +184,7 @@ const kartTips = (touch: boolean, b: GpBinds): TipRow[] => [
     ) : (
       <Keycap k={gpKeyName('drift', b)} touchHide={false} />
     ),
-    text: 'Segure virando, rápido: o kart pula e derrapa. Volante para dentro fecha a curva; enche a barra de turbo',
-  },
-  {
-    keys: touch ? (
-      <b className="gm-tag">Turbo</b>
-    ) : (
-      <Keycap k={gpKeyName('drs', b)} touchHide={false} />
-    ),
-    text: 'Gasta a barra toda: no 1º terço (azul) curto, no 2º (laranja) médio, no 3º (rosa) longo',
+    text: 'Segure virando, rápido: o kart pula e derrapa, e a fumaça muda de cor (azul, laranja, rosa). Solte o drift: sai um turbo, maior quanto mais cor. Sem azul, não sai',
   },
   {
     keys: touch ? (
@@ -429,9 +421,6 @@ export function GpPlay({
   const watchingRef = useRef(false);
   watchingRef.current = !!hud && (hud.done !== null || !!hud.watching);
   const [perfText, setPerfText] = useState('');
-  /** Kart: a barra pisca ao completar um terço; balança no "sem turbo". */
-  const [barPulse, setBarPulse] = useState(0);
-  const [noTurbo, setNoTurbo] = useState(0);
   useTouchGuard();
   const autoGas = useGpAutoGas((st) => st.on);
   const autoGasRef = useRef(autoGas);
@@ -598,7 +587,13 @@ export function GpPlay({
       })),
     ];
     const seed = online?.seed ?? seedOf();
-    const world = new GpWorld(seed, infos, gpTrackDefFor(mode, online?.track ?? track, powers), mode, laps);
+    const world = new GpWorld(
+      seed,
+      infos,
+      gpTrackDefFor(mode, online?.track ?? track, powers),
+      mode,
+      laps,
+    );
     // a espera com as luzes acesas: sorteada pela seed no treino (na sala, quem sorteia é o servidor)
     const holdSec = gpLightsHold(createRng(`${seed}:lights`)());
     const isHost = !!online && !!online.meId && online.hostId === meId;
@@ -611,16 +606,13 @@ export function GpPlay({
     const itemView = powers && isClient ? new GpItemView(world) : null;
     const itemsRead: GpItemsReadable | null = itemSys ?? itemView;
     let itemQ = false;
+    let itemKeyHeld = false;
     let itemKey = '';
     let mudRef = false;
     let shieldRef = false;
     useItemRef.current = () => {
       itemQ = true;
     };
-    const onItemKey = (e: KeyboardEvent) => {
-      if (e.code === 'KeyF' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') itemQ = true;
-    };
-    if (itemsRead) window.addEventListener('keydown', onItemKey);
     // som e aviso dos eventos dos itens (de qualquer fonte: treino, líder ou espelho)
     let toastN = 0;
     const playItemEvents = (list: readonly GpItemEvent[]) => {
@@ -979,14 +971,8 @@ export function GpPlay({
             say(lapClock(e.ms), 4000, 'result', `Recorde do aparelho no ${PHYSICS_NAME[mode]}`);
           else say(lapClock(e.ms), 4000, 'result', 'Seu tempo da volta lançada');
         } else if (e.type === 'bar' && mine) {
-          // cada terço da barra: aviso curto e a nota do nível (mais alta a cada terço)
+          // cada nível da carga do drift (azul, laranja, rosa): uma nota mais alta
           gpSfx.bar(e.level);
-          setBarPulse((n) => n + 1);
-          const name = ['', 'azul', 'laranja', 'rosa'][e.level] ?? '';
-          say('Turbo pronto', 1400, 'turbo', `Nível ${e.level} · ${name}`);
-        } else if (e.type === 'noturbo' && mine) {
-          gpSfx.noTurbo();
-          setNoTurbo((n) => n + 1);
         } else if (e.type === 'drsready' && mine) {
           gpSfx.drs();
           say(
@@ -1140,8 +1126,12 @@ export function GpPlay({
         // celular com acelerador automático: pisa fundo (o freio solta); só na pista e na volta, nunca na espera da largada
         if (touchDevice && autoGasRef.current && (stage === 'race' || stage === 'quali'))
           input = { ...input, throttle: input.brake > 0.1 ? 0 : 1 };
-        // kart (spec 081): a mesma tecla do DRS é o turbo (os modos não se misturam)
-        if (mode === 'arcade') input = { ...input, turbo: !!input.drs, drs: false };
+        // kart: o turbo vem do drift (spec 086); a tecla que era o DRS (E por padrão) usa o poder, só no modo com poderes
+        if (mode === 'arcade') {
+          if (itemsRead && input.drs && !itemKeyHeld) itemQ = true;
+          itemKeyHeld = !!input.drs;
+          input = { ...input, turbo: false, drs: false };
+        }
         // só no desenvolvimento: piloto automático no seu carro (os testes de tela medem a fluidez com ele)
         if (import.meta.env.DEV && mine && (window as unknown as { __gpAuto?: boolean }).__gpAuto) {
           if (!autoMem) autoMem = newGpBotMemory(0.9);
@@ -1552,7 +1542,6 @@ export function GpPlay({
       hostLink?.dispose();
       peerLink?.dispose();
       controls.detach();
-      window.removeEventListener('keydown', onItemKey);
       gpSfx.engine.stop();
       ro?.disconnect();
       sceneRef.current?.dispose();
@@ -1810,7 +1799,7 @@ export function GpPlay({
             />
           </div>
 
-          {/* kart: embaixo no meio, o drift e a barra de turbo em 3 terços (no lugar do DRS) */}
+          {/* kart: embaixo no meio, só o aviso do drift (o turbo vem de soltar o drift: sem barra) */}
           {driving && mode === 'arcade' && (
             <div className="gpx-kart" data-testid="gp-kart-hud" role="status">
               <div className="gpx-drift" data-state={h.drift} data-testid="gp-drift">
@@ -1819,27 +1808,6 @@ export function GpPlay({
                 </svg>
                 <span>
                   {h.drift === 'on' ? 'Drift' : h.drift === 'avail' ? 'Liberado' : 'Drift'}
-                </span>
-              </div>
-              <div
-                className="gpx-turbo"
-                data-boost={h.boost}
-                data-testid="gp-turbo"
-                key={`nt${noTurbo}`}
-                data-no={noTurbo > 0 ? '1' : undefined}
-                aria-label={`Turbo: ${Math.floor(h.bar)} de 3 terços`}
-              >
-                {[0, 1, 2].map((i) => (
-                  <i
-                    key={i}
-                    className={`gpx-third is-${i + 1}`}
-                    data-full={h.bar >= i + 1 ? '1' : undefined}
-                  >
-                    <b style={{ transform: `scaleX(${Math.max(0, Math.min(1, h.bar - i))})` }} />
-                  </i>
-                ))}
-                <span className="gpx-turbo-key" key={`bp${barPulse}`}>
-                  {h.boost ? 'Turbo!' : touchDevice ? 'Turbo' : gpKeyName('drs', binds)}
                 </span>
               </div>
             </div>
@@ -1876,7 +1844,7 @@ export function GpPlay({
                   : 'Sem poder'}
               </span>
               <span className="gpx-item-key">
-                <kbd>{touchDevice ? 'Toque' : 'F'}</kbd>
+                <kbd>{touchDevice ? 'Toque' : drsKey}</kbd>
                 {itemHud ? 'para usar' : 'passe numa caixa'}
               </span>
             </button>
@@ -1909,7 +1877,7 @@ export function GpPlay({
                 <strong>{GP_ITEMS.find((i) => i.id === itemToast.id)?.name ?? itemToast.id}</strong>
                 <span>{GP_ITEMS.find((i) => i.id === itemToast.id)?.blurb}</span>
                 <em>
-                  <kbd>{touchDevice ? 'Botão Item' : 'F'}</kbd> para usar
+                  <kbd>{touchDevice ? 'Botão Item' : drsKey}</kbd> para usar
                 </em>
               </div>
             </div>
@@ -2223,16 +2191,6 @@ export function GpPlay({
                       {...pad('drift')}
                     >
                       Drift
-                    </button>
-                    <button
-                      type="button"
-                      className="gp-pad is-turbo"
-                      data-ready={h.bar >= 1 ? '1' : undefined}
-                      aria-label="Turbo"
-                      data-testid="gp-pad-turbo"
-                      {...pad('drs')}
-                    >
-                      Turbo
                     </button>
                   </>
                 ) : (

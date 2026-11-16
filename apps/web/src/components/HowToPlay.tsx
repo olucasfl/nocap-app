@@ -25,7 +25,7 @@ export const HOW_TO_PLAY = {
   foxgp: {
     title: 'Fox GP',
     points: [
-      'Física: Arcade (kart: segure o drift virando para encher a barra de turbo e use o turbo nas retas) ou Realista (F1: freie antes da curva, o câmbio troca as marchas; pediu curva demais, o carro abre). Na sala, o líder escolhe.',
+      'Física: Arcade (kart: segure o drift virando e a carga vai de azul para laranja e rosa; solte o drift e sai um turbo, maior quanto mais cor) ou Realista (F1: freie antes da curva, o câmbio troca as marchas; pediu curva demais, o carro abre). Na sala, o líder escolhe.',
       'Classificação: ande livre e, quando quiser, aperte L (ou o botão): o carro vai para a largada, conta 3 e a volta lançada começa. O melhor tempo larga na frente.',
       'Corrida de 3 voltas com até 12 carros: na reta, a zona verde é de DRS (abre a asa e ganha velocidade; nunca para quem lidera, só depois da 1ª volta). Atrás de outro carro, o vácuo ajuda.',
       'Grama e brita deixam o carro lento; cortar caminho volta você. No Realista os pneus gastam e o box troca em 3 s.',
