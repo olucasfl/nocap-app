@@ -1862,6 +1862,7 @@ export class GpScene {
           // o chão é uma consulta por célula (a busca na pista inteira, a cada partícula, enchia a memória de lixo)
           model ? (x, z) => this.groundMap?.sample(x, z, this.focusY) ?? this.focusY : undefined,
           model ? (c) => this.cars.get(c.id)?.gy ?? 0 : undefined,
+          tr.kartK,
         )
       : null;
   }

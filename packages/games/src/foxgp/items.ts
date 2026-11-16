@@ -76,13 +76,18 @@ export const GP_MUD_SEC = 4.5;
 export const GP_SHOCK_RADIUS = 24;
 export const GP_SHOCK_PUSH = 20;
 
-export const GP_BALL_SPEED = GP_ARC_VMAX * 1.5;
-export const GP_SEEKER_SPEED = GP_ARC_VMAX * 1.3;
-export const GP_ICE_SPEED = GP_ARC_VMAX * 1.6;
-export const GP_MUD_SPEED = GP_ARC_VMAX * 1.5;
-export const GP_BOLT_SPEED = GP_ARC_VMAX * 2.8;
-/** Quanto o cometa azul acelera por metro de distância até o líder (alcança de qualquer lugar da pista). */
-const GP_BOLT_CATCHUP = 0.5;
+// Velocidade dos tiros (m/s, na pista de ritmo normal; nas pistas com `vmaxK` acompanham os karts). Mais lentos que antes para
+// dar para ver o tiro indo; os perseguidores (foguete vermelho e cometa azul) ganham velocidade pela distância até o alvo e
+// por isso chegam de qualquer lugar da pista, sem passar voando.
+export const GP_BALL_SPEED = GP_ARC_VMAX * 1.25;
+export const GP_SEEKER_SPEED = GP_ARC_VMAX * 1.0;
+export const GP_ICE_SPEED = GP_ARC_VMAX * 1.3;
+export const GP_MUD_SPEED = GP_ARC_VMAX * 1.25;
+export const GP_BOLT_SPEED = GP_ARC_VMAX * 1.5;
+/** Quanto o foguete vermelho e o cometa azul aceleram por metro de distância até o alvo, e o teto desse extra (x a velocidade base). */
+const GP_SEEKER_CATCHUP = 0.35;
+const GP_BOLT_CATCHUP = 0.25;
+const GP_CATCHUP_CAP = 1.2;
 const GP_BALL_BOUNCES = 6;
 /** Raio de acerto dos tiros: um pouco maior que o do chão, para a bola e o cometa não passarem por dentro do kart. */
 const GP_SHOT_HIT_RADIUS = 3;
@@ -332,7 +337,7 @@ export class GpItemSystem implements GpItemsReadable {
       const s = this.state(c.id);
       if (s.id) continue;
       for (const b of this.boxes) {
-        if (b.cd > 0 || dist(c.x, c.z, b.x, b.z) > GP_BOX_RADIUS) continue;
+        if (b.cd > 0 || dist(c.x, c.z, b.x, b.z) > GP_BOX_RADIUS * w.track.kartK) continue;
         b.cd = GP_BOX_RESPAWN;
         const { rank, total } = this.rankOf(c.id);
         const item = gpRollItem(rank, total, this.rng);
@@ -449,7 +454,7 @@ export class GpItemSystem implements GpItemsReadable {
           target: null,
           ttl: GP_SHOT_TTL,
           bounces: GP_BALL_BOUNCES,
-          vd: Math.sin(ang) * GP_BALL_SPEED,
+          vd: Math.sin(ang) * GP_BALL_SPEED * this.world.track.vmaxK,
         });
         break;
       }
@@ -622,7 +627,7 @@ export class GpItemSystem implements GpItemsReadable {
       } else {
         for (const c of this.world.cars) {
           if (!this.active(c) || (t.arm > 0 && c.id === t.owner)) continue;
-          if (dist(c.x, c.z, t.x, t.z) <= GP_ITEM_HIT_RADIUS) {
+          if (dist(c.x, c.z, t.x, t.z) <= GP_ITEM_HIT_RADIUS * this.world.track.kartK) {
             this.hit(c, t.owner, 'peel');
             gone = true;
             break;
@@ -642,7 +647,8 @@ export class GpItemSystem implements GpItemsReadable {
       let dead = sh.ttl <= 0;
       if (sh.kind === 'ball') {
         const lim = GP_HALF_WIDTH - 1.2;
-        const vf = Math.sqrt(Math.max(1, GP_BALL_SPEED * GP_BALL_SPEED - sh.vd * sh.vd));
+        const ballV = GP_BALL_SPEED * tr.vmaxK;
+        const vf = Math.sqrt(Math.max(1, ballV * ballV - sh.vd * sh.vd));
         sh.prog += vf * dt;
         sh.d += sh.vd * dt;
         if (Math.abs(sh.d) > lim) {
@@ -650,8 +656,7 @@ export class GpItemSystem implements GpItemsReadable {
           sh.d = Math.sign(sh.d) * lim;
           sh.vd = -sh.vd;
           // a quicada sempre devolve a bola para dentro da pista, mesmo saindo reta
-          if (Math.abs(sh.vd) < GP_BALL_SPEED * 0.25)
-            sh.vd = -Math.sign(sh.d) * GP_BALL_SPEED * 0.4;
+          if (Math.abs(sh.vd) < ballV * 0.25) sh.vd = -Math.sign(sh.d) * ballV * 0.4;
         }
         const p = tr.pointAt(sh.prog, sh.d);
         sh.x = p.x;
@@ -661,16 +666,20 @@ export class GpItemSystem implements GpItemsReadable {
         // perseguidores seguem o traçado da pista e vão para o afastamento do alvo
         const target = sh.target ? this.world.car(sh.target) : undefined;
         const speed =
-          sh.kind === 'bolt'
+          (sh.kind === 'bolt'
             ? GP_BOLT_SPEED
             : sh.kind === 'ice'
               ? GP_ICE_SPEED
               : sh.kind === 'mud'
                 ? GP_MUD_SPEED
-                : GP_SEEKER_SPEED;
-        // o cometa azul acelera quanto mais longe estiver do líder, para sempre alcançá-lo
+                : GP_SEEKER_SPEED) * tr.vmaxK;
+        // o foguete vermelho e o cometa azul aceleram quanto mais longe estiverem do alvo, para sempre alcançá-lo
+        const chase =
+          sh.kind === 'bolt' ? GP_BOLT_CATCHUP : sh.kind === 'seeker' ? GP_SEEKER_CATCHUP : 0;
         const extra =
-          sh.kind === 'bolt' && target ? Math.max(0, target.prog - sh.prog) * GP_BOLT_CATCHUP : 0;
+          chase > 0 && target
+            ? Math.min(speed * GP_CATCHUP_CAP, Math.max(0, target.prog - sh.prog) * chase)
+            : 0;
         sh.prog += (speed + extra) * dt;
         if (target && this.active(target)) {
           const gap = target.prog - sh.prog;
@@ -689,7 +698,7 @@ export class GpItemSystem implements GpItemsReadable {
         for (const c of this.world.cars) {
           if (!this.active(c) || c.id === sh.owner) continue;
           if (sh.kind !== 'ball' && sh.target && c.id !== sh.target) continue;
-          if (dist(c.x, c.z, sh.x, sh.z) <= GP_SHOT_HIT_RADIUS) {
+          if (dist(c.x, c.z, sh.x, sh.z) <= GP_SHOT_HIT_RADIUS * tr.kartK) {
             this.hit(c, sh.owner, sh.kind);
             dead = true;
             break;

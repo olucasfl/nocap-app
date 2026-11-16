@@ -58,6 +58,8 @@ export class GpItemsLayer {
     /** Altura da estrada num ponto e sob um carro (m, só desenho; 0 nas pistas planas). */
     private groundY: (x: number, z: number) => number = () => 0,
     private carY: (c: GpCar) => number = () => 0,
+    /** Escala dos poderes (a pista pode ter kart menor: caixas, tiros, armadilhas e efeitos seguem o tamanho do kart). */
+    private k = 1,
   ) {
     scene.add(this.group);
     const tex = glowTexture();
@@ -76,7 +78,7 @@ export class GpItemsLayer {
     }
     for (const b of sys.boxes) {
       const m = buildItem('box');
-      m.scale.setScalar(BS);
+      m.scale.setScalar(BS * this.k);
       m.position.set(b.x, b.y, b.z);
       this.group.add(m);
       this.boxes.push(m);
@@ -85,7 +87,7 @@ export class GpItemsLayer {
 
   private spawn(id: GpModelId, scale = S): THREE.Group {
     const g = buildItem(id);
-    g.scale.setScalar(scale);
+    g.scale.setScalar(scale * this.k);
     this.group.add(g);
     return g;
   }
@@ -400,7 +402,7 @@ export class GpItemsLayer {
       s.g.position.set(tp.x, gyT + s.g.position.y, tp.z);
       // pavio da bomba: pisca mais rápido perto de explodir
       if (tp.kind === 'bomb') {
-        s.g.scale.setScalar(TS * (1 + Math.abs(Math.sin(t * (6 + (3 - tp.fuse) * 4))) * 0.08));
+        s.g.scale.setScalar(TS * this.k * (1 + Math.abs(Math.sin(t * (6 + (3 - tp.fuse) * 4))) * 0.08));
         if (Math.random() < 0.5)
           this.emit(
             tp.x + 0.6,
@@ -469,7 +471,7 @@ export class GpItemsLayer {
         const g = new THREE.Group();
         for (let i = 0; i < want.left; i++) {
           const it = buildItem(kind);
-          it.scale.setScalar(0.75);
+          it.scale.setScalar(0.75 * this.k);
           const a = (i / want.left) * Math.PI * 2;
           it.userData.a = a;
           g.add(it);
@@ -479,10 +481,14 @@ export class GpItemsLayer {
         this.orbits.set(c.id, o);
       }
       if (o) {
-        o.g.position.set(p.x, cy + 1.2, p.z);
+        o.g.position.set(p.x, cy + 1.2 * this.k, p.z);
         o.g.children.forEach((ch, i) => {
           const a = (ch.userData.a as number) + t * 2.2;
-          ch.position.set(Math.cos(a) * ORBIT_R, Math.sin(t * 3 + i) * 0.15, Math.sin(a) * ORBIT_R);
+          ch.position.set(
+            Math.cos(a) * ORBIT_R * this.k,
+            Math.sin(t * 3 + i) * 0.15 * this.k,
+            Math.sin(a) * ORBIT_R * this.k,
+          );
         });
       }
       // Escudo bolha: esfera brilhante em volta do kart (some ao estourar)
@@ -507,9 +513,9 @@ export class GpItemsLayer {
       }
       if (bub) {
         bub.visible = hasShield;
-        bub.position.set(p.x, cy + 1.4, p.z);
+        bub.position.set(p.x, cy + 1.4 * this.k, p.z);
         // perto de acabar (últimos 2 s no líder): pisca; online só liga/desliga
-        bub.scale.setScalar(1 + Math.sin(t * 5) * 0.04);
+        bub.scale.setScalar((1 + Math.sin(t * 5) * 0.04) * this.k);
         const m = bub.material as THREE.MeshPhysicalMaterial;
         m.opacity =
           st && st.shield > 0 && st.shield < 2 ? 0.12 + 0.2 * Math.abs(Math.sin(t * 14)) : 0.28;
@@ -542,8 +548,8 @@ export class GpItemsLayer {
       }
       if (halo) {
         halo.visible = star;
-        halo.position.set(p.x, cy + 0.7, p.z);
-        halo.scale.setScalar(1 + Math.sin(t * 8) * 0.06);
+        halo.position.set(p.x, cy + 0.7 * this.k, p.z);
+        halo.scale.setScalar((1 + Math.sin(t * 8) * 0.06) * this.k);
         const col = [0xffd23a, 0xfff6c8, 0xff7d26, 0x5fe3ff][Math.floor(t * 12) % 4]!;
         (halo.material as THREE.MeshBasicMaterial).color.setHex(col);
         if (Math.random() < 0.6) {
