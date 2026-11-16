@@ -19,6 +19,7 @@ async function loadPack(
   base: string,
   name: string,
   textures: THREE.Texture[],
+  solids: THREE.Mesh[],
 ): Promise<THREE.Group> {
   const [meta, bin] = await Promise.all([
     fetch(`${base}${name}.json`).then((r) => r.json() as Promise<{ groups: Group[] }>),
@@ -61,6 +62,9 @@ async function loadPack(
     mesh.frustumCulled = true;
     mesh.name = g.mat;
     geo.computeBoundingSphere();
+    geo.computeBoundingBox();
+    // o que a câmera não pode atravessar: tudo menos folhagem (recorte por transparência)
+    if (!g.alpha) solids.push(mesh);
     out.add(mesh);
   }
   return out;
@@ -70,16 +74,17 @@ async function loadPack(
 export async function loadTrackModel(
   id: string,
   detail: boolean,
-): Promise<{ group: THREE.Group; textures: THREE.Texture[] }> {
+): Promise<{ group: THREE.Group; textures: THREE.Texture[]; solids: THREE.Mesh[] }> {
   const base = `/foxgp/${id}/`;
   const textures: THREE.Texture[] = [];
+  const solids: THREE.Mesh[] = [];
   const group = new THREE.Group();
-  group.add(await loadPack(base, 'core', textures));
+  group.add(await loadPack(base, 'core', textures, solids));
   if (detail) {
     // o detalhe chega depois e não segura a largada
-    void loadPack(base, 'detail', textures)
+    void loadPack(base, 'detail', textures, solids)
       .then((g) => group.add(g))
       .catch(() => undefined);
   }
-  return { group, textures };
+  return { group, textures, solids };
 }

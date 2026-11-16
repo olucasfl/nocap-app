@@ -46,6 +46,7 @@ import { buildCar, type CarModel } from './car-model';
 import { buildKart, kartReady, type KartModel } from './kart-model';
 import { GpItemsLayer } from './gp-items-layer';
 import { loadTrackModel } from './track-model';
+import { GroundMap } from './ground-map';
 
 export type GpCamMode = 'far' | 'chase' | 'cockpit';
 export type GpQuality = 'low' | 'medium' | 'high';
@@ -71,6 +72,8 @@ const WATER = 0x2a7fd4;
 const STAND = 0xf2c230;
 
 /** Cores dos 3 níveis do turbo do kart (azul, laranja, rosa) e da faísca antes do 1º terço. */
+const tmpCamO = new THREE.Vector3();
+const tmpCamD = new THREE.Vector3();
 const BOOST_COLORS = [0xfff1c8, 0x3aa0ff, 0xff8a1f, 0xff4fd8] as const;
 
 interface CarView {
@@ -295,6 +298,12 @@ export class GpScene {
   private envTex: THREE.Texture | null = null;
   private ground!: THREE.Mesh;
   private modelGroup: THREE.Group | null = null;
+  /** Chão da pista de modelo (altura das quatro rodas) e as peças que a câmera não atravessa. */
+  private groundMap: GroundMap | null = null;
+  private camSolids: THREE.Mesh[] = [];
+  private camRay = new THREE.Raycaster();
+  /** Quanto da distância da câmera cabe sem entrar numa parede (0 a 1, suavizado). */
+  private camClip = 1;
   /** Altura da estrada sob o carro em foco (câmera). */
   private focusY = 0;
 
@@ -605,24 +614,58 @@ export class GpScene {
   private async buildModelTrack() {
     const touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
     try {
-      const { group, textures } = await loadTrackModel(
-        this.world.track.def.id,
-        !touch && this.quality !== 'low',
-      );
-      this.textures.push(...textures);
-      this.scene.add(group);
-      this.modelGroup = group;
+      const id = this.world.track.def.id;
+      const [model, ground] = await Promise.all([
+        loadTrackModel(id, !touch && this.quality !== 'low'),
+        GroundMap.load(id).catch(() => null),
+      ]);
+      this.textures.push(...model.textures);
+      this.scene.add(model.group);
+      this.modelGroup = model.group;
+      this.camSolids = model.solids;
+      this.groundMap = ground;
     } catch {
       /* sem o cenário a pista corre assim mesmo (só a estrada invisível): melhor que travar a largada */
     }
   }
 
-  /** Altura da estrada sob o carro (m, só desenho), suavizada para não tremer nos pontos de controle. */
-  private groundOf(c: GpCar, v: { gy: number }, dt: number): number {
+  /**
+   * O kart sobre a estrada (pistas de modelo): a altura e a inclinação vêm do chão de verdade, medido nas quatro rodas
+   * (morro, rampa, ponte, lombada); sem o mapa de chão, da linha central. Devolve a altura (m, só desenho).
+   */
+  private contact(c: GpCar, p: GpPose, v: CarView, dt: number): number {
     const tr = this.world.track;
     if (!tr.def.heights) return 0;
-    const y = tr.surfaceY(c.s, c.d);
-    v.gy += (y - v.gy) * Math.min(1, dt * 14);
+    const base = tr.surfaceY(c.s, c.d);
+    let y = base;
+    let pitch = Math.atan((tr.yAt(c.s + 2.5) - tr.yAt(c.s - 2.5)) / 5);
+    let roll = tr.bankAt(c.s);
+    const gm = this.groundMap;
+    if (gm) {
+      const hint = Math.abs(v.gy - base) < 3 ? v.gy : base;
+      const fx = Math.sin(p.h);
+      const fz = -Math.cos(p.h);
+      const rx = Math.cos(p.h);
+      const rz = Math.sin(p.h);
+      const mid = gm.sample(p.x, p.z, hint);
+      if (mid !== null) {
+        const at = (dx: number, dz: number) => gm.sample(p.x + dx, p.z + dz, mid) ?? mid;
+        const f = at(fx * 1.3, fz * 1.3);
+        const b = at(-fx * 1.3, -fz * 1.3);
+        const r = at(rx * 0.9, rz * 0.9);
+        const l = at(-rx * 0.9, -rz * 0.9);
+        y = (f + b + r + l) / 4;
+        pitch = Math.atan((f - b) / 2.6);
+        roll = Math.atan((r - l) / 1.8);
+      }
+    }
+    // a altura acompanha rápido (as rodas não afundam nem flutuam); a inclinação é mais suave
+    const d = y - v.gy;
+    v.gy = Math.abs(d) > 0.8 ? y : v.gy + d * Math.min(1, dt * 25);
+    v.pitch += (pitch - v.pitch) * Math.min(1, dt * 12);
+    v.roll += (roll - v.roll) * Math.min(1, dt * 12);
+    v.m.group.rotation.x = v.pitch;
+    v.m.group.rotation.z = v.roll;
     return v.gy;
   }
 
@@ -1796,13 +1839,9 @@ export class GpScene {
       ? new GpItemsLayer(
           this.scene,
           sys,
-          model
-            ? (x, z) => {
-                const q = tr.projectGlobal(x, z);
-                return tr.surfaceY(q.s, q.d);
-              }
-            : undefined,
-          model ? (c) => tr.surfaceY(c.s, c.d) : undefined,
+          // o chão é uma consulta por célula (a busca na pista inteira, a cada partícula, enchia a memória de lixo)
+          model ? (x, z) => this.groundMap?.sample(x, z, this.focusY) ?? this.focusY : undefined,
+          model ? (c) => this.cars.get(c.id)?.gy ?? 0 : undefined,
         )
       : null;
   }
@@ -1943,20 +1982,10 @@ export class GpScene {
         focusPose = p;
         focusCar = c;
       }
-      const gy = this.groundOf(c, v, dt);
-      v.m.group.position.set(p.x, gy, p.z);
       v.m.group.rotation.order = 'YXZ';
       v.m.group.rotation.y = -p.h;
-      // sobe e desce a rampa: o nariz acompanha a inclinação da estrada
-      if (this.world.track.def.heights) {
-        const tr = this.world.track;
-        v.pitch +=
-          (Math.atan((tr.yAt(c.s + 2.5) - tr.yAt(c.s - 2.5)) / 5) - v.pitch) * Math.min(1, dt * 10);
-        // a estrada inclinada de lado: o kart rola junto, com as quatro rodas no chão
-        v.roll += (tr.bankAt(c.s) - v.roll) * Math.min(1, dt * 10);
-        v.m.group.rotation.x = v.pitch;
-        v.m.group.rotation.z = v.roll;
-      }
+      const gy = this.contact(c, p, v, dt);
+      v.m.group.position.set(p.x, gy, p.z);
       if (c.id === focusId) this.focusY = gy;
       for (const wh of v.m.wheelsF) wh.rotation.y = -c.steer * 0.45;
       // as rodas giram com a velocidade; a asa de trás abre com o DRS (suave)
@@ -2228,6 +2257,32 @@ export class GpScene {
     };
   }
 
+  /**
+   * Câmera adaptativa (pistas de modelo): um raio do kart até a câmera; se uma parede, o teto de um túnel ou uma ponte
+   * está no caminho, a câmera chega mais perto do kart em vez de entrar na construção. Entra na hora e sai devagar.
+   */
+  private clipCamera(dt: number) {
+    if (this.camSolids.length === 0) return;
+    const cam = this.camera;
+    // o ponto de partida é um pouco acima do kart (a cabeça do piloto)
+    const o = tmpCamO.copy(this.camLook);
+    if (this.mode === 'chase') o.y = Math.max(o.y, this.focusY + 1.4);
+    const dir = tmpCamD.copy(cam.position).sub(o);
+    const dist = dir.length();
+    if (dist < 0.5) return;
+    dir.multiplyScalar(1 / dist);
+    const ray = this.camRay;
+    ray.set(o, dir);
+    ray.near = 0;
+    ray.far = dist + 0.6;
+    const hit = ray.intersectObjects(this.camSolids, false)[0];
+    const want = hit ? Math.max(0.25, Math.min(1, (hit.distance - 0.6) / dist)) : 1;
+    // entra na hora (nunca fica dentro da parede) e volta ao normal devagar
+    this.camClip =
+      want < this.camClip ? want : this.camClip + (want - this.camClip) * Math.min(1, dt * 3);
+    if (this.camClip < 0.999) cam.position.copy(o).addScaledVector(dir, dist * this.camClip);
+  }
+
   private updateCamera(dt: number, p: GpPose | null, car: GpCar | null) {
     const cam = this.camera;
     const speed = car ? Math.abs(car.speed) : 0;
@@ -2302,6 +2357,7 @@ export class GpScene {
       }
     }
     cam.position.copy(this.camPos);
+    if (p && car && this.mode !== 'cockpit') this.clipCamera(dt);
     cam.up.set(0, 1, 0);
     cam.lookAt(this.camLook);
     // tremida da câmera numa batida (de perto)

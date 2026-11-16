@@ -73,10 +73,19 @@ export interface GpTrackDef {
   banks?: readonly number[];
   /** Desgaste do pneu nesta pista, em relação ao padrão (1). Interlagos é longa: gastava demais por volta. */
   wearK?: number;
+  /**
+   * Distância (m) do centro da pista até a primeira parede do modelo de cada lado, em cada ponto de controle (99 = sem
+   * parede). O kart encosta na parede de verdade em vez de numa barreira invisível mais longe (spec 086).
+   */
+  wallsL?: readonly number[];
+  wallsR?: readonly number[];
 }
 
 /** O tipo da barreira: muro (batida normal) ou pilha de pneus (rebate o kart para trás). */
 export type GpWallKind = 'metal' | 'tyres';
+
+/** Folga (m) entre a parede do modelo e a barreira do jogo: o kart para antes de entrar na pedra. */
+const GP_MODEL_WALL_GAP = 1.1;
 
 const PIT_DEFAULT: GpPitDef = {
   side: 1,
@@ -634,6 +643,15 @@ export class GpTrack {
       };
       this.wallR[i] = wall(right, fold && kk > 0);
       this.wallL[i] = wall(left, fold && kk < 0);
+      // parede do modelo: o kart bate nela, não numa barreira invisível mais adiante
+      if (this.def.wallsR || this.def.wallsL) {
+        const s = i * this.ds;
+        const mr = this.interp(this.def.wallsR, s) - GP_MODEL_WALL_GAP;
+        const ml = this.interp(this.def.wallsL, s) - GP_MODEL_WALL_GAP;
+        const floor = GP_HALF_WIDTH + 0.8;
+        if (mr > 0 && mr < this.wallR[i]!) this.wallR[i] = Math.max(floor, mr);
+        if (ml > 0 && ml < this.wallL[i]!) this.wallL[i] = Math.max(floor, ml);
+      }
       // a faixa do box fica dentro da barreira do lado dela
       const pc = this.pitCenter(this.rel(i * this.ds));
       if (pc !== null) {

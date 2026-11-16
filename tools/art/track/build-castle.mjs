@@ -83,6 +83,35 @@ for (let pass = 0; pass < 2; pass++) {
 console.log('banks (graus) min/max', (Math.min(...banks) * 57.3).toFixed(1), (Math.max(...banks) * 57.3).toFixed(1));
 console.log(`largura ${W.toFixed(2)} un, ${K.toFixed(4)} m/un, ${center.length} pontos, volta ~${Math.round(cum)} m, altura ${Math.min(...heights).toFixed(1)}..${Math.max(...heights).toFixed(1)} m`);
 
+// paredes reais: de cada ponto da linha central, um raio para cada lado na altura do kart até a primeira peça sólida
+const WALL = /wall|castle_base$|castle_base_$|castle_base_0[23]$|tirewall|trackCastle$|trackTunnelCastle$|inner_castle|CastleHedges|CastleTower|rock_/i;
+const solids = [];
+root.traverse((o) => {
+  if (o.isMesh && WALL.test(o.name) && !/driveable|offroad/i.test(o.name)) {
+    const mats = Array.isArray(o.material) ? o.material : [o.material];
+    mats.forEach((m) => (m.side = THREE.DoubleSide));
+    solids.push(o);
+  }
+});
+const ray = new THREE.Raycaster();
+const wallsL = [];
+const wallsR = [];
+center.forEach((c, i) => {
+  const n = center[(i + 1) % center.length];
+  const p = center[(i - 1 + center.length) % center.length];
+  let tx = n[0] - p[0], tz = n[2] - p[2];
+  const tl = Math.hypot(tx, tz) || 1; tx /= tl; tz /= tl;
+  const rx = -tz, rz = tx; // direita de quem corre
+  for (const [sign, out] of [[1, wallsR], [-1, wallsL]]) {
+    ray.set(new THREE.Vector3(c[0], c[1] + 0.8 / K, c[2]), new THREE.Vector3(rx * sign, 0, rz * sign));
+    ray.near = 0; ray.far = 40 / K;
+    const hit = ray.intersectObjects(solids, false)[0];
+    out.push(hit ? Math.round(hit.distance * K * 10) / 10 : 99);
+  }
+});
+const nearWalls = wallsL.concat(wallsR).filter((v) => v < 99);
+console.log('paredes achadas', nearWalls.length, 'de', wallsL.length * 2, 'mediana', nearWalls.sort((a, b) => a - b)[Math.floor(nearWalls.length / 2)]);
+
 // placas de turbo: projeta cada BoostPad na linha central
 const padList = [];
 root.traverse((o) => {
@@ -122,9 +151,60 @@ ${padList.map((p) => `    { s: ${r2(p.s)}, d: ${p.d} },`).join('\n')}
   ],
   heights: [${heights.map(r2).join(', ')}],
   banks: [${banks.map((b) => Math.round(b * 1e4) / 1e4).join(', ')}],
+  wallsL: [${wallsL.join(', ')}],
+  wallsR: [${wallsR.join(', ')}],
 };
 `);
 fs.writeFileSync('/tmp/fbxwork/castle-model.json', JSON.stringify({ K, ox: O[0], oy: O[1], oz: O[2] }));
+
+// ---------- 1b. mapa de altura do chão (onde o kart pisa: estrada, ponte, túnel, grama e areia) ----------
+const GROUND = /^(CastleRoad|trackTunnelCastle_driveable|castle_base_0\d_driveable|castle_base_offroad|trackSand)$/;
+const CELL = 1; // m
+const gtris = [];
+let gx0 = Infinity, gx1 = -Infinity, gz0 = Infinity, gz1 = -Infinity;
+root.traverse((o) => {
+  if (!o.isMesh || !GROUND.test(o.name)) return;
+  const g = o.geometry.clone(); g.applyMatrix4(o.matrixWorld);
+  const pp = g.attributes.position.array;
+  const ii = g.index ? g.index.array : Array.from({ length: pp.length / 3 }, (_, i) => i);
+  for (let t = 0; t < ii.length; t += 3) {
+    const tri = [0, 1, 2].map((j) => [(pp[ii[t + j] * 3] - O[0]) * K, (pp[ii[t + j] * 3 + 1] - O[1]) * K, (pp[ii[t + j] * 3 + 2] - O[2]) * K]);
+    gtris.push(tri);
+    for (const v of tri) { gx0 = Math.min(gx0, v[0]); gx1 = Math.max(gx1, v[0]); gz0 = Math.min(gz0, v[2]); gz1 = Math.max(gz1, v[2]); }
+  }
+});
+gx0 = Math.floor(gx0) - 1; gz0 = Math.floor(gz0) - 1;
+const GW = Math.ceil(gx1 - gx0) + 2, GH = Math.ceil(gz1 - gz0) + 2;
+const cells = new Array(GW * GH);
+for (const [a, b, c] of gtris) {
+  const minx = Math.floor((Math.min(a[0], b[0], c[0]) - gx0) / CELL), maxx = Math.ceil((Math.max(a[0], b[0], c[0]) - gx0) / CELL);
+  const minz = Math.floor((Math.min(a[2], b[2], c[2]) - gz0) / CELL), maxz = Math.ceil((Math.max(a[2], b[2], c[2]) - gz0) / CELL);
+  const den = (b[2] - c[2]) * (a[0] - c[0]) + (c[0] - b[0]) * (a[2] - c[2]);
+  if (Math.abs(den) < 1e-9) continue;
+  for (let cz = minz; cz <= maxz; cz++) for (let cx = minx; cx <= maxx; cx++) {
+    const px = gx0 + (cx + 0.5) * CELL, pz = gz0 + (cz + 0.5) * CELL;
+    const l1 = ((b[2] - c[2]) * (px - c[0]) + (c[0] - b[0]) * (pz - c[2])) / den;
+    const l2 = ((c[2] - a[2]) * (px - c[0]) + (a[0] - c[0]) * (pz - c[2])) / den;
+    const l3 = 1 - l1 - l2;
+    if (l1 < -0.02 || l2 < -0.02 || l3 < -0.02) continue;
+    (cells[cz * GW + cx] ??= []).push(l1 * a[1] + l2 * b[1] + l3 * c[1]);
+  }
+}
+const lowA = new Int16Array(GW * GH).fill(-32768), highA = new Int16Array(GW * GH).fill(-32768);
+let filled = 0, two = 0;
+for (let i = 0; i < cells.length; i++) {
+  const h = cells[i]; if (!h) continue;
+  h.sort((x, y) => x - y);
+  // agrupa alturas a menos de 1,2 m (pistas sobrepostas no mesmo plano) e fica com o topo de cada grupo
+  const tops = [];
+  for (const y of h) { if (tops.length && y - tops[tops.length - 1] < 1.2) tops[tops.length - 1] = y; else tops.push(y); }
+  lowA[i] = Math.round(tops[0] * 100); highA[i] = Math.round(tops[tops.length - 1] * 100);
+  filled++; if (tops.length > 1) two++;
+}
+fs.mkdirSync(OUT_DIR, { recursive: true });
+fs.writeFileSync(path.join(OUT_DIR, 'ground.json'), JSON.stringify({ x0: gx0, z0: gz0, w: GW, h: GH, cell: CELL }));
+fs.writeFileSync(path.join(OUT_DIR, 'ground.bin'), Buffer.concat([Buffer.from(lowA.buffer), Buffer.from(highA.buffer)]));
+console.log('chão', GW, 'x', GH, 'células', filled, 'com dois andares', two);
 
 // ---------- 2. cenário compacto ----------
 const MAT_TEX = {
@@ -157,13 +237,19 @@ root.traverse((o) => {
   const groupsDef = geo.groups.length ? geo.groups : [{ start: 0, count: ix ? ix.length : P2.length / 3, materialIndex: 0 }];
   for (const gr of groupsDef) {
     const mat = baseMat(mats[gr.materialIndex ?? 0].name);
-    const key = `${tier}|${mat}`;
-    const G = groups.get(key) ?? groups.set(key, { tier, mat, pos: [], nor: [], uv: [] }).get(key);
-    for (let t = 0; t < gr.count; t++) {
-      const v = ix ? ix[gr.start + t] : gr.start + t;
-      G.pos.push((P2[v * 3] - O[0]) * K, (P2[v * 3 + 1] - O[1]) * K, (P2[v * 3 + 2] - O[2]) * K);
-      G.nor.push(N[v * 3], N[v * 3 + 1], N[v * 3 + 2]);
-      G.uv.push(U ? U[v * 2] : 0, U ? U[v * 2 + 1] : 0);
+    // cada material é cortado em quadrados de 40 m: assim a câmera descarta o que não vê e o raio da câmera só testa o que está no caminho
+    for (let t0 = 0; t0 < gr.count; t0 += 3) {
+      const vi = (k) => (ix ? ix[gr.start + t0 + k] : gr.start + t0 + k);
+      const cx = Math.floor(((P2[vi(0) * 3] + P2[vi(1) * 3] + P2[vi(2) * 3]) / 3 - O[0]) * K / 40);
+      const cz = Math.floor(((P2[vi(0) * 3 + 2] + P2[vi(1) * 3 + 2] + P2[vi(2) * 3 + 2]) / 3 - O[2]) * K / 40);
+      const key = `${tier}|${mat}|${cx}|${cz}`;
+      const G = groups.get(key) ?? groups.set(key, { tier, mat, pos: [], nor: [], uv: [] }).get(key);
+      for (let k = 0; k < 3; k++) {
+        const v = vi(k);
+        G.pos.push((P2[v * 3] - O[0]) * K, (P2[v * 3 + 1] - O[1]) * K, (P2[v * 3 + 2] - O[2]) * K);
+        G.nor.push(N[v * 3], N[v * 3 + 1], N[v * 3 + 2]);
+        G.uv.push(U ? U[v * 2] : 0, U ? U[v * 2 + 1] : 0);
+      }
     }
     kept += gr.count / 3;
   }
