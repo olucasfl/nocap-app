@@ -259,7 +259,7 @@ function RankingView({ game }: { game: Game }) {
             onClick={() => go({ jogo: g.id, modo: undefined, periodo: undefined })}
           >
             <Cover game={g.id} />
-            <span className="rkp-games-name">{GAME_LABEL[g.id]}</span>
+            <span className="rkp-games-name">{GAME_LABEL[g.id].replace(/^Classic /, '')}</span>
           </button>
         ))}
       </div>

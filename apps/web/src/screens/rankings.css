@@ -184,7 +184,7 @@
 .rkp-seg button {
   appearance: none;
   height: 44px;
-  padding: 0 6px;
+  padding: 0 3px;
   min-width: 0;
   border: 0;
   border-left: 2.5px solid var(--ink);
@@ -737,6 +737,10 @@
 }
 .rkp-games-name {
   display: none;
+  min-width: 0;
+  max-width: 100%;
+  justify-self: stretch;
+  text-align: center;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

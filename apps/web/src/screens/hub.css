@@ -1115,8 +1115,14 @@ a.hz-today:active {
   text-overflow: ellipsis;
   white-space: nowrap;
   font: 800 11px var(--font-display);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.04em;
   text-transform: uppercase;
+}
+@media (max-width: 380px) {
+  .hz-dt-name {
+    font-size: 10.5px;
+    letter-spacing: -0.06em;
+  }
 }
 @keyframes hz-dt-pop {
   from {

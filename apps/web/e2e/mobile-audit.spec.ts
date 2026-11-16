@@ -172,7 +172,36 @@ async function metrics(page: Page, d: Dev, pass: 'top' | 'end') {
       if (el.scrollWidth > el.clientWidth + 2 && /hidden|clip/.test(cs.overflowX) && cs.textOverflow !== 'ellipsis' && cs.whiteSpace !== 'normal')
         add('TEXTO', el, `cortado (${el.scrollWidth}>${el.clientWidth})`);
     }
-    return out.slice(0, 24);
+    // texto que passa da borda da própria caixa (a caixa do cartão, botão ou etiqueta que o contém)
+    const isBox = (e: HTMLElement) => {
+      const cs = getComputedStyle(e);
+      const bg = cs.backgroundColor;
+      const hasBg = bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent' && !/rgba\(.*, 0\)$/.test(bg);
+      return hasBg || parseFloat(cs.borderTopWidth) > 0 || parseFloat(cs.borderLeftWidth) > 0 || cs.backgroundImage !== 'none';
+    };
+    for (const el of Array.from(document.querySelectorAll<HTMLElement>('body *'))) {
+      const tn = Array.from(el.childNodes).find((n) => n.nodeType === 3 && (n.textContent || '').trim());
+      if (!tn) continue;
+      if (getComputedStyle(el).textOverflow === 'ellipsis') {
+        if (el.scrollWidth > el.clientWidth + 1 && visible(el)) add('TRUNCADO', el, `texto com reticências (${el.scrollWidth}>${el.clientWidth})`);
+        continue;
+      }
+      const er = visible(el);
+      if (!er || er.bottom < 0 || er.top > vh) continue;
+      const range = document.createRange();
+      range.selectNodeContents(tn);
+      const tr = range.getBoundingClientRect();
+      if (tr.width < 2) continue;
+      let box: HTMLElement | null = el;
+      while (box && box !== document.body && !isBox(box)) box = box.parentElement;
+      if (!box || box === document.body || box === document.documentElement) continue;
+      const br = box.getBoundingClientRect();
+      if (br.width < 6) continue;
+      const left = br.left - tr.left;
+      const right = tr.right - br.right;
+      if (left > 1.5 || right > 1.5) add('TRANSBORDA', el, `texto passa da caixa ${Math.round(Math.max(left, right))}px (${label(box)})`);
+    }
+    return out.slice(0, 30);
   }, { d, pass });
 }
 
@@ -188,6 +217,9 @@ for (const [group, routes] of Object.entries(GROUPS)) {
       test.setTimeout(120_000);
       await installApi(page);
       const cdp = await context.newCDPSession(page);
+      // AUDIT_PWA=1: simula o app instalado (sem barra do navegador; o app troca estilos por `display-mode: standalone`)
+      if (process.env.AUDIT_PWA)
+        await cdp.send('Emulation.setEmulatedMedia', { features: [{ name: 'display-mode', value: 'standalone' }] });
       const report: Record<string, string[]> = {};
       mkdirSync(OUT, { recursive: true });
       for (const d of devices) {
