@@ -91,7 +91,7 @@
 }
 .gx-panel h2 { margin: 0; font: 400 clamp(26px, 3vw, 38px) / 1 var(--gl-title); letter-spacing: 0.04em; }
 .gx-panel .lead { margin: 0; color: var(--gl-muted); font-size: 15px; }
-.gx-back { justify-self: start; background: none; border: 0; color: var(--gl-muted); font: 700 13px var(--gl-ui); letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; padding: 4px 0; }
+.gx-back { justify-self: start; background: none; border: 0; color: var(--gl-muted); font: 700 13px var(--gl-ui); letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; padding: 4px 14px 4px 0; min-height: 44px; display: inline-flex; align-items: center; }
 .gx-back:hover { color: var(--gl-ink); }
 .gx-card { display: grid; gap: 6px; text-align: left; padding: 14px 18px; border: 1px solid var(--gl-line); background: rgba(255, 255, 255, 0.05); color: var(--gl-ink); font: inherit; cursor: pointer; clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%); }
 .gx-card b { font-size: 19px; letter-spacing: 0.14em; text-transform: uppercase; }

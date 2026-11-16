@@ -859,3 +859,59 @@
 .cx-pop:has(.cx-pop-card.calm) {
   animation: none;
 }
+
+/*
+ * Celular deitado (docs/MOBILE-GUIDE.md): o Connect usa o encaixe de duas colunas da tela de jogo do Word's, feito para o
+ * tabuleiro e o teclado do Classic, e as 16 palavras viravam faixas de 12px. Aqui: palavras à esquerda (ocupam a altura toda) e
+ * abas, progresso, grupos achados e botões à direita.
+ */
+@media (orientation: landscape) and (max-height: 520px) {
+  .wd-app.fit .wd.cx-theme {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(250px, 42%);
+    grid-template-rows: auto repeat(3, min-content) minmax(0, 1fr);
+    align-content: start;
+    gap: 6px 14px;
+    overflow-y: auto;
+  }
+  .wd-app.fit .wd.cx-theme > .wd-top {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+  .wd-app.fit .wd.cx-theme > .cx-gridwrap {
+    grid-column: 1;
+    grid-row: 2 / -1;
+    min-height: 0;
+  }
+  .wd-app.fit .wd.cx-theme > :not(.wd-top):not(.cx-gridwrap) {
+    grid-column: 2;
+  }
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .wd-app.fit .wd.cx-theme .cx-controls {
+    min-width: 0;
+    gap: 6px;
+    margin-top: 0;
+    padding-top: 8px;
+  }
+  .wd-app.fit .wd.cx-theme .cx-actions {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      'shuffle clear'
+      'send send';
+    gap: 6px;
+  }
+  .wd-app.fit .wd.cx-theme .cx-aux {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .wd-app.fit .wd.cx-theme .cx-btn {
+    min-width: 0;
+    height: 44px;
+    padding: 0 8px;
+  }
+  .wd-app.fit .wd.cx-theme .cx-btn.send {
+    height: 44px;
+    font-size: 15px;
+  }
+}
