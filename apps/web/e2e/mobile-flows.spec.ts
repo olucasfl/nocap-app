@@ -136,6 +136,24 @@ const FLOWS: [string, string, Step[]][] = [
       },
     ],
   ],
+  [
+    'counterfox-fim',
+    '/fox-cap/counter-fox',
+    [
+      click('cfh-play'),
+      click('cfh-offline'),
+      click('cfx-min-2'),
+      click('cfx-bots-1'),
+      click('cfx-start'),
+      waitId('fs-ammo', 40_000),
+      async (p) => {
+        await p.getByTestId('fsm-resume').click({ timeout: 2500 }).catch(() => undefined);
+        await p.evaluate(() => (window as unknown as { __fs: { skip(n: number): void } }).__fs.skip(500));
+        await p.getByTestId('fs-end').waitFor({ timeout: 15_000 });
+        await p.waitForTimeout(1200);
+      },
+    ],
+  ],
   ['golf-fim', '/minigolf/jogar?fase=1', [wait(2500), golfFinish(true, 3)]],
   ['golf-jogo', '/minigolf/jogar?fase=1', [wait(3000), tips]],
   ['golf-online', '/minigolf', [click('mg-online'), wait(500)]],
