@@ -285,7 +285,7 @@ test('Arcade com poderes: a líder liga o modo e a Bia vê e usa o item pela sal
   await expect(B.getByTestId('gp-item-slot')).toContainText('Bola tripla', { timeout: 8000 });
   await expect(B.getByTestId('gp-item-slot')).toContainText('x3');
   // a Bia usa: o pedido vai pela entrada, a líder lança a bola e o espelho diminui
-  await B.keyboard.press('KeyF');
+  await B.keyboard.press('KeyE');
   await expect(B.getByTestId('gp-item-slot')).toContainText('x2', { timeout: 8000 });
   expect(await A.evaluate(() => (window as WinI).__gpItems!.shots.length)).toBeGreaterThanOrEqual(
     1,

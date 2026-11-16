@@ -66,7 +66,7 @@ test.describe('Fox GP: Arcade com poderes (spec 085)', () => {
     await page.evaluate(() => (window as Win).__gpItems!.give('me', 'ball3'));
     await expect(slot).toContainText('Bola tripla');
     await expect(slot).toContainText('x3');
-    await page.keyboard.press('KeyF');
+    await page.keyboard.press('KeyE');
     await expect(slot).toContainText('x2');
     expect(
       await page.evaluate(() => (window as Win).__gpItems!.shots.length),
@@ -125,7 +125,7 @@ test.describe('Fox GP: Arcade com poderes (spec 085)', () => {
     await pad.tap();
     await expect(pad).toContainText('x2');
     const boxes = await page.evaluate(() =>
-      ['gp-pad-item', 'gp-pad-turbo', 'gp-pad-drift', 'gp-pad-auto'].map((id) => {
+      ['gp-pad-item', 'gp-pad-drift', 'gp-pad-auto'].map((id) => {
         const r = document.querySelector(`[data-testid="${id}"]`)!.getBoundingClientRect();
         return { id, x: r.left, y: r.top, w: r.width, h: r.height };
       }),
