@@ -224,6 +224,18 @@ const MAT_TEX = {
 };
 const ALPHA = new Set(['bush', 'Fern', 'shrub_leaf7', 'TallLeafTree_tex', 'tree', 'festivebanners', 'Banner_tex', 'pike', 'portcullis', 'Blimp_tex', 'finishLineMarkingsDecal', 'BrokenCastleBrickWall_decal1', 'BrokenCastleBrickWall_decal2', 'boostPadBase', 'Gallery_tex']);
 const DETAIL = /^(bush|Bush|Shrub|Fern|tree|TallLeafTree|flowerbed|vine|pike|Market|Medieval|Melee|Archery|Walltorch|CastleWindow|CastlePainting|Festival|CastleBanner|Woodpillar|M_wooden|WallDamage|wood_bench|rock|Audience|Blimp|castle_ads|woodenshack|SiegeTower|windmill)/;
+// a placa da largada (e a caixa de luzes embaixo dela) pendia baixo demais e a câmera entrava nela: sobe tudo isso
+const LB = new Box3Holder();
+function Box3Holder() { const b = new THREE.Box3(); root.traverse((o) => { if (o.isMesh && o.name === 'startFrame_Lightboard') b.expandByObject(o); }); return b; }
+const LIFT = 2.2 / K; // 2,2 m: a borda de baixo passa de 1,7 m para 3,9 m da estrada
+const lifted = (name, P2, v0, v1, v2) => {
+  if (name === 'startFrame_Lightboard') return true;
+  if (name !== 'startFrame') return false;
+  const ys = [P2[v0 * 3 + 1], P2[v1 * 3 + 1], P2[v2 * 3 + 1]];
+  if (Math.max(...ys) > LB.max.y + 0.2 || Math.min(...ys) < LB.min.y - 1.2) return false;
+  const cx = (P2[v0 * 3] + P2[v1 * 3] + P2[v2 * 3]) / 3, cz = (P2[v0 * 3 + 2] + P2[v1 * 3 + 2] + P2[v2 * 3 + 2]) / 3;
+  return cx > LB.min.x - 1.5 && cx < LB.max.x + 1.5 && cz > LB.min.z - 1.5 && cz < LB.max.z + 1.5;
+};
 const baseMat = (n) => n.replace(/\.\d+$/, '');
 const groups = new Map(); // `${tier}|${mat}` -> { pos:[], uv:[], nor:[] }
 let kept = 0;
@@ -245,9 +257,10 @@ root.traverse((o) => {
       const cz = Math.floor(((P2[vi(0) * 3 + 2] + P2[vi(1) * 3 + 2] + P2[vi(2) * 3 + 2]) / 3 - O[2]) * K / 40);
       const key = `${tier}|${mat}|${cx}|${cz}`;
       const G = groups.get(key) ?? groups.set(key, { tier, mat, pos: [], nor: [], uv: [] }).get(key);
+      const up = lifted(o.name, P2, vi(0), vi(1), vi(2)) ? LIFT : 0;
       for (let k = 0; k < 3; k++) {
         const v = vi(k);
-        G.pos.push((P2[v * 3] - O[0]) * K, (P2[v * 3 + 1] - O[1]) * K, (P2[v * 3 + 2] - O[2]) * K);
+        G.pos.push((P2[v * 3] - O[0]) * K, (P2[v * 3 + 1] + up - O[1]) * K, (P2[v * 3 + 2] - O[2]) * K);
         G.nor.push(N[v * 3], N[v * 3 + 1], N[v * 3 + 2]);
         G.uv.push(U ? U[v * 2] : 0, U ? U[v * 2 + 1] : 0);
       }
