@@ -17,7 +17,12 @@ export type GpItemId =
   | 'nitro'
   | 'nitro3'
   | 'star'
-  | 'bolt';
+  | 'bolt'
+  | 'shield'
+  | 'ice'
+  | 'shock'
+  | 'mud'
+  | 'swap';
 
 export interface GpItemInfo {
   id: GpItemId;
@@ -66,6 +71,36 @@ export const GP_ITEMS: GpItemInfo[] = [
     tone: 0xffd23a,
   },
   { id: 'bolt', name: 'Cometa azul', blurb: 'Vai atrás de quem lidera a corrida.', tone: 0x4fb3ff },
+  {
+    id: 'shield',
+    name: 'Escudo bolha',
+    blurb: 'Barra o próximo golpe. Estoura sozinho em 8 s.',
+    tone: 0x5fe3ff,
+  },
+  {
+    id: 'ice',
+    name: 'Raio de gelo',
+    blurb: 'Acerta o da frente: o kart dele escorrega.',
+    tone: 0x9fe8ff,
+  },
+  {
+    id: 'shock',
+    name: 'Onda de choque',
+    blurb: 'Empurra para longe quem está por perto.',
+    tone: 0xffe14a,
+  },
+  {
+    id: 'mud',
+    name: 'Tinta',
+    blurb: 'Suja a tela de quem estiver na frente.',
+    tone: 0xb06a2a,
+  },
+  {
+    id: 'swap',
+    name: 'Troca de lugar',
+    blurb: 'Troca de posição com o kart da frente.',
+    tone: 0xd86bff,
+  },
 ];
 
 const std = (color: number, o: Partial<THREE.MeshStandardMaterialParameters> = {}) =>
@@ -442,6 +477,151 @@ function buildBolt(): THREE.Group {
   return g;
 }
 
+function buildShield(): THREE.Group {
+  const g = new THREE.Group();
+  const bubble = mesh(
+    new THREE.SphereGeometry(0.5, 28, 20),
+    new THREE.MeshPhysicalMaterial({
+      color: 0x7fefff,
+      emissive: 0x2fb8d8,
+      emissiveIntensity: 0.35,
+      transparent: true,
+      opacity: 0.42,
+      roughness: 0.05,
+      clearcoat: 1,
+    }),
+    0,
+    0.55,
+    0,
+  );
+  bubble.castShadow = false;
+  g.add(bubble);
+  g.add(mesh(new THREE.TorusGeometry(0.5, 0.025, 8, 40), glow(0xe8ffff, 1.2), 0, 0.55, 0));
+  const inner = mesh(new THREE.OctahedronGeometry(0.2), glow(0xffffff, 1.4), 0, 0.55, 0);
+  inner.name = 'spin';
+  g.add(inner);
+  g.add(shadow(0.45));
+  g.add(halo(0x5fe3ff, 1.9, 0.55));
+  return g;
+}
+
+function buildIce(): THREE.Group {
+  const g = new THREE.Group();
+  const ice = std(0x9fe8ff, {
+    emissive: 0x3aa8e0,
+    emissiveIntensity: 0.5,
+    roughness: 0.12,
+    metalness: 0.2,
+  });
+  const core = mesh(new THREE.OctahedronGeometry(0.34), ice, 0, 0.5, 0);
+  core.scale.set(0.8, 1.3, 0.8);
+  g.add(core);
+  for (const [a, h] of [
+    [0.0, 0.3],
+    [1.6, 0.24],
+    [3.1, 0.3],
+    [4.6, 0.22],
+  ] as const) {
+    const sp = mesh(
+      new THREE.ConeGeometry(0.1, h + 0.2, 8),
+      ice,
+      Math.cos(a) * 0.32,
+      0.38,
+      Math.sin(a) * 0.32,
+    );
+    sp.rotation.z = -Math.cos(a) * 0.9;
+    sp.rotation.x = Math.sin(a) * 0.9;
+    g.add(sp);
+  }
+  g.add(mesh(new THREE.SphereGeometry(0.08, 8, 6), glow(0xffffff, 1.4), 0, 0.62, 0.1));
+  g.add(shadow(0.4));
+  g.add(halo(0x7fe0ff, 2, 0.5));
+  return g;
+}
+
+function buildShock(): THREE.Group {
+  const g = new THREE.Group();
+  const y = std(0xffe14a, { emissive: 0xffa800, emissiveIntensity: 0.7, roughness: 0.25 });
+  g.add(mesh(new THREE.SphereGeometry(0.28, 20, 14), y, 0, 0.5, 0));
+  for (const [r, w] of [
+    [0.5, 0.045],
+    [0.7, 0.03],
+  ] as const) {
+    const ring = mesh(new THREE.TorusGeometry(r, w, 8, 44), glow(0xfff3a8, 1.1), 0, 0.5, 0);
+    ring.rotation.x = Math.PI / 2;
+    ring.name = 'ring';
+    g.add(ring);
+  }
+  // raio no centro
+  const bolt = new THREE.Shape();
+  bolt.moveTo(0.06, 0.2);
+  bolt.lineTo(-0.1, -0.02);
+  bolt.lineTo(0, -0.02);
+  bolt.lineTo(-0.06, -0.22);
+  bolt.lineTo(0.12, 0.02);
+  bolt.lineTo(0.02, 0.02);
+  bolt.closePath();
+  const b = mesh(
+    new THREE.ExtrudeGeometry(bolt, { depth: 0.08, bevelEnabled: false }),
+    std(0x141a2b),
+    0,
+    0.5,
+    -0.04,
+  );
+  g.add(b);
+  g.add(shadow(0.5));
+  g.add(halo(0xffd23a, 2.1, 0.5));
+  return g;
+}
+
+function buildMud(): THREE.Group {
+  const g = new THREE.Group();
+  const m = std(0x6b3e1c, {
+    roughness: 0.35,
+    metalness: 0.05,
+    emissive: 0x2a1408,
+    emissiveIntensity: 0.4,
+  });
+  const blob = mesh(new THREE.SphereGeometry(0.4, 22, 16), m, 0, 0.46, 0);
+  blob.scale.set(1, 0.85, 1);
+  g.add(blob);
+  for (const [x, y, z, r] of [
+    [0.3, 0.7, 0.1, 0.16],
+    [-0.28, 0.62, 0.18, 0.13],
+    [0.05, 0.84, -0.12, 0.12],
+    [-0.1, 0.3, -0.3, 0.14],
+  ] as const)
+    g.add(mesh(new THREE.SphereGeometry(r, 12, 10), m, x, y, z));
+  g.add(mesh(new THREE.SphereGeometry(0.07, 8, 6), glow(0xd9a066, 0.6), -0.15, 0.68, 0.3));
+  g.add(shadow(0.45));
+  g.add(halo(0xb06a2a, 1.6, 0.5));
+  return g;
+}
+
+function buildSwap(): THREE.Group {
+  const g = new THREE.Group();
+  const pur = std(0xd86bff, {
+    emissive: 0x9a2ad0,
+    emissiveIntensity: 0.6,
+    roughness: 0.25,
+    metalness: 0.2,
+  });
+  for (const s of [1, -1]) {
+    const arrow = new THREE.Group();
+    arrow.add(mesh(new THREE.BoxGeometry(0.5, 0.12, 0.12), pur, 0, 0, 0));
+    const head = mesh(new THREE.ConeGeometry(0.17, 0.3, 14), pur, 0.36, 0, 0);
+    head.rotation.z = -Math.PI / 2;
+    arrow.add(head);
+    arrow.position.set(0, 0.5 + s * 0.17, 0);
+    arrow.rotation.y = s > 0 ? 0 : Math.PI;
+    g.add(arrow);
+  }
+  g.add(mesh(new THREE.SphereGeometry(0.1, 10, 8), glow(0xffffff, 1.2), 0, 0.5, 0));
+  g.add(shadow(0.45));
+  g.add(halo(0xd86bff, 1.9, 0.5));
+  return g;
+}
+
 const BUILDERS: Record<string, () => THREE.Group> = {
   box: buildBox,
   peel: buildPeel,
@@ -451,6 +631,11 @@ const BUILDERS: Record<string, () => THREE.Group> = {
   nitro: buildNitro,
   star: buildStar,
   bolt: buildBolt,
+  shield: buildShield,
+  ice: buildIce,
+  shock: buildShock,
+  mud: buildMud,
+  swap: buildSwap,
 };
 
 /** Três cópias girando em volta do kart (o item "triplo"). */
@@ -481,6 +666,8 @@ export function animateItem(g: THREE.Group, id: GpItemId, t: number) {
   g.position.y = Math.sin(t * 2) * 0.05;
   const ring = g.getObjectByName('ring');
   if (ring) ring.rotation.y = t * 1.6;
+  const spin = g.getObjectByName('spin');
+  if (spin) spin.rotation.y = t * 3;
   const spark = g.getObjectByName('spark');
   if (spark) spark.scale.setScalar(0.8 + Math.abs(Math.sin(t * 14)) * 0.6);
 }

@@ -7,7 +7,19 @@ import type { GpCar, GpWorld } from './world';
  * escolha do item pela posição. Tudo puro e determinístico (mesma seed, mesma corrida); em sala, só o servidor roda.
  * As ideias vêm de jogos de kart em geral; nomes, regras e números são nossos.
  */
-export type GpItemKind = 'peel' | 'ball' | 'seeker' | 'bomb' | 'nitro' | 'star' | 'bolt';
+export type GpItemKind =
+  | 'peel'
+  | 'ball'
+  | 'seeker'
+  | 'bomb'
+  | 'nitro'
+  | 'star'
+  | 'bolt'
+  | 'shield'
+  | 'ice'
+  | 'shock'
+  | 'mud'
+  | 'swap';
 export type GpItemId =
   | 'peel'
   | 'peel3'
@@ -19,7 +31,12 @@ export type GpItemId =
   | 'nitro'
   | 'nitro3'
   | 'star'
-  | 'bolt';
+  | 'bolt'
+  | 'shield'
+  | 'ice'
+  | 'shock'
+  | 'mud'
+  | 'swap';
 
 export const gpItemKind = (id: GpItemId): GpItemKind => id.replace('3', '') as GpItemKind;
 export const gpItemCount = (id: GpItemId) => (id.endsWith('3') ? 3 : 1);
@@ -49,9 +66,20 @@ export const GP_STAR_SEC = 8;
 export const GP_NITRO_SEC = 1.5;
 /** Espera entre dois usos (s), para o triplo não sair de uma vez. */
 export const GP_USE_GAP = 0.45;
+/** Escudo bolha: dura isto (s) e estoura sozinho; também estoura ao barrar um golpe. */
+export const GP_SHIELD_SEC = 8;
+/** Raio de gelo: quanto o kart fica escorregadio (s). */
+export const GP_SLICK_SEC = 3.2;
+/** Tinta/lama: quanto a tela fica suja (s). */
+export const GP_MUD_SEC = 4.5;
+/** Onda de choque: alcance (m) e o empurrão de lado (m/s). */
+export const GP_SHOCK_RADIUS = 24;
+export const GP_SHOCK_PUSH = 20;
 
 export const GP_BALL_SPEED = GP_ARC_VMAX * 1.5;
 export const GP_SEEKER_SPEED = GP_ARC_VMAX * 1.3;
+export const GP_ICE_SPEED = GP_ARC_VMAX * 1.6;
+export const GP_MUD_SPEED = GP_ARC_VMAX * 1.5;
 export const GP_BOLT_SPEED = GP_ARC_VMAX * 2.8;
 /** Quanto o cometa azul acelera por metro de distância até o líder (alcança de qualquer lugar da pista). */
 const GP_BOLT_CATCHUP = 0.5;
@@ -72,6 +100,8 @@ const WEIGHTS: Record<0 | 1 | 2, readonly (readonly [GpItemId, number])[]> = {
     ['peel', 4],
     ['ball', 4],
     ['nitro', 2],
+    ['shield', 2],
+    ['mud', 2],
   ],
   1: [
     ['ball', 2],
@@ -80,6 +110,11 @@ const WEIGHTS: Record<0 | 1 | 2, readonly (readonly [GpItemId, number])[]> = {
     ['peel3', 2],
     ['nitro', 2],
     ['ball3', 1],
+    ['shield', 3],
+    ['ice', 3],
+    ['shock', 2],
+    ['mud', 2],
+    ['swap', 1],
   ],
   2: [
     ['seeker3', 3],
@@ -88,6 +123,10 @@ const WEIGHTS: Record<0 | 1 | 2, readonly (readonly [GpItemId, number])[]> = {
     ['star', 3],
     ['bolt', 1],
     ['bomb', 1],
+    ['shield', 3],
+    ['ice', 3],
+    ['shock', 3],
+    ['swap', 3],
   ],
 };
 
@@ -131,9 +170,25 @@ export interface GpCarItem {
   stun: number;
   safe: number;
   star: number;
+  /** Escudo bolha (s), escorregadio pelo gelo (s) e tela suja de tinta (s). */
+  shield: number;
+  slick: number;
+  mud: number;
 }
 
-export type GpShotKind = 'ball' | 'seeker' | 'bolt';
+const newCarItem = (): GpCarItem => ({
+  id: null,
+  left: 0,
+  gap: 0,
+  stun: 0,
+  safe: 0,
+  star: 0,
+  shield: 0,
+  slick: 0,
+  mud: 0,
+});
+
+export type GpShotKind = 'ball' | 'seeker' | 'bolt' | 'ice' | 'mud';
 export interface GpShot {
   uid: number;
   kind: GpShotKind;
@@ -168,7 +223,10 @@ export type GpItemEvent =
   | { type: 'use'; id: string; item: GpItemId }
   | { type: 'hit'; id: string; by: string; kind: GpItemKind }
   | { type: 'blocked'; id: string; kind: GpItemKind }
-  | { type: 'boom'; x: number; z: number };
+  | { type: 'boom'; x: number; z: number }
+  | { type: 'shock'; x: number; z: number }
+  | { type: 'pop'; id: string }
+  | { type: 'swap'; id: string; with: string };
 
 /** Fileiras de caixas ao longo da pista, longe da largada. */
 export function gpItemBoxes(world: GpWorld): GpItemBox[] {
@@ -210,14 +268,13 @@ export class GpItemSystem implements GpItemsReadable {
   ) {
     this.rng = createRng(`${seed}:items`);
     this.boxes = gpItemBoxes(world);
-    for (const c of world.cars)
-      this.cars.set(c.id, { id: null, left: 0, gap: 0, stun: 0, safe: 0, star: 0 });
+    for (const c of world.cars) this.cars.set(c.id, newCarItem());
   }
 
   state(id: string): GpCarItem {
     let s = this.cars.get(id);
     if (!s) {
-      s = { id: null, left: 0, gap: 0, stun: 0, safe: 0, star: 0 };
+      s = newCarItem();
       this.cars.set(id, s);
     }
     return s;
@@ -257,6 +314,13 @@ export class GpItemSystem implements GpItemsReadable {
       s.stun = Math.max(0, s.stun - dt);
       s.safe = Math.max(0, s.safe - dt);
       s.star = Math.max(0, s.star - dt);
+      s.slick = Math.max(0, s.slick - dt);
+      s.mud = Math.max(0, s.mud - dt);
+      if (s.shield > 0) {
+        s.shield = Math.max(0, s.shield - dt);
+        // o escudo estoura com o tempo
+        if (s.shield === 0) this.events.push({ type: 'pop', id: c.id });
+      }
     }
     for (const b of this.boxes) b.cd = Math.max(0, b.cd - dt);
 
@@ -303,6 +367,13 @@ export class GpItemSystem implements GpItemsReadable {
       }
       if (c.speed > GP_ARC_VMAX * 0.3) this.scaleSpeed(c, 0.94);
     }
+    // gelo: o kart escorrega de lado e perde um pouco de velocidade
+    for (const c of w.cars) {
+      const s = this.state(c.id);
+      if (s.slick <= 0 || !this.active(c)) continue;
+      c.h += Math.sin(w.t * 5.5 + c.slot) * 0.9 * dt;
+      if (c.speed > GP_ARC_VMAX * 0.7) this.scaleSpeed(c, 0.992);
+    }
   }
 
   private scaleSpeed(c: GpCar, k: number) {
@@ -314,6 +385,8 @@ export class GpItemSystem implements GpItemsReadable {
   private useItem(c: GpCar, s: GpCarItem) {
     const item = s.id!;
     const kind = gpItemKind(item);
+    // a troca de lugar precisa de alguém na frente: sem ninguém, o item fica guardado
+    if (kind === 'swap' && !this.nextAhead(c)) return;
     s.left -= 1;
     s.gap = GP_USE_GAP;
     if (s.left <= 0) s.id = null;
@@ -387,6 +460,67 @@ export class GpItemSystem implements GpItemsReadable {
         });
         break;
       }
+      case 'ice':
+      case 'mud':
+        this.shots.push({
+          uid: ++this.uid,
+          kind,
+          owner: c.id,
+          x: c.x + fx * 4,
+          z: c.z + fz * 4,
+          h: c.h,
+          prog: c.prog + 4,
+          d: c.d,
+          target: this.nextAhead(c),
+          ttl: GP_SHOT_TTL,
+          bounces: 0,
+          vd: 0,
+        });
+        break;
+      case 'shield':
+        this.state(c.id).shield = GP_SHIELD_SEC;
+        break;
+      case 'shock': {
+        this.events.push({ type: 'shock', x: c.x, z: c.z });
+        for (const o of this.world.cars) {
+          if (o.id === c.id || !this.active(o)) continue;
+          const dx = o.x - c.x;
+          const dz = o.z - c.z;
+          const dd = Math.hypot(dx, dz);
+          if (dd > GP_SHOCK_RADIUS) continue;
+          if (this.blockedByShield(o, 'shock')) continue;
+          const k = (1 - dd / GP_SHOCK_RADIUS) * 0.7 + 0.3;
+          const nx = dd > 0.01 ? dx / dd : 1;
+          const nz = dd > 0.01 ? dz / dd : 0;
+          o.kx += nx * GP_SHOCK_PUSH * k;
+          o.kz += nz * GP_SHOCK_PUSH * k;
+          o.vx += nx * GP_SHOCK_PUSH * k;
+          o.vz += nz * GP_SHOCK_PUSH * k;
+          this.scaleSpeed(o, 0.75);
+          o.boostT = 0;
+          this.events.push({ type: 'hit', id: o.id, by: c.id, kind: 'shock' });
+        }
+        break;
+      }
+      case 'swap': {
+        const o = this.world.car(this.nextAhead(c)!)!;
+        if (this.blockedByShield(o, 'swap')) break;
+        for (const k of ['x', 'z', 'h', 'idx', 's', 'd', 'prog'] as const) {
+          const t = c[k];
+          c[k] = o[k];
+          o[k] = t;
+        }
+        for (const q of [c, o]) {
+          q.vx = Math.sin(q.h) * q.speed;
+          q.vz = -Math.cos(q.h) * q.speed;
+          q.kx = q.kz = q.spin = 0;
+          q.lastValid = { x: q.x, z: q.z, h: q.h, prog: q.prog, idx: q.idx };
+        }
+        this.state(o.id).safe = Math.max(this.state(o.id).safe, 0.6);
+        this.state(c.id).safe = Math.max(this.state(c.id).safe, 0.6);
+        this.events.push({ type: 'swap', id: c.id, with: o.id });
+        break;
+      }
       case 'nitro':
         c.boostLevel = Math.max(c.boostLevel, 2);
         c.boostT = Math.max(c.boostT, GP_NITRO_SEC);
@@ -418,8 +552,30 @@ export class GpItemSystem implements GpItemsReadable {
   }
 
   /** Acerta um carro (some se estiver imune ou de Superfox). Devolve se pegou. */
+  /** O escudo bolha barra o golpe (e estoura). */
+  private blockedByShield(c: GpCar, kind: GpItemKind): boolean {
+    const s = this.state(c.id);
+    if (s.shield <= 0) return false;
+    s.shield = 0;
+    s.safe = Math.max(s.safe, 0.5);
+    this.events.push({ type: 'blocked', id: c.id, kind });
+    this.events.push({ type: 'pop', id: c.id });
+    return true;
+  }
+
   hit(c: GpCar, by: string, kind: GpItemKind): boolean {
     const s = this.state(c.id);
+    if (kind === 'ice' || kind === 'mud') {
+      if (s.star > 0 || this.blockedByShield(c, kind)) {
+        if (s.star > 0) this.events.push({ type: 'blocked', id: c.id, kind });
+        return false;
+      }
+      if (kind === 'ice') s.slick = GP_SLICK_SEC;
+      else s.mud = GP_MUD_SEC;
+      this.events.push({ type: 'hit', id: c.id, by, kind });
+      return true;
+    }
+    if (this.blockedByShield(c, kind)) return false;
     if (s.star > 0 || s.safe > 0) {
       this.events.push({ type: 'blocked', id: c.id, kind });
       return false;
@@ -492,7 +648,14 @@ export class GpItemSystem implements GpItemsReadable {
       } else {
         // perseguidores seguem o traçado da pista e vão para o afastamento do alvo
         const target = sh.target ? this.world.car(sh.target) : undefined;
-        const speed = sh.kind === 'bolt' ? GP_BOLT_SPEED : GP_SEEKER_SPEED;
+        const speed =
+          sh.kind === 'bolt'
+            ? GP_BOLT_SPEED
+            : sh.kind === 'ice'
+              ? GP_ICE_SPEED
+              : sh.kind === 'mud'
+                ? GP_MUD_SPEED
+                : GP_SEEKER_SPEED;
         // o cometa azul acelera quanto mais longe estiver do líder, para sempre alcançá-lo
         const extra =
           sh.kind === 'bolt' && target ? Math.max(0, target.prog - sh.prog) * GP_BOLT_CATCHUP : 0;
@@ -554,6 +717,20 @@ export function gpBotUseItem(world: GpWorld, c: GpCar, item: GpItemId, held: num
   switch (kind) {
     case 'bolt':
       return true;
+    case 'ice':
+    case 'mud':
+      return ahead < 120;
+    case 'swap':
+      return ahead < 90 && ahead > 6;
+    case 'shield':
+      return behind < 35 || held > 4;
+    case 'shock': {
+      for (const o of world.cars) {
+        if (o.id === c.id || o.gone || o.ghost || o.finished) continue;
+        if (Math.hypot(o.x - c.x, o.z - c.z) < GP_SHOCK_RADIUS * 0.7) return true;
+      }
+      return false;
+    }
     case 'ball':
       return ahead < 70 && Math.abs(aheadD) < 5;
     case 'seeker':
@@ -569,7 +746,20 @@ export function gpBotUseItem(world: GpWorld, c: GpCar, item: GpItemId, held: num
 }
 
 // ---- rede (spec 085, etapa online) ----
-const KIND_IDS: readonly GpItemKind[] = ['peel', 'ball', 'seeker', 'bomb', 'nitro', 'star', 'bolt'];
+const KIND_IDS: readonly GpItemKind[] = [
+  'peel',
+  'ball',
+  'seeker',
+  'bomb',
+  'nitro',
+  'star',
+  'bolt',
+  'shield',
+  'ice',
+  'shock',
+  'mud',
+  'swap',
+];
 const ITEM_IDS: readonly GpItemId[] = [
   'peel',
   'peel3',
@@ -582,8 +772,13 @@ const ITEM_IDS: readonly GpItemId[] = [
   'nitro3',
   'star',
   'bolt',
+  'shield',
+  'ice',
+  'shock',
+  'mud',
+  'swap',
 ];
-const EVENT_TYPES = ['pickup', 'use', 'hit', 'blocked', 'boom'] as const;
+const EVENT_TYPES = ['pickup', 'use', 'hit', 'blocked', 'boom', 'shock', 'pop', 'swap'] as const;
 
 /** O que cada aparelho precisa para desenhar os itens (o líder manda isto junto do estado). */
 export interface GpItemsSnap {
@@ -593,8 +788,8 @@ export interface GpItemsSnap {
   s: [number, number, number, number, number][];
   /** Armadilhas: [uid, 0 casca / 1 bomba, x, z, pavio]. */
   t: [number, number, number, number, number][];
-  /** Ccada carro: [vaga, item (-1 nenhum), quantos faltam, Superfox (0/1), tropeçando (0/1)]. */
-  c: [number, number, number, number, number][];
+  /** Cada carro: [vaga, item (-1 nenhum), quantos faltam, Superfox (0/1), tropeçando (0/1), escudo (0/1), gelo (0/1), tinta (0/1)]. */
+  c: number[][];
   /** Eventos novos: [tipo, vaga de quem, tipo do item ou x, z]. Sem garantia de entrega (só som e aviso). */
   e: number[][];
 }
@@ -617,6 +812,9 @@ export function gpItemsSnap(sys: GpItemSystem, world: GpWorld, events: number[][
           st.left,
           st.star > 0 ? 1 : 0,
           st.stun > 0 ? 1 : 0,
+          st.shield > 0 ? 1 : 0,
+          st.slick > 0 ? 1 : 0,
+          st.mud > 0 ? 1 : 0,
         ];
       }),
     e: events,
@@ -626,7 +824,16 @@ export function gpItemsSnap(sys: GpItemSystem, world: GpWorld, events: number[][
 /** Um evento do sistema em linha para a rede. */
 export function gpItemEventRow(e: GpItemEvent, world: GpWorld): number[] | null {
   const t = EVENT_TYPES.indexOf(e.type);
-  if (e.type === 'boom') return [t, 0, q(e.x), q(e.z)];
+  if (e.type === 'boom' || e.type === 'shock') return [t, 0, q(e.x), q(e.z)];
+  if (e.type === 'swap') {
+    const a = world.car(e.id);
+    const b = world.car(e.with);
+    return a && b ? [t, a.slot, b.slot, 0] : null;
+  }
+  if (e.type === 'pop') {
+    const a = world.car(e.id);
+    return a ? [t, a.slot, 0, 0] : null;
+  }
   const car = world.car(e.id);
   if (!car) return null;
   const what =
@@ -652,7 +859,7 @@ export class GpItemView implements GpItemsReadable {
   state(id: string): GpCarItem {
     let s = this.cars.get(id);
     if (!s) {
-      s = { id: null, left: 0, gap: 0, stun: 0, safe: 0, star: 0 };
+      s = newCarItem();
       this.cars.set(id, s);
     }
     return s;
@@ -677,7 +884,14 @@ export class GpItemView implements GpItemsReadable {
     this.boxes.forEach((b, i) => (b.cd = wait.has(i) ? GP_BOX_RESPAWN : 0));
     this.shots = n.s.flatMap(([uid, k, x, z, h]) => {
       const kind = KIND_IDS[k!];
-      if (kind !== 'ball' && kind !== 'seeker' && kind !== 'bolt') return [];
+      if (
+        kind !== 'ball' &&
+        kind !== 'seeker' &&
+        kind !== 'bolt' &&
+        kind !== 'ice' &&
+        kind !== 'mud'
+      )
+        return [];
       return [
         {
           uid: uid!,
@@ -705,7 +919,7 @@ export class GpItemView implements GpItemsReadable {
       fuse: fuse!,
       arm: 0,
     }));
-    for (const [slot, item, left, star, stun] of n.c) {
+    for (const [slot, item, left, star, stun, shield, slick, mud] of n.c) {
       const car = this.world.cars.find((c) => c.slot === slot);
       if (!car) continue;
       const st = this.state(car.id);
@@ -713,17 +927,29 @@ export class GpItemView implements GpItemsReadable {
       st.left = left!;
       st.star = star! ? 1 : 0;
       st.stun = stun! ? 1 : 0;
+      st.shield = shield ? 1 : 0;
+      st.slick = slick ? 1 : 0;
+      st.mud = mud ? 1 : 0;
     }
     for (const row of n.e ?? []) {
       const [t, slot, what, z] = row;
       const type = EVENT_TYPES[t!];
       if (!type) continue;
-      if (type === 'boom') {
-        this.events.push({ type: 'boom', x: what!, z: z! });
+      if (type === 'boom' || type === 'shock') {
+        this.events.push({ type, x: what!, z: z! });
         continue;
       }
       const car = this.world.cars.find((c) => c.slot === slot);
       if (!car) continue;
+      if (type === 'pop') {
+        this.events.push({ type: 'pop', id: car.id });
+        continue;
+      }
+      if (type === 'swap') {
+        const other = this.world.cars.find((c) => c.slot === what);
+        if (other) this.events.push({ type: 'swap', id: car.id, with: other.id });
+        continue;
+      }
       if (type === 'pickup' || type === 'use') {
         const item = ITEM_IDS[what!];
         if (item) this.events.push({ type, id: car.id, item });

@@ -475,6 +475,8 @@ export function GpPlay({
     star: number;
     stun: number;
   } | null>(null);
+  const [mudHud, setMudHud] = useState(false);
+  const [shieldHud, setShieldHud] = useState(false);
   const [itemToast, setItemToast] = useState<{ id: string; n: number } | null>(null);
   const useItemRef = useRef<() => void>(() => undefined);
   const laps = gpLapsOr(online?.laps ?? lapsProp);
@@ -610,6 +612,8 @@ export function GpPlay({
     const itemsRead: GpItemsReadable | null = itemSys ?? itemView;
     let itemQ = false;
     let itemKey = '';
+    let mudRef = false;
+    let shieldRef = false;
     useItemRef.current = () => {
       itemQ = true;
     };
@@ -633,7 +637,12 @@ export function GpPlay({
         } else if (e.type === 'blocked' && e.id === meId) gpSfx.itemBlocked();
         else if (e.type === 'pickup' && e.id === meId) gpSfx.itemPickup();
         else if (e.type === 'use' && e.id === meId) gpSfx.itemUse(gpItemKind(e.item));
-        else if (e.type === 'boom') {
+        else if (e.type === 'pop' && e.id === meId) gpSfx.itemPop();
+        else if (e.type === 'shock') {
+          const me1 = world.car(meId);
+          const d1 = me1 ? Math.hypot(me1.x - e.x, me1.z - e.z) : 99;
+          gpSfx.itemBoom(1 - Math.min(1, d1 / 40));
+        } else if (e.type === 'boom') {
           const me0 = world.car(meId);
           const d = me0 ? Math.hypot(me0.x - e.x, me0.z - e.z) : 99;
           gpSfx.itemBoom(1 - Math.min(1, d / 80));
@@ -1194,6 +1203,16 @@ export function GpPlay({
         if (itemsRead) {
           const st = itemsRead.state(meId);
           const k = `${st.id ?? ''}|${st.left}|${st.star > 0 ? 1 : 0}|${st.stun > 0 ? 1 : 0}`;
+          const mud = st.mud > 0;
+          if (mud !== mudRef) {
+            mudRef = mud;
+            setMudHud(mud);
+          }
+          const sh = st.shield > 0;
+          if (sh !== shieldRef) {
+            shieldRef = sh;
+            setShieldHud(sh);
+          }
           if (k !== itemKey) {
             itemKey = k;
             setItemHud(st.id ? { id: st.id, left: st.left, star: st.star, stun: st.stun } : null);
@@ -1861,6 +1880,21 @@ export function GpPlay({
                 {itemHud ? 'para usar' : 'passe numa caixa'}
               </span>
             </button>
+          )}
+          {driving && powers && mudHud && (
+            <div className="gpx-mud" aria-hidden="true" data-testid="gp-mud">
+              <i />
+              <i />
+              <i />
+              <i />
+              <i />
+              <i />
+            </div>
+          )}
+          {driving && powers && shieldHud && (
+            <div className="gpx-shield-tag" aria-hidden="true">
+              Escudo ativo
+            </div>
           )}
           {driving && powers && itemToast && (
             <div

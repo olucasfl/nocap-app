@@ -362,3 +362,94 @@ describe('bots e itens (spec 085)', () => {
     expect(gpBotUseItem(w, a, 'nitro', 2)).toBe(true);
   });
 });
+
+describe('poderes novos: escudo, gelo, onda, tinta e troca', () => {
+  it('escudo bolha barra um golpe e estoura; também estoura com o tempo', () => {
+    const { w, sys } = race(2);
+    const [a, b] = w.cars as [GpCar, GpCar];
+    put(w, a, 400, 0, 25);
+    put(w, b, 380, 0, 25);
+    sys.give(a.id, 'shield');
+    run(w, sys, GP_DT, { p0: true });
+    expect(sys.state(a.id).shield).toBeGreaterThan(7);
+    expect(sys.hit(a, b.id, 'peel')).toBe(false);
+    expect(sys.state(a.id).shield).toBe(0);
+    expect(sys.state(a.id).stun).toBe(0);
+    // com o tempo
+    sys.give(b.id, 'shield');
+    run(w, sys, GP_DT, { p1: true });
+    sys.drainEvents();
+    run(w, sys, 8.5);
+    expect(sys.state(b.id).shield).toBe(0);
+    expect(sys.drainEvents().some((e) => e.type === 'pop' && e.id === b.id)).toBe(true);
+  });
+
+  it('raio de gelo acerta o da frente e o deixa escorregadio por uns segundos', () => {
+    const { w, sys } = race(2);
+    const [a, b] = w.cars as [GpCar, GpCar];
+    put(w, a, 300, 0, 0);
+    put(w, b, 400, 0, 0);
+    sys.give(a.id, 'ice');
+    run(w, sys, GP_DT, { p0: true });
+    run(w, sys, 4);
+    expect(sys.state(b.id).slick).toBeGreaterThan(0);
+    run(w, sys, 4);
+    expect(sys.state(b.id).slick).toBe(0);
+  });
+
+  it('tinta suja a tela de quem leva, e o escudo barra', () => {
+    const { w, sys } = race(2);
+    const [a, b] = w.cars as [GpCar, GpCar];
+    put(w, a, 300, 0, 0);
+    put(w, b, 400, 0, 0);
+    sys.give(a.id, 'mud');
+    run(w, sys, GP_DT, { p0: true });
+    run(w, sys, 4);
+    expect(sys.state(b.id).mud).toBeGreaterThan(0);
+    sys.state(b.id).mud = 0;
+    sys.state(b.id).shield = 5;
+    sys.give(a.id, 'mud');
+    run(w, sys, GP_DT, { p0: true });
+    run(w, sys, 4);
+    expect(sys.state(b.id).mud).toBe(0);
+    expect(sys.state(b.id).shield).toBe(0);
+  });
+
+  it('onda de choque empurra os karts por perto e deixa os longe quietos', () => {
+    const { w, sys } = race(3);
+    const [a, b, far] = w.cars as [GpCar, GpCar, GpCar];
+    put(w, a, 400, 0, 25);
+    put(w, b, 404, 3, 25);
+    put(w, far, 600, 0, 25);
+    const kx = b.kx;
+    sys.give(a.id, 'shock');
+    run(w, sys, GP_DT, { p0: true });
+    expect(Math.abs(b.kx) + Math.abs(b.kz)).toBeGreaterThan(Math.abs(kx) + 5);
+    expect(far.kx).toBe(0);
+    expect(far.kz).toBe(0);
+  });
+
+  it('troca de lugar leva você para onde o da frente estava (e ele para onde você estava)', () => {
+    const { w, sys } = race(2);
+    const [a, b] = w.cars as [GpCar, GpCar];
+    put(w, a, 300, 0, 20);
+    put(w, b, 360, 2, 20);
+    const pa = a.prog;
+    const pb = b.prog;
+    sys.give(a.id, 'swap');
+    run(w, sys, GP_DT, { p0: true });
+    expect(a.prog).toBeCloseTo(pb, 0);
+    expect(b.prog).toBeCloseTo(pa, 0);
+    expect(sys.state(a.id).id).toBeNull();
+  });
+
+  it('troca de lugar sem ninguém na frente não gasta o item', () => {
+    const { w, sys } = race(2);
+    const [a, b] = w.cars as [GpCar, GpCar];
+    put(w, a, 500, 0, 20);
+    put(w, b, 300, 0, 20);
+    sys.give(a.id, 'swap');
+    run(w, sys, GP_DT, { p0: true });
+    expect(sys.state(a.id).id).toBe('swap');
+  });
+});

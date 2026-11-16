@@ -1,7 +1,19 @@
 import type { ReactElement } from 'react';
 
 /** Símbolos dos poderes do Arcade (spec 085): um SVG por tipo, com a cor do próprio poder. */
-export type GpIconKind = 'peel' | 'ball' | 'seeker' | 'bomb' | 'nitro' | 'star' | 'bolt';
+export type GpIconKind =
+  | 'peel'
+  | 'ball'
+  | 'seeker'
+  | 'bomb'
+  | 'nitro'
+  | 'star'
+  | 'bolt'
+  | 'shield'
+  | 'ice'
+  | 'shock'
+  | 'mud'
+  | 'swap';
 
 const ART: Record<GpIconKind, ReactElement> = {
   peel: (
@@ -190,6 +202,155 @@ const ART: Record<GpIconKind, ReactElement> = {
         strokeLinejoin="round"
       />
       <circle cx="32" cy="32" r="8" fill="#fff" opacity=".85" />
+    </>
+  ),
+  shield: (
+    <>
+      <defs>
+        <radialGradient id="gi-shield" cx="0.35" cy="0.3" r="0.9">
+          <stop offset="0" stopColor="#e8ffff" />
+          <stop offset="0.55" stopColor="#5fe3ff" />
+          <stop offset="1" stopColor="#1a8ab8" />
+        </radialGradient>
+      </defs>
+      <circle
+        cx="32"
+        cy="32"
+        r="23"
+        fill="url(#gi-shield)"
+        fillOpacity=".55"
+        stroke="#141a2b"
+        strokeWidth="3"
+      />
+      <circle cx="32" cy="32" r="23" fill="none" stroke="#e8ffff" strokeWidth="2" opacity=".8" />
+      <path
+        d="M32 14l11 4v10c0 8-5 14-11 17-6-3-11-9-11-17V18z"
+        fill="#fff"
+        stroke="#141a2b"
+        strokeWidth="2.5"
+        strokeLinejoin="round"
+      />
+      <path d="M32 20v20M25 27h14" stroke="#1a8ab8" strokeWidth="3" strokeLinecap="round" />
+      <ellipse
+        cx="22"
+        cy="20"
+        rx="5"
+        ry="3"
+        fill="#fff"
+        opacity=".7"
+        transform="rotate(-35 22 20)"
+      />
+    </>
+  ),
+  ice: (
+    <>
+      <defs>
+        <linearGradient id="gi-ice" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#e8ffff" />
+          <stop offset="1" stopColor="#3aa8e0" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M32 4l9 16 15 4-11 11 3 17-16-9-16 9 3-17L8 24l15-4z"
+        fill="url(#gi-ice)"
+        stroke="#141a2b"
+        strokeWidth="3"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M32 14v36M16 24l32 16M48 24L16 40"
+        stroke="#fff"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        opacity=".85"
+      />
+      <path
+        d="M6 54l8-4M58 54l-8-4M32 62v-6"
+        stroke="#9fe8ff"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+    </>
+  ),
+  shock: (
+    <>
+      <defs>
+        <radialGradient id="gi-shock" cx="0.4" cy="0.35" r="0.8">
+          <stop offset="0" stopColor="#fffbd0" />
+          <stop offset="1" stopColor="#ffa800" />
+        </radialGradient>
+      </defs>
+      <circle
+        cx="32"
+        cy="32"
+        r="26"
+        fill="none"
+        stroke="#ffe14a"
+        strokeWidth="3"
+        strokeDasharray="6 5"
+      />
+      <circle cx="32" cy="32" r="18" fill="url(#gi-shock)" stroke="#141a2b" strokeWidth="3" />
+      <path
+        d="M36 14L24 34h8l-4 16 14-22h-9z"
+        fill="#141a2b"
+        stroke="#fff"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+    </>
+  ),
+  mud: (
+    <>
+      <defs>
+        <radialGradient id="gi-mud" cx="0.35" cy="0.3" r="0.9">
+          <stop offset="0" stopColor="#c98a50" />
+          <stop offset="0.6" stopColor="#6b3e1c" />
+          <stop offset="1" stopColor="#3a200c" />
+        </radialGradient>
+      </defs>
+      <path
+        d="M32 8c6 8 18 12 20 26 2 12-8 22-20 22S10 46 12 34C14 20 26 16 32 8z"
+        fill="url(#gi-mud)"
+        stroke="#141a2b"
+        strokeWidth="3"
+        strokeLinejoin="round"
+      />
+      <circle cx="46" cy="14" r="5" fill="#6b3e1c" stroke="#141a2b" strokeWidth="2.5" />
+      <circle cx="12" cy="18" r="4" fill="#6b3e1c" stroke="#141a2b" strokeWidth="2.5" />
+      <ellipse
+        cx="24"
+        cy="30"
+        rx="6"
+        ry="3.5"
+        fill="#fff"
+        opacity=".35"
+        transform="rotate(-30 24 30)"
+      />
+    </>
+  ),
+  swap: (
+    <>
+      <defs>
+        <linearGradient id="gi-swap" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#f0b0ff" />
+          <stop offset="1" stopColor="#9a2ad0" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M8 22h34V12l16 14-16 14V30H8z"
+        fill="url(#gi-swap)"
+        stroke="#141a2b"
+        strokeWidth="3"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M56 42H22V32L6 46l16 14V50h34z"
+        fill="#fff"
+        stroke="#141a2b"
+        strokeWidth="3"
+        strokeLinejoin="round"
+        opacity=".92"
+      />
     </>
   ),
 };

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { GpCar, GpItemEvent, GpItemsReadable } from '@nocap/games';
+import { GP_SHOCK_RADIUS, type GpCar, type GpItemEvent, type GpItemsReadable } from '@nocap/games';
 import { animateItem, buildItem, glowTexture, type GpItemId as GpModelId } from './item-models';
 
 /** O item é pequeno perto do kart (que mede 3,6 m de largura): em cena ele é ampliado para ler de longe. */
@@ -45,6 +45,7 @@ export class GpItemsLayer {
   private traps = new Map<number, Slot>();
   private orbits = new Map<string, { id: string; n: number; g: THREE.Group }>();
   private halos = new Map<string, THREE.Mesh>();
+  private bubbles = new Map<string, THREE.Mesh>();
   private t = 0;
   private sparks: Spark[] = [];
   private free: Spark[] = [];
@@ -160,6 +161,8 @@ export class GpItemsLayer {
     }
   }
 
+  private cars = new Map<string, GpCar>();
+
   /** Efeitos dos eventos dos itens: pegar, usar, acertar, bloquear e explodir (só visual; o som fica no GpPlay). */
   event(e: GpItemEvent, car: GpCar | undefined) {
     if (e.type === 'boom') {
@@ -171,12 +174,35 @@ export class GpItemsLayer {
       this.wave(e.x, e.z, 0x8a5cff, 10, 0.4);
       return;
     }
+    if (e.type === 'shock') {
+      this.wave(e.x, e.z, 0xffe14a, GP_SHOCK_RADIUS, 0.55, 0.4);
+      this.wave(e.x, e.z, 0xffffff, GP_SHOCK_RADIUS * 0.6, 0.4, 0.5);
+      this.burst(e.x, 1.2, e.z, [0xfff3a8, 0xffe14a, 0xffffff], 40, 22, 1.4, 0.6, 0.5);
+      return;
+    }
     if (!car) return;
     const x = car.x;
     const z = car.z;
     if (e.type === 'pickup') {
       this.burst(x, 1.8, z, [0xfff1d0, 0xff9a3d, 0xffd23a], 26, 9, 1.1, 0.8, 1.2);
       this.wave(x, z, 0xffa54a, 5, 0.5);
+    } else if (e.type === 'pop') {
+      this.burst(x, 1.6, z, [0xe8ffff, 0x5fe3ff, 0xffffff], 34, 11, 1.2, 0.6, 0.9);
+      this.wave(x, z, 0x5fe3ff, 6, 0.45, 0.9);
+    } else if (e.type === 'swap') {
+      const o = this.cars.get(e.with);
+      for (const c of [car, o]) {
+        if (!c) continue;
+        this.burst(c.x, 1.6, c.z, [0xf0b0ff, 0xd86bff, 0xffffff], 30, 12, 1.3, 0.7, 1);
+        this.wave(c.x, c.z, 0xd86bff, 6, 0.5, 0.5);
+      }
+    } else if (e.type === 'hit' && e.kind === 'ice') {
+      this.burst(x, 1.6, z, [0xe8ffff, 0x9fe8ff, 0x3aa8e0], 36, 12, 1.2, 0.8, 0.8);
+      this.wave(x, z, 0x9fe8ff, 6, 0.5, 0.4);
+    } else if (e.type === 'hit' && e.kind === 'mud') {
+      this.burst(x, 1.8, z, [0x6b3e1c, 0x8a5a2a, 0x3a200c], 30, 10, 1.6, 0.8, 1);
+    } else if (e.type === 'hit' && e.kind === 'shock') {
+      this.burst(x, 1.4, z, [0xfff3a8, 0xffe14a], 18, 10, 1.1, 0.5, 0.6);
     } else if (e.type === 'hit') {
       this.burst(x, 1.6, z, [0xfff6c8, 0xffd23a, 0xff7d26], 30, 14, 1.4, 0.7, 1);
       this.wave(x, z, 0xfff1d0, 6, 0.4);
@@ -271,6 +297,7 @@ export class GpItemsLayer {
     });
 
     this.stepFx(dt);
+    for (const c of cars) this.cars.set(c.id, c);
     const seen = new Set<number>();
     for (const sh of this.sys.shots) {
       seen.add(sh.uid);
@@ -296,7 +323,30 @@ export class GpItemsLayer {
         const r = () => (Math.random() - 0.5) * 0.9;
         if (sh.kind === 'ball')
           this.emit(bx + r() * 0.4, 0.9, bz + r() * 0.4, 0x35ff8a, 1.5, 0.45, [0, 0.6, 0], 0.1);
-        else if (sh.kind === 'seeker') {
+        else if (sh.kind === 'ice') {
+          this.emit(
+            bx + r() * 0.3,
+            1.1,
+            bz + r() * 0.3,
+            0x9fe8ff,
+            2.2,
+            0.55,
+            [r(), 0.5, r()],
+            0.15,
+          );
+          this.emit(
+            bx + r(),
+            1.2 + Math.random() * 0.6,
+            bz + r(),
+            0xffffff,
+            0.9,
+            0.5,
+            [r() * 2, 1, r() * 2],
+            0.1,
+          );
+        } else if (sh.kind === 'mud') {
+          this.emit(bx + r() * 0.4, 0.8, bz + r() * 0.4, 0x6b3e1c, 2, 0.5, [r(), 0.4, r()], 0.2, 4);
+        } else if (sh.kind === 'seeker') {
           this.emit(bx + r() * 0.3, 1.1, bz + r() * 0.3, 0xffb02e, 2.1, 0.5, [r(), 0.8, r()], 0.15);
           this.emit(bx + r() * 0.5, 1.3, bz + r() * 0.5, 0xe8343c, 2.6, 0.7, [r(), 1.2, r()], 0.3);
         } else {
@@ -426,6 +476,49 @@ export class GpItemsLayer {
           const a = (ch.userData.a as number) + t * 2.2;
           ch.position.set(Math.cos(a) * ORBIT_R, Math.sin(t * 3 + i) * 0.15, Math.sin(a) * ORBIT_R);
         });
+      }
+      // Escudo bolha: esfera brilhante em volta do kart (some ao estourar)
+      let bub = this.bubbles.get(c.id);
+      const hasShield = !!st && st.shield > 0 && !c.gone;
+      if (hasShield && !bub) {
+        bub = new THREE.Mesh(
+          new THREE.SphereGeometry(3, 28, 20),
+          new THREE.MeshPhysicalMaterial({
+            color: 0x7fefff,
+            emissive: 0x2fb8d8,
+            emissiveIntensity: 0.4,
+            transparent: true,
+            opacity: 0.28,
+            roughness: 0.05,
+            clearcoat: 1,
+            depthWrite: false,
+          }),
+        );
+        this.group.add(bub);
+        this.bubbles.set(c.id, bub);
+      }
+      if (bub) {
+        bub.visible = hasShield;
+        bub.position.set(p.x, 1.4, p.z);
+        // perto de acabar (últimos 2 s no líder): pisca; online só liga/desliga
+        bub.scale.setScalar(1 + Math.sin(t * 5) * 0.04);
+        const m = bub.material as THREE.MeshPhysicalMaterial;
+        m.opacity =
+          st && st.shield > 0 && st.shield < 2 ? 0.12 + 0.2 * Math.abs(Math.sin(t * 14)) : 0.28;
+      }
+      // gelo: cristais voando em volta do kart escorregadio
+      if (st && st.slick > 0 && !c.gone && Math.random() < 0.5) {
+        const a = Math.random() * Math.PI * 2;
+        this.emit(
+          p.x + Math.cos(a) * 2,
+          0.4 + Math.random() * 1.2,
+          p.z + Math.sin(a) * 2,
+          0xbfefff,
+          0.9,
+          0.6,
+          [0, 0.8, 0],
+          0.2,
+        );
       }
       // Superfox: aro dourado pulsando em volta do kart
       let halo = this.halos.get(c.id);

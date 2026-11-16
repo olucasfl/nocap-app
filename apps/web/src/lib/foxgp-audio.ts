@@ -130,7 +130,8 @@ class Engine {
     f.frequency.value = 2200;
     shaper.connect(f).connect(g).connect(out);
     // três camadas (o kart usa as duas primeiras mais o "zumbido" do LFO)
-    const types: OscillatorType[] = vehicle === 'kart' ? ['square', 'sawtooth', 'triangle'] : ['sawtooth', 'square', 'sawtooth'];
+    const types: OscillatorType[] =
+      vehicle === 'kart' ? ['square', 'sawtooth', 'triangle'] : ['sawtooth', 'square', 'sawtooth'];
     const oscs: OscillatorNode[] = [];
     const layers: GainNode[] = [];
     for (const ty of types) {
@@ -236,7 +237,8 @@ class Engine {
       n.skidG.gain.setTargetAtTime(on && d > 0 ? 0.05 * d : 0, t, 0.06);
     } else {
       // V6: três camadas pelo giro (potência igual), o médio e o agudo crescem em giro alto
-      const base = ((idle ? 4000 + throttle * 6000 : 5500 + 6500 * r) / 60) * 3 * (1 - this.dip * 0.18);
+      const base =
+        ((idle ? 4000 + throttle * 6000 : 5500 + 6500 * r) / 60) * 3 * (1 - this.dip * 0.18);
       n.oscs[0]!.frequency.setTargetAtTime(base * 0.5, t, 0.025);
       n.oscs[1]!.frequency.setTargetAtTime(base, t, 0.025);
       n.oscs[2]!.frequency.setTargetAtTime(base * 2, t, 0.025);
@@ -262,7 +264,15 @@ class Engine {
       this.dip = Math.max(0, this.dip - 0.12);
       // tirou o pé em giro alto: estouros de escapamento
       if (on && this.lastThr > 0.6 && throttle < 0.1 && this.lastRpm > 0.65)
-        for (let k = 0; k < 3; k++) noise(260 + Math.random() * 200, 120, 1.2, 0.05, 0.16, 0.04 + k * 0.07 + Math.random() * 0.03);
+        for (let k = 0; k < 3; k++)
+          noise(
+            260 + Math.random() * 200,
+            120,
+            1.2,
+            0.05,
+            0.16,
+            0.04 + k * 0.07 + Math.random() * 0.03,
+          );
       this.lastGear = gear;
     }
     // vento: sobe com a velocidade
@@ -294,7 +304,8 @@ class Engine {
     this.n = null;
     const t = n.ctx.currentTime;
     n.g.gain.setTargetAtTime(0.0001, t, 0.05);
-    for (const gg of [n.whineG.gain, n.windG.gain, n.skidG.gain, n.lfoG.gain]) gg.setTargetAtTime(0, t, 0.05);
+    for (const gg of [n.whineG.gain, n.windG.gain, n.skidG.gain, n.lfoG.gain])
+      gg.setTargetAtTime(0, t, 0.05);
     for (const o of [...n.oscs, n.whine, n.lfo]) o.stop(t + 0.3);
     n.wind.stop(t + 0.3);
     n.skid.stop(t + 0.3);
@@ -364,11 +375,27 @@ export const gpSfx = {
       noise(400, 2400, 0.8, 0.5, 0.3);
       tone('sawtooth', 160, 520, 0.45, 0.12);
     } else if (kind === 'star') {
-      for (let i = 0; i < 5; i++) tone('square', 660 * 1.25 ** i, 660 * 1.25 ** i, 0.07, 0.1, i * 0.06);
+      for (let i = 0; i < 5; i++)
+        tone('square', 660 * 1.25 ** i, 660 * 1.25 ** i, 0.07, 0.1, i * 0.06);
     } else if (kind === 'peel') {
       tone('triangle', 420, 180, 0.12, 0.2);
     } else if (kind === 'bomb') {
       tone('sine', 220, 90, 0.2, 0.25);
+    } else if (kind === 'shield') {
+      tone('sine', 520, 880, 0.2, 0.16);
+      tone('triangle', 780, 1170, 0.2, 0.1, 0.08);
+    } else if (kind === 'ice') {
+      tone('triangle', 1400, 700, 0.18, 0.14);
+      noise(2400, 4200, 0.8, 0.15, 0.1);
+    } else if (kind === 'shock') {
+      noise(300, 80, 1, 0.35, 0.5);
+      tone('sine', 120, 40, 0.4, 0.4);
+    } else if (kind === 'mud') {
+      noise(200, 600, 0.9, 0.2, 0.25);
+      tone('sine', 140, 90, 0.15, 0.2);
+    } else if (kind === 'swap') {
+      tone('sine', 300, 900, 0.18, 0.14);
+      tone('sine', 900, 300, 0.18, 0.14, 0.18);
     } else {
       // bola, cometa e cometa azul: um zunido que sobe
       noise(600, 1800, 1.2, 0.2, 0.22);
@@ -383,6 +410,11 @@ export const gpSfx = {
   /** O Superfox (ou a imunidade) barrou o acerto. */
   itemBlocked() {
     tone('triangle', 900, 1400, 0.08, 0.14);
+  },
+  /** O escudo bolha estourou. */
+  itemPop() {
+    tone('triangle', 1200, 300, 0.1, 0.18);
+    noise(2000, 600, 0.8, 0.12, 0.18);
   },
   /** Bomba explodindo; `near` (0 a 1) é o quão perto de você. */
   itemBoom(near: number) {
@@ -431,7 +463,8 @@ export const gpSfx = {
   },
   /** cruzou a linha de chegada */
   finish(place: number) {
-    const notes = place === 1 ? [523, 659, 784, 1047, 1319] : place <= 3 ? [523, 659, 784] : [440, 523];
+    const notes =
+      place === 1 ? [523, 659, 784, 1047, 1319] : place <= 3 ? [523, 659, 784] : [440, 523];
     notes.forEach((f, i) => tone('triangle', f, f, 0.2, 0.2, 0.1 * i));
   },
 };
