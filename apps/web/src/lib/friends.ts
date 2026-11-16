@@ -1,6 +1,7 @@
 import { apiClient } from './api-client';
 import type { WordsSummary } from '@/components/WordsProgress';
 import type { Stats } from './stats';
+import type { Activity } from './activity';
 
 export type RelationState = 'none' | 'friends' | 'outgoing' | 'incoming';
 
@@ -19,6 +20,8 @@ export interface LastPlayed {
 /** Amigo aceito: além do @usuário, se está online, quando entrou por último e o que jogou por último. */
 export interface Friend extends FriendUser {
   online: boolean;
+  /** O que está fazendo agora (só com `online`); `undefined` em servidor antigo. */
+  activity?: Activity | null;
   lastSeenAt: string | null;
   lastPlayed: LastPlayed | null;
 }
@@ -39,12 +42,14 @@ export interface FriendProfile {
   username: string;
   stats: Stats;
   online: boolean;
+  activity?: Activity | null;
   lastSeenAt: string | null;
   lastPlayed: LastPlayed | null;
 }
 
 /** O app está aberto: avisa o servidor (alimenta "online" e "visto por último" dos amigos). */
-export const sendPing = () => apiClient.post<{ ok: boolean }>('/me/ping', {});
+export const sendPing = (activity?: Activity) =>
+  apiClient.post<{ ok: boolean }>('/me/ping', activity ? { activity } : {});
 
 export const fetchFriendProfile = (username: string) =>
   apiClient.get<FriendProfile>(`/friends/${encodeURIComponent(username)}/profile`);

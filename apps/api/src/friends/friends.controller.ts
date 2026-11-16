@@ -18,6 +18,21 @@ import { FriendsService } from './friends.service';
 
 const searchSchema = z.object({ q: z.string().trim().min(2).max(30) });
 const requestSchema = z.object({ username: z.string().trim().min(1).max(30) });
+/** O que o app diz que a pessoa está fazendo: só o tipo e o id do jogo (texto curto, sem dado pessoal). */
+const pingSchema = z
+  .object({
+    activity: z
+      .object({
+        state: z.enum(['game', 'room', 'menu']),
+        game: z
+          .string()
+          .regex(/^[a-z0-9-]{1,24}$/)
+          .nullable()
+          .optional(),
+      })
+      .optional(),
+  })
+  .optional();
 const usernameParam = z.string().trim().min(1).max(30);
 
 @Controller()
@@ -37,9 +52,16 @@ export class FriendsController {
   /** Batimento do app aberto: alimenta "online" e "visto por último" dos amigos. */
   @Post('me/ping')
   @HttpCode(200)
-  @RateLimit({ limit: 12, windowMs: 60_000 })
-  async ping(@Req() req: AuthedRequest) {
-    await this.friends.ping(req.user.id);
+  @RateLimit({ limit: 30, windowMs: 60_000 })
+  async ping(
+    @Req() req: AuthedRequest,
+    @Body(new ZodValidationPipe(pingSchema)) body: z.infer<typeof pingSchema>,
+  ) {
+    const a = body?.activity;
+    await this.friends.ping(
+      req.user.id,
+      a ? { state: a.state, game: a.state === 'game' ? (a.game ?? null) : null } : null,
+    );
     return { ok: true };
   }
 

@@ -21,6 +21,7 @@ import { Check, Door, Search } from '@/components/icons';
 import { NicknameDialog } from '@/components/NicknameDialog';
 import { RoomConflictDialog } from '@/components/RoomConflictDialog';
 import { fetchFriends } from '@/lib/friends';
+import { activityText } from '@/lib/activity';
 import { norm } from '@/lib/home-daily';
 import { useRoomEntry } from '@/lib/my-room';
 import { MuteButton } from '@/components/MuteButton';
@@ -288,6 +289,7 @@ export function Hub() {
     queryFn: fetchFriends,
     enabled: !!user,
     retry: false,
+    refetchInterval: 15_000,
   });
   const authStatus = useAuth((s) => s.status);
   const data = user ? stats.data : undefined;
@@ -517,7 +519,9 @@ export function Hub() {
                         </span>
                         <span className="hz-friend-txt">
                           <span className="hz-friend-name">@{f.username}</span>
-                          <small className="hz-friend-st">online</small>
+                          <small className="hz-friend-st">
+                            {activityText(f.activity) ? `online · ${activityText(f.activity)}` : 'online'}
+                          </small>
                         </span>
                         <span className="hz-friend-plus" aria-hidden="true">
                           +

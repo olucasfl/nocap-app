@@ -7,6 +7,7 @@ import { Field } from '@/components/Field';
 import { ApiError } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth';
 import { gameLabel } from '@/lib/labels';
+import { activityText } from '@/lib/activity';
 import {
   MIN_SEARCH,
   ago,
@@ -155,7 +156,13 @@ function Search({ onChanged }: { onChanged: () => void }) {
 export function Friends() {
   const { user, status } = useAuth();
   const queryClient = useQueryClient();
-  const list = useQuery({ queryKey: ['friends'], queryFn: fetchFriends, enabled: !!user });
+  const list = useQuery({
+    queryKey: ['friends'],
+    queryFn: fetchFriends,
+    enabled: !!user,
+    // quem está online e o que está fazendo muda a toda hora
+    refetchInterval: 15_000,
+  });
   const [error, setError] = useState('');
   const [tab, setTab] = useState<Tab | null>(null);
   const [filter, setFilter] = useState('');
@@ -416,7 +423,7 @@ export function Friends() {
                                 <b className="fr-name">@{p.username}</b>
                                 <span className={`mono fr-row2-sub${p.online ? ' on' : ''}`}>
                                   {p.online
-                                    ? 'ONLINE AGORA'
+                                    ? `ONLINE${activityText(p.activity) ? ` · ${activityText(p.activity)!.toUpperCase()}` : ' AGORA'}`
                                     : presenceText(p)
                                         .replace('Ainda não entrou', 'Nunca entrou')
                                         .toUpperCase()}

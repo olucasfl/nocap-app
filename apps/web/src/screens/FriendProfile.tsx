@@ -15,6 +15,7 @@ import {
   type FriendProfile as FriendProfileData,
 } from '@/lib/friends';
 import { gameLabel, modeLabel } from '@/lib/labels';
+import { activityText } from '@/lib/activity';
 import { streakLabel, type Stats } from '@/lib/stats';
 import './profile.css';
 
@@ -65,6 +66,9 @@ function Details({ data: raw }: { data: FriendProfileData }) {
         <div className="pf-fact">
           <span className="mono pf-fact-label">ÚLTIMA VEZ NO APP</span>
           <b>{data.online ? 'Agora' : data.lastSeenAt ? ago(data.lastSeenAt) : 'Nunca entrou'}</b>
+          {data.online && activityText(data.activity) && (
+            <small className="mono">{activityText(data.activity)}</small>
+          )}
         </div>
         <div className="pf-fact">
           <span className="mono pf-fact-label">ÚLTIMO JOGO</span>
@@ -156,7 +160,7 @@ export function FriendProfile() {
     queryKey: ['friend-profile', username],
     queryFn: () => fetchFriendProfile(username),
     retry: false,
-    refetchInterval: 60_000,
+    refetchInterval: 15_000,
   });
 
   return (

@@ -9,8 +9,18 @@ export const ONLINE_MS = 100_000;
 /** O banco só é escrito de tempos em tempos; o "online" vem da memória. */
 export const PERSIST_EVERY_MS = 2 * 60_000;
 
+/** O que a pessoa está fazendo agora (vem do batimento do app): num jogo, numa sala ou no menu. */
+export interface Activity {
+  /** `game`: dentro de um jogo; `room`: numa sala; `menu`: navegando no NoCap. */
+  state: 'game' | 'room' | 'menu';
+  /** Id do jogo (só com `state: 'game'`), como `foxgp` ou `color`. */
+  game: string | null;
+}
+
 export interface Presence {
   online: boolean;
+  /** O que está fazendo agora; `null` quando offline ou sem informação. */
+  activity: Activity | null;
   /** Última vez com o app aberto (ISO), ou `null` se nunca bateu. */
   lastSeenAt: string | null;
 }
@@ -31,6 +41,7 @@ export interface LastPlayed {
 @Injectable()
 export class PresenceService {
   private seen = new Map<string, number>();
+  private doing = new Map<string, Activity>();
   private written = new Map<string, number>();
 
   /** Relógio: os testes trocam por um controlado (o Nest só injeta o banco). */
@@ -39,9 +50,11 @@ export class PresenceService {
   constructor(@Inject(DB) private readonly db: Db | null) {}
 
   /** A conta está com o app aberto agora. */
-  async touch(userId: string): Promise<void> {
+  async touch(userId: string, activity?: Activity | null): Promise<void> {
     const t = this.now();
     this.seen.set(userId, t);
+    if (activity) this.doing.set(userId, activity);
+    else this.doing.delete(userId);
     if (!this.db || t - (this.written.get(userId) ?? 0) < PERSIST_EVERY_MS) return;
     this.written.set(userId, t);
     const at = new Date(t);
@@ -77,8 +90,10 @@ export class PresenceService {
     for (const id of userIds) {
       const mem = this.seen.get(id);
       const last = Math.max(mem ?? 0, stored.get(id) ?? 0);
+      const online = mem !== undefined && t - mem <= ONLINE_MS;
       out.set(id, {
-        online: mem !== undefined && t - mem <= ONLINE_MS,
+        online,
+        activity: online ? (this.doing.get(id) ?? null) : null,
         lastSeenAt: last > 0 ? new Date(last).toISOString() : null,
       });
     }

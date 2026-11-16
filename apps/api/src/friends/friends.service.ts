@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import type { FriendRelation, FriendshipRow, UserRef } from './friends.repository';
 import { FriendsRepository } from './friends.repository';
-import { PresenceService, type LastPlayed, type Presence } from './presence.service';
+import { PresenceService, type Activity, type LastPlayed, type Presence } from './presence.service';
 
 /** Pedidos de amizade enviados e ainda sem resposta (anti-spam). */
 export const MAX_PENDING_OUT = 50;
@@ -68,6 +68,7 @@ export class FriendsService {
       friends: friendRows.map((r, i) => ({
         username: r.otherUsername,
         online: seen.get(ids[i]!)?.online ?? false,
+        activity: seen.get(ids[i]!)?.activity ?? null,
         lastSeenAt: seen.get(ids[i]!)?.lastSeenAt ?? null,
         lastPlayed: played.get(ids[i]!) ?? null,
       })),
@@ -78,21 +79,22 @@ export class FriendsService {
 
   /** Online, última visita e última partida de uma pessoa (perfil de amigo). */
   async activityOf(userId: string) {
-    if (!this.presence) return { online: false, lastSeenAt: null, lastPlayed: null };
+    if (!this.presence) return { online: false, activity: null, lastSeenAt: null, lastPlayed: null };
     const [seen, played] = await Promise.all([
       this.presence.of([userId]),
       this.presence.lastPlayed([userId]),
     ]);
     return {
       online: seen.get(userId)?.online ?? false,
+      activity: seen.get(userId)?.activity ?? null,
       lastSeenAt: seen.get(userId)?.lastSeenAt ?? null,
       lastPlayed: played.get(userId) ?? null,
     };
   }
 
   /** A conta está com o app aberto (batimento). */
-  ping(userId: string) {
-    return this.presence?.touch(userId);
+  ping(userId: string, activity?: Activity | null) {
+    return this.presence?.touch(userId, activity);
   }
 
   /** Se a outra pessoa já tinha pedido, o pedido cruzado vira amizade na hora. */

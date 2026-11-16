@@ -206,8 +206,9 @@ export async function installApi(page: Page, opts: MockOptions = {}) {
     if (path === '/friends' && method === 'GET')
       return json(route, {
         friends: [
-          { username: 'ana', online: true, lastSeenAt: null, lastPlayed: { game: 'wclassic', mode: 'classic', kind: 'daily', playedAt: '2026-11-15T10:00:00Z' } },
+          { username: 'ana', online: true, activity: { state: 'game', game: 'foxgp' }, lastSeenAt: null, lastPlayed: { game: 'wclassic', mode: 'classic', kind: 'daily', playedAt: '2026-11-15T10:00:00Z' } },
           { username: 'bia_super_longa_nome', online: false, lastSeenAt: '2026-11-14T09:00:00Z', lastPlayed: { game: 'blocks', mode: 'classic', kind: 'solo', playedAt: '2026-11-14T09:00:00Z' } },
+          { username: 'dudu', online: true, activity: { state: 'room', game: null }, lastSeenAt: null, lastPlayed: null },
           { username: 'carlos', online: false, lastSeenAt: null, lastPlayed: null },
         ],
         incoming: [{ username: 'pedro_do_nocap_2026' }, { username: 'lia' }],
