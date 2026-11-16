@@ -261,14 +261,14 @@ const PERIODIC = new Map<string, { followTime: number; waitTime: number }>(
 const r1 = (n: number) => Math.round(n * 10) / 10;
 /**
  * Chance de baú dos chefes. No Slash só os chefes difíceis soltam baú (e pouco); no Night Hunt toda evolução vem de um baú,
- * então os chefes soltam com mais frequência (o resto da tabela do Slash não muda).
+ * então TODO chefe solta um baú, sempre (pedido do Lucas, 16/11/2026: matou dois chefes e nenhum baú veio, com 60 a 70%).
  */
 const BOSS_CHEST: Record<string, number> = {
-  BasicBoss: 0.6,
-  StandardBoss: 0.7,
-  HardBoss: 0.8,
-  HarderBoss: 0.8,
-  HardestBoss: 0.9,
+  BasicBoss: 1,
+  StandardBoss: 1,
+  HardBoss: 1,
+  HarderBoss: 1,
+  HardestBoss: 1,
   FinalBoss: 1,
   DragaoDouradoBoss: 1,
 };

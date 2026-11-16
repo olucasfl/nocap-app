@@ -900,3 +900,18 @@ describe('limite de 6 itens e substituição na evolução', () => {
     }
   });
 });
+
+describe('baú dos chefes (16/11/2026)', () => {
+  it('todo chefe derrotado solta um baú, em qualquer semente', () => {
+    for (const id of ['BasicBoss', 'StandardBoss', 'HardBoss', 'FinalBoss']) {
+      for (let k = 0; k < 20; k++) {
+        const w = new NhWorld(`boss-chest-${id}-${k}`);
+        const spawn = (w as unknown as { spawnEnemy(x: number, y: number, c: string): Enemy })
+          .spawnEnemy;
+        const e = spawn.call(w, 400, 0, id);
+        (w as unknown as { damageEnemy(e: Enemy, d: number): void }).damageEnemy(e, 1e9);
+        expect(w.items.filter((i) => i.type === 'chest')).toHaveLength(1);
+      }
+    }
+  });
+});
