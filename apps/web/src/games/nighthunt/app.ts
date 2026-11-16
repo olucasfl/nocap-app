@@ -601,11 +601,7 @@ export class NhApp {
       if (l > 4) {
         x = dx / Math.max(l, R);
         y = -dy / Math.max(l, R);
-        if (l > R * 1.6) {
-          // o botão acompanha o dedo se ele se afastar muito
-          this.joy.ox = this.joy.x - (dx / l) * R * 1.6;
-          this.joy.oy = this.joy.y - (dy / l) * R * 1.6;
-        }
+        // a base fica onde o dedo tocou (não segue o dedo); passar do raio só mantém a força no máximo
       }
     }
     return { x, y };
