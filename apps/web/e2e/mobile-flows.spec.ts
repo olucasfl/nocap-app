@@ -42,6 +42,25 @@ const colorToEnd: Step = async (p) => {
   }
   await p.waitForTimeout(1500);
 };
+/** Já Deu?: cada rodada toca em Iniciar e em Parar (1 s depois) e segue; para quando não há mais rodada. */
+const tempoToEnd: Step = async (p) => {
+  for (let i = 0; i < 12; i++) {
+    const go = p.locator('.tm-go');
+    const next = p.getByRole('button', { name: /^(Próxima|Ver resultado|Continuar)/ });
+    const which = await Promise.race([
+      go.waitFor({ timeout: 8_000 }).then(() => 'go'),
+      next.first().waitFor({ timeout: 8_000 }).then(() => 'next'),
+    ]).catch(() => 'none');
+    if (which === 'go') {
+      await go.click();
+      await p.waitForTimeout(1100);
+      await go.click();
+      await p.waitForTimeout(700);
+    } else if (which === 'next') await next.first().click();
+    else break;
+  }
+  await p.waitForTimeout(1500);
+};
 const golfFinish = (hole: boolean, n: number): Step => async (p) => {
   await p.waitForFunction(() => !!(window as unknown as { __mgFinish?: unknown }).__mgFinish, null, { timeout: 15_000 });
   await p.evaluate(([h, k]) => (window as unknown as { __mgFinish: (h: boolean, n: number) => void }).__mgFinish(h as boolean, k as number), [hole, n]);
@@ -83,6 +102,40 @@ const FLOWS: [string, string, Step[]][] = [
   ['bola-config', '/fox-cap?jogo=bola', [click('gl-offline'), wait(600)]],
   ['bola-jogo', '/fox-cap?jogo=bola', [click('gl-offline'), click('bola-fmt-2x2'), click('bola-start'), wait(2500), tips]],
   ['cor-fim', '/cor', [click('menu-modes'), click('mode-classic'), click('play-classic'), colorToEnd]],
+  ['tempo-fim', '/tempo', [click('menu-modes'), click('mode-classic'), click('play-classic'), tempoToEnd]],
+  ['eco-fim', '/eco', [click('menu-modes'), click('mode-classic'), click('play-classic'), wait(20_000)]],
+  [
+    'ping-fim',
+    '/fox-cap?jogo=pingpong',
+    [
+      click('gl-offline'),
+      click('png-level-medio'),
+      click('png-start'),
+      wait(2500),
+      async (p) => {
+        await p.evaluate(() => {
+          (window as unknown as { __ping: { match: { score: number[] } } }).__ping.match.score[1] = 10;
+        });
+        await p.getByTestId('png-final').waitFor({ timeout: 90_000 });
+        await p.waitForTimeout(1200);
+      },
+    ],
+  ],
+  [
+    'bola-fim',
+    '/fox-cap?jogo=bola',
+    [
+      click('gl-offline'),
+      click('bola-fmt-2x2'),
+      click('bola-start'),
+      wait(2500),
+      async (p) => {
+        await p.waitForFunction(() => !!(window as unknown as { __bola?: unknown }).__bola);
+        await p.evaluate(() => (window as unknown as { __bola: { endNow(): void } }).__bola.endNow());
+        await p.waitForTimeout(2500);
+      },
+    ],
+  ],
   ['golf-fim', '/minigolf/jogar?fase=1', [wait(2500), golfFinish(true, 3)]],
   ['golf-jogo', '/minigolf/jogar?fase=1', [wait(3000), tips]],
   ['golf-online', '/minigolf', [click('mg-online'), wait(500)]],
