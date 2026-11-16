@@ -311,7 +311,7 @@ Regra de desenho: o herói começa com **uma arma que tem evolução e tem um pa
 | Herói | Preço | Arma inicial (evolução) | Característica | Por que escolher |
 | --- | --- | --- | --- | --- |
 | Kael, o Guerreiro | 0 | Espada (Lâmina Real, com Poder) | +20% de XP | O simples e equilibrado para aprender |
-| Vesper, a Açoitadora | 600 | Chicote (Laceração Sangrenta, com Coração) | +20% de vida máxima, dano crítico pequeno desde o início | Corpo a corpo largo, ótimo contra hordas dos dois lados |
+| Vesper, a Açoitadora | 300 | Chicote (Laceração Sangrenta, com Coração) | +20% de vida máxima, dano crítico pequeno desde o início | Corpo a corpo largo, ótimo contra hordas dos dois lados |
 | Mara, a Caçadora | 1.200 | Varinha Arcana (Santa Varinha, com Diário de Caça) | +15% de velocidade de projétil, -10% de vida | Alcance e alvo automático para quem quer só desviar |
 | Brann, o Guardião | 1.800 | Aura de Alho (Devorador de Almas, com Regeneração) | +25% de vida, -8% de velocidade | Tanque que aguenta no meio da horda |
 | Dorian, o Alquimista | 2.400 | Poças de Magma (Lava Viva, com Imã) | +15% de duração de zonas e raio de atração +20% | Controle de área: encurrala os inimigos nas poças |
@@ -319,7 +319,7 @@ Regra de desenho: o herói começa com **uma arma que tem evolução e tem um pa
 | Ysolde, a Tempestade | 3.600 | Raio Lunar (Tempestade, com Trevo) | recarga 12% menor, -20% de vida | Dano alto em alvos aleatórios sem mirar |
 | Rurik, o Lenhador | 4.200 | Machado Giratório (evolução, com Armadura) | +18% de dano, +15% de ouro | Dano em arco que atravessa tudo |
 
-Preços **nivelados**, de 600 em 600 (600, 1.200, 1.800, 2.400, 3.000, 3.600, 4.200), na economia nova (15 vezes a do Slash). As características pequenas ficam em `HEROES` (`data.ts`), e a descrição de cada herói na carta mostra a arma inicial, a evolução e o passivo que ela pede. O robô testa cada herói com a arma inicial dele.
+Preços (decisão do Lucas, 16/11/2026): 300, 900, 1.200, 2.000, 3.000, 3.600 e 4.200 (Vesper, Mara, Brann, Dorian, Selene, Ysolde e Rurik), na economia nova (15 vezes a do Slash). As características pequenas ficam em `HEROES` (`data.ts`), e a descrição de cada herói na carta mostra a arma inicial, a evolução e o passivo que ela pede. O robô testa cada herói com a arma inicial dele.
 
 ## 7. Etapas
 

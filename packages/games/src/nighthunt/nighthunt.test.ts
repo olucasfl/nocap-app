@@ -305,7 +305,7 @@ describe('heróis e mapas', () => {
     sim(gelo);
     expect(MAPS.gelo!.enemyHp).toBeGreaterThan(1);
     expect(gelo.mapId).toBe('gelo');
-    expect(MAP_IDS).toEqual(['campo', 'deserto']);
+    expect(MAP_IDS).toEqual(['campo', 'deserto', 'gelo']);
   });
 
   it('comprar herói gasta ouro; mapas liberam pelo tempo sobrevivido', () => {
@@ -313,10 +313,10 @@ describe('heróis e mapas', () => {
     expect(buyHero(s, 'mara')).toBe(false);
     s.gold = 1000;
     expect(buyHero(s, 'vesper')).toBe(true);
-    expect(s.gold).toBe(420); // 1000 - 600 do preço + 20 da conquista "Novo companheiro"
+    expect(s.gold).toBe(720); // 1000 - 300 do preço + 20 da conquista "Novo companheiro"
     expect(s.heroes).toContain('vesper');
     expect(HERO_IDS.map((id) => HEROES[id]!.price)).toEqual([
-      0, 600, 1200, 1800, 2400, 3000, 3600, 4200,
+      0, 300, 900, 1200, 2000, 3000, 3600, 4200,
     ]);
     expect(mapUnlocked(s, 'deserto')).toBe(false);
     s.stats.bestTime = 8 * 60;

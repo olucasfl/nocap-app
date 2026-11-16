@@ -356,7 +356,7 @@ export const HEROES: Record<string, HeroDef> = {
     xp: 1,
     start: 'whip',
     hue: 330,
-    price: 600,
+    price: 300,
   },
   mara: {
     id: 'mara',
@@ -369,7 +369,7 @@ export const HEROES: Record<string, HeroDef> = {
     xp: 1,
     start: 'wand',
     hue: 300,
-    price: 1200,
+    price: 900,
     swift: 0.15,
   },
   brann: {
@@ -383,7 +383,7 @@ export const HEROES: Record<string, HeroDef> = {
     xp: 1,
     start: 'garlic',
     hue: 110,
-    price: 1800,
+    price: 1200,
   },
   dorian: {
     id: 'dorian',
@@ -396,7 +396,7 @@ export const HEROES: Record<string, HeroDef> = {
     xp: 1,
     start: 'magma',
     hue: 20,
-    price: 2400,
+    price: 2000,
     dur: 0.15,
     attract: 0.2,
   },
@@ -474,5 +474,5 @@ export const MAPS: Record<string, MapDef> = {
     hue: 190,
   },
 };
-/** Mapas jogáveis. O gelo fica guardado em `MAPS` (arte, regras, monstros e exigências prontas) mas fora do jogo por ora, a pedido do Lucas (15/11/2026). */
-export const MAP_IDS: readonly string[] = ['campo', 'deserto'];
+/** Mapas jogáveis. O gelo (Planície Gelada) voltou ao jogo a pedido do Lucas em 16/11/2026 (tinha sido guardado em 15/11). */
+export const MAP_IDS: readonly string[] = ['campo', 'deserto', 'gelo'];
