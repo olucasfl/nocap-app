@@ -10,7 +10,7 @@ import { DEVICES, measure, setDevice } from './mobile-lib';
  */
 const OUT = 'test-results/mobile-audit';
 type Step = (page: Page) => Promise<void>;
-const click = (id: string): Step => async (p) => void (await p.getByTestId(id).click());
+const click = (id: string): Step => async (p) => void (await p.getByTestId(id).click({ timeout: 8000 }));
 const btn = (name: RegExp, last = false): Step => async (p) => {
   const l = p.getByRole('button', { name });
   await (last ? l.last() : l.first()).click();
@@ -62,9 +62,9 @@ const FLOWS: [string, string, Step[]][] = [
   ['counterfox-jogar', '/fox-cap/counter-fox', [click('cfh-play'), wait(800)]],
   ['counterfox-offline', '/fox-cap/counter-fox', [click('cfh-play'), click('cfh-offline'), wait(800)]],
   ['foxgp-home', '/fox-cap?jogo=foxgp', [click('gl-offline'), wait(1500)]],
-  ['foxgp-garagem', '/fox-cap?jogo=foxgp', [click('gl-offline'), click('gp-open-garage'), wait(1500)]],
-  ['foxgp-pistas', '/fox-cap?jogo=foxgp', [click('gl-offline'), click('gp-open-track'), wait(1500)]],
-  ['foxgp-comandos', '/fox-cap?jogo=foxgp', [click('gl-offline'), click('gp-open-commands'), wait(800)]],
+  ['foxgp-garagem', '/fox-cap?jogo=foxgp', [click('gl-offline'), click('gp-pick-garage'), wait(1500)]],
+  ['foxgp-pistas', '/fox-cap?jogo=foxgp', [click('gl-offline'), btn(/^Voltar$/), click('gp-open-track'), wait(1500)]],
+  ['foxgp-comandos', '/fox-cap?jogo=foxgp', [click('gl-offline'), btn(/^Voltar$/), click('gp-open-commands'), wait(800)]],
   ['foxgp-jogo', '/fox-cap?jogo=foxgp', [click('gl-offline'), click('gp-physics-arcade'), click('gp-start'), wait(6000), tips]],
   ['sala-cor', '/sala?jogo=color', [wait(800)]],
   ['classic-jogo', '/words/classic/fase/classic/1', [wait(800)]],
