@@ -1170,7 +1170,7 @@ export class GpWorld {
     const before = c.s;
     let p = tr.project(c.x, c.z, c.idx);
     // ---- barreira de pneus ----
-    const lim = tr.wallAt(p.i, p.d) - (gpHitDims(this.mode).wid / 2) * GP_CAR_WALL_IN;
+    const lim = tr.wallAt(p.i, p.d) - (gpHitDims(this.mode).wid / 2) * this.track.kartK * GP_CAR_WALL_IN;
     if (Math.abs(p.d) > lim) {
       const nx = -tr.tz[p.i]! * Math.sign(p.d);
       const nz = tr.tx[p.i]! * Math.sign(p.d);
@@ -1367,7 +1367,9 @@ export class GpWorld {
   ): { overlap: number; nx: number; nz: number; px: number; pz: number } | null {
     const dx = b.x - a.x;
     const dz = b.z - a.z;
-    const dims = gpHitDims(this.mode);
+    const base = gpHitDims(this.mode);
+    const k = this.track.kartK;
+    const dims = { len: base.len * k, wid: base.wid * k };
     if (dx * dx + dz * dz > dims.len * dims.len + dims.wid * dims.wid) return null;
 
     const hl = dims.len * 0.5;

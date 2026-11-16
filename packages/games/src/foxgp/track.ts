@@ -75,6 +75,8 @@ export interface GpTrackDef {
   wearK?: number;
   /** Arcade: fator da velocidade máxima (pista curta para o ritmo: a volta dura mais). */
   vmaxK?: number;
+  /** Escala do tamanho do carro (desenho e caixa de colisão): 0,6 deixa o kart 40% menor na pista. */
+  kartK?: number;
   /**
    * Distância (m) do centro da pista até a primeira parede do modelo de cada lado, em cada ponto de controle (99 = sem
    * parede). O kart encosta na parede de verdade em vez de numa barreira invisível mais longe (spec 086).
@@ -446,6 +448,7 @@ export class GpTrack {
   /** Multiplicador do desgaste do pneu desta pista. */
   readonly wearK: number;
   readonly vmaxK: number;
+  readonly kartK: number;
   /** A faixa do box (null = pista sem box). */
   readonly pit: GpPitDef | null;
   readonly pads: readonly { s: number; d: number }[];
@@ -470,6 +473,7 @@ export class GpTrack {
     this.limit = def.limit ?? GP_LIMIT;
     this.wearK = def.wearK ?? 1;
     this.vmaxK = def.vmaxK ?? 1;
+    this.kartK = def.kartK ?? 1;
     this.pit = def.pit === null ? null : (def.pit ?? PIT_DEFAULT);
     this.pads = def.pads ?? [];
     const k = def.scale ?? 1;

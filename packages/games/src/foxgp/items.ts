@@ -1,5 +1,5 @@
 import { createRng } from '../core/rng';
-import { GP_ARC_VMAX, GP_HALF_WIDTH } from './constants';
+import { GP_ARC_VMAX, GP_CAR_LEN, GP_HALF_WIDTH } from './constants';
 import type { GpCar, GpWorld } from './world';
 
 /**
@@ -339,6 +339,16 @@ export class GpItemSystem implements GpItemsReadable {
         this.give(c.id, item);
         this.events.push({ type: 'pickup', id: c.id, item });
         break;
+      }
+    }
+
+    // estrela: quem encosta num carro com a estrela ligada gira e perde velocidade (como acertar um item)
+    const reach = GP_CAR_LEN * w.track.kartK * 0.85;
+    for (const a of w.cars) {
+      if (!this.active(a) || this.state(a.id).star <= 0) continue;
+      for (const b of w.cars) {
+        if (b.id === a.id || !this.active(b) || this.state(b.id).star > 0) continue;
+        if (dist(a.x, a.z, b.x, b.z) <= reach) this.hit(b, a.id, 'star');
       }
     }
 

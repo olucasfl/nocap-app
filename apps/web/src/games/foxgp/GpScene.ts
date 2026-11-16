@@ -312,6 +312,8 @@ export class GpScene {
   private camClip = 1;
   /** Altura da estrada sob o carro em foco (câmera). */
   private focusY = 0;
+  /** Escala do desenho do carro (pista com `kartK`: o kart é menor e a câmera chega mais perto). */
+  private cv = CAR_VIS;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -320,6 +322,7 @@ export class GpScene {
     opts: { reduced?: boolean; quality?: GpQuality } = {},
   ) {
     this.meId = meId;
+    this.cv = CAR_VIS * world.track.kartK;
     this.reduced = !!opts.reduced;
     this.quality = opts.quality ?? 'medium';
     const q = this.quality;
@@ -389,7 +392,7 @@ export class GpScene {
       this.buildCrew();
     }
     // marcas de pneu e faíscas (malhas instanciadas: uma chamada de desenho cada)
-    const markGeo = new THREE.PlaneGeometry(0.28 * CAR_VIS, 0.9 * CAR_VIS);
+    const markGeo = new THREE.PlaneGeometry(0.28 * this.cv, 0.9 * this.cv);
     markGeo.rotateX(-Math.PI / 2);
     this.markCap = q === 'low' ? 0 : 900;
     this.marks = new THREE.InstancedMesh(
@@ -665,14 +668,15 @@ export class GpScene {
       const rz = Math.sin(p.h);
       const mid = gm.sample(p.x, p.z, hint);
       if (mid !== null) {
+        const k = tr.kartK;
         const at = (dx: number, dz: number) => gm.sample(p.x + dx, p.z + dz, mid) ?? mid;
-        const f = at(fx * 1.3, fz * 1.3);
-        const b = at(-fx * 1.3, -fz * 1.3);
-        const r = at(rx * 0.9, rz * 0.9);
-        const l = at(-rx * 0.9, -rz * 0.9);
+        const f = at(fx * 1.3 * k, fz * 1.3 * k);
+        const b = at(-fx * 1.3 * k, -fz * 1.3 * k);
+        const r = at(rx * 0.9 * k, rz * 0.9 * k);
+        const l = at(-rx * 0.9 * k, -rz * 0.9 * k);
         y = (f + b + r + l) / 4;
-        pitch = Math.atan((f - b) / 2.6);
-        roll = Math.atan((r - l) / 1.8);
+        pitch = Math.atan((f - b) / (2.6 * k));
+        roll = Math.atan((r - l) / (1.8 * k));
       }
     }
     // a altura acompanha rápido (as rodas não afundam nem flutuam); a inclinação é mais suave
@@ -1775,7 +1779,7 @@ export class GpScene {
     const tag = this.textSprite(c.name, 'rgba(11,14,23,0.88)');
     tag.position.y = 2.6;
     const vis = kart ? KART_VIS : 1;
-    m.group.scale.setScalar(CAR_VIS * vis);
+    m.group.scale.setScalar(this.cv * vis);
     // a chama do turbo (kart): atrás do carro, brilhante, sem luz real
     const flame = new THREE.Mesh(
       new THREE.ConeGeometry(0.22, 1.1, 10),
@@ -2009,7 +2013,7 @@ export class GpScene {
       if (c.id === focusId) this.focusY = gy;
       for (const wh of v.m.wheelsF) wh.rotation.y = -c.steer * 0.45;
       // as rodas giram com a velocidade; a asa de trás abre com o DRS (suave)
-      v.wheelA += (c.speed * dt) / (v.m.wheelR * CAR_VIS);
+      v.wheelA += (c.speed * dt) / (v.m.wheelR * this.cv);
       for (const wh of v.m.wheels) wh.rotation.x = v.wheelA;
       if ('kart' in v.m)
         (v.m as KartModel).update(dt, {
@@ -2034,7 +2038,7 @@ export class GpScene {
         v.driftYaw += (want - v.driftYaw) * Math.min(1, dt * 9);
         v.m.body.rotation.y = v.driftYaw;
         const hop = c.hop > 0 ? Math.sin(Math.PI * (1 - c.hop / GP_ARC_HOP_SEC)) * GP_ARC_HOP_H : 0;
-        v.m.group.position.y = gy + hop * CAR_VIS * v.vis;
+        v.m.group.position.y = gy + hop * this.cv * v.vis;
         const boost = c.boostT > 0 && c.boostLevel > 0;
         v.m.body.scale.z = boost && !this.reduced ? 1.04 : 1;
         v.flame.visible = boost;
@@ -2049,11 +2053,11 @@ export class GpScene {
         if (c.driftDir !== 0 && c.bar >= 1 && Math.random() < 0.9) {
           const rx = Math.cos(p.h);
           const rz = Math.sin(p.h);
-          const bx = p.x - Math.sin(p.h) * GP_CAR_LEN * 0.3 * v.vis;
-          const bz = p.z + Math.cos(p.h) * GP_CAR_LEN * 0.3 * v.vis;
+          const bx = p.x - Math.sin(p.h) * GP_CAR_LEN * 0.3 * v.vis * this.world.track.kartK;
+          const bz = p.z + Math.cos(p.h) * GP_CAR_LEN * 0.3 * v.vis * this.world.track.kartK;
           const lv = Math.min(3, Math.floor(c.bar));
           const side = Math.random() < 0.5 ? 1 : -1;
-          const sw = GP_CAR_WID * 0.4 * v.vis;
+          const sw = GP_CAR_WID * 0.4 * v.vis * this.world.track.kartK;
           this.spark(bx + rx * side * sw, bz + rz * side * sw, 2 + lv, BOOST_COLORS[lv], 0.35 + lv * 0.15, gy);
         }
       }
@@ -2090,9 +2094,9 @@ export class GpScene {
           const rx = Math.cos(p.h);
           const rz = Math.sin(p.h);
           // as rodas de trás do carro em escala de pista
-          const bx = p.x - Math.sin(p.h) * GP_CAR_LEN * 0.28 * v.vis;
-          const bz = p.z + Math.cos(p.h) * GP_CAR_LEN * 0.28 * v.vis;
-          const half = GP_CAR_WID * 0.38 * v.vis;
+          const bx = p.x - Math.sin(p.h) * GP_CAR_LEN * 0.28 * v.vis * this.world.track.kartK;
+          const bz = p.z + Math.cos(p.h) * GP_CAR_LEN * 0.28 * v.vis * this.world.track.kartK;
+          const half = GP_CAR_WID * 0.38 * v.vis * this.world.track.kartK;
           const col = charged ? markCols[Math.min(3, Math.floor(c.bar))]! : markDark;
           const gyAt = (x: number, z: number) =>
             this.groundMap ? (this.groundMap.sample(x, z, v.gy) ?? v.gy) : v.gy;
@@ -2352,8 +2356,8 @@ export class GpScene {
         // no F1, a câmera desce e chega perto com a velocidade e o FOV abre mais: sensação de velocidade (13/11/2026)
         const vk = Math.min(1, speed / gpVmaxOf(this.world.mode));
         const real = this.world.mode === 'real';
-        const back = (real ? 7.2 - vk * 1.4 : 7.2) * CAR_VIS;
-        const up = (real ? 2.7 - vk * 0.6 : 2.7) * CAR_VIS;
+        const back = (real ? 7.2 - vk * 1.4 : 7.2) * this.cv;
+        const up = (real ? 2.7 - vk * 0.6 : 2.7) * this.cv;
         const dir = this.lookBack ? -1 : 1;
         const want = this.chaseWant.set(
           p.x - dir * fx * back,
@@ -2367,9 +2371,9 @@ export class GpScene {
         this.chasePos.lerp(want, 1 - Math.exp(-dt * 7));
         this.camPos.copy(this.chasePos);
         this.camLook.set(
-          p.x + dir * fx * 4 * CAR_VIS,
-          0.9 * CAR_VIS + this.focusY,
-          p.z + dir * fz * 4 * CAR_VIS,
+          p.x + dir * fx * 4 * this.cv,
+          0.9 * this.cv + this.focusY,
+          p.z + dir * fz * 4 * this.cv,
         );
         fov = 60 + vk * vk * (real ? 26 : 14);
       } else {
@@ -2394,7 +2398,7 @@ export class GpScene {
             p.z + fz * 22 * (this.lookBack ? -1 : 1),
           );
         } else {
-          this.camPos.set(p.x + fx * 0.05 * CAR_VIS, 1.05 * CAR_VIS, p.z + fz * 0.05 * CAR_VIS);
+          this.camPos.set(p.x + fx * 0.05 * this.cv, 1.05 * this.cv, p.z + fz * 0.05 * this.cv);
           this.camLook.set(p.x + fx * 20, 0.55, p.z + fz * 20);
         }
         fov =

@@ -192,6 +192,22 @@ describe('efeitos (spec 085)', () => {
     expect(sys.state(a.id).star).toBe(0);
   });
 
+  it('Superfox: quem encosta no carro com a estrela gira e perde velocidade; quem tem a estrela não', () => {
+    const { w, sys } = race(3);
+    const [a, b, c] = w.cars as [GpCar, GpCar, GpCar];
+    put(w, a, 400, 0, 25);
+    put(w, b, 400, 0, 25); // colado no a
+    put(w, c, 300, 0, 25); // longe
+    sys.give(a.id, 'star');
+    sys.give(c.id, 'star');
+    run(w, sys, GP_DT, { p0: true, p2: true });
+    run(w, sys, GP_DT * 3);
+    // c tem estrela e está longe; b encostou em a
+    expect(sys.state(b.id).stun).toBeGreaterThan(0);
+    expect(sys.state(a.id).stun).toBe(0);
+    expect(sys.state(c.id).stun).toBe(0);
+  });
+
   it('turbo dá o impulso do kart', () => {
     const { w, sys } = race(1);
     const c = w.cars[0]!;

@@ -287,6 +287,7 @@ export const GP_TRACK_CASTLE: GpTrackDef = {
   pit: null,
   smooth: 2,
   vmaxK: 0.8,
+  kartK: 0.6,
   limit: 18,
   pads: [
     { s: 227.95, d: 3.9 },
