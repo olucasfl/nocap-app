@@ -800,7 +800,8 @@
   .gph-garage {
     grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.25fr) !important;
     gap: 8px 14px !important;
-    padding: 8px 12px !important;
+    padding: max(8px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+      max(8px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)) !important;
   }
   .gph-garage-head .gp-title {
     font-size: 22px;
@@ -927,10 +928,10 @@
 }
 @media (max-height: 520px) and (orientation: landscape) {
   .gpg-theme-list {
-    grid-template-columns: repeat(8, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
   .gpg-theme {
-    height: 26px;
+    height: 44px;
   }
   .gpg-theme span {
     display: none;
