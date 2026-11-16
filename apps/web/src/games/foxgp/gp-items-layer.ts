@@ -55,6 +55,9 @@ export class GpItemsLayer {
   constructor(
     scene: THREE.Scene,
     private sys: GpItemsReadable,
+    /** Altura da estrada num ponto e sob um carro (m, só desenho; 0 nas pistas planas). */
+    private groundY: (x: number, z: number) => number = () => 0,
+    private carY: (c: GpCar) => number = () => 0,
   ) {
     scene.add(this.group);
     const tex = glowTexture();
@@ -74,7 +77,7 @@ export class GpItemsLayer {
     for (const b of sys.boxes) {
       const m = buildItem('box');
       m.scale.setScalar(BS);
-      m.position.set(b.x, 0, b.z);
+      m.position.set(b.x, b.y, b.z);
       this.group.add(m);
       this.boxes.push(m);
     }
@@ -103,7 +106,7 @@ export class GpItemsLayer {
     if (!p) return;
     p.s.visible = true;
     (p.s.material as THREE.SpriteMaterial).color.setHex(color);
-    p.s.position.set(x, y, z);
+    p.s.position.set(x, y + this.groundY(x, z), z);
     p.vx = v[0];
     p.vy = v[1];
     p.vz = v[2];
@@ -127,7 +130,7 @@ export class GpItemsLayer {
       }),
     );
     m.rotation.x = -Math.PI / 2;
-    m.position.set(x, y, z);
+    m.position.set(x, y + this.groundY(x, z), z);
     this.group.add(m);
     this.waves.push({ m, life, max: life, r1 });
   }
@@ -293,7 +296,7 @@ export class GpItemsLayer {
       const m = this.boxes[i]!;
       m.visible = b.cd <= 0;
       animateItem(m, 'box', t + i * 0.4);
-      m.position.set(b.x, m.position.y, b.z);
+      m.position.set(b.x, b.y + m.position.y, b.z);
     });
 
     this.stepFx(dt);
@@ -306,13 +309,14 @@ export class GpItemsLayer {
         s = { g: this.spawn(sh.kind as GpModelId) };
         this.shots.set(sh.uid, s);
       }
-      s.g.position.set(sh.x, 0.25, sh.z);
+      const gyS = this.groundY(sh.x, sh.z);
+      s.g.position.set(sh.x, gyS + 0.25, sh.z);
       s.g.rotation.y = -sh.h;
       if (sh.kind === 'ball') {
         // rola em torno do próprio centro (o grupo fica no chão) e quica de leve
         const roll = s.g.getObjectByName('roll');
         if (roll) roll.rotation.x = t * 14;
-        s.g.position.y = 0.25 + Math.abs(Math.sin(t * 9 + sh.uid)) * 0.35;
+        s.g.position.y = gyS + 0.25 + Math.abs(Math.sin(t * 9 + sh.uid)) * 0.35;
       }
       // rastro: cada tiro solta brilho atrás de si
       const acc = (this.trailAcc.get(sh.uid) ?? 0) + dt;
@@ -388,9 +392,10 @@ export class GpItemsLayer {
         s = { g: this.spawn(tp.kind, TS) };
         this.traps.set(tp.uid, s);
       }
+      const gyT = this.groundY(tp.x, tp.z);
       s.g.position.set(tp.x, 0, tp.z);
       animateItem(s.g, tp.kind, t);
-      s.g.position.set(tp.x, s.g.position.y, tp.z);
+      s.g.position.set(tp.x, gyT + s.g.position.y, tp.z);
       // pavio da bomba: pisca mais rápido perto de explodir
       if (tp.kind === 'bomb') {
         s.g.scale.setScalar(TS * (1 + Math.abs(Math.sin(t * (6 + (3 - tp.fuse) * 4))) * 0.08));
@@ -448,6 +453,7 @@ export class GpItemsLayer {
     for (const c of cars) {
       const st = this.sys.cars.get(c.id);
       const p = pose(c);
+      const cy = this.carY(c);
       // itens em volta do kart
       const want = st && st.id && !c.gone ? st : null;
       let o = this.orbits.get(c.id);
@@ -471,7 +477,7 @@ export class GpItemsLayer {
         this.orbits.set(c.id, o);
       }
       if (o) {
-        o.g.position.set(p.x, 1.2, p.z);
+        o.g.position.set(p.x, cy + 1.2, p.z);
         o.g.children.forEach((ch, i) => {
           const a = (ch.userData.a as number) + t * 2.2;
           ch.position.set(Math.cos(a) * ORBIT_R, Math.sin(t * 3 + i) * 0.15, Math.sin(a) * ORBIT_R);
@@ -499,7 +505,7 @@ export class GpItemsLayer {
       }
       if (bub) {
         bub.visible = hasShield;
-        bub.position.set(p.x, 1.4, p.z);
+        bub.position.set(p.x, cy + 1.4, p.z);
         // perto de acabar (últimos 2 s no líder): pisca; online só liga/desliga
         bub.scale.setScalar(1 + Math.sin(t * 5) * 0.04);
         const m = bub.material as THREE.MeshPhysicalMaterial;
@@ -534,7 +540,7 @@ export class GpItemsLayer {
       }
       if (halo) {
         halo.visible = star;
-        halo.position.set(p.x, 0.7, p.z);
+        halo.position.set(p.x, cy + 0.7, p.z);
         halo.scale.setScalar(1 + Math.sin(t * 8) * 0.06);
         const col = [0xffd23a, 0xfff6c8, 0xff7d26, 0x5fe3ff][Math.floor(t * 12) % 4]!;
         (halo.material as THREE.MeshBasicMaterial).color.setHex(col);

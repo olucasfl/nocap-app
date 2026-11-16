@@ -45,6 +45,7 @@ import { mapEdge } from '../atravessa/models';
 import { buildCar, type CarModel } from './car-model';
 import { buildKart, kartReady, type KartModel } from './kart-model';
 import { GpItemsLayer } from './gp-items-layer';
+import { loadTrackModel } from './track-model';
 
 export type GpCamMode = 'far' | 'chase' | 'cockpit';
 export type GpQuality = 'low' | 'medium' | 'high';
@@ -87,6 +88,9 @@ interface CarView {
   tag: THREE.Sprite;
   ghost: boolean;
   wag: number;
+  /** Altura da estrada sob o kart (suavizada; pistas de modelo). */
+  gy: number;
+  pitch: number;
   shake: number;
   /** Distância desde a última marca de pneu. */
   markAcc: number;
@@ -288,6 +292,10 @@ export class GpScene {
   private reduced: boolean;
   private meId: string;
   private envTex: THREE.Texture | null = null;
+  private ground!: THREE.Mesh;
+  private modelGroup: THREE.Group | null = null;
+  /** Altura da estrada sob o carro em foco (câmera). */
+  private focusY = 0;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -346,12 +354,18 @@ export class GpScene {
 
     this.puffTex = this.makePuffTexture();
     this.buildGround();
-    this.buildTrack();
-    if (world.track.pit) this.buildPit();
-    this.buildGantry();
-    this.buildBarriers();
-    this.buildScenery();
-    if (this.kartTrack) this.buildPads();
+    if (world.track.def.heights) {
+      // pista de modelo (spec 086): o cenário vem do arquivo; o chão fica abaixo do ponto mais baixo da estrada
+      this.ground.position.y = Math.min(...world.track.def.heights) - 10;
+      void this.buildModelTrack();
+    } else {
+      this.buildTrack();
+      if (world.track.pit) this.buildPit();
+      this.buildGantry();
+      this.buildBarriers();
+      this.buildScenery();
+      if (this.kartTrack) this.buildPads();
+    }
     const tr = world.track;
     if (tr.pit) {
       this.boxSpot = tr.pointAt(tr.pit.box, tr.pitCenter(tr.pit.box) ?? 0);
@@ -582,7 +596,33 @@ export class GpScene {
     g.rotation.x = -Math.PI / 2;
     g.position.set(0, -0.06, 0);
     g.receiveShadow = true;
+    this.ground = g;
     this.scene.add(g);
+  }
+
+  /** O cenário da pista de modelo: o pacote leve para todos e o de detalhes só no computador (spec 086). */
+  private async buildModelTrack() {
+    const touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+    try {
+      const { group, textures } = await loadTrackModel(
+        this.world.track.def.id,
+        !touch && this.quality !== 'low',
+      );
+      this.textures.push(...textures);
+      this.scene.add(group);
+      this.modelGroup = group;
+    } catch {
+      /* sem o cenário a pista corre assim mesmo (só a estrada invisível): melhor que travar a largada */
+    }
+  }
+
+  /** Altura da estrada sob o carro (m, só desenho), suavizada para não tremer nos pontos de controle. */
+  private groundOf(c: GpCar, v: { gy: number }, dt: number): number {
+    const tr = this.world.track;
+    if (!tr.def.heights) return 0;
+    const y = tr.yAt(c.s);
+    v.gy += (y - v.gy) * Math.min(1, dt * 14);
+    return v.gy;
   }
 
   private buildTrack() {
@@ -1721,6 +1761,8 @@ export class GpScene {
       flame,
       ghost: false,
       wag: 0,
+      gy: 0,
+      pitch: 0,
       shake: 0,
       markAcc: 0,
       lastX: 0,
@@ -1746,7 +1788,16 @@ export class GpScene {
   /** Liga os itens do Arcade com poderes (caixas, tiros, armadilhas) a esta cena. */
   setItems(sys: GpItemsReadable | null) {
     this.itemsLayer?.dispose();
-    this.itemsLayer = sys ? new GpItemsLayer(this.scene, sys) : null;
+    const tr = this.world.track;
+    const model = !!tr.def.heights;
+    this.itemsLayer = sys
+      ? new GpItemsLayer(
+          this.scene,
+          sys,
+          model ? (x, z) => tr.yAt(tr.projectGlobal(x, z).s) : undefined,
+          model ? (c) => tr.yAt(c.s) : undefined,
+        )
+      : null;
   }
 
   /** Efeito visual de um evento dos itens (pegar, usar, acertar, explodir). */
@@ -1885,8 +1936,18 @@ export class GpScene {
         focusPose = p;
         focusCar = c;
       }
-      v.m.group.position.set(p.x, 0, p.z);
+      const gy = this.groundOf(c, v, dt);
+      v.m.group.position.set(p.x, gy, p.z);
+      v.m.group.rotation.order = 'YXZ';
       v.m.group.rotation.y = -p.h;
+      // sobe e desce a rampa: o nariz acompanha a inclinação da estrada
+      if (this.world.track.def.heights) {
+        const tr = this.world.track;
+        v.pitch +=
+          (Math.atan((tr.yAt(c.s + 2.5) - tr.yAt(c.s - 2.5)) / 5) - v.pitch) * Math.min(1, dt * 10);
+        v.m.group.rotation.x = v.pitch;
+      }
+      if (c.id === focusId) this.focusY = gy;
       for (const wh of v.m.wheelsF) wh.rotation.y = -c.steer * 0.45;
       // as rodas giram com a velocidade; a asa de trás abre com o DRS (suave)
       v.wheelA += (c.speed * dt) / (v.m.wheelR * CAR_VIS);
@@ -1914,7 +1975,7 @@ export class GpScene {
         v.driftYaw += (want - v.driftYaw) * Math.min(1, dt * 9);
         v.m.body.rotation.y = v.driftYaw;
         const hop = c.hop > 0 ? Math.sin(Math.PI * (1 - c.hop / GP_ARC_HOP_SEC)) * GP_ARC_HOP_H : 0;
-        v.m.group.position.y = hop * CAR_VIS * v.vis;
+        v.m.group.position.y = gy + hop * CAR_VIS * v.vis;
         const boost = c.boostT > 0 && c.boostLevel > 0;
         v.m.body.scale.z = boost && !this.reduced ? 1.04 : 1;
         v.flame.visible = boost;
@@ -2075,7 +2136,8 @@ export class GpScene {
     // a caixa da sombra acompanha o foco
     if (focusPose) {
       this.sun.position.set(focusPose.x - 40, 80, focusPose.z + 30);
-      this.sun.target.position.set(focusPose.x, 0, focusPose.z);
+      this.sun.position.y = 80 + this.focusY;
+      this.sun.target.position.set(focusPose.x, this.focusY, focusPose.z);
     }
     // motion blur sutil só em alta velocidade
     if (this.afterimage) {
@@ -2170,7 +2232,7 @@ export class GpScene {
         const tz = p.z + this.lead.z;
         // a câmera de longe quase não se afasta com a velocidade (afastar fazia o carro parecer mais lento)
         const dist = this.farDist * (1 + Math.min(1, speed / gpVmaxOf(this.world.mode)) * 0.06);
-        this.camLook.set(tx, 0, tz);
+        this.camLook.set(tx, this.focusY, tz);
         this.camPos.copy(this.camLook).addScaledVector(FAR_DIR, dist);
       } else if (this.mode === 'chase') {
         // atrás do carro, com atraso suave (a câmera "segura" na curva) e FOV que abre com a velocidade
@@ -2180,14 +2242,22 @@ export class GpScene {
         const back = (real ? 7.2 - vk * 1.4 : 7.2) * CAR_VIS;
         const up = (real ? 2.7 - vk * 0.6 : 2.7) * CAR_VIS;
         const dir = this.lookBack ? -1 : 1;
-        const want = this.chaseWant.set(p.x - dir * fx * back, up, p.z - dir * fz * back);
+        const want = this.chaseWant.set(
+          p.x - dir * fx * back,
+          up + this.focusY,
+          p.z - dir * fz * back,
+        );
         if (!this.chaseInit || this.lookBack) {
           this.chasePos.copy(want);
           this.chaseInit = true;
         }
         this.chasePos.lerp(want, 1 - Math.exp(-dt * 7));
         this.camPos.copy(this.chasePos);
-        this.camLook.set(p.x + dir * fx * 4 * CAR_VIS, 0.9 * CAR_VIS, p.z + dir * fz * 4 * CAR_VIS);
+        this.camLook.set(
+          p.x + dir * fx * 4 * CAR_VIS,
+          0.9 * CAR_VIS + this.focusY,
+          p.z + dir * fz * 4 * CAR_VIS,
+        );
         fov = 60 + vk * vk * (real ? 26 : 14);
       } else {
         // cockpit: o olho do piloto (atrás do halo), olhando para a frente e um pouco para baixo

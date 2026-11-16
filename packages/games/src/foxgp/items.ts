@@ -156,6 +156,8 @@ export interface GpItemsReadable {
 export interface GpItemBox {
   x: number;
   z: number;
+  /** Altura da estrada na caixa (m, só desenho; pistas de modelo). */
+  y: number;
   /** Segundos até voltar (0 = ativa). */
   cd: number;
 }
@@ -239,7 +241,7 @@ export function gpItemBoxes(world: GpWorld): GpItemBox[] {
     for (let k = 0; k < GP_BOX_PER_ROW; k++) {
       const d = (k - (GP_BOX_PER_ROW - 1) / 2) * (span / (GP_BOX_PER_ROW - 1));
       const p = tr.pointAt(s, d);
-      out.push({ x: p.x, z: p.z, cd: 0 });
+      out.push({ x: p.x, z: p.z, y: tr.yAt(s), cd: 0 });
     }
   }
   return out;
