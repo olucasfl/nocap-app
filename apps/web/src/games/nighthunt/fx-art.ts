@@ -313,3 +313,337 @@ export function drawMagicBolt(
   g.drawImage(c, 0, 0, N, N, x - (N * sc) / 2, y - (N * sc) / 2, N * sc, N * sc);
   g.restore();
 }
+
+// ------------------------------------------------------------------ Raio Lunar
+const BOLT_LUN: Rgb[] = ['#ffffff', '#dff4ff', '#9fd8ff', '#5fa8ff', '#4a5de0', '#2a2a8a'].map(hex);
+
+/**
+ * Raio Lunar caindo do céu. `k` de 0 a 1: (0 a 0,22) a lua marca o chão com um círculo que se fecha e faíscas sobem;
+ * (0,22 a 0,4) o raio cai em zigue-zague com ramificações e o clarão toma a tela do ponto; (0,4 a 1) estouro no chão com
+ * anel de choque, rachaduras, arcos elétricos e brasas azuis que apagam.
+ */
+export function drawLunarStrike(
+  g: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  k: number,
+  seed = 1,
+): void {
+  if (k < 0 || k >= 1) return;
+  const W = 64;
+  const H = 80;
+  const cell = 3;
+  const c = canvas('lunar', W, H);
+  const q = c.getContext('2d')!;
+  q.clearRect(0, 0, W, H);
+  const img = q.createImageData(W, H);
+  const d = img.data;
+  const put = (i: number, j: number, col: Rgb, a = 255) => {
+    i = Math.round(i);
+    j = Math.round(j);
+    if (i < 0 || j < 0 || i >= W || j >= H) return;
+    const o = (j * W + i) * 4;
+    d[o] = col[0];
+    d[o + 1] = col[1];
+    d[o + 2] = col[2];
+    d[o + 3] = a;
+  };
+  const cx = W / 2;
+  const gy = H - 14; // linha do chão
+  const line = (x0: number, y0: number, x1: number, y1: number, col: Rgb, th = 1) => {
+    const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0), 1);
+    for (let s = 0; s <= n; s++) {
+      const px = x0 + ((x1 - x0) * s) / n;
+      const py = y0 + ((y1 - y0) * s) / n;
+      for (let a = 0; a < th; a++)
+        for (let b = 0; b < th; b++) put(px + a - (th >> 1), py + b - (th >> 1), col);
+    }
+  };
+
+  // 1) marca da lua no chão: elipse tracejada que fecha, com cruz de luz
+  if (k < 0.45) {
+    const closing = k < 0.22 ? 1 - easeOut(k / 0.22) * 0.55 : 0.45;
+    const rr = 15 * (0.7 + closing * 0.5);
+    const a = k < 0.22 ? 1 : 1 - smooth(0.22, 0.45, k);
+    for (let s = 0; s < 96; s++) {
+      const th = (s / 96) * Math.PI * 2 + k * 6;
+      if (s % 3 === 2 || !dither(s, s >> 1, a)) continue;
+      put(
+        cx + Math.cos(th) * rr,
+        gy + Math.sin(th) * rr * 0.42,
+        k < 0.22 ? BOLT_LUN[2]! : BOLT_LUN[1]!,
+      );
+    }
+    // faíscas subindo da marca
+    for (let s = 0; s < 8; s++) {
+      const life = (k * 4 + hash(seed * 3 + s) * 3) % 1;
+      const th = hash(seed * 5 + s) * Math.PI * 2;
+      if (k > 0.3) continue;
+      put(
+        cx + Math.cos(th) * rr * 0.8,
+        gy - life * 14 + Math.sin(th) * 2,
+        life < 0.5 ? BOLT_LUN[1]! : BOLT_LUN[3]!,
+      );
+    }
+  }
+
+  // 2) o raio: zigue-zague do alto até o chão, com núcleo branco, brilho azul e galhos
+  if (k > 0.2 && k < 0.62) {
+    const kk = (k - 0.2) / 0.42;
+    const grow = Math.min(1, kk * 5); // desce quase instantaneamente
+    const fade = 1 - smooth(0.15, 1, kk);
+    const pts: Array<[number, number]> = [];
+    const segs = 9;
+    for (let s = 0; s <= segs; s++) {
+      const t = s / segs;
+      const jx =
+        s === 0 || s === segs
+          ? 0
+          : (hash(seed * 11 + s + Math.floor(k * 14)) - 0.5) * 11 * (1 - t * 0.35);
+      pts.push([cx + jx, 0 + (gy - 0) * t]);
+    }
+    const last = Math.max(1, Math.floor(grow * segs));
+    for (let s = 0; s < last; s++) {
+      const [x0, y0] = pts[s]!;
+      const [x1, y1] = pts[s + 1]!;
+      const wide = fade > 0.5 ? 6 : 4;
+      line(x0, y0, x1, y1, BOLT_LUN[4]!, wide);
+      line(x0, y0, x1, y1, BOLT_LUN[2]!, wide - 2);
+      line(x0, y0, x1, y1, BOLT_LUN[0]!, 1);
+      // galho curto saindo de alguns nós
+      if (s % 3 === 1) {
+        const dir = hash(seed + s) > 0.5 ? 1 : -1;
+        line(x1, y1, x1 + dir * 7, y1 + 6, BOLT_LUN[3]!, 1);
+        put(x1 + dir * 7, y1 + 6, BOLT_LUN[0]!);
+      }
+    }
+  }
+
+  // 3) impacto: clarão, anel, rachaduras, arcos e brasas
+  if (k >= 0.38) {
+    const ik = (k - 0.38) / 0.62;
+    const flash = 1 - smooth(0, 0.22, ik);
+    if (flash > 0) {
+      const fr = 11 * (0.5 + easeOut(ik / 0.2) * 0.9);
+      for (let j = -14; j <= 14; j++)
+        for (let i = -16; i <= 16; i++) {
+          const dd = Math.hypot(i, j * 2.2);
+          if (dd < fr && dither(i, j, flash * 1.3 - (dd / fr) * 0.5))
+            put(cx + i, gy + j, BOLT_LUN[0]!);
+        }
+    }
+    // anel de choque achatado
+    const rr = 4 + easeOut(ik / 0.7) * 22;
+    const ra = 1 - smooth(0.25, 0.85, ik);
+    for (let s = 0; s < 160; s++) {
+      if (!dither(s, s >> 2, ra)) continue;
+      const th = (s / 160) * Math.PI * 2;
+      put(
+        cx + Math.cos(th) * rr,
+        gy + Math.sin(th) * rr * 0.42,
+        ik < 0.3 ? BOLT_LUN[0]! : BOLT_LUN[2]!,
+      );
+    }
+    // rachaduras e arcos elétricos no chão, irradiando
+    for (let s = 0; s < 7; s++) {
+      const th = (s / 7) * Math.PI * 2 + hash(seed + s) * 0.6;
+      const len = (6 + hash(seed * 2 + s) * 10) * easeOut(ik / 0.35);
+      let px = cx;
+      let py = gy;
+      for (let st = 0; st < len; st++) {
+        px += Math.cos(th) + (hash(seed * 9 + s * 13 + st + Math.floor(k * 16)) - 0.5) * 1.4;
+        py += (Math.sin(th) + (hash(seed * 7 + s * 5 + st) - 0.5) * 0.9) * 0.45;
+        put(px, py, ik < 0.55 ? BOLT_LUN[1]! : BOLT_LUN[4]!);
+      }
+    }
+    // brasas azuis para cima, com gravidade
+    for (let s = 0; s < 16; s++) {
+      const th = -Math.PI / 2 + (hash(seed * 4 + s) - 0.5) * 2.4;
+      const sp = 10 + hash(seed * 6 + s) * 16;
+      const life = 0.5 + hash(seed * 8 + s) * 0.5;
+      if (ik > life) continue;
+      const t = ik / life;
+      put(
+        cx + Math.cos(th) * sp * t,
+        gy + Math.sin(th) * sp * t + 20 * t * t,
+        t < 0.5 ? BOLT_LUN[0]! : BOLT_LUN[3]!,
+      );
+    }
+  }
+  q.putImageData(img, 0, 0);
+  g.save();
+  g.imageSmoothingEnabled = false;
+  // sombra azulada no chão durante o clarão
+  if (k > 0.38 && k < 0.8) {
+    g.globalAlpha = 0.28 * (1 - smooth(0.38, 0.8, k));
+    g.fillStyle = '#8fb4ff';
+    g.beginPath();
+    g.ellipse(x, y, 40, 15, 0, 0, Math.PI * 2);
+    g.fill();
+    g.globalAlpha = 1;
+  }
+  g.drawImage(c, 0, 0, W, H, x - (W * cell) / 2, y - gy * cell, W * cell, H * cell);
+  g.restore();
+}
+
+// ------------------------------------------------------------------ Aura de Alho
+const GARLIC_PAL: Rgb[] = ['#f2ffe8', '#c9f5b4', '#8fdc78', '#4fb85a', '#2f7d3f', '#1c4a2a'].map(
+  hex,
+);
+const GARLIC_EVO: Rgb[] = ['#fbeeff', '#e6c4ff', '#c58cf0', '#9a56d6', '#6a2fa0', '#3f1a66'].map(
+  hex,
+);
+
+const BULB = [
+  '..g.g..',
+  '...g...',
+  '..ccc..',
+  '.cwcccs',
+  'ccwccss',
+  'cccccss',
+  '.cccss.',
+  '..sss..',
+];
+
+/**
+ * Aura de Alho no chão: leque pontilhado que fica mais denso na borda, ondas que se expandem do jogador, anel de runas
+ * tracejado girando, dentes de alho orbitando e esporos que sobem. `r` é o raio (px da tela), `t` o tempo (s) e `evo`
+ * a versão roxa (Devorador de Almas), que ganha lamentos fantasmas em vez de esporos.
+ */
+export function drawGarlicAura(
+  g: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  r: number,
+  t: number,
+  evo = false,
+): void {
+  const pal = evo ? GARLIC_EVO : GARLIC_PAL;
+  const cell = 3;
+  const N = Math.ceil((r * 2.3) / cell) | 1;
+  const c = canvas('garlic', N, N);
+  const q = c.getContext('2d')!;
+  q.clearRect(0, 0, N, N);
+  const img = q.createImageData(N, N);
+  const d = img.data;
+  const put = (i: number, j: number, col: Rgb, a = 255) => {
+    i = Math.round(i);
+    j = Math.round(j);
+    if (i < 0 || j < 0 || i >= N || j >= N) return;
+    const o = (j * N + i) * 4;
+    d[o] = col[0];
+    d[o + 1] = col[1];
+    d[o + 2] = col[2];
+    d[o + 3] = a;
+  };
+  const cx = (N - 1) / 2;
+  const cy = (N - 1) / 2;
+  const R = (r / cell) * 0.98;
+  const squash = 0.8;
+  const pulse = 0.5 + 0.5 * Math.sin(t * 3);
+
+  for (let j = 0; j < N; j++)
+    for (let i = 0; i < N; i++) {
+      const dx = i - cx;
+      const dy = (j - cy) / squash;
+      const dd = Math.hypot(dx, dy) / R;
+      if (dd > 1.0) continue;
+      // enchimento pontilhado: bem fraco no centro, mais denso perto da borda
+      const dens = 0.06 + 0.3 * smooth(0.45, 1, dd) + 0.05 * pulse;
+      if (dither(i, j, dens)) put(i, j, dd > 0.85 ? pal[2]! : pal[3]!, 215);
+    }
+  // ondas que saem do jogador e somem na borda
+  for (let w = 0; w < 2; w++) {
+    const ph = (t * 0.55 + w * 0.5) % 1;
+    const rr = R * (0.15 + ph * 0.85);
+    const a = 1 - smooth(0.5, 1, ph);
+    for (let s = 0; s < 360; s++) {
+      if (!dither(s, s >> 2, a)) continue;
+      const th = (s / 360) * Math.PI * 2;
+      put(cx + Math.cos(th) * rr, cy + Math.sin(th) * rr * squash, pal[1]!);
+    }
+  }
+  // anel externo: faixa de 2 células com borda recortada e brilho girando
+  for (let s = 0; s < 720; s++) {
+    const th = (s / 720) * Math.PI * 2;
+    const scal = 1 + 0.018 * Math.sin(th * 12 + t * 2);
+    const bright = 0.5 + 0.5 * Math.sin(th * 2 - t * 2.4);
+    const col = bright > 0.8 ? pal[0]! : bright > 0.4 ? pal[1]! : pal[2]!;
+    put(cx + Math.cos(th) * R * scal, cy + Math.sin(th) * R * scal * squash, col);
+    put(cx + Math.cos(th) * (R * scal - 1), cy + Math.sin(th) * (R * scal - 1) * squash, pal[3]!);
+  }
+  // runas: traços tracejados girando num anel interno
+  for (let s = 0; s < 24; s++) {
+    const th = (s / 24) * Math.PI * 2 + t * 0.5;
+    const rr = R * 0.9;
+    if (s % 2) continue;
+    for (let m = 0; m < 3; m++) {
+      const a2 = th + m * 0.045;
+      put(cx + Math.cos(a2) * rr, cy + Math.sin(a2) * rr * squash, pal[1]!);
+    }
+  }
+  // dentes de alho orbitando
+  const bulbs = 6;
+  const sprites: Array<[number, number]> = [];
+  for (let b = 0; b < bulbs; b++) {
+    const th = (b / bulbs) * Math.PI * 2 + t * 0.7;
+    const bob = Math.sin(t * 4 + b) * 0.8;
+    sprites.push([cx + Math.cos(th) * R * 0.99, cy + Math.sin(th) * R * 0.99 * squash + bob]);
+  }
+  // esporos subindo (ou lamentos, na versão roxa)
+  for (let s = 0; s < 22; s++) {
+    const life = (t * 0.45 + hash(s * 7) * 3) % 1;
+    const th = hash(s * 3) * Math.PI * 2;
+    const rad = Math.sqrt(hash(s * 11)) * R * 0.88;
+    const px = cx + Math.cos(th) * rad + Math.sin(t * 2 + s) * 1.2;
+    const py = cy + Math.sin(th) * rad * squash - life * 10;
+    const col = life < 0.3 ? pal[1]! : life < 0.7 ? pal[2]! : pal[3]!;
+    if (!dither(s, s >> 1, 1 - life * 0.6)) continue;
+    put(px, py, col);
+    if (s % 5 === 0 && life < 0.6) {
+      put(px + 1, py, pal[1]!);
+      put(px - 1, py, pal[1]!);
+      put(px, py - 1, pal[0]!);
+    }
+  }
+  q.putImageData(img, 0, 0);
+  // os dentes de alho entram por cima (sprite por mapa de pixels, com contorno escuro)
+  const q2 = c.getContext('2d')!;
+  for (const [bx, by] of sprites) {
+    const ox = Math.round(bx) - 4;
+    const oy = Math.round(by) - 5;
+    // primeiro o contorno escuro (um pixel em volta de cada pixel do dente), depois as cores por cima
+    q2.fillStyle = '#12182b';
+    BULB.forEach((row, jj) =>
+      [...row].forEach((ch, ii) => {
+        if (ch === '.') return;
+        q2.fillRect(ox + ii - 1, oy + jj, 3, 1);
+        q2.fillRect(ox + ii, oy + jj - 1, 1, 3);
+      }),
+    );
+    BULB.forEach((row, jj) =>
+      [...row].forEach((ch, ii) => {
+        if (ch === '.') return;
+        q2.fillStyle =
+          ch === 'g'
+            ? evo
+              ? '#d49cff'
+              : '#6fd86a'
+            : ch === 'w'
+              ? '#ffffff'
+              : ch === 's'
+                ? evo
+                  ? '#a97bd0'
+                  : '#c8bfa0'
+                : evo
+                  ? '#f0dcff'
+                  : '#f4f0dc';
+        q2.fillRect(ox + ii, oy + jj, 1, 1);
+      }),
+    );
+  }
+  g.save();
+  g.imageSmoothingEnabled = false;
+  g.drawImage(c, 0, 0, N, N, x - (N * cell) / 2, y - (N * cell) / 2, N * cell, N * cell);
+  g.restore();
+}

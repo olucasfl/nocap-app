@@ -2352,10 +2352,14 @@ export class NhApp {
         const ev = EVO_INFO[id as EvoId];
         notes.push({ label: 'Requer', ids: [ev.passive], color: '#ffb25a' });
       } else {
-        const hint = w.comboHint(id);
-        if (hint) notes.push({ label: 'Combina com', ids: [hint], color: '#7fe08a' });
-        const ign = IGNORES[id as UpgradeId] ?? [];
-        if (ign.length) notes.push({ label: 'Não é afetada por', ids: [...ign], color: '#ffb25a' });
+        // as notas só aparecem na PRIMEIRA vez que o item é oferecido (nível 0): o aviso de combinação, só quando você já tem
+        // o parceiro; depois que pegou, nenhum dos dois volta a mostrar a nota
+        if (lv === 0) {
+          const hint = w.comboHint(id);
+          if (hint) notes.push({ label: 'Combina com', ids: [hint], color: '#7fe08a' });
+          const ign = IGNORES[id as UpgradeId] ?? [];
+          if (ign.length) notes.push({ label: 'Não é afetada por', ids: [...ign], color: '#ffb25a' });
+        }
       }
       const ICON_W = 20;
       type Seg = { text?: string; icon?: string; w: number };
