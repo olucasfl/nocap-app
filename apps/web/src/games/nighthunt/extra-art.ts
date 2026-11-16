@@ -1,3 +1,4 @@
+import { drawHeroFrame } from './hero-art';
 import { HEROES, MAPS, MONSTER_CELLS } from '@nocap/games';
 
 /**
@@ -724,9 +725,18 @@ export function extendAtlas(
   // heróis: o guerreiro com outro matiz
   for (const h of Object.values(HEROES)) {
     if (!h.hue) continue;
-    for (const name of Object.keys(frames))
-      if (name.startsWith('Player/'))
-        add(`Player/${h.id}/${name.slice(7)}`, shifted(crop(name), h.hue, 1.05, 0, true));
+    for (const name of Object.keys(frames)) {
+      if (!name.startsWith('Player/')) continue;
+      // herói com visual próprio (hero-art.ts): quadro desenhado; senão o guerreiro com outro matiz
+      const m = /PlWarrior(Idle|Move|Die)(\d+)$/.exec(name);
+      const own = m
+        ? drawHeroFrame(h.id, {
+            kind: m[1] === 'Idle' ? 'idle' : m[1] === 'Move' ? 'move' : 'die',
+            frame: Number(m[2]),
+          })
+        : null;
+      add(`Player/${h.id}/${name.slice(7)}`, own ?? shifted(crop(name), h.hue, 1.05, 0, true));
+    }
   }
   // mapas: decoração com outro matiz
   const bgNames = new Set(bgs.flat().map((b) => b.f));

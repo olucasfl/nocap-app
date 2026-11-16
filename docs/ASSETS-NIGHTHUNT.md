@@ -12,7 +12,7 @@ Os gráficos (personagem, inimigos, chefes, itens, armas, efeitos, fundos e inte
 
 ## Arte e sons feitos para o Night Hunt
 
-Gerados por código em `apps/web/src/games/nighthunt/extra-art.ts`, a partir do material do Slash: variações de matiz dos sprites do guerreiro e da decoração do chão, orbes em azul, ícones novos desenhados por mapa de pixels com contorno escuro, moldura dourada das evoluções. Não há arquivo novo no repositório além do atlas e do áudio extraídos.
+Gerados por código em `apps/web/src/games/nighthunt/extra-art.ts`, a partir do material do Slash: sprites próprios dos heróis (`hero-art.ts`, pixels 32x32 com contorno escuro: Vesper com chicote enrolado, Mara com varinha e aljava, Brann com escudo do alho, Dorian com frasco de lava, Selene com bola de fogo, Ysolde com cajado da lua, Rurik com machado; o Kael segue com o guerreiro original, que é quem usa espada), variações de matiz da decoração do chão, orbes em azul, ícones novos desenhados por mapa de pixels com contorno escuro, moldura dourada das evoluções. Não há arquivo novo no repositório além do atlas e do áudio extraídos.
 
 ## Diferenças deliberadas em relação ao Slash
 
