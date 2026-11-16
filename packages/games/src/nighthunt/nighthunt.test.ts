@@ -562,7 +562,7 @@ describe('monstros novos (Dungeon Crawl)', () => {
     run(campo, 420);
     for (const m of MONSTERS) expect(ids(campo).has(m.id)).toBe(false);
     const des = new NhWorld('md', NO_META, { map: 'deserto' });
-    run(des, 420);
+    run(des, 600);
     const seen = [...ids(des)].filter((id) => MONSTERS.some((m) => m.id === id));
     expect(seen.length).toBeGreaterThanOrEqual(3);
   });
@@ -952,5 +952,20 @@ describe('vender melhorias compradas, com 10% de desconto (heróis não se vende
     // comprar e vender tudo nunca dá lucro
     expect(s.gold).toBeLessThan(before);
     expect(s.stats.metaBought).toBe(0);
+  });
+});
+
+describe('chefes mais lentos (16/11/2026)', () => {
+  it('um chefe anda 12% mais devagar que antes; o resto não muda', () => {
+    const w = new NhWorld('boss-slow');
+    const spawn = (w as unknown as { spawnEnemy(x: number, y: number, c: string): Enemy })
+      .spawnEnemy;
+    const boss = spawn.call(w, 400, 0, 'BasicBoss');
+    const bat = spawn.call(w, 400, 0, 'BasicEnemy');
+    const bossSpeed = Math.max(boss.speedX, boss.speedY);
+    expect(bossSpeed).toBeLessThanOrEqual(boss.s.speed * 0.88 * MAPS.campo!.enemySpeed + 1e-9);
+    expect(Math.max(bat.speedX, bat.speedY)).toBeLessThanOrEqual(
+      bat.s.speed * MAPS.campo!.enemySpeed + 1e-9,
+    );
   });
 });

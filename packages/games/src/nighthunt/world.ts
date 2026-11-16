@@ -1066,6 +1066,8 @@ export class NhWorld {
     if (!s) throw new Error('inimigo desconhecido ' + id);
     const per = PERIODIC.get(id);
     const lo = s.speed / 2;
+    // chefes (todos soltam baú): 12% mais lentos, só um pouco (pedido do Lucas, 16/11/2026)
+    const slow = id.endsWith('Boss') ? 0.88 : 1;
     const e: Enemy = {
       uid: this.nextUid++,
       s,
@@ -1082,10 +1084,12 @@ export class NhWorld {
       speedX:
         (lo + this.rng() * (s.speed - lo)) *
         this.mapDef.enemySpeed *
+        slow *
         (1 + 0.05 * this.levels.curse),
       speedY:
         (lo + this.rng() * (s.speed - lo)) *
         this.mapDef.enemySpeed *
+        slow *
         (1 + 0.05 * this.levels.curse),
       life: s.lifetime,
       faceX: 1,
