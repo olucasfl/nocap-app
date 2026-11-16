@@ -71,6 +71,8 @@ export interface GpTrackDef {
   heights?: readonly number[];
   /** Inclinação lateral da estrada em cada ponto de controle (rad; positiva = lado direito mais alto). */
   banks?: readonly number[];
+  /** Desgaste do pneu nesta pista, em relação ao padrão (1). Interlagos é longa: gastava demais por volta. */
+  wearK?: number;
 }
 
 /** O tipo da barreira: muro (batida normal) ou pilha de pneus (rebate o kart para trás). */
@@ -134,7 +136,7 @@ export const GP_TRACK_TOCA: GpTrackDef = {
  * Circuito da Marina (spec 079): o traçado da imagem de referência (o desenho de um circuito de marina com a reta norte e o
  * grampo), redesenhado em pontos do próprio desenho (pixels) e escalado para ~1,5 km. Sentido: a reta principal desce para
  * sudeste passando pela linha, sobe para o grampo do norte, volta pela reta norte, desce pela esquerda até o sul, faz o
- * miolo de curvas e sobe de volta para a reta principal. Os boxes ficam do lado de dentro da reta principal.
+ * miolo de curvas e sobe de volta para a reta principal. O box fica na metade da volta, do lado de fora da curva.
  */
 export const GP_TRACK_MARINA: GpTrackDef = {
   id: 'marina',
@@ -201,7 +203,8 @@ export const GP_TRACK_MARINA: GpTrackDef = {
   ],
   // a chicane do miolo (das curvas de baixo até a subida): cortar por dentro volta o carro
   noCut: [[42, 47]],
-  pit: { side: 1, offset: 12, inStart: -46, inEnd: -32, outStart: 30, outEnd: 52, box: -12 },
+  // box na metade da volta (pedido do Lucas, 16/11/2026): na curva longa antes da reta curta do norte, do lado de fora
+  pit: { side: 1, offset: 12, inStart: -731, inEnd: -717, outStart: -655, outEnd: -633, box: -697 },
   sectors: [13, 33],
   stands: [
     { from: 0, to: 2, side: -1, name: 'MAIN' },
@@ -229,7 +232,7 @@ export const GP_TRACK_MARINA: GpTrackDef = {
  * Interlagos (pedido do Lucas, 14/11/2026): o traçado do mapa de DRS enviado por ele (reta principal descendo para o
  * sudoeste, S do Senna, Curva do Sol, reta oposta embaixo, subida pela direita, Descida do Lago, Ferradura, Laranjinha,
  * Pinheirinho, Bico de Pato, Mergulho, Junção e Subida dos Boxes de volta, no sentido da corrida). Pontos
- * em pixels do desenho; o cenário é o mesmo da Marina (só muda o traçado). Os boxes ficam do lado de dentro da reta de largada.
+ * em pixels do desenho; o cenário é o mesmo da Marina (só muda o traçado). O box fica na metade da volta, do lado de fora da curva.
  */
 export const GP_TRACK_INTERLAGOS: GpTrackDef = {
   id: 'interlagos',
@@ -302,7 +305,10 @@ export const GP_TRACK_INTERLAGOS: GpTrackDef = {
     [1480, 140], // 60 Subida dos Boxes
   ],
   noCut: [],
-  pit: { side: -1, offset: 12, inStart: -46, inEnd: -32, outStart: 30, outEnd: 52, box: -12 },
+  // box na metade da volta (pedido do Lucas, 16/11/2026): na curva aberta antes da reta do Pinheirinho, do lado de fora
+  pit: { side: 1, offset: 12, inStart: 1124, inEnd: 1138, outStart: 1200, outEnd: 1222, box: 1158 },
+  // Interlagos é longa: o pneu gastava quase tudo em uma volta
+  wearK: 0.5,
   sectors: [20, 41],
   stands: [
     { from: 0, to: 3, side: 1, name: 'MAIN' },
@@ -426,6 +432,8 @@ export class GpTrack {
   readonly wallR: Float64Array;
   readonly noCut: Uint8Array;
   readonly limit: number;
+  /** Multiplicador do desgaste do pneu desta pista. */
+  readonly wearK: number;
   /** A faixa do box (null = pista sem box). */
   readonly pit: GpPitDef | null;
   readonly pads: readonly { s: number; d: number }[];
@@ -448,6 +456,7 @@ export class GpTrack {
   constructor(def: GpTrackDef) {
     this.def = def;
     this.limit = def.limit ?? GP_LIMIT;
+    this.wearK = def.wearK ?? 1;
     this.pit = def.pit === null ? null : (def.pit ?? PIT_DEFAULT);
     this.pads = def.pads ?? [];
     const k = def.scale ?? 1;

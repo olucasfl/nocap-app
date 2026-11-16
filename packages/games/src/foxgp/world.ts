@@ -1026,7 +1026,7 @@ export class GpWorld {
       );
       if (over > 0) {
         v -= Math.sign(v) * over * GP_REAL_SCRUB * dt;
-        c.wear += GP_WEAR_SLIP * over * av * 0.25 * dt;
+        c.wear += GP_WEAR_SLIP * over * av * 0.25 * dt * this.track.wearK;
       }
       v -= Math.sign(v) * GP_REAL_CORNER_DRAG * load * load * dt;
     }
@@ -1063,7 +1063,7 @@ export class GpWorld {
         (v > 0 ? GP_REAL_ROLL : 0) -
         c.rBrk * brakeK * gpRealBrake(v);
       v = Math.max(0, v + a * dt);
-      if (c.rBrk > 0.05 && v > 12) c.wear += GP_WEAR_BRAKE * c.rBrk * dt;
+      if (c.rBrk > 0.05 && v > 12) c.wear += GP_WEAR_BRAKE * c.rBrk * dt * this.track.wearK;
     }
     // fora do asfalto (grama, brita, box) a máxima cai: perde velocidade até ela
     const vmax = this.vmaxOf(c);
@@ -1081,8 +1081,9 @@ export class GpWorld {
     c.vz = -Math.cos(c.h) * v + c.kz;
     c.x += c.vx * dt;
     c.z += c.vz * dt;
-    c.wear += GP_WEAR_DIST * Math.abs(v) * dt;
-    if (c.surface === 'grass' || c.surface === 'gravel') c.wear += GP_WEAR_OFF * dt;
+    c.wear += GP_WEAR_DIST * Math.abs(v) * dt * this.track.wearK;
+    if (c.surface === 'grass' || c.surface === 'gravel')
+      c.wear += GP_WEAR_OFF * dt * this.track.wearK;
     c.wear = Math.min(1, c.wear);
   }
 
