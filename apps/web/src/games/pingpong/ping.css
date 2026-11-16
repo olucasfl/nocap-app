@@ -973,3 +973,11 @@
 .png-play .gm-net span {
   white-space: nowrap;
 }
+
+/* celular: os dois nomes do placar cabem inteiros ("Raposa Média" não vira "Raposa Mé...") */
+@media (max-width: 520px) {
+  .png-side small {
+    max-width: 36vw;
+    letter-spacing: 0.02em;
+  }
+}

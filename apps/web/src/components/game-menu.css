@@ -370,3 +370,9 @@
   background: #5b8cff;
   color: #fff;
 }
+
+/* nota da versão no fim do menu de pausa: legível em celular */
+.gm-note,
+.gm-note.mono {
+  font-size: max(11px, 0.8rem);
+}
