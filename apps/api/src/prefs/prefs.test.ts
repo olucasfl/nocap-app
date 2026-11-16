@@ -127,8 +127,9 @@ describe('Night Hunt na conta (spec 083)', () => {
     expect(nhSchema.safeParse({ ...ok, extra: 1 }).success).toBe(false);
     expect(nhSchema.safeParse({ ...ok, heroes: Array(30).fill('x') }).success).toBe(false);
   });
-  it('reset (geração 2): save sem geração é recusado e o da conta de antes não conta', () => {
-    const { epoch: _e, ...legacy } = ok;
+  it('reset (por geração): save sem geração é recusado e o da conta de antes não conta', () => {
+    const legacy: Partial<typeof ok> = { ...ok };
+    delete legacy.epoch;
     expect(nhSchema.safeParse(legacy).success).toBe(false);
     const old = { ...ok, epoch: 1 as never, rev: 999, gold: 9999 };
     expect(mergeNh(old, ok)).toBe(ok);
