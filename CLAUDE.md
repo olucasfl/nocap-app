@@ -8,7 +8,7 @@ Guia para agentes neste repositório. `README.md` é para humanos; este arquivo 
 2. `.claude/rules/RULES.md`: regras permanentes (têm precedência sobre o resto)
 3. `docs/PROJECT-BRIEF.md`: visão, decisões, roadmap
 4. `ARCHITECTURE.md` e `docs/ROADMAP.md`
-5. `docs/DESIGN.md` e `docs/reference/` antes de qualquer UI
+5. `docs/DESIGN.md` e `docs/reference/` antes de qualquer UI; `docs/MOBILE-GUIDE.md` para qualquer tela (celular, tablet, PWA)
 6. `specs/INDEX.md`: a spec da feature em andamento
 
 ## Comandos

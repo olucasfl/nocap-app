@@ -347,7 +347,7 @@
 @media (orientation: landscape) and (max-height: 520px) {
   :root {
     --rail: 76px;
-    --ui-zoom: 0.86;
+    --ui-zoom: 0.95;
   }
   .tabs-app,
   .app.has-rail {
@@ -368,7 +368,7 @@
     display: none;
   }
   .tab {
-    font-size: 9px;
+    font-size: 10.5px;
     gap: 2px;
   }
   .tab svg {
@@ -445,7 +445,7 @@
 /* menor ainda e em colunas: cartões de jogo lado a lado, títulos baixos, sem a folga da barra de baixo */
 @media (orientation: landscape) and (max-height: 520px) {
   :root {
-    --ui-zoom: 0.8;
+    --ui-zoom: 0.95;
   }
   h1,
   .rm h1,
@@ -477,7 +477,7 @@
 }
 @media (orientation: landscape) and (max-height: 520px) and (max-height: 420px) {
   :root {
-    --ui-zoom: 0.72;
+    --ui-zoom: 0.94;
   }
 }
 
@@ -485,5 +485,22 @@
 @media (max-width: 767px) and (not ((orientation: landscape) and (max-height: 520px))) {
   .tabs-app {
     padding-bottom: calc(70px + 16px + 28px + var(--sa-bottom, env(safe-area-inset-bottom)));
+  }
+}
+
+/*
+ * Alvo de toque (docs/MOBILE-GUIDE.md): com o celular deitado o `zoom` encolhe os controles; a altura/largura mínima desconta o zoom
+ * para o alvo efetivo ficar em 44px.
+ */
+@media (orientation: landscape) and (max-height: 520px) {
+  button.chip,
+  .chip[href],
+  .hz-search-btn {
+    min-width: calc(44px / var(--ui-zoom));
+    min-height: calc(44px / var(--ui-zoom));
+  }
+  .hz-roomtop-btn,
+  .hub-room-toggle {
+    min-height: calc(44px / var(--ui-zoom));
   }
 }

@@ -28,6 +28,7 @@ Padrão: negar por padrão, abrir exceções nomeadas, dizer o que fazer em vez 
 - Uma spec em `specs/NNN-nome.md` antes de feature nova; atualizar `specs/INDEX.md`.
 - Testes no mesmo commit para lógica com ramificação (nota, rng, validação).
 - Atualizar `ARCHITECTURE.md`, `docs/ROADMAP.md` e o status do brief junto com a mudança.
+- Toda tela nova ou alterada segue `docs/MOBILE-GUIDE.md` (retrato e paisagem, áreas seguras, alvos de toque de 44 px, sem rolagem horizontal) e passa na varredura `mobile-audit`.
 - Código em inglês, UI em pt-BR, Conventional Commits.
 
 ## Como pedir exceção
