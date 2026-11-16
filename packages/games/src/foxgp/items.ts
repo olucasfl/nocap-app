@@ -39,10 +39,12 @@ export const GP_PEEL_TTL = 60;
 export const GP_SHOT_TTL = 14;
 export const GP_BOLT_TTL = 22;
 /** Quanto dura o tropeço (s) e a imunidade logo depois (s). */
-export const GP_HIT_STUN = 1.1;
+export const GP_HIT_STUN = 1.4;
+/** Voltas completas que o kart dá ao ser acertado (inteiro, para voltar de frente). */
+export const GP_HIT_TURNS = 2;
 export const GP_HIT_SAFE = 1.6;
 /** O que sobra da velocidade ao ser acertado. */
-export const GP_HIT_KEEP = 0.35;
+export const GP_HIT_KEEP = 0.25;
 export const GP_STAR_SEC = 8;
 export const GP_NITRO_SEC = 1.5;
 /** Espera entre dois usos (s), para o triplo não sair de uma vez. */
@@ -51,7 +53,9 @@ export const GP_USE_GAP = 0.45;
 export const GP_BALL_SPEED = GP_ARC_VMAX * 1.5;
 export const GP_SEEKER_SPEED = GP_ARC_VMAX * 1.3;
 export const GP_BOLT_SPEED = GP_ARC_VMAX * 1.75;
-const GP_BALL_BOUNCES = 4;
+const GP_BALL_BOUNCES = 6;
+/** Raio de acerto dos tiros: um pouco maior que o do chão, para a bola e o cometa não passarem por dentro do kart. */
+const GP_SHOT_HIT_RADIUS = 3;
 
 // ---- item pela posição ----
 /** Faixa do carro: 0 frente, 1 meio, 2 trás (com 1 carro só, frente). */
@@ -141,6 +145,8 @@ export interface GpShot {
   target: string | null;
   ttl: number;
   bounces: number;
+  /** Bola: velocidade lateral (m/s, + para a direita da pista); ela anda colada ao traçado e quica nas bordas. */
+  vd: number;
 }
 export interface GpTrap {
   uid: number;
@@ -193,6 +199,8 @@ export class GpItemSystem implements GpItemsReadable {
   private events: GpItemEvent[] = [];
   private uid = 0;
   private rng: () => number;
+  /** Sentido do giro e quanto do giro já foi aplicado (0 a 1), por kart acertado. */
+  private spinDir = new Map<string, { dir: number; done: number }>();
 
   constructor(
     private world: GpWorld,
@@ -277,10 +285,21 @@ export class GpItemSystem implements GpItemsReadable {
     this.stepTraps(dt);
     this.stepShots(dt);
 
-    // tropeço: o carro fica lento enquanto dura
+    // tropeço: o kart gira em torno de si (GP_HIT_TURNS voltas, rápido no começo) e fica lento enquanto dura
     for (const c of w.cars) {
       const s = this.state(c.id);
-      if (s.stun > 0 && c.speed > GP_ARC_VMAX * 0.5) this.scaleSpeed(c, 0.96);
+      if (s.stun <= 0) {
+        this.spinDir.delete(c.id);
+        continue;
+      }
+      const sp = this.spinDir.get(c.id);
+      if (sp) {
+        const p = 1 - s.stun / GP_HIT_STUN;
+        const k = 1 - (1 - Math.min(1, p)) ** 2;
+        c.h += sp.dir * Math.PI * 2 * GP_HIT_TURNS * (k - sp.done);
+        sp.done = k;
+      }
+      if (c.speed > GP_ARC_VMAX * 0.3) this.scaleSpeed(c, 0.94);
     }
   }
 
@@ -324,7 +343,13 @@ export class GpItemSystem implements GpItemsReadable {
           arm: 0.7,
         });
         break;
-      case 'ball':
+      case 'ball': {
+        // sai na direção do kart, mas anda pelo traçado da pista (não atravessa o chão nem as bordas nas curvas)
+        const along = this.world.track.pointAt(c.prog, c.d).h;
+        let ang = c.h - along;
+        while (ang > Math.PI) ang -= Math.PI * 2;
+        while (ang < -Math.PI) ang += Math.PI * 2;
+        ang = Math.max(-0.6, Math.min(0.6, ang));
         this.shots.push({
           uid: ++this.uid,
           kind: 'ball',
@@ -332,13 +357,15 @@ export class GpItemSystem implements GpItemsReadable {
           x: c.x + fx * 4,
           z: c.z + fz * 4,
           h: c.h,
-          prog: c.prog,
+          prog: c.prog + 4,
           d: c.d,
           target: null,
           ttl: GP_SHOT_TTL,
           bounces: GP_BALL_BOUNCES,
+          vd: Math.sin(ang) * GP_BALL_SPEED,
         });
         break;
+      }
       case 'seeker':
       case 'bolt': {
         const target = kind === 'bolt' ? this.leaderOtherThan(c.id) : this.nextAhead(c);
@@ -354,6 +381,7 @@ export class GpItemSystem implements GpItemsReadable {
           target,
           ttl: kind === 'bolt' ? GP_BOLT_TTL : GP_SHOT_TTL,
           bounces: 0,
+          vd: 0,
         });
         break;
       }
@@ -396,7 +424,8 @@ export class GpItemSystem implements GpItemsReadable {
     }
     s.stun = GP_HIT_STUN;
     s.safe = GP_HIT_STUN + GP_HIT_SAFE;
-    c.spin += (this.rng() < 0.5 ? -1 : 1) * 7;
+    c.spin = 0;
+    this.spinDir.set(c.id, { dir: this.rng() < 0.5 ? -1 : 1, done: 0 });
     this.scaleSpeed(c, GP_HIT_KEEP);
     c.boostT = 0;
     c.boostX = 0;
@@ -442,21 +471,22 @@ export class GpItemSystem implements GpItemsReadable {
       sh.ttl -= dt;
       let dead = sh.ttl <= 0;
       if (sh.kind === 'ball') {
-        const v = GP_BALL_SPEED * dt;
-        sh.x += Math.sin(sh.h) * v;
-        sh.z -= Math.cos(sh.h) * v;
-        const pr = tr.projectGlobal(sh.x, sh.z);
-        if (Math.abs(pr.d) > GP_HALF_WIDTH - 0.8) {
+        const lim = GP_HALF_WIDTH - 1.2;
+        const vf = Math.sqrt(Math.max(1, GP_BALL_SPEED * GP_BALL_SPEED - sh.vd * sh.vd));
+        sh.prog += vf * dt;
+        sh.d += sh.vd * dt;
+        if (Math.abs(sh.d) > lim) {
           if (sh.bounces-- <= 0) dead = true;
-          else {
-            // espelha a direção em torno do traçado da pista
-            const along = tr.pointAt(pr.s, 0).h;
-            sh.h = 2 * along - sh.h;
-            const p = tr.pointAt(pr.s, Math.sign(pr.d) * (GP_HALF_WIDTH - 1.2));
-            sh.x = p.x;
-            sh.z = p.z;
-          }
+          sh.d = Math.sign(sh.d) * lim;
+          sh.vd = -sh.vd;
+          // a quicada sempre devolve a bola para dentro da pista, mesmo saindo reta
+          if (Math.abs(sh.vd) < GP_BALL_SPEED * 0.25)
+            sh.vd = -Math.sign(sh.d) * GP_BALL_SPEED * 0.4;
         }
+        const p = tr.pointAt(sh.prog, sh.d);
+        sh.x = p.x;
+        sh.z = p.z;
+        sh.h = p.h + Math.atan2(sh.vd, vf);
       } else {
         // perseguidores seguem o traçado da pista e vão para o afastamento do alvo
         const target = sh.target ? this.world.car(sh.target) : undefined;
@@ -479,7 +509,7 @@ export class GpItemSystem implements GpItemsReadable {
         for (const c of this.world.cars) {
           if (!this.active(c) || c.id === sh.owner) continue;
           if (sh.kind !== 'ball' && sh.target && c.id !== sh.target) continue;
-          if (dist(c.x, c.z, sh.x, sh.z) <= GP_ITEM_HIT_RADIUS) {
+          if (dist(c.x, c.z, sh.x, sh.z) <= GP_SHOT_HIT_RADIUS) {
             this.hit(c, sh.owner, sh.kind);
             dead = true;
             break;
@@ -656,6 +686,7 @@ export class GpItemView implements GpItemsReadable {
           target: null,
           ttl: 1,
           bounces: 0,
+          vd: 0,
         },
       ];
     });

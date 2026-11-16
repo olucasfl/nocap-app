@@ -74,6 +74,57 @@ const glow = (color: number, k = 1.2) =>
   std(color, { emissive: color, emissiveIntensity: k, roughness: 0.5 });
 const ink = () => std(0x141a2b, { roughness: 0.6 });
 
+let glowTex: THREE.CanvasTexture | null = null;
+/** Textura de brilho suave (círculo que apaga nas bordas), usada nos halos e nas partículas. */
+export function glowTexture(): THREE.CanvasTexture {
+  if (glowTex) return glowTex;
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d')!;
+  const r = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  r.addColorStop(0, 'rgba(255,255,255,1)');
+  r.addColorStop(0.35, 'rgba(255,255,255,0.55)');
+  r.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = r;
+  g.fillRect(0, 0, 64, 64);
+  glowTex = new THREE.CanvasTexture(c);
+  glowTex.colorSpace = THREE.SRGBColorSpace;
+  return glowTex;
+}
+/** Halo aditivo atrás do item (ele "acende" mesmo de longe). */
+function halo(color: number, size: number, y: number, name = 'halo') {
+  const m = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      map: glowTexture(),
+      color,
+      transparent: true,
+      opacity: 0.55,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    }),
+  );
+  m.scale.setScalar(size);
+  m.position.y = y;
+  m.name = name;
+  return m;
+}
+/** Sombra de contato no chão (um disco escuro e suave). */
+function shadow(r: number) {
+  const m = new THREE.Mesh(
+    new THREE.CircleGeometry(r, 24),
+    new THREE.MeshBasicMaterial({
+      color: 0x000000,
+      transparent: true,
+      opacity: 0.28,
+      depthWrite: false,
+    }),
+  );
+  m.rotation.x = -Math.PI / 2;
+  m.position.y = 0.02;
+  m.name = 'shadow';
+  return m;
+}
+
 function mesh(g: THREE.BufferGeometry, m: THREE.Material, x = 0, y = 0, z = 0) {
   const o = new THREE.Mesh(g, m);
   o.position.set(x, y, z);
@@ -124,6 +175,23 @@ function buildBox(): THREE.Group {
   );
   edges.position.y = 0.6;
   g.add(edges);
+  // coluna de luz fraca: dá para achar a caixa de longe
+  const beam = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.32, 0.5, 5, 18, 1, true),
+    new THREE.MeshBasicMaterial({
+      color: 0xffa54a,
+      transparent: true,
+      opacity: 0.16,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    }),
+  );
+  beam.position.y = 2.6;
+  beam.name = 'beam';
+  g.add(beam);
+  g.add(halo(0xff9a3d, 2.8, 0.6));
+  g.add(shadow(0.6));
   const tex = questionTexture();
   const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false });
   for (const [ry, x, z] of [
@@ -161,20 +229,43 @@ function buildPeel(): THREE.Group {
     g.add(p);
   }
   g.add(mesh(new THREE.SphereGeometry(0.1, 12, 10), std(0x3f9a45), 0, 0.2, 0));
+  g.add(shadow(0.55));
+  g.add(halo(0xffb02e, 1.5, 0.25));
   return g;
 }
 
 function buildBall(): THREE.Group {
   const g = new THREE.Group();
-  g.add(
-    mesh(new THREE.SphereGeometry(0.42, 28, 20), std(0x29c26a, { roughness: 0.25 }), 0, 0.46, 0),
+  g.add(shadow(0.4));
+  // a bola gira dentro do `roll`, em torno do próprio centro (girar o grupo inteiro a enterrava no chão)
+  const roll = new THREE.Group();
+  roll.name = 'roll';
+  roll.position.y = 0.46;
+  g.add(roll);
+  roll.add(
+    mesh(
+      new THREE.SphereGeometry(0.42, 32, 24),
+      std(0x1fbf63, {
+        roughness: 0.18,
+        metalness: 0.15,
+        emissive: 0x0a8a3c,
+        emissiveIntensity: 0.55,
+      }),
+      0,
+      0,
+      0,
+    ),
   );
-  const band = mesh(new THREE.TorusGeometry(0.43, 0.045, 10, 40), std(0xeaffef), 0, 0.46, 0);
-  g.add(band);
+  const band = mesh(new THREE.TorusGeometry(0.43, 0.05, 10, 44), glow(0xeaffef, 0.9), 0, 0, 0);
+  roll.add(band);
   const band2 = band.clone();
   band2.rotation.y = Math.PI / 2;
-  g.add(band2);
-  g.add(mesh(new THREE.SphereGeometry(0.1, 10, 8), glow(0xc7ffd9, 0.6), -0.18, 0.7, 0.3));
+  roll.add(band2);
+  const band3 = band.clone();
+  band3.rotation.x = Math.PI / 2;
+  roll.add(band3);
+  roll.add(mesh(new THREE.SphereGeometry(0.1, 10, 8), glow(0xc7ffd9, 1.1), -0.18, 0.24, 0.3));
+  g.add(halo(0x35ff8a, 2.4, 0.46));
   return g;
 }
 
@@ -213,7 +304,9 @@ function buildSeeker(color = 0xe8343c, flame = 0xffb02e): THREE.Group {
   const fl = mesh(new THREE.ConeGeometry(0.18, 0.6, 14), glow(flame, 1.6), 0, 0.45, -0.72).rotateX(
     -Math.PI / 2,
   );
+  fl.name = 'flame';
   g.add(fl);
+  g.add(halo(color === 0xe8343c ? 0xff5a2a : 0x4fb3ff, 1.9, 0.45));
   g.add(
     mesh(new THREE.ConeGeometry(0.1, 0.4, 12), glow(0xfff3a8, 1.8), 0, 0.45, -0.66).rotateX(
       -Math.PI / 2,
@@ -246,6 +339,8 @@ function buildBomb(): THREE.Group {
   g.add(spark);
   g.add(mesh(new THREE.SphereGeometry(0.09, 10, 8), glow(0xe8343c, 0.9), -0.17, 0.5, 0.39));
   g.add(mesh(new THREE.SphereGeometry(0.09, 10, 8), glow(0xe8343c, 0.9), 0.17, 0.5, 0.39));
+  g.add(shadow(0.5));
+  g.add(halo(0x8a5cff, 1.8, 0.5));
   return g;
 }
 
@@ -284,6 +379,8 @@ function buildNitro(): THREE.Group {
     Math.PI / 2,
   );
   g.add(fl);
+  g.add(shadow(0.4));
+  g.add(halo(0x4f8bff, 1.8, 0.6));
   return g;
 }
 
@@ -320,9 +417,10 @@ function buildStar(): THREE.Group {
   g.add(star);
   g.add(mesh(new THREE.SphereGeometry(0.05, 8, 6), ink(), -0.12, 0.7, 0.14));
   g.add(mesh(new THREE.SphereGeometry(0.05, 8, 6), ink(), 0.12, 0.7, 0.14));
-  const halo = mesh(new THREE.TorusGeometry(0.66, 0.025, 8, 48), glow(0xfff0a0, 1.4), 0, 0.62, 0);
-  halo.castShadow = false;
-  g.add(halo);
+  const ring = mesh(new THREE.TorusGeometry(0.66, 0.025, 8, 48), glow(0xfff0a0, 1.4), 0, 0.62, 0);
+  ring.castShadow = false;
+  g.add(ring);
+  g.add(halo(0xffd23a, 2.6, 0.62));
   return g;
 }
 
@@ -355,6 +453,7 @@ function buildBolt(): THREE.Group {
     g.add(c);
   }
   g.add(mesh(new THREE.SphereGeometry(0.1, 10, 8), glow(0xffffff, 1), 0, 0.55, 0.28));
+  g.add(halo(0x4fb3ff, 2.2, 0.55));
   return g;
 }
 

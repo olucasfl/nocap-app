@@ -66,3 +66,10 @@ quem lidera. Com 2 a 20 carros a posição vira faixa (frente, meio, trás).
 - O modo Poderes entra em algum ranking? (proposta: não, como as salas personalizadas.)
 - Nomes finais dos itens (os atuais são provisórios).
 - Sons: gravar/sintetizar próprios (proposta: Web Audio, como o resto do Fox GP).
+
+## 7. Revisão de 16/11/2026 (pedido do Lucas)
+
+- **Bola:** anda colada ao traçado da pista (avanço + afastamento lateral) e quica nas bordas; antes seguia reta no mundo e saía da pista nas curvas. Raio de acerto dos tiros 3 m. No modelo, ela gira em torno do próprio centro (girar o grupo a enterrava no chão).
+- **Casca e bomba no chão:** quem acerta dá duas voltas completas (volta de frente), perde velocidade (fica com 25%, e segue freando enquanto dura o tropeço de 1,4 s).
+- **HUD:** cartão com o símbolo (SVG por poder), o nome, a tecla (F no PC, botão Item no celular) e quantos faltam; ao pegar uma caixa, aviso "Novo poder" com nome, descrição e tecla.
+- **Visual:** halos e sombras nos modelos, coluna de luz nas caixas, rastro de brilho nos tiros, anel de aviso da bomba, explosões, faíscas ao pegar, acertar, bloquear e usar, brilho do Superfox.

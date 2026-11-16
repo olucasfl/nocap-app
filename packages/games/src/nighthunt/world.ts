@@ -191,6 +191,8 @@ export interface Cut {
   len: number;
   evo: boolean;
   at: number;
+  /** Inimigos e objetos já atingidos por este corte (o golpe acompanha o jogador e acerta cada um uma vez). */
+  hit?: Set<number>;
 }
 export interface Pool {
   x: number;
@@ -972,7 +974,19 @@ export class NhWorld {
   }
 
   private drawOptions(n: number): ChoiceId[] {
-    const base: ChoiceId[] = this.shuffled(this.availableUpgrades()).slice(0, n);
+    // sorteio com peso: o que você já tem sai mais (peso 3) que o item novo (peso 1), sem repetir na mesma janela
+    const pool: UpgradeId[] = [...this.availableUpgrades()];
+    const base: ChoiceId[] = [];
+    while (base.length < n && pool.length) {
+      const wt = pool.map((id) => (this.levels[id] > 0 ? 3 : 1));
+      let r = this.rng() * wt.reduce((a, b) => a + b, 0);
+      let k = 0;
+      for (; k < pool.length - 1; k++) {
+        r -= wt[k]!;
+        if (r < 0) break;
+      }
+      base.push(pool.splice(k, 1)[0]!);
+    }
     // arma no máximo + passivo certo: a evolução vem na próxima janela, no lugar de uma das melhorias
     const evo = this.availableEvolutions()[0];
     if (evo) return [evo, ...base.slice(0, Math.max(0, n - 1))];
@@ -1474,7 +1488,7 @@ export class NhWorld {
     // Chicote: cortes em sequência, frente e trás
     if (L.whip > 0) {
       const evo = this.evolved.has('evoWhip');
-      if (tick('whip', WHIP.cd * this.cdMult * (evo ? 0.6 : 1))) {
+      if (tick('whip', WHIP.cd * this.lv(WHIP.cdLv, L.whip) * this.cdMult * (evo ? 0.6 : 1))) {
         const n = this.lv(WHIP.cuts, L.whip) + amt;
         const dir = this.player.face === 0 ? 1 : this.player.face;
         for (let i = 0; i < n; i++)
@@ -1488,29 +1502,42 @@ export class NhWorld {
       }
     }
     for (const c of this.cuts) {
-      if (c.born > 0 || t < c.at) continue;
-      c.born = t;
-      const evo = c.evo;
-      const len = this.lv(WHIP.len, L.whip) * this.area * (evo ? 2 : 1);
-      c.len = len;
-      const h = 44 * this.area;
-      const cx = px + c.side * (len / 2 + 8);
-      const cy = py + 8;
-      this.events.push({ k: 'swing' });
-      const shape: Shape = { kind: 'box', cx, cy, w: len, h };
-      const base = this.lv(WHIP.dmg, L.whip) * dm * (evo ? 1.3 : 1);
+      if (t < c.at) continue;
+      if (c.born === 0) {
+        c.born = t;
+        c.len = this.lv(WHIP.len, L.whip) * this.area * (c.evo ? 2 : 1);
+        c.hit = new Set();
+        this.events.push({ k: 'swing' });
+      }
+      // o golpe dura pouco e acompanha o jogador: quem entra na área enquanto ele estala leva o dano uma vez
+      if (t - c.born > WHIP.life) continue;
+      const h = WHIP.height * this.area;
+      const shape: Shape = {
+        kind: 'box',
+        cx: px + c.side * (c.len / 2 + 8),
+        cy: py + 8,
+        w: c.len,
+        h,
+      };
+      const base = this.lv(WHIP.dmg, L.whip) * dm * (c.evo ? 1.3 : 1);
       for (const e of this.enemies) {
-        if (e.dead || !overlaps(shape, this.enemyShape(e))) continue;
-        const crit = evo && this.rng() < 0.15;
+        if (e.dead || c.hit!.has(e.uid) || !overlaps(shape, this.enemyShape(e))) continue;
+        c.hit!.add(e.uid);
+        const crit = c.evo && this.rng() < 0.15;
         const d = base * (crit ? 2 : 1);
         this.damageEnemy(e, d);
         this.knock(e, px, py, 90);
-        if (evo) this.heal(Math.max(0, Math.round(d * 0.01 * 10) / 10));
+        if (c.evo) this.heal(Math.max(0, Math.round(d * 0.01 * 10) / 10));
       }
-      for (const b of this.breakables)
-        if (b.hp > 0 && overlaps(shape, this.breakableShape(b))) this.damageBreakable(b, base);
+      for (const b of this.breakables) {
+        const key = -1 - b.uid;
+        if (b.hp > 0 && !c.hit!.has(key) && overlaps(shape, this.breakableShape(b))) {
+          c.hit!.add(key);
+          this.damageBreakable(b, base);
+        }
+      }
     }
-    this.cuts = this.cuts.filter((c) => c.born === 0 || t - c.born < 0.3);
+    this.cuts = this.cuts.filter((c) => c.born === 0 || t - c.born < WHIP.life + 0.04);
 
     // Varinha Arcana: alvos aleatórios por perto
     if (L.wand > 0) {

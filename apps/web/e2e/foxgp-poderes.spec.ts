@@ -62,7 +62,7 @@ test.describe('Fox GP: Arcade com poderes (spec 085)', () => {
     await start(page, true);
     const slot = page.getByTestId('gp-item-slot');
     await expect(slot).toBeVisible();
-    await expect(slot).toContainText('Sem item');
+    await expect(slot).toContainText('Sem poder');
     await page.evaluate(() => (window as Win).__gpItems!.give('me', 'ball3'));
     await expect(slot).toContainText('Bola tripla');
     await expect(slot).toContainText('x3');

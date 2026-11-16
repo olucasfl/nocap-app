@@ -1109,16 +1109,10 @@ export function drawMagmaPool(
 // ------------------------------------------------------------------ Rastreador de Runas
 const RUNE_PAL: Rgb[] = ['#ffffff', '#c8f6ff', '#7fe0ff', '#3a9bff', '#4a5de0', '#2a2a8a'].map(hex);
 const RUNE_EVO: Rgb[] = ['#ffffff', '#fff3b0', '#ffd23f', '#ff9a1a', '#d9461a', '#8a2a1a'].map(hex);
-const GLYPHS = [
-  ['.#.', '###', '.#.'],
-  ['#.#', '.#.', '#.#'],
-  ['##.', '.##', '#..'],
-  ['#..', '###', '..#'],
-];
-
 /**
- * Esfera de runa: orbe luminoso com um anel de glifos girando em volta, pulso de luz e rastro de partículas; ao quicar na
- * borda ela solta um anel. `bounce` (0 a 1) é o clarão da quicada.
+ * Pedra de runa (a mesma do ícone): losango azul facetado com um raio gravado que brilha. Ela rola de lado, bate no chão
+ * e rebate num ritmo seco (sombra no chão, achata ao encostar, solta faíscas e poeira na batida), sem rastro de cometa
+ * para não parecer a Varinha. `bounce` (0 a 1) acende o clarão extra de uma quicada na borda da tela.
  */
 export function drawRuneOrb(
   g: CanvasRenderingContext2D,
@@ -1131,59 +1125,75 @@ export function drawRuneOrb(
   bounce = 0,
   scale = 1,
 ): void {
-  const N = 48;
+  const N = 56;
   const L = lowres('rune', N);
   const pal = evo ? RUNE_EVO : RUNE_PAL;
   const cx = N / 2;
-  const cy = N / 2;
-  const len = Math.hypot(vx, vy) || 1;
-  const dx = vx / len;
-  const dy = vy / len;
-  // rastro de luz: faixa que afina para trás, cintilando
-  for (let s = 3; s < 20; s++) {
-    const w = Math.max(0.5, 4.2 - s * 0.22);
-    const px = cx - dx * s;
-    const py = cy - dy * s;
-    const col = s < 7 ? pal[2]! : s < 12 ? pal[3]! : pal[4]!;
-    for (let j = -4; j <= 4; j++)
-      for (let i = -4; i <= 4; i++)
-        if (Math.hypot(i, j) <= w && (s < 8 || dither(i + s, j, 1 - s / 22)))
-          L.put(px + i, py + j, col);
-  }
-  // orbe
-  const pulse = 0.5 + 0.5 * Math.sin(t * 10);
-  const R = 4.6 + pulse * 0.7;
-  for (let j = 0; j < N; j++)
-    for (let i = 0; i < N; i++) {
-      const dd = Math.hypot(i + 0.5 - cx, j + 0.5 - cy);
-      if (dd < R) L.put(i, j, pal[Math.min(3, Math.floor((dd / R) * 3.2))]!);
-      else if (dd < R + 1.6) L.put(i, j, pal[3]!);
-      else if (dd < R + 3.4 && dither(i, j, 0.45)) L.put(i, j, pal[4]!);
+  const ground = N / 2 + 9;
+  // pulo: arco rápido que bate no chão a cada ~0,42 s
+  const ph = (t * 2.4) % 1;
+  const hop = Math.sin(ph * Math.PI) * 11;
+  const hit = ph < 0.1 || ph > 0.93 ? 1 : 0;
+  // achata ao encostar no chão
+  const sq = hit ? 0.8 : 1;
+  const flip = Math.cos(t * 5.5 + (vx > 0 ? 0 : 2));
+  const wScale = 0.35 + 0.65 * Math.abs(flip);
+  const tilt = Math.sin(t * 5.5) * 0.35 + (vx > 0 ? 0.15 : -0.15);
+  const midY = ground - 9 * sq - hop;
+  // sombra no chão (menor quanto mais alto)
+  const sr = 8 - hop * 0.35;
+  for (let j = -3; j <= 3; j++)
+    for (let i = -10; i <= 10; i++)
+      if ((i / sr) ** 2 + (j / 2.6) ** 2 < 1 && dither(i + 30, j + 30, 0.7))
+        L.put(cx + i, ground + 2 + j, pal[4]!);
+  // pedra: losango (a metade de largura depende do giro) com facetas pela luz do alto à esquerda
+  const hw = 7 * wScale;
+  const hh = 9.5 * sq;
+  const cs = Math.cos(tilt);
+  const sn = Math.sin(tilt);
+  for (let j = -14; j <= 14; j++)
+    for (let i = -12; i <= 12; i++) {
+      const u = i * cs + j * sn;
+      const v = -i * sn + j * cs;
+      const d = Math.abs(u) / hw + Math.abs(v) / hh;
+      if (d >= 1) continue;
+      let tone = 2 + Math.min(2, Math.floor(d * 2.6));
+      // faceta clara na metade de cima/esquerda, escura embaixo/direita
+      if (u + v < -2) tone = Math.max(1, tone - 1);
+      else if (u + v > 3) tone = Math.min(5, tone + 1);
+      if (d > 0.84) tone = 5;
+      L.put(cx + i, midY + j, pal[tone]!);
     }
-  L.put(cx - 1, cy - 2, pal[0]!);
-  // glifos girando em órbita
-  for (let k = 0; k < 4; k++) {
-    const a = t * 2.2 + (k / 4) * Math.PI * 2;
-    const gx = Math.round(cx + Math.cos(a) * 10) - 1;
-    const gy = Math.round(cy + Math.sin(a) * 10) - 1;
-    GLYPHS[k]!.forEach((row, jj) =>
-      [...row].forEach((ch, ii) => {
-        if (ch === '#') L.put(gx + ii, gy + jj, k % 2 ? pal[1]! : pal[0]!);
-      }),
-    );
+  // raio gravado, que brilha mais na batida
+  const glow = hit ? pal[0]! : pal[1]!;
+  for (const [u, v] of [
+    [1, -6],
+    [0, -4],
+    [-1, -2],
+    [0, 0],
+    [1, 2],
+    [0, 4],
+    [-1, 6],
+  ] as const) {
+    if (Math.abs(u * wScale) < hw * 0.8) {
+      const px = cx + u * wScale * cs - v * sn;
+      const py = midY + u * wScale * sn + v * cs;
+      L.put(px, py, glow);
+      L.put(px + 1, py, pal[1]!);
+    }
   }
-  // anel da quicada
-  if (bounce > 0) {
-    const rr = 6 + (1 - bounce) * 12;
-    for (let s = 0; s < 40; s++)
-      if (s % 2 === 0)
-        L.put(
-          cx + Math.cos((s / 40) * Math.PI * 2) * rr,
-          cy + Math.sin((s / 40) * Math.PI * 2) * rr,
-          bounce > 0.5 ? pal[0]! : pal[2]!,
-        );
+  L.put(cx - 2 * wScale, midY - 4, pal[0]!);
+  // batida: faíscas que saltam para os lados e poeira rasa
+  if (hit || bounce > 0) {
+    const k = hit ? 1 - Math.abs(ph < 0.5 ? ph : ph - 1) / 0.1 : bounce;
+    for (let s = 0; s < 10; s++) {
+      const a = (s / 10) * Math.PI;
+      const rr = 6 + (1 - k) * 9;
+      L.put(cx + Math.cos(a) * rr, ground - Math.sin(a) * rr * 0.55 + 1, s % 2 ? pal[0]! : pal[2]!);
+    }
+    for (let i = -9; i <= 9; i += 3) L.put(cx + i * (1.2 - k * 0.4), ground + 1, pal[3]!);
   }
-  L.flush(g, x, y, 2 * scale);
+  L.flush(g, x, y + 4 * scale, 2 * scale, 0, 0);
 }
 
 // ------------------------------------------------------------------ Pentagrama

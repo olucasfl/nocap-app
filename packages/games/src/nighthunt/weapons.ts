@@ -7,8 +7,13 @@ export const WHIP = {
   cuts: [2, 2, 3, 3, 4, 5],
   dmg: [3, 3.9, 3.9, 5.1, 5.1, 5.1],
   cd: 1.4,
-  len: [150, 150, 150, 150, 150, 180],
-  gap: 0.12,
+  /** Multiplicador da recarga por nível: devagar no nível 1 (2,1 s) e mais rápido ao evoluir. */
+  cdLv: [1.5, 1.4, 1.3, 1.2, 1.1, 1],
+  len: [130, 130, 130, 130, 130, 160],
+  gap: 0.3,
+  /** Quanto o estalo dura (s) e a altura da área (px): a animação tem o mesmo tamanho da área. */
+  life: 0.2,
+  height: 40,
 } as const;
 export const WAND = {
   n: [1, 2, 2, 3, 3, 4],

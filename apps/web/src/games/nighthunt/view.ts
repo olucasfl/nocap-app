@@ -541,17 +541,9 @@ export function drawWorld(
   // cortes do Chicote
   for (const c of w.cuts) {
     if (c.born === 0) continue;
-    const age = (w.t - c.born) / 0.3;
+    const age = (w.t - c.born) / 0.2;
     if (age > 1) continue;
-    FX.drawWhipCut(
-      g,
-      sx(w.player.x) + c.side * (c.len / 2 + 8),
-      sy(w.player.y) - 8,
-      c.side,
-      age,
-      c.len,
-      c.evo,
-    );
+    FX.drawWhipCut(g, sx(w.player.x) + c.side * 8, sy(w.player.y) - 8, c.side, age, c.len, c.evo);
   }
   // Círculo de Brasas: bolas de fogo girando
   for (const [i, b] of w.embersBalls().entries()) {

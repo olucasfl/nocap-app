@@ -75,9 +75,17 @@ import { drawMinimap } from './minimap';
 import { GpNoticeQueue, NOTICE_FADE_MS, type GpNotice, type GpNoticeKind } from './notices';
 import { PHYSICS_NAME, loadPowers, saveBest } from './gp-best';
 import { GP_ITEMS } from './item-models';
+import { GpItemIcon } from './GpItemIcon';
 import { gpTrackName } from './vehicles';
 import { useTouchGuard } from './touch-guard';
-import { gpActionOf, gpKeyName, useGpAutoGas, useGpControls, useGpShake, type GpBinds } from './gp-settings';
+import {
+  gpActionOf,
+  gpKeyName,
+  useGpAutoGas,
+  useGpControls,
+  useGpShake,
+  type GpBinds,
+} from './gp-settings';
 import './theme.css';
 import './foxgp.css';
 import './gp-hud.css';
@@ -156,7 +164,10 @@ const save = (key: string, v: string) => {
 /** Dicas do kart (Arcade, spec 081): drift e turbo no lugar de DRS e box. */
 const kartTips = (touch: boolean, b: GpBinds): TipRow[] => [
   touch
-    ? { keys: <b className="gm-tag">‹ ›</b>, text: 'Botões da esquerda: virar; Acelera e Freio à direita' }
+    ? {
+        keys: <b className="gm-tag">‹ ›</b>,
+        text: 'Botões da esquerda: virar; Acelera e Freio à direita',
+      }
     : {
         keys: (
           <>
@@ -168,19 +179,35 @@ const kartTips = (touch: boolean, b: GpBinds): TipRow[] => [
         text: 'Acelerar e virar',
       },
   {
-    keys: touch ? <b className="gm-tag">Drift</b> : <Keycap k={gpKeyName('drift', b)} touchHide={false} />,
+    keys: touch ? (
+      <b className="gm-tag">Drift</b>
+    ) : (
+      <Keycap k={gpKeyName('drift', b)} touchHide={false} />
+    ),
     text: 'Segure virando, rápido: o kart pula e derrapa. Volante para dentro fecha a curva; enche a barra de turbo',
   },
   {
-    keys: touch ? <b className="gm-tag">Turbo</b> : <Keycap k={gpKeyName('drs', b)} touchHide={false} />,
+    keys: touch ? (
+      <b className="gm-tag">Turbo</b>
+    ) : (
+      <Keycap k={gpKeyName('drs', b)} touchHide={false} />
+    ),
     text: 'Gasta a barra toda: no 1º terço (azul) curto, no 2º (laranja) médio, no 3º (rosa) longo',
   },
   {
-    keys: touch ? <b className="gm-tag">Volta</b> : <Keycap k={gpKeyName('lap', b)} touchHide={false} />,
+    keys: touch ? (
+      <b className="gm-tag">Volta</b>
+    ) : (
+      <Keycap k={gpKeyName('lap', b)} touchHide={false} />
+    ),
     text: 'Classificação: ir para a largada da volta lançada',
   },
   {
-    keys: touch ? <b className="gm-tag">Câmera</b> : <Keycap k={gpKeyName('cam', b)} touchHide={false} />,
+    keys: touch ? (
+      <b className="gm-tag">Câmera</b>
+    ) : (
+      <Keycap k={gpKeyName('cam', b)} touchHide={false} />
+    ),
     text: 'Câmera: distante, atrás do carro ou cockpit',
   },
   ...(touch
@@ -197,70 +224,70 @@ const tipRows = (touch: boolean, b: GpBinds, kart = false): TipRow[] =>
   kart
     ? kartTips(touch, b)
     : touch
-    ? [
-        { keys: <b className="gm-tag">‹ ›</b>, text: 'Botões da esquerda: virar' },
-        {
-          keys: <b className="gm-tag">Acelera</b>,
-          text: 'Botão grande da direita; o Freio fica ao lado (parado, dá ré)',
-        },
-        {
-          keys: <b className="gm-tag">DRS</b>,
-          text: 'Na zona verde da reta, abre a asa (fecha ao frear). Atrás de outro carro, o vácuo ajuda',
-        },
-        {
-          keys: <b className="gm-tag">Volta</b>,
-          text: 'Classificação: o botão grande leva você para a largada da volta lançada',
-        },
-        {
-          keys: <b className="gm-tag">Câmera</b>,
-          text: 'Troca entre distante, atrás do carro e cockpit',
-        },
-        {
-          keys: <b className="gm-tag">Box</b>,
-          text: 'Entre na faixa do box e pare na vaga amarela: pneus novos em 3 s',
-        },
-      ]
-    : [
-        {
-          keys: (
-            <>
-              <Keycap k={gpKeyName('gas', b)} touchHide={false} />
-              <Keycap k={gpKeyName('brake', b)} touchHide={false} />
-            </>
-          ),
-          text: 'Acelerar e frear (parado, dá ré)',
-        },
-        {
-          keys: (
-            <>
-              <Keycap k={gpKeyName('left', b)} touchHide={false} />
-              <Keycap k={gpKeyName('right', b)} touchHide={false} />
-            </>
-          ),
-          text: 'Virar',
-        },
-        {
-          keys: <Keycap k={gpKeyName('drs', b)} touchHide={false} />,
-          text: 'DRS: abre a asa na zona verde da reta (fecha ao frear)',
-        },
-        {
-          keys: <Keycap k={gpKeyName('lap', b)} touchHide={false} />,
-          text: 'Classificação: ir para a largada da volta lançada',
-        },
-        {
-          keys: <Keycap k={gpKeyName('cam', b)} touchHide={false} />,
-          text: 'Câmera: distante, atrás do carro ou cockpit',
-        },
-        {
-          keys: <b className="gm-tag">Box</b>,
-          text: 'Pare na vaga amarela do box: pneus novos em 3 s',
-        },
-        {
-          keys: <Keycap k="Esc" touchHide={false} />,
-          text: 'Menu: câmera, qualidade, comandos, som e sair',
-        },
-        { keys: <Keycap k="T" touchHide={false} />, text: 'Chat da sala (em sala)' },
-      ];
+      ? [
+          { keys: <b className="gm-tag">‹ ›</b>, text: 'Botões da esquerda: virar' },
+          {
+            keys: <b className="gm-tag">Acelera</b>,
+            text: 'Botão grande da direita; o Freio fica ao lado (parado, dá ré)',
+          },
+          {
+            keys: <b className="gm-tag">DRS</b>,
+            text: 'Na zona verde da reta, abre a asa (fecha ao frear). Atrás de outro carro, o vácuo ajuda',
+          },
+          {
+            keys: <b className="gm-tag">Volta</b>,
+            text: 'Classificação: o botão grande leva você para a largada da volta lançada',
+          },
+          {
+            keys: <b className="gm-tag">Câmera</b>,
+            text: 'Troca entre distante, atrás do carro e cockpit',
+          },
+          {
+            keys: <b className="gm-tag">Box</b>,
+            text: 'Entre na faixa do box e pare na vaga amarela: pneus novos em 3 s',
+          },
+        ]
+      : [
+          {
+            keys: (
+              <>
+                <Keycap k={gpKeyName('gas', b)} touchHide={false} />
+                <Keycap k={gpKeyName('brake', b)} touchHide={false} />
+              </>
+            ),
+            text: 'Acelerar e frear (parado, dá ré)',
+          },
+          {
+            keys: (
+              <>
+                <Keycap k={gpKeyName('left', b)} touchHide={false} />
+                <Keycap k={gpKeyName('right', b)} touchHide={false} />
+              </>
+            ),
+            text: 'Virar',
+          },
+          {
+            keys: <Keycap k={gpKeyName('drs', b)} touchHide={false} />,
+            text: 'DRS: abre a asa na zona verde da reta (fecha ao frear)',
+          },
+          {
+            keys: <Keycap k={gpKeyName('lap', b)} touchHide={false} />,
+            text: 'Classificação: ir para a largada da volta lançada',
+          },
+          {
+            keys: <Keycap k={gpKeyName('cam', b)} touchHide={false} />,
+            text: 'Câmera: distante, atrás do carro ou cockpit',
+          },
+          {
+            keys: <b className="gm-tag">Box</b>,
+            text: 'Pare na vaga amarela do box: pneus novos em 3 s',
+          },
+          {
+            keys: <Keycap k="Esc" touchHide={false} />,
+            text: 'Menu: câmera, qualidade, comandos, som e sair',
+          },
+          { keys: <Keycap k="T" touchHide={false} />, text: 'Chat da sala (em sala)' },
+        ];
 
 type Stage = 'count' | 'quali' | 'grid' | 'lights' | 'race' | 'over';
 
@@ -428,7 +455,8 @@ export function GpPlay({
     window.addEventListener('blur', blur);
     window.addEventListener('focus', focus);
     if (import.meta.env.DEV)
-      (window as unknown as { __gpEngineGain?: () => number }).__gpEngineGain = () => gpSfx.engine.gainNow();
+      (window as unknown as { __gpEngineGain?: () => number }).__gpEngineGain = () =>
+        gpSfx.engine.gainNow();
     return () => {
       document.removeEventListener('visibilitychange', apply);
       window.removeEventListener('blur', blur);
@@ -441,7 +469,13 @@ export function GpPlay({
   const mode: GpPhysicsMode = online?.physics ?? physics;
   /** Arcade com poderes (spec 085): só no treino do Arcade, escolhido na tela antes de correr. */
   const powers = mode === 'arcade' && (online ? !!online.powers : loadPowers());
-  const [itemHud, setItemHud] = useState<{ id: string; left: number; star: number; stun: number } | null>(null);
+  const [itemHud, setItemHud] = useState<{
+    id: string;
+    left: number;
+    star: number;
+    stun: number;
+  } | null>(null);
+  const [itemToast, setItemToast] = useState<{ id: string; n: number } | null>(null);
   const useItemRef = useRef<() => void>(() => undefined);
   const laps = gpLapsOr(online?.laps ?? lapsProp);
   const trackId = gpTrackDefFor(mode, online?.track ?? track).id;
@@ -584,8 +618,15 @@ export function GpPlay({
     };
     if (itemsRead) window.addEventListener('keydown', onItemKey);
     // som e aviso dos eventos dos itens (de qualquer fonte: treino, líder ou espelho)
+    let toastN = 0;
     const playItemEvents = (list: readonly GpItemEvent[]) => {
       for (const e of list) {
+        sceneRef.current?.itemEvent(e, 'id' in e ? world.car(e.id) : undefined);
+        if (e.type === 'pickup' && e.id === meId) {
+          const n = ++toastN;
+          setItemToast({ id: e.item, n });
+          setTimeout(() => setItemToast((t) => (t && t.n === n ? null : t)), 2600);
+        }
         if (e.type === 'hit' && e.id === meId) {
           say('Acertado!', 1400, 'info');
           gpSfx.itemHit();
@@ -628,7 +669,10 @@ export function GpPlay({
           // na sala, a dificuldade escolhida pelo líder mexe no talento (12.4)
           const prof = gpBotProfile(seed, i);
           const add = GP_BOT_LEVEL_SKILL[online?.botLevel ?? 'medio'];
-          return [c.id, newGpBotMemory({ ...prof, skill: Math.max(0.7, Math.min(0.99, prof.skill + add)) })];
+          return [
+            c.id,
+            newGpBotMemory({ ...prof, skill: Math.max(0.7, Math.min(0.99, prof.skill + add)) }),
+          ];
         }),
     );
 
@@ -693,7 +737,15 @@ export function GpPlay({
     /** Distância até a entrada do box (m), quando o pneu passou de 55 % e a entrada está a até 350 m. */
     const boxDistOf = (c: GpCar | undefined): number | null => {
       const pit = world.track.pit;
-      if (mode !== 'real' || !c || !pit || world.phase !== 'race' || c.finished || c.wear < GP_TYRE_WARN) return null;
+      if (
+        mode !== 'real' ||
+        !c ||
+        !pit ||
+        world.phase !== 'race' ||
+        c.finished ||
+        c.wear < GP_TYRE_WARN
+      )
+        return null;
       if (c.surface === 'pit') return null;
       const d = world.track.delta(c.s, world.track.wrap(pit.inStart));
       const ahead = d < 0 ? d + world.track.length : d;
@@ -950,8 +1002,7 @@ export function GpPlay({
           const fastest = world.fastest?.id === meId && world.fastest.ms === e.ms;
           if (fastest) say('Volta mais rápida', 2600, 'highlight', lapClock(e.ms));
           if (e.lap === laps - 1) say('Última volta', 2400, 'highlight');
-          else if (e.lap < laps)
-            say(`Volta ${e.lap + 1}/${laps}`, 2000, 'info', lapClock(e.ms));
+          else if (e.lap < laps) say(`Volta ${e.lap + 1}/${laps}`, 2000, 'info', lapClock(e.ms));
         } else if (e.type === 'finish' && mine) {
           gpSfx.finish(e.place);
           say(`Você terminou em ${e.place}º`, 5000, 'result', 'Agora assista os outros');
@@ -981,7 +1032,8 @@ export function GpPlay({
           say('Cortou caminho', 2600, 'alert', 'De volta ao último ponto válido');
         } else if (e.type === 'wall' && mine && !fromHost) {
           gpSfx.wall(mode === 'arcade');
-        } else if (e.type === 'bump' && (e.a === meId || e.b === meId) && !fromHost) gpSfx.bump(true);
+        } else if (e.type === 'bump' && (e.a === meId || e.b === meId) && !fromHost)
+          gpSfx.bump(true);
         else if (e.type === 'turbo' && e.id === focus) gpSfx.turbo(e.level);
         else if (e.type === 'pad' && e.id === focus) gpSfx.turbo(1);
         else if (e.type === 'drift' && e.id === focus) gpSfx.hop();
@@ -1208,12 +1260,18 @@ export function GpPlay({
           : heard.id === meId
             ? controls.throttle()
             : Math.min(1, v / 8);
-        gpSfx.engine.update(Math.max(0, Math.min(1, heard.rpm)), load, silent || stage === 'over', v < 0.3, {
-          gear: heard.gear,
-          speed: heard.speed,
-          drift: heard.driftDir !== 0 ? Math.min(1, heard.driftT * 2 + 0.4) : 0,
-          boost: heard.boostT > 0 ? heard.boostLevel : 0,
-        });
+        gpSfx.engine.update(
+          Math.max(0, Math.min(1, heard.rpm)),
+          load,
+          silent || stage === 'over',
+          v < 0.3,
+          {
+            gear: heard.gear,
+            speed: heard.speed,
+            drift: heard.driftDir !== 0 ? Math.min(1, heard.driftT * 2 + 0.4) : 0,
+            boost: heard.boostT > 0 ? heard.boostLevel : 0,
+          },
+        );
       }
       // "Vai!" no meio da tela logo que as luzes apagam
       if (goAt && now - goAt > GP_GO_SEC * 1000) goAt = 0;
@@ -1283,8 +1341,16 @@ export function GpPlay({
       // ---- lembrete da volta lançada (spec 081, 9.1): aviso forte aos 30 s e de novo no último minuto ----
       {
         const c = me();
-        if (world.phase === 'quali' && c && c.qualiStartT === null && c.qualiMs === null && c.qualiHold <= 0) {
-          const how = touchDevice ? 'Toque em Iniciar a volta lançada' : `Aperte ${gpKeyName('lap')} para fazer a sua volta lançada`;
+        if (
+          world.phase === 'quali' &&
+          c &&
+          c.qualiStartT === null &&
+          c.qualiMs === null &&
+          c.qualiHold <= 0
+        ) {
+          const how = touchDevice
+            ? 'Toque em Iniciar a volta lançada'
+            : `Aperte ${gpKeyName('lap')} para fazer a sua volta lançada`;
           if (world.t >= 30 && remind < 1) {
             remind = 1;
             say(how, 4200, 'alert', 'A classificação dura 5 minutos');
@@ -1298,7 +1364,14 @@ export function GpPlay({
       {
         const c = me();
         const bd = boxDistOf(c);
-        if (boxWas !== null && boxWas < 25 && (bd === null || bd > 200) && c && c.surface !== 'pit' && c.pitHold <= 0)
+        if (
+          boxWas !== null &&
+          boxWas < 25 &&
+          (bd === null || bd > 200) &&
+          c &&
+          c.surface !== 'pit' &&
+          c.pitHold <= 0
+        )
           say('Box perdido: próxima volta', 2400, 'info');
         boxWas = bd;
       }
@@ -1350,7 +1423,13 @@ export function GpPlay({
           best: seen?.bestLap ?? null,
           last: seen?.laps.length ? seen.laps[seen.laps.length - 1]! : null,
           kmh: gpKmh(seen?.speed ?? 0),
-          rush: mode === 'real' ? Math.max(0, Math.min(1, (Math.abs(seen?.speed ?? 0) / gpVmaxOf('real') - 0.6) / 0.35)) : 0,
+          rush:
+            mode === 'real'
+              ? Math.max(
+                  0,
+                  Math.min(1, (Math.abs(seen?.speed ?? 0) / gpVmaxOf('real') - 0.6) / 0.35),
+                )
+              : 0,
           gear: seen ? (seen.speed < -0.3 ? 0 : Math.max(1, seen.gear)) : 1,
           rpm: seen?.rpm ?? 0,
           drs: c?.drsOpen ? 'open' : c?.drsAvail ? 'avail' : 'off',
@@ -1719,7 +1798,9 @@ export function GpPlay({
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M4 17c4-1 6-4 7-8M20 17c-4-1-6-4-7-8M8 20h8" />
                 </svg>
-                <span>{h.drift === 'on' ? 'Drift' : h.drift === 'avail' ? 'Liberado' : 'Drift'}</span>
+                <span>
+                  {h.drift === 'on' ? 'Drift' : h.drift === 'avail' ? 'Liberado' : 'Drift'}
+                </span>
               </div>
               <div
                 className="gpx-turbo"
@@ -1730,7 +1811,11 @@ export function GpPlay({
                 aria-label={`Turbo: ${Math.floor(h.bar)} de 3 terços`}
               >
                 {[0, 1, 2].map((i) => (
-                  <i key={i} className={`gpx-third is-${i + 1}`} data-full={h.bar >= i + 1 ? '1' : undefined}>
+                  <i
+                    key={i}
+                    className={`gpx-third is-${i + 1}`}
+                    data-full={h.bar >= i + 1 ? '1' : undefined}
+                  >
                     <b style={{ transform: `scaleX(${Math.max(0, Math.min(1, h.bar - i))})` }} />
                   </i>
                 ))}
@@ -1746,6 +1831,7 @@ export function GpPlay({
               className="gpx-item"
               data-has={itemHud ? '1' : undefined}
               data-kind={itemHud ? gpItemKind(itemHud.id as never) : undefined}
+              data-stun={itemHud && itemHud.stun > 0 ? '1' : undefined}
               onPointerDown={(e) => {
                 e.preventDefault();
                 useItemRef.current();
@@ -1757,12 +1843,42 @@ export function GpPlay({
               }
               data-testid="gp-item-slot"
             >
-              <span className="gpx-item-name">
-                {itemHud ? (GP_ITEMS.find((i) => i.id === itemHud.id)?.name ?? itemHud.id) : 'Sem item'}
+              <span className="gpx-item-art" key={itemHud?.id ?? 'none'}>
+                {itemHud ? (
+                  <GpItemIcon kind={gpItemKind(itemHud.id as never)} size={58} />
+                ) : (
+                  <span className="gpx-item-empty">?</span>
+                )}
+                {itemHud && itemHud.left > 1 && <b className="gpx-item-n">x{itemHud.left}</b>}
               </span>
-              {itemHud && itemHud.left > 1 && <b className="gpx-item-n">x{itemHud.left}</b>}
-              <small>{touchDevice ? 'Toque' : 'F'}</small>
+              <span className="gpx-item-name">
+                {itemHud
+                  ? (GP_ITEMS.find((i) => i.id === itemHud.id)?.name ?? itemHud.id)
+                  : 'Sem poder'}
+              </span>
+              <span className="gpx-item-key">
+                <kbd>{touchDevice ? 'Toque' : 'F'}</kbd>
+                {itemHud ? 'para usar' : 'passe numa caixa'}
+              </span>
             </button>
+          )}
+          {driving && powers && itemToast && (
+            <div
+              className="gpx-item-toast"
+              key={itemToast.n}
+              data-kind={gpItemKind(itemToast.id as never)}
+              role="status"
+            >
+              <GpItemIcon kind={gpItemKind(itemToast.id as never)} size={64} />
+              <div>
+                <small>Novo poder</small>
+                <strong>{GP_ITEMS.find((i) => i.id === itemToast.id)?.name ?? itemToast.id}</strong>
+                <span>{GP_ITEMS.find((i) => i.id === itemToast.id)?.blurb}</span>
+                <em>
+                  <kbd>{touchDevice ? 'Botão Item' : 'F'}</kbd> para usar
+                </em>
+              </div>
+            </div>
           )}
           {driving && mode === 'arcade' && h.boost > 0 && (
             <div className="gpx-boost" data-level={h.boost} aria-hidden="true">
@@ -1939,7 +2055,12 @@ export function GpPlay({
             </div>
           )}
           {h.dnfLeft !== null && (racing || h.done !== null || !!h.watching) && (
-            <div className="gpx-dnf" role="status" data-hot={h.dnfLeft <= 30 ? '1' : undefined} data-testid="gp-dnf">
+            <div
+              className="gpx-dnf"
+              role="status"
+              data-hot={h.dnfLeft <= 30 ? '1' : undefined}
+              data-testid="gp-dnf"
+            >
               {h.done !== null ? 'Aguardando os outros terminarem' : 'O primeiro já chegou'}:{' '}
               <b className="gpn">{clock(Math.ceil(h.dnfLeft))}</b>
               {h.done === null && !h.watching ? ' para cruzar a linha' : ''}
@@ -1957,7 +2078,12 @@ export function GpPlay({
           )}
           {/* Fase 10: o box é ali (só no Realista, com o pneu gasto): distância, barra e, perto, "entre no box" */}
           {mode === 'real' && h.boxDist !== null && driving && (
-            <div className="gpx-box" data-near={h.boxDist <= GP_BOX_SIGN_NEAR ? '1' : undefined} role="status" data-testid="gp-box-sign">
+            <div
+              className="gpx-box"
+              data-near={h.boxDist <= GP_BOX_SIGN_NEAR ? '1' : undefined}
+              role="status"
+              data-testid="gp-box-sign"
+            >
               <span className="gpx-box-arrow" aria-hidden="true">
                 ›
               </span>
@@ -2030,8 +2156,15 @@ export function GpPlay({
                       useItemRef.current();
                     }}
                   >
-                    {itemHud ? (GP_ITEMS.find((i) => i.id === itemHud.id)?.name ?? 'Item') : 'Item'}
-                    {itemHud && itemHud.left > 1 ? ` x${itemHud.left}` : ''}
+                    {itemHud ? (
+                      <GpItemIcon kind={gpItemKind(itemHud.id as never)} size={30} />
+                    ) : null}
+                    <span>
+                      {itemHud
+                        ? (GP_ITEMS.find((i) => i.id === itemHud.id)?.name ?? 'Item')
+                        : 'Item'}
+                      {itemHud && itemHud.left > 1 ? ` x${itemHud.left}` : ''}
+                    </span>
                   </button>
                 )}
               </div>
@@ -2192,8 +2325,11 @@ export function GpPlay({
 }
 
 /** A cor do carro de verdade (a carroceria do kart no Arcade, a do F1 no Realista), para os quadradinhos das tabelas. */
-const carBody = (c: { kart?: { body: number } | null; paint?: { body: number } | null; color: number } | undefined, arcade: boolean, fallback = 0xff7d26): number =>
-  (arcade ? c?.kart?.body : undefined) ?? c?.paint?.body ?? c?.color ?? fallback;
+const carBody = (
+  c: { kart?: { body: number } | null; paint?: { body: number } | null; color: number } | undefined,
+  arcade: boolean,
+  fallback = 0xff7d26,
+): number => (arcade ? c?.kart?.body : undefined) ?? c?.paint?.body ?? c?.color ?? fallback;
 
 function initialHud(): Hud {
   return {
@@ -2291,9 +2427,17 @@ function NoticeIcon({ kind }: { kind: GpNoticeKind }) {
 }
 
 /** Riscos de velocidade (coordenadas 0 a 100): raios do centro, só perto das bordas da tela. */
-const RUSH_LINES: readonly [number, number, number, number][] = Array.from({ length: 28 }, (_, i) => {
-  const a = (i / 28) * Math.PI * 2 + (i % 2) * 0.07;
-  const r0 = 0.62 + (i % 3) * 0.06;
-  const r1 = 1.05;
-  return [50 + Math.cos(a) * 50 * r0, 50 + Math.sin(a) * 50 * r0, 50 + Math.cos(a) * 50 * r1, 50 + Math.sin(a) * 50 * r1];
-});
+const RUSH_LINES: readonly [number, number, number, number][] = Array.from(
+  { length: 28 },
+  (_, i) => {
+    const a = (i / 28) * Math.PI * 2 + (i % 2) * 0.07;
+    const r0 = 0.62 + (i % 3) * 0.06;
+    const r1 = 1.05;
+    return [
+      50 + Math.cos(a) * 50 * r0,
+      50 + Math.sin(a) * 50 * r0,
+      50 + Math.cos(a) * 50 * r1,
+      50 + Math.sin(a) * 50 * r1,
+    ];
+  },
+);

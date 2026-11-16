@@ -156,8 +156,18 @@ describe('efeitos (spec 085)', () => {
     run(w, sys, GP_DT);
     expect(sys.state(b.id).stun).toBeGreaterThan(0);
     expect(b.speed).toBeLessThan(before * (GP_HIT_KEEP + 0.05));
-    expect(Math.abs(b.spin)).toBeGreaterThan(3);
     expect(sys.traps).toHaveLength(0);
+    // gira duas voltas inteiras enquanto dura o tropeço e termina com a frente de antes
+    const h0 = b.h;
+    let turned = 0;
+    let last = b.h;
+    for (let k = 0; k < 120 && sys.state(b.id).stun > 0; k++) {
+      sys.step(GP_DT);
+      turned += Math.abs(b.h - last);
+      last = b.h;
+    }
+    expect(turned).toBeGreaterThan(Math.PI * 2 * 1.8);
+    expect(Math.abs(Math.sin((b.h - h0) / 2))).toBeLessThan(0.1);
   });
 
   it('depois de acertado fica imune um tempo (não toma duas seguidas)', () => {
@@ -227,6 +237,28 @@ describe('efeitos (spec 085)', () => {
     }
     expect(maxD).toBeLessThan(8);
     expect(sys.shots).toHaveLength(0);
+  });
+
+  it('bola acerta quem está na frente, em qualquer trecho da pista (reta ou curva)', () => {
+    for (const at of [300, 900, 1500, 2100]) {
+      const { w, sys } = race(2);
+      const [a, b] = w.cars as [GpCar, GpCar];
+      put(w, a, at, 0, 0);
+      put(w, b, at + 60, 0, 0);
+      sys.give(a.id, 'ball');
+      run(w, sys, GP_DT, { p0: true });
+      sys.drainEvents();
+      let maxOff = 0;
+      for (let t = 0; t < 3; t += GP_DT) {
+        sys.step(GP_DT);
+        for (const s of sys.shots)
+          maxOff = Math.max(maxOff, Math.abs(w.track.projectGlobal(s.x, s.z).d));
+      }
+      expect(maxOff).toBeLessThan(9);
+      expect(
+        sys.drainEvents().some((e) => e.type === 'hit' && e.id === b.id && e.kind === 'ball'),
+      ).toBe(true);
+    }
   });
 
   it('cometa persegue o carro da frente e o acerta', () => {

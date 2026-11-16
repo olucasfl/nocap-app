@@ -37,6 +37,7 @@ import {
   gpTowerSlots,
   type GpCar,
   type GpEvent,
+  type GpItemEvent,
   type GpItemsReadable,
   type GpWorld,
 } from '@nocap/games';
@@ -336,7 +337,11 @@ export class GpScene {
     this.scene.add(this.sun, this.sun.target);
     // o Arcade é mais alegre: mais luz do céu e grama mais viva
     this.scene.add(
-      new THREE.HemisphereLight(0xdfeaff, world.track.pit ? 0x4f6d3c : 0x5f9a3a, (q === 'low' ? 1.3 : 0.6) * (world.track.pit ? 1 : 1.25)),
+      new THREE.HemisphereLight(
+        0xdfeaff,
+        world.track.pit ? 0x4f6d3c : 0x5f9a3a,
+        (q === 'low' ? 1.3 : 0.6) * (world.track.pit ? 1 : 1.25),
+      ),
     );
 
     this.puffTex = this.makePuffTexture();
@@ -736,7 +741,10 @@ export class GpScene {
       const i = tr.index(s0);
       const off = Math.min(tr.wallAt(i, pd.side), tr.limit) - 0.6;
       const q = tr.pointAt(s0, pd.side * Math.max(GP_HALF_WIDTH + GP_KERB_W + 1, off));
-      const sign = new THREE.Mesh(new THREE.PlaneGeometry(5, 2.5), new THREE.MeshBasicMaterial({ map: t, side: THREE.DoubleSide }));
+      const sign = new THREE.Mesh(
+        new THREE.PlaneGeometry(5, 2.5),
+        new THREE.MeshBasicMaterial({ map: t, side: THREE.DoubleSide }),
+      );
       sign.position.set(q.x, 3.2, q.z);
       sign.rotation.y = -q.h + Math.PI;
       this.scene.add(sign);
@@ -775,7 +783,12 @@ export class GpScene {
       if (pts.length > 1) {
         const guide = new THREE.Mesh(
           new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), pts.length * 2, 0.18, 4, false),
-          new THREE.MeshBasicMaterial({ color: 0xffd23a, toneMapped: false, transparent: true, opacity: 0.9 }),
+          new THREE.MeshBasicMaterial({
+            color: 0xffd23a,
+            toneMapped: false,
+            transparent: true,
+            opacity: 0.9,
+          }),
         );
         guide.visible = false;
         this.scene.add(guide);
@@ -806,7 +819,10 @@ export class GpScene {
     const roof = this.std(0x2f5bff, 0.5, 0.2);
     for (const f of gpGarageSlots(tr)) {
       const q = tr.pointAt(f.s, (f.from + f.to) / 2);
-      const g = new THREE.Mesh(new THREE.BoxGeometry(GP_GARAGE_LEN - 0.2, 3.2, GP_GARAGE_DEPTH - 0.4), wall);
+      const g = new THREE.Mesh(
+        new THREE.BoxGeometry(GP_GARAGE_LEN - 0.2, 3.2, GP_GARAGE_DEPTH - 0.4),
+        wall,
+      );
       g.position.set(q.x, 1.6, q.z);
       g.rotation.y = -q.h;
       g.castShadow = true;
@@ -1273,7 +1289,10 @@ export class GpScene {
         this.scene.add(fan);
       }
       if (sl.roof) {
-        const q = tr.pointAt(sl.s, sl.side * (sl.wall + (GP_STAND_ROOF_FROM + GP_STAND_ROOF_TO) / 2));
+        const q = tr.pointAt(
+          sl.s,
+          sl.side * (sl.wall + (GP_STAND_ROOF_FROM + GP_STAND_ROOF_TO) / 2),
+        );
         const r = new THREE.Mesh(
           new THREE.BoxGeometry(GP_STAND_LEN, 0.3, GP_STAND_ROOF_TO - GP_STAND_ROOF_FROM),
           stand,
@@ -1318,7 +1337,10 @@ export class GpScene {
     });
     for (const bd of gpBoardSlots(tr)) {
       const q = tr.pointAt(bd.s, bd.d);
-      const b = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 1.2), boards[bd.label === 100 ? 0 : 1]!);
+      const b = new THREE.Mesh(
+        new THREE.PlaneGeometry(1.2, 1.2),
+        boards[bd.label === 100 ? 0 : 1]!,
+      );
       b.position.set(q.x, 1.4, q.z);
       b.rotation.y = -q.h;
       this.scene.add(b);
@@ -1496,11 +1518,14 @@ export class GpScene {
         new THREE.CylinderGeometry(0.007, 0.007, 0.006, 10).rotateX(Math.PI / 2),
         new THREE.MeshBasicMaterial({ color: c, toneMapped: false }),
       );
-      b.position.set((k < 3 ? -1 : 1) * (0.062 + (k % 3) * 0.0) , 0.022 - (k % 3) * 0.018, 0.012);
+      b.position.set((k < 3 ? -1 : 1) * (0.062 + (k % 3) * 0.0), 0.022 - (k % 3) * 0.018, 0.012);
       wheel.add(b);
     });
     for (const sx of [-1, 1]) {
-      const knob = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.012, 12).rotateX(Math.PI / 2), grip);
+      const knob = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.011, 0.011, 0.012, 12).rotateX(Math.PI / 2),
+        grip,
+      );
       knob.position.set(sx * 0.035, -0.033, 0.012);
       wheel.add(knob);
     }
@@ -1522,7 +1547,10 @@ export class GpScene {
     for (const sx of [-1, 1]) {
       const hand = new THREE.Group();
       hand.position.set(sx * 0.118, -0.008, 0.02);
-      const palm = new THREE.Mesh(new THREE.SphereGeometry(0.028, 14, 10).scale(1, 1.25, 0.8), gloveM);
+      const palm = new THREE.Mesh(
+        new THREE.SphereGeometry(0.028, 14, 10).scale(1, 1.25, 0.8),
+        gloveM,
+      );
       hand.add(palm);
       for (let f = 0; f < 4; f++) {
         const finger = new THREE.Mesh(new THREE.CapsuleGeometry(0.008, 0.022, 4, 8), gloveM);
@@ -1651,7 +1679,12 @@ export class GpScene {
     // a chama do turbo (kart): atrás do carro, brilhante, sem luz real
     const flame = new THREE.Mesh(
       new THREE.ConeGeometry(0.22, 1.1, 10),
-      new THREE.MeshBasicMaterial({ color: BOOST_COLORS[1], transparent: true, opacity: 0.85, toneMapped: false }),
+      new THREE.MeshBasicMaterial({
+        color: BOOST_COLORS[1],
+        transparent: true,
+        opacity: 0.85,
+        toneMapped: false,
+      }),
     );
     flame.rotation.x = Math.PI / 2;
     flame.position.set(0, 0.45, 1.95);
@@ -1714,6 +1747,11 @@ export class GpScene {
   setItems(sys: GpItemsReadable | null) {
     this.itemsLayer?.dispose();
     this.itemsLayer = sys ? new GpItemsLayer(this.scene, sys) : null;
+  }
+
+  /** Efeito visual de um evento dos itens (pegar, usar, acertar, explodir). */
+  itemEvent(e: GpItemEvent, car?: GpCar) {
+    this.itemsLayer?.event(e, car);
   }
 
   resize(w: number, h: number) {
@@ -1902,7 +1940,8 @@ export class GpScene {
       // o kart inclina para o lado da curva (mais no drift e no escorregão); o F1 quase não inclina
       const lean =
         w.mode === 'arcade'
-          ? (c.driftDir !== 0 ? c.driftDir * 0.09 : c.steer * 0.05) * Math.min(1, fast * 1.5) + Math.min(0.06, c.skid * 0.006) * Math.sign(c.steer)
+          ? (c.driftDir !== 0 ? c.driftDir * 0.09 : c.steer * 0.05) * Math.min(1, fast * 1.5) +
+            Math.min(0.06, c.skid * 0.006) * Math.sign(c.steer)
           : c.steer * Math.min(1, fast * 1.2) * 0.05;
       v.m.body.rotation.z = this.reduced ? 0 : -lean;
       this.setGhost(v, w.phase === 'quali' && c.id !== focusId);
@@ -1935,8 +1974,10 @@ export class GpScene {
           this.skidMark(bx + rx * half, bz + rz * half, p.h);
           this.skidMark(bx - rx * half, bz - rz * half, p.h);
           // fumaça da traseira: no kart, sai das duas rodas e cresce com o escorregão
-          if (Math.random() < (w.mode === 'arcade' ? 0.85 : 0.5)) this.puff(bx + rx * half, 0.4, bz + rz * half, 0xdedede, 1 + c.skid * 0.1);
-          if (w.mode === 'arcade' && Math.random() < 0.85) this.puff(bx - rx * half, 0.4, bz - rz * half, 0xdedede, 1 + c.skid * 0.1);
+          if (Math.random() < (w.mode === 'arcade' ? 0.85 : 0.5))
+            this.puff(bx + rx * half, 0.4, bz + rz * half, 0xdedede, 1 + c.skid * 0.1);
+          if (w.mode === 'arcade' && Math.random() < 0.85)
+            this.puff(bx - rx * half, 0.4, bz - rz * half, 0xdedede, 1 + c.skid * 0.1);
         }
       }
     }
@@ -1982,10 +2023,12 @@ export class GpScene {
     this.sparkMesh.instanceMatrix.needsUpdate = true;
     if (this.sparkMesh.instanceColor) this.sparkMesh.instanceColor.needsUpdate = true;
     // a linha de guia do box acende com o pneu gasto do carro em foco (Realista)
-    if (this.pitGuide) this.pitGuide.visible = w.mode === 'real' && !!focusCar && focusCar.wear >= 0.55;
+    if (this.pitGuide)
+      this.pitGuide.visible = w.mode === 'real' && !!focusCar && focusCar.wear >= 0.55;
     // placas de turbo: o pulso varre para a frente; brilham mais com um kart chegando perto
     if (this.padTex && this.padMats.length) {
-      if (this.quality !== 'low' && !this.reduced) this.padTex.offset.y = (this.padTex.offset.y - dt * 1.2) % 1;
+      if (this.quality !== 'low' && !this.reduced)
+        this.padTex.offset.y = (this.padTex.offset.y - dt * 1.2) % 1;
       const tr = w.track;
       tr.pads.forEach((pd, k) => {
         let near = 0;
@@ -2002,8 +2045,13 @@ export class GpScene {
       const lv = focusCar.boostT > 0 ? focusCar.boostLevel : 0;
       const fovWant = [0, 6, 10, 14][lv] ?? 0;
       this.boostFov += (fovWant - this.boostFov) * Math.min(1, dt * (lv ? 6 : 3));
-      const shakeWant = lv ? lv * 0.35 : focusCar.surface === 'kerb' && Math.abs(focusCar.speed) > 8 ? 0.25 : 0;
-      this.camShake = this.shakeOn && !this.reduced ? Math.max(shakeWant, this.camShake - dt * 2) : 0;
+      const shakeWant = lv
+        ? lv * 0.35
+        : focusCar.surface === 'kerb' && Math.abs(focusCar.speed) > 8
+          ? 0.25
+          : 0;
+      this.camShake =
+        this.shakeOn && !this.reduced ? Math.max(shakeWant, this.camShake - dt * 2) : 0;
     } else {
       this.boostFov = 0;
       this.camShake = 0;
@@ -2148,17 +2196,28 @@ export class GpScene {
           // kart: o olho do piloto no próprio kart (o volante e as mãos aparecem à frente)
           (kv.m as KartModel).eye.getWorldPosition(this.camPos);
           // olhando um pouco para baixo (~18°): aparecem o volante, as mãos e o bico do kart, e a pista continua à frente
-          this.camLook.set(this.camPos.x + fx * 10 * (this.lookBack ? -1 : 1), this.camPos.y - (this.lookBack ? 0.5 : 3.2), this.camPos.z + fz * 10 * (this.lookBack ? -1 : 1));
+          this.camLook.set(
+            this.camPos.x + fx * 10 * (this.lookBack ? -1 : 1),
+            this.camPos.y - (this.lookBack ? 0.5 : 3.2),
+            this.camPos.z + fz * 10 * (this.lookBack ? -1 : 1),
+          );
         } else if (kv) {
           // F1: o olho do piloto, um pouco acima e atrás do volante, olhando a pista por cima do bico
           kv.m.group.updateMatrixWorld(true);
           this.camPos.copy(kv.m.body.localToWorld(new THREE.Vector3(0, 1.1, -0.08)));
-          this.camLook.set(p.x + fx * 22 * (this.lookBack ? -1 : 1), this.camPos.y - (this.lookBack ? 1.0 : 1.5), p.z + fz * 22 * (this.lookBack ? -1 : 1));
+          this.camLook.set(
+            p.x + fx * 22 * (this.lookBack ? -1 : 1),
+            this.camPos.y - (this.lookBack ? 1.0 : 1.5),
+            p.z + fz * 22 * (this.lookBack ? -1 : 1),
+          );
         } else {
           this.camPos.set(p.x + fx * 0.05 * CAR_VIS, 1.05 * CAR_VIS, p.z + fz * 0.05 * CAR_VIS);
           this.camLook.set(p.x + fx * 20, 0.55, p.z + fz * 20);
         }
-        fov = 74 + Math.min(1, speed / gpVmaxOf(this.world.mode)) ** 2 * (this.world.mode === 'real' ? 14 : 6);
+        fov =
+          74 +
+          Math.min(1, speed / gpVmaxOf(this.world.mode)) ** 2 *
+            (this.world.mode === 'real' ? 14 : 6);
       }
     }
     cam.position.copy(this.camPos);
@@ -2197,7 +2256,8 @@ export class GpScene {
     if (f1Wheel && car) {
       this.cockpitWheel.rotation.z = -car.steer * 1.1;
       // luzes de troca: acendem com o giro do motor (só no F1; o kart não tem marchas)
-      const lit = this.world.mode === 'real' ? Math.round(Math.max(0, (car.rpm - 0.55) / 0.42) * 10) : 0;
+      const lit =
+        this.world.mode === 'real' ? Math.round(Math.max(0, (car.rpm - 0.55) / 0.42) * 10) : 0;
       this.shiftLights.forEach((m, k) =>
         m.color.setHex(k < lit ? (k < 4 ? 0x1fd05a : k < 7 ? 0xffd23a : 0xe8343c) : 0x1a1a1a),
       );

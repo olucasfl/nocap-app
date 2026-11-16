@@ -531,10 +531,11 @@ describe('guardar e continuar a partida', () => {
     expect(r.t).toBeCloseTo(w.t, 1);
     expect(r.level).toBe(w.level);
     expect(r.kills).toBe(w.kills);
-    expect(r.levels.halo).toBe(3);
+    expect(r.levels.halo).toBe(w.levels.halo);
     expect(r.enemies.length).toBeGreaterThan(0);
     expect(r.evolved.size).toBe(w.evolved.size);
     for (let i = 0; i < 600; i++) {
+      if (r.pending) r.choose(r.pending.options[0]!);
       r.player.hp = r.player.maxHp;
       r.step({ x: 1, y: 0 });
       r.drainEvents();
