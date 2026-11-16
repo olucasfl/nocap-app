@@ -81,4 +81,4 @@
 | 084 | [Night Hunt, fase 3](084-night-hunt-fase-3.md) | 5 | implementada (15/11/2026): 10 armas e 3 passivos novos com evoluções, empurrão, separação, obstáculos, chefe final por mapa e modo infinito, heróis refeitos, bestiário e guia; falta calibrar jogando |
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.
-| 085 | [Fox GP, Arcade com poderes](085-fox-gp-poderes.md) | 5 | etapas 0 a 5 no treino offline (15/11/2026): vitrine, lógica, caixas, 12 itens, dois modos e bots; falta calibrar, sons, online e celular |
+| 085 | [Fox GP, Arcade com poderes](085-fox-gp-poderes.md) | 5 | etapas 0 a 5 feitas, offline e online (16/11/2026): vitrine, lógica, caixas, 12 itens, dois modos, bots, sons e sala; falta calibrar jogando e testar o celular |

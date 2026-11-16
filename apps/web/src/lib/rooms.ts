@@ -209,6 +209,8 @@ export interface FoxGpRoomState {
   holdMs?: number | null;
   /** Modo de física da sala (regra que só o líder muda). */
   physics?: 'arcade' | 'real';
+  /** Arcade com poderes (itens); só vale no Arcade. */
+  powers?: boolean;
   /** Pista da sala (id). */
   track?: string;
   laps?: number;

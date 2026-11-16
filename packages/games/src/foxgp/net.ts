@@ -1,4 +1,12 @@
 import { GP_DT, GP_NET_VERSION } from './constants';
+import {
+  gpItemEventRow,
+  gpItemsSnap,
+  type GpItemEvent,
+  type GpItemSystem,
+  type GpItemView,
+  type GpItemsSnap,
+} from './items';
 import { GP_IDLE, type GpCar, type GpEvent, type GpInput, type GpWorld } from './world';
 
 /**
@@ -13,7 +21,7 @@ import { GP_IDLE, type GpCar, type GpEvent, type GpInput, type GpWorld } from '.
 
 /** Entrada empacotada: [seq, acelerar, frear, volante, DRS(0/1), iniciar volta(0/1)]. */
 /** [seq, acelerador, freio, volante, DRS, volta, drift, turbo] (spec 081: drift e turbo do kart). */
-export type GpInputRow = [number, number, number, number, number, number, number, number];
+export type GpInputRow = [number, number, number, number, number, number, number, number, number?];
 
 /** O pacote de entrada leva as últimas entradas (o canal não garante entrega: a repetição cobre a perda). */
 export interface GpInputPacket {
@@ -42,6 +50,8 @@ export interface GpSnapshot {
   full: number[][];
   /** Dados de tempo (voltas, classificação, chegada) por vaga, a cada tanto tempo. */
   meta?: GpCarMeta[];
+  /** Itens do Arcade com poderes (só quando a sala os liga). */
+  it?: GpItemsSnap;
 }
 
 /** Os tempos de um carro, como o líder vê. */
@@ -57,16 +67,21 @@ export type GpCarMeta = [
 ];
 
 const r = (v: number, k: number) => Math.round(v * k) / k;
-const packInput = (seq: number, i: GpInput): GpInputRow => [
-  seq,
-  r(i.throttle, 100),
-  r(i.brake, 100),
-  r(i.steer, 1000),
-  i.drs ? 1 : 0,
-  i.lap ? 1 : 0,
-  i.drift ? 1 : 0,
-  i.turbo ? 1 : 0,
-];
+// o 9º valor (usar item) só vai quando é 1: o pacote continua igual ao de antes para quem não usa itens
+const packInput = (seq: number, i: GpInput): GpInputRow => {
+  const row: GpInputRow = [
+    seq,
+    r(i.throttle, 100),
+    r(i.brake, 100),
+    r(i.steer, 1000),
+    i.drs ? 1 : 0,
+    i.lap ? 1 : 0,
+    i.drift ? 1 : 0,
+    i.turbo ? 1 : 0,
+  ];
+  if (i.item) row.push(1);
+  return row;
+};
 const unpackInput = (row: GpInputRow): GpInput => ({
   throttle: row[1],
   brake: row[2],
@@ -75,6 +90,7 @@ const unpackInput = (row: GpInputRow): GpInput => ({
   lap: row[5] === 1,
   drift: row[6] === 1,
   turbo: row[7] === 1,
+  item: row[8] === 1,
 });
 
 /** O estado enxuto de um carro. */
@@ -121,9 +137,14 @@ export class GpHost {
   private snaps = 0;
   private events: GpEvent[] = [];
 
+  /** Itens do Arcade com poderes (o líder é quem os simula). */
+  private itemEvents: number[][] = [];
+  private itemLocal: GpItemEvent[] = [];
+
   constructor(
     readonly world: GpWorld,
     readonly meId: string,
+    readonly items: GpItemSystem | null = null,
   ) {}
 
   /** Chegou um pacote de entrada de alguém: entra na fila só o que é novo (e da mesma versão). */
@@ -132,7 +153,11 @@ export class GpHost {
     const q = this.queues.get(id) ?? [];
     const top = Math.max(this.acks.get(id) ?? -1, q.length ? q[q.length - 1]![0] : -1);
     for (const row of p.rows) {
-      if (!Array.isArray(row) || row.length !== 8 || !row.every((v) => typeof v === 'number' && Number.isFinite(v)))
+      if (
+        !Array.isArray(row) ||
+        (row.length !== 8 && row.length !== 9) ||
+        !row.every((v) => typeof v === 'number' && Number.isFinite(v))
+      )
         continue;
       if (row[0] > top) q.push(row);
     }
@@ -161,6 +186,16 @@ export class GpHost {
     }
     this.world.step(GP_DT, inputs);
     for (const e of this.world.drainEvents()) this.events.push(e);
+    if (this.items) {
+      const use: Record<string, boolean> = {};
+      for (const c of this.world.cars) if (inputs[c.id]?.item) use[c.id] = true;
+      this.items.step(GP_DT, use);
+      for (const e of this.items.drainEvents()) {
+        this.itemLocal.push(e);
+        const row = gpItemEventRow(e, this.world);
+        if (row) this.itemEvents.push(row);
+      }
+    }
     this.n += 1;
   }
 
@@ -168,6 +203,13 @@ export class GpHost {
   drainEvents(): GpEvent[] {
     const out = this.events;
     this.events = [];
+    return out;
+  }
+
+  /** Eventos dos itens para o som e o aviso do próprio líder. */
+  drainItemEvents(): GpItemEvent[] {
+    const out = this.itemLocal;
+    this.itemLocal = [];
     return out;
   }
 
@@ -191,12 +233,25 @@ export class GpHost {
         .map((c) => [c.slot, this.acks.get(c.id) ?? -1, ...w.pack(c).map((v) => r(v, 1000))]),
     };
     if (this.snaps % META_EVERY === 1) snap.meta = w.cars.map((c) => gpCarMeta(c));
+    if (this.items) {
+      snap.it = gpItemsSnap(this.items, w, this.itemEvents);
+      this.itemEvents = [];
+    }
     return snap;
   }
 }
 
 export function gpCarMeta(c: GpCar): GpCarMeta {
-  return [c.slot, [...c.laps], c.qualiMs, c.qualiStartT, c.finishMs, c.pitStops, [...c.bestSectors], [...c.sectorT]];
+  return [
+    c.slot,
+    [...c.laps],
+    c.qualiMs,
+    c.qualiStartT,
+    c.finishMs,
+    c.pitStops,
+    [...c.bestSectors],
+    [...c.sectorT],
+  ];
 }
 
 /** Aplica os tempos que o líder mandou num carro. */
@@ -238,6 +293,8 @@ export class GpClient {
   private ph: GpSnapshot['ph'] | null = null;
   corrections = 0;
   maxCorrection = 0;
+  /** O espelho dos itens (só quando a sala liga o Arcade com poderes). */
+  items: GpItemView | null = null;
 
   constructor(
     readonly world: GpWorld,
@@ -250,7 +307,8 @@ export class GpClient {
     const row = packInput(this.seq, input);
     this.history.push(row);
     if (this.history.length > 240) this.history.shift();
-    if (this.world.car(this.meId) && !this.world.ended) this.world.step(GP_DT, { [this.meId]: input }, this.meId);
+    if (this.world.car(this.meId) && !this.world.ended)
+      this.world.step(GP_DT, { [this.meId]: input }, this.meId);
     return { v: GP_NET_VERSION, rows: this.history.slice(-4) };
   }
 
@@ -282,6 +340,7 @@ export class GpClient {
     this.hostAt = now;
     w.t = s.t;
     if (s.meta) for (const m of s.meta) gpApplyMeta(w, m);
+    if (s.it && this.items) this.items.apply(s.it);
     const mine = w.car(this.meId);
     for (const row of s.full ?? []) {
       if (mine && row[0] === mine.slot) this.reconcile(mine, row[1]!, row.slice(2));
@@ -303,7 +362,8 @@ export class GpClient {
     const before = { x: car.x, z: car.z, h: car.h };
     w.unpack(car, state);
     this.history = this.history.filter((row) => row[0] > ack);
-    for (const row of this.history) w.step(GP_DT, { [this.meId]: unpackInput(row) }, this.meId, true);
+    for (const row of this.history)
+      w.step(GP_DT, { [this.meId]: unpackInput(row) }, this.meId, true);
     // eventos da reprevisão não valem (os de verdade vêm do líder)
     w.drainEvents();
     const dx = before.x - car.x;
@@ -343,7 +403,10 @@ export class GpClient {
       const f = span > 0 ? Math.max(0, Math.min(1, (when - a.at) / span)) : 1;
       const s = f >= 1 ? b.state : a.state;
       const lerp = (p: number) => a.state[p]! + (b.state[p]! - a.state[p]!) * f;
-      const dh = Math.atan2(Math.sin(b.state[2]! - a.state[2]!), Math.cos(b.state[2]! - a.state[2]!));
+      const dh = Math.atan2(
+        Math.sin(b.state[2]! - a.state[2]!),
+        Math.cos(b.state[2]! - a.state[2]!),
+      );
       const h = a.state[2]! + dh * f;
       const speed = f < 1 ? lerp(3) : b.state[3]!;
       const vx = Math.sin(h) * speed;

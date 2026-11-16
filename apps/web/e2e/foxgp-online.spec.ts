@@ -46,14 +46,19 @@ async function nick(page: Page, name: string) {
 
 test('duas janelas: classificação, grid, corrida pela sala e pódio', async ({ browser }) => {
   const mk = async () => {
-    const ctx = await browser.newContext({ viewport: { width: 1100, height: 700 }, locale: 'pt-BR' });
+    const ctx = await browser.newContext({
+      viewport: { width: 1100, height: 700 },
+      locale: 'pt-BR',
+    });
     const p = await ctx.newPage();
     await p.addInitScript(() => localStorage.setItem('nocap-mute', '1'));
     return p;
   };
   const A = await mk();
   await A.goto('/');
-  await A.getByRole('button', { name: 'Agora não' }).click({ timeout: 8000 }).catch(() => undefined);
+  await A.getByRole('button', { name: 'Agora não' })
+    .click({ timeout: 8000 })
+    .catch(() => undefined);
   await A.getByTestId('hub-room-toggle').click();
   await A.getByTestId('hub-create-room').click();
   await nick(A, 'Ana');
@@ -62,7 +67,9 @@ test('duas janelas: classificação, grid, corrida pela sala e pódio', async ({
 
   const B = await mk();
   await B.goto('/');
-  await B.getByRole('button', { name: 'Agora não' }).click({ timeout: 8000 }).catch(() => undefined);
+  await B.getByRole('button', { name: 'Agora não' })
+    .click({ timeout: 8000 })
+    .catch(() => undefined);
   await B.getByTestId('hub-room-toggle').click();
   await B.getByTestId('hub-room-code').fill(code);
   await B.getByRole('button', { name: 'Entrar', exact: true }).click();
@@ -71,7 +78,9 @@ test('duas janelas: classificação, grid, corrida pela sala e pódio', async ({
 
   await A.getByRole('tab', { name: /Jogos/i }).click();
   await A.getByTestId('pick-foxgp').click();
-  await expect(A.getByTestId('themed-lobby')).toHaveAttribute('data-game', 'foxgp', { timeout: 20_000 });
+  await expect(A.getByTestId('themed-lobby')).toHaveAttribute('data-game', 'foxgp', {
+    timeout: 20_000,
+  });
   // regra da sala: a líder escolhe a física Realista (só ela pode); todos correm nesse modo
   await A.getByRole('tab', { name: /Configurar|Regras/ }).click();
   await A.getByRole('radio', { name: 'Realista' }).click();
@@ -80,13 +89,18 @@ test('duas janelas: classificação, grid, corrida pela sala e pódio', async ({
   await A.getByRole('button', { name: /COMEÇAR/i }).click();
   await A.getByTestId('gp-play').waitFor({ timeout: 20_000 });
   await B.getByTestId('gp-play').waitFor({ timeout: 20_000 });
-  for (const p of [A, B]) await expect(p.getByTestId('gp-play')).toHaveAttribute('data-physics', 'real');
+  for (const p of [A, B])
+    await expect(p.getByTestId('gp-play')).toHaveAttribute('data-physics', 'real');
 
   // classificação: quem simula é a Ana (líder). Passados mais de 22 s, os dois "fecham" a volta no mundo dela (a Bia mais
   // rápida); o tempo de cada um vai para a sala pelo relato da líder
-  await A.waitForFunction(() => (window as Win).__gp?.phase === 'quali' && (window as Win).__gp!.t > 0.5, null, {
-    timeout: 20_000,
-  });
+  await A.waitForFunction(
+    () => (window as Win).__gp?.phase === 'quali' && (window as Win).__gp!.t > 0.5,
+    null,
+    {
+      timeout: 20_000,
+    },
+  );
   await A.waitForTimeout(23_500);
   await A.evaluate(() => {
     const w = (window as Win).__gp!;
@@ -113,9 +127,13 @@ test('duas janelas: classificação, grid, corrida pela sala e pódio', async ({
   await expect(B.getByTestId('gp-lap')).toBeVisible({ timeout: 15_000 });
   // o selo da volta já aparece no grid e nas luzes: só mede depois que as luzes apagam
   for (const p of [A, B])
-    await p.waitForFunction(() => (window as Win).__gp?.phase === 'race' && (window as Win).__gp!.t > 0.3, null, {
-      timeout: 20_000,
-    });
+    await p.waitForFunction(
+      () => (window as Win).__gp?.phase === 'race' && (window as Win).__gp!.t > 0.3,
+      null,
+      {
+        timeout: 20_000,
+      },
+    );
 
   // corrida: os dois no piloto automático. O carro da Ana anda na tela da Bia; o da Bia, simulado pela Ana a partir da
   // entrada que a Bia manda, anda na tela da Ana
@@ -157,7 +175,10 @@ test('duas janelas: classificação, grid, corrida pela sala e pódio', async ({
     w.__watch = true;
     const tick = () => {
       if (document.querySelector('[data-testid="card-foxgp"]')) w.__saw!.push('lista');
-      if (!document.querySelector('[data-testid="gp-final"]') && !document.querySelector('[data-testid="gp-home"]'))
+      if (
+        !document.querySelector('[data-testid="gp-final"]') &&
+        !document.querySelector('[data-testid="gp-home"]')
+      )
         w.__saw!.push(location.pathname);
       if (w.__watch) requestAnimationFrame(tick);
     };
@@ -173,4 +194,100 @@ test('duas janelas: classificação, grid, corrida pela sala e pódio', async ({
     return w.__saw;
   });
   expect(saw).toEqual([]);
+});
+
+test('Arcade com poderes: a líder liga o modo e a Bia vê e usa o item pela sala', async ({
+  browser,
+}) => {
+  const mk = async () => {
+    const ctx = await browser.newContext({
+      viewport: { width: 1100, height: 700 },
+      locale: 'pt-BR',
+    });
+    const p = await ctx.newPage();
+    await p.addInitScript(() => localStorage.setItem('nocap-mute', '1'));
+    return p;
+  };
+  const A = await mk();
+  await A.goto('/');
+  await A.getByRole('button', { name: 'Agora não' })
+    .click({ timeout: 8000 })
+    .catch(() => undefined);
+  await A.getByTestId('hub-room-toggle').click();
+  await A.getByTestId('hub-create-room').click();
+  await nick(A, 'Ana');
+  await A.waitForURL(/\/sala\//);
+  const code = A.url().split('/sala/')[1]!.slice(0, 4);
+  const B = await mk();
+  await B.goto('/');
+  await B.getByRole('button', { name: 'Agora não' })
+    .click({ timeout: 8000 })
+    .catch(() => undefined);
+  await B.getByTestId('hub-room-toggle').click();
+  await B.getByTestId('hub-room-code').fill(code);
+  await B.getByRole('button', { name: 'Entrar', exact: true }).click();
+  await nick(B, 'Bia');
+  await B.waitForURL(/\/sala\//);
+  await A.getByRole('tab', { name: /Jogos/i }).click();
+  await A.getByTestId('pick-foxgp').click();
+  await expect(A.getByTestId('themed-lobby')).toHaveAttribute('data-game', 'foxgp', {
+    timeout: 20_000,
+  });
+  await A.getByRole('tab', { name: /Configurar|Regras/ }).click();
+  await A.getByRole('radio', { name: 'Arcade' }).click();
+  await A.getByRole('radio', { name: 'Poderes' }).click();
+  await expect(A.getByRole('radio', { name: 'Poderes' })).toHaveAttribute('aria-checked', 'true');
+  await B.getByRole('button', { name: /ESTOU PRONTO/i }).click();
+  await A.getByRole('button', { name: /COMEÇAR/i }).click();
+  await A.getByTestId('gp-play').waitFor({ timeout: 20_000 });
+  await B.getByTestId('gp-play').waitFor({ timeout: 20_000 });
+  // classificação: os dois fecham a volta já para a corrida começar logo
+  await A.waitForFunction(
+    () => (window as Win).__gp?.phase === 'quali' && (window as Win).__gp!.t > 0.5,
+    null,
+    {
+      timeout: 20_000,
+    },
+  );
+  await A.waitForTimeout(23_500);
+  await A.evaluate(() => {
+    const w = (window as Win).__gp!;
+    w.cars.forEach((c, i) => {
+      c.qualiStartT = w.t - (i === 0 ? 23.4 : 23.1);
+      c.qualiStartProg = 0;
+      c.prog = w.track.length - 0.2;
+      c.speed = 15;
+      c.vx = Math.sin(c.h) * 15;
+      c.vz = -Math.cos(c.h) * 15;
+      c.pitHold = 0;
+      c.surface = 'asphalt';
+    });
+  });
+  for (const p of [A, B])
+    await p.waitForFunction(
+      () => (window as Win).__gp?.phase === 'race' && (window as Win).__gp!.t > 0.3,
+      null,
+      {
+        timeout: 60_000,
+      },
+    );
+  for (const p of [A, B]) await expect(p.getByTestId('gp-item-slot')).toBeVisible();
+  // só a líder tem o sistema; a Bia só vê o espelho
+  type Items = {
+    give: (id: string, item: string) => void;
+    state: (id: string) => { id: string | null };
+    shots: unknown[];
+  };
+  type WinI = Win & { __gpItems?: Items | null };
+  expect(await B.evaluate(() => (window as WinI).__gpItems ?? null)).toBeNull();
+  const biaId = await B.evaluate(() => (window as Win).__gp!.meId!);
+  await A.evaluate((id) => (window as WinI).__gpItems!.give(id, 'ball3'), biaId);
+  await expect(B.getByTestId('gp-item-slot')).toContainText('Bola tripla', { timeout: 8000 });
+  await expect(B.getByTestId('gp-item-slot')).toContainText('x3');
+  // a Bia usa: o pedido vai pela entrada, a líder lança a bola e o espelho diminui
+  await B.keyboard.press('KeyF');
+  await expect(B.getByTestId('gp-item-slot')).toContainText('x2', { timeout: 8000 });
+  expect(await A.evaluate(() => (window as WinI).__gpItems!.shots.length)).toBeGreaterThanOrEqual(
+    1,
+  );
 });

@@ -1,6 +1,6 @@
 # 085: Fox GP, Arcade com poderes
 
-Status: etapas 0 a 3 feitas no treino offline (15/11/2026); faltam cometa/bomba afinados jogando, sons, online e docs.
+Status: etapas 0 a 5 feitas, offline e online (16/11/2026); falta calibrar jogando, botão de toque melhor e teste de tela no celular.
 
 ## 1. Decisão do Lucas (15/11/2026)
 
@@ -39,7 +39,7 @@ quem lidera. Com 2 a 20 carros a posição vira faixa (frente, meio, trás).
 - `apps/web/src/games/foxgp/item-models.ts`: modelos 3D (feito na etapa 0).
 - `apps/web/src/games/foxgp/GpItemsPreview.tsx`: vitrine em `/fox-cap/foxgp-itens` (feito na etapa 0).
 - Cena: caixas na Bala Track, item no chão, orbitando, lançado; HUD com o slot do item; escolha do modo na tela do Arcade.
-- Salas online: o servidor decide itens e acertos (nada vindo do cliente). Ranking: só presets; **salas do modo Poderes
+- Salas online: o líder (que já simula todos os carros) decide itens e acertos; ninguém manda acerto, só o pedido de usar. Ranking: só presets; **salas do modo Poderes
   não entram em ranking** (pergunta aberta abaixo).
 
 ## 5. Etapas
@@ -49,7 +49,14 @@ quem lidera. Com 2 a 20 carros a posição vira faixa (frente, meio, trás).
 2. Caixas na pista, slot do item no HUD, escolha dos dois modos (feito): chips "Corrida" e "Poderes" na tela antes de correr (só no Arcade, treino offline).
 3. Casca, bola, turbo, Superfox, orbitar e lançar (feito, `gp-items-layer.ts`). Tecla **F** ou **Shift** usa o item (E continua sendo o turbo do drift); no celular, toque no cartão do item.
 4. Cometa, Cometa azul e bomba (feito, falta calibrar jogando).
-5. Bots usando itens (feito, simples: usam depois de uma espera sorteada). Falta: sons próprios, online (servidor decide), botão de toque melhor, testes de tela no celular e docs.
+5. Bots usando itens, sons e online (feito, 16/11/2026):
+   - Bots usam o item depois de uma espera sorteada de 0,8 a 4 s.
+   - Sons próprios em Web Audio (`foxgp-audio.ts`: pegar, usar por tipo, acerto, barrado, explosão com volume pela distância).
+   - Online: o líder da sala liga o modo em **Configurar > MODO** (Corrida ou Poderes, só no Arcade). O líder simula os itens
+     (`GpHost` recebe o `GpItemSystem`) e manda o estado dentro do snapshot (campo `it`); quem corre vê um espelho
+     (`GpItemView`) e pede o uso pelo 9º valor da entrada (só vai quando vale 1, então o pacote não muda para quem não usa itens).
+     Protocolo compatível com o anterior (mesma `GP_NET_VERSION`). Servidor da API só guarda a regra (`powers`) e a repassa.
+   - Falta: botão de toque melhor, teste de tela no celular, calibrar jogando.
 
 ## 6. Perguntas abertas
 

@@ -179,6 +179,8 @@ export interface GpInput {
   drift?: boolean;
   /** Arcade: usar o turbo (toque: gasta a barra toda). */
   turbo?: boolean;
+  /** Arcade com poderes: usar o item (toque). */
+  item?: boolean;
 }
 
 export const GP_IDLE: GpInput = { throttle: 0, brake: 0, steer: 0 };

@@ -352,6 +352,44 @@ export const gpSfx = {
   noTurbo() {
     tone('square', 160, 120, 0.06, 0.12);
   },
+  /** Arcade com poderes (spec 085): pegou uma caixa (três notas subindo). */
+  itemPickup() {
+    tone('square', 523, 523, 0.07, 0.1);
+    tone('square', 659, 659, 0.07, 0.1, 0.07);
+    tone('square', 784, 988, 0.12, 0.12, 0.14);
+  },
+  /** Usou o item: cada tipo tem o seu som. */
+  itemUse(kind: string) {
+    if (kind === 'nitro') {
+      noise(400, 2400, 0.8, 0.5, 0.3);
+      tone('sawtooth', 160, 520, 0.45, 0.12);
+    } else if (kind === 'star') {
+      for (let i = 0; i < 5; i++) tone('square', 660 * 1.25 ** i, 660 * 1.25 ** i, 0.07, 0.1, i * 0.06);
+    } else if (kind === 'peel') {
+      tone('triangle', 420, 180, 0.12, 0.2);
+    } else if (kind === 'bomb') {
+      tone('sine', 220, 90, 0.2, 0.25);
+    } else {
+      // bola, cometa e cometa azul: um zunido que sobe
+      noise(600, 1800, 1.2, 0.2, 0.22);
+      tone('sawtooth', kind === 'bolt' ? 300 : 220, kind === 'bolt' ? 900 : 520, 0.22, 0.12);
+    }
+  },
+  /** Foi acertado: pancada e giro descendo. */
+  itemHit() {
+    noise(500, 120, 1, 0.3, 0.45);
+    tone('sawtooth', 520, 90, 0.45, 0.2);
+  },
+  /** O Superfox (ou a imunidade) barrou o acerto. */
+  itemBlocked() {
+    tone('triangle', 900, 1400, 0.08, 0.14);
+  },
+  /** Bomba explodindo; `near` (0 a 1) é o quão perto de você. */
+  itemBoom(near: number) {
+    const k = 0.15 + 0.85 * Math.max(0, Math.min(1, near));
+    noise(900, 60, 0.7, 0.7, 0.55 * k);
+    tone('sine', 140, 40, 0.6, 0.5 * k);
+  },
   /** Kart: o pulinho do drift. */
   hop() {
     tone('sine', 300, 620, 0.09, 0.1);

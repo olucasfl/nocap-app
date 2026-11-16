@@ -213,7 +213,7 @@ export function rulesSummary(s: RoomSnapshot): string {
   }
   if (s.game === 'foxgp')
     return s.foxgp?.physics === 'arcade'
-      ? 'Fox GP · Bala Track · 3 voltas · Arcade'
+      ? `Fox GP · Bala Track · 3 voltas · Arcade${s.foxgp?.powers ? ' · Poderes' : ''}`
       : `Fox GP · ${s.foxgp?.track === 'interlagos' ? 'Interlagos' : 'Circuito da Marina'} · 3 voltas · Realista`;
   if (s.game === 'pingpong') return 'Ping Fox! · 1 contra 1 · 11 pontos';
   if (s.game === 'foxshot') return `Counter Fox · Mata-mata · ${s.foxshot?.minutes ?? 5} min`;
@@ -261,6 +261,22 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
             ? 'Realista: a curva tem limite; pediu demais, o carro abre e perde velocidade (sem escorregar de lado).'
             : 'Arcade: kart com drift e turbo de 3 níveis; sem pneu, vácuo, box nem DRS.',
       },
+      ...(cur === 'arcade'
+        ? [
+            {
+              id: 'powers',
+              label: 'MODO',
+              values: ['off', 'on'],
+              current: (s.settings as unknown as { powers?: boolean }).powers === true ? 'on' : 'off',
+              format: (v: string) => (v === 'on' ? 'Poderes' : 'Corrida'),
+              patch: (v: string) => ({ powers: v === 'on' }),
+              note:
+                (s.settings as unknown as { powers?: boolean }).powers === true
+                  ? 'Poderes: caixas na pista com itens (casca, bola, cometa, bomba, turbo, Superfox). Quem está atrás ganha itens melhores.'
+                  : 'Corrida: só pilotagem, sem itens.',
+            } as RuleDef,
+          ]
+        : []),
       ...(cur === 'real'
         ? [
             {

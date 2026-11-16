@@ -98,6 +98,15 @@ export function gpRollItem(rank: number, total: number, rng: () => number): GpIt
   return list[0]![0];
 }
 
+/** O que a cena e o HUD leem dos itens (o sistema do líder ou o espelho de quem corre online). */
+export interface GpItemsReadable {
+  boxes: GpItemBox[];
+  cars: Map<string, GpCarItem>;
+  shots: GpShot[];
+  traps: GpTrap[];
+  state(id: string): GpCarItem;
+}
+
 // ---- estado ----
 export interface GpItemBox {
   x: number;
@@ -176,7 +185,7 @@ const dist = (ax: number, az: number, bx: number, bz: number) => Math.hypot(ax -
  * O sistema de itens de uma partida: roda junto do `GpWorld` (chame `step` depois do `world.step`), com o pedido de
  * "usar item" de cada carro. Os efeitos mexem no carro (velocidade, giro, turbo) e viram eventos para o som e o HUD.
  */
-export class GpItemSystem {
+export class GpItemSystem implements GpItemsReadable {
   readonly boxes: GpItemBox[];
   readonly cars = new Map<string, GpCarItem>();
   shots: GpShot[] = [];
@@ -480,5 +489,171 @@ export class GpItemSystem {
       if (!dead) keep.push(sh);
     }
     this.shots = keep;
+  }
+}
+
+// ---- rede (spec 085, etapa online) ----
+const KIND_IDS: readonly GpItemKind[] = ['peel', 'ball', 'seeker', 'bomb', 'nitro', 'star', 'bolt'];
+const ITEM_IDS: readonly GpItemId[] = [
+  'peel',
+  'peel3',
+  'ball',
+  'ball3',
+  'seeker',
+  'seeker3',
+  'bomb',
+  'nitro',
+  'nitro3',
+  'star',
+  'bolt',
+];
+const EVENT_TYPES = ['pickup', 'use', 'hit', 'blocked', 'boom'] as const;
+
+/** O que cada aparelho precisa para desenhar os itens (o líder manda isto junto do estado). */
+export interface GpItemsSnap {
+  /** Índices das caixas que estão em espera. */
+  b: number[];
+  /** Tiros: [uid, tipo, x, z, direção]. */
+  s: [number, number, number, number, number][];
+  /** Armadilhas: [uid, 0 casca / 1 bomba, x, z, pavio]. */
+  t: [number, number, number, number, number][];
+  /** Ccada carro: [vaga, item (-1 nenhum), quantos faltam, Superfox (0/1), tropeçando (0/1)]. */
+  c: [number, number, number, number, number][];
+  /** Eventos novos: [tipo, vaga de quem, tipo do item ou x, z]. Sem garantia de entrega (só som e aviso). */
+  e: number[][];
+}
+
+const q = (v: number) => Math.round(v * 100) / 100;
+
+/** Monta o estado dos itens para a rede (o `events` já vem em linhas, de `gpItemEventRows`). */
+export function gpItemsSnap(sys: GpItemSystem, world: GpWorld, events: number[][]): GpItemsSnap {
+  return {
+    b: sys.boxes.flatMap((b, i) => (b.cd > 0 ? [i] : [])),
+    s: sys.shots.map((x) => [x.uid, KIND_IDS.indexOf(x.kind), q(x.x), q(x.z), q(x.h)]),
+    t: sys.traps.map((x) => [x.uid, x.kind === 'bomb' ? 1 : 0, q(x.x), q(x.z), q(x.fuse)]),
+    c: world.cars
+      .filter((c) => !c.gone)
+      .map((c) => {
+        const st = sys.state(c.id);
+        return [
+          c.slot,
+          st.id ? ITEM_IDS.indexOf(st.id) : -1,
+          st.left,
+          st.star > 0 ? 1 : 0,
+          st.stun > 0 ? 1 : 0,
+        ];
+      }),
+    e: events,
+  };
+}
+
+/** Um evento do sistema em linha para a rede. */
+export function gpItemEventRow(e: GpItemEvent, world: GpWorld): number[] | null {
+  const t = EVENT_TYPES.indexOf(e.type);
+  if (e.type === 'boom') return [t, 0, q(e.x), q(e.z)];
+  const car = world.car(e.id);
+  if (!car) return null;
+  const what =
+    e.type === 'pickup' || e.type === 'use' ? ITEM_IDS.indexOf(e.item) : KIND_IDS.indexOf(e.kind);
+  return [t, car.slot, what, 0];
+}
+
+/**
+ * O espelho dos itens num aparelho que não é o líder: só guarda o que o líder mandou, no mesmo formato que a cena e o
+ * HUD leem do `GpItemSystem` (caixas, tiros, armadilhas e o item de cada carro).
+ */
+export class GpItemView implements GpItemsReadable {
+  readonly boxes: GpItemBox[];
+  readonly cars = new Map<string, GpCarItem>();
+  shots: GpShot[] = [];
+  traps: GpTrap[] = [];
+  private events: GpItemEvent[] = [];
+
+  constructor(private world: GpWorld) {
+    this.boxes = gpItemBoxes(world);
+  }
+
+  state(id: string): GpCarItem {
+    let s = this.cars.get(id);
+    if (!s) {
+      s = { id: null, left: 0, gap: 0, stun: 0, safe: 0, star: 0 };
+      this.cars.set(id, s);
+    }
+    return s;
+  }
+
+  drainEvents(): GpItemEvent[] {
+    const e = this.events;
+    this.events = [];
+    return e;
+  }
+
+  apply(n: GpItemsSnap) {
+    if (
+      !n ||
+      !Array.isArray(n.b) ||
+      !Array.isArray(n.s) ||
+      !Array.isArray(n.t) ||
+      !Array.isArray(n.c)
+    )
+      return;
+    const wait = new Set(n.b);
+    this.boxes.forEach((b, i) => (b.cd = wait.has(i) ? GP_BOX_RESPAWN : 0));
+    this.shots = n.s.flatMap(([uid, k, x, z, h]) => {
+      const kind = KIND_IDS[k!];
+      if (kind !== 'ball' && kind !== 'seeker' && kind !== 'bolt') return [];
+      return [
+        {
+          uid: uid!,
+          kind,
+          owner: '',
+          x: x!,
+          z: z!,
+          h: h!,
+          prog: 0,
+          d: 0,
+          target: null,
+          ttl: 1,
+          bounces: 0,
+        },
+      ];
+    });
+    this.traps = n.t.map(([uid, k, x, z, fuse]) => ({
+      uid: uid!,
+      kind: k === 1 ? ('bomb' as const) : ('peel' as const),
+      owner: '',
+      x: x!,
+      z: z!,
+      ttl: 1,
+      fuse: fuse!,
+      arm: 0,
+    }));
+    for (const [slot, item, left, star, stun] of n.c) {
+      const car = this.world.cars.find((c) => c.slot === slot);
+      if (!car) continue;
+      const st = this.state(car.id);
+      st.id = item! >= 0 ? (ITEM_IDS[item!] ?? null) : null;
+      st.left = left!;
+      st.star = star! ? 1 : 0;
+      st.stun = stun! ? 1 : 0;
+    }
+    for (const row of n.e ?? []) {
+      const [t, slot, what, z] = row;
+      const type = EVENT_TYPES[t!];
+      if (!type) continue;
+      if (type === 'boom') {
+        this.events.push({ type: 'boom', x: what!, z: z! });
+        continue;
+      }
+      const car = this.world.cars.find((c) => c.slot === slot);
+      if (!car) continue;
+      if (type === 'pickup' || type === 'use') {
+        const item = ITEM_IDS[what!];
+        if (item) this.events.push({ type, id: car.id, item });
+      } else {
+        const kind = KIND_IDS[what!];
+        if (kind) this.events.push({ type, id: car.id, by: '', kind });
+      }
+    }
   }
 }

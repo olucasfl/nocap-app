@@ -116,6 +116,7 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
       gpIsPhysicsMode(merged.physics) &&
       (merged.track === undefined || gpIsTrackId(merged.track)) &&
       (merged.laps === undefined || gpIsLaps(merged.laps)) &&
+      (merged.powers === undefined || typeof merged.powers === 'boolean') &&
       GP_FILL_OPTIONS.includes(fill as number) &&
       GP_BOT_LEVELS.includes(level as GpBotLevel)
     );
@@ -125,6 +126,11 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
   get physics(): GpPhysicsMode {
     const v = (this.settings as unknown as { physics?: unknown }).physics;
     return gpIsPhysicsMode(v) ? v : GP_PHYSICS_DEFAULT;
+  }
+
+  /** Arcade com poderes (spec 085): só vale no Arcade. */
+  get powers(): boolean {
+    return this.physics === 'arcade' && (this.settings as unknown as { powers?: unknown }).powers === true;
   }
 
   /** A pista da sala: a escolhida, se existe no modo; senão a primeira do modo. */
@@ -536,6 +542,7 @@ export class FoxGpRoomEngine extends ColorRoomEngine {
         raceAt: started && this.stage !== 'quali' ? this.raceAt : null,
         holdMs: started && this.stage !== 'quali' ? this.holdMs : null,
         physics: this.physics,
+        powers: this.powers,
         track: this.trackId,
         laps: this.laps,
         slots: started ? slots : {},

@@ -37,7 +37,7 @@ import {
   gpTowerSlots,
   type GpCar,
   type GpEvent,
-  type GpItemSystem,
+  type GpItemsReadable,
   type GpWorld,
 } from '@nocap/games';
 import { mapEdge } from '../atravessa/models';
@@ -1711,7 +1711,7 @@ export class GpScene {
   }
 
   /** Liga os itens do Arcade com poderes (caixas, tiros, armadilhas) a esta cena. */
-  setItems(sys: GpItemSystem | null) {
+  setItems(sys: GpItemsReadable | null) {
     this.itemsLayer?.dispose();
     this.itemsLayer = sys ? new GpItemsLayer(this.scene, sys) : null;
   }

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { GpCar, GpItemSystem } from '@nocap/games';
+import type { GpCar, GpItemsReadable } from '@nocap/games';
 import { animateItem, buildItem, type GpItemId as GpModelId } from './item-models';
 
 /** O item é pequeno perto do kart (que mede 3,6 m de largura): em cena ele é ampliado para ler de longe. */
@@ -25,7 +25,7 @@ export class GpItemsLayer {
 
   constructor(
     scene: THREE.Scene,
-    private sys: GpItemSystem,
+    private sys: GpItemsReadable,
   ) {
     scene.add(this.group);
     for (const b of sys.boxes) {

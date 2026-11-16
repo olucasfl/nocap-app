@@ -41,6 +41,9 @@ import {
   type GpPaint,
   GpItemSystem,
   gpItemKind,
+  GpItemView,
+  type GpItemEvent,
+  type GpItemsReadable,
   type GpPhysicsMode,
   type GpPlayerInfo,
   gpTrackDefFor,
@@ -268,6 +271,8 @@ export interface GpOnline {
   infos: GpPlayerInfo[];
   /** Modo de física da sala (todos correm no mesmo: quem simula é o líder). */
   physics: GpPhysicsMode;
+  /** Arcade com poderes (itens), ligado pelo líder da sala. */
+  powers?: boolean;
   /** Pista da sala (id). */
   track?: string;
   /** Voltas da corrida da sala. */
@@ -434,7 +439,7 @@ export function GpPlay({
   const [notice, setNotice] = useState<GpNotice | null>(null);
   const mode: GpPhysicsMode = online?.physics ?? physics;
   /** Arcade com poderes (spec 085): só no treino do Arcade, escolhido na tela antes de correr. */
-  const powers = !online && mode === 'arcade' && loadPowers();
+  const powers = mode === 'arcade' && (online ? !!online.powers : loadPowers());
   const [itemHud, setItemHud] = useState<{ id: string; left: number; star: number; stun: number } | null>(null);
   const useItemRef = useRef<() => void>(() => undefined);
   const laps = gpLapsOr(online?.laps ?? lapsProp);
@@ -564,7 +569,10 @@ export function GpPlay({
     const spectator = !!online && !world.car(meId);
     if (online && !isHost) world.goOnline(meId);
     if (isHost) world.autoEnd = false;
-    const itemSys = powers ? new GpItemSystem(world) : null;
+    // quem simula (treino ou líder da sala) roda os itens; os outros só veem o que o líder manda
+    const itemSys = powers && (!online || isHost) ? new GpItemSystem(world) : null;
+    const itemView = powers && isClient ? new GpItemView(world) : null;
+    const itemsRead: GpItemsReadable | null = itemSys ?? itemView;
     let itemQ = false;
     const botWait = new Map<string, number>();
     let itemKey = '';
@@ -574,7 +582,36 @@ export function GpPlay({
     const onItemKey = (e: KeyboardEvent) => {
       if (e.code === 'KeyF' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') itemQ = true;
     };
-    if (itemSys) window.addEventListener('keydown', onItemKey);
+    if (itemsRead) window.addEventListener('keydown', onItemKey);
+    // som e aviso dos eventos dos itens (de qualquer fonte: treino, líder ou espelho)
+    const playItemEvents = (list: readonly GpItemEvent[]) => {
+      for (const e of list) {
+        if (e.type === 'hit' && e.id === meId) {
+          say('Acertado!', 1400, 'info');
+          gpSfx.itemHit();
+        } else if (e.type === 'blocked' && e.id === meId) gpSfx.itemBlocked();
+        else if (e.type === 'pickup' && e.id === meId) gpSfx.itemPickup();
+        else if (e.type === 'use' && e.id === meId) gpSfx.itemUse(gpItemKind(e.item));
+        else if (e.type === 'boom') {
+          const me0 = world.car(meId);
+          const d = me0 ? Math.hypot(me0.x - e.x, me0.z - e.z) : 99;
+          gpSfx.itemBoom(1 - Math.min(1, d / 80));
+        }
+      }
+    };
+    // os bots usam o item depois de uma espera sorteada (some o ar de robô)
+    const botWantsItem = (id: string) => {
+      if (!itemSys) return false;
+      if (!itemSys.state(id).id) {
+        botWait.delete(id);
+        return false;
+      }
+      const left = (botWait.get(id) ?? 0.8 + rng() * 3.2) - GP_DT;
+      botWait.set(id, left);
+      if (left > 0) return false;
+      botWait.set(id, 0.8 + rng() * 3.2);
+      return true;
+    };
     if (import.meta.env.DEV)
       (window as unknown as { __gpItems?: GpItemSystem | null }).__gpItems = itemSys;
     if (import.meta.env.DEV) (window as unknown as { __gp?: GpWorld }).__gp = world;
@@ -601,7 +638,7 @@ export function GpPlay({
       const scene = new GpScene(el, world, meId, { reduced, quality: qualityRef.current });
       scene.setCamMode(read(CAM_KEY, CAMS, 'chase'));
       scene.shakeOn = useGpShake.getState().on;
-      scene.setItems(itemSys);
+      scene.setItems(itemsRead);
       sceneRef.current = scene;
       if (import.meta.env.DEV) (window as unknown as { __gpScene?: GpScene }).__gpScene = scene;
       const resize = () => {
@@ -616,8 +653,9 @@ export function GpPlay({
     remakeScene.current = makeScene;
 
     // ---- rede ----
-    const host = isHost ? new GpHost(world, meId) : null;
+    const host = isHost ? new GpHost(world, meId, itemSys) : null;
     const client = isClient ? new GpClient(world, meId) : null;
+    if (client && itemView) client.items = itemView;
     const hostLink = isHost ? new GpHostLink(meId) : null;
     const peerLink = isClient ? new GpPeerLink(online!.hostId) : null;
     if (hostLink && host) {
@@ -1047,19 +1085,27 @@ export function GpPlay({
         // pedido de um toque só (iniciar a volta, DRS de toque): fica guardado até um passo da simulação usar (num
         // quadro sem passo, com a tela mais rápida que 60/s, ele não se perde)
         if (wantLap) input.lap = true;
+        // item (toque ou tecla): fica guardado até um passo usar
+        if (itemQ) input.item = true;
         if (acc >= GP_DT) wantLap = false;
         else if (input.drs) controls.keepDrs();
         let first = true;
         while (acc >= GP_DT) {
           acc -= GP_DT;
-          const stepIn: GpInput = first ? input : { ...input, lap: false };
+          const stepIn: GpInput = first ? input : { ...input, lap: false, item: false };
+          if (first && stepIn.item) itemQ = false;
           first = false;
           if (isHost && host) {
             const s0 = clock();
             // os bots da sala: quem simula é o líder, como no treino
             const botIn: Record<string, GpInput> = {};
-            for (const c of world.cars) if (c.bot && !c.gone) botIn[c.id] = gpBotInput(world, c, mem.get(c.id)!, rng);
+            for (const c of world.cars) {
+              if (!c.bot || c.gone) continue;
+              botIn[c.id] = gpBotInput(world, c, mem.get(c.id)!, rng);
+              if (botWantsItem(c.id)) botIn[c.id]!.item = true;
+            }
             host.step(stepIn, botIn);
+            if (itemSys) playItemEvents(host.drainItemEvents());
             const n0 = clock();
             if (host.snapDue) hostLink?.sendSnapshot(host.snapshot(), gpSnapshotFor);
             if (perf) {
@@ -1076,28 +1122,10 @@ export function GpPlay({
             const s0 = clock();
             world.step(GP_DT, inputs);
             if (itemSys) {
-              const use: Record<string, boolean> = { [meId]: itemQ };
-              itemQ = false;
-              // os bots usam o item depois de uma espera sorteada (some o ar de robô)
-              for (const c of world.cars) {
-                if (!c.bot) continue;
-                const st = itemSys.state(c.id);
-                if (!st.id) {
-                  botWait.delete(c.id);
-                  continue;
-                }
-                const left = (botWait.get(c.id) ?? 0.8 + rng() * 3.2) - GP_DT;
-                botWait.set(c.id, left);
-                if (left <= 0) {
-                  use[c.id] = true;
-                  botWait.set(c.id, 0.8 + rng() * 3.2);
-                }
-              }
+              const use: Record<string, boolean> = { [meId]: !!stepIn.item };
+              for (const c of world.cars) if (c.bot && botWantsItem(c.id)) use[c.id] = true;
               itemSys.step(GP_DT, use);
-              for (const e of itemSys.drainEvents()) {
-                if (e.type === 'hit' && e.id === meId) say('Acertado!', 1400, 'info');
-                if (e.type === 'pickup' && e.id === meId) gpSfx.noTurbo();
-              }
+              playItemEvents(itemSys.drainEvents());
             }
             if (perf) {
               perf.add('bots', s0 - b0);
@@ -1106,8 +1134,9 @@ export function GpPlay({
           }
           remember();
         }
-        if (itemSys) {
-          const st = itemSys.state(meId);
+        if (itemView) playItemEvents(itemView.drainEvents());
+        if (itemsRead) {
+          const st = itemsRead.state(meId);
           const k = `${st.id ?? ''}|${st.left}|${st.star > 0 ? 1 : 0}|${st.stun > 0 ? 1 : 0}`;
           if (k !== itemKey) {
             itemKey = k;
