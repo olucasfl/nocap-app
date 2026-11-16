@@ -68,7 +68,7 @@
 }
 .fr-btn {
   appearance: none;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 12px;
   border: var(--border);
   border-radius: 10px;
@@ -557,7 +557,7 @@
   border-radius: 999px;
   background: var(--paper);
   color: var(--ink);
-  font-size: 9.5px;
+  font-size: 10.5px;
   font-weight: 700;
   text-transform: uppercase;
   overflow: hidden;
@@ -580,5 +580,53 @@
 @media (prefers-reduced-motion: reduce) {
   .fr-fcard {
     transition: none;
+  }
+}
+
+/* Celular (docs/MOBILE-GUIDE.md): em pedido de amizade o nome ganha a linha de cima inteira e os botões vão para baixo,
+   em vez de espremer o nome em "@p..." ao lado de dois botões. */
+@media (max-width: 520px) {
+  .fr-row:has(.fr-who.plain) {
+    flex-wrap: wrap;
+  }
+  .fr-row:has(.fr-who.plain) .fr-who {
+    flex: 1 1 100%;
+  }
+  .fr-row:has(.fr-who.plain) .fr-actions {
+    flex: 1 1 100%;
+    flex-wrap: nowrap;
+  }
+  .fr-row:has(.fr-who.plain) .fr-actions .fr-btn {
+    flex: 1 1 0;
+  }
+}
+/* Celular deitado: o zoom da paisagem encolhe o botão; desconta para o alvo ficar em 44px */
+@media (orientation: landscape) and (max-height: 520px) {
+  .fr-btn {
+    min-height: calc(44px / var(--ui-zoom, 1));
+  }
+}
+
+@media (max-width: 400px) {
+  .fr-name,
+  .fr-fcard-body .fr-name,
+  .fr-row2-body .fr-name {
+    font-size: 15px;
+    letter-spacing: -0.02em;
+  }
+}
+
+/* nome de usuário nunca vira "@bia_sup...": se não couber, quebra em duas linhas */
+.fr-fcard-body .fr-name,
+.fr-who .fr-name {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* Tablet e computador: a grade ocupa a largura toda e os cartões se ajustam (antes ficavam estreitos e cortavam o nome) */
+@media (min-width: 700px) {
+  .fr-cards {
+    width: 100%;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   }
 }

@@ -202,6 +202,42 @@ export async function installApi(page: Page, opts: MockOptions = {}) {
         me: entries[1],
       });
     }
+    // amigos (varredura de celular): nomes longos e todos os estados, para testar o pior caso de largura
+    if (path === '/friends' && method === 'GET')
+      return json(route, {
+        friends: [
+          { username: 'ana', online: true, lastSeenAt: null, lastPlayed: { game: 'wclassic', mode: 'classic', kind: 'daily', playedAt: '2026-11-15T10:00:00Z' } },
+          { username: 'bia_super_longa_nome', online: false, lastSeenAt: '2026-11-14T09:00:00Z', lastPlayed: { game: 'blocks', mode: 'classic', kind: 'solo', playedAt: '2026-11-14T09:00:00Z' } },
+          { username: 'carlos', online: false, lastSeenAt: null, lastPlayed: null },
+        ],
+        incoming: [{ username: 'pedro_do_nocap_2026' }, { username: 'lia' }],
+        outgoing: [{ username: 'zeca' }],
+      });
+    if (path === '/users/search')
+      return json(route, [
+        { username: 'maria', state: 'none' },
+        { username: 'marcelo_com_nome_longo', state: 'friends' },
+        { username: 'marta', state: 'outgoing' },
+        { username: 'mauro', state: 'incoming' },
+      ]);
+    if (/^\/friends\/[^/]+\/profile$/.test(path))
+      return json(route, {
+        username: decodeURIComponent(path.split('/')[2]!),
+        online: true,
+        lastSeenAt: null,
+        lastPlayed: { game: 'wclassic', mode: 'classic', kind: 'daily', playedAt: '2026-11-15T10:00:00Z' },
+        stats: {
+          modes: [
+            { game: 'color', mode: 'classic', matches: 12, best: 285, average: 240 },
+            { game: 'time', mode: 'strict', matches: 5, best: 270, average: 200 },
+          ],
+          daily: Object.fromEntries(
+            ['color', 'time', 'eco', 'blocks', 'atravessa', 'wclassic'].map((g) => [g, { current: 2, best: 5, playedToday: g === 'color', totalScore: g === 'color' ? 250 : null }]),
+          ),
+          visit: { current: 3, best: 7, visitedToday: true },
+        },
+      });
+    if (/^\/friends\/[^/]+\/words-progress$/.test(path)) return json(route, {});
     if (path === '/me/ping' || path === '/me/invites') return json(route, []);
     if (path === '/me/room') return json(route, { room: null });
 

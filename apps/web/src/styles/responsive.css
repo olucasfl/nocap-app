@@ -347,7 +347,7 @@
 @media (orientation: landscape) and (max-height: 520px) {
   :root {
     --rail: 76px;
-    --ui-zoom: 0.95;
+    --ui-zoom: 1;
   }
   .tabs-app,
   .app.has-rail {
@@ -445,7 +445,7 @@
 /* menor ainda e em colunas: cartões de jogo lado a lado, títulos baixos, sem a folga da barra de baixo */
 @media (orientation: landscape) and (max-height: 520px) {
   :root {
-    --ui-zoom: 0.95;
+    --ui-zoom: 1;
   }
   h1,
   .rm h1,
@@ -477,7 +477,7 @@
 }
 @media (orientation: landscape) and (max-height: 520px) and (max-height: 420px) {
   :root {
-    --ui-zoom: 0.94;
+    --ui-zoom: 1;
   }
 }
 

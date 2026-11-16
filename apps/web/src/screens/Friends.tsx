@@ -423,7 +423,7 @@ export function Friends() {
                                 </span>
                                 {p.lastPlayed && (
                                   <span className="fr-tag mono">
-                                    {gameLabel(p.lastPlayed.game)} · {ago(p.lastPlayed.playedAt)}
+                                    {gameLabel(p.lastPlayed.game).replace(/^Classic /, '')} · {ago(p.lastPlayed.playedAt)}
                                   </span>
                                 )}
                               </span>

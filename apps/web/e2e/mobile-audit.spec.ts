@@ -36,13 +36,28 @@ const DEVICES: Dev[] = [
 ];
 
 /** Grupos de telas (um commit por grupo). Chave: nome do grupo; valor: [nome da tela, rota]. */
-export const GROUPS: Record<string, [string, string][]> = {
+type Act = (page: Page) => Promise<void>;
+export const GROUPS: Record<string, [string, string, Act?][]> = {
   hub: [
     ['hub', '/'],
     ['hub-fox-cap', '/fox-cap?jogo=atravessa'],
   ],
   ranking: [['ranking', '/ranking']],
-  amigos: [['amigos', '/amigos']],
+  amigos: [
+    ['amigos', '/amigos', async (p) => void (await p.getByRole('tab', { name: /^Amigos/ }).click())],
+    ['amigos-pedidos', '/amigos', async (p) => void (await p.getByRole('tab', { name: /Pedidos/ }).click())],
+    [
+      'amigos-adicionar',
+      '/amigos',
+      async (p) => {
+        await p.getByRole('tab', { name: /Adicionar/ }).click();
+        await p.getByRole('textbox').first().fill('mar');
+        await p.getByRole('button', { name: /Buscar/ }).click();
+        await p.waitForTimeout(900);
+      },
+    ],
+    ['amigo-perfil', '/amigos/ana'],
+  ],
   perfil: [
     ['perfil', '/perfil'],
     ['entrar', '/entrar'],
@@ -211,7 +226,7 @@ const devices = devFilter ? DEVICES.filter((x) => devFilter.includes(x.name)) : 
 
 for (const [group, routes] of Object.entries(GROUPS)) {
   if (only && !only.split(',').includes(group)) continue;
-  for (const [name, url] of routes) {
+  for (const [name, url, act] of routes) {
     test(`mobile ${group} / ${name}`, async ({ page, context }, info) => {
       test.skip(info.project.name !== 'desktop', 'um projeto basta');
       test.setTimeout(120_000);
@@ -233,6 +248,10 @@ for (const [group, routes] of Object.entries(GROUPS)) {
           .click({ timeout: 700 })
           .catch(() => undefined);
         await page.waitForTimeout(900);
+        if (act) {
+          await act(page);
+          await page.waitForTimeout(500);
+        }
         if (process.env.AUDIT_SHOTS)
           await page.screenshot({ path: `${OUT}/${name}-${d.name}.png` });
         const m: string[] = [];
