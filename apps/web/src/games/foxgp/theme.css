@@ -126,3 +126,11 @@
   width: 100%;
   margin: 4px 0 10px;
 }
+
+/* Alvo de toque (docs/MOBILE-GUIDE.md): nenhum botão do Fox GP fica abaixo de 44px, mesmo nos painéis compactos do celular deitado */
+.gp-tbtn,
+.gpc-key,
+.gpg-veh button,
+.gpg-tabs button {
+  min-height: 44px;
+}
