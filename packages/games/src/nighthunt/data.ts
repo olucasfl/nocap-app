@@ -86,7 +86,6 @@ export const ITEM_ATTRACT_ACCEL = 100;
 
 export type ProjectileKind =
   | 'horizontal'
-  | 'diagonal'
   | 'halo'
   | 'axe'
   | 'orb'
@@ -102,7 +101,6 @@ export const PROJECTILE_SHAPE: Record<
   (x: number, y: number, rot: number, big?: boolean) => Shape
 > = {
   horizontal: (x, y) => ({ kind: 'circle', cx: x, cy: y, r: 26 }),
-  diagonal: (x, y) => ({ kind: 'circle', cx: x, cy: y, r: 26 }),
   halo: (x, y, rot) => ({ kind: 'box', cx: x, cy: y, w: 16, h: 8, rot }),
   axe: (x, y) => ({ kind: 'box', cx: x, cy: y, w: 25.2, h: 25.2 }),
   orb: (x, y) => ({ kind: 'box', cx: x, cy: y, w: 16, h: 16 }),
@@ -139,7 +137,6 @@ export type UpgradeId =
   | 'weaponLength'
   | 'weaponDamage'
   | 'horizontal'
-  | 'diagonal'
   | 'halo'
   | 'regeneration'
   | 'axe'
@@ -172,7 +169,6 @@ export const UPGRADE_IDS: readonly UpgradeId[] = [
   'weaponLength',
   'weaponDamage',
   'horizontal',
-  'diagonal',
   'halo',
   'axe',
   'orbit',
@@ -189,7 +185,6 @@ export const UPGRADE_IDS: readonly UpgradeId[] = [
 export const WEAPON_IDS: readonly UpgradeId[] = [
   'sword',
   'horizontal',
-  'diagonal',
   'halo',
   'axe',
   'orbit',
@@ -246,7 +241,6 @@ export const UPGRADE_MAX: Record<UpgradeId, number> = {
   weaponLength: 5,
   weaponDamage: 5,
   horizontal: 6,
-  diagonal: 6,
   halo: 6,
   regeneration: 6,
   axe: 6,
@@ -264,7 +258,6 @@ export const slotOf = (id: UpgradeId): string => id;
 
 export type EvoId =
   | 'evoHorizontal'
-  | 'evoDiagonal'
   | 'evoHalo'
   | 'evoAxe'
   | 'evoOrbit'
@@ -291,7 +284,6 @@ export interface Evolution {
 /** Arma no máximo + passivo certo + abrir um baú = evolução (regra do Vampire Survivors). */
 export const EVOLUTIONS: readonly Evolution[] = [
   { id: 'evoHorizontal', maxed: ['horizontal'], passive: 'boots' },
-  { id: 'evoDiagonal', maxed: ['diagonal'], passive: 'tome' },
   { id: 'evoHalo', maxed: ['halo'], passive: 'heart' },
   { id: 'evoAxe', maxed: ['axe'], passive: 'armor' },
   { id: 'evoOrbit', maxed: ['orbit'], passive: 'magnet' },

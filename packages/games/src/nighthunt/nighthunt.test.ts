@@ -400,7 +400,7 @@ describe('armas novas, passivos e evoluções', () => {
 
   it('os espaços são 6 armas e 6 passivos', () => {
     const w = new NhWorld('s');
-    for (const u of ['weaponLength', 'horizontal', 'diagonal', 'halo', 'axe', 'orbit'] as const)
+    for (const u of ['weaponLength', 'horizontal', 'whip', 'halo', 'axe', 'orbit'] as const)
       w.levels[u] = 1;
     const avail = w.availableUpgrades();
     expect(avail).not.toContain('lightning');
@@ -437,7 +437,7 @@ describe('armas novas, passivos e evoluções', () => {
   });
 
   it('há uma evolução para cada arma e todo item evoluído tem descrição', () => {
-    expect(EVOLUTIONS).toHaveLength(17);
+    expect(EVOLUTIONS).toHaveLength(16);
     for (const e of EVOLUTIONS) {
       for (const m of e.maxed) expect(UPGRADE_IDS).toContain(m);
       expect(UPGRADE_IDS).toContain(e.passive);

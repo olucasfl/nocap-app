@@ -345,7 +345,6 @@ export class NhWorld {
   evolved = new Set<EvoId>();
   launchers = {
     horizontal: { timer: 0, waves: 0, burstLeft: 0, burstTimer: 0 },
-    diagonal: { timer: 0, waves: 0, burstLeft: 0, burstTimer: 0 },
     halo: { timer: 0, cooldown: 0 },
     axe: { timer: 0 },
     lightning: { timer: 0 },
@@ -1028,9 +1027,6 @@ export class NhWorld {
         break;
       case 'horizontal':
         this.launchers.horizontal.waves += L.horizontalLauncher.wavesToShootPerUpgrade;
-        break;
-      case 'diagonal':
-        this.launchers.diagonal.waves += L.diagonalLauncher.wavesToShootPerUpgrade;
         break;
       case 'halo':
         this.launchers.halo.timer = 0;
@@ -2086,7 +2082,7 @@ export class NhWorld {
       };
     };
     const wave = (
-      key: 'horizontal' | 'diagonal',
+      key: 'horizontal',
       cfg: WaveCfg,
       dirs: [number, number][],
       cdScale: number,
@@ -2139,24 +2135,6 @@ export class NhWorld {
           ],
       evoH ? 0.75 : 1,
       evoH ? 2 : 0,
-    );
-    const evoD = this.evolved.has('evoDiagonal');
-    wave(
-      'diagonal',
-      P.diagonalLauncher,
-      evoD
-        ? [
-            [-0.5, -0.5],
-            [0.5, -0.5],
-            [-0.5, 0.5],
-            [0.5, 0.5],
-          ]
-        : [
-            [-0.5, -0.5],
-            [0.5, -0.5],
-          ],
-      evoD ? 0.7 : 1,
-      evoD ? 2 : 0,
     );
     const h = this.launchers.halo;
     if (this.levels.halo > 0) {

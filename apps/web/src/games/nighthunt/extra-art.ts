@@ -782,7 +782,6 @@ export function extendAtlas(
   // ícones de evolução: o ícone da arma com brilho dourado e uma estrela
   const evoBase: Record<string, string> = {
     evoHorizontal: 'UI/UpgradeIcons/HorizontalProjectile',
-    evoDiagonal: 'UI/UpgradeIcons/DiagonalProjectile',
     evoHalo: 'UI/UpgradeIcons/HaloProjectile',
     evoAxe: 'UI/UpgradeIcons/ThrowAxe',
     evoOrbit: 'X/orbit',

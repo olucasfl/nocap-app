@@ -57,22 +57,11 @@ export const PLAYER_SETTINGS = {
       cooldown: 4,
     },
   },
-  diagonalLauncher: {
-    wavesToShootPerUpgrade: 1,
-    launcher: {
-      projectileLifetime: 20,
-      projectileSpeed: 300,
-      wavesToShoot: 0,
-      wavesDelayMs: 200,
-      cooldown: 4,
-    },
-  },
 } as const;
 export const UPGRADE_LIMITS = {
   maxWeaponLengthUpgrades: 5,
   maxWeaponDamageUpgrades: 10,
   maxHorizontalProjectileUpgrades: 6,
-  maxDiagonalProjectileUpgrades: 6,
   maxHaloProjectileUpgrades: 6,
   maxRegenerationUpgrades: 6,
 } as const;

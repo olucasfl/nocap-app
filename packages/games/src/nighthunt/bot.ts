@@ -25,7 +25,6 @@ export const BOT_PRIORITY: readonly UpgradeId[] = [
   'lightning',
   'axe',
   'weaponLength',
-  'diagonal',
   'heart',
   'armor',
   'regeneration',

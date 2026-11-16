@@ -44,7 +44,6 @@ const ITEM_GFX: Record<string, { anim?: string; frame?: string; ox: number; oy: 
 };
 const PROJ_FRAME: Record<string, string> = {
   horizontal: 'Weapons/ShotHoriz',
-  diagonal: 'Weapons/ShotDiag',
   halo: 'Weapons/ShotHalo',
   axe: 'Weapons/ThrowAxe',
   wand: 'X/p/wand',

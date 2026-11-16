@@ -367,3 +367,7 @@ Preços (decisão do Lucas, 16/11/2026): 300, 900, 1.200, 2.000, 3.000, 3.600 e 
 - **Heróis:** 8, de 0 a 4.200 de 600 em 600; só o Kael começa com a Espada.
 - **Bestiário:** `bestiary.ts` (56 entradas, nomes e textos pt-BR, números lidos de `ENEMIES`), tela com lista e bicho animado, contagem de abates na conta (`stats.bestiary`).
 - **Não feito:** sons próprios das armas novas (reaproveitam os do Slash), bichos novos além dos 15 do Dungeon Crawl e dos chefes finais, uniões (cortadas por decisão do Lucas).
+
+## Tiro Arcano removido (16/11/2026)
+
+A pedido do Lucas, o **Tiro Arcano** (arma `diagonal`) e a evolução **Arcano Total** saíram do jogo: parecia repetido com a Varinha Arcana. Saíram também a conquista "Arcanista" e a configuração `diagonalLauncher`. O evento de som `fire`/`diagonal` continua existindo (a Varinha e o Osso o usam).

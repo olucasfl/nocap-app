@@ -263,15 +263,6 @@ export const UPGRADES: Record<UpgradeId, UpgradeInfo> = {
       n === 1 ? 'Desbloqueia: 1 salva de 3 adagas.' : `+1 salva (${n} salvas por disparo).`,
     icon: 'UI/UpgradeIcons/HorizontalProjectile',
   },
-  diagonal: {
-    id: 'diagonal',
-    name: 'Tiro Arcano',
-    desc: 'Dispara dois tiros em diagonal para baixo a cada 4 segundos. Cada nível adiciona uma salva.',
-    max: 6,
-    level: (n) =>
-      n === 1 ? 'Desbloqueia: 1 salva de 2 tiros.' : `+1 salva (${n} salvas por disparo).`,
-    icon: 'UI/UpgradeIcons/DiagonalProjectile',
-  },
   halo: {
     id: 'halo',
     name: 'Nova Ígnea',
@@ -725,14 +716,6 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
     UPGRADES.horizontal.icon,
     (s) => [s.stats.upgradeBest.horizontal, maxUp('horizontal')],
   ),
-  mk(
-    'arcane',
-    'Arcanista',
-    'Leve o Tiro Arcano ao nível máximo.',
-    35,
-    UPGRADES.diagonal.icon,
-    (s) => [s.stats.upgradeBest.diagonal, maxUp('diagonal')],
-  ),
   mk('nova', 'Supernova', 'Leve a Nova Ígnea ao nível máximo.', 35, UPGRADES.halo.icon, (s) => [
     s.stats.upgradeBest.halo,
     maxUp('halo'),
@@ -1182,13 +1165,6 @@ export const EVO_INFO: Record<EvoId, EvoInfo> = {
     desc: 'Leque de 5 adagas, uma salva a mais, atravessam 2 inimigos a mais e recarregam 25% mais rápido.',
     from: 'horizontal',
     passive: 'boots',
-  },
-  evoDiagonal: {
-    id: 'evoDiagonal',
-    name: 'Arcano Total',
-    desc: 'Tiros nas 4 diagonais, atravessam 2 inimigos a mais e recarregam 30% mais rápido.',
-    from: 'diagonal',
-    passive: 'tome',
   },
   evoHalo: {
     id: 'evoHalo',
