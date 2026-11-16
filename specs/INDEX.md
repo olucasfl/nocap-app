@@ -82,3 +82,4 @@
 
 Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `/spec <nome>`.
 | 085 | [Fox GP, Arcade com poderes](085-fox-gp-poderes.md) | 5 | etapas 0 a 5 feitas, offline e online (16/11/2026): vitrine, lógica, caixas, 12 itens, dois modos, bots, sons e sala; falta calibrar jogando e testar o celular |
+| 086 | [Fox GP, pistas novas para o Arcade com poderes](086-fox-gp-pistas-poderes.md) | 5 | spec escrita (16/11/2026): análise das 4 pistas, mecânicas de andar/pulo/gravidade/queda e fases; começa pela Castle Circuit |
