@@ -61,3 +61,7 @@ O motor do Fox GP é plano: o carro anda em (x, z), a pista é uma linha central
   - Cenário compacto em `apps/web/public/foxgp/castle/` (pacote `core` para todos; `detail` só no computador).
 - **Fotos das pistas** (`public/foxgp/preview/*.webp`) aparecem na escolha do treino e no lobby da sala, para o líder e para quem entra (`TrackPreview`).
 - Falta: F2 (pulo guiado e turbo de andar), F3 a F5 (as outras pistas) e o segundo passo da escolha da pista com poderes quando houver mais de uma.
+
+## 8. Box e pneu (16/11/2026)
+
+O box da Marina e o de Interlagos foram para a metade da volta (Marina a ~51%, Interlagos a ~44%), do lado de fora da curva e logo antes de uma reta rápida, nunca em cima dela. Os avisos de box seguem a distância até a entrada, então valem em qualquer lugar da pista. Interlagos ganhou `wearK: 0.5` (metade do desgaste de pneu), porque gastava 41% por volta; agora gasta cerca de 20%, perto da Marina.
