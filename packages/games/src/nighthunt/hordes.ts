@@ -128,8 +128,12 @@ export function dripTier(t: number): DripTier {
 export const minPopulation = (t: number): number => Math.min(380, 16 + t * 0.17);
 /** Teto de inimigos vivos (protege o desempenho). */
 export const MAX_ENEMIES = 460;
-/** Vida extra dos inimigos comuns conforme o tempo (a partir dos 10 min). */
-export const hpScale = (t: number): number => 1 + Math.max(0, t - 600) / 1200;
+/**
+ * Vida extra dos inimigos comuns conforme o tempo: sobe devagar a partir dos 10 min e mais rápido depois dos 15 (com
+ * as armas no nível 8 o fim da partida precisa de mais pressão: 2,2x aos 20 min e 3,1x aos 25).
+ */
+export const hpScale = (t: number): number =>
+  1 + Math.max(0, t - 600) / 1200 + Math.max(0, t - 900) / 450;
 /** Valor de cada cristal de XP: sobe com o tempo, como as gemas verdes e vermelhas do Vampire Survivors. */
 export const gemValue = (t: number): number =>
   Math.max(1, Math.floor(1 + Math.max(0, t - 240) / 110));
