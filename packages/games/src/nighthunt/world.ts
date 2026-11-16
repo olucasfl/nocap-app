@@ -405,6 +405,8 @@ export class NhWorld {
   pent: { born: number } | null = null;
   garlicHits = 0;
   private wTimers: Record<string, number> = {};
+  /** Recarga do Pentagrama até o próximo uso (sorteada entre 40 e 80 s a cada uso). */
+  private pentCd = 0;
   private embHit = new Map<number, number>();
   private aimX = 1;
   private aimY = 0;
@@ -1760,11 +1762,17 @@ export class NhWorld {
       }
     }
 
-    // Pentagrama: limpa a tela e puxa os itens
+    // Pentagrama: varre a tela com dano grande (não puxa itens). A recarga é sorteada a cada uso entre 40 e 80 s;
+    // os níveis e a evolução encurtam só um pouco.
     if (L.pentagram > 0) {
       const evo = this.evolved.has('evoPentagram');
-      const cd = this.lv(PENTAGRAM.cd, L.pentagram) * this.cdMult * (evo ? 0.85 : 1);
-      if (tick('pentagram', cd)) {
+      const roll = (): number =>
+        (PENTAGRAM.cdMin + this.rng() * (PENTAGRAM.cdMax - PENTAGRAM.cdMin)) *
+        this.lv(PENTAGRAM.cdFactor, L.pentagram) *
+        (evo ? 0.9 : 1);
+      if (this.pentCd <= 0) this.pentCd = roll();
+      if (tick('pentagram', this.pentCd)) {
+        this.pentCd = roll();
         const sc = this.lv(PENTAGRAM.scale, L.pentagram);
         const d = this.lv(PENTAGRAM.dmg, L.pentagram) * dm * (evo ? 1.5 : 1);
         this.pent = { born: t };
@@ -1772,12 +1780,6 @@ export class NhWorld {
           if (e.dead || e.s.id === 'FinalBoss' || e.s.id.endsWith('FinalBoss')) continue;
           if (Math.abs(e.x - px) <= this.viewHW * sc && Math.abs(e.y - py) <= this.viewHH * sc)
             this.damageEnemy(e, d);
-        }
-        for (const it of this.items) {
-          if (!it.attracted) {
-            it.attracted = true;
-            it.speed = 320;
-          }
         }
         this.events.push({ k: 'levelUp' });
       }

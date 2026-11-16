@@ -69,7 +69,10 @@ export const RUNES = {
 } as const;
 export const PENTAGRAM = {
   dmg: [15, 15, 19.5, 19.5, 24, 24],
-  cd: [20, 18, 18, 16, 16, 12],
+  /** Recarga sorteada a cada uso entre estes dois valores (s); os níveis encurtam só um pouco (fator abaixo). */
+  cdMin: 40,
+  cdMax: 80,
+  cdFactor: [1, 0.95, 0.95, 0.9, 0.9, 0.85],
   scale: [1, 1, 1, 1, 1, 2],
 } as const;
 export const BOMB = {

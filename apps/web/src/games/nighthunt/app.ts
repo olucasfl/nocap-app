@@ -2,7 +2,7 @@ import {
   ACHIEVEMENTS,
   EVOLUTIONS,
   EVO_INFO,
-  ignoresText,
+  IGNORES,
   HEROES,
   HERO_IDS,
   HERO_INFO,
@@ -624,6 +624,7 @@ export class NhApp {
           break;
         case 'enemyHit':
           snd('enemyHit', 0.9 + Math.random() * 0.2);
+          if (this.save.damageNumbers) pushFx(this.fx, 'dmg', e.x, e.y, undefined, e.dmg);
           break;
         case 'enemyDeath':
           pushFx(this.fx, 'enemyDeath', e.x, e.y);
@@ -2345,18 +2346,34 @@ export class NhApp {
       const body = info.evo ? info.desc : UPGRADES[id as UpgradeId].level(lv + 1);
       // linhas de apoio no pé da carta (combinação, o que a arma ignora, receita da evolução): reservam o espaço delas
       // antes do texto, para a descrição nunca passar por cima
-      const notes: Array<{ txt: string; color: string }> = [];
+      // cada nota é um texto + o símbolo de cada item citado (ex.: "Combina com Espada [ícone da espada]")
+      const notes: Array<{ label: string; ids: UpgradeId[]; color: string }> = [];
       if (info.evo) {
         const ev = EVO_INFO[id as EvoId];
-        notes.push({ txt: `Requer: ${UPGRADES[ev.passive].name}.`, color: '#ffb25a' });
+        notes.push({ label: 'Requer', ids: [ev.passive], color: '#ffb25a' });
       } else {
         const hint = w.comboHint(id);
-        if (hint) notes.push({ txt: `Combina com ${UPGRADES[hint].name}`, color: '#7fe08a' });
-        const ign = ignoresText(id as UpgradeId);
-        if (ign) notes.push({ txt: `Não é afetada por: ${ign}.`, color: '#ffb25a' });
+        if (hint) notes.push({ label: 'Combina com', ids: [hint], color: '#7fe08a' });
+        const ign = IGNORES[id as UpgradeId] ?? [];
+        if (ign.length) notes.push({ label: 'Não é afetada por', ids: [...ign], color: '#ffb25a' });
       }
-      const noteLines = notes.map((nt) => wrapText(a, nt.txt, cw - 18, { size: 12 }));
-      const noteH = noteLines.reduce((sum, ls) => sum + ls.length * 14 + 4, 0);
+      const ICON_W = 20;
+      type Seg = { text?: string; icon?: string; w: number };
+      // monta as linhas: cabe tudo numa linha? senão, o rótulo numa linha e cada item (ícone + nome) na sua
+      const layout = (nt: (typeof notes)[number]): Seg[][] => {
+        const segs = (ids: UpgradeId[]): Seg[] =>
+          ids.flatMap((u, k) => [
+            ...(k > 0 ? [{ text: ',', w: measureText(a, ', ', { size: 12 }) }] : []),
+            { text: UPGRADES[u].name, w: measureText(a, UPGRADES[u].name, { size: 12 }) + 4 },
+            { icon: UPGRADES[u].icon, w: ICON_W },
+          ]);
+        const label: Seg = { text: `${nt.label}:`, w: measureText(a, `${nt.label}: `, { size: 12 }) };
+        const one = [label, ...segs(nt.ids)];
+        if (one.reduce((sum, sg) => sum + sg.w, 0) <= cw - 16) return [one];
+        return [[label], ...nt.ids.map((u) => segs([u]))];
+      };
+      const rows = notes.map(layout);
+      const noteH = rows.reduce((sum, rs) => sum + rs.length * 20 + 4, 0);
       const floor = y + lift + h - 34 - noteH; // o texto da carta termina aqui
       const bodySize = info.evo ? 12 : n >= 4 ? 13 : 15;
       const bodyLine = info.evo ? 14 : n >= 4 ? 15 : 17;
@@ -2383,15 +2400,19 @@ export class NhApp {
       // as notas ficam coladas embaixo, de baixo para cima
       let ny = y + lift + h - 34;
       for (let k = notes.length - 1; k >= 0; k--) {
-        const ls = noteLines[k]!;
-        ny -= ls.length * 14 + 4;
-        ls.forEach((l, j) =>
-          drawText(g, a, l, x + cw / 2, ny + 4 + j * 14, {
-            size: 12,
-            align: 'center',
-            color: notes[k]!.color,
-          }),
-        );
+        const rs = rows[k]!;
+        ny -= rs.length * 20 + 4;
+        rs.forEach((row, j) => {
+          const total = row.reduce((sum, sg) => sum + sg.w, 0);
+          let cx = x + cw / 2 - total / 2;
+          const cy = ny + 4 + j * 20;
+          for (const sg of row) {
+            if (sg.icon) drawFrame(g, a, sg.icon, cx + ICON_W / 2, cy + 8, { s: 0.5 });
+            else
+              drawText(g, a, sg.text!, cx, cy + 2, { size: 12, align: 'left', color: notes[k]!.color });
+            cx += sg.w;
+          }
+        });
       }
       drawText(g, a, `[${i + 1}]`, x + cw / 2, y + lift + h - 24, {
         size: 13,

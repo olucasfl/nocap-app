@@ -754,26 +754,38 @@ describe('armas novas da fase 3', () => {
       else expect(high).toBeLessThanOrEqual(low);
     });
   }
-  it('pentagrama limpa a tela, puxa os itens e a recarga é longa', () => {
-    const w = new NhWorld('wp-pent');
-    w.levels.pentagram = 1;
-    w.levels.sword = 0;
-    const e = spawn(w, 'ToughEnemy', 150, 50);
-    e.speedX = e.speedY = 0;
-    e.hp = e.maxHp = 999;
-    w.items.push({ uid: 7777, type: 'xp', x: 400, y: 0, attracted: false, speed: 0, born: 0 });
-    const go = (n: number) => {
-      for (let i = 0; i < n; i++) {
+  it('pentagrama limpa a tela, NÃO puxa itens e a recarga é sorteada entre 40 e 80 s', () => {
+    const gaps: number[] = [];
+    for (const seed of ['wp-pent', 'wp-pent2', 'wp-pent3', 'wp-pent4']) {
+      const w = new NhWorld(seed);
+      w.levels.pentagram = 1;
+      w.levels.sword = 0;
+      const e = spawn(w, 'ToughEnemy', 150, 50);
+      e.speedX = e.speedY = 0;
+      e.hp = e.maxHp = 1e9;
+      w.items.push({ uid: 7777, type: 'xp', x: 4000, y: 0, attracted: false, speed: 0, born: 0 });
+      let last = e.hp;
+      let castAt = 0;
+      for (let i = 0; i < 60 * 85 && gaps.length < 8; i++) {
         w.player.hp = w.player.maxHp;
         w.step({ x: 0, y: 0 });
         w.drainEvents();
+        if (e.hp < last) {
+          gaps.push(w.t - castAt);
+          castAt = w.t;
+          break;
+        }
+        last = e.hp;
       }
-    };
-    go(60 * 19);
-    expect(e.hp).toBe(999);
-    go(60 * 3);
-    expect(e.hp).toBeLessThan(999);
-    expect(w.items.every((it) => it.attracted) || w.items.length === 0).toBe(true);
+      // o item continua onde estava (o pentagrama não é ímã)
+      expect(w.items.find((it) => it.uid === 7777)?.attracted).toBe(false);
+    }
+    for (const g of gaps) {
+      expect(g).toBeGreaterThanOrEqual(39.9);
+      expect(g).toBeLessThanOrEqual(80.5);
+    }
+    // sorteado de verdade: as quatro sementes não caem no mesmo segundo
+    expect(new Set(gaps.map((g) => Math.round(g))).size).toBeGreaterThan(1);
   });
   it('quantidade soma projéteis, maldição reforça inimigos e dá XP, duração estica as poças', () => {
     const w = new NhWorld('wp-pass');

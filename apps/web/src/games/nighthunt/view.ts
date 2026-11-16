@@ -1,5 +1,5 @@
 import { HEROES, MAPS, SWORD_BOXES, type Enemy, type NhWorld, type Obstacle } from '@nocap/games';
-import { animFrame, drawFrame, type Atlas } from './assets';
+import { animFrame, drawFrame, drawText, type Atlas } from './assets';
 import { BREAKABLE_DEBRIS, BREAKABLE_GLOW } from './extra-art';
 import { MONSTERS, MONSTER_BY_ID, PICK_RADIUS } from '@nocap/games';
 
@@ -19,6 +19,8 @@ export interface Fx {
   y: number;
   t: number;
   dur: number;
+  /** Número de dano (efeito `dmg`). */
+  v?: number;
 }
 
 const ENEMY_ANIM: Record<string, string> = {
@@ -164,6 +166,11 @@ export function heroFrame(a: Atlas, heroId: string, name: string | null): string
   const v = `Player/${heroId}/${name.slice(7)}`;
   return a.frames[v] ? v : name;
 }
+
+const smoothstep = (a: number, b: number, x: number): number => {
+  const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+};
 
 function enemyAnimKey(e: Enemy, touching: boolean): string {
   const gt = e.s.graphicsType;
@@ -741,6 +748,28 @@ export function drawWorld(
       drawBolt(g, sx(f.x), sy(f.y), f.t / f.dur, f.x * 7 + f.y);
       continue;
     }
+    if (f.key === 'dmg') {
+      // número de dano: sobe, encolhe um pouco e some; os fortes são maiores e amarelos
+      const p = f.t / f.dur;
+      const v = f.v ?? 0;
+      const big = v >= 30;
+      g.save();
+      g.globalAlpha = 1 - smoothstep(0.55, 1, p);
+      drawText(
+        g,
+        a,
+        String(Math.max(1, Math.round(v))),
+        sx(f.x) + ((f.x * 13) % 9) - 4,
+        sy(f.y) - 18 - p * 26 - Math.sin(p * Math.PI) * 6,
+        {
+          size: big ? 22 : 16,
+          align: 'center',
+          color: big ? '#ffd94a' : '#ffffff',
+        },
+      );
+      g.restore();
+      continue;
+    }
     if (f.key === 'debris') {
       const p = f.t / f.dur;
       const cols = BREAKABLE_DEBRIS[f.map ?? 'campo'] ?? BREAKABLE_DEBRIS.campo!;
@@ -817,11 +846,18 @@ function drawSword(
 /** Atualiza os efeitos de tela a partir dos eventos da simulação. */
 export function pushFx(
   fx: Fx[],
-  k: 'enemyDeath' | 'pickup' | 'bolt' | 'debris',
+  k: 'enemyDeath' | 'pickup' | 'bolt' | 'debris' | 'dmg',
   x: number,
   y: number,
   map?: string,
+  v?: number,
 ): void {
+  if (k === 'dmg') {
+    // no máximo 60 números ao mesmo tempo (hordas e armas rápidas não enchem a tela)
+    if (fx.filter((f) => f.key === 'dmg').length < 60)
+      fx.push({ key: 'dmg', x, y, t: 0, dur: 0.7, v });
+    return;
+  }
   if (k === 'debris') fx.push({ key: 'debris', map, x, y, t: 0, dur: 0.5 });
   else if (k === 'bolt') fx.push({ key: 'bolt', x, y, t: 0, dur: 0.3 });
   else if (k === 'enemyDeath') fx.push({ key: 'Effects/DeathEffect', x, y, t: 0, dur: 0.36 });

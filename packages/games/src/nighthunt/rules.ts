@@ -154,18 +154,18 @@ export const UPGRADES: Record<UpgradeId, UpgradeInfo> = {
   pentagram: {
     id: 'pentagram',
     name: 'Pentagrama',
-    desc: 'De tempos em tempos varre a tela: dano grande em todos os inimigos e puxa todos os itens para você.',
+    desc: 'De tempos em tempos varre a tela: dano grande em todos os inimigos. A recarga é sorteada a cada uso, entre 40 e 80 segundos.',
     max: 6,
     level: (n) =>
       n === 1
-        ? 'Desbloqueia: dano 15 a cada 20 s.'
+        ? 'Desbloqueia: dano 15 a cada 40 a 80 s (sorteado).'
         : [
             '',
-            'Recarga -10%.',
+            'Recarga -5%.',
             'Dano +30%.',
-            'Recarga -10%.',
+            'Recarga -5%.',
             'Dano +30%.',
-            'Alcance x2 e recarga 12 s.',
+            'Alcance x2 e recarga -5%.',
           ][n - 1]!,
     icon: 'X/pentagram',
   },
