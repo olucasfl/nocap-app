@@ -25,6 +25,28 @@ const evalFinal = (mode: string, record: boolean): Step => async (p) => {
 };
 const tips: Step = async (p) => void (await p.getByTestId('game-tips-ok').click({ timeout: 2500 }).catch(() => undefined));
 const key = (k: string): Step => async (p) => void (await p.keyboard.press(k));
+const pickBack: Step = async (p) => void (await p.locator('.gp-pick-card').getByRole('button', { name: /^Voltar$/ }).click({ timeout: 8000 }));
+const colorToEnd: Step = async (p) => {
+  for (let i = 0; i < 8; i++) {
+    const lock = p.getByRole('button', { name: 'Cravar' });
+    const next = p.getByRole('button', { name: /^(Próxima|Ver resultado)$/ });
+    const done = p.getByTestId('final-again');
+    const which = await Promise.race([
+      lock.waitFor({ timeout: 20_000 }).then(() => 'lock'),
+      next.waitFor({ timeout: 20_000 }).then(() => 'next'),
+      done.waitFor({ timeout: 20_000 }).then(() => 'done'),
+    ]).catch(() => 'none');
+    if (which === 'lock') await lock.click();
+    else if (which === 'next') await next.click();
+    else break;
+  }
+  await p.waitForTimeout(1500);
+};
+const golfFinish = (hole: boolean, n: number): Step => async (p) => {
+  await p.waitForFunction(() => !!(window as unknown as { __mgFinish?: unknown }).__mgFinish, null, { timeout: 15_000 });
+  await p.evaluate(([h, k]) => (window as unknown as { __mgFinish: (h: boolean, n: number) => void }).__mgFinish(h as boolean, k as number), [hole, n]);
+  await p.waitForTimeout(2500);
+};
 const wait = (ms: number): Step => async (p) => void (await p.waitForTimeout(ms));
 
 const hubPanels = (game: string, url: string, mode: string): [string, string, Step[]][] => [
@@ -55,6 +77,8 @@ const FLOWS: [string, string, Step[]][] = [
   ['ping-jogo', '/fox-cap?jogo=pingpong', [click('gl-offline'), click('png-level-medio'), click('png-start'), wait(2500), tips]],
   ['bola-config', '/fox-cap?jogo=bola', [click('gl-offline'), wait(600)]],
   ['bola-jogo', '/fox-cap?jogo=bola', [click('gl-offline'), click('bola-fmt-2x2'), click('bola-start'), wait(2500), tips]],
+  ['cor-fim', '/cor', [click('menu-modes'), click('mode-classic'), click('play-classic'), colorToEnd]],
+  ['golf-fim', '/minigolf/jogar?fase=1', [wait(2500), golfFinish(true, 3)]],
   ['golf-jogo', '/minigolf/jogar?fase=1', [wait(3000), tips]],
   ['golf-online', '/minigolf', [click('mg-online'), wait(500)]],
   ['nighthunt-menu', '/nighthunt', [wait(2500)]],
@@ -63,8 +87,8 @@ const FLOWS: [string, string, Step[]][] = [
   ['counterfox-offline', '/fox-cap/counter-fox', [click('cfh-play'), click('cfh-offline'), wait(800)]],
   ['foxgp-home', '/fox-cap?jogo=foxgp', [click('gl-offline'), wait(1500)]],
   ['foxgp-garagem', '/fox-cap?jogo=foxgp', [click('gl-offline'), click('gp-pick-garage'), wait(1500)]],
-  ['foxgp-pistas', '/fox-cap?jogo=foxgp', [click('gl-offline'), btn(/^Voltar$/), click('gp-open-track'), wait(1500)]],
-  ['foxgp-comandos', '/fox-cap?jogo=foxgp', [click('gl-offline'), btn(/^Voltar$/), click('gp-open-commands'), wait(800)]],
+  ['foxgp-pistas', '/fox-cap?jogo=foxgp', [click('gl-offline'), pickBack, click('gp-open-track'), wait(1500)]],
+  ['foxgp-comandos', '/fox-cap?jogo=foxgp', [click('gl-offline'), pickBack, click('gp-open-commands'), wait(800)]],
   ['foxgp-jogo', '/fox-cap?jogo=foxgp', [click('gl-offline'), click('gp-physics-arcade'), click('gp-start'), wait(6000), tips]],
   ['sala-cor', '/sala?jogo=color', [wait(800)]],
   ['classic-jogo', '/words/classic/fase/classic/1', [wait(800)]],

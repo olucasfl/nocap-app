@@ -607,7 +607,7 @@
     font-size: 12px;
   }
   .gph-carousel-best {
-    font-size: 10px;
+    font-size: 11px;
   }
   /* painéis compactos */
   .gph-panel {
@@ -699,6 +699,7 @@
   cursor: pointer;
 }
 .gpg-tabs button {
+  min-height: 44px;
   padding: 5px 4px;
   font-size: 12px;
 }
