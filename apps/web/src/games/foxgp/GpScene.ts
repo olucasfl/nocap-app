@@ -2275,7 +2275,10 @@ export class GpScene {
     ray.set(o, dir);
     ray.near = 0;
     ray.far = dist + 0.6;
+    // o raio também vale para o verso das faces (um letreiro ou um teto visto de trás); o desenho não muda
+    for (const m of this.camSolids) (m.material as THREE.Material).side = THREE.DoubleSide;
     const hit = ray.intersectObjects(this.camSolids, false)[0];
+    for (const m of this.camSolids) (m.material as THREE.Material).side = THREE.FrontSide;
     const want = hit ? Math.max(0.25, Math.min(1, (hit.distance - 0.6) / dist)) : 1;
     // entra na hora (nunca fica dentro da parede) e volta ao normal devagar
     this.camClip =
