@@ -383,7 +383,7 @@
   animation: gh-nudge 1.4s ease-in-out infinite;
 }
 .gh-mode-help {
-  min-height: 38px;
+  min-height: 44px;
   background: var(--paper);
   color: var(--ink);
   font-size: 13px;
