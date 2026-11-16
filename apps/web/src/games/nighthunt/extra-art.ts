@@ -1,4 +1,3 @@
-import { drawHeroFrame } from './hero-art';
 import { HEROES, MAPS, MONSTER_CELLS } from '@nocap/games';
 
 /**
@@ -699,12 +698,17 @@ function paint(map: string[], scale: number, cols = 16, trim = false): HTMLCanva
   return c;
 }
 
+/** Ordem da folha de heróis (linhas) e dos quadros (colunas) de `heroes.png`. */
+const HERO_SHEET = ['vesper', 'mara', 'brann', 'dorian', 'selene', 'ysolde', 'rurik'];
+const HERO_FRAMES = ['Idle00', 'Idle01', 'Move00', 'Move01', 'Move02', 'Move03', 'Die00', 'Die01', 'Die02'];
+
 /** Aumenta o atlas e devolve o novo atlas (imagem, retângulos). `frames` ganha os nomes novos. */
 export function extendAtlas(
   base: HTMLImageElement,
   frames: Record<string, Rect>,
   bgs: { f: string }[][],
   dcss?: HTMLImageElement,
+  heroSheet?: HTMLImageElement,
 ): HTMLCanvasElement {
   const W = base.width;
   const pending: Array<{ name: string; canvas: HTMLCanvasElement }> = [];
@@ -722,20 +726,21 @@ export function extendAtlas(
     queued.set(name, canvas);
   };
 
-  // heróis: o guerreiro com outro matiz
+  // heróis: sprites feitos a partir do guerreiro do Kael (tools/art/nighthunt/heroes.py gera heroes.png: uma linha por herói,
+  // uma coluna por quadro, células de 32x32). Sem a folha, cai no guerreiro com outro matiz.
   for (const h of Object.values(HEROES)) {
     if (!h.hue) continue;
+    const row = HERO_SHEET.indexOf(h.id);
     for (const name of Object.keys(frames)) {
       if (!name.startsWith('Player/')) continue;
-      // herói com visual próprio (hero-art.ts): quadro desenhado; senão o guerreiro com outro matiz
-      const m = /PlWarrior(Idle|Move|Die)(\d+)$/.exec(name);
-      const own = m
-        ? drawHeroFrame(h.id, {
-            kind: m[1] === 'Idle' ? 'idle' : m[1] === 'Move' ? 'move' : 'die',
-            frame: Number(m[2]),
-          })
-        : null;
-      add(`Player/${h.id}/${name.slice(7)}`, own ?? shifted(crop(name), h.hue, 1.05, 0, true));
+      const col = HERO_FRAMES.findIndex((f) => name.endsWith(`PlWarrior${f}`));
+      if (heroSheet && row >= 0 && col >= 0) {
+        const c = document.createElement('canvas');
+        c.width = 32;
+        c.height = 32;
+        c.getContext('2d')!.drawImage(heroSheet, col * 32, row * 32, 32, 32, 0, 0, 32, 32);
+        add(`Player/${h.id}/${name.slice(7)}`, c);
+      } else add(`Player/${h.id}/${name.slice(7)}`, shifted(crop(name), h.hue, 1.05, 0, true));
     }
   }
   // mapas: decoração com outro matiz

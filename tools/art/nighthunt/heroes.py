@@ -478,6 +478,15 @@ def sheet(frames_by_hero, kael, path, scale=8, names=('Idle00', 'Move01', 'Move0
     img.save(path)
 
 
+def pack(made, path):
+    """Folha final: uma linha por herói (na ordem de HEROES), uma coluna por quadro (na ordem de FRAMES), células de 32x32."""
+    img = Image.new('RGBA', (len(FRAMES) * 32, len(made) * 32), (0, 0, 0, 0))
+    for r, hid in enumerate(HEROES):
+        for k, n in enumerate(FRAMES):
+            img.alpha_composite(made[hid][n], (k * 32, r * 32))
+    img.save(path)
+
+
 def lineup(made, kael, path, scale=6):
     names = ['kael'] + list(made)
     img = Image.new('RGBA', (len(names) * 34 * scale, 36 * scale), (75, 109, 59, 255))
@@ -493,6 +502,8 @@ if __name__ == '__main__':
     made = {h: make(base, h) for h in HEROES}
     sheet(made, base, outdir + '/heroes-mock.png')
     lineup(made, base, outdir + '/heroes-lineup.png')
+    if len(sys.argv) > 4:
+        pack(made, sys.argv[4])
     sheet(made, base, outdir + '/heroes-mock2.png', 8, ('Idle01', 'Move00', 'Move02'))
     for h in HEROES:
         sheet({h: made[h]}, base, outdir + f'/hero-{h}.png', 10, ('Idle00', 'Idle01', 'Move00', 'Move01', 'Move02', 'Move03'))
