@@ -1272,8 +1272,9 @@
   white-space: nowrap;
 }
 .gp-room-cars button {
+  min-height: 44px;
   font-size: 12px;
-  padding: 3px 8px;
+  padding: 3px 12px;
   cursor: pointer;
 }
 .gp-see {

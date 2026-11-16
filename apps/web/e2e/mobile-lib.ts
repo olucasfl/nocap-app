@@ -142,6 +142,15 @@ export async function metrics(page: Page, d: Dev, pass: 'top' | 'end') {
       range.selectNodeContents(tn);
       const tr = range.getBoundingClientRect();
       if (tr.width < 2) continue;
+      // tabela dentro de um rolador horizontal (placar): sair da caixa é rolar, de propósito
+      let sc: HTMLElement | null = el.parentElement;
+      let scrolls = false;
+      while (sc && sc !== document.body) {
+        const ox = getComputedStyle(sc).overflowX;
+        if ((ox === 'auto' || ox === 'scroll') && sc.scrollWidth > sc.clientWidth + 1) scrolls = true;
+        sc = sc.parentElement;
+      }
+      if (scrolls) continue;
       let box: HTMLElement | null = el;
       while (box && box !== document.body && !isBox(box)) box = box.parentElement;
       if (!box || box === document.body || box === document.documentElement) continue;

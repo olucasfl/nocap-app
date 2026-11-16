@@ -519,10 +519,10 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       {showBoard && (
         <div className="mg-board" data-testid="golf-board">
           <div className="mg-board-card">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ flex: 1 }}>
+            <div className="mg-board-head">
+              <div className="mg-board-title">
                 <div className="mg-kick">Placar · buraco {hole + 1} de {info.levels.length}</div>
-                <h2 className="mg-disp" style={{ fontSize: 40 }}>Quem manda no campo</h2>
+                <h2 className="mg-disp">Quem manda no campo</h2>
               </div>
               <button type="button" className="mg-pill" onClick={() => setBoard(false)}>Fechar</button>
             </div>
@@ -569,9 +569,9 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
                 </tbody>
               </table>
             </div>
-            <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+            <div className="mg-board-foot">
               <span className="mg-tag">Verde: abaixo do par · X: acabaram as tacadas</span>
-              <span style={{ flex: 1 }} />
+              <span className="mg-board-gap" />
               {snapshot.hostId === me && <button type="button" className="mg-pill ghost" onClick={() => sendRoom('gend')} data-testid="golf-end">Encerrar partida</button>}
               <button type="button" className="mg-pill ghost" onClick={leave}>Sair da partida</button>
             </div>
