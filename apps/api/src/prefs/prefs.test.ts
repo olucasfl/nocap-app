@@ -104,6 +104,7 @@ describe('Fox GP na conta (14/11/2026)', () => {
 describe('Night Hunt na conta (spec 083)', () => {
   const ok = {
     v: 1 as const,
+    epoch: 2 as const,
     rev: 5,
     gold: 120,
     highscore: 301.5,
@@ -125,6 +126,12 @@ describe('Night Hunt na conta (spec 083)', () => {
     expect(nhSchema.safeParse({ ...ok, meta: { health: 9 } }).success).toBe(false);
     expect(nhSchema.safeParse({ ...ok, extra: 1 }).success).toBe(false);
     expect(nhSchema.safeParse({ ...ok, heroes: Array(30).fill('x') }).success).toBe(false);
+  });
+  it('reset (geração 2): save sem geração é recusado e o da conta de antes não conta', () => {
+    const { epoch: _e, ...legacy } = ok;
+    expect(nhSchema.safeParse(legacy).success).toBe(false);
+    const old = { ...ok, epoch: 1 as never, rev: 999, gold: 9999 };
+    expect(mergeNh(old, ok)).toBe(ok);
   });
   it('um aparelho desatualizado não desfaz o progresso da conta', () => {
     const newer = { ...ok, rev: 9, gold: 500 };

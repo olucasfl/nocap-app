@@ -137,9 +137,13 @@ export type GolfSaved = z.infer<typeof golfSchema>;
  * Sem migration: vive em `user_prefs`. O aparelho manda o save inteiro com um contador `rev` (sobe a cada gravação);
  * o servidor só aceita se o `rev` não for mais velho que o da conta, para um aparelho parado não desfazer o progresso.
  */
+/** Geração do save do Night Hunt (igual a `NH_EPOCH` de packages/games): save de outra geração é ignorado e substituído. */
+export const NH_EPOCH = 2;
+
 export const nhSchema = z
   .object({
     v: z.literal(1),
+    epoch: z.literal(NH_EPOCH),
     rev: z.number().int().min(0).max(1_000_000_000),
     gold: z.number().int().min(0).max(100_000_000),
     highscore: z.number().min(0).max(36_000),
@@ -196,7 +200,9 @@ export type NhSaved = z.infer<typeof nhSchema>;
 
 /** Aceita o save novo, a não ser que a conta já tenha um mais recente (o `rev` maior vence). */
 export function mergeNh(old: NhSaved | undefined, next: NhSaved): NhSaved {
-  return old && old.rev > next.rev ? old : next;
+  // o que a conta guardava antes do reset (outra geração) não conta
+  const cur = old && old.epoch === NH_EPOCH ? old : undefined;
+  return cur && cur.rev > next.rev ? cur : next;
 }
 
 type StoredPrefs = PrefsInput & {
@@ -351,7 +357,8 @@ export class PrefsController {
       .select({ data: userPrefs.data })
       .from(userPrefs)
       .where(eq(userPrefs.userId, req.user.id));
-    return { nighthunt: (row?.data as StoredPrefs | undefined)?.nh ?? null };
+    const nh = (row?.data as StoredPrefs | undefined)?.nh;
+    return { nighthunt: nh && nh.epoch === NH_EPOCH ? nh : null };
   }
 
   @Put('nighthunt')

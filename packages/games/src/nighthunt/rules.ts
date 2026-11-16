@@ -481,8 +481,16 @@ export interface SavedRun {
   /** Texto de `NhWorld.snapshot()`. */
   snap: string;
 }
+/**
+ * Geração do save. Subir este número zera o progresso de todo mundo: o aparelho descarta saves de outra geração e o
+ * servidor (prefs.controller, `NH_EPOCH`) ignora e substitui o que a conta tinha. Zerado em 16/11/2026 (pedido do Lucas).
+ */
+export const NH_EPOCH = 2;
+
 export interface NhSave {
   v: 1;
+  /** Geração do save (`NH_EPOCH`). */
+  epoch: number;
   /** Sobe a cada gravação; a conta guarda o save de maior `rev` (ver prefs.controller). */
   rev: number;
   gold: number;
@@ -509,6 +517,7 @@ export interface NhSave {
 export function emptySave(): NhSave {
   return {
     v: 1,
+    epoch: NH_EPOCH,
     rev: 0,
     gold: 0,
     highscore: 0,

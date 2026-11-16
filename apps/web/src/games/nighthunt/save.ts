@@ -1,4 +1,4 @@
-import { MAP_IDS, emptySave, type NhSave } from '@nocap/games';
+import { MAP_IDS, NH_EPOCH, emptySave, type NhSave } from '@nocap/games';
 
 const KEY = 'nighthunt:save:v1';
 /** Avisa a sincronização com a conta que o save mudou no aparelho / que a conta mandou um save mais novo. */
@@ -7,6 +7,8 @@ export const NH_REMOTE = 'nighthunt:remote';
 
 function normalize(s: Partial<NhSave>): NhSave {
   const base = emptySave();
+  // save de outra geração (antes do reset): começa do zero
+  if (s.epoch !== NH_EPOCH) return base;
   return {
     ...base,
     ...s,
@@ -32,7 +34,11 @@ function normalize(s: Partial<NhSave>): NhSave {
 export function loadSave(): NhSave {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return normalize(JSON.parse(raw) as Partial<NhSave>);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<NhSave>;
+      if (parsed.epoch !== NH_EPOCH) localStorage.removeItem(KEY);
+      return normalize(parsed);
+    }
   } catch {
     /* save corrompido ou sem acesso: começa do zero */
   }

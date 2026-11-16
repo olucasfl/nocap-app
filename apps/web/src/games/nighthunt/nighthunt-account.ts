@@ -1,5 +1,6 @@
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth';
+import { NH_EPOCH } from '@nocap/games';
 import { NH_CHANGED, applyRemote, loadSave } from './save';
 
 /**
@@ -27,7 +28,7 @@ async function sync(userId: string) {
       '/me/prefs/nighthunt',
     );
     const local = loadSave();
-    if (nighthunt && nighthunt.rev >= local.rev) {
+    if (nighthunt && nighthunt.epoch === NH_EPOCH && nighthunt.rev >= local.rev) {
       applying = true;
       try {
         applyRemote(nighthunt);
