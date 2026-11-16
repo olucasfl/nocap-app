@@ -697,7 +697,7 @@ export class GpWorld {
             : c.surface === 'gravel'
               ? GP_ARC_GRAVEL_VMAX
               : 1;
-      return GP_ARC_VMAX * f;
+      return GP_ARC_VMAX * f * this.track.vmaxK;
     }
     if (c.surface === 'pit') return GP_PIT_LIMIT;
     return gpVmaxOf(this.mode) * GP_SURFACE[c.surface].vmax;

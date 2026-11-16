@@ -72,3 +72,9 @@ O box da Marina e o de Interlagos foram para a metade da volta (Marina a ~51%, I
 - **Paredes do modelo:** de cada ponto da linha central, um raio para cada lado achou a primeira parede (`wallsL`/`wallsR`); o kart bate nela, com 1,1 m de folga, em vez de numa barreira invisível mais longe.
 - **Câmera adaptativa:** um raio do kart até a câmera; se há parede, teto de túnel ou ponte no caminho, a câmera chega mais perto (entra na hora, sai devagar). O raio também vale para o verso das faces.
 - **Desempenho:** o cenário é cortado em quadrados de 40 m (a câmera descarta o que não vê) e a altura de efeitos e itens vem do mapa de chão (antes era uma busca na pista inteira a cada partícula, que enchia a memória de lixo). Medido em teste: 167 chamadas e 57 mil triângulos, menos que a Bala Track (129 mil).
+
+## 10. Ajustes após teste (16/11/2026)
+
+- Desempenho da Castle: raio da câmera só testa as peças que ele cruza; karts a mais de 150 m do foco não são desenhados; sombra só até 30 m; névoa e plano de corte em 480/520 m; pixel ratio 1,25 no médio; o pacote de detalhes só na qualidade alta.
+- Ritmo: `vmaxK` (0,62) na definição da pista reduz a velocidade máxima do Arcade só na Castle; a volta dura cerca de 40% mais.
+- Caixas de poder não aparecem na volta de classificação, só na largada da corrida.

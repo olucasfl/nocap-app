@@ -289,12 +289,14 @@ export class GpItemsLayer {
     dt: number,
     cars: readonly GpCar[],
     pose: (c: GpCar) => { x: number; z: number; h: number },
+    racing = true,
   ) {
     this.t += dt;
     const t = this.t;
     this.sys.boxes.forEach((b, i) => {
       const m = this.boxes[i]!;
-      m.visible = b.cd <= 0;
+      // na classificação as caixas não aparecem: só no começo da corrida
+      m.visible = racing && b.cd <= 0;
       animateItem(m, 'box', t + i * 0.4);
       m.position.set(b.x, b.y + m.position.y, b.z);
     });

@@ -301,6 +301,8 @@ export class GpScene {
   /** Chão da pista de modelo (altura das quatro rodas) e as peças que a câmera não atravessa. */
   private groundMap: GroundMap | null = null;
   private camSolids: THREE.Mesh[] = [];
+  private camBoxes: THREE.Box3[] = [];
+  private camNear: THREE.Mesh[] = [];
   private camRay = new THREE.Raycaster();
   /** Quanto da distância da câmera cabe sem entrar numa parede (0 a 1, suavizado). */
   private camClip = 1;
@@ -324,7 +326,8 @@ export class GpScene {
       alpha: false,
       powerPreference: 'high-performance',
     });
-    const maxRatio = q === 'low' ? 1 : q === 'medium' ? (touch ? 1.5 : 1.75) : 2;
+    const modelTrack = !!world.track.def.heights;
+    const maxRatio = q === 'low' ? 1 : q === 'medium' ? (touch ? 1.5 : modelTrack ? 1.25 : 1.75) : 2;
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxRatio));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     // tone mapping neutro (referência): cores da pintura sem puxar para o laranja
@@ -616,7 +619,7 @@ export class GpScene {
     try {
       const id = this.world.track.def.id;
       const [model, ground] = await Promise.all([
-        loadTrackModel(id, !touch && this.quality !== 'low'),
+        loadTrackModel(id, !touch && this.quality === 'high'),
         GroundMap.load(id).catch(() => null),
       ]);
       this.textures.push(...model.textures);
@@ -624,6 +627,10 @@ export class GpScene {
       this.modelGroup = model.group;
       this.camSolids = model.solids;
       this.groundMap = ground;
+      // o que está longe some na névoa e nem é desenhado
+      this.camera.far = 520;
+      this.camera.updateProjectionMatrix();
+      this.scene.fog = new THREE.Fog(0xbfd0e0, 150, 480);
     } catch {
       /* sem o cenário a pista corre assim mesmo (só a estrada invisível): melhor que travar a largada */
     }
@@ -2158,13 +2165,21 @@ export class GpScene {
       this.camShake = 0;
     }
     this.updateCamera(dt, focusPose, focusCar);
+    // pista de modelo: carro longe do foco nem entra no desenho (com todos juntos, cada kart são dezenas de peças)
+    if (focusPose && this.modelGroup) {
+      for (const c of w.cars) {
+        const v = this.cars.get(c.id);
+        if (!v || c.gone || c.id === focusId) continue;
+        v.m.group.visible = Math.hypot(c.x - focusPose.x, c.z - focusPose.z) < 150;
+      }
+    }
     // sombra só dos carros perto do foco (12 carros projetando sombra pesa no celular)
     if (focusPose && this.quality !== 'low') {
       for (const c of w.cars) {
         const v = this.cars.get(c.id);
         if (!v) continue;
         // carro de 6,5 m: a sombra pesa mais, então só os mais perto (spec 081, Fase 3)
-        const near = Math.hypot(c.x - focusPose.x, c.z - focusPose.z) < 45;
+        const near = Math.hypot(c.x - focusPose.x, c.z - focusPose.z) < (this.modelGroup ? 30 : 45);
         if (near === v.shadow) continue;
         v.shadow = near;
         v.m.group.traverse((o) => {
@@ -2237,7 +2252,7 @@ export class GpScene {
       }
     }
 
-    this.itemsLayer?.update(dt, w.cars, pose);
+    this.itemsLayer?.update(dt, w.cars, pose, w.phase === 'race');
     const t0 = import.meta.env.DEV ? performance.now() : 0;
     if (this.composer) this.composer.render(dt);
     else this.renderer.render(this.scene, this.camera);
@@ -2276,9 +2291,21 @@ export class GpScene {
     ray.near = 0;
     ray.far = dist + 0.6;
     // o raio também vale para o verso das faces (um letreiro ou um teto visto de trás); o desenho não muda
-    for (const m of this.camSolids) (m.material as THREE.Material).side = THREE.DoubleSide;
-    const hit = ray.intersectObjects(this.camSolids, false)[0];
-    for (const m of this.camSolids) (m.material as THREE.Material).side = THREE.FrontSide;
+    // só as peças cuja caixa o raio cruza entram na conta (o cenário tem centenas de peças; o resto nem é tocado)
+    if (this.camBoxes.length !== this.camSolids.length) {
+      this.camBoxes = this.camSolids.map((m) => {
+        m.updateWorldMatrix(true, false);
+        if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
+        return m.geometry.boundingBox!.clone().applyMatrix4(m.matrixWorld);
+      });
+    }
+    const near: THREE.Mesh[] = this.camNear;
+    near.length = 0;
+    for (let i = 0; i < this.camSolids.length; i++)
+      if (ray.ray.intersectsBox(this.camBoxes[i]!)) near.push(this.camSolids[i]!);
+    for (const m of near) (m.material as THREE.Material).side = THREE.DoubleSide;
+    const hit = near.length ? ray.intersectObjects(near, false)[0] : undefined;
+    for (const m of near) (m.material as THREE.Material).side = THREE.FrontSide;
     const want = hit ? Math.max(0.25, Math.min(1, (hit.distance - 0.6) / dist)) : 1;
     // entra na hora (nunca fica dentro da parede) e volta ao normal devagar
     this.camClip =
