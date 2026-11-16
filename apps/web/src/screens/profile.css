@@ -253,7 +253,7 @@
   font: 800 13px var(--font-display);
 }
 .pf2-email {
-  font-size: 10.5px;
+  font-size: 11.5px;
   opacity: 0.85;
   overflow-wrap: anywhere;
 }
@@ -274,7 +274,7 @@
 }
 .pf2-stats dt {
   margin: 0;
-  font-size: 9px;
+  font-size: 10.5px;
   text-transform: uppercase;
   color: var(--muted);
 }
@@ -342,7 +342,7 @@
   text-transform: uppercase;
 }
 .pf2-row-text small {
-  font-size: 10.5px;
+  font-size: 11.5px;
   color: var(--muted);
 }
 .pf2-row.danger .pf2-row-ico {
