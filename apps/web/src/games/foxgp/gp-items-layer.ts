@@ -4,6 +4,9 @@ import { animateItem, buildItem, glowTexture, type GpItemId as GpModelId } from 
 
 /** O item é pequeno perto do kart (que mede 3,6 m de largura): em cena ele é ampliado para ler de longe. */
 const S = 2.1;
+/** Itens que ficam no chão (casca e bomba) e caixas: menores que os tiros, para não tampar a pista. */
+const TS = 1.5;
+const BS = 1.8;
 const ORBIT_R = 3.6;
 
 interface Slot {
@@ -69,7 +72,7 @@ export class GpItemsLayer {
     }
     for (const b of sys.boxes) {
       const m = buildItem('box');
-      m.scale.setScalar(S);
+      m.scale.setScalar(BS);
       m.position.set(b.x, 0, b.z);
       this.group.add(m);
       this.boxes.push(m);
@@ -332,7 +335,7 @@ export class GpItemsLayer {
       seenT.add(tp.uid);
       let s = this.traps.get(tp.uid);
       if (!s) {
-        s = { g: this.spawn(tp.kind) };
+        s = { g: this.spawn(tp.kind, TS) };
         this.traps.set(tp.uid, s);
       }
       s.g.position.set(tp.x, 0, tp.z);
@@ -340,7 +343,7 @@ export class GpItemsLayer {
       s.g.position.set(tp.x, s.g.position.y, tp.z);
       // pavio da bomba: pisca mais rápido perto de explodir
       if (tp.kind === 'bomb') {
-        s.g.scale.setScalar(S * (1 + Math.abs(Math.sin(t * (6 + (3 - tp.fuse) * 4))) * 0.08));
+        s.g.scale.setScalar(TS * (1 + Math.abs(Math.sin(t * (6 + (3 - tp.fuse) * 4))) * 0.08));
         if (Math.random() < 0.5)
           this.emit(
             tp.x + 0.6,
@@ -368,7 +371,7 @@ export class GpItemsLayer {
           );
           w.rotation.x = -Math.PI / 2;
           w.position.y = 0.06;
-          w.scale.setScalar(14 / S);
+          w.scale.setScalar(14 / TS);
           w.name = 'warn';
           s.g.add(w);
         } else
