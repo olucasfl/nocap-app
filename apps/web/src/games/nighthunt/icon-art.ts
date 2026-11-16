@@ -615,43 +615,50 @@ export function iconCurse(): HTMLCanvasElement {
   return p.done();
 }
 
-/** Ganância: pilha de moedas de ouro com brilho e uma moeda de lado. */
+/** Ganância: pilha de três moedas de lado e uma moeda de frente, com anel gravado e brilho. */
 export function iconGreed(): HTMLCanvasElement {
   const p = new Pix();
-  const coin = (cx: number, cy: number, r = 7) => {
+  // pilha de moedas (elipses achatadas) à direita
+  for (const cy of [26, 22, 18]) {
     p.shape(
-      (x, y) => Math.hypot((x - cx) / 1, (y - cy) / 0.55) < r,
+      (x, y) => Math.hypot((x - 21) / 8, (y - cy) / 3) < 1,
       GOLD,
-      (x, y) => (y - (cy - 4)) / 8 + (x - (cx - r)) * 0.01,
+      (x, y) => (y - (cy - 3)) / 6,
     );
     p.shape(
       (x, y) =>
-        Math.abs(x - cx) < r &&
+        Math.abs(x - 21) < 8 &&
         y >= cy &&
-        y < cy + 3 &&
-        Math.hypot((x - cx) / 1, (y - cy - 1.5) / 0.55) < r + 0.5,
+        y < cy + 2.5 &&
+        Math.hypot((x - 21) / 8, (y - cy - 1) / 3) < 1.05,
       [GOLD[2]!, GOLD[3]!],
-      (x, y) => (y - cy) / 3,
+      (x, y) => (y - cy) / 2.5,
     );
-    p.rect(cx - 1, cy - 2, 2, 1, GOLD[0]!);
-  };
-  coin(16, 24);
-  coin(16, 20);
-  coin(16, 16);
-  coin(16, 12);
-  // moeda grande de frente, na lateral
-  p.shape((x, y) => Math.hypot(x - 8, y - 22) < 5.5, GOLD, lightTL(6, 20, 6));
-  p.rect(7, 19, 2, 6, GOLD[3]!);
-  // brilhos
+  }
+  // moeda de frente, apoiada na pilha
+  p.shape((x, y) => Math.hypot(x - 12, y - 12) < 9, GOLD, lightTL(8, 8, 10));
+  p.shape(
+    (x, y) => Math.hypot(x - 12, y - 12) < 6.2 && Math.hypot(x - 12, y - 12) > 4.6,
+    [GOLD[3]!, GOLD[2]!],
+    () => 0.3,
+  );
+  p.rect(11, 8, 2, 8, GOLD[3]!);
+  p.rect(9, 10, 6, 2, GOLD[3]!);
+  p.rect(9, 13, 6, 2, GOLD[3]!);
+  p.put(8, 7, hex('#ffffff'));
+  p.put(9, 6, hex('#ffffff'));
   for (const [x, y] of [
-    [26, 6],
-    [4, 10],
+    [27, 7],
+    [4, 24],
   ] as const) {
     p.put(x, y, hex('#ffffff'));
-    p.put(x - 1, y, GOLD[0]!);
-    p.put(x + 1, y, GOLD[0]!);
-    p.put(x, y - 1, GOLD[0]!);
-    p.put(x, y + 1, GOLD[0]!);
+    for (const [dx, dy] of [
+      [-1, 0],
+      [1, 0],
+      [0, -1],
+      [0, 1],
+    ] as const)
+      p.put(x + dx, y + dy, GOLD[0]!);
   }
   return p.done();
 }
@@ -789,5 +796,62 @@ export function iconTome(): HTMLCanvasElement {
     p.rect(x, y, 2, 2, hex('#4a2a14'));
   // marcador vermelho
   p.rect(12, 28, 3, 3, hex('#d84a4a'));
+  return p.done();
+}
+
+/** Armadura: escudo de aço com borda dourada e um cruzado de luz no meio. */
+export function iconArmor(): HTMLCanvasElement {
+  const p = new Pix();
+  const inShield = (x: number, y: number, k = 0) =>
+    Math.abs(x - 16) < 11 - k &&
+    y > 4 + k &&
+    y < 29 - k &&
+    Math.abs(x - 16) < 11 - k - Math.max(0, y - 17) * 0.75;
+  p.shape((x, y) => inShield(x, y), GOLD, lightTL(11, 8, 22));
+  p.shape(
+    (x, y) => inShield(x, y, 2),
+    ['#f4faff', '#c8d8ea', '#8fa6c4', '#5a6f94', '#3a4a6a'].map(hex),
+    lightTL(11, 9, 20),
+  );
+  // faixa vertical e horizontal em azul real
+  p.shape(
+    (x, y) => inShield(x, y, 2) && (Math.abs(x - 16) < 2 || (y > 11 && y < 14)),
+    ['#7fb4ff', '#3a78e8', '#2a50b0'].map(hex),
+    lightTL(12, 9, 18),
+  );
+  p.put(10, 8, hex('#ffffff'));
+  p.put(11, 8, hex('#ffffff'));
+  return p.done();
+}
+
+/** Pedra Atrativa: ímã de ferradura vermelho com pontas prateadas e cristais sendo puxados. */
+export function iconMagnet(): HTMLCanvasElement {
+  const p = new Pix();
+  const red = ['#ff9a8a', '#e83a3a', '#b01c2a', '#701020'].map(hex);
+  const ring = (x: number, y: number) => Math.hypot(x - 16, y - 18);
+  const arch = (x: number, y: number) =>
+    (ring(x, y) < 11 && ring(x, y) > 5 && y < 19) ||
+    (ring(x, y) < 11 && ring(x, y) > 5 && y >= 19 && (x < 12 || x > 20) && y < 25);
+  p.shape(arch, red, lightTL(10, 10, 14));
+  // pontas prateadas
+  for (const x of [5, 21]) {
+    p.rect(x, 22, 6, 5, hex('#dfe8f4'));
+    p.rect(x, 22, 6, 1, hex('#ffffff'));
+    p.rect(x, 26, 6, 1, hex('#8a98b4'));
+  }
+  // cristal de XP e moeda sendo puxados
+  p.shape(
+    (x, y) => Math.abs(x - 8) + Math.abs(y - 30) < 3.2,
+    ['#c8ffe0', '#5fe39a', '#2a9a60'].map(hex),
+    (x, y) => (y - 27) / 6,
+  );
+  p.shape((x, y) => Math.hypot(x - 24, y - 30) < 2.6, GOLD, lightTL(23, 29, 3));
+  // linhas de atração
+  for (const [x, y] of [
+    [8, 19],
+    [24, 19],
+    [16, 2],
+  ] as const)
+    p.rect(x, y, 1, 3, hex('#7fe0ff'));
   return p.done();
 }

@@ -1,4 +1,5 @@
 import { HEROES, MAPS, MONSTER_CELLS } from '@nocap/games';
+import * as IA from './icon-art';
 
 /**
  * Arte nova do Night Hunt feita no estilo do Slash: variações de matiz dos sprites do guerreiro (um por herói) e da
@@ -700,7 +701,17 @@ function paint(map: string[], scale: number, cols = 16, trim = false): HTMLCanva
 
 /** Ordem da folha de heróis (linhas) e dos quadros (colunas) de `heroes.png`. */
 const HERO_SHEET = ['vesper', 'mara', 'brann', 'dorian', 'selene', 'ysolde', 'rurik'];
-const HERO_FRAMES = ['Idle00', 'Idle01', 'Move00', 'Move01', 'Move02', 'Move03', 'Die00', 'Die01', 'Die02'];
+const HERO_FRAMES = [
+  'Idle00',
+  'Idle01',
+  'Move00',
+  'Move01',
+  'Move02',
+  'Move03',
+  'Die00',
+  'Die01',
+  'Die02',
+];
 
 /** Aumenta o atlas e devolve o novo atlas (imagem, retângulos). `frames` ganha os nomes novos. */
 export function extendAtlas(
@@ -777,7 +788,35 @@ export function extendAtlas(
     add(`X/p/${k}`, outlined(paint(map, 3, map[0]!.length, true), '#0f1424', 2));
   // ícones novos
   const base32 = (id: string) => outlined(paint(ICONS[id]!, 2), '#0f2233', 2);
-  for (const id of Object.keys(ICONS)) add(`X/${id}`, base32(id));
+  const redrawn = new Set([
+    'duration',
+    'amount',
+    'curse',
+    'greed',
+    'swift',
+    'area',
+    'growth',
+    'clover',
+    'tome',
+    'armor',
+    'magnet',
+  ]);
+  for (const id of Object.keys(ICONS)) if (!redrawn.has(id)) add(`X/${id}`, base32(id));
+  // passivos redesenhados por código (substituem os desenhos antigos acima)
+  const passive: Record<string, () => HTMLCanvasElement> = {
+    duration: IA.iconDuration,
+    amount: IA.iconAmount,
+    curse: IA.iconCurse,
+    greed: IA.iconGreed,
+    swift: IA.iconSwift,
+    area: IA.iconArea,
+    growth: IA.iconGrowth,
+    clover: IA.iconClover,
+    tome: IA.iconTome,
+    armor: IA.iconArmor,
+    magnet: IA.iconMagnet,
+  };
+  for (const [id, fn] of Object.entries(passive)) add(`X/${id}`, fn());
   add('X/orbit', outlined(shifted(crop('UI/UpgradeIcons/HaloProjectile'), 195, 1.1), '#0f2233', 0));
   // ícones de evolução: o ícone da arma com brilho dourado e uma estrela
   const evoBase: Record<string, string> = {
