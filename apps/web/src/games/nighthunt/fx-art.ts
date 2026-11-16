@@ -647,3 +647,308 @@ export function drawGarlicAura(
   g.drawImage(c, 0, 0, N, N, x - (N * cell) / 2, y - (N * cell) / 2, N * cell, N * cell);
   g.restore();
 }
+
+// ------------------------------------------------------------------ Cruz
+const CROSS_SILVER: Rgb[] = ['#ffffff', '#e4eefc', '#b8cbe6', '#8aa0c4', '#5f759e'].map(hex);
+const CROSS_GOLD: Rgb[] = ['#fffbd0', '#ffe27a', '#ffc23a', '#e8962a', '#a8661a'].map(hex);
+
+/**
+ * Cruz sagrada em voo: gira (`spin`, radianos), com bisel de metal, pontas douradas, gema azul no centro, halo pontilhado,
+ * imagens-fantasma atrás (rastro do giro) e brilhos que piscam. `big` é a versão evoluída (dourada, maior, com raios).
+ */
+export function drawCrossProj(
+  g: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  spin: number,
+  t: number,
+  big = false,
+  scale = 1,
+  vx = 0,
+  vy = 0,
+): void {
+  const N = 48;
+  const c = canvas('cross', N, N);
+  const q = c.getContext('2d')!;
+  q.clearRect(0, 0, N, N);
+  const img = q.createImageData(N, N);
+  const d = img.data;
+  const put = (i: number, j: number, col: Rgb) => {
+    i = Math.round(i);
+    j = Math.round(j);
+    if (i < 0 || j < 0 || i >= N || j >= N) return;
+    const o = (j * N + i) * 4;
+    d[o] = col[0];
+    d[o + 1] = col[1];
+    d[o + 2] = col[2];
+    d[o + 3] = 255;
+  };
+  const pal = big ? CROSS_GOLD : CROSS_SILVER;
+  const trim = big ? CROSS_SILVER : CROSS_GOLD;
+  const cx = N / 2;
+  const cy = N / 2;
+  const S = big ? 1.25 : 1;
+  const glow: Rgb[] = (big ? ['#ffe27a', '#ffc23a'] : ['#7fe0ff', '#3a9bff', '#5a4de0']).map(hex);
+
+  // halo pontilhado, pulsando
+  const pulse = 0.5 + 0.5 * Math.sin(t * 8);
+  const hr = (11 + pulse * 1.5) * S;
+  for (let j = 0; j < N; j++)
+    for (let i = 0; i < N; i++) {
+      const dd = Math.hypot(i - cx, j - cy);
+      if (dd < hr + 2 && dd > hr - 5 && dither(i, j, 0.5 * (1 - (dd - (hr - 5)) / 7)))
+        put(i, j, glow[dd > hr ? 1 : 0]!);
+    }
+
+  // a cruz desenhada célula a célula, rotacionada: dentro/fora, bisel e cor pela posição local
+  const drawCross = (rot: number, dens: number, ghost: boolean) => {
+    const cs = Math.cos(-rot);
+    const sn = Math.sin(-rot);
+    for (let j = 0; j < N; j++)
+      for (let i = 0; i < N; i++) {
+        const dx = i + 0.5 - cx;
+        const dy = j + 0.5 - cy;
+        const lx = (dx * cs - dy * sn) / S;
+        const ly = (dx * sn + dy * cs) / S;
+        const inV = Math.abs(lx) <= 2.6 && ly >= -10.5 && ly <= 10.5;
+        const inH = Math.abs(ly + 3) <= 2.6 && Math.abs(lx) <= 7.5;
+        if (!inV && !inH) continue;
+        if (ghost && !dither(i, j, dens)) continue;
+        // bisel: borda "de cima/esquerda" em coordenadas locais clara, "baixo/direita" escura
+        const edgeX = inV ? (lx + 2.6) / 5.2 : 0.5;
+        const edgeY = inH ? (ly + 3 + 2.6) / 5.2 : 0.5;
+        let l =
+          inV && inH
+            ? 0.3 + edgeX * 0.3 + edgeY * 0.2
+            : inV
+              ? 0.1 + edgeX * 0.7
+              : 0.1 + edgeY * 0.7;
+        const tip = (inV && Math.abs(ly) > 8.6) || (inH && !inV && Math.abs(lx) > 5.6);
+        const col = tip
+          ? trim[Math.min(trim.length - 1, Math.floor((0.1 + l * 0.8) * trim.length))]!
+          : pal[Math.min(pal.length - 1, Math.floor(l * pal.length))]!;
+        put(i, j, ghost ? glow[1]! : col);
+      }
+  };
+  // rastro do giro: duas imagens-fantasma em ângulos anteriores, bem pontilhadas
+  drawCross(spin - 0.9, 0.22, true);
+  drawCross(spin - 0.45, 0.4, true);
+  drawCross(spin, 1, false);
+  // gema azul no centro
+  const gem = (big ? ['#fff6c0', '#ffd23a', '#e07a1a'] : ['#e8fbff', '#7fe0ff', '#3a9bff']).map(
+    hex,
+  );
+  put(cx - 1, cy - 4, gem[0]!);
+  put(cx, cy - 4, gem[1]!);
+  put(cx - 1, cy - 3, gem[1]!);
+  put(cx, cy - 3, gem[2]!);
+  // brilhos que piscam nas pontas
+  const ph = Math.floor(t * 12) % 4;
+  const a = spin + (ph * Math.PI) / 2;
+  const sp: Rgb = hex('#ffffff');
+  put(cx + Math.cos(a) * 11 * S, cy + Math.sin(a) * 11 * S, sp);
+  put(cx + Math.cos(a) * 11 * S + 1, cy + Math.sin(a) * 11 * S, glow[0]!);
+  put(cx + Math.cos(a) * 11 * S - 1, cy + Math.sin(a) * 11 * S, glow[0]!);
+  put(cx + Math.cos(a) * 11 * S, cy + Math.sin(a) * 11 * S + 1, glow[0]!);
+  put(cx + Math.cos(a) * 11 * S, cy + Math.sin(a) * 11 * S - 1, glow[0]!);
+  // faíscas soltas atrás da direção do voo
+  for (let s = 0; s < 6; s++) {
+    const life = (t * 3 + hash(s * 7) * 4) % 1;
+    const sx = cx - vx * life * 14 + (hash(s * 3) - 0.5) * 10;
+    const sy = cy - vy * life * 14 + (hash(s * 5) - 0.5) * 10;
+    if (life < 0.8) put(sx, sy, life < 0.4 ? glow[0]! : glow[1]!);
+  }
+  q.putImageData(img, 0, 0);
+  g.save();
+  g.imageSmoothingEnabled = false;
+  const sc = 2 * scale;
+  g.drawImage(c, 0, 0, N, N, x - (N * sc) / 2, y - (N * sc) / 2, N * sc, N * sc);
+  g.restore();
+}
+
+// ------------------------------------------------------------------ Círculo de Brasas
+/**
+ * Bola de fogo do Círculo de Brasas: núcleo branco-amarelo, corpo laranja, borda vermelha e cauda de chama que fica para
+ * trás da direção em que ela gira (`heading`), tremulando; faíscas e fumaça fina saem da cauda. `evo` = Anel Infernal (azul).
+ */
+export function drawEmberBall(
+  g: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  heading: number,
+  t: number,
+  r = 12,
+  evo = false,
+  seed = 0,
+): void {
+  const N = 40;
+  const c = canvas('ember', N, N);
+  const q = c.getContext('2d')!;
+  q.clearRect(0, 0, N, N);
+  const img = q.createImageData(N, N);
+  const d = img.data;
+  const put = (i: number, j: number, col: Rgb) => {
+    i = Math.round(i);
+    j = Math.round(j);
+    if (i < 0 || j < 0 || i >= N || j >= N) return;
+    const o = (j * N + i) * 4;
+    d[o] = col[0];
+    d[o + 1] = col[1];
+    d[o + 2] = col[2];
+    d[o + 3] = 255;
+  };
+  const ramp: Rgb[] = (
+    evo
+      ? ['#ffffff', '#c8f0ff', '#6fc8ff', '#2f7fe0', '#1a3fa0', '#102a70']
+      : ['#fffbe0', '#ffe27a', '#ffb02e', '#ff7a1a', '#d9461a', '#8a2a1a']
+  ).map(hex);
+  const cx = N / 2;
+  const cy = N / 2;
+  const dirx = Math.cos(heading);
+  const diry = Math.sin(heading);
+  const k = r / 12; // 12 = tamanho de referência
+  const flick = Math.sin(t * 18 + seed) * 0.5 + 0.5;
+  const body = 5.2 * k + flick * 0.5;
+
+  // cauda de chama: segmentos para trás, afinando, com ondulação e cores esfriando
+  for (let s = 1; s <= 15; s++) {
+    const w = Math.max(0.4, body * (1 - s / 17));
+    const wob = Math.sin(t * 15 - s * 0.7 + seed) * (0.4 + s * 0.09);
+    const px = cx - dirx * s * 0.95 * k - diry * wob;
+    const py = cy - diry * s * 0.95 * k + dirx * wob;
+    const col = s < 4 ? ramp[2]! : s < 8 ? ramp[3]! : s < 12 ? ramp[4]! : ramp[5]!;
+    for (let j = -6; j <= 6; j++)
+      for (let i = -6; i <= 6; i++) {
+        const dd = Math.hypot(i, j);
+        if (dd > w) continue;
+        if (dd > w * 0.55 && !dither(i + s, j + s * 2, 1 - s / 18)) continue;
+        put(px + i, py + j, col);
+      }
+  }
+  // corpo da bola: tons pela distância do centro deslocado para a luz
+  for (let j = 0; j < N; j++)
+    for (let i = 0; i < N; i++) {
+      const dd = Math.hypot(i + 0.5 - cx, j + 0.5 - cy);
+      if (dd > body) continue;
+      const l = Math.hypot(i + 0.5 - cx + dirx * 0.9, j + 0.5 - cy + diry * 0.9) / (body * 0.95);
+      put(i, j, ramp[Math.min(3, Math.floor(l * 4))]!);
+    }
+  // língua de fogo no alto, tremulando
+  for (let s = 0; s < 3; s++) {
+    const ux = cx + (s - 1) * 2 * k + Math.sin(t * 20 + s + seed) * 0.8;
+    const uy = cy - body - s * 1.2 * k - flick * 1.4;
+    put(ux, uy, ramp[s === 1 ? 1 : 2]!);
+    put(ux, uy + 1, ramp[2]!);
+  }
+  // brilho de reflexo e faíscas
+  put(cx - 1, cy - 2, ramp[0]!);
+  put(cx, cy - 2, ramp[0]!);
+  for (let s = 0; s < 7; s++) {
+    const life = (t * 2.4 + hash(s * 9 + seed) * 5) % 1;
+    const back = 4 + life * 13 * k;
+    const side = (hash(s * 4 + seed) - 0.5) * 9 * (0.2 + life);
+    const sx = cx - dirx * back - diry * side;
+    const sy = cy - diry * back + dirx * side - life * 4;
+    if (life < 0.85) put(sx, sy, life < 0.4 ? ramp[1]! : life < 0.7 ? ramp[3]! : ramp[4]!);
+  }
+  q.putImageData(img, 0, 0);
+  g.save();
+  g.imageSmoothingEnabled = false;
+  // brilho no chão embaixo da bola
+  g.globalAlpha = 0.25;
+  g.fillStyle = evo ? '#5ab4ff' : '#ff9a30';
+  g.beginPath();
+  g.ellipse(x, y + 10 * k, 15 * k, 6 * k, 0, 0, Math.PI * 2);
+  g.fill();
+  g.globalAlpha = 1;
+  const sc = 2;
+  g.drawImage(c, 0, 0, N, N, x - (N * sc) / 2, y - (N * sc) / 2, N * sc, N * sc);
+  g.restore();
+}
+
+// ------------------------------------------------------------------ Osso
+const BONE_PAL: Rgb[] = ['#ffffff', '#fffbe8', '#f0e6c4', '#d4c59a', '#a89868'].map(hex);
+const BONE_EVO: Rgb[] = ['#ffffff', '#f2dcff', '#d9aaf5', '#a974d8', '#6a3fa0'].map(hex);
+
+/**
+ * Osso em voo: gira girando de ponta a ponta, com marfim sombreado, nós nas pontas, imagens-fantasma do giro, poeira de osso
+ * caindo e faíscas. `hop` (0 a 1) acende o clarão de quando ele bate e quica; `evo` troca para a versão espectral roxa.
+ */
+export function drawBoneProj(
+  g: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  spin: number,
+  t: number,
+  evo = false,
+  hop = 0,
+  scale = 1,
+): void {
+  const N = 40;
+  const c = canvas('bone', N, N);
+  const q = c.getContext('2d')!;
+  q.clearRect(0, 0, N, N);
+  const img = q.createImageData(N, N);
+  const d = img.data;
+  const put = (i: number, j: number, col: Rgb) => {
+    i = Math.round(i);
+    j = Math.round(j);
+    if (i < 0 || j < 0 || i >= N || j >= N) return;
+    const o = (j * N + i) * 4;
+    d[o] = col[0];
+    d[o + 1] = col[1];
+    d[o + 2] = col[2];
+    d[o + 3] = 255;
+  };
+  const pal = evo ? BONE_EVO : BONE_PAL;
+  const cx = N / 2;
+  const cy = N / 2;
+  const glow = hex(evo ? '#c58cf0' : '#cfe8ff');
+  const bone = (rot: number, ghost: boolean, dens: number) => {
+    const cs = Math.cos(-rot);
+    const sn = Math.sin(-rot);
+    for (let j = 0; j < N; j++)
+      for (let i = 0; i < N; i++) {
+        const dx = i + 0.5 - cx;
+        const dy = j + 0.5 - cy;
+        const lx = dx * cs - dy * sn;
+        const ly = dx * sn + dy * cs;
+        // osso: haste horizontal e dois nós em cada ponta
+        const shaft = Math.abs(lx) <= 7 && Math.abs(ly) <= 2.1;
+        const kn = [-1, 1].some((sx) =>
+          [-1, 1].some((sy) => Math.hypot(lx - sx * 8, ly - sy * 2.6) < 3.2),
+        );
+        if (!shaft && !kn) continue;
+        if (ghost && !dither(i, j, dens)) continue;
+        const l = Math.max(0, Math.min(0.99, 0.5 + (ly * 0.75 + lx * 0.25) / 8));
+        put(i, j, ghost ? glow : pal[Math.floor(l * pal.length)]!);
+      }
+  };
+  bone(spin - 1.0, true, 0.18);
+  bone(spin - 0.5, true, 0.35);
+  bone(spin, false, 1);
+  // reflexo branco num nó
+  put(cx + Math.cos(spin) * -8 - 1, cy + Math.sin(spin) * -8 - 1, pal[0]!);
+  // poeira de osso caindo atrás
+  for (let s = 0; s < 8; s++) {
+    const life = (t * 2.6 + hash(s * 5) * 3) % 1;
+    const px = cx + (hash(s * 3) - 0.5) * 14;
+    const py = cy + (hash(s * 7) - 0.5) * 8 + life * 12;
+    if (life < 0.8) put(px, py, life < 0.4 ? pal[1]! : pal[3]!);
+  }
+  // clarão da quicada: anel curto de fagulhas
+  if (hop > 0) {
+    const rr = 6 + hop * 10;
+    for (let s = 0; s < 16; s++) {
+      const th = (s / 16) * Math.PI * 2;
+      if (s % 2) continue;
+      put(cx + Math.cos(th) * rr, cy + Math.sin(th) * rr * 0.6, hop < 0.5 ? pal[0]! : glow);
+    }
+  }
+  q.putImageData(img, 0, 0);
+  g.save();
+  g.imageSmoothingEnabled = false;
+  const sc = 2 * scale;
+  g.drawImage(c, 0, 0, N, N, x - (N * sc) / 2, y - (N * sc) / 2, N * sc, N * sc);
+  g.restore();
+}
