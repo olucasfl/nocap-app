@@ -24,16 +24,34 @@
   color: #f4f6fb;
 }
 .gp-trackprev figcaption b {
-  font: italic 900 20px/1 'Saira Condensed', system-ui, sans-serif;
+  font:
+    italic 900 20px/1 'Saira Condensed',
+    system-ui,
+    sans-serif;
   letter-spacing: 0.03em;
   text-transform: uppercase;
 }
 .gp-trackprev figcaption span {
-  font: 700 11px 'Inter', system-ui, sans-serif;
+  font:
+    700 11px 'Inter',
+    system-ui,
+    sans-serif;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #ffb27a;
 }
 .gp-trackprev[data-compact='1'] figcaption b {
   font-size: 16px;
+}
+
+.gp-trackprev-map {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 25%;
+  max-width: 96px;
+  aspect-ratio: 1;
+  padding: 4px;
+  background: rgba(11, 14, 23, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.25);
 }

@@ -51,3 +51,13 @@ O motor do Fox GP é plano: o carro anda em (x, z), a pista é uma linha central
 - Confirmar a origem e a licença dos quatro modelos.
 - A Castle Circuit mostra o castelo e o cenário inteiros (36 mil triângulos) ou uma versão mais leve no celular?
 - Os bots sabem usar pulo e turbo de andar? (proposta: seguem a linha central, que já passa pelas placas.)
+
+## 7. Andamento (16/11/2026)
+
+- **F1, Castle Circuit: feita** (motor, cena, escolha e lobby). A licença foi dada como resolvida pelo Lucas.
+  - Linha central de 790 m extraída das duas bordas da estrada, com altura (morro e ponte) e inclinação lateral em cada ponto; 3 placas de turbo; largada no portão do modelo.
+  - O cruzamento da ponte não gera falso corte de caminho (`GpTrack.overlap`).
+  - O kart sobe e desce, inclina de frente e de lado junto com a estrada (`surfaceY`, `bankAt`), e a subida/descida mexe na velocidade (`GP_SLOPE_ACC`); caixas, itens e câmera acompanham a altura.
+  - Cenário compacto em `apps/web/public/foxgp/castle/` (pacote `core` para todos; `detail` só no computador).
+- **Fotos das pistas** (`public/foxgp/preview/*.webp`) aparecem na escolha do treino e no lobby da sala, para o líder e para quem entra (`TrackPreview`).
+- Falta: F2 (pulo guiado e turbo de andar), F3 a F5 (as outras pistas) e o segundo passo da escolha da pista com poderes quando houver mais de uma.
