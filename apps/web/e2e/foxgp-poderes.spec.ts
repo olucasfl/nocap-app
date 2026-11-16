@@ -81,7 +81,17 @@ test.describe('Fox GP: Arcade com poderes (spec 085)', () => {
       const car = w.cars[0]!;
       // o carro precisa ficar coerente com a pista (índice e distância), senão o motor o devolve ao último ponto válido
       const pr = w.track.projectGlobal(b.x, b.z);
-      Object.assign(car, { x: b.x, z: b.z, speed: 0, vx: 0, vz: 0, idx: pr.i, s: pr.s, d: pr.d, prog: pr.s });
+      Object.assign(car, {
+        x: b.x,
+        z: b.z,
+        speed: 0,
+        vx: 0,
+        vz: 0,
+        idx: pr.i,
+        s: pr.s,
+        d: pr.d,
+        prog: pr.s,
+      });
       car.lastValid = { x: b.x, z: b.z, h: car.h, prog: pr.s, idx: pr.i };
     });
     await expect
@@ -95,5 +105,45 @@ test.describe('Fox GP: Arcade com poderes (spec 085)', () => {
     await start(page, false);
     await expect(page.getByTestId('gp-item-slot')).toHaveCount(0);
     expect(await page.evaluate(() => (window as Win).__gpItems ?? null)).toBeNull();
+  });
+
+  test('celular: botão Item ao lado do Turbo usa o item e não cobre outros botões', async ({
+    browser,
+  }) => {
+    const ctx = await browser.newContext({
+      viewport: { width: 740, height: 360 },
+      hasTouch: true,
+      isMobile: true,
+      deviceScaleFactor: 2,
+    });
+    const page = await ctx.newPage();
+    await start(page, true);
+    const pad = page.getByTestId('gp-pad-item');
+    await expect(pad).toBeVisible();
+    await page.evaluate(() => (window as Win).__gpItems!.give('me', 'ball3'));
+    await expect(pad).toContainText('x3');
+    await pad.tap();
+    await expect(pad).toContainText('x2');
+    const boxes = await page.evaluate(() =>
+      ['gp-pad-item', 'gp-pad-turbo', 'gp-pad-drift', 'gp-pad-auto'].map((id) => {
+        const r = document.querySelector(`[data-testid="${id}"]`)!.getBoundingClientRect();
+        return { id, x: r.left, y: r.top, w: r.width, h: r.height };
+      }),
+    );
+    for (const b of boxes) {
+      expect(b.x).toBeGreaterThanOrEqual(0);
+      expect(b.x + b.w).toBeLessThanOrEqual(740);
+      expect(b.y + b.h).toBeLessThanOrEqual(360);
+    }
+    for (let i = 0; i < boxes.length; i++)
+      for (let j = i + 1; j < boxes.length; j++) {
+        const a = boxes[i]!;
+        const b = boxes[j]!;
+        const ox = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+        const oy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+        expect(ox > 2 && oy > 2, `${a.id} em cima de ${b.id}`).toBe(false);
+      }
+    await page.screenshot({ path: `${OUT}-celular.png` });
+    await ctx.close();
   });
 });

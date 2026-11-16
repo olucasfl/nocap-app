@@ -42,6 +42,7 @@ import {
   GpItemSystem,
   gpItemKind,
   GpItemView,
+  gpBotUseItem,
   type GpItemEvent,
   type GpItemsReadable,
   type GpPhysicsMode,
@@ -574,7 +575,6 @@ export function GpPlay({
     const itemView = powers && isClient ? new GpItemView(world) : null;
     const itemsRead: GpItemsReadable | null = itemSys ?? itemView;
     let itemQ = false;
-    const botWait = new Map<string, number>();
     let itemKey = '';
     useItemRef.current = () => {
       itemQ = true;
@@ -599,17 +599,21 @@ export function GpPlay({
         }
       }
     };
-    // os bots usam o item depois de uma espera sorteada (some o ar de robô)
+    // cada bot usa o item na hora que serve (tiro com alguém na frente, casca com alguém atrás, turbo na reta)
+    const botHeld = new Map<string, number>();
     const botWantsItem = (id: string) => {
       if (!itemSys) return false;
-      if (!itemSys.state(id).id) {
-        botWait.delete(id);
+      const st = itemSys.state(id);
+      const car = world.car(id);
+      if (!st.id || !car) {
+        botHeld.delete(id);
         return false;
       }
-      const left = (botWait.get(id) ?? 0.8 + rng() * 3.2) - GP_DT;
-      botWait.set(id, left);
-      if (left > 0) return false;
-      botWait.set(id, 0.8 + rng() * 3.2);
+      const held = (botHeld.get(id) ?? 0) + GP_DT;
+      botHeld.set(id, held);
+      if (!gpBotUseItem(world, car, st.id, held)) return false;
+      // triplo: o próximo só depois de uma pausa
+      botHeld.set(id, st.left > 1 ? 0.8 - 0.6 : 0);
       return true;
     };
     if (import.meta.env.DEV)
@@ -2014,6 +2018,22 @@ export function GpPlay({
                 >
                   ›
                 </button>
+                {powers && (
+                  <button
+                    type="button"
+                    className="gp-pad is-item"
+                    data-has={itemHud ? '1' : undefined}
+                    aria-label={itemHud ? 'Usar item' : 'Sem item'}
+                    data-testid="gp-pad-item"
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      useItemRef.current();
+                    }}
+                  >
+                    {itemHud ? (GP_ITEMS.find((i) => i.id === itemHud.id)?.name ?? 'Item') : 'Item'}
+                    {itemHud && itemHud.left > 1 ? ` x${itemHud.left}` : ''}
+                  </button>
+                )}
               </div>
               <div className="gp-pads-r" data-auto={autoGas ? '1' : '0'}>
                 <button

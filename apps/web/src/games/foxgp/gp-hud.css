@@ -1219,10 +1219,20 @@
 }
 
 @media (pointer: coarse) {
+  /* no celular o botão é o "Item" ao lado das setas; o cartão do PC some */
   .gpx-item {
-    bottom: auto;
-    top: 42%;
-    min-width: 84px;
-    padding: 6px 10px;
+    display: none;
   }
+}
+.gp-pad.is-item {
+  opacity: 0.55;
+  font: italic 800 10px/1.1 var(--gp-display);
+  text-transform: uppercase;
+  padding: 4px;
+  overflow-wrap: anywhere;
+}
+.gp-pad.is-item[data-has='1'] {
+  opacity: 1;
+  background: var(--gp-accent, #ff7d26);
+  color: #141a2b;
 }

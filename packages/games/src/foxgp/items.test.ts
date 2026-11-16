@@ -10,6 +10,7 @@ import {
   gpItemBoxes,
   gpItemCount,
   gpItemKind,
+  gpBotUseItem,
   gpItemTier,
   gpRollItem,
   type GpItemId,
@@ -273,5 +274,42 @@ describe('efeitos (spec 085)', () => {
       return w.cars.map((c) => sys.state(c.id).id).join(',');
     };
     expect(run1()).toBe(run1());
+  });
+});
+
+describe('bots e itens (spec 085)', () => {
+  it('só usa depois de um tempo e nunca guarda para sempre', () => {
+    const { w } = race(2);
+    const [a] = w.cars as [GpCar, GpCar];
+    expect(gpBotUseItem(w, a, 'bolt', 0.3)).toBe(false);
+    expect(gpBotUseItem(w, a, 'bolt', 1)).toBe(true);
+    expect(gpBotUseItem(w, a, 'ball', 9.5)).toBe(true);
+  });
+
+  it('bola e cometa esperam alguém na frente; casca espera alguém atrás', () => {
+    const { w } = race(3);
+    const [a, b, c] = w.cars as [GpCar, GpCar, GpCar];
+    put(w, a, 300, 0, 20);
+    put(w, b, 900, 0, 20);
+    put(w, c, 100, 0, 20);
+    // b está longe na frente, c longe atrás
+    expect(gpBotUseItem(w, a, 'ball', 2)).toBe(false);
+    expect(gpBotUseItem(w, a, 'seeker', 2)).toBe(false);
+    expect(gpBotUseItem(w, a, 'peel', 2)).toBe(false);
+    put(w, b, 340, 1, 20);
+    expect(gpBotUseItem(w, a, 'ball', 2)).toBe(true);
+    expect(gpBotUseItem(w, a, 'seeker', 2)).toBe(true);
+    put(w, c, 280, 0, 20);
+    expect(gpBotUseItem(w, a, 'peel', 2)).toBe(true);
+  });
+
+  it('turbo só em reta (volante quase reto)', () => {
+    const { w } = race(1);
+    const a = w.cars[0]!;
+    a.speed = 25;
+    a.steer = 0.6;
+    expect(gpBotUseItem(w, a, 'nitro', 2)).toBe(false);
+    a.steer = 0;
+    expect(gpBotUseItem(w, a, 'nitro', 2)).toBe(true);
   });
 });

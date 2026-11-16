@@ -1,6 +1,6 @@
 # 085: Fox GP, Arcade com poderes
 
-Status: etapas 0 a 5 feitas, offline e online (16/11/2026); falta calibrar jogando, botão de toque melhor e teste de tela no celular.
+Status: etapas 0 a 5 feitas, offline e online (16/11/2026); falta calibrar jogando.
 
 ## 1. Decisão do Lucas (15/11/2026)
 
@@ -56,7 +56,10 @@ quem lidera. Com 2 a 20 carros a posição vira faixa (frente, meio, trás).
      (`GpHost` recebe o `GpItemSystem`) e manda o estado dentro do snapshot (campo `it`); quem corre vê um espelho
      (`GpItemView`) e pede o uso pelo 9º valor da entrada (só vai quando vale 1, então o pacote não muda para quem não usa itens).
      Protocolo compatível com o anterior (mesma `GP_NET_VERSION`). Servidor da API só guarda a regra (`powers`) e a repassa.
-   - Falta: botão de toque melhor, teste de tela no celular, calibrar jogando.
+   - Bots com estratégia (`gpBotUseItem`): tiro com alguém na frente, casca com alguém atrás, turbo e Superfox na reta, nunca guardam mais de 9 s.
+   - Celular: botão redondo "Item" ao lado das setas (testado em 740x360); o cartão do HUD é só do PC.
+   - Corrigido de passagem: a tela "Antes de correr" no celular deitado empilhava as seções umas sobre as outras (Voltas, Adversários e Modo no mesmo lugar).
+   - Falta: calibrar jogando.
 
 ## 6. Perguntas abertas
 

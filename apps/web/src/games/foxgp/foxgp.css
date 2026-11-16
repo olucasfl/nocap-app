@@ -871,7 +871,23 @@
   color: var(--gp-text);
   font-family: var(--gp-body);
   display: grid;
+  /* linhas do tamanho do conteúdo: em tela baixa o cartão rola em vez de espremer as seções umas sobre as outras */
+  grid-auto-rows: max-content;
+  align-content: start;
   gap: 14px;
+}
+@media (max-height: 520px) {
+  .gp-pick {
+    padding: 8px;
+  }
+  .gp-pick-card {
+    max-height: calc(100dvh - 16px);
+    padding: 14px;
+    gap: 10px;
+  }
+  .gp-pick-card h2 {
+    font-size: 24px;
+  }
 }
 .gp-pick-card h2 {
   margin: 0;
@@ -1008,24 +1024,20 @@
     padding: 12px 14px;
     gap: 8px 14px;
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-    grid-template-areas:
-      'k k'
-      'h h'
-      'm t'
-      'm b'
-      'm g'
-      'm x';
     align-content: start;
   }
-  .gp-pick-card > .gp-kicker {
-    grid-area: k;
+  /* o título ocupa a largura toda; os modos ficam à esquerda e as demais seções empilham à direita (sem áreas fixas, para
+     caber qualquer quantidade de seções sem uma cair em cima da outra) */
+  .gp-pick-card > .gp-kicker,
+  .gp-pick-card h2 {
+    grid-column: 1 / -1;
   }
   .gp-pick-card h2 {
-    grid-area: h;
     font-size: 22px;
   }
   .gp-pick-modes {
-    grid-area: m;
+    grid-column: 1;
+    grid-row: 3 / span 8;
     grid-template-columns: minmax(0, 1fr);
     gap: 6px;
   }
@@ -1036,17 +1048,10 @@
   .gp-pick-mode-desc {
     display: none;
   }
-  .gp-pick-bots-section {
-    grid-area: b;
-  }
-  .gp-pick-bots-section.gp-pick-track {
-    grid-area: t;
-  }
-  .gp-pick-card > [data-testid='gp-pick-garage'] {
-    grid-area: g;
-  }
+  .gp-pick-bots-section,
+  .gp-pick-card > [data-testid='gp-pick-garage'],
   .gp-pick-btns {
-    grid-area: x;
+    grid-column: 2;
   }
   .gp-pick-card .gp-tbtn {
     height: 36px;

@@ -492,6 +492,47 @@ export class GpItemSystem implements GpItemsReadable {
   }
 }
 
+// ---- bots ----
+/** Depois de quanto tempo com o item o bot usa de qualquer jeito (para não ficar guardando para sempre). */
+export const GP_BOT_HOLD_MAX = 9;
+
+/**
+ * O bot usa o item agora? Cada item tem a sua hora: tiros quando há alguém na frente ao alcance, casca e bomba quando há
+ * alguém atrás (ou na frente, para a bomba), turbo e Superfox numa reta, cometa azul na hora. `held` é há quanto tempo
+ * ele tem o item (s): passou do limite, usa.
+ */
+export function gpBotUseItem(world: GpWorld, c: GpCar, item: GpItemId, held: number): boolean {
+  if (held < 0.8) return false;
+  if (held >= GP_BOT_HOLD_MAX) return true;
+  const kind = gpItemKind(item);
+  let ahead = Infinity;
+  let aheadD = 0;
+  let behind = Infinity;
+  for (const o of world.cars) {
+    if (o.id === c.id || o.gone || o.ghost || o.finished) continue;
+    const gap = o.prog - c.prog;
+    if (gap > 4 && gap < ahead) {
+      ahead = gap;
+      aheadD = o.d - c.d;
+    } else if (gap < -4 && -gap < behind) behind = -gap;
+  }
+  switch (kind) {
+    case 'bolt':
+      return true;
+    case 'ball':
+      return ahead < 70 && Math.abs(aheadD) < 5;
+    case 'seeker':
+      return ahead < 130;
+    case 'bomb':
+      return ahead < 28 || behind < 22;
+    case 'peel':
+      return behind < 30;
+    case 'nitro':
+    case 'star':
+      return Math.abs(c.steer) < 0.15 && c.speed > 12;
+  }
+}
+
 // ---- rede (spec 085, etapa online) ----
 const KIND_IDS: readonly GpItemKind[] = ['peel', 'ball', 'seeker', 'bomb', 'nitro', 'star', 'bolt'];
 const ITEM_IDS: readonly GpItemId[] = [

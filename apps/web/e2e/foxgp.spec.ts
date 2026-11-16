@@ -74,7 +74,7 @@ async function openTraining(page: Page, bots: number, mode: 'arcade' | 'real' = 
   await openHome(page);
   await page.getByTestId('gl-offline').click();
   await page.getByTestId(`gp-physics-${mode}`).click();
-  await page.getByRole('radio', { name: String(bots), exact: true }).click();
+  await page.getByRole('radiogroup', { name: 'Quantidade de adversários' }).getByRole('radio', { name: String(bots), exact: true }).click();
   await page.getByTestId('gp-start').click();
   await expect(page.getByTestId('gp-play')).toBeVisible({ timeout: 30_000 });
 }
@@ -193,7 +193,7 @@ test.describe('Fox GP', () => {
     await page.getByTestId('gp-commands-close').click();
     // na partida, a chamada da volta lançada mostra a tecla do mapa, e ela funciona
     await page.getByTestId('gl-offline').click();
-    await page.getByRole('radio', { name: '1', exact: true }).click();
+    await page.getByRole('radiogroup', { name: 'Quantidade de adversários' }).getByRole('radio', { name: '1', exact: true }).click();
     await page.getByTestId('gp-start').click();
     await qualiOn(page);
     await expect(page.getByTestId('gp-startlap')).toContainText('K', { timeout: 15_000 });
@@ -371,7 +371,7 @@ test.describe('Fox GP', () => {
     await openHome(page);
     await page.getByTestId('gl-offline').click();
     await page.getByTestId('gp-physics-real').click();
-    await page.getByRole('radio', { name: '11', exact: true }).click();
+    await page.getByRole('radiogroup', { name: 'Quantidade de adversários' }).getByRole('radio', { name: '11', exact: true }).click();
     await page.getByTestId('gp-start').click();
     await expect(page.getByTestId('gp-play')).toHaveAttribute('data-physics', 'real', { timeout: 30_000 });
     await qualiOn(page);
@@ -404,7 +404,7 @@ test.describe('Fox GP', () => {
     await openHome(page);
     await page.getByTestId('gl-offline').click();
     await page.getByTestId('gp-physics-real').click();
-    await page.getByRole('radio', { name: '11', exact: true }).click();
+    await page.getByRole('radiogroup', { name: 'Quantidade de adversários' }).getByRole('radio', { name: '11', exact: true }).click();
     await page.getByTestId('gp-start').click();
     await qualiOn(page);
     await page.evaluate(() => ((window as Win).__gpAuto = true));
