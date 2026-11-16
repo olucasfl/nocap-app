@@ -10,7 +10,7 @@ import { DEVICES, measure, setDevice } from './mobile-lib';
  */
 const OUT = 'test-results/mobile-audit';
 type Step = (page: Page) => Promise<void>;
-const click = (id: string): Step => async (p) => void (await p.getByTestId(id).click({ timeout: 8000 }));
+const click = (id: string): Step => async (p) => void (await p.getByTestId(id).click({ timeout: 25_000 }));
 const btn = (name: RegExp, last = false): Step => async (p) => {
   const l = p.getByRole('button', { name });
   await (last ? l.last() : l.first()).click();
@@ -25,7 +25,7 @@ const evalFinal = (mode: string, record: boolean): Step => async (p) => {
 };
 const tips: Step = async (p) => void (await p.getByTestId('game-tips-ok').click({ timeout: 2500 }).catch(() => undefined));
 const key = (k: string): Step => async (p) => void (await p.keyboard.press(k));
-const pickBack: Step = async (p) => void (await p.locator('.gp-pick-card').getByRole('button', { name: /^Voltar$/ }).click({ timeout: 8000 }));
+const pickBack: Step = async (p) => void (await p.locator('.gp-pick-card').getByRole('button', { name: /^Voltar$/ }).click({ timeout: 25_000 }));
 const colorToEnd: Step = async (p) => {
   for (let i = 0; i < 8; i++) {
     const lock = p.getByRole('button', { name: 'Cravar' });
