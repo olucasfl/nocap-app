@@ -11,6 +11,19 @@ import { DEVICES, measure, setDevice } from './mobile-lib';
 const OUT = 'test-results/mobile-audit';
 type Step = (page: Page) => Promise<void>;
 const click = (id: string): Step => async (p) => void (await p.getByTestId(id).click());
+const btn = (name: RegExp, last = false): Step => async (p) => {
+  const l = p.getByRole('button', { name });
+  await (last ? l.last() : l.first()).click();
+};
+const evalFinal = (mode: string, record: boolean): Step => async (p) => {
+  await p.waitForFunction(() => !!(window as unknown as { __blocksFinal?: unknown }).__blocksFinal);
+  await p.evaluate(
+    ([m, r]) => (window as unknown as { __blocksFinal: (m: string, r: boolean) => void }).__blocksFinal(m as string, r as boolean),
+    [mode, record],
+  );
+  await p.waitForTimeout(1500);
+};
+const tips: Step = async (p) => void (await p.getByTestId('game-tips-ok').click({ timeout: 2500 }).catch(() => undefined));
 const key = (k: string): Step => async (p) => void (await p.keyboard.press(k));
 const wait = (ms: number): Step => async (p) => void (await p.waitForTimeout(ms));
 
@@ -29,6 +42,19 @@ const FLOWS: [string, string, Step[]][] = [
   ...hubPanels('cor', '/cor', 'classic'),
   ...hubPanels('tempo', '/tempo', 'classic'),
   ...hubPanels('eco', '/eco', 'classic'),
+  ['blocks-folha-classic', '/blocks', [btn(/Block Classic/i), wait(600)]],
+  ['blocks-folha-towers', '/blocks', [btn(/Block Towers/i), wait(600)]],
+  ['blocks-jogo-classic', '/blocks', [btn(/Block Classic/i), wait(500), btn(/^Jogar/, true), wait(2500)]],
+  ['blocks-jogo-towers', '/blocks', [btn(/Block Towers/i), wait(500), btn(/^Jogar/, true), wait(2500)]],
+  ['blocks-fim-classic', '/blocks', [evalFinal('classic', true)]],
+  ['blocks-fim-towers', '/blocks', [evalFinal('towers', false)]],
+  ['atravessa-jogo', '/fox-cap?jogo=atravessa', [click('gl-offline'), wait(1500), tips, wait(500)]],
+  ['desmorona-config', '/fox-cap?jogo=desmorona', [click('gl-offline'), wait(600)]],
+  ['desmorona-jogo', '/fox-cap?jogo=desmorona', [click('gl-offline'), click('dsm-start'), wait(2500), tips]],
+  ['ping-config', '/fox-cap?jogo=pingpong', [click('gl-offline'), wait(600)]],
+  ['ping-jogo', '/fox-cap?jogo=pingpong', [click('gl-offline'), click('png-level-medio'), click('png-start'), wait(2500), tips]],
+  ['bola-config', '/fox-cap?jogo=bola', [click('gl-offline'), wait(600)]],
+  ['bola-jogo', '/fox-cap?jogo=bola', [click('gl-offline'), click('bola-fmt-2x2'), click('bola-start'), wait(2500), tips]],
   ['classic-jogo', '/words/classic/fase/classic/1', [wait(800)]],
   ['classic-dueto', '/words/classic/fase/dueto/1', [wait(800)]],
   ['bee-jogo', '/words/bee/fase/1', [wait(800)]],

@@ -112,7 +112,7 @@
   text-transform: uppercase;
 }
 .bf-team-name small {
-  font: 800 11px var(--font-display, system-ui);
+  font: 800 11.5px var(--font-display, system-ui);
   letter-spacing: 0.06em;
   opacity: 0.65;
 }

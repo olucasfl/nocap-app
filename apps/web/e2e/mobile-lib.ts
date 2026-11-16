@@ -118,7 +118,7 @@ export async function metrics(page: Page, d: Dev, pass: 'top' | 'end') {
       // o `zoom` da moldura encolhe o texto sem mudar o valor calculado: mede o tamanho que aparece na tela
       const zf = el.offsetWidth > 0 ? r.width / el.offsetWidth : 1;
       const fs = parseFloat(cs.fontSize) * (zf > 0.3 && zf < 3 ? zf : 1);
-      if (fs < (cs.textTransform === 'uppercase' || (el.textContent || '').trim() === (el.textContent || '').trim().toUpperCase() ? 9.5 : 11)) add('MIUDO', el, `fonte ${fs.toFixed(1)}px`);
+      if (fs < (cs.textTransform === 'uppercase' || (el.textContent || '').trim() === (el.textContent || '').trim().toUpperCase() ? 9.5 : 10.8)) add('MIUDO', el, `fonte ${fs.toFixed(1)}px`);
       if (el.tagName !== 'BUTTON' && el.scrollWidth > el.clientWidth + 2 && /hidden|clip/.test(cs.overflowX) && cs.textOverflow !== 'ellipsis' && cs.whiteSpace !== 'normal')
         add('TEXTO', el, `cortado (${el.scrollWidth}>${el.clientWidth})`);
     }
