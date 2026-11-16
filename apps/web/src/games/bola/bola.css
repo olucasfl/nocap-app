@@ -934,8 +934,8 @@
   font-variant-numeric: tabular-nums;
 }
 .bola-board .bola-team small {
-  font: 800 9px/1 var(--font-display, system-ui);
-  letter-spacing: 0.08em;
+  font: 800 10.5px/1 var(--font-display, system-ui);
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   opacity: 0.9;
 }
