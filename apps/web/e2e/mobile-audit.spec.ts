@@ -11,7 +11,7 @@ import { DEVICES, measure, setDevice } from './mobile-lib';
  * Uso: AUDIT=hub pnpm exec playwright test e2e/mobile-audit.spec.ts --project=desktop --trace off
  * (AUDIT filtra por nome do grupo; AUDIT_SHOTS=1 também salva uma captura por aparelho; AUDIT_DEV filtra aparelhos.)
  */
-const OUT = 'test-results/mobile-audit';
+const OUT = process.env.AUDIT_OUT ?? 'test-results/mobile-audit';
 
 /** Grupos de telas (um commit por grupo). Chave: nome do grupo; valor: [nome da tela, rota]. */
 type Act = (page: Page) => Promise<void>;

@@ -8,7 +8,7 @@ import { DEVICES, measure, setDevice } from './mobile-lib';
  * aparelho médio) e depois a mesma tela é medida em todos os tamanhos (a tela responde ao redimensionar, como ao girar o celular).
  * Uso: FLOW=cor pnpm exec playwright test e2e/mobile-flows.spec.ts --project=desktop --trace off  (FLOW filtra por nome).
  */
-const OUT = 'test-results/mobile-audit';
+const OUT = process.env.AUDIT_OUT ?? 'test-results/mobile-audit';
 type Step = (page: Page) => Promise<void>;
 const click = (id: string): Step => async (p) => void (await p.getByTestId(id).click({ timeout: 25_000 }));
 const btn = (name: RegExp, last = false): Step => async (p) => {
@@ -51,6 +51,7 @@ const typeWord = (w: string): Step => async (p) => {
   for (const ch of w) await p.getByTestId(`key-${ch}`).click({ timeout: 10_000 });
   await p.getByTestId('enter').click({ timeout: 10_000 });
 };
+const waitId = (id: string, ms: number): Step => async (p) => void (await p.getByTestId(id).waitFor({ timeout: ms }));
 const wait = (ms: number): Step => async (p) => void (await p.waitForTimeout(ms));
 
 const hubPanels = (game: string, url: string, mode: string): [string, string, Step[]][] => [
@@ -95,6 +96,13 @@ const FLOWS: [string, string, Step[]][] = [
   ['foxgp-comandos', '/fox-cap?jogo=foxgp', [click('gl-offline'), pickBack, click('gp-open-commands'), wait(800)]],
   ['foxgp-jogo', '/fox-cap?jogo=foxgp', [click('gl-offline'), click('gp-physics-arcade'), click('gp-start'), wait(6000), tips]],
   ['sala-cor', '/sala?jogo=color', [wait(800)]],
+  ['atravessa-pausa', '/fox-cap?jogo=atravessa', [click('gl-offline'), wait(1500), tips, key('Escape'), wait(800)]],
+  ['desmorona-pausa', '/fox-cap?jogo=desmorona', [click('gl-offline'), click('dsm-start'), wait(2500), tips, key('Escape'), wait(800)]],
+  ['ping-pausa', '/fox-cap?jogo=pingpong', [click('gl-offline'), click('png-level-medio'), click('png-start'), wait(2500), tips, key('Escape'), wait(800)]],
+  ['bola-pausa', '/fox-cap?jogo=bola', [click('gl-offline'), click('bola-fmt-2x2'), click('bola-start'), wait(2500), tips, key('Escape'), wait(800)]],
+  ['counterfox-jogo', '/fox-cap/counter-fox', [click('cfh-play'), click('cfh-offline'), click('cfx-start'), waitId('fs-ammo', 90_000), wait(1500)]],
+  ['counterfox-pausa', '/fox-cap/counter-fox', [click('cfh-play'), click('cfh-offline'), click('cfx-start'), waitId('fs-ammo', 90_000), key('Escape'), wait(1200)]],
+  ['golf-pausa', '/minigolf/jogar?fase=1', [wait(2500), key('Escape'), wait(800)]],
   ['classic-jogo', '/words/classic/fase/classic/1', [wait(800)]],
   ['classic-fim', '/words/classic/fase/classic/1', [wait(800), typeWord('amigo'), wait(2500)]],
   ['classic-dueto', '/words/classic/fase/dueto/1', [wait(800)]],
