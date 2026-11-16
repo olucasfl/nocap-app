@@ -69,6 +69,8 @@ export interface GpTrackDef {
    * ponte; o desenho põe o kart, as caixas e a câmera nessa altura.
    */
   heights?: readonly number[];
+  /** Inclinação lateral da estrada em cada ponto de controle (rad; positiva = lado direito mais alto). */
+  banks?: readonly number[];
 }
 
 /** O tipo da barreira: muro (batida normal) ou pilha de pneus (rebate o kart para trás). */
@@ -861,11 +863,26 @@ export class GpTrack {
    * tem alturas.
    */
   yAt(s: number): number {
+    return this.interp(this.def.heights, s);
+  }
+
+  /** Inclinação lateral da estrada na distância s (rad; positiva = lado direito mais alto). */
+  bankAt(s: number): number {
+    return this.interp(this.def.banks, s);
+  }
+
+  /** Altura da superfície no ponto (s, d), com a inclinação lateral: onde as rodas tocam a estrada (m, só desenho). */
+  surfaceY(s: number, d: number): number {
     const h = this.def.heights;
-    if (!h || h.length < 2) return 0;
+    if (!h) return 0;
+    return this.yAt(s) + (this.def.banks ? d * Math.tan(this.bankAt(s)) : 0);
+  }
+
+  /** Interpola um valor por ponto de controle ao longo da pista (cp[0] = 0; o último trecho fecha no comprimento). */
+  private interp(arr: readonly number[] | undefined, s: number): number {
+    if (!arr || arr.length < 2) return 0;
     const cp = this.cpS;
     const w = this.wrap(s);
-    // procura o trecho [cp[i], cp[i+1]] que contém w (cp[0] = 0; o último vai até o comprimento)
     let lo = 0;
     let hi = cp.length - 1;
     while (lo < hi) {
@@ -878,7 +895,7 @@ export class GpTrack {
     const sa = cp[a]!;
     const sb = b === 0 ? this.length : cp[b]!;
     const f = sb > sa ? (w - sa) / (sb - sa) : 0;
-    return h[a]! + (h[b]! - h[a]!) * Math.min(1, Math.max(0, f));
+    return arr[a]! + (arr[b]! - arr[a]!) * Math.min(1, Math.max(0, f));
   }
 
   /** Ponto do desenho original (pixels) em metros da pista (minimapa, cenário). */

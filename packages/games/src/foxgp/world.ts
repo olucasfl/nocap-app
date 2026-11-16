@@ -122,6 +122,9 @@ import {
 import { gpTrack, gpTrackDefFor, type GpTrack, type GpTrackDef } from './track';
 import type { GpKartPaint } from './paint';
 
+/** Quanto a inclinação da estrada acelera o kart (m/s² por unidade de inclinação: 0,1 = 10%). */
+const GP_SLOPE_ACC = 6;
+
 /** Quem corre: id, nome na tela, cor do pelo, pintura do carro (opcional) e se é bot. */
 export interface GpPlayerInfo {
   id: string;
@@ -941,6 +944,13 @@ export class GpWorld {
     if (Math.abs(vl) > 0.3)
       v -= Math.sign(v) * Math.min(Math.abs(v), GP_ARC_SLIDE_LOSS * Math.abs(vl) * dt);
 
+    // subida e descida (pistas de modelo): a estrada inclinada freia quem sobe e empurra quem desce
+    // (parado ele não rola: a grade de largada e o carro encostado numa barreira ficam onde estão)
+    if (this.track.def.heights && Math.abs(v) > 2) {
+      const tr = this.track;
+      const slope = (tr.yAt(c.s + 1.5) - tr.yAt(c.s - 1.5)) / 3;
+      v -= clamp(slope, -0.25, 0.25) * GP_SLOPE_ACC * dt;
+    }
     c.speed = v;
     // som e desenho: um giro contínuo (sem marchas); fumaça e marcas de pneu no drift e no escorregão
     c.gear = v < -0.3 ? 0 : 1;

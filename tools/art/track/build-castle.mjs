@@ -54,12 +54,33 @@ const K = (2 * HALF) / W; // metros por unidade
 // linha de largada: o ponto da linha central mais perto de StartLine
 const sb = new THREE.Box3().setFromObject(byName('StartLine')); const sc = sb.getCenter(new THREE.Vector3());
 let s0 = 0, sd = Infinity; center.forEach((c, i) => { const d = Math.hypot(c[0] - sc.x, c[2] - sc.z); if (d < sd) { sd = d; s0 = i; } });
+const pairsRot = pairs.slice(s0).concat(pairs.slice(0, s0));
 center = center.slice(s0).concat(center.slice(0, s0));
 // sentido da corrida: o da malha (a tela mostra a volta); anti-horário visto de cima fica como está
 const O = center[0];
 const toM = (x, z) => [(x - O[0]) * K, (z - O[2]) * K];
 let cum = 0; const pts = center.map((c, i) => { if (i) cum += Math.hypot(c[0] - center[i - 1][0], c[2] - center[i - 1][2]) * K; return toM(c[0], c[2]); });
 const heights = center.map((c) => (c[1] - O[1]) * K);
+// inclinação lateral (rad): positiva quando o lado direito de quem corre é mais alto que o esquerdo
+const banks = center.map((c, i) => {
+  const n = center[(i + 1) % center.length];
+  const tx = n[0] - c[0], tz = n[2] - c[2];
+  const { a, b } = pairsRot[i];
+  const side = (q) => (q[0] - c[0]) * -tz + (q[2] - c[2]) * tx; // + = direita
+  const [R, L] = side(a) > side(b) ? [a, b] : [b, a];
+  // limitado a 17°: mais que isso é quina da malha, não curva inclinada
+  return Math.max(-0.3, Math.min(0.3, Math.atan2(R[1] - L[1], Math.hypot(R[0] - L[0], R[2] - L[2]))));
+});
+// suaviza (média de 5 pontos, duas vezes): as quinas da malha viram rampa contínua
+for (let pass = 0; pass < 2; pass++) {
+  const copy = banks.slice();
+  for (let i = 0; i < banks.length; i++) {
+    let sum = 0;
+    for (let o = -2; o <= 2; o++) sum += copy[(i + o + banks.length) % banks.length];
+    banks[i] = sum / 5;
+  }
+}
+console.log('banks (graus) min/max', (Math.min(...banks) * 57.3).toFixed(1), (Math.max(...banks) * 57.3).toFixed(1));
 console.log(`largura ${W.toFixed(2)} un, ${K.toFixed(4)} m/un, ${center.length} pontos, volta ~${Math.round(cum)} m, altura ${Math.min(...heights).toFixed(1)}..${Math.max(...heights).toFixed(1)} m`);
 
 // placas de turbo: projeta cada BoostPad na linha central
@@ -83,8 +104,8 @@ fs.writeFileSync(OUT_TS, `import type { GpTrackDef } from './track';
 /**
  * Castle Circuit (spec 086, F1), a primeira pista do Arcade com poderes: o circuito do modelo \`castlecircuit.fbx\`, extraído
  * por \`tools/art/track/build-castle.mjs\` (as duas bordas da estrada pareadas, linha central em metros a partir da largada,
- * ${K.toFixed(4)} m por unidade do modelo, ${Math.round(cum)} m de linha central). \`heights\` é a altura da estrada em cada ponto (m,
- * só desenho: a física é plana). Arquivo gerado: não edite à mão.
+ * ${K.toFixed(4)} m por unidade do modelo, ${Math.round(cum)} m de linha central). \`heights\` é a altura da estrada em cada ponto (m)
+ * e \`banks\` a inclinação lateral (rad); a física é plana, mas a altura e a inclinação mexem na velocidade e no desenho. Arquivo gerado: não edite à mão.
  */
 export const GP_TRACK_CASTLE: GpTrackDef = {
   id: 'castle',
@@ -100,6 +121,7 @@ ${pts.map(([x, z]) => `    [${r2(x)}, ${r2(z)}],`).join('\n')}
 ${padList.map((p) => `    { s: ${r2(p.s)}, d: ${p.d} },`).join('\n')}
   ],
   heights: [${heights.map(r2).join(', ')}],
+  banks: [${banks.map((b) => Math.round(b * 1e4) / 1e4).join(', ')}],
 };
 `);
 fs.writeFileSync('/tmp/fbxwork/castle-model.json', JSON.stringify({ K, ox: O[0], oy: O[1], oz: O[2] }));

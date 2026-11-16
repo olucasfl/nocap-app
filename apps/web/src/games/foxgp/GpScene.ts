@@ -91,6 +91,7 @@ interface CarView {
   /** Altura da estrada sob o kart (suavizada; pistas de modelo). */
   gy: number;
   pitch: number;
+  roll: number;
   shake: number;
   /** Distância desde a última marca de pneu. */
   markAcc: number;
@@ -620,7 +621,7 @@ export class GpScene {
   private groundOf(c: GpCar, v: { gy: number }, dt: number): number {
     const tr = this.world.track;
     if (!tr.def.heights) return 0;
-    const y = tr.yAt(c.s);
+    const y = tr.surfaceY(c.s, c.d);
     v.gy += (y - v.gy) * Math.min(1, dt * 14);
     return v.gy;
   }
@@ -1763,6 +1764,7 @@ export class GpScene {
       wag: 0,
       gy: 0,
       pitch: 0,
+      roll: 0,
       shake: 0,
       markAcc: 0,
       lastX: 0,
@@ -1794,8 +1796,13 @@ export class GpScene {
       ? new GpItemsLayer(
           this.scene,
           sys,
-          model ? (x, z) => tr.yAt(tr.projectGlobal(x, z).s) : undefined,
-          model ? (c) => tr.yAt(c.s) : undefined,
+          model
+            ? (x, z) => {
+                const q = tr.projectGlobal(x, z);
+                return tr.surfaceY(q.s, q.d);
+              }
+            : undefined,
+          model ? (c) => tr.surfaceY(c.s, c.d) : undefined,
         )
       : null;
   }
@@ -1945,7 +1952,10 @@ export class GpScene {
         const tr = this.world.track;
         v.pitch +=
           (Math.atan((tr.yAt(c.s + 2.5) - tr.yAt(c.s - 2.5)) / 5) - v.pitch) * Math.min(1, dt * 10);
+        // a estrada inclinada de lado: o kart rola junto, com as quatro rodas no chão
+        v.roll += (tr.bankAt(c.s) - v.roll) * Math.min(1, dt * 10);
         v.m.group.rotation.x = v.pitch;
+        v.m.group.rotation.z = v.roll;
       }
       if (c.id === focusId) this.focusY = gy;
       for (const wh of v.m.wheelsF) wh.rotation.y = -c.steer * 0.45;
