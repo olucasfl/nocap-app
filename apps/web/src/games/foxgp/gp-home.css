@@ -1015,18 +1015,15 @@
   }
 }
 
-/* Garagem, pistas e outros painéis cheios: o conteúdo respeita o notch, a ilha e a barra de gestos (docs/MOBILE-GUIDE.md) */
+/* Garagem: o conteúdo respeita o notch, a ilha e a barra de gestos (docs/MOBILE-GUIDE.md) */
 .gph-garage {
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
-    env(safe-area-inset-left);
-  box-sizing: border-box;
-}
-.gph-garage > .gph {
-  width: 100%;
-  height: auto;
-  min-height: 100%;
-  max-height: none;
+  padding-left: max(24px, 4vw, env(safe-area-inset-left));
+  padding-right: max(24px, 4vw, env(safe-area-inset-right));
+  padding-bottom: max(0px, env(safe-area-inset-bottom));
 }
 .gpc-reset {
   min-height: 44px;
+}
+.gph-panel {
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
 }
