@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 /** Reset de 16/11/2026: um save de antes (sem geração) é descartado e o jogo abre como se ninguém tivesse jogado. */
-test('save antigo do Night Hunt é descartado; save novo é da geração 2', async ({ page }) => {
+test('save antigo do Night Hunt é descartado; save novo é da a geração atual', async ({ page }) => {
   await page.addInitScript(() => {
     if (!localStorage.getItem('seeded')) {
       localStorage.setItem('seeded', '1');
@@ -19,7 +19,7 @@ test('save antigo do Night Hunt é descartado; save novo é da geração 2', asy
   const raw = await page.evaluate(() => localStorage.getItem('nighthunt:save:v1'));
   if (raw) {
     const s = JSON.parse(raw);
-    expect(s.epoch).toBe(2);
+    expect(s.epoch).toBe(3);
     expect(s.gold).toBe(0);
     expect(s.highscore).toBe(0);
   }
