@@ -11,15 +11,22 @@ import {
   clampRounds,
   drawRound,
   filterWords,
-  guessIsRight,
-  guessNeedsJudgement,
+  elimApply,
+  elimOutcome,
+  elimResolve,
+  elimStart,
+  imImpostorLimit,
+  scoreElimination,
   imEffectiveMode,
   leaders,
   newSession,
-  normalizeGuess,
+  normalizeWord,
   scoreResult,
   sessionRanking,
+  IM_ELIM_MAX_ROUNDS,
+  type ImElimState,
   type ImHistory,
+  type ImVoteMode,
   type ImMode,
   type ImResult,
   type ImRound,
@@ -38,22 +45,23 @@ import {
 export const SALA_SHOW_MS = 90_000;
 export const SALA_CLUE_MS = 45_000;
 export const SALA_VOTE_MS = 60_000;
-export const SALA_GUESS_MS = 45_000;
-/** Cerimônia de revelação (suspense, quem é, quem votou) antes do chute. */
+/** Cerimônia de revelação (suspense, quem é, quem votou) depois do voto. */
 export const SALA_REVEAL_MS = 11_000;
-/** O grupo decide se um chute parecido vale; sem chute para decidir, só mostra o resultado. */
-export const SALA_JUDGE_MS = 30_000;
-export const SALA_JUDGE_SHOW_MS = 5_000;
+/** Eliminação: quem saiu, os votos e o papel (se for para mostrar). */
+export const SALA_ELIM_MS = 11_000;
 
 export interface ImpostorSalaSettings {
-  /** Rodadas de dicas (1 a 5); o motor base lê este campo. */
+  /** Rodadas de dicas (1 a 5; até 7 na eliminação); o motor base lê este campo. */
   rounds: number;
   /** 0 = surpresa (de 1 até o máximo da mesa). */
   impostors: number;
   /** Debate em ms; 0 = sem limite (todos precisam tocar em "votar"). */
   talkMs: number;
   hint: boolean;
-  lastChance: boolean;
+  /** "final": um voto só no fim. "elim": vota a cada rodada e uma pessoa sai. */
+  voteMode: ImVoteMode;
+  /** Eliminação: mostra se quem saiu era inocente ou impostor (só com 2 ou mais impostores). */
+  revealRoles: boolean;
   categories: string[];
   filters: Record<string, Record<string, string[]>>;
 }
@@ -63,7 +71,8 @@ export const DEFAULT_IMPOSTOR_SALA: ImpostorSalaSettings = {
   impostors: 1,
   talkMs: 60_000,
   hint: false,
-  lastChance: true,
+  voteMode: 'final',
+  revealRoles: true,
   categories: [],
   filters: {},
 };
@@ -77,15 +86,16 @@ export interface Clue {
   round: number;
 }
 
-type Stage = 'reveal' | 'guess' | 'judge' | 'score' | null;
+/** `reveal`: cerimônia do voto final. `elim`: quem saiu nesta rodada. `score`: placar. */
+type Stage = 'reveal' | 'elim' | 'score' | null;
 
 /**
  * O Impostor em sala (spec 088): cada pessoa no seu celular. Reaproveita o ciclo da sala (entrar, líder, pronto, chat,
  * revanche) e troca a partida pelas regras de `impostor-mesa` (packages/games): papéis secretos por pessoa, dicas
- * digitadas na ordem de fala, debate, voto secreto simultâneo, última chance de chute e ranking que soma várias partidas.
+ * digitadas na ordem de fala, debate, voto secreto simultâneo (um só no fim ou a eliminação de uma pessoa por rodada) e ranking que soma várias partidas.
  *
  * Fases da sala: `show` (cada um vê o papel), `play` (rodadas de dicas), `pick` (debate), `vote` (voto secreto),
- * `reveal` (resultado, com a etapa do chute e depois o placar) e `final` (ranking da sessão).
+ * `reveal` (cerimônia do resultado, quem saiu na eliminação e o placar) e `final` (ranking da sessão).
  */
 export class ImpostorSalaEngine extends ColorRoomEngine {
   override readonly game = 'impostor' as const;
@@ -110,9 +120,10 @@ export class ImpostorSalaEngine extends ColorRoomEngine {
   private wantVote = new Set<string>();
   private votes: Record<string, string> = {};
   private result: ImResult | null = null;
-  private guesses: Record<string, string> = {};
-  /** Chute parecido: quem decidiu se vale (por chutador). */
-  private judgeVotes: Record<string, Record<string, boolean>> = {};
+  /** Eliminação: quem está vivo e o histórico de quem saiu (null no voto final). */
+  private elim: ImElimState | null = null;
+  private elimCands: string[] | null = null;
+  private elimRevote = false;
   private stage: Stage = null;
   private gains: Record<string, number> = {};
 
@@ -135,10 +146,10 @@ export class ImpostorSalaEngine extends ColorRoomEngine {
     const m = merged as unknown as ImpostorSalaSettings;
     const okCat = Array.isArray(m.categories) && m.categories.every((c) => typeof c === 'string' && c in IM_CATEGORY_LABELS);
     return (
-      Number.isInteger(m.rounds) && m.rounds >= 1 && m.rounds <= 5 &&
+      Number.isInteger(m.rounds) && m.rounds >= 1 && m.rounds <= IM_ELIM_MAX_ROUNDS &&
       Number.isInteger(m.impostors) && m.impostors >= 0 && m.impostors <= 3 &&
       TALK_OPTIONS.includes(m.talkMs) &&
-      typeof m.hint === 'boolean' && typeof m.lastChance === 'boolean' &&
+      typeof m.hint === 'boolean' && (m.voteMode === 'final' || m.voteMode === 'elim') && typeof m.revealRoles === 'boolean' &&
       okCat && typeof m.filters === 'object' && m.filters !== null
     );
   }
@@ -149,7 +160,9 @@ export class ImpostorSalaEngine extends ColorRoomEngine {
 
   override configure(id: string, next: Parameters<ColorRoomEngine['configure']>[1]) {
     const patch = { ...(next as Record<string, unknown>) };
-    if (typeof patch.rounds === 'number') patch.rounds = clampRounds(patch.rounds);
+    const nextMode = (patch.voteMode as ImVoteMode | undefined) ?? this.cfg.voteMode;
+    if (typeof patch.rounds === 'number') patch.rounds = clampRounds(patch.rounds, nextMode === 'elim' ? IM_ELIM_MAX_ROUNDS : 5);
+    else if (nextMode === 'final' && this.cfg.rounds > 5) patch.rounds = 5;
     super.configure(id, patch as Parameters<ColorRoomEngine['configure']>[1]);
   }
 
@@ -175,7 +188,8 @@ export class ImpostorSalaEngine extends ColorRoomEngine {
       rounds: c.rounds,
       talkSeconds: Math.round(c.talkMs / 1000),
       hint: c.hint,
-      lastChance: c.lastChance,
+      voteMode: c.voteMode,
+      revealRoles: c.revealRoles,
       categories: c.categories,
       filters: c.filters,
     };
@@ -204,8 +218,9 @@ export class ImpostorSalaEngine extends ColorRoomEngine {
     this.wantVote = new Set();
     this.votes = {};
     this.result = null;
-    this.guesses = {};
-    this.judgeVotes = {};
+    this.elim = this.cfg.voteMode === 'elim' ? elimStart(ids, this.round, this.cfg.rounds) : null;
+    this.elimCands = null;
+    this.elimRevote = false;
     this.stage = null;
     this.gains = {};
     this.phase = 'show';
@@ -236,13 +251,13 @@ export class ImpostorSalaEngine extends ColorRoomEngine {
     if (!word) throw new RoomError('Digite a sua dica');
     if (/\s/.test(word)) throw new RoomError('A dica é uma palavra só');
     if (word.length > 24) throw new RoomError('A dica ficou grande demais (máximo 24 letras)');
-    const secret = normalizeGuess(this.round!.civilText);
-    const sec2 = this.round!.outsiderText ? normalizeGuess(this.round!.outsiderText) : null;
-    const w = normalizeGuess(word);
+    const secret = normalizeWord(this.round!.civilText);
+    const sec2 = this.round!.outsiderText ? normalizeWord(this.round!.outsiderText) : null;
+    const w = normalizeWord(word);
     if (w === secret || (sec2 !== null && w === sec2) || secret.split(' ').includes(w)) {
       throw new RoomError('Essa é a palavra secreta (ou parte dela). Dê outra dica');
     }
-    if (this.clues.some((c) => c.id === id && normalizeGuess(c.word) === w)) {
+    if (this.clues.some((c) => c.id === id && normalizeWord(c.word) === w)) {
       throw new RoomError('Você já deu essa dica. Dê outra palavra');
     }
     this.pushClue(id, word);
@@ -253,39 +268,51 @@ export class ImpostorSalaEngine extends ColorRoomEngine {
     this.advanceTurn();
   }
 
-  /** No modo "resposta errada" cada um só responde a pergunta uma vez: nada de rodadas repetidas. */
+  /** Rodadas de dicas de verdade: eliminação tem o total ajustado; voto final no modo de perguntas tem uma só. */
   private clueRounds(): number {
+    if (this.elim) return this.elim.total;
     return this.mode === 'wrong' ? 1 : this.cfg.rounds;
+  }
+
+  /** Na eliminação, quem já saiu não fala nem vota. */
+  private alive(id: string): boolean {
+    return !this.elim || this.elim.alive.includes(id);
+  }
+
+  /** Fim da rodada de dicas: eliminação vota na hora; voto final vai ao debate. */
+  private afterClues() {
+    if (this.elim) this.toVote();
+    else this.toDebate();
   }
 
   private advanceTurn() {
     const order = this.round!.order;
     if (this.turn < order.length - 1) this.turn += 1;
-    else if (this.clueRound < this.clueRounds()) {
+    else if (!this.elim && this.clueRound < this.clueRounds()) {
       this.clueRound += 1;
       this.turn = 0;
     } else {
-      this.toDebate();
+      this.afterClues();
       return;
     }
     this.skipAbsent();
     if (this.phase === 'play') this.phaseEndsAt = this.now() + SALA_CLUE_MS;
   }
 
-  /** Quem caiu da conexão perde a vez em silêncio, sem segurar a mesa. */
+  /** Quem caiu da conexão perde a vez em silêncio (e quem foi eliminado nem entra na fila). */
   private skipAbsent() {
     let guard = 0;
     while (this.phase === 'play' && guard++ < 200) {
       const s = this.speaker();
-      if (s && this.members.get(s)?.connected) return;
-      this.clues.push({ id: s ?? '', word: '', round: this.clueRound });
+      if (s && this.alive(s) && this.members.get(s)?.connected) return;
+      if (s && this.alive(s)) this.clues.push({ id: s, word: '', round: this.clueRound });
       const order = this.round!.order;
       if (this.turn < order.length - 1) this.turn += 1;
-      else if (this.clueRound < this.clueRounds()) {
+      else if (!this.elim && this.clueRound < this.clueRounds()) {
         this.clueRound += 1;
         this.turn = 0;
       } else {
-        this.toDebate();
+        this.afterClues();
         return;
       }
     }
@@ -313,84 +340,85 @@ export class ImpostorSalaEngine extends ColorRoomEngine {
 
   private toVote() {
     this.phase = 'vote';
+    this.votes = {};
     this.phaseEndsAt = this.now() + SALA_VOTE_MS;
   }
 
-  /** Voto secreto: pode trocar até todos votarem. */
+  /** Quem vota agora: na eliminação só os vivos. */
+  private voters(): string[] {
+    return this.participants.filter((id) => this.alive(id));
+  }
+
+  /** Voto secreto: pode trocar até todos votarem. Na eliminação, só vivos votam e só em vivos (ou nos empatados). */
   castVote(id: string, target: string) {
     this.requirePhase('vote');
     if (!this.participants.includes(id)) throw new RoomError('Você não está nesta partida');
+    if (!this.alive(id)) throw new RoomError('Você foi eliminado: agora só assiste');
     if (target === id) throw new RoomError('Você não pode votar em si mesmo');
     if (!this.participants.includes(target)) throw new RoomError('Essa pessoa não está na partida');
+    if (!this.alive(target)) throw new RoomError('Essa pessoa já foi eliminada');
+    if (this.elimCands && !this.elimCands.includes(target)) throw new RoomError('No desempate só vale votar nos empatados');
     this.votes[id] = target;
     this.reevaluate();
   }
 
   private resolveVotes() {
-    const ids = this.participants;
     const votes = Object.fromEntries(Object.entries(this.votes).filter(([v, t]) => this.members.has(v) && this.members.has(t)));
-    this.result = scoreResult({ ids, round: this.round!, votes, lastChance: this.cfg.lastChance });
+    if (this.elim) {
+      this.resolveElimVote(votes);
+      return;
+    }
+    this.result = scoreResult({ ids: this.participants, round: this.round!, votes });
     this.phase = 'reveal';
     this.stage = 'reveal';
     this.phaseEndsAt = this.now() + SALA_REVEAL_MS;
   }
 
-  /** Fim da cerimônia: quem foi pego pode chutar; sem chute, o placar fecha. */
-  private afterReveal() {
-    if (this.result && this.result.canGuess.length > 0) {
-      this.stage = 'guess';
-      this.phaseEndsAt = this.now() + SALA_GUESS_MS;
-    } else {
-      this.finishGame();
+  /** Eliminação: empate volta só com os empatados; empate de novo sorteia; senão, sai o mais votado. */
+  private resolveElimVote(votes: Record<string, string>) {
+    const el = this.elim!;
+    const res = elimResolve(this.elimCands ?? el.alive, votes, this.elimRevote, `${this.seed}:${this.gameNo}:${el.steps.length}`);
+    if (res.kind === 'tie') {
+      this.elimCands = res.tied;
+      this.elimRevote = true;
+      this.toVote();
+      return;
     }
+    this.elim = elimApply(el, this.round!, res.out, votes, this.elimRevote, res.drawn);
+    this.elimCands = null;
+    this.elimRevote = false;
+    this.votes = {};
+    this.phase = 'reveal';
+    this.stage = 'elim';
+    this.phaseEndsAt = this.now() + SALA_ELIM_MS;
   }
 
-  /** Depois dos chutes: mostra acertou/errou; chute parecido vai para o grupo decidir. */
-  private toJudge() {
-    this.stage = 'judge';
-    this.phaseEndsAt = this.now() + (this.pendingGuessers().length > 0 ? SALA_JUDGE_MS : SALA_JUDGE_SHOW_MS);
-  }
-
-  private pendingGuessers(): string[] {
-    const word = this.round!.civilText;
-    return (this.result?.canGuess ?? []).filter((id) => guessNeedsJudgement(this.guesses[id] ?? '', word));
-  }
-
-  private judges(): string[] {
-    const bad = new Set(this.result?.canGuess ?? []);
-    return this.participants.filter((id) => !bad.has(id) && this.members.get(id)?.connected);
-  }
-
-  /** Voto de quem não chutou: o chute do outro vale ou não? */
-  judge(id: string, target: string, ok: unknown) {
-    this.requirePhase('reveal');
-    if (this.stage !== 'judge') throw new RoomError('Agora não dá para decidir');
-    if (!this.judges().includes(id)) throw new RoomError('Quem chutou não decide o próprio chute');
-    if (!this.pendingGuessers().includes(target)) throw new RoomError('Esse chute não precisa de decisão');
-    (this.judgeVotes[target] ??= {})[id] = ok === true;
-    this.reevaluate();
-  }
-
-  private acceptedGuessers(): string[] {
-    return this.pendingGuessers().filter((g) => {
-      const v = Object.values(this.judgeVotes[g] ?? {});
-      return v.filter(Boolean).length > v.filter((x) => !x).length;
-    });
-  }
-
-  /** Chute de quem foi pego (última chance). */
-  guess(id: string, raw: unknown) {
-    this.requirePhase('reveal');
-    if (this.stage !== 'guess' || !this.result?.canGuess.includes(id)) throw new RoomError('Agora não dá para chutar');
-    const text = typeof raw === 'string' ? raw.trim().slice(0, 40) : '';
-    this.guesses[id] = text;
-    this.reevaluate();
+  /** Fim da cerimônia de quem saiu: acabou a partida ou segue para a próxima rodada de dicas. */
+  private afterElim() {
+    const el = this.elim!;
+    if (elimOutcome(el, this.round!)) {
+      this.finishGame();
+      return;
+    }
+    this.clueRound = el.steps.length + 1;
+    this.turn = 0;
+    this.clues = this.clues.filter((c) => c.round < this.clueRound);
+    this.stage = null;
+    this.phase = 'play';
+    this.skipAbsent();
+    if (this.phase === 'play') this.phaseEndsAt = this.now() + SALA_CLUE_MS;
   }
 
   private finishGame() {
     const ids = this.participants;
-    const votes = Object.fromEntries(Object.entries(this.votes).filter(([v, t]) => this.members.has(v) && this.members.has(t)));
-    this.result = scoreResult({ ids, round: this.round!, votes, lastChance: this.cfg.lastChance, guesses: this.guesses, accepted: this.acceptedGuessers() });
+    const winner = this.elim ? elimOutcome(this.elim, this.round!) : null;
+    if (this.elim) {
+      // as rodadas acabaram sem resolver: os impostores vencem
+      this.result = scoreElimination(ids, this.round!, this.elim, winner ?? 'impostors');
+    } else {
+      const votes = Object.fromEntries(Object.entries(this.votes).filter(([v, t]) => this.members.has(v) && this.members.has(t)));
+      this.result = scoreResult({ ids, round: this.round!, votes });
+    }
     this.session = addResult(this.session, this.result);
     this.history = advanceHistory(this.history, ids, this.round!);
     this.gains = this.result.points;
@@ -455,14 +483,7 @@ export class ImpostorSalaEngine extends ColorRoomEngine {
     if (this.phase === 'show' && here.every((id) => this.seen.has(id))) this.toClues();
     else if (this.phase === 'play') this.skipAbsent();
     else if (this.phase === 'pick' && here.length > 0 && here.every((id) => this.wantVote.has(id))) this.toVote();
-    else if (this.phase === 'vote' && here.every((id) => this.votes[id] !== undefined)) this.resolveVotes();
-    else if (this.phase === 'reveal' && this.stage === 'guess') {
-      const need = (this.result?.canGuess ?? []).filter((id) => this.members.get(id)?.connected);
-      if (need.every((id) => this.guesses[id] !== undefined)) this.toJudge();
-    } else if (this.phase === 'reveal' && this.stage === 'judge') {
-      const judges = this.judges();
-      if (this.pendingGuessers().every((g) => judges.every((j) => this.judgeVotes[g]?.[j] !== undefined))) this.finishGame();
-    }
+    else if (this.phase === 'vote' && here.filter((id) => this.alive(id)).every((id) => this.votes[id] !== undefined)) this.resolveVotes();
   }
 
   override tick(): boolean {
@@ -473,9 +494,8 @@ export class ImpostorSalaEngine extends ColorRoomEngine {
       this.pushClue(s ?? '', '');
     } else if (this.phase === 'pick') this.toVote();
     else if (this.phase === 'vote') this.resolveVotes();
-    else if (this.phase === 'reveal' && this.stage === 'reveal') this.afterReveal();
-    else if (this.phase === 'reveal' && this.stage === 'guess') this.toJudge();
-    else if (this.phase === 'reveal' && this.stage === 'judge') this.finishGame();
+    else if (this.phase === 'reveal' && this.stage === 'reveal') this.finishGame();
+    else if (this.phase === 'reveal' && this.stage === 'elim') this.afterElim();
     else return false;
     return true;
   }
@@ -497,6 +517,16 @@ export class ImpostorSalaEngine extends ColorRoomEngine {
   }
 
   // ---- o que cada pessoa enxerga ----
+
+  private outsidersCount(): number {
+    return Object.values(this.round?.roles ?? {}).filter((x) => x.kind !== 'civil').length;
+  }
+
+  /** Eliminação: o papel de quem saiu só aparece com 1 impostor, se a mesa escolheu mostrar, ou quando a partida acaba. */
+  private roleVisible(): boolean {
+    if (!this.elim || !this.round) return false;
+    return this.outsidersCount() === 1 || this.cfg.revealRoles || elimOutcome(this.elim, this.round) !== null || this.stage === 'score';
+  }
 
   protected override extraSnapshot(viewerId?: string): Record<string, unknown> {
     const me = viewerId && this.participants.includes(viewerId) ? viewerId : null;
@@ -525,35 +555,42 @@ export class ImpostorSalaEngine extends ColorRoomEngine {
         seen: [...this.seen],
         wantVote: [...this.wantVote],
         voted: Object.keys(this.votes),
-        guessed: Object.keys(this.guesses),
+        // eliminação: quem está vivo, as rodadas e quem saiu (o papel só aparece se a mesa escolheu mostrar)
+        alive: this.elim ? this.elim.alive : this.participants,
+        voteMode: this.elim ? 'elim' : 'final',
+        cands: this.elimCands,
+        revote: this.elimRevote,
+        elim: this.elim
+          ? {
+              total: this.elim.total,
+              steps: this.elim.steps.map((st) => ({
+                round: st.round,
+                out: st.out,
+                role: this.roleVisible() ? st.role : null,
+                votes: st.votes,
+                revote: st.revote,
+                drawn: st.drawn,
+              })),
+              winner: this.stage === 'elim' || finished ? elimOutcome(this.elim, r) : null,
+              outsiders: this.stage === 'elim' || finished ? this.outsidersCount() : null,
+            }
+          : null,
         // o papel é segredo: cada pessoa recebe só o seu (todos aparecem quando o placar fecha)
         me: my
           ? { kind: my.kind, text: my.text, hint: my.hint, theme: my.theme, knowsRole: my.knowsRole, wasSeen: this.seen.has(me!) }
           : null,
         myVote: me ? (this.votes[me] ?? null) : null,
-        result: this.result && (this.stage !== null || finished)
+        result: this.result && (this.stage === 'reveal' || finished)
           ? {
               caught: this.result.caught,
               counts: this.result.counts,
-              canGuess: this.result.canGuess,
               // a cerimônia de revelação mostra quem são os impostores e quem votou neles
               outsiders: this.result.outsiders,
               votes: this.votes,
               innocentsWin: this.stage === 'score' ? this.result.innocentsWin : null,
-              guessedRight: this.stage === 'score' ? this.result.guessedRight : [],
-              word: this.stage === 'judge' || this.stage === 'score' ? r.civilText : null,
+              word: this.stage === 'score' ? r.civilText : null,
               similar: this.stage === 'score' ? r.outsiderText : null,
               gains: this.stage === 'score' ? this.gains : null,
-              guesses: this.stage === 'judge' || this.stage === 'score' ? this.guesses : null,
-              judge: this.stage === 'judge' || this.stage === 'score'
-                ? Object.fromEntries((this.result.canGuess).map((g) => {
-                    const text = this.guesses[g] ?? '';
-                    const exact = guessIsRight(text, r.civilText);
-                    const needs = guessNeedsJudgement(text, r.civilText);
-                    const v = Object.values(this.judgeVotes[g] ?? {});
-                    return [g, { exact, needs, yes: v.filter(Boolean).length, no: v.filter((x) => !x).length, mine: me ? (this.judgeVotes[g]?.[me] ?? null) : null, eligible: this.judges().length }];
-                  }))
-                : null,
             }
           : null,
       },

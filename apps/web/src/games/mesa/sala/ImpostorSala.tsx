@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react';
-import { IM_CATEGORIES, IM_MAX_ROUNDS, IM_MIN_PLAYERS, IM_WHITE_MIN_PLAYERS, imImpostorLimit, type ImMode } from '@nocap/games';
+import { IM_CATEGORIES, IM_ELIM_MAX_ROUNDS, IM_MAX_ROUNDS, IM_MIN_PLAYERS, IM_WHITE_MIN_PLAYERS, imImpostorLimit, type ImMode } from '@nocap/games';
 import { InvitePanel } from '@/screens/room/lobby/InvitePanel';
 import { leaveRoom, sendRoom } from '@/lib/rooms';
 import { RankSlot } from '../impostor/ui';
@@ -12,7 +12,7 @@ import type { Action, State } from '../impostor/state';
 import { Alert, AskCtx, Ceremony, ArrowIcon, Coin, Confirm, GearIcon, Icon, Primary, Stepper, Switch, TopBar, Words, useAsk, useFlash, type AskCfg } from '../impostor/ui';
 import '../impostor/impostor.css';
 
-type Cfg = { rounds: number; impostors: number; talkMs: number; hint: boolean; lastChance: boolean; categories: string[]; filters: Record<string, Record<string, string[]>> };
+type Cfg = { rounds: number; impostors: number; talkMs: number; hint: boolean; voteMode: 'final' | 'elim'; revealRoles: boolean; categories: string[]; filters: Record<string, Record<string, string[]>> };
 
 /** O Impostor em sala (spec 088): lobby, partida e ranking com o mesmo visual do modo Mesa, cada pessoa no seu celular. */
 export function ImpostorSala({ snapshot }: { snapshot: Snap }) {
@@ -31,9 +31,9 @@ export function ImpostorSala({ snapshot }: { snapshot: Snap }) {
   const wrong = mesaS?.mode === 'wrong';
   const sp: { key: string; title: string; sub: string } | null =
     phase === 'show' ? { key: `show-${games}`, title: `${games + 1}ª partida`, sub: 'Cada um vê o seu papel' }
-    : phase === 'play' ? { key: `play-${games}`, title: wrong ? 'Hora de responder' : 'Hora de dizer', sub: wrong ? 'Uma resposta de cada um' : 'Uma palavra de cada um' }
+    : phase === 'play' ? { key: `play-${games}-${mesaS?.clueRound ?? 1}`, title: wrong ? 'Hora de responder' : 'Hora de dizer', sub: wrong ? 'Uma resposta de cada um' : 'Uma palavra de cada um' }
     : phase === 'pick' ? { key: `pick-${games}`, title: 'Debate', sub: 'Conversem e descubram' }
-    : phase === 'vote' ? { key: `vote-${games}`, title: 'Hora de votar', sub: 'Em segredo' }
+    : phase === 'vote' ? { key: `vote-${games}-${mesaS?.clueRound ?? 1}-${mesaS?.revote ? 'r' : ''}`, title: mesaS?.voteMode === 'elim' ? (mesaS.revote ? 'Desempate' : 'Hora de eliminar') : 'Hora de votar', sub: mesaS?.revote ? 'Só nos empatados' : 'Em segredo' }
     : phase === 'reveal' && mesaS?.stage === 'score' ? { key: `score-${games}`, title: 'Ranking', sub: 'Os pontos desta partida' }
     : null;
   const [doneKey, setDoneKey] = useState<string | null>(null);
@@ -105,7 +105,8 @@ function Lobby({ snap }: { snap: Snap }) {
   const connected = snap.members.filter((m) => m.connected);
   const tooFew = connected.length < IM_WHITE_MIN_PLAYERS;
   const lacking = connected.filter((m) => !m.isHost && !m.ready).length;
-  const max = imImpostorLimit(Math.max(connected.length, IM_MIN_PLAYERS));
+  const elimMode = cfg.voteMode === 'elim';
+  const max = imImpostorLimit(Math.max(connected.length, IM_MIN_PLAYERS), cfg.voteMode);
   const imp = Math.min(cfg.impostors, max);
   const ti = Math.max(0, TIMES.indexOf(Math.round(cfg.talkMs / 1000)));
   const [copied, setCopied] = useState(false);
@@ -199,11 +200,17 @@ function Lobby({ snap }: { snap: Snap }) {
                 </div>
                 <p className="im-modedesc" key={mode}>{MODES.find((m) => m.id === mode)?.desc}</p>
                 <div className="im-rows">
-                  {mode !== 'wrong' && <div className="im-row"><div><b>Rodadas de dicas</b><small>Quantas vezes cada um dá sua dica. Em cada rodada, cada pessoa diz uma palavra sobre o tema, uma de cada vez.</small></div><Stepper value={cfg.rounds} label="rodadas" min={1} max={IM_MAX_ROUNDS} onChange={(n) => set({ rounds: n })} /></div>}
-                  <div className="im-row"><div><b>Impostores</b><small>{imp === 0 ? 'Número surpresa' : `Máximo para ${connected.length}: ${max}`}</small></div><Stepper value={imp} label="impostores" min={0} max={max} format={(n) => (n === 0 ? '?' : String(n))} onChange={(n) => set({ impostors: n })} /></div>
-                  <div className="im-row"><div><b>Debate</b><small>Depois das dicas, todos conversam por esse tempo para descobrir quem é o impostor. Depois vem a votação.</small></div><Stepper value={ti} label="tempo do debate" min={0} max={TIMES.length - 1} format={(n) => fmtTime(TIMES[n]!)} onChange={(n) => set({ talkMs: TIMES[n]! * 1000 })} /></div>
+                  <div className="im-row votemode"><div><b>Como votar</b><small>{elimMode ? 'A cada rodada a mesa vota e uma pessoa é eliminada. Quem sai só assiste. Inocentes vencem eliminando todos os impostores; impostores vencem se sobrarem tantos quanto os inocentes ou se as rodadas acabarem.' : 'Todos dão as dicas nas rodadas, depois conversam e votam uma vez só em quem acham que é o impostor.'}</small></div>
+                    <div className="im-seg im-seg2" role="radiogroup" aria-label="Como votar">
+                      {([['final', 'Voto final'], ['elim', 'Eliminação']] as const).map(([v, label]) => (
+                        <button key={v} type="button" role="radio" aria-checked={cfg.voteMode === v} data-testid={`sala-howvote-${v}`} onClick={() => { play('select'); set({ voteMode: v }); }}>{label}</button>
+                      ))}
+                    </div></div>
+                  {(mode !== 'wrong' || elimMode) && <div className="im-row"><div><b>Rodadas de dicas</b><small>{elimMode ? `Cada rodada termina com uma eliminação. ${imp > 0 ? `Com ${imp} ${imp === 1 ? 'impostor' : 'impostores'}, o jogo tem no mínimo ${imp + 1} rodadas (o app ajusta sozinho).` : 'O mínimo é o número de impostores mais 1 (o app ajusta sozinho).'}` : 'Quantas vezes cada um dá sua dica. Em cada rodada, cada pessoa diz uma palavra sobre o tema, uma de cada vez.'}</small></div><Stepper value={elimMode && imp > 0 ? Math.max(cfg.rounds, imp + 1) : cfg.rounds} label="rodadas" min={1} max={elimMode ? IM_ELIM_MAX_ROUNDS : IM_MAX_ROUNDS} onChange={(n) => set({ rounds: n })} /></div>}
+                  <div className="im-row"><div><b>Impostores</b><small>{imp === 0 ? 'Número surpresa' : `Máximo para ${connected.length}: ${max}${elimMode ? ' (menos da metade da mesa)' : ''}`}</small></div><Stepper value={imp} label="impostores" min={0} max={max} format={(n) => (n === 0 ? '?' : String(n))} onChange={(n) => set({ impostors: n })} /></div>
+                  {!elimMode && <div className="im-row"><div><b>Debate</b><small>Depois das dicas, todos conversam por esse tempo para descobrir quem é o impostor. Depois vem a votação.</small></div><Stepper value={ti} label="tempo do debate" min={0} max={TIMES.length - 1} format={(n) => fmtTime(TIMES[n]!)} onChange={(n) => set({ talkMs: TIMES[n]! * 1000 })} /></div>}
+                  {elimMode && (cfg.impostors === 0 || imp >= 2) && <div className="im-row"><div><b>Mostrar quem era</b><small>Ao eliminar alguém, a tela mostra se era inocente ou impostor. Desligado, o papel de quem sai fica em segredo e o jogo só revela no fim.</small></div><Switch on={cfg.revealRoles} label="Mostrar quem era" onChange={(v) => set({ revealRoles: v })} /></div>}
                   {mode === 'classic' && cfg.categories.length > 2 && <div className="im-row"><div><b>Dica de categoria</b><small>O impostor vê o tema da palavra. Só aparece com mais de 2 temas.</small></div><Switch on={cfg.hint} label="Dica de categoria" onChange={(v) => set({ hint: v })} /></div>}
-                  {mode !== 'wrong' && <div className="im-row"><div><b>Última chance</b><small>Se o impostor for pego, ainda tenta acertar a palavra. Acertando, ganha poucos pontos (os inocentes ganham mais). Escapar sem ser pego vale muito mais.</small></div><Switch on={cfg.lastChance} label="Última chance" onChange={(v) => set({ lastChance: v })} /></div>}
                 </div>
                 <p className="im-instr" data-testid="sala-instr">Selecione os temas para sortear</p>
                 <div className="im-tiles">
@@ -226,7 +233,7 @@ function Lobby({ snap }: { snap: Snap }) {
                 <p className="im-sub">Só o líder muda as regras.</p>
                 <div className="im-rows">
                   <div className="im-row"><div><b>{MODES.find((m) => m.id === mode)?.label}</b><small>{MODES.find((m) => m.id === mode)?.desc}</small></div></div>
-                  <div className="im-row"><div><b>{mode === 'wrong' ? 'Cada um responde uma vez' : `${cfg.rounds} ${cfg.rounds === 1 ? 'rodada' : 'rodadas'} de dicas`}</b><small>{cfg.impostors === 0 ? 'Impostores: surpresa' : `${cfg.impostors} ${cfg.impostors === 1 ? 'impostor' : 'impostores'}`} · debate {fmtTime(Math.round(cfg.talkMs / 1000))}</small></div></div>
+                  <div className="im-row"><div><b>{elimMode ? 'Eliminação a cada rodada' : mode === 'wrong' ? 'Cada um responde uma vez' : `${cfg.rounds} ${cfg.rounds === 1 ? 'rodada' : 'rodadas'} de dicas`}</b><small>{cfg.impostors === 0 ? 'Impostores: surpresa' : `${cfg.impostors} ${cfg.impostors === 1 ? 'impostor' : 'impostores'}`} · debate {fmtTime(Math.round(cfg.talkMs / 1000))}</small></div></div>
                   <div className="im-row themes"><div className="im-themes-h"><b>Temas</b></div>
                     <div className="im-pills">
                       {cfg.categories.length === 0 && <span className="im-sub">O líder ainda não escolheu.</span>}
@@ -317,7 +324,8 @@ function Clues({ snap }: { snap: Snap }) {
   const [word, setWord] = useState('');
   const [flash, show] = useFlash();
   const mine = mesa.speaker === me;
-  const total = mesa.mode === 'wrong' ? 1 : snap.settings.rounds;
+  const total = mesa.elim ? mesa.elim.total : mesa.mode === 'wrong' ? 1 : snap.settings.rounds;
+  const out = !!mesa.alive && !mesa.alive.includes(me) && !!mesa.participants?.some((p) => p.id === me);
   const speaker = mesa.speaker ? { id: mesa.speaker, name: nameOf(snap, mesa.speaker) } : null;
   const left = useCountdown(snap.round?.endsAt ?? null);
   useEffect(() => { if (mine) play('pass'); }, [mine]);
@@ -335,6 +343,7 @@ function Clues({ snap }: { snap: Snap }) {
     <div className="im-screen" data-testid="sala-clues">
       <TopBar leave onBack={leave} center={<span className="im-status">Rodada {mesa.clueRound} de {total}</span>} />
       <div className="im-body">
+        {out && <p className="im-sub center" data-testid="sala-out">Você foi eliminado. Agora só assiste.</p>}
         {speaker && (
           <div className="im-whovotes">
             <Coin avatar={looks(speaker.id).avatar} color={looks(speaker.id).color} size="md" />
@@ -430,27 +439,35 @@ function Vote({ snap }: { snap: Snap }) {
   const looks = useLooks(snap);
   const leave = useLeaveRoom();
   const left = useCountdown(snap.round?.endsAt ?? null);
+  const elim = mesa.voteMode === 'elim';
+  const alive = mesa.alive ?? (mesa.participants ?? []).map((p) => p.id);
+  const canVote = alive.includes(me);
+  const cands = (mesa.cands ?? alive).filter((id) => id !== me);
   const [sel, setSel] = useState<string | null>(mesa.myVote ?? null);
+  const tieKey = (mesa.cands ?? []).join(',');
+  useEffect(() => { setSel(null); }, [tieKey, mesa.revote]);
   const voted = mesa.voted ?? [];
   const iVoted = voted.includes(me);
-  const inGame = mesa.participants?.some((p) => p.id === me);
+  const tieNames = (mesa.cands ?? []).map((id) => nameOf(snap, id)).join(' e ');
   return (
     <div className="im-screen" data-testid="sala-vote">
-      <TopBar leave onBack={leave} center={<span className="im-status">Votação secreta · {voted.length} de {mesa.participants?.length ?? 0}{left !== null ? ` · ${left} s` : ''}</span>} />
+      <TopBar leave onBack={leave} center={<span className="im-status">{elim ? 'Eliminação' : 'Votação secreta'} · {voted.length} de {alive.length}{left !== null ? ` · ${left} s` : ''}</span>} />
       <div className="im-body">
-        <h2 className="im-t im-lupa-t"><Icon name="lupa" size={52} className="im-lupa" /><Words text="Quem é o impostor?" /></h2>
+        <h2 className="im-t im-lupa-t"><Icon name="lupa" size={52} className="im-lupa" /><Words text={elim ? 'Quem vai ser eliminado?' : 'Quem é o impostor?'} /></h2>
+        {elim && mesa.revote && <span className="im-banner warn" data-testid="sala-tie">Empate! Só vale votar em {tieNames}</span>}
+        {!canVote && <p className="im-sub center" data-testid="sala-out">Você foi eliminado. Agora só assiste à votação.</p>}
         <div className="im-vgrid">
-          {(mesa.participants ?? []).map((p, i) => p.id === me ? null : (
-            <button key={p.id} type="button" className="im-vote im-rise" style={{ '--d': (i % 4) + 1 } as CSSProperties} aria-pressed={sel === p.id} disabled={!inGame} data-testid={`sala-vote-${p.id}`} onClick={() => { play('select'); setSel(p.id); }}>
-              <Coin avatar={looks(p.id).avatar} color={looks(p.id).color} size="lg" />
-              <span>{p.name}</span>
+          {cands.map((id, i) => (
+            <button key={id} type="button" className="im-vote im-rise" style={{ '--d': (i % 4) + 1 } as CSSProperties} aria-pressed={sel === id} disabled={!canVote} data-testid={`sala-vote-${id}`} onClick={() => { play('select'); setSel(id); }}>
+              <Coin avatar={looks(id).avatar} color={looks(id).color} size="lg" />
+              <span>{nameOf(snap, id)}</span>
             </button>
           ))}
         </div>
       </div>
       <div className="im-foot">
-        <Primary disabled={!sel || !inGame} sound="vote" testId="sala-cast" onClick={() => sel && sendRoom('cast', { id: sel })}>
-          {!sel ? 'Escolha alguém' : iVoted && mesa.myVote === sel ? 'Voto enviado. Toque para trocar' : iVoted ? 'Trocar o meu voto' : 'Confirmar voto'}
+        <Primary disabled={!sel || !canVote} sound="vote" testId="sala-cast" onClick={() => sel && sendRoom('cast', { id: sel })}>
+          {!canVote ? 'Só assistindo' : !sel ? 'Escolha alguém' : iVoted && mesa.myVote === sel ? 'Voto enviado. Toque para trocar' : iVoted ? 'Trocar o meu voto' : 'Confirmar voto'}
         </Primary>
       </div>
     </div>
@@ -466,33 +483,22 @@ function Reveal({ snap }: { snap: Snap }) {
   const leave = useLeaveRoom();
   const ask = useAsk();
   const isHost = snap.hostId === me;
-  const left = useCountdown(snap.round?.endsAt ?? null);
-  const [text, setText] = useState('');
-  const [flash, show] = useFlash();
-  const guessing = mesa.stage === 'guess';
-  const canGuessMe = !!r?.canGuess.includes(me) && !(mesa.guessed ?? []).includes(me);
   const win = r?.innocentsWin === true;
-  // sem chute, o som do resultado acompanha o placar; com chute, acompanha o veredito
+  // o som do resultado acompanha o placar
   useEffect(() => {
     if (mesa.stage !== 'score' || !r) return undefined;
-    const t = window.setTimeout(() => play(r.guessedRight.length > 0 || win ? 'win' : 'lose'), 500);
+    const t = window.setTimeout(() => play(win ? 'win' : 'lose'), 500);
     return () => window.clearTimeout(t);
   }, [mesa.stage, r, win]);
-  useEffect(() => { if (mesa.stage === 'judge') play('reveal'); }, [mesa.stage]);
   const onReveal = useCallback(() => play('reveal'), []);
   useEffect(() => {
     if (mesa.stage !== 'score') return undefined;
-    const t = window.setTimeout(() => play(mesa.session.ranking.some((x) => x.position === 1 && x.points > 0) ? 'rankcalm' : 'rankcalm'), 1200);
+    const t = window.setTimeout(() => play('rankcalm'), 1200);
     return () => window.clearTimeout(t);
-  }, [mesa.stage, mesa.session.ranking]);
+  }, [mesa.stage]);
+  if (mesa.stage === 'elim' && mesa.elim) return <ElimView snap={snap} />;
   if (!r) return <Waiting snap={snap} text="Contando os votos..." />;
   const lead = new Set(mesa.session.leaders);
-  const send = (e?: FormEvent) => {
-    e?.preventDefault();
-    if (!text.trim()) return show('Digite um chute.');
-    play('vote');
-    sendRoom('guess', { text });
-  };
   if (mesa.stage === 'reveal') {
     const outsiders = r.outsiders ?? [];
     const hit = (id: string) => outsiders.includes(r.votes?.[id] ?? '');
@@ -508,67 +514,7 @@ function Reveal({ snap }: { snap: Snap }) {
             voters={voters.map((p) => ({ id: p.id, name: p.name, coin: <Coin avatar={looks(p.id).avatar} color={looks(p.id).color} size="sm" />, hit: hit(p.id) }))}
           />
         </div>
-        <div className="im-foot"><p className="im-sub center">Já já vem o próximo passo...</p></div>
-      </div>
-    );
-  }
-  if (mesa.stage === 'judge') {
-    const items = r.canGuess.map((id) => {
-      const j = r.judge?.[id];
-      const text = (r.guesses?.[id] ?? '').trim();
-      return { id, text, j };
-    });
-    const canJudge = !r.canGuess.includes(me) && (mesa.participants ?? []).some((p) => p.id === me);
-    return (
-      <div className="im-screen im-centered" data-testid="sala-judge">
-        <TopBar leave onBack={leave} center={<span className="im-status">Última chance{left !== null ? ` · ${left} s` : ''}</span>} />
-        <div className="im-body im-mid im-revbody">
-          <p className="im-suspense">A palavra era</p>
-          <h2 className="im-culprit">{r.word}</h2>
-          <ul className="im-guesslist">
-            {items.map(({ id, text, j }) => {
-              const open = !!j?.needs;
-              return (
-                <li key={id} className={`im-gcard ${open ? 'open' : j?.exact ? 'ok' : 'no'}`}>
-                  <div className="im-grow"><Coin avatar={looks(id).avatar} color={looks(id).color} size="md" /><div><b>{nameOf(snap, id)}</b><small>{text ? `respondeu “${text}”` : 'não chutou'}</small></div></div>
-                  {open ? (
-                    <div className="im-judge">
-                      <p className="im-sub">Para todos: o chute <b>{text}</b> vale como <b>{r.word}</b>? ({(j?.yes ?? 0) + (j?.no ?? 0)} de {j?.eligible ?? 0} votaram)</p>
-                      {canJudge ? (
-                        <div className="im-judgebtns">
-                          <button type="button" className={`im-chip yes${j?.mine === true ? ' on' : ''}`} data-testid={`sala-judge-yes-${id}`} aria-pressed={j?.mine === true} onClick={() => { play('confirm'); sendRoom('judge', { id, ok: true }); }}>Vale</button>
-                          <button type="button" className={`im-chip no${j?.mine === false ? ' on' : ''}`} data-testid={`sala-judge-no-${id}`} aria-pressed={j?.mine === false} onClick={() => { play('off'); sendRoom('judge', { id, ok: false }); }}>Não vale</button>
-                        </div>
-                      ) : <p className="im-sub">O grupo está decidindo...</p>}
-                    </div>
-                  ) : (
-                    <span className={`im-verdictpill ${j?.exact ? 'ok' : 'no'}`}>{j?.exact ? 'ACERTOU' : 'ERROU'}</span>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-        <div className="im-foot"><p className="im-sub center">O ranking abre quando todos decidirem.</p></div>
-      </div>
-    );
-  }
-  if (guessing) {
-    return (
-      <div className="im-screen im-centered" data-testid="sala-guess">
-        <TopBar leave onBack={leave} center={<span className="im-status">Última chance{left !== null ? ` · ${left} s` : ''}</span>} />
-        <div className="im-body im-mid">
-          <span className="im-banner warn">Última chance</span>
-          <h2 className="im-t"><Words text={r.canGuess.length === 1 ? `Pegaram ${nameOf(snap, r.canGuess[0]!)}` : 'Pegaram os impostores'} /></h2>
-          <div className="im-reveal">{r.canGuess.map((id, i) => <span key={id} style={{ '--i': i } as CSSProperties}><Coin avatar={looks(id).avatar} color={looks(id).color} size="lg" /></span>)}</div>
-          {canGuessMe ? (
-            <form className="im-add wide" onSubmit={send}>
-              <input id="sala-guess" data-testid="sala-guess-input" value={text} onChange={(e) => setText(e.target.value)} placeholder="Qual era a palavra?" autoComplete="off" autoCapitalize="none" maxLength={40} aria-label="Chute da palavra" aria-invalid={!!flash} />
-            </form>
-          ) : <p className="im-sub">Esperando o chute...</p>}
-        </div>
-        {flash && <div className="im-foot-alert"><Alert n={flash.n}>{flash.m}</Alert></div>}
-        <div className="im-foot">{canGuessMe && <Primary sound={null} testId="sala-guess-send" onClick={() => send()}>Chutar <ArrowIcon /></Primary>}</div>
+        <div className="im-foot"><p className="im-sub center">Já já vem o ranking...</p></div>
       </div>
     );
   }
@@ -606,6 +552,63 @@ function Reveal({ snap }: { snap: Snap }) {
           </>
         ) : <p className="im-sub center">Esperando o líder: continuar ou encerrar.</p>}
       </div>
+    </div>
+  );
+}
+
+/* ---------- Eliminação: quem saiu nesta rodada ---------- */
+function ElimView({ snap }: { snap: Snap }) {
+  const mesa = snap.mesa!;
+  const el = mesa.elim!;
+  const step = el.steps[el.steps.length - 1]!;
+  const looks = useLooks(snap);
+  const leave = useLeaveRoom();
+  const winner = el.winner;
+  const isOutsider = step.role !== null && step.role !== 'civil';
+  const out = looks(step.out);
+  const voteList = Object.entries(step.votes).filter(([, t]) => t === step.out).map(([v]) => nameOf(snap, v));
+  const [stage, setStage] = useState(0);
+  useEffect(() => {
+    const ts = [
+      window.setTimeout(() => { setStage(1); play('reveal'); }, 2200),
+      window.setTimeout(() => setStage(2), 3800),
+      window.setTimeout(() => { setStage(3); if (winner) play(winner === 'innocents' ? 'win' : 'lose'); }, 5400),
+    ];
+    return () => ts.forEach((t) => window.clearTimeout(t));
+  }, [winner]);
+  const lastOne = el.steps.length >= el.total;
+  return (
+    <div className={`im-screen im-centered im-tense${stage >= 1 ? ' lit' : ''}`} data-testid="sala-elimres" data-stage={stage}>
+      <TopBar leave onBack={leave} center={<span className="im-status">Rodada {step.round} de {el.total}</span>} />
+      <div className="im-body im-mid im-revbody">
+        <p className="im-suspense" aria-live="polite">
+          {step.drawn ? 'Empate de novo. O sorteio escolheu' : step.revote ? 'Depois do empate, saiu' : 'Foi eliminado'}
+          {stage === 0 && <span className="im-dots" aria-hidden="true"><i /><i /><i /></span>}
+        </p>
+        {stage >= 1 && (
+          <div className="im-slam" data-testid="sala-elim-out">
+            <div className="im-reveal"><Coin avatar={out.avatar} color={out.color} size="xl" /></div>
+            <h2 className="im-culprit">{nameOf(snap, step.out)}</h2>
+            <p className="im-sub">{voteList.length > 0 ? `Votaram nele: ${voteList.join(', ')}` : 'Ninguém votou: o sorteio decidiu'}</p>
+          </div>
+        )}
+        {stage >= 2 && (
+          <div className={`im-rolecard ${step.role ? (isOutsider ? 'bad' : 'ok') : 'hidden'}`} data-testid="sala-rolecard">
+            <b>{step.role ? (isOutsider ? (step.role === 'white' ? 'Era o impostor sem palavra' : 'Era impostor') : 'Era inocente') : 'O papel continua em segredo'}</b>
+          </div>
+        )}
+        {stage >= 3 && (
+          <div className="im-verdict" data-testid="sala-elim-verdict">
+            {winner ? (
+              <>
+                <span className={`im-banner${winner === 'innocents' ? '' : ' bad'}`}>{winner === 'innocents' ? 'Inocentes venceram' : 'Impostores venceram'}</span>
+                <p className="im-sub">{winner === 'innocents' ? `Os inocentes acharam ${el.outsiders === 1 ? 'o impostor' : 'todos os impostores'}.` : lastOne ? 'As rodadas acabaram e ainda havia impostor na mesa.' : 'Sobraram tantos impostores quanto inocentes.'}</p>
+              </>
+            ) : <p className="im-sub">A partida continua.</p>}
+          </div>
+        )}
+      </div>
+      <div className="im-foot"><p className="im-sub center">{winner ? 'Já já vem o ranking...' : 'Já já começa a próxima rodada...'}</p></div>
     </div>
   );
 }

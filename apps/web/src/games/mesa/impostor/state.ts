@@ -1,13 +1,14 @@
 import {
-  IM_DEFAULTS, IM_EMPTY_HISTORY, IM_MIN_POOL, IM_MAX_PLAYERS, IM_MIN_PLAYERS, IM_QUESTIONS, IM_WORDS, IM_CATEGORY_LABELS,
-  addResult, advanceHistory, clampRounds, drawRound, filterWords, imEffectiveMode, newSession, rankingShift, scoreResult,
-  type ImHistory, type ImResult, type ImRound, type ImSession, type ImSettings,
+  IM_DEFAULTS, IM_ELIM_MAX_ROUNDS, IM_EMPTY_HISTORY, IM_MAX_ROUNDS, IM_MIN_POOL, IM_MAX_PLAYERS, IM_MIN_PLAYERS, IM_QUESTIONS, IM_WORDS, IM_CATEGORY_LABELS,
+  addResult, advanceHistory, clampRounds, drawRound, elimApply, elimOutcome, elimResolve, elimStart, filterWords, imEffectiveMode,
+  imImpostorLimit, newSession, rankingShift, scoreElimination, scoreResult,
+  type ImElimState, type ImHistory, type ImResult, type ImRound, type ImSession, type ImSettings, type ImWinner,
 } from '@nocap/games';
 import { AVATARS } from './assets';
 
 export type Phase =
   | 'players' | 'cats' | 'cfg' | 'reveal' | 'clues' | 'talk' | 'vote'
-  | 'result' | 'guess' | 'guessres' | 'score' | 'final';
+  | 'result' | 'elimres' | 'score' | 'final';
 
 export interface Player {
   id: string;
@@ -39,10 +40,13 @@ export interface State {
   voter: number;
   votes: Record<string, string>;
   result: ImResult | null;
-  guesses: Record<string, string>;
-  /** Chutes parecidos ou sinônimos: o grupo decide se vale (true) ou não (false). */
-  judged: Record<string, boolean>;
-  guessIdx: number;
+  /** Eliminação: quem está vivo, quantas rodadas e o histórico de quem saiu. */
+  elim: ImElimState | null;
+  /** Eliminação: votos da votação em andamento. */
+  elimVotes: Record<string, string>;
+  /** Eliminação: em empate, só estes recebem votos na segunda votação. */
+  elimCands: string[] | null;
+  elimRevote: boolean;
   session: ImSession;
   /** O que o último placar mexeu (escolhe o som). */
   shift: 'calm' | 'brusque';
@@ -66,14 +70,14 @@ export function initial(): State {
     if (raw) {
       const s = JSON.parse(raw) as { settings?: ImSettings };
       // os temas começam sempre vazios: a pessoa escolhe a cada sessão
-      if (s.settings) settings = { ...settings, ...s.settings, categories: [], rounds: clampRounds(s.settings.rounds ?? 3) };
+      if (s.settings) settings = { ...settings, ...s.settings, categories: [], rounds: clampRounds(s.settings.rounds ?? 3, IM_ELIM_MAX_ROUNDS) };
     }
   } catch {
     /* sem memória salva: começa do padrão */
   }
   return {
     phase: 'players', back: false, players, settings, seed: randomSeed(), game: 0, history: IM_EMPTY_HISTORY, round: null,
-    seen: 0, clueRound: 1, turn: 0, clueStep: 'brief', voteStep: 'pass', resultStep: 'ask', voter: 0, votes: {}, result: null, guesses: {}, judged: {}, guessIdx: 0,
+    seen: 0, clueRound: 1, turn: 0, clueStep: 'brief', voteStep: 'pass', resultStep: 'ask', voter: 0, votes: {}, result: null, elim: null, elimVotes: {}, elimCands: null, elimRevote: false,
     session: newSession(players.map((p) => p.id)), shift: 'calm', gains: {}, error: null,
   };
 }
@@ -99,9 +103,8 @@ export type Action =
   | { type: 'clueNext' }
   | { type: 'voteReady' }
   | { type: 'revealNow' }
-  | { type: 'judge'; id: string; ok: boolean }
+  | { type: 'elimNext' }
   | { type: 'castVote'; target: string }
-  | { type: 'guess'; text: string }
   | { type: 'finish' }
   | { type: 'leave' }
   | { type: 'again'; phase: 'cfg' | 'cats' }
@@ -115,7 +118,16 @@ export function poolSize(s: Pick<State, 'settings' | 'players'>): number {
 }
 
 /** Rodadas de dicas de verdade: no modo de perguntas é uma só (cada um responde e pronto). */
-export const clueRounds = (s: Pick<State, 'settings' | 'round'>) => (s.round?.mode === 'wrong' ? 1 : s.settings.rounds);
+export const clueRounds = (s: Pick<State, 'settings' | 'round' | 'elim'>) => (s.elim ? s.elim.total : s.round?.mode === 'wrong' ? 1 : s.settings.rounds);
+
+/** Quem vota agora: na eliminação só os vivos; no voto final, todos. */
+export const voterIds = (s: Pick<State, 'players' | 'elim'>): string[] => (s.elim ? s.elim.alive : s.players.map((p) => p.id));
+
+/** Quem fala/vota ainda: na eliminação só os vivos. */
+export const isAlive = (s: Pick<State, 'elim'>, id: string) => !s.elim || s.elim.alive.includes(id);
+
+/** Como a eliminação termina agora (ou null se segue). */
+export const elimWinner = (s: Pick<State, 'elim' | 'round'>): ImWinner | null => (s.elim && s.round ? elimOutcome(s.elim, s.round) : null);
 
 export const poolOk = (s: Pick<State, 'settings' | 'players'>) => poolSize(s) >= IM_MIN_POOL;
 
@@ -147,8 +159,13 @@ export function reducer(s: State, a: Action): State {
       };
     case 'setAvatar':
       return { ...s, players: s.players.map((p) => (p.id === a.id ? { ...p, avatar: a.avatar } : p)) };
-    case 'settings':
-      return { ...s, settings: { ...s.settings, ...a.patch, rounds: clampRounds(a.patch.rounds ?? s.settings.rounds) } };
+    case 'settings': {
+      const settings = { ...s.settings, ...a.patch };
+      const max = settings.voteMode === 'elim' ? IM_ELIM_MAX_ROUNDS : IM_MAX_ROUNDS;
+      settings.rounds = clampRounds(a.patch.rounds ?? settings.rounds, max);
+      if (typeof settings.impostors === 'number') settings.impostors = Math.min(settings.impostors, imImpostorLimit(Math.max(s.players.length, 3), settings.voteMode));
+      return { ...s, settings };
+    }
     case 'toggleCategory': {
       const has = s.settings.categories.includes(a.id);
       const categories = has ? s.settings.categories.filter((c) => c !== a.id) : [...s.settings.categories, a.id];
@@ -180,7 +197,7 @@ export function reducer(s: State, a: Action): State {
       // o ranking continua igual; quem entrou agora começa do zero e quem saiu deixa o ranking
       const keep = (m: Record<string, number>) => Object.fromEntries(ids.map((id) => [id, m[id] ?? 0]));
       const session = { ...s.session, scores: keep(s.session.scores), escapes: keep(s.session.escapes) };
-      return { ...s, round, session, phase: 'reveal', back: false, seen: 0, clueRound: 1, turn: 0, clueStep: 'brief', voteStep: 'pass', voter: 0, votes: {}, result: null, guesses: {}, judged: {}, guessIdx: 0 };
+      return { ...s, round, session, phase: 'reveal', back: false, seen: 0, clueRound: 1, turn: 0, clueStep: 'brief', voteStep: 'pass', voter: 0, votes: {}, result: null, elim: s.settings.voteMode === 'elim' ? elimStart(ids, round, s.settings.rounds) : null, elimVotes: {}, elimCands: null, elimRevote: false };
     }
     case 'seen': {
       const last = s.seen >= s.players.length - 1;
@@ -188,34 +205,41 @@ export function reducer(s: State, a: Action): State {
     }
     case 'clueNext': {
       if (s.clueStep === 'brief') return { ...s, clueStep: 'say' };
+      // eliminação: depois das palavras de cada rodada, a mesa vota e alguém sai
+      if (s.elim) return { ...s, phase: 'vote', back: false, voteStep: 'pass', voter: 0, elimVotes: {}, elimCands: null, elimRevote: false };
       if (s.clueRound < clueRounds(s)) return { ...s, clueRound: s.clueRound + 1, clueStep: 'brief' };
       return { ...s, phase: 'talk', back: false };
     }
-    case 'judge':
-      return { ...s, judged: { ...s.judged, [a.id]: a.ok } };
     case 'revealNow':
       return { ...s, resultStep: 'reveal' };
     case 'voteReady':
       return { ...s, voteStep: 'pick' };
     case 'castVote': {
+      if (s.elim) {
+        const alive = s.elim.alive;
+        const votes = { ...s.elimVotes, [alive[s.voter]!]: a.target };
+        if (s.voter < alive.length - 1) return { ...s, elimVotes: votes, voter: s.voter + 1, voteStep: 'pass', phase: 'vote', back: false };
+        const res = elimResolve(s.elimCands ?? alive, votes, s.elimRevote, `${s.seed}:${s.game}:${s.elim.steps.length}`);
+        if (res.kind === 'tie') return { ...s, elimVotes: {}, elimCands: res.tied, elimRevote: true, voter: 0, voteStep: 'pass', phase: 'vote', back: false };
+        const elim = elimApply(s.elim, s.round!, res.out, votes, s.elimRevote, res.drawn);
+        return { ...s, elim, elimVotes: {}, elimCands: null, elimRevote: false, phase: 'elimres', back: false };
+      }
       const voterId = s.players[s.voter]!.id;
       const votes = { ...s.votes, [voterId]: a.target };
       if (s.voter < s.players.length - 1) return { ...s, votes, voter: s.voter + 1, voteStep: 'pass', phase: 'vote', back: false };
       const ids = s.players.map((p) => p.id);
-      const result = scoreResult({ ids, round: s.round!, votes, lastChance: s.settings.lastChance });
-      return { ...s, votes, result, phase: 'result', resultStep: 'ask', back: false, guessIdx: 0 };
+      const result = scoreResult({ ids, round: s.round!, votes });
+      return { ...s, votes, result, phase: 'result', resultStep: 'ask', back: false };
     }
-    case 'guess': {
-      const caught = s.result!.canGuess;
-      const id = caught[s.guessIdx]!;
-      const guesses = { ...s.guesses, [id]: a.text };
-      if (s.guessIdx < caught.length - 1) return { ...s, guesses, guessIdx: s.guessIdx + 1 };
-      return { ...s, guesses, judged: {}, phase: 'guessres', back: false };
+    case 'elimNext': {
+      if (!s.elim) return s;
+      if (elimWinner(s)) return finish(s);
+      return { ...s, phase: 'clues', back: false, clueRound: s.elim.steps.length + 1, clueStep: 'brief' };
     }
     case 'finish':
       return finish(s);
     case 'leave':
-      return { ...s, phase: 'players', back: true, round: null, votes: {}, result: null, guesses: {}, error: null };
+      return { ...s, phase: 'players', back: true, round: null, votes: {}, result: null, elim: null, elimVotes: {}, elimCands: null, elimRevote: false, error: null };
     case 'again':
       return { ...s, phase: a.phase, back: false };
     case 'reset':
@@ -228,7 +252,10 @@ export function reducer(s: State, a: Action): State {
 /** Fecha a partida: pontos, ranking da sessão, histórico do sorteio. */
 export function finish(s: State): State {
   const ids = s.players.map((p) => p.id);
-  const result = scoreResult({ ids, round: s.round!, votes: s.votes, lastChance: s.settings.lastChance, guesses: s.guesses, accepted: Object.keys(s.judged).filter((k) => s.judged[k]) });
+  const winner = elimWinner(s);
+  const result = s.elim && winner
+    ? scoreElimination(ids, s.round!, s.elim, winner)
+    : scoreResult({ ids, round: s.round!, votes: s.votes });
   const session = addResult(s.session, result);
   return {
     ...s, result, session, phase: 'score', back: false, game: s.game + 1, history: advanceHistory(s.history, ids, s.round!),

@@ -124,18 +124,7 @@ for (const d of DEVICES.filter((x) => only.includes(x.name))) {
     await page.getByTestId('im-skip').click();
     await expect(page.getByTestId('im-verdict')).toBeVisible();
     await check('resultado');
-    if (await page.getByTestId('im-guess').count()) {
-      await page.getByTestId('im-guess').click();
-      await check('chute');
-      for (let g = 0; g < 3 && (await page.getByTestId('im-guess-input').count()); g++) {
-        await page.getByTestId('im-guess-input').fill('nada');
-        await page.getByTestId('im-guess-send').click();
-      }
-      await expect(page.getByTestId('im-guessres')).toBeVisible();
-      await check('chute-resultado');
-      for (let g = 0; g < 3 && (await page.locator('[data-testid^="im-judge-no-"]').count()); g++) await page.locator('[data-testid^="im-judge-no-"]').first().click();
-      await page.getByTestId('im-guess-done').click();
-    } else await page.getByTestId('im-score').click();
+    await page.getByTestId('im-score').click();
     await expect(page.getByTestId('im-again')).toBeVisible();
     await check('placar');
     await page.getByTestId('im-again').click();
@@ -147,12 +136,7 @@ for (const d of DEVICES.filter((x) => only.includes(x.name))) {
     await page.getByTestId('im-revealnow').click();
     await page.getByTestId('im-skip').click();
     await expect(page.getByTestId('im-verdict')).toBeVisible();
-    if (await page.getByTestId('im-guess').count()) {
-      await page.getByTestId('im-guess').click();
-      for (let g = 0; g < 3 && (await page.getByTestId('im-guess-input').count()); g++) { await page.getByTestId('im-guess-input').fill('x'); await page.getByTestId('im-guess-send').click(); }
-      for (let g = 0; g < 3 && (await page.locator('[data-testid^="im-judge-no-"]').count()); g++) await page.locator('[data-testid^="im-judge-no-"]').first().click();
-      await page.getByTestId('im-guess-done').click();
-    } else await page.getByTestId('im-score').click();
+    await page.getByTestId('im-score').click();
     // o ranking da sessão fica sempre à vista e abre ao toque
     await page.getByTestId('im-rank').click();
     await expect(page.getByRole('dialog')).toBeVisible();

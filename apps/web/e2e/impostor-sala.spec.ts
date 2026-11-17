@@ -141,22 +141,10 @@ for (const d of DEVICES.filter((x) => only.includes(x.name))) {
         await p.locator('[data-testid^="sala-vote-"]').first().click();
         await p.getByTestId('sala-cast').click();
       }
-      // cerimônia da revelação (11 s no servidor), depois a última chance e a decisão do grupo
+      // cerimônia da revelação (11 s no servidor) e o placar
       await expect(A.getByTestId('sala-reveal')).toBeVisible({ timeout: 20_000 });
       await check(`${label}-revelacao`, A);
-      for (let g = 0; g < 100 && !(await A.getByTestId('sala-score').isVisible().catch(() => false)); g++) {
-        for (const p of all) {
-          if (await p.getByTestId('sala-guess-input').isVisible().catch(() => false)) {
-            await check(`${label}-chute`, p);
-            await p.getByTestId('sala-guess-input').fill('nada a ver');
-            await p.getByTestId('sala-guess-send').click();
-          }
-          const no = p.locator('[data-testid^="sala-judge-no-"]').first();
-          if (await no.isVisible().catch(() => false)) await no.click().catch(() => undefined);
-        }
-        await A.waitForTimeout(500);
-      }
-      for (const p of all) await expect(p.getByTestId('sala-score')).toBeVisible({ timeout: 20_000 });
+      for (const p of all) await expect(p.getByTestId('sala-score')).toBeVisible({ timeout: 30_000 });
       await check(`${label}-placar`, A);
     };
 
@@ -177,3 +165,79 @@ for (const d of DEVICES.filter((x) => only.includes(x.name))) {
     expect(report, report.join('\n')).toEqual([]);
   });
 }
+
+/** Eliminação em sala: 3 pessoas, 1 impostor. Vota, alguém sai, a partida acaba (inocente fora = empate numérico; impostor fora = inocentes vencem). */
+test('impostor sala eliminação', async ({ browser }, info) => {
+  test.skip(info.project.name !== 'desktop', 'um projeto basta');
+  test.setTimeout(240_000);
+  const d = DEVICES.find((x) => x.name === 'se')!;
+  const mk = async () => {
+    const ctx = await browser.newContext({ locale: 'pt-BR', viewport: { width: d.w, height: d.h } });
+    const p = await ctx.newPage();
+    await p.addInitScript(() => { localStorage.setItem('nocap-mute', '1'); localStorage.setItem('im-nosplash', '1'); });
+    const cdp = await ctx.newCDPSession(p);
+    await setDevice(p, cdp, d);
+    return p;
+  };
+  const dismiss = (p: Page) => p.getByRole('button', { name: 'Agora não' }).click({ timeout: 4000 }).catch(() => undefined);
+  const A = await mk();
+  await A.goto('/mesa');
+  await dismiss(A);
+  await A.getByTestId('mesa-jogar').click();
+  await A.getByTestId('mesa-online').click();
+  await A.getByTestId('mesa-create').click();
+  await nick(A, 'Ana');
+  await A.waitForURL(/\/sala\//);
+  const code = A.url().split('/sala/')[1]!.slice(0, 4);
+  await expect(A.getByTestId('sala-lobby')).toBeVisible({ timeout: 25_000 });
+  const join = async (name: string) => {
+    const P = await mk();
+    await P.goto('/');
+    await dismiss(P);
+    await P.getByTestId('hub-room-toggle').click();
+    await P.getByTestId('hub-room-code').fill(code);
+    await P.getByRole('button', { name: 'Entrar', exact: true }).click();
+    await nick(P, name);
+    await P.waitForURL(/\/sala\//);
+    await expect(P.getByTestId('sala-lobby')).toBeVisible({ timeout: 25_000 });
+    return P;
+  };
+  const B = await join('Bia');
+  const C = await join('Cris');
+  const all = [A, B, C];
+  await A.getByTestId('sala-tab-regras').click();
+  await A.getByTestId('sala-howvote-elim').click();
+  await expect(A.getByText('A cada rodada a mesa vota')).toBeVisible();
+  await A.getByTestId('sala-cat-comida').click();
+  await B.getByTestId('sala-ready').click();
+  await C.getByTestId('sala-ready').click();
+  await A.getByTestId('sala-start').click();
+  for (const p of all) {
+    await expect(p.getByTestId('sala-role')).toBeVisible({ timeout: 20_000 });
+    await hold(p);
+    await p.getByTestId('sala-seen').click();
+  }
+  // dicas da rodada 1 e votação de eliminação (sem debate)
+  for (let g = 0; g < 60 && !(await A.getByTestId('sala-vote').isVisible().catch(() => false)); g++) {
+    for (const p of all) {
+      if (await p.getByTestId('sala-clue-input').isVisible().catch(() => false)) {
+        await p.getByTestId('sala-clue-input').fill(`dica${g}x`);
+        await p.getByTestId('sala-clue-send').click();
+        await A.waitForTimeout(250);
+      }
+    }
+    await A.waitForTimeout(120);
+  }
+  for (const p of all) await expect(p.getByTestId('sala-vote')).toBeVisible({ timeout: 20_000 });
+  await expect(A.getByText('Quem vai ser eliminado?')).toBeVisible();
+  for (const p of all) {
+    await p.locator('[data-testid^="sala-vote-"]').first().click();
+    await p.getByTestId('sala-cast').click();
+  }
+  // quem saiu (11 s) e o fim da partida
+  await expect(A.getByTestId('sala-elimres')).toBeVisible({ timeout: 20_000 });
+  await A.waitForTimeout(3500);
+  await expect(A.getByTestId('sala-elim-out')).toBeVisible();
+  for (const p of all) await expect(p.getByTestId('sala-score')).toBeVisible({ timeout: 40_000 });
+});
+

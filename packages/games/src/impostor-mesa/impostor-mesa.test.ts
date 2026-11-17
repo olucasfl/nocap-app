@@ -6,20 +6,26 @@ import {
   IM_POINTS,
   addResult,
   advanceHistory,
+  IM_ELIM_MAX_ROUNDS,
   clampRounds,
+  elimApply,
+  elimOutcome,
+  elimResolve,
+  elimStart,
+  imElimRounds,
+  scoreElimination,
   drawRound,
   filterWords,
-  guessIsRight,
-  guessNeedsJudgement,
   imEffectiveMode,
   imImpostorLimit,
   leaders,
   newSession,
-  normalizeGuess,
   rankingShift,
   scoreResult,
   sessionRanking,
+  type ImElimState,
   type ImHistory,
+  type ImRound,
   type ImQuestion,
   type ImSettings,
   type ImWord,
@@ -151,20 +157,6 @@ describe('sorteio justo ao longo da sessão', () => {
   });
 });
 
-describe('chute', () => {
-  it('aceita o nome original ou a tradução', () => {
-    expect(guessIsRight('hog rider', 'Hog Rider (Corredor)')).toBe(true);
-    expect(guessIsRight('Corredor', 'Hog Rider (Corredor)')).toBe(true);
-    expect(guessIsRight('Mineiro', 'Hog Rider (Corredor)')).toBe(false);
-  });
-  it('ignora acento, maiúscula e pontuação', () => {
-    expect(normalizeGuess('  Pizzá! ')).toBe('pizza');
-    expect(guessIsRight('PIZZA', 'Pizza')).toBe(true);
-    expect(guessIsRight('Lasanha', 'Pizza')).toBe(false);
-    expect(guessIsRight('', '')).toBe(false);
-  });
-});
-
 describe('resultado e pontos', () => {
   const round = draw();
   const imp = Object.entries(round.roles).find(([, r]) => r.kind === 'impostor')![0];
@@ -172,7 +164,7 @@ describe('resultado e pontos', () => {
   const allVote = (target: string) => Object.fromEntries(ids.filter((i) => i !== target).map((i) => [i, target]));
 
   it('pego por todos: inocentes ganham e quem votou certo ganha 2 + 1', () => {
-    const r = scoreResult({ ids, round, votes: allVote(imp), lastChance: false });
+    const r = scoreResult({ ids, round, votes: allVote(imp) });
     expect(r.caught).toEqual([imp]);
     expect(r.innocentsWin).toBe(true);
     for (const c of civils) expect(r.points[c]).toBe(IM_POINTS.rightVote + IM_POINTS.innocentsWin);
@@ -180,25 +172,13 @@ describe('resultado e pontos', () => {
   });
   it('escapou: impostor ganha 4 e inocentes não ganham', () => {
     const wrong = civils[0]!;
-    const r = scoreResult({ ids, round, votes: allVote(wrong), lastChance: true });
+    const r = scoreResult({ ids, round, votes: allVote(wrong) });
     expect(r.caught).not.toContain(imp);
     expect(r.innocentsWin).toBe(false);
     expect(r.points[imp]).toBe(IM_POINTS.outsiderSurvived);
   });
-  it('pego mas acerta a palavra: impostor vence', () => {
-    const r = scoreResult({ ids, round, votes: allVote(imp), lastChance: true, guesses: { [imp]: round.civilText } });
-    expect(r.guessedRight).toEqual([imp]);
-    expect(r.innocentsWin).toBe(false);
-    expect(r.points[imp]).toBe(IM_POINTS.outsiderGuessed);
-    for (const c of civils) expect(r.points[c]).toBe(IM_POINTS.rightVote);
-  });
-  it('sem última chance, o chute não conta', () => {
-    const r = scoreResult({ ids, round, votes: allVote(imp), lastChance: false, guesses: { [imp]: round.civilText } });
-    expect(r.canGuess).toEqual([]);
-    expect(r.innocentsWin).toBe(true);
-  });
   it('ninguém vota em si e quem não votou não pontua', () => {
-    const r = scoreResult({ ids, round, votes: { [civils[0]!]: imp }, lastChance: false });
+    const r = scoreResult({ ids, round, votes: { [civils[0]!]: imp } });
     expect(r.points[civils[0]!]).toBeGreaterThanOrEqual(IM_POINTS.rightVote);
     expect(r.points[civils[1]!]).toBe(IM_POINTS.innocentsWin);
   });
@@ -206,7 +186,7 @@ describe('resultado e pontos', () => {
 
 describe('sessão e ranking', () => {
   const res = (points: Record<string, number>, out: string[] = [], caught: string[] = []) => ({
-    counts: {}, caught, outsiders: out, canGuess: [], guessedRight: [], innocentsWin: false, points,
+    counts: {}, caught, outsiders: out, innocentsWin: false, points,
   });
   it('soma as partidas', () => {
     let s = newSession(['a', 'b', 'c']);
@@ -238,12 +218,9 @@ describe('sessão e ranking', () => {
     expect(rankingShift(before, jump)).toBe('brusque');
   });
 
-  it('as proporções dos pontos: escapar vale muito, o chute certo vale pouco', () => {
+  it('as proporções dos pontos: escapar vale muito', () => {
     const innocentBest = IM_POINTS.rightVote + IM_POINTS.innocentsWin;
     expect(IM_POINTS.outsiderSurvived).toBeGreaterThan(innocentBest);
-    expect(IM_POINTS.outsiderGuessed).toBeGreaterThan(0);
-    expect(IM_POINTS.outsiderGuessed).toBeLessThan(IM_POINTS.rightVote);
-    expect(IM_POINTS.whiteGuessed).toBeLessThan(IM_POINTS.outsiderSurvived);
   });
 
   it('o tema aparece para quem recebe palavra; a dica do impostor só com mais de 2 temas', () => {
@@ -260,31 +237,109 @@ describe('sessão e ranking', () => {
     expect(Object.values(off.roles).find((x) => x.kind === 'impostor')!.hint).toBeNull();
   });
 
-  it('modo de perguntas: não existe última chance de chute', () => {
-    const q: ImQuestion = { id: 'q1', category: 'comida', q: 'Qual a sua comida favorita?', qPair: 'Qual a sua bebida favorita?' };
-    const round = drawRound({ ids, settings: base({ mode: 'wrong' }), words, questions: [q], seed: 's', roundIndex: 0, history: IM_EMPTY_HISTORY });
-    const imp = Object.entries(round.roles).find(([, r]) => r.kind === 'impostor')![0];
-    const votes = Object.fromEntries(ids.filter((i) => i !== imp).map((i) => [i, imp]));
-    const r = scoreResult({ ids, round, votes, lastChance: true });
-    expect(r.canGuess).toEqual([]);
-    expect(r.innocentsWin).toBe(true);
-  });
+});
 
-  it('chute: sem acento e sem espaço vale; parecido ou sinônimo o grupo decide', () => {
-    expect(guessIsRight('joao pessoa', 'João Pessoa')).toBe(true);
-    expect(guessIsRight('  JOAOPESSOA ', 'João Pessoa')).toBe(true);
-    expect(guessNeedsJudgement('Natal', 'João Pessoa')).toBe(true);
-    expect(guessNeedsJudgement('   ', 'João Pessoa')).toBe(false);
-    expect(guessNeedsJudgement('joao pessoa', 'João Pessoa')).toBe(false);
+describe('eliminação', () => {
+  const six = ['a', 'b', 'c', 'd', 'e', 'f'];
+  const mk = (n: number, impostors: number) => {
+    const who = six.concat(['g', 'h', 'i', 'j']).slice(0, n);
+    const round = drawRound({ ids: who, settings: base({ impostors, voteMode: 'elim' }), words, seed: 'e', roundIndex: 0, history: IM_EMPTY_HISTORY });
+    const outs = who.filter((i) => round.roles[i]!.kind !== 'civil');
+    const civs = who.filter((i) => round.roles[i]!.kind === 'civil');
+    return { who, round, outs, civs };
+  };
+  const out = (st: ImElimState, round: ImRound, id: string, voters: string[] = []) =>
+    elimApply(st, round, id, Object.fromEntries(voters.map((v) => [v, id])), false, false);
+
+  it('limites: impostores menos da metade da mesa e rodadas mínimas = impostores + 1', () => {
+    expect(imImpostorLimit(4, 'elim')).toBe(1);
+    expect(imImpostorLimit(5, 'elim')).toBe(2);
+    expect(imImpostorLimit(6, 'elim')).toBe(2);
+    expect(imImpostorLimit(7, 'elim')).toBe(3);
+    expect(imImpostorLimit(10, 'elim')).toBe(3);
+    expect(imImpostorLimit(6, 'final')).toBe(3);
+    expect(imElimRounds(2, 3)).toBe(4);
+    expect(imElimRounds(5, 1)).toBe(5);
+    expect(imElimRounds(1, 1)).toBe(2);
+    expect(imElimRounds(9, 2)).toBe(IM_ELIM_MAX_ROUNDS);
   });
-  it('chute aceito pelo grupo conta como acerto', () => {
-    const round = draw();
-    const imp = Object.entries(round.roles).find(([, r]) => r.kind === 'impostor')![0];
-    const votes = Object.fromEntries(ids.filter((i) => i !== imp).map((i) => [i, imp]));
-    const no = scoreResult({ ids, round, votes, lastChance: true, guesses: { [imp]: 'sinonimo' } });
-    expect(no.guessedRight).toEqual([]);
-    const yes = scoreResult({ ids, round, votes, lastChance: true, guesses: { [imp]: 'sinonimo' }, accepted: [imp] });
-    expect(yes.guessedRight).toEqual([imp]);
-    expect(yes.innocentsWin).toBe(false);
+  it('sorteio de impostores respeita o limite da eliminação', () => {
+    const r = mk(4, 3);
+    expect(r.outs).toHaveLength(1);
+  });
+  it('voto: maioria elimina; empate volta só com os empatados; empate de novo sorteia', () => {
+    const cand = ['a', 'b', 'c'];
+    expect(elimResolve(cand, { a: 'b', b: 'a', c: 'b' }, false, 's')).toEqual({ kind: 'out', out: 'b', drawn: false });
+    const tie = elimResolve(cand, { a: 'b', b: 'c' }, false, 's');
+    expect(tie).toEqual({ kind: 'tie', tied: ['b', 'c'] });
+    const again = elimResolve(['b', 'c'], { a: 'b', d: 'c' }, true, 's');
+    expect(again.kind).toBe('out');
+    expect((again as { drawn: boolean }).drawn).toBe(true);
+    expect(['b', 'c']).toContain((again as { out: string }).out);
+    // ninguém votou: sorteia (sempre sai alguém)
+    const none = elimResolve(cand, {}, false, 's');
+    expect(none.kind).toBe('out');
+  });
+  it('um impostor pego: inocentes vencem na hora (sem ir para a rodada 2)', () => {
+    const { who, round, outs, civs } = mk(6, 1);
+    let st = elimStart(who, round, 3);
+    expect(elimOutcome(st, round)).toBeNull();
+    st = out(st, round, outs[0]!, civs);
+    expect(elimOutcome(st, round)).toBe('innocents');
+  });
+  it('erro: inocente eliminado e a partida segue; depois acerta e ganha', () => {
+    const { who, round, outs, civs } = mk(6, 1);
+    let st = elimStart(who, round, 3);
+    st = out(st, round, civs[0]!);
+    expect(elimOutcome(st, round)).toBeNull();
+    expect(st.alive).toHaveLength(5);
+    st = out(st, round, outs[0]!);
+    expect(elimOutcome(st, round)).toBe('innocents');
+  });
+  it('dois impostores: um sai, a partida continua; os dois saem, inocentes vencem', () => {
+    const { who, round, outs, civs } = mk(6, 2);
+    let st = elimStart(who, round, 3);
+    expect(st.total).toBe(3);
+    st = out(st, round, outs[0]!);
+    expect(elimOutcome(st, round)).toBeNull();
+    st = out(st, round, outs[1]!);
+    expect(elimOutcome(st, round)).toBe('innocents');
+    void civs;
+  });
+  it('paridade: com 2 impostores em 6, o segundo erro dos inocentes dá a vitória aos impostores', () => {
+    const { who, round, civs } = mk(6, 2);
+    let st = elimStart(who, round, 3);
+    st = out(st, round, civs[0]!);
+    expect(elimOutcome(st, round)).toBeNull(); // 3 inocentes x 2 impostores
+    st = out(st, round, civs[1]!);
+    expect(elimOutcome(st, round)).toBe('impostors'); // 2 x 2
+  });
+  it('acabaram as rodadas com impostor vivo: impostores vencem', () => {
+    const { who, round, civs } = mk(10, 2);
+    let st = elimStart(who, round, 3);
+    for (let i = 0; i < 3; i++) {
+      expect(elimOutcome(st, round)).toBeNull();
+      st = out(st, round, civs[i]!);
+    }
+    expect(elimOutcome(st, round)).toBe('impostors');
+  });
+  it('3 impostores e 2 rodadas pedidas: o app sobe para 4 rodadas', () => {
+    const { who, round } = mk(8, 3);
+    expect(elimStart(who, round, 2).total).toBe(4);
+  });
+  it('pontos: time inteiro ganha, inclusive os eliminados', () => {
+    const { who, round, outs, civs } = mk(6, 1);
+    let st = elimStart(who, round, 3);
+    st = out(st, round, civs[0]!, [civs[1]!]);
+    st = out(st, round, outs[0]!, [civs[1]!, civs[2]!, civs[3]!]);
+    const r = scoreElimination(who, round, st, 'innocents');
+    expect(r.innocentsWin).toBe(true);
+    expect(r.points[civs[0]!]).toBe(IM_POINTS.innocentsWin); // eliminado, mas o time ganhou
+    expect(r.points[civs[2]!]).toBe(IM_POINTS.innocentsWin + IM_POINTS.rightVote);
+    expect(r.points[outs[0]!]).toBe(0);
+    const r2 = scoreElimination(who, round, st, 'impostors');
+    expect(r2.points[outs[0]!]).toBe(IM_POINTS.outsiderSurvived); // eliminado, mas o time ganhou
+    expect(r2.points[civs[0]!]).toBe(0);
   });
 });
+

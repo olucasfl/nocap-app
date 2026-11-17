@@ -3,7 +3,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { preloadImages } from './assets';
 import { preloadSounds } from './audio';
 import {
-  CatsScreen, CfgScreen, CluesScreen, FinalScreen, GuessResScreen, GuessScreen, PlayersScreen, RankChip, RankSheet,
+  CatsScreen, CfgScreen, CluesScreen, FinalScreen, ElimResScreen, PlayersScreen, RankChip, RankSheet,
   RevealScreen, ResultScreen, ScoreScreen, TalkScreen, VoteScreen,
 } from './screens';
 import { initial, reducer, saveSetup, type Phase, type State } from './state';
@@ -12,23 +12,26 @@ import './impostor.css';
 
 const SCREENS = {
   players: PlayersScreen, cats: CatsScreen, cfg: CfgScreen, reveal: RevealScreen,
-  clues: CluesScreen, talk: TalkScreen, vote: VoteScreen, result: ResultScreen, guess: GuessScreen, guessres: GuessResScreen,
+  clues: CluesScreen, talk: TalkScreen, vote: VoteScreen, result: ResultScreen, elimres: ElimResScreen,
   score: ScoreScreen, final: FinalScreen,
 } as const;
 
 /** Sem ranking na faixa onde a pessoa só vê o próprio segredo. */
-const NO_RANK: Phase[] = ['reveal', 'vote', 'guess', 'guessres', 'final'];
+const NO_RANK: Phase[] = ['reveal', 'vote', 'elimres', 'final'];
 
 /** Fases em que há partida em andamento: sair sem querer perderia o que foi feito. */
-const IN_GAME: Phase[] = ['reveal', 'clues', 'talk', 'vote', 'result', 'guess', 'guessres'];
+const IN_GAME: Phase[] = ['reveal', 'clues', 'talk', 'vote', 'elimres', 'result'];
 
 /** Cartela de transição entre momentos do jogo: título grande, rápido, sem exagero. */
 function splashFor(s: State): { key: string; title: string; sub: string } | null {
   const wrong = s.round?.mode === 'wrong';
   if (s.phase === 'reveal' && s.seen === 0) return { key: `reveal-${s.game}`, title: `${s.game + 1}ª partida`, sub: 'Cada um vai ver o seu papel' };
-  if (s.phase === 'clues' && s.clueStep === 'say') return { key: `say-${s.game}-${s.clueRound}`, title: wrong ? 'Hora de responder' : 'Hora de dizer', sub: wrong ? 'Uma resposta de cada um' : 'Uma palavra de cada um' };
+  if (s.phase === 'clues' && s.clueStep === 'say') return { key: `say-${s.game}-${s.clueRound}-${s.elim?.steps.length ?? 0}`, title: wrong ? 'Hora de responder' : 'Hora de dizer', sub: wrong ? 'Uma resposta de cada um' : 'Uma palavra de cada um' };
   if (s.phase === 'talk') return { key: `talk-${s.game}`, title: 'Debate', sub: 'Conversem e descubram' };
-  if (s.phase === 'vote' && s.voter === 0 && s.voteStep === 'pass') return { key: `vote-${s.game}`, title: 'Hora de votar', sub: 'Em segredo, um de cada vez' };
+  if (s.phase === 'vote' && s.voter === 0 && s.voteStep === 'pass') {
+    if (s.elim) return { key: `vote-${s.game}-${s.elim.steps.length}-${s.elimRevote ? 'r' : ''}`, title: s.elimRevote ? 'Desempate' : 'Hora de eliminar', sub: s.elimRevote ? 'Votem de novo, só nos empatados' : 'Em segredo, um de cada vez' };
+    return { key: `vote-${s.game}`, title: 'Hora de votar', sub: 'Em segredo, um de cada vez' };
+  }
   if (s.phase === 'score') return { key: `score-${s.game}`, title: 'Ranking', sub: 'Os pontos desta partida' };
   return null;
 }
@@ -118,7 +121,7 @@ export function ImpostorGame() {
                 <span className="im-splash-s">{sp.sub}</span>
               </div>
             ) : (
-            <div key={`${s.phase}-${s.seen}-${s.voter}-${s.guessIdx}-${s.clueStep}-${s.clueRound}-${s.voteStep}-${s.resultStep}`} className={`im-view${s.back ? ' back' : ''}`}>
+            <div key={`${s.phase}-${s.seen}-${s.voter}-${s.clueStep}-${s.clueRound}-${s.voteStep}-${s.resultStep}-${s.elim?.steps.length ?? 0}-${s.elimRevote ? 'r' : ''}`} className={`im-view${s.back ? ' back' : ''}`}>
               <Screen s={s} d={d} exit={exit} />
             </div>
             )}

@@ -45,6 +45,8 @@ export interface ImQuestion {
   qPair: string;
 }
 
+export type ImVoteMode = 'final' | 'elim';
+
 export interface ImSettings {
   mode: ImMode;
   /** 1 a 3, ou "random" (de 1 até o máximo da mesa, sem revelar quantos). */
@@ -55,8 +57,10 @@ export interface ImSettings {
   talkSeconds: number;
   /** Clássico: o impostor vê a categoria. */
   hint: boolean;
-  /** Pego, o impostor ainda pode adivinhar a palavra. */
-  lastChance: boolean;
+  /** "final": um voto só no fim das rodadas. "elim": a mesa vota a cada rodada e elimina uma pessoa. */
+  voteMode: ImVoteMode;
+  /** Eliminação: mostra se quem saiu era inocente ou impostor (só com 2 ou mais impostores; com 1 sempre mostra). */
+  revealRoles: boolean;
   categories: readonly string[];
   /** Por categoria e etiqueta, os valores aceitos (vazio ou ausente = tudo). */
   filters?: Readonly<Record<string, Readonly<Record<string, readonly string[]>>>>;
@@ -68,16 +72,21 @@ export const IM_DEFAULTS: ImSettings = {
   rounds: 3,
   talkSeconds: 60,
   hint: false,
-  lastChance: true,
+  voteMode: 'final',
+  revealRoles: true,
   categories: [],
 };
 
-export function clampRounds(n: number): number {
-  return Math.max(1, Math.min(IM_MAX_ROUNDS, Math.round(n)));
+/** Rodadas de dicas: 1 a 5 no voto final; na eliminação até 7 (precisa de mais rodadas para pegar todos). */
+export const IM_ELIM_MAX_ROUNDS = 7;
+export function clampRounds(n: number, max = IM_MAX_ROUNDS): number {
+  return Math.max(1, Math.min(max, Math.round(n)));
 }
 
 /** Quantos "de fora" (impostores) a mesa aguenta: até 3, sempre sobra gente que sabe. */
-export function imImpostorLimit(players: number): number {
+export function imImpostorLimit(players: number, mode: ImVoteMode = 'final'): number {
+  // na eliminação os impostores precisam ser menos da metade da mesa, senão ganham no primeiro voto
+  if (mode === 'elim') return Math.max(1, Math.min(IM_MAX_IMPOSTORS, Math.floor((players - 1) / 2)));
   return Math.max(1, Math.min(IM_MAX_IMPOSTORS, players - 1));
 }
 
@@ -183,7 +192,7 @@ export function drawRound(input: ImDrawInput): ImRound {
   if (n < IM_MIN_PLAYERS || n > IM_MAX_PLAYERS) throw new Error(`mesa de ${IM_MIN_PLAYERS} a ${IM_MAX_PLAYERS} pessoas`);
   const rng = createRng(`${seed}:im:${roundIndex}`);
   const mode = imEffectiveMode(settings.mode, n);
-  const max = imImpostorLimit(n);
+  const max = imImpostorLimit(n, settings.voteMode);
   const asked = settings.impostors === 'random' ? randInt(rng, 1, max) : settings.impostors;
   const roles: Record<string, ImRole> = {};
 
@@ -251,8 +260,8 @@ export function advanceHistory(h: ImHistory, ids: readonly string[], round: ImRo
   return { dry, used: [...h.used, round.wordId] };
 }
 
-/** Compara o chute com a palavra: sem maiúsculas, acentos, pontuação nem espaços sobrando. */
-export function normalizeGuess(s: string): string {
+/** Compara palavras sem maiúsculas, acentos, pontuação nem espaços sobrando (usado para barrar dica igual à palavra secreta). */
+export function normalizeWord(s: string): string {
   return s
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
@@ -261,32 +270,11 @@ export function normalizeGuess(s: string): string {
     .trim();
 }
 
-/** "Hog Rider (Corredor)" vale como "Hog Rider", "Corredor" ou o texto inteiro. */
-export function wordAnswers(word: string): string[] {
-  const m = /^(.*?)\s*\(([^)]+)\)\s*$/.exec(word);
-  return m ? [word, m[1]!, m[2]!] : [word];
-}
-
-const squash = (s: string) => normalizeGuess(s).replace(/ /g, '');
-
-/** Certo na hora: igual sem acento, maiúscula, pontuação nem espaço ("joao pessoa" = "João Pessoa"). */
-export function guessIsRight(guess: string, word: string): boolean {
-  const g = squash(guess);
-  return g.length > 0 && wordAnswers(word).some((a) => squash(a) === g);
-}
-
-/** Chute que não bateu mas foi digitado: sinônimo ou palavra parecida, o grupo decide se vale. */
-export function guessNeedsJudgement(guess: string, word: string): boolean {
-  return squash(guess).length > 0 && !guessIsRight(guess, word);
-}
-
-/** Proporção (pedido do Lucas, 17/11/2026): escapar vale bem mais que a vitória dos inocentes; o chute certo vale pouco, menos que acertar o voto. */
+/** Pontos (pedido do Lucas, 17/11/2026): escapar vale bem mais que a vitória dos inocentes; acertar o voto vale um pouco. */
 export const IM_POINTS = {
   rightVote: 2,
   innocentsWin: 2,
   outsiderSurvived: 5,
-  outsiderGuessed: 1,
-  whiteGuessed: 2,
 } as const;
 
 export interface ImResultInput {
@@ -294,34 +282,24 @@ export interface ImResultInput {
   round: ImRound;
   /** `votes[quem votou] = em quem votou`. Quem não votou não pontua pelo voto. */
   votes: Readonly<Record<string, string>>;
-  lastChance: boolean;
-  /** Chute de cada impostor pego (só vale com `lastChance`). */
-  guesses?: Readonly<Record<string, string>>;
-  /** Impostores cujo chute o grupo aceitou como válido (sinônimo, palavra parecida). */
-  accepted?: readonly string[];
 }
 
 export interface ImResult {
   counts: Record<string, number>;
+  /** Impostores pegos (no voto final) ou eliminados (na eliminação). */
   caught: string[];
   outsiders: string[];
-  /** Impostores que foram pegos e ainda podem chutar. */
-  canGuess: string[];
-  guessedRight: string[];
   innocentsWin: boolean;
   points: Record<string, number>;
 }
 
-/** Resultado e pontos de uma partida (a votação já terminou). */
+/** Resultado e pontos de uma partida de voto final (a votação já terminou). */
 export function scoreResult(input: ImResultInput): ImResult {
   const { ids, round, votes } = input;
   const outsiders = ids.filter((id) => round.roles[id]!.kind !== 'civil');
   const tally = tallyVotes(ids, votes, outsiders.length);
   const caught = outsiders.filter((o) => tally.caught.includes(o));
-  // no modo de perguntas não há palavra para chutar
-  const canGuess = input.lastChance && round.mode !== 'wrong' ? caught : [];
-  const guessedRight = canGuess.filter((id) => input.guesses?.[id] !== undefined && (guessIsRight(input.guesses[id]!, round.civilText) || input.accepted?.includes(id)));
-  const innocentsWin = caught.length === outsiders.length && guessedRight.length === 0;
+  const innocentsWin = caught.length === outsiders.length;
 
   const points: Record<string, number> = Object.fromEntries(ids.map((id) => [id, 0]));
   for (const [voter, target] of Object.entries(votes)) {
@@ -329,13 +307,119 @@ export function scoreResult(input: ImResultInput): ImResult {
     if (round.roles[voter]!.kind === 'civil' && outsiders.includes(target)) points[voter]! += IM_POINTS.rightVote;
   }
   for (const id of ids) {
-    const kind = round.roles[id]!.kind;
-    if (kind === 'civil') {
+    if (round.roles[id]!.kind === 'civil') {
       if (innocentsWin) points[id]! += IM_POINTS.innocentsWin;
     } else if (!caught.includes(id)) points[id]! += IM_POINTS.outsiderSurvived;
-    else if (guessedRight.includes(id)) points[id]! += kind === 'white' ? IM_POINTS.whiteGuessed : IM_POINTS.outsiderGuessed;
   }
-  return { counts: tally.counts, caught, outsiders, canGuess, guessedRight, innocentsWin, points };
+  return { counts: tally.counts, caught, outsiders, innocentsWin, points };
+}
+
+// ---- Eliminação: a mesa vota a cada rodada e uma pessoa sai ----
+
+/**
+ * Rodadas da eliminação: no mínimo `impostores + 1` (com menos, os inocentes não teriam como pegar todos), até 7.
+ * O app aumenta sozinho e avisa.
+ */
+export function imElimRounds(requested: number, impostors: number): number {
+  return Math.min(IM_ELIM_MAX_ROUNDS, Math.max(clampRounds(requested, IM_ELIM_MAX_ROUNDS), impostors + 1));
+}
+
+export interface ImElimStep {
+  /** Rodada da eliminação (1, 2, ...). */
+  round: number;
+  out: string;
+  /** Papel de quem saiu (a tela decide se mostra). */
+  role: ImRoleKind;
+  /** Votos desta rodada (a decisão final: depois do desempate, se houve). */
+  votes: Record<string, string>;
+  /** Houve empate e votaram de novo. */
+  revote: boolean;
+  /** Empatou de novo e o sorteio decidiu. */
+  drawn: boolean;
+}
+
+export interface ImElimState {
+  alive: string[];
+  /** Quantas rodadas a partida tem (já ajustado). */
+  total: number;
+  steps: ImElimStep[];
+}
+
+export function elimStart(ids: readonly string[], round: ImRound, requested: number): ImElimState {
+  const impostors = ids.filter((id) => round.roles[id]!.kind !== 'civil').length;
+  return { alive: [...ids], total: imElimRounds(requested, impostors), steps: [] };
+}
+
+/** Qual rodada de eliminação está valendo agora (1 a total). */
+export const elimRoundNo = (st: ImElimState) => st.steps.length + 1;
+
+export type ElimVoteResult = { kind: 'tie'; tied: string[] } | { kind: 'out'; out: string; drawn: boolean };
+
+/**
+ * Conta os votos. Empate na primeira votação: volta só com os empatados (`tied`). Empate de novo (ou ninguém votou): sorteio
+ * entre os empatados, então sempre sai alguém.
+ */
+export function elimResolve(
+  candidates: readonly string[],
+  votes: Readonly<Record<string, string>>,
+  revote: boolean,
+  seed: string,
+): ElimVoteResult {
+  const counts: Record<string, number> = Object.fromEntries(candidates.map((c) => [c, 0]));
+  for (const [voter, target] of Object.entries(votes)) if (voter !== target && target in counts) counts[target]! += 1;
+  const max = Math.max(...candidates.map((c) => counts[c]!));
+  const top = max === 0 ? [...candidates] : candidates.filter((c) => counts[c] === max);
+  if (top.length === 1) return { kind: 'out', out: top[0]!, drawn: false };
+  if (!revote && max > 0) return { kind: 'tie', tied: top };
+  const rng = createRng(`${seed}:elim-draw`);
+  return { kind: 'out', out: top[Math.floor(rng() * top.length)]!, drawn: true };
+}
+
+export function elimApply(
+  st: ImElimState,
+  round: ImRound,
+  out: string,
+  votes: Record<string, string>,
+  revote: boolean,
+  drawn: boolean,
+): ImElimState {
+  const step: ImElimStep = { round: elimRoundNo(st), out, role: round.roles[out]!.kind, votes: { ...votes }, revote, drawn };
+  return { ...st, alive: st.alive.filter((id) => id !== out), steps: [...st.steps, step] };
+}
+
+export type ImWinner = 'innocents' | 'impostors';
+
+/**
+ * Fim da partida, conferido a cada eliminação: não sobrou impostor (inocentes vencem); impostores vivos iguais ou mais que
+ * inocentes vivos (impostores vencem na hora); acabaram as rodadas com impostor vivo (impostores vencem).
+ */
+export function elimOutcome(st: ImElimState, round: ImRound): ImWinner | null {
+  const outsiders = st.alive.filter((id) => round.roles[id]!.kind !== 'civil').length;
+  const civils = st.alive.length - outsiders;
+  if (outsiders === 0) return 'innocents';
+  if (outsiders >= civils) return 'impostors';
+  if (st.steps.length >= st.total) return 'impostors';
+  return null;
+}
+
+/** Pontos da eliminação: o time inteiro ganha, inclusive quem já foi eliminado. */
+export function scoreElimination(ids: readonly string[], round: ImRound, st: ImElimState, winner: ImWinner): ImResult {
+  const outsiders = ids.filter((id) => round.roles[id]!.kind !== 'civil');
+  const points: Record<string, number> = Object.fromEntries(ids.map((id) => [id, 0]));
+  const counts: Record<string, number> = {};
+  for (const step of st.steps) {
+    for (const [voter, target] of Object.entries(step.votes)) {
+      counts[target] = (counts[target] ?? 0) + 1;
+      if (round.roles[voter]?.kind === 'civil' && outsiders.includes(target)) points[voter]! += IM_POINTS.rightVote;
+    }
+  }
+  for (const id of ids) {
+    if (round.roles[id]!.kind === 'civil') {
+      if (winner === 'innocents') points[id]! += IM_POINTS.innocentsWin;
+    } else if (winner === 'impostors') points[id]! += IM_POINTS.outsiderSurvived;
+  }
+  const caught = st.steps.filter((x) => x.role !== 'civil').map((x) => x.out);
+  return { counts, caught, outsiders, innocentsWin: winner === 'innocents', points };
 }
 
 // ---- Sessão: várias partidas na mesma mesa, ranking que soma ----
@@ -359,7 +443,8 @@ export function addResult(s: ImSession, r: ImResult): ImSession {
     scores[id] = (scores[id] ?? 0) + p;
     escapes[id] = escapes[id] ?? 0;
   }
-  for (const id of r.outsiders) if (!r.caught.includes(id) || r.guessedRight.includes(id)) escapes[id] = (escapes[id] ?? 0) + 1;
+  // fuga de impostor (desempate do ranking): não foi pego, ou o time dos impostores venceu
+  for (const id of r.outsiders) if (!r.caught.includes(id) || !r.innocentsWin) escapes[id] = (escapes[id] ?? 0) + 1;
   return { scores, escapes, games: s.games + 1 };
 }
 

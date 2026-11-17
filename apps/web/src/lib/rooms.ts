@@ -44,12 +44,13 @@ export interface ColorRoomSettings {
   pickMs: number;
 }
 export type TimeRoomSettings = TimeSettings;
-/** Impostor (spec 088): rodadas de dicas, impostores (0 = surpresa), debate em ms (0 = livre), dica de tema, última chance, temas e filtros. */
+/** Impostor (spec 088): rodadas de dicas, impostores (0 = surpresa), debate em ms (0 = livre), dica de tema, como votar (um voto final ou eliminação por rodada), temas e filtros. */
 export interface ImpostorRoomSettings {
   impostors: number;
   talkMs: number;
   hint: boolean;
-  lastChance: boolean;
+  voteMode: 'final' | 'elim';
+  revealRoles: boolean;
   categories: string[];
   filters: Record<string, Record<string, string[]>>;
 }
@@ -357,7 +358,7 @@ export interface MesaState {
   session: { games: number; ranking: { id: string; points: number; position: number }[]; leaders: string[] };
   /** Só dentro da partida: */
   mode?: 'classic' | 'similar' | 'white' | 'wrong';
-  stage?: 'reveal' | 'guess' | 'judge' | 'score' | null;
+  stage?: 'reveal' | 'elim' | 'score' | null;
   participants?: { id: string; name: string }[];
   order?: string[];
   clueRound?: number;
@@ -367,22 +368,29 @@ export interface MesaState {
   seen?: string[];
   wantVote?: string[];
   voted?: string[];
-  guessed?: string[];
+  /** Quem ainda está na partida (na eliminação, quem saiu só assiste). */
+  alive?: string[];
+  voteMode?: 'final' | 'elim';
+  /** Desempate: só estes recebem votos. */
+  cands?: string[] | null;
+  revote?: boolean;
+  elim?: {
+    total: number;
+    steps: { round: number; out: string; role: 'civil' | 'impostor' | 'white' | null; votes: Record<string, string>; revote: boolean; drawn: boolean }[];
+    winner: 'innocents' | 'impostors' | null;
+    outsiders: number | null;
+  } | null;
   me?: { kind: 'civil' | 'impostor' | 'white'; text: string | null; hint: string | null; theme: string | null; knowsRole: boolean; wasSeen: boolean } | null;
   myVote?: string | null;
   result?: {
     caught: string[];
     counts: Record<string, number>;
-    canGuess: string[];
     outsiders: string[];
     innocentsWin: boolean | null;
-    guessedRight: string[];
     word: string | null;
     similar: string | null;
     gains: Record<string, number> | null;
     votes?: Record<string, string>;
-    guesses?: Record<string, string> | null;
-    judge?: Record<string, { exact: boolean; needs: boolean; yes: number; no: number; mine: boolean | null; eligible: number }> | null;
   } | null;
 }
 

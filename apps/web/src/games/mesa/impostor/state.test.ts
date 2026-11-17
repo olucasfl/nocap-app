@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { poolOk, poolSize, reducer, initial, type Action, type State } from './state';
+import { elimWinner, poolOk, poolSize, reducer, initial, type Action, type State } from './state';
 
 const run = (s: State, ...a: Action[]) => a.reduce(reducer, s);
 const NAMES = ['Sofia', 'Alexandre', 'Lúcia', 'Diego', 'Bia'];
 const base = (): State => {
   const s = NAMES.reduce((acc, name) => reducer(acc, { type: 'addPlayer', name }), initial());
-  return { ...s, settings: { ...s.settings, categories: ['comida', 'animais'], impostors: 1, rounds: 2, lastChance: true, mode: 'classic' } };
+  return { ...s, settings: { ...s.settings, categories: ['comida', 'animais'], impostors: 1, rounds: 2, voteMode: 'final', mode: 'classic' } };
 };
 
 describe('estado do Impostor (mesa)', () => {
@@ -49,7 +49,7 @@ describe('estado do Impostor (mesa)', () => {
     expect(poolSize(base())).toBeGreaterThan(100);
   });
 
-  it('partida completa: papéis, rodadas de dicas, voto secreto, chute e placar', () => {
+  it('partida completa: papéis, rodadas de dicas, voto secreto e placar', () => {
     let s = run(base(), { type: 'start' });
     expect(s.phase).toBe('reveal');
     expect(Object.keys(s.round!.roles)).toHaveLength(5);
@@ -73,11 +73,7 @@ describe('estado do Impostor (mesa)', () => {
     }
     expect(s.phase).toBe('result');
     expect(s.result!.caught).toEqual([imp]);
-    expect(s.result!.canGuess).toEqual([imp]);
-    s = run(s, { type: 'guess', text: 'nada a ver' });
-    // chute errado vai para a tela de resultado do chute; "nada a ver" não é parecido, mas o grupo decide
-    expect(s.phase).toBe('guessres');
-    s = run(s, { type: 'judge', id: imp, ok: false }, { type: 'finish' });
+    s = run(s, { type: 'finish' });
     expect(s.phase).toBe('score');
     expect(s.session.games).toBe(1);
     expect(s.result!.innocentsWin).toBe(true);
@@ -89,15 +85,6 @@ describe('estado do Impostor (mesa)', () => {
     expect(s.session.games).toBe(1);
     expect(s.game).toBe(1);
     expect(s.history.used).toHaveLength(1);
-  });
-  it('sem última chance, o resultado vai direto ao placar', () => {
-    let s = run({ ...base(), settings: { ...base().settings, lastChance: false } }, { type: 'start' });
-    for (let i = 0; i < 5; i++) s = run(s, { type: 'seen' });
-    s = run(s, { type: 'go', phase: 'vote' });
-    for (let i = 0; i < 5; i++) s = run(s, { type: 'castVote', target: s.players.find((p) => p.id !== s.players[s.voter]!.id)!.id });
-    expect(s.result!.canGuess).toEqual([]);
-    s = run(s, { type: 'finish' });
-    expect(s.phase).toBe('score');
   });
   it('continuar jogando mantém o ranking; entra gente nova do zero e quem saiu deixa o ranking', () => {
     let s = run(base(), { type: 'start' });
@@ -147,18 +134,117 @@ describe('estado do Impostor (mesa)', () => {
     expect(s.phase).toBe('talk');
   });
 
-  it('chute aceito pelo grupo faz o impostor ganhar', () => {
-    let s = run(base(), { type: 'start' });
-    for (let i = 0; i < 5; i++) s = run(s, { type: 'seen' });
-    s = run(s, { type: 'go', phase: 'vote' });
-    const imp = Object.entries(s.round!.roles).find(([, r]) => r.kind === 'impostor')![0];
-    for (let i = 0; i < 5; i++) {
-      s = run(s, { type: 'voteReady' });
-      const me = s.players[s.voter]!.id;
-      s = run(s, { type: 'castVote', target: me === imp ? s.players.find((p) => p.id !== imp)!.id : imp });
-    }
-    s = run(s, { type: 'guess', text: 'sinonimo qualquer' }, { type: 'judge', id: imp, ok: true }, { type: 'finish' });
-    expect(s.result!.guessedRight).toEqual([imp]);
-    expect(s.result!.innocentsWin).toBe(false);
+  describe('eliminação', () => {
+    const elimBase = (players: number, impostors: number, rounds = 3): State => {
+      let s = initial();
+      for (let i = 0; i < players; i++) s = reducer(s, { type: 'addPlayer', name: `J${i + 1}` });
+      s = { ...s, settings: { ...s.settings, categories: ['comida', 'animais'], impostors, rounds, voteMode: 'elim', mode: 'classic' } };
+      s = run(s, { type: 'start' });
+      for (let i = 0; i < players; i++) s = run(s, { type: 'seen' });
+      return s;
+    };
+    const toVote = (s: State) => run(s, { type: 'clueNext' }, { type: 'clueNext' });
+    /** Todos os vivos votam no mesmo alvo (quem for o alvo vota em outra pessoa). */
+    const allVote = (s: State, target: string) => {
+      let st = s;
+      const n = st.elim!.alive.length;
+      for (let i = 0; i < n; i++) {
+        st = run(st, { type: 'voteReady' });
+        const me = st.elim!.alive[st.voter]!;
+        const t = me === target ? st.elim!.alive.find((x) => x !== target)! : target;
+        st = run(st, { type: 'castVote', target: t });
+      }
+      return st;
+    };
+    const outsiderOf = (s: State) => Object.entries(s.round!.roles).filter(([, r]) => r.kind !== 'civil').map(([id]) => id);
+
+    it('depois das palavras vem a votação (sem debate) e sai um', () => {
+      let s = toVote(elimBase(6, 1));
+      expect(s.phase).toBe('vote');
+      expect(s.elim!.alive).toHaveLength(6);
+      const civil = Object.entries(s.round!.roles).find(([, r]) => r.kind === 'civil')![0];
+      s = allVote(s, civil);
+      expect(s.phase).toBe('elimres');
+      expect(s.elim!.alive).toHaveLength(5);
+      expect(s.elim!.steps[0]!.out).toBe(civil);
+    });
+    it('um impostor só e pego na rodada 1: acaba na hora e os inocentes vencem', () => {
+      let s = toVote(elimBase(6, 1));
+      const imp = outsiderOf(s)[0]!;
+      s = allVote(s, imp);
+      expect(s.phase).toBe('elimres');
+      expect(elimWinner(s)).toBe('innocents');
+      s = run(s, { type: 'elimNext' });
+      expect(s.phase).toBe('score');
+      expect(s.result!.innocentsWin).toBe(true);
+    });
+    it('inocente eliminado: segue para a rodada 2 só com os vivos', () => {
+      let s = toVote(elimBase(6, 1));
+      const civil = Object.entries(s.round!.roles).find(([, r]) => r.kind === 'civil')![0];
+      s = allVote(s, civil);
+      expect(elimWinner(s)).toBeNull();
+      s = run(s, { type: 'elimNext' });
+      expect(s.phase).toBe('clues');
+      expect(s.clueRound).toBe(2);
+      expect(s.clueStep).toBe('brief');
+      expect(s.elim!.alive).not.toContain(civil);
+    });
+    it('3 impostores pedidos em 4 jogadores: sorteia só 1 (limite da eliminação)', () => {
+      const s = elimBase(4, 3);
+      expect(outsiderOf(s)).toHaveLength(1);
+    });
+    it('2 impostores com 2 rodadas pedidas: o jogo ganha 3 rodadas', () => {
+      const s = elimBase(6, 2, 2);
+      expect(s.elim!.total).toBe(3);
+    });
+    it('empate: volta só com os empatados e na segunda vez sempre sai alguém', () => {
+      let s = toVote(elimBase(6, 1));
+      const [a, b] = s.elim!.alive;
+      // a e b votam um no outro; os outros 4 se dividem 2 a 2: empate 3 x 3
+      for (let i = 0; i < s.elim!.alive.length; i++) {
+        s = run(s, { type: 'voteReady' });
+        const target = i === 0 ? b! : i === 1 ? a! : i < 4 ? a! : b!;
+        s = run(s, { type: 'castVote', target });
+      }
+      expect(s.phase).toBe('vote');
+      expect(s.elimCands).toEqual([a, b]);
+      expect(s.elimRevote).toBe(true);
+      expect(s.voter).toBe(0);
+      // segunda votação empatada de novo: sorteio, sempre sai alguém
+      for (let i = 0; i < s.elim!.alive.length; i++) {
+        s = run(s, { type: 'voteReady' });
+        const me = s.elim!.alive[s.voter]!;
+        const target = me === a ? b! : me === b ? a! : (i % 2 === 0 ? a! : b!);
+        s = run(s, { type: 'castVote', target });
+      }
+      expect(s.phase).toBe('elimres');
+      expect(s.elim!.alive).toHaveLength(5);
+      expect([a, b]).toContain(s.elim!.steps[0]!.out);
+    });
+    it('os dois impostores saem: inocentes vencem; eliminados também pontuam', () => {
+      let s = toVote(elimBase(6, 2));
+      const [i1, i2] = outsiderOf(s);
+      s = allVote(s, i1!);
+      expect(elimWinner(s)).toBeNull();
+      s = run(s, { type: 'elimNext' }, { type: 'clueNext' }, { type: 'clueNext' });
+      expect(s.phase).toBe('vote');
+      s = allVote(s, i2!);
+      expect(elimWinner(s)).toBe('innocents');
+      s = run(s, { type: 'elimNext' });
+      expect(s.phase).toBe('score');
+      const civils = s.players.filter((p) => s.round!.roles[p.id]!.kind === 'civil');
+      for (const c of civils) expect(s.result!.points[c.id]).toBeGreaterThanOrEqual(2);
+    });
+    it('erros dos inocentes dão a vitória aos impostores (empate numérico)', () => {
+      let s = toVote(elimBase(6, 2));
+      const civils = s.players.filter((p) => s.round!.roles[p.id]!.kind === 'civil').map((p) => p.id);
+      s = allVote(s, civils[0]!);
+      s = run(s, { type: 'elimNext' }, { type: 'clueNext' }, { type: 'clueNext' });
+      s = allVote(s, civils[1]!);
+      expect(elimWinner(s)).toBe('impostors');
+      s = run(s, { type: 'elimNext' });
+      expect(s.result!.innocentsWin).toBe(false);
+    });
   });
 });
+

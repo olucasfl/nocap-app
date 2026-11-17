@@ -827,3 +827,14 @@
 /* revelação e resultado do chute: sempre em coluna, mesmo em celular deitado (a lista de quem votou rola) */
 .im-body.im-revbody { flex-direction: column; align-items: center; justify-content: flex-start; text-align: center; gap: 12px; }
 .im-body.im-revbody > * { flex-shrink: 0; max-width: 100%; }
+
+/* eliminação */
+.im-row.votemode { flex-direction: column; align-items: stretch; gap: 10px; }
+.im-seg.im-seg2 { grid-template-columns: 1fr 1fr; }
+.im-rolecard { width: 100%; max-width: 420px; padding: 14px 16px; border-radius: 22px; text-align: center; font: 800 20px var(--display); animation: im-flipcard 0.7s var(--ease) both; }
+.im-rolecard.ok { background: var(--green); color: #07140d; }
+.im-rolecard.bad { background: #ff7a5c; color: #1b0a05; }
+.im-rolecard.hidden { background: var(--surface2); color: var(--muted); }
+@keyframes im-flipcard { from { opacity: 0; transform: rotateX(90deg) scale(0.8); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .im-rolecard { animation: none; } }
+.im-seg button[aria-checked='true'] { background: var(--text); color: var(--bg); }
