@@ -237,3 +237,31 @@ export function Ceremony({ many, culprits, voters, onReveal }: CeremonyProps) {
     </div>
   );
 }
+
+/** De onde vieram os pontos de uma pessoa na partida: cada motivo com os pontos e o total no fim. */
+export interface PointReason { kind: 'rightVote' | 'innocentsWin' | 'outsiderSurvived' | 'outsiderTeamWin'; points: number; rounds?: number[] }
+const REASON_TEXT: Record<PointReason['kind'], string> = {
+  rightVote: 'Votou em um impostor de verdade',
+  innocentsWin: 'Os inocentes venceram',
+  outsiderSurvived: 'Escapou sem ser pego(a)',
+  outsiderTeamWin: 'Os impostores venceram',
+};
+export function PointsSheet({ name, reasons, sessionTotal, onClose }: { name: string; reasons: PointReason[]; sessionTotal: number; onClose: () => void }) {
+  const total = reasons.reduce((a, r) => a + r.points, 0);
+  return (
+    <Sheet title={`Pontos de ${name}`} onClose={onClose}>
+      <ul className="im-reasons" data-testid="im-reasons">
+        {reasons.length === 0 && <li className="im-reason none"><span>Nenhum ponto nesta partida.</span></li>}
+        {reasons.map((r, i) => (
+          <li key={i} className="im-reason">
+            <b>+{r.points}</b>
+            <span>{REASON_TEXT[r.kind]}{r.rounds && r.rounds.length > 0 ? ` (${r.rounds.length === 1 ? 'rodada' : 'rodadas'} ${r.rounds.join(', ')})` : ''}</span>
+          </li>
+        ))}
+      </ul>
+      <div className="im-reason-total"><span>Total da partida</span><b>{total} {total === 1 ? 'ponto' : 'pontos'}</b></div>
+      <p className="im-sub center">No ranking da sessão: <b>{sessionTotal}</b> pts</p>
+      <Primary sound="confirm" onClick={onClose}>Fechar</Primary>
+    </Sheet>
+  );
+}

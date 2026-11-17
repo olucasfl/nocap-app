@@ -86,6 +86,11 @@ for (const d of DEVICES.filter((x) => only.includes(x.name))) {
     await expect(page.getByTestId('im-again')).toBeVisible();
     expect(sawVote && sawElim).toBe(true);
     await check('ranking');
+    // toque em uma pessoa: de onde vieram os pontos dela
+    await page.locator('[data-testid^="im-points-"]').first().click();
+    await expect(page.getByTestId('im-reasons')).toBeVisible();
+    await check('pontos-da-pessoa');
+    await page.keyboard.press('Escape');
     writeFileSync(`${OUT}/${d.name}.json`, JSON.stringify(report, null, 1));
     expect(report, report.join('\n')).toEqual([]);
   });

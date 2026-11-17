@@ -391,6 +391,7 @@ export interface MesaState {
     word: string | null;
     similar: string | null;
     gains: Record<string, number> | null;
+    breakdown?: Record<string, { kind: 'rightVote' | 'innocentsWin' | 'outsiderSurvived' | 'outsiderTeamWin'; points: number; rounds?: number[] }[]> | null;
     votes?: Record<string, string>;
   } | null;
 }

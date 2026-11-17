@@ -173,7 +173,7 @@ describe('resultado e pontos', () => {
 
 describe('sessão e ranking', () => {
   const res = (points: Record<string, number>, out: string[] = [], caught: string[] = []) => ({
-    counts: {}, caught, outsiders: out, innocentsWin: false, points,
+    counts: {}, caught, outsiders: out, innocentsWin: false, points, breakdown: {},
   });
   it('soma as partidas', () => {
     let s = newSession(['a', 'b', 'c']);
@@ -350,5 +350,17 @@ describe('eliminação', () => {
     // no voto final a pergunta é uma só
     const f = drawRound({ ids, settings: base({ mode: 'wrong' }), words, questions: qs, seed: 's', roundIndex: 0, history: IM_EMPTY_HISTORY });
     expect(f.qa).toBeUndefined();
+  });
+
+  it('o detalhamento dos pontos fecha com o total de cada pessoa', () => {
+    const round = draw();
+    const imp = Object.entries(round.roles).find(([, r]) => r.kind === 'impostor')![0];
+    const civils = ids.filter((i) => i !== imp);
+    const votes = Object.fromEntries(civils.map((i) => [i, imp]));
+    const r = scoreResult({ ids, round, votes });
+    for (const id of ids) expect(r.breakdown[id]!.reduce((a, x) => a + x.points, 0)).toBe(r.points[id]);
+    expect(r.breakdown[civils[0]!]!.map((x) => x.kind)).toEqual(['rightVote', 'innocentsWin']);
+    const esc = scoreResult({ ids, round, votes: Object.fromEntries(ids.filter((i) => i !== civils[0]).map((i) => [i, civils[0]!])) });
+    expect(esc.breakdown[imp]!.map((x) => x.kind)).toEqual(['outsiderSurvived']);
   });
 });

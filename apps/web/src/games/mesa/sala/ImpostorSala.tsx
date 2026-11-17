@@ -9,7 +9,7 @@ import { nameOf, useLooks, type Snap } from './looks';
 import { play, preloadSounds } from '../impostor/audio';
 import { CategorySheet, MODES, TIMES, fmtTime } from '../impostor/screens';
 import type { Action, State } from '../impostor/state';
-import { Alert, AskCtx, Ceremony, ArrowIcon, Coin, Confirm, GearIcon, Icon, Primary, Stepper, Switch, TopBar, Words, useAsk, useFlash, type AskCfg } from '../impostor/ui';
+import { Alert, AskCtx, Ceremony, PointsSheet, ArrowIcon, Coin, Confirm, GearIcon, Icon, Primary, Stepper, Switch, TopBar, Words, useAsk, useFlash, type AskCfg } from '../impostor/ui';
 import '../impostor/impostor.css';
 
 type Cfg = { rounds: number; impostors: number; talkMs: number; hint: boolean; voteMode: 'final' | 'elim'; revealRoles: boolean; categories: string[]; filters: Record<string, Record<string, string[]>> };
@@ -483,6 +483,7 @@ function Reveal({ snap }: { snap: Snap }) {
   const ask = useAsk();
   const isHost = snap.hostId === me;
   const win = r?.innocentsWin === true;
+  const [who, setWho] = useState<string | null>(null);
   const onReveal = useCallback(() => play('reveal'), []);
   useEffect(() => {
     if (mesa.stage !== 'score') return undefined;
@@ -526,7 +527,7 @@ function Reveal({ snap }: { snap: Snap }) {
           {rows.map((row, i) => {
             const g = r.gains?.[row.id] ?? 0;
             return (
-              <li key={row.id} className={`im-srow${lead.has(row.id) ? ' im-top1' : ''}`} style={{ '--i': i } as CSSProperties}>
+              <li key={row.id} className={`im-srow im-click${lead.has(row.id) ? ' im-top1' : ''}`} style={{ '--i': i } as CSSProperties} role="button" tabIndex={0} aria-label={`Ver de onde vieram os pontos de ${nameOf(snap, row.id)}`} data-testid={`sala-points-${row.id}`} onClick={() => { play('tap'); setWho(row.id); }} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setWho(row.id); } }}>
                 <span className="im-pos">{row.position}</span>
                 <span className="im-cw"><Coin avatar={looks(row.id).avatar} color={looks(row.id).color} size="sm" />{lead.has(row.id) && <Icon name="coroa" size={34} className="im-crown" />}</span>
                 <b>{nameOf(snap, row.id)}</b>
@@ -536,7 +537,9 @@ function Reveal({ snap }: { snap: Snap }) {
             );
           })}
         </ol>
+        <p className="im-sub center im-pointshint">Toque em uma pessoa para ver de onde vieram os pontos.</p>
       </div>
+      {who && <PointsSheet name={nameOf(snap, who)} reasons={r.breakdown?.[who] ?? []} sessionTotal={rows.find((x) => x.id === who)?.points ?? 0} onClose={() => setWho(null)} />}
       <div className="im-foot im-endfoot">
         {isHost ? (
           <>

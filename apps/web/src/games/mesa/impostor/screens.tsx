@@ -7,7 +7,7 @@ import {
 import { AVATARS, CATEGORY_ICONS, PEOPLE } from './assets';
 import { play } from './audio';
 import { clueRounds, elimWinner, isAlive, poolOk, poolSize, voterIds, type Action, type Player, type State } from './state';
-import { Alert, ArrowIcon, CheckIcon, Coin, GearIcon, Icon, PlusIcon, Primary, Sheet, Steps, Stepper, Switch, TopBar, Words, useAsk, useFlash } from './ui';
+import { Alert, ArrowIcon, CheckIcon, Coin, GearIcon, Icon, PlusIcon, PointsSheet, Primary, Sheet, Steps, Stepper, Switch, TopBar, Words, useAsk, useFlash } from './ui';
 
 interface P {
   s: State;
@@ -777,6 +777,7 @@ export function ScoreScreen({ s, d }: P) {
   const ask = useAsk();
   const rows = sessionRanking(s.session);
   const lead = new Set(leaders(s.session).length === rows.length ? [] : leaders(s.session));
+  const [who, setWho] = useState<string | null>(null);
   const r = s.result!;
   const word = s.round!.civilText;
   useEffect(() => {
@@ -797,7 +798,7 @@ export function ScoreScreen({ s, d }: P) {
           {rows.map((row, i) => {
             const g = s.gains[row.id] ?? 0;
             return (
-              <li key={row.id} className={`im-srow${lead.has(row.id) ? ' im-top1' : ''}`} style={{ '--i': i } as CSSProperties}>
+              <li key={row.id} className={`im-srow im-click${lead.has(row.id) ? ' im-top1' : ''}`} style={{ '--i': i } as CSSProperties} role="button" tabIndex={0} aria-label={`Ver de onde vieram os pontos de ${by(s, row.id).name}`} data-testid={`im-points-${row.id}`} onClick={() => { play('tap'); setWho(row.id); }} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setWho(row.id); } }}>
                 <span className="im-pos">{row.position}</span>
                 <span className="im-cw">{coinOf(s, row.id, 'sm')}{lead.has(row.id) && <Icon name="coroa" size={34} className="im-crown" />}</span>
                 <b>{by(s, row.id).name}</b>
@@ -807,7 +808,9 @@ export function ScoreScreen({ s, d }: P) {
             );
           })}
         </ol>
+        <p className="im-sub center im-pointshint">Toque em uma pessoa para ver de onde vieram os pontos.</p>
       </div>
+      {who && <PointsSheet name={by(s, who).name} reasons={r.breakdown[who] ?? []} sessionTotal={s.session.scores[who] ?? 0} onClose={() => setWho(null)} />}
       <div className="im-foot im-endfoot">
         <Primary sound="shuffle" testId="im-again" onClick={() => d({ type: 'start' })}>Continuar jogando (Tudo igual) <ArrowIcon /></Primary>
         <Primary tone="ghost" testId="im-more" onClick={() => d({ type: 'go', phase: 'players' })}>Alterar tema ou adicionar pessoas</Primary>

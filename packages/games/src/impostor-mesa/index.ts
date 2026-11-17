@@ -297,6 +297,14 @@ export interface ImResultInput {
   votes: Readonly<Record<string, string>>;
 }
 
+/** De onde veio cada ponto de uma pessoa na partida (o popup do ranking mostra isso). */
+export interface ImPointReason {
+  kind: 'rightVote' | 'innocentsWin' | 'outsiderSurvived' | 'outsiderTeamWin';
+  points: number;
+  /** Eliminação: em quais rodadas o voto acertou. */
+  rounds?: number[];
+}
+
 export interface ImResult {
   counts: Record<string, number>;
   /** Impostores pegos (no voto final) ou eliminados (na eliminação). */
@@ -304,6 +312,8 @@ export interface ImResult {
   outsiders: string[];
   innocentsWin: boolean;
   points: Record<string, number>;
+  /** Motivos dos pontos de cada pessoa (a soma de cada lista é o total da pessoa). */
+  breakdown: Record<string, ImPointReason[]>;
 }
 
 /** Resultado e pontos de uma partida de voto final (a votação já terminou). */
@@ -315,16 +325,18 @@ export function scoreResult(input: ImResultInput): ImResult {
   const innocentsWin = caught.length === outsiders.length;
 
   const points: Record<string, number> = Object.fromEntries(ids.map((id) => [id, 0]));
+  const breakdown: Record<string, ImPointReason[]> = Object.fromEntries(ids.map((id) => [id, []]));
+  const add = (id: string, r: ImPointReason) => { points[id]! += r.points; breakdown[id]!.push(r); };
   for (const [voter, target] of Object.entries(votes)) {
     if (voter === target || !ids.includes(voter) || !ids.includes(target)) continue;
-    if (round.roles[voter]!.kind === 'civil' && outsiders.includes(target)) points[voter]! += IM_POINTS.rightVote;
+    if (round.roles[voter]!.kind === 'civil' && outsiders.includes(target)) add(voter, { kind: 'rightVote', points: IM_POINTS.rightVote });
   }
   for (const id of ids) {
     if (round.roles[id]!.kind === 'civil') {
-      if (innocentsWin) points[id]! += IM_POINTS.innocentsWin;
-    } else if (!caught.includes(id)) points[id]! += IM_POINTS.outsiderSurvived;
+      if (innocentsWin) add(id, { kind: 'innocentsWin', points: IM_POINTS.innocentsWin });
+    } else if (!caught.includes(id)) add(id, { kind: 'outsiderSurvived', points: IM_POINTS.outsiderSurvived });
   }
-  return { counts: tally.counts, caught, outsiders, innocentsWin, points };
+  return { counts: tally.counts, caught, outsiders, innocentsWin, points, breakdown };
 }
 
 // ---- Eliminação: a mesa vota a cada rodada e uma pessoa sai ----
@@ -419,20 +431,27 @@ export function elimOutcome(st: ImElimState, round: ImRound): ImWinner | null {
 export function scoreElimination(ids: readonly string[], round: ImRound, st: ImElimState, winner: ImWinner): ImResult {
   const outsiders = ids.filter((id) => round.roles[id]!.kind !== 'civil');
   const points: Record<string, number> = Object.fromEntries(ids.map((id) => [id, 0]));
+  const breakdown: Record<string, ImPointReason[]> = Object.fromEntries(ids.map((id) => [id, []]));
   const counts: Record<string, number> = {};
+  const hits: Record<string, number[]> = {};
   for (const step of st.steps) {
     for (const [voter, target] of Object.entries(step.votes)) {
       counts[target] = (counts[target] ?? 0) + 1;
-      if (round.roles[voter]?.kind === 'civil' && outsiders.includes(target)) points[voter]! += IM_POINTS.rightVote;
+      if (round.roles[voter]?.kind === 'civil' && outsiders.includes(target)) (hits[voter] ??= []).push(step.round);
     }
+  }
+  for (const [id, rounds] of Object.entries(hits)) {
+    const total = rounds.length * IM_POINTS.rightVote;
+    points[id]! += total;
+    breakdown[id]!.push({ kind: 'rightVote', points: total, rounds });
   }
   for (const id of ids) {
     if (round.roles[id]!.kind === 'civil') {
-      if (winner === 'innocents') points[id]! += IM_POINTS.innocentsWin;
-    } else if (winner === 'impostors') points[id]! += IM_POINTS.outsiderSurvived;
+      if (winner === 'innocents') { points[id]! += IM_POINTS.innocentsWin; breakdown[id]!.push({ kind: 'innocentsWin', points: IM_POINTS.innocentsWin }); }
+    } else if (winner === 'impostors') { points[id]! += IM_POINTS.outsiderSurvived; breakdown[id]!.push({ kind: 'outsiderTeamWin', points: IM_POINTS.outsiderSurvived }); }
   }
   const caught = st.steps.filter((x) => x.role !== 'civil').map((x) => x.out);
-  return { counts, caught, outsiders, innocentsWin: winner === 'innocents', points };
+  return { counts, caught, outsiders, innocentsWin: winner === 'innocents', points, breakdown };
 }
 
 // ---- Sessão: várias partidas na mesma mesa, ranking que soma ----

@@ -601,6 +601,7 @@ export class ImpostorSalaEngine extends ColorRoomEngine {
               word: this.stage === 'score' ? r.civilText : null,
               similar: this.stage === 'score' ? r.outsiderText : null,
               gains: this.stage === 'score' ? this.gains : null,
+              breakdown: this.stage === 'score' ? this.result.breakdown : null,
             }
           : null,
       },
