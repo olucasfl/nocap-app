@@ -195,6 +195,8 @@ describe('Impostor em sala', () => {
     const clueRound = (e: ImpostorSalaEngine, tag: string) => {
       const n = (snap(e, 'ana').mesa.alive as string[]).length;
       for (let i = 0; i < n; i++) e.submitClue(snap(e, 'ana').mesa.speaker as string, `d${tag}${i}x`);
+      // debate: todos os vivos tocam em "ir votar"
+      for (const id of snap(e, 'ana').mesa.alive as string[]) e.readyToVote(id);
     };
     const voteAll = (e: ImpostorSalaEngine, target: string) => {
       for (const id of snap(e, 'ana').mesa.alive as string[]) {
@@ -203,7 +205,7 @@ describe('Impostor em sala', () => {
       }
     };
 
-    it('depois das dicas vai direto à votação (sem debate); quem sai é eliminado e a partida acaba com 1 impostor pego', () => {
+    it('depois das dicas vem o debate e a votação; quem sai é eliminado e a partida acaba com 1 impostor pego', () => {
       const { e, ids, adv } = elimSetup(6, 1);
       clueRound(e, 'a');
       expect(snap(e, 'ana').phase).toBe('vote');
@@ -237,6 +239,7 @@ describe('Impostor em sala', () => {
         expect(sp).not.toBe(civil);
         e.submitClue(sp, `r2d${i}x`);
       }
+      for (const id of snap(e, 'ana').mesa.alive as string[]) e.readyToVote(id);
       expect(() => e.castVote(civil, ids.find((x) => x !== civil)!)).toThrow(/eliminado/);
       const voter = (snap(e, 'ana').mesa.alive as string[])[0]!;
       expect(() => e.castVote(voter, civil)).toThrow(/eliminada/);
@@ -295,6 +298,43 @@ describe('Impostor em sala', () => {
       const done = snap(e, 'ana');
       expect(done.mesa.stage).toBe('score');
       expect(done.mesa.result.innocentsWin).toBe(false);
+    });
+
+    it('antes da votação tem debate, e quem saiu não participa dele', () => {
+      const { e, ids, adv } = elimSetup(6, 1);
+      const n = ids.length;
+      for (let i = 0; i < n; i++) e.submitClue(snap(e, 'ana').mesa.speaker as string, `x${i}x`);
+      expect(snap(e, 'ana').phase).toBe('pick');
+      for (const id of ids) e.readyToVote(id);
+      const civil = ids.find((id) => roleOf(e, id) === 'civil')!;
+      voteAll(e, civil);
+      adv(SALA_ELIM_MS + 1);
+      for (let i = 0; i < 5; i++) e.submitClue(snap(e, 'ana').mesa.speaker as string, `y${i}x`);
+      expect(snap(e, 'ana').phase).toBe('pick');
+      expect(() => e.readyToVote(civil)).toThrow(/eliminado/);
+    });
+    it('modo de perguntas: cada rodada tem pergunta nova e todo mundo vivo vê de novo', () => {
+      const r = setup(6, { voteMode: 'elim', impostors: 1, rounds: 3, revealRoles: true });
+      r.e.configure('ana', { mode: 'wrong' } as never);
+      for (const id of r.ids.slice(1)) r.e.setReady(id, true);
+      r.e.start('ana');
+      const { e, ids, adv } = r;
+      const q1 = ids.map((id) => snap(e, id).mesa.me.text as string);
+      for (const id of ids) e.markSeen(id);
+      clueRound(e, 'a');
+      const civil = ids.find((id) => roleOf(e, id) === 'civil')!;
+      voteAll(e, civil);
+      adv(SALA_ELIM_MS + 1);
+      const s = snap(e, 'ana');
+      expect(s.phase).toBe('show');
+      const alive = s.mesa.alive as string[];
+      const q2 = alive.map((id) => snap(e, id).mesa.me.text as string);
+      const civilAlive = alive.find((id) => roleOf(e, id) === 'civil')!;
+      expect(snap(e, civilAlive).mesa.me.text).not.toBe(q1[ids.indexOf(civilAlive)]);
+      void q2;
+      for (const id of alive) e.markSeen(id);
+      expect(snap(e, 'ana').phase).toBe('play');
+      expect(snap(e, 'ana').mesa.clueRound).toBe(2);
     });
   });
 });

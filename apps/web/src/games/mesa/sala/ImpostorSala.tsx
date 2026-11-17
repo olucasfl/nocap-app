@@ -281,7 +281,8 @@ function SeeRole({ snap }: { snap: Snap }) {
   const outsider = me.kind !== 'civil' && me.knowsRole;
   const lk = looks(snap.me!);
   const done = mesa.seen?.length ?? 0;
-  const total = mesa.participants?.length ?? 0;
+  const total = mesa.alive?.length ?? mesa.participants?.length ?? 0;
+  if (mesa.alive && !mesa.alive.includes(snap.me!)) return <Waiting snap={snap} text={`Você foi eliminado(a). Agora só assiste (${done} de ${total} viram a nova pergunta).`} />;
   return (
     <div className="im-screen im-centered" data-testid="sala-role">
       <TopBar leave onBack={leave} center={<span className="im-status">{done} de {total} viram</span>} />
@@ -408,7 +409,7 @@ function Debate({ snap }: { snap: Snap }) {
   const clues = (mesa.clues ?? []).filter((c) => c.word);
   return (
     <div className="im-screen im-centered" data-testid="sala-debate">
-      <TopBar leave onBack={leave} center={<span className="im-status">Debate · {wanted.length} de {mesa.participants?.length ?? 0} querem votar</span>} />
+      <TopBar leave onBack={leave} center={<span className="im-status">Debate · {wanted.length} de {mesa.alive?.length ?? mesa.participants?.length ?? 0} querem votar</span>} />
       <div className="im-body im-mid">
         {total > 0 && left !== null ? (
           <div className={`im-timer${low ? ' low' : ''}`} role="timer" aria-label="Tempo do debate">
@@ -424,7 +425,7 @@ function Debate({ snap }: { snap: Snap }) {
         </ul>
       </div>
       <div className="im-foot">
-        <Primary sound="confirm" tone={mineWant ? 'ghost' : 'orange'} disabled={!mesa.participants?.some((p) => p.id === me)} testId="sala-tovote" onClick={() => sendRoom('tovote')}>
+        <Primary sound="confirm" tone={mineWant ? 'ghost' : 'orange'} disabled={!(mesa.alive ?? (mesa.participants ?? []).map((p) => p.id)).includes(me)} testId="sala-tovote" onClick={() => sendRoom('tovote')}>
           {mineWant ? 'Esperando os outros...' : 'Quero votar'} {!mineWant && <ArrowIcon />}
         </Primary>
       </div>
@@ -527,7 +528,7 @@ function Reveal({ snap }: { snap: Snap }) {
           {rows.map((row, i) => {
             const g = r.gains?.[row.id] ?? 0;
             return (
-              <li key={row.id} className={`im-srow${lead.has(row.id) ? ' lead' : ''}`} style={{ '--i': i } as CSSProperties}>
+              <li key={row.id} className={`im-srow${lead.has(row.id) ? ' im-top1' : ''}`} style={{ '--i': i } as CSSProperties}>
                 <span className="im-pos">{row.position}</span>
                 <span className="im-cw"><Coin avatar={looks(row.id).avatar} color={looks(row.id).color} size="sm" />{lead.has(row.id) && <Icon name="coroa" size={34} className="im-crown" />}</span>
                 <b>{nameOf(snap, row.id)}</b>

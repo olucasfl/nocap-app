@@ -217,8 +217,13 @@ test('impostor sala eliminação', async ({ browser }, info) => {
     await hold(p);
     await p.getByTestId('sala-seen').click();
   }
-  // dicas da rodada 1 e votação de eliminação (sem debate)
+  // dicas da rodada 1, debate e votação de eliminação
   for (let g = 0; g < 60 && !(await A.getByTestId('sala-vote').isVisible().catch(() => false)); g++) {
+    // debate antes da votação: todos tocam em "quero votar"
+    if (await A.getByTestId('sala-debate').isVisible().catch(() => false)) {
+      for (const p of all) await p.getByTestId('sala-tovote').click();
+      break;
+    }
     for (const p of all) {
       if (await p.getByTestId('sala-clue-input').isVisible().catch(() => false)) {
         await p.getByTestId('sala-clue-input').fill(`dica${g}x`);

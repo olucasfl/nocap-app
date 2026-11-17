@@ -515,22 +515,30 @@ export function VoteScreen({ s, d }: P) {
   const headline = elim ? 'Quem vai ser eliminado(a)?' : 'Quem é o impostor?';
   const status = `${elim ? 'Eliminação' : 'Votação'} · ${s.voter + 1} de ${ids.length}`;
   const tieNames = s.elimCands ? s.elimCands.map((id) => by(s, id).name).join(' e ') : '';
-  if (s.voteStep === 'pass') {
+  // a vez de cada um aparece por um instante e a votação abre sozinha (nos testes automáticos fica manual, igual às cartelas)
+  const pass = s.voteStep === 'pass';
+  useEffect(() => {
+    if (!pass) return undefined;
+    let manual = false;
+    try { manual = localStorage.getItem('im-nosplash') === '1'; } catch { /* sem armazenamento */ }
+    if (manual) return undefined;
+    const t = window.setTimeout(() => d({ type: 'voteReady' }), 1500);
+    return () => window.clearTimeout(t);
+  }, [pass, s.voter, s.elimRevote]);
+  if (pass) {
     return (
-      <div className="im-screen im-centered" data-testid="im-votepass">
+      <div className="im-screen im-centered" data-testid="im-votepass" onClick={() => d({ type: 'voteReady' })}>
         <TopBar leave onBack={leave} center={<span className="im-status">{status}</span>} />
         <div className="im-body im-mid">
           {elim && s.elimRevote && s.voter === 0 && <span className="im-banner warn" data-testid="im-tie">Empate! Votem de novo</span>}
           <Coin avatar={me.avatar} color={myIdx} size="xl" className="im-pop" />
           <div>
-            <p className="im-hint im-rise" style={{ '--d': 2 } as CSSProperties}>Passe o celular para</p>
+            <p className="im-hint im-rise" style={{ '--d': 2 } as CSSProperties}>Agora é a vez de</p>
             <div className="im-name"><Words text={me.name} /></div>
           </div>
-          <p className="im-sub im-rise" style={{ '--d': 4 } as CSSProperties}>
-            {elim && s.elimRevote ? `Só vale votar em ${tieNames}. ` : ''}É a vez de {me.name} votar.
-          </p>
+          {elim && s.elimRevote && <p className="im-sub im-rise" style={{ '--d': 4 } as CSSProperties}>Só vale votar em {tieNames}.</p>}
         </div>
-        <div className="im-foot"><Primary testId="im-voteready" sound="pass" onClick={() => d({ type: 'voteReady' })}>Sou eu, votar <ArrowIcon /></Primary></div>
+        <div className="im-foot"><button type="button" className="im-link" data-testid="im-voteready" onClick={(e) => { e.stopPropagation(); d({ type: 'voteReady' }); }}>Toque para votar</button></div>
       </div>
     );
   }
@@ -540,7 +548,7 @@ export function VoteScreen({ s, d }: P) {
       <div className="im-body">
         <div className="im-whovotes">
           <Coin avatar={me.avatar} color={myIdx} size="md" />
-          <div><p className="im-hint">Passe o celular para</p><b className="im-votername">{me.name}</b></div>
+          <div><p className="im-hint">Vez de</p><b className="im-votername">{me.name}</b></div>
           <Icon name="lupa" size={52} className="im-lupa" />
         </div>
         <h2 className="im-t"><Words text={headline} /></h2>
@@ -796,7 +804,7 @@ export function ScoreScreen({ s, d }: P) {
           {rows.map((row, i) => {
             const g = s.gains[row.id] ?? 0;
             return (
-              <li key={row.id} className={`im-srow${lead.has(row.id) ? ' lead' : ''}`} style={{ '--i': i } as CSSProperties}>
+              <li key={row.id} className={`im-srow${lead.has(row.id) ? ' im-top1' : ''}`} style={{ '--i': i } as CSSProperties}>
                 <span className="im-pos">{row.position}</span>
                 <span className="im-cw">{coinOf(s, row.id, 'sm')}{lead.has(row.id) && <Icon name="coroa" size={34} className="im-crown" />}</span>
                 <b>{by(s, row.id).name}</b>
@@ -878,7 +886,7 @@ export function RankSheet({ s, onClose }: { s: State; onClose: () => void }) {
     <Sheet title={`Ranking · ${s.session.games} ${s.session.games === 1 ? 'partida' : 'partidas'}`} onClose={onClose}>
       <ol className="im-score compact">
         {rows.map((row) => (
-          <li key={row.id} className={`im-srow${lead.has(row.id) ? ' lead' : ''}`}>
+          <li key={row.id} className={`im-srow${lead.has(row.id) ? ' im-top1' : ''}`}>
             <span className="im-pos">{row.position}</span><span className="im-cw">{coinOf(s, row.id, 'sm')}{lead.has(row.id) && <Icon name="coroa" size={34} className="im-crown" />}</span><b>{by(s, row.id).name}</b>
             <span className="im-pts">{row.points}<small>pts</small></span>
           </li>

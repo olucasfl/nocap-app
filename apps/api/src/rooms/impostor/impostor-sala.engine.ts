@@ -15,6 +15,7 @@ import {
   elimOutcome,
   elimResolve,
   elimStart,
+  imRoundView,
   imImpostorLimit,
   scoreElimination,
   imEffectiveMode,
@@ -228,13 +229,14 @@ export class ImpostorSalaEngine extends ColorRoomEngine {
   }
 
   private present(): string[] {
-    return this.participants.filter((id) => this.members.get(id)?.connected);
+    return this.participants.filter((id) => this.members.get(id)?.connected && this.alive(id));
   }
 
   /** "Já vi o meu papel". Quando todos viram, começam as dicas. */
   markSeen(id: string) {
     this.requirePhase('show');
     if (!this.participants.includes(id)) throw new RoomError('Você não está nesta partida');
+    if (!this.alive(id)) throw new RoomError('Você foi eliminado(a): agora só assiste');
     this.seen.add(id);
     this.reevaluate();
   }
@@ -279,10 +281,9 @@ export class ImpostorSalaEngine extends ColorRoomEngine {
     return !this.elim || this.elim.alive.includes(id);
   }
 
-  /** Fim da rodada de dicas: eliminação vota na hora; voto final vai ao debate. */
+  /** Fim da rodada de dicas: vem o debate (na eliminação, antes de cada votação). */
   private afterClues() {
-    if (this.elim) this.toVote();
-    else this.toDebate();
+    this.toDebate();
   }
 
   private advanceTurn() {
@@ -334,6 +335,7 @@ export class ImpostorSalaEngine extends ColorRoomEngine {
   readyToVote(id: string) {
     this.requirePhase('pick');
     if (!this.participants.includes(id)) throw new RoomError('Você não está nesta partida');
+    if (!this.alive(id)) throw new RoomError('Você foi eliminado(a): agora só assiste');
     this.wantVote.add(id);
     this.reevaluate();
   }
@@ -404,6 +406,13 @@ export class ImpostorSalaEngine extends ColorRoomEngine {
     this.turn = 0;
     this.clues = this.clues.filter((c) => c.round < this.clueRound);
     this.stage = null;
+    if (this.round!.qa) {
+      // modo de perguntas: cada rodada tem uma pergunta nova, que todo mundo vivo vê de novo em segredo
+      this.seen = new Set();
+      this.phase = 'show';
+      this.phaseEndsAt = this.now() + SALA_SHOW_MS;
+      return;
+    }
     this.phase = 'play';
     this.skipAbsent();
     if (this.phase === 'play') this.phaseEndsAt = this.now() + SALA_CLUE_MS;
@@ -541,6 +550,8 @@ export class ImpostorSalaEngine extends ColorRoomEngine {
     };
     if (!inGame || !r) return { mesa: base };
     const my = me ? r.roles[me] : undefined;
+    // modo de perguntas com eliminação: a pergunta de cada rodada
+    const roundView = me && r.qa ? imRoundView(r, me, (this.elim?.steps.length ?? 0) + 1) : null;
     return {
       mesa: {
         ...base,
@@ -577,7 +588,7 @@ export class ImpostorSalaEngine extends ColorRoomEngine {
           : null,
         // o papel é segredo: cada pessoa recebe só o seu (todos aparecem quando o placar fecha)
         me: my
-          ? { kind: my.kind, text: my.text, hint: my.hint, theme: my.theme, knowsRole: my.knowsRole, wasSeen: this.seen.has(me!) }
+          ? { kind: my.kind, text: roundView ? roundView.text : my.text, hint: my.hint, theme: roundView ? roundView.theme : my.theme, knowsRole: my.knowsRole, wasSeen: this.seen.has(me!) }
           : null,
         myVote: me ? (this.votes[me] ?? null) : null,
         result: this.result && (this.stage === 'reveal' || finished)
