@@ -1356,3 +1356,10 @@
 @media (prefers-reduced-motion: reduce) {
   .gpx-mud i { animation-duration: 0.01s; }
 }
+
+/* Celular: o aviso grande ao pegar um item cobre a pista; o item já aparece no quadro de itens */
+@media (pointer: coarse) {
+  .gpx-item-toast {
+    display: none;
+  }
+}
