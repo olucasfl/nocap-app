@@ -143,7 +143,7 @@ export function PlayersScreen({ s, d, exit }: P) {
 /* ---------- Modo ---------- */
 export const MODES: { id: ImMode; label: string; desc: string; tone: string; icon: string }[] = [
   { id: 'classic', label: 'Clássico', desc: 'Todos veem a palavra. Menos o impostor.', tone: '#ff6a2b', icon: 'modo-classico' },
-  { id: 'similar', label: 'Palavra parecida', desc: 'O impostor recebe outra palavra, parecida. Ele nem sabe.', tone: '#2f5bff', icon: 'modo-parecida' },
+  { id: 'similar', label: 'Palavra parecida', desc: 'Todos recebem uma palavra. O impostor recebe outra, parecida (por exemplo, Pizza e Lasanha), e nem sabe que é o impostor. Cada um diz uma palavra sobre a sua, sem entregar qual é, e o grupo descobre quem falou algo fora do assunto.', tone: '#2f5bff', icon: 'modo-parecida' },
   { id: 'white', label: 'Sem palavra', desc: 'Dois impostores: um recebe uma palavra parecida e nem sabe que é impostor; o outro não recebe nada e precisa disfarçar.', tone: '#ffd23f', icon: 'modo-semword' },
   { id: 'wrong', label: 'Resposta errada', desc: 'Todos recebem uma pergunta e respondem em voz alta, uma vez só. Menos o impostor: ele recebe uma pergunta parecida e nem sabe. Escutem as respostas e descubram quem respondeu algo estranho. Não tem chute no final.', tone: '#33c27f', icon: 'modo-errada' },
 ];
