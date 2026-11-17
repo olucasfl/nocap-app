@@ -1,6 +1,6 @@
 # Spec 088: Impostor (primeiro jogo da categoria "Dinner Table Games")
 
-Pedido do Lucas (17/11/2026). Status: **rascunho, regras aprovadas em 17/11/2026; falta o OK do design e do conteúdo (seção 8).**
+Pedido do Lucas (17/11/2026). Status: **rascunho; regras e categorias aprovadas em 17/11/2026; falta o OK do design (seção 8).**
 
 ## 1. A categoria "Dinner Table Games"
 
@@ -45,10 +45,38 @@ Por rodada: inocente que votou num impostor de verdade +2; inocentes ganham +1 s
 
 ## 7. Conteúdo
 
-- **Palavras:** categorias em pt-BR com palavras e **pares parecidos** (para o modo 2/3) e **perguntas pareadas** (modo 4). Meta da primeira versão: **10 categorias, 500+ palavras com par**, 100+ pares de perguntas. Categorias: **a definir com o Lucas (17/11/2026)**. Já decidido: **sem categoria apimentada/adulta**; **uma categoria de Clash Royale** com as cartas e personagens mais conhecidos (lista conferida no wiki do jogo).
-- Conteúdo só no servidor para a sala; no modo Mesa vai no app (offline). Teste barra palavra repetida, par igual à palavra e categoria vazia.
-- A palavra parecida precisa ser **boa**: parecida o bastante para confundir, diferente o bastante para as dicas diferirem (cachorro/lobo, não cachorro/foguete).
-- **Sem assinatura, anúncio ou pacote travado** (queixa número 1 dos apps).
+**Regra de ouro (Lucas, 17/11/2026): toda palavra tem que ser conhecida e famosa. Nada difícil, nada obscuro** (cidade ou país desconhecido, jogador pouco famoso, marca de nicho). Cada palavra entra com uma nota de fama (1 = todo mundo conhece, 2 = a maioria conhece); só 1 e 2 são aceitas, e o teste barra o resto.
+
+**As 10 categorias da primeira versão** (decididas em 17/11/2026):
+
+| Categoria | O que entra | Personalização (tela de configuração) |
+|---|---|---|
+| Comida | pratos, doces, bebidas, frutas, lanches | tipo: pratos, doces, bebidas, frutas, lanches (marcar vários) |
+| Animais | bichos conhecidos de casa, fazenda, selva, mar | tipo: de casa, fazenda, selva, mar, aves |
+| Lugares | **cidades e países famosos** (Paris, Nova York, Rio de Janeiro, Japão, Itália) | só países, só cidades; Brasil ou mundo todo |
+| Marcas | marcas famosas (Nike, Coca-Cola, Apple, Netflix, McDonald's) | tipo: tecnologia, comida e bebida, roupa e esporte, entretenimento |
+| Esportes | modalidades, equipamentos e eventos conhecidos | modalidades, equipamentos, eventos (Copa, Olimpíada) |
+| Filmes e Séries | títulos famosos | filmes, séries, animações; nacionais ou internacionais |
+| Super-heróis e vilões | Marvel, DC e clássicos | heróis, vilões, os dois; Marvel, DC |
+| Músicas e bandas | artistas e músicas muito conhecidos | bandas, cantores, músicas; Brasil ou mundo todo |
+| Clash Royale | cartas e personagens mais conhecidos (conferidos no wiki do jogo), mais algumas coisas do jogo | tipo: tropas, campeões, feitiços, construções, torres; coisas do jogo (elixir, baú, arena, coroa) |
+| Futebol | jogadores, times, seleções, estádios | ver abaixo |
+
+**Futebol, personalização completa (pedido do Lucas):** o host escolhe o que entra:
+- **O quê:** jogadores, times, seleções (marcar um ou mais; também estádios e técnicos famosos, desligados por padrão).
+- **Times:** só do Brasil ou do mundo todo (ou os dois).
+- **Jogadores:** só do Brasil ou do mundo todo; **só jogadores famosos** (lista curada, atuais e lendas).
+- **Seleções:** entram ou não.
+
+**Como a personalização funciona (vale para todas):** cada palavra tem etiquetas (`tipo`, `origem: brasil|mundo`, `fama`). A tela de configuração mostra, para cada categoria marcada, as opções dela; o jogo sorteia só entre as palavras que passam no filtro. Se o filtro deixar menos de 30 palavras, o app avisa e não deixa começar. Várias categorias podem ser marcadas ao mesmo tempo (a palavra sai de qualquer uma).
+
+**Pares parecidos e perguntas pareadas:** cada palavra precisa de um par para o modo "palavra parecida" (Mega Cavaleiro/P.E.K.K.A., Messi/Cristiano Ronaldo, Paris/Londres, Coca-Cola/Pepsi) e as categorias têm perguntas pareadas para o modo "resposta errada". O par também tem que ser famoso e do mesmo tipo.
+
+**Tamanho da primeira versão:** 60 a 100 palavras por categoria (de 600 a 1000 no total), cada uma com par e etiquetas, mais 100+ pares de perguntas.
+
+**Sem categoria apimentada/adulta.** Sem assinatura, anúncio ou pacote travado.
+
+**Onde mora:** no modo Mesa (offline) o conteúdo vai no app; na sala vai no servidor. Testes barram palavra repetida, par igual à palavra, par de outro tipo, fama fora de 1 a 2 e categoria com menos de 60 palavras.
 
 ## 8. Design (decisão do Lucas pendente)
 
