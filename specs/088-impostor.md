@@ -59,7 +59,7 @@ Por rodada: inocente que votou num impostor de verdade +2; inocentes ganham +1 s
 | Filmes e Séries | títulos famosos | filmes, séries, animações; nacionais ou internacionais |
 | Super-heróis e vilões | Marvel, DC e clássicos | heróis, vilões, os dois; Marvel, DC |
 | Músicas e bandas | artistas e músicas muito conhecidos | bandas, cantores, músicas; Brasil ou mundo todo |
-| Clash Royale | cartas e personagens mais conhecidos (conferidos no wiki do jogo), mais algumas coisas do jogo | tipo: tropas, campeões, feitiços, construções, torres; coisas do jogo (elixir, baú, arena, coroa) |
+| Clash Royale | **só cartas** (tropas, campeões, feitiços, construções, torres), as mais conhecidas, conferidas no wiki do jogo; nada de arena, baú, elixir ou ouro | tipo: tropas, campeões, feitiços, construções, torres |
 | Futebol | jogadores, times, seleções, estádios | ver abaixo |
 
 **Futebol, personalização completa (pedido do Lucas):** o host escolhe o que entra:
@@ -73,6 +73,8 @@ Por rodada: inocente que votou num impostor de verdade +2; inocentes ganham +1 s
 **Pares parecidos e perguntas pareadas:** cada palavra precisa de um par para o modo "palavra parecida" (Mega Cavaleiro/P.E.K.K.A., Messi/Cristiano Ronaldo, Paris/Londres, Coca-Cola/Pepsi) e as categorias têm perguntas pareadas para o modo "resposta errada". O par também tem que ser famoso e do mesmo tipo.
 
 **Tamanho da primeira versão:** 60 a 100 palavras por categoria (de 600 a 1000 no total), cada uma com par e etiquetas, mais 100+ pares de perguntas.
+
+**Aprovação das listas (pedido do Lucas, 17/11/2026): antes de entrar no jogo, cada lista de palavras é enviada ao Lucas inteira, categoria por categoria, e só entra depois do OK dele.** Nada de palavra nova sem ele ver.
 
 **Sem categoria apimentada/adulta.** Sem assinatura, anúncio ou pacote travado.
 
