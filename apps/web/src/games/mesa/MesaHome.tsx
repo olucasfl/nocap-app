@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { NicknameDialog } from '@/components/NicknameDialog';
 import { RoomConflictDialog } from '@/components/RoomConflictDialog';
@@ -7,16 +7,92 @@ import { useRoomEntry } from '@/lib/my-room';
 import { preloadImages } from './impostor/assets';
 import { play, preloadSounds } from './impostor/audio';
 import { Alert, ArrowIcon, Icon, Primary, TopBar, Words, useFlash } from './impostor/ui';
+import { MESA_FUTURE, MESA_GAMES, type MesaGameInfo } from './games';
 import './impostor/impostor.css';
 
 type Step = 'home' | 'mode' | 'online';
 
-const STEPS: { icon: string; title: string; text: string }[] = [
-  { icon: 'olhos', title: 'Veja o seu papel', text: 'Todo mundo recebe a mesma palavra secreta, menos o impostor.' },
-  { icon: 'ampulheta', title: 'Deem dicas e debatam', text: 'Uma palavra por pessoa, rodada a rodada. Depois, conversem.' },
-  { icon: 'lupa', title: 'Votem no impostor', text: 'Quem acerta o impostor ganha pontos. O ranking soma as partidas.' },
-];
-const FACTS = ['3 a 15 pessoas', '4 modos de jogo', '10 temas', 'Sem anúncio'];
+/** Um cartão do carrossel: capa, nome, descrição e, no que já existe, como se joga. O que ainda não existe leva o selo "Em breve". */
+function GameSlide({ g, index, total }: { g: MesaGameInfo; index: number; total: number }) {
+  return (
+    <section className={`im-car-slide${g.soon ? ' soon' : ''}`} aria-label={`${g.name}, ${index + 1} de ${total}`} data-testid={`mesa-slide-${g.id}`}>
+      <div className="im-cover">
+        <div className="im-cover-art">
+          {g.soon ? (
+            <div className="im-soon-art" aria-hidden="true">
+              <Icon name={g.icon ?? 'jogo'} size={150} className="im-soon-ic" />
+              <span className="im-stamp">Em breve</span>
+            </div>
+          ) : <TableArt />}
+        </div>
+        <div className="im-cover-text">
+          <h1 className="im-t im-cover-t">{g.name}</h1>
+          <p className="im-sub">{g.desc}</p>
+          <ul className="im-facts">{g.facts.map((f) => <li key={f}>{f}</li>)}</ul>
+        </div>
+        {g.steps && (
+          <ol className="im-how">
+            {g.steps.map((st) => (
+              <li key={st.title}>
+                <Icon name={st.icon} size={44} className="im-how-ic" />
+                <span><b>{st.title}</b><small>{st.text}</small></span>
+              </li>
+            ))}
+          </ol>
+        )}
+        {g.soon && <p className="im-sub im-soon-note">Estamos preparando este jogo. Em breve ele aparece aqui.</p>}
+      </div>
+    </section>
+  );
+}
+
+/** Carrossel de jogos: passa com as setas, deslizando o dedo ou com as setas do teclado. */
+function GamesCarousel({ active, onActive }: { active: number; onActive: (i: number) => void }) {
+  const track = useRef<HTMLDivElement>(null);
+  const total = MESA_GAMES.length;
+  const goTo = useCallback((i: number) => {
+    const el = track.current;
+    if (!el) return;
+    const n = Math.max(0, Math.min(total - 1, i));
+    const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el.scrollTo({ left: n * el.clientWidth, behavior: smooth ? 'smooth' : 'auto' });
+    onActive(n);
+    play('tap');
+  }, [onActive, total]);
+  const onScroll = () => {
+    const el = track.current;
+    if (!el) return;
+    const n = Math.round(el.scrollLeft / Math.max(1, el.clientWidth));
+    if (n !== active) onActive(n);
+  };
+  return (
+    <div
+      className="im-car"
+      role="region"
+      aria-roledescription="carrossel"
+      aria-label="Jogos de mesa"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'ArrowRight') { e.preventDefault(); goTo(active + 1); } else if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(active - 1); } }}
+    >
+      <div className="im-car-track" ref={track} onScroll={onScroll} data-testid="mesa-carousel">
+        {MESA_GAMES.map((g, i) => <GameSlide key={g.id} g={g} index={i} total={total} />)}
+      </div>
+      <div className="im-car-nav">
+        <button type="button" className="im-iconbtn im-car-arrow" aria-label="Jogo anterior" data-testid="mesa-prev" disabled={active === 0} onClick={() => goTo(active - 1)}>
+          <span className="im-arrow-flip"><ArrowIcon /></span>
+        </button>
+        <div className="im-dots" role="tablist" aria-label="Escolher jogo">
+          {MESA_GAMES.map((g, i) => (
+            <button key={g.id} type="button" role="tab" aria-selected={i === active} aria-label={g.name} className={`im-dot${i === active ? ' on' : ''}`} onClick={() => goTo(i)} />
+          ))}
+        </div>
+        <button type="button" className="im-iconbtn im-car-arrow" aria-label="Próximo jogo" data-testid="mesa-next" disabled={active === total - 1} onClick={() => goTo(active + 1)}>
+          <ArrowIcon />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 /**
  * A casa do Dinner Table Games (spec 088). Três telas: a apresentação do Impostor, a escolha de como jogar (online ou
@@ -27,6 +103,7 @@ export function MesaHome() {
   const navigate = useNavigate();
   const entry = useRoomEntry({ resume: true });
   const [step, setStep] = useState<Step>('home');
+  const [game, setGame] = useState(0);
   const [back, setBack] = useState(false);
   const [code, setCode] = useState('');
   const [flash, show, clear] = useFlash();
@@ -69,24 +146,21 @@ export function MesaHome() {
         {step === 'home' && (
           <div className="im-screen" data-testid="mesa-step-home">
             <TopBar onBack={leave} center={<span className="im-status">Dinner Table Games</span>} />
-            <div className="im-body im-cover">
-              <div className="im-cover-art im-rise" style={{ '--d': 1 } as CSSProperties}><TableArt /></div>
-              <div className="im-cover-text">
-                <h1 className="im-t im-cover-t"><Words text="Impostor" /></h1>
-                <p className="im-sub im-rise" style={{ '--d': 3 } as CSSProperties}>O jogo de dedução para jogar em roda: ache quem está fingindo saber a palavra.</p>
-                <ul className="im-facts im-rise" style={{ '--d': 4 } as CSSProperties}>{FACTS.map((f) => <li key={f}>{f}</li>)}</ul>
-              </div>
-              <ol className="im-how">
-                {STEPS.map((s, i) => (
-                  <li key={s.title} className="im-rise" style={{ '--d': i + 5 } as CSSProperties}>
-                    <Icon name={s.icon} size={44} className="im-how-ic" />
-                    <span><b>{s.title}</b><small>{s.text}</small></span>
-                  </li>
-                ))}
-              </ol>
+            <div className="im-body im-gamesbody">
+              <GamesCarousel active={game} onActive={setGame} />
+              <section className="im-future" aria-label="Jogos que vêm por aí" data-testid="mesa-future">
+                <h2 className="im-future-t">Vem por aí</h2>
+                <ul>
+                  {MESA_FUTURE.map((f, i) => (
+                    <li key={f.name}><span className="im-future-n">{i + 1}</span><span><b>{f.name}</b><small>{f.text}</small></span></li>
+                  ))}
+                </ul>
+              </section>
             </div>
             <div className="im-foot">
-              <Primary testId="mesa-jogar" onClick={() => go('mode')}>Jogar Impostor <ArrowIcon /></Primary>
+              {MESA_GAMES[game]!.soon
+                ? <Primary testId="mesa-soon" tone="ghost" disabled sound={null} onClick={() => undefined}>{MESA_GAMES[game]!.name}: em breve</Primary>
+                : <Primary testId="mesa-jogar" onClick={() => go('mode')}>Jogar {MESA_GAMES[game]!.name} <ArrowIcon /></Primary>}
               <button type="button" className="im-link" data-testid="mesa-sair" onClick={leave}>Sair do Dinner Table Games</button>
             </div>
           </div>
