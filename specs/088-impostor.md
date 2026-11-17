@@ -51,7 +51,7 @@ Uma **sessão** é a mesa inteira jogando várias partidas seguidas, na mesma sa
 
 ## 6. Pontuação (placar acumulado, escolhido em 17/11/2026)
 
-Por rodada (a partida inteira, depois das N rodadas de dicas): inocente que votou num impostor de verdade +2; inocentes ganham +2 se a rodada for deles; impostor que não foi pego +5; impostor pego que adivinha a palavra +1; Mr. White que adivinha +2 (reajustado em 17/11/2026: escapar vale bem mais que a vitória dos inocentes e o chute certo vale pouco). Os pontos **somam durante toda a sessão** (seção 5b); não há número fixo de partidas. Empate no ranking final: ganha quem foi impostor e sobreviveu mais vezes. Sem ranking global: partida de mesa e sala nunca entram no ranking (regra do app).
+Por rodada (a partida inteira, depois das N rodadas de dicas): inocente que votou num impostor de verdade +2; inocentes ganham +2 se a rodada for deles; impostor que não foi pego +5 (reajustado em 17/11/2026: escapar vale bem mais que a vitória dos inocentes). Sem chute. Os pontos **somam durante toda a sessão** (seção 5b); não há número fixo de partidas. Empate no ranking final: ganha quem foi impostor e sobreviveu mais vezes. Sem ranking global: partida de mesa e sala nunca entram no ranking (regra do app).
 
 ## 7. Conteúdo
 
@@ -154,5 +154,6 @@ Fakeit (smak apps, 5M+ downloads, 4,5): palavra secreta, impostor sem palavra, d
 - O tema aparece para quem recebe palavra; a dica de tema do impostor só com mais de 2 temas.
 - O som do resultado toca 0,7 s depois de a tela entrar (junto da revelação).
 - Revelação: pergunta "já revelar?" (só na mesa), suspense, nome, quem votou nele, veredito. Na sala a cerimônia dura 11 s e segue sozinha.
-- Chute: igual sem acento/maiúscula/espaço vale; diferente vai ao grupo ("Vale?"). Modo de perguntas não tem chute.
+- A "última chance" (chute) foi removida de tudo (pedido do Lucas: confuso).
+- **Modo Eliminação** (opção "Como votar"): a mesa vota a cada rodada e uma pessoa sai (só assiste). Fim: sem impostor vivo = inocentes; impostores vivos >= inocentes vivos ou rodadas acabaram = impostores. Impostores < metade da mesa; rodadas >= impostores + 1 (o app ajusta, até 7). Empate: segunda votação só nos empatados; empatou de novo: sorteio. "Mostrar quem era" só com 2 ou mais impostores. Pontos: time inteiro, inclusive eliminados. Vale na mesa e na sala, nos quatro modos (clássico, parecida, sem palavra, resposta errada).
 - Pódio: medalhas por posição na lista (1º troféu, 2º prata, 3º bronze), mesmo com empate de pontos.
