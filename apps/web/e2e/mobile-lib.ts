@@ -160,6 +160,16 @@ export async function metrics(page: Page, d: Dev, pass: 'top' | 'end') {
       const right = tr.right - br.right;
       if (left > 1.5 || right > 1.5) add('TRANSBORDA', el, `texto passa da caixa ${Math.round(Math.max(left, right))}px (${label(box)})`);
     }
+    // blocos de tamanho fixo numa coluna do Impostor têm que estar no meio (não colados à esquerda)
+    for (const el of document.querySelectorAll<HTMLElement>('.im-mid > *')) {
+      const par = el.parentElement!;
+      if (getComputedStyle(par).flexDirection !== 'column') continue;
+      const r = visible(el);
+      const pr = par.getBoundingClientRect();
+      if (!r || r.width > pr.width * 0.92 || r.width < 60 || r.bottom < 0 || r.top > vh) continue;
+      const off = Math.abs(r.left + r.width / 2 - (pr.left + pr.width / 2));
+      if (off > 6) add('DESCENTRALIZADO', el, `fora do centro ${Math.round(off)}px`);
+    }
     // texto coberto por outro bloco (cortado atrás de um cartão) e barra de rolagem visível
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
     for (let n = walker.nextNode(); n; n = walker.nextNode()) {

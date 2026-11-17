@@ -30,6 +30,10 @@ export interface State {
   clueRound: number;
   /** Quem fala agora na rodada de dicas (índice na ordem de fala). */
   turn: number;
+  /** Dentro de cada rodada de dicas: primeiro as instruções, depois a hora de dizer as palavras. */
+  clueStep: 'brief' | 'say';
+  /** Cada voto começa com "passe o celular para..."; só depois aparece a escolha. */
+  voteStep: 'pass' | 'pick';
   voter: number;
   votes: Record<string, string>;
   result: ImResult | null;
@@ -65,7 +69,7 @@ export function initial(): State {
   }
   return {
     phase: 'players', back: false, players, settings, seed: randomSeed(), game: 0, history: IM_EMPTY_HISTORY, round: null,
-    seen: 0, clueRound: 1, turn: 0, voter: 0, votes: {}, result: null, guesses: {}, guessIdx: 0,
+    seen: 0, clueRound: 1, turn: 0, clueStep: 'brief', voteStep: 'pass', voter: 0, votes: {}, result: null, guesses: {}, guessIdx: 0,
     session: newSession(players.map((p) => p.id)), shift: 'calm', gains: {}, error: null,
   };
 }
@@ -88,7 +92,8 @@ export type Action =
   | { type: 'toggleCategory'; id: string }
   | { type: 'start' }
   | { type: 'seen' }
-  | { type: 'nextTurn' }
+  | { type: 'clueNext' }
+  | { type: 'voteReady' }
   | { type: 'castVote'; target: string }
   | { type: 'guess'; text: string }
   | { type: 'finish' }
@@ -108,7 +113,7 @@ export const poolOk = (s: Pick<State, 'settings' | 'players'>) => poolSize(s) >=
 export function reducer(s: State, a: Action): State {
   switch (a.type) {
     case 'go':
-      return { ...s, phase: a.phase, back: !!a.back, error: null };
+      return { ...s, phase: a.phase, back: !!a.back, error: null, ...(a.phase === 'vote' ? { voteStep: 'pass' as const } : {}) };
     case 'addPlayer': {
       const name = a.name.trim().slice(0, 14);
       if (!name || s.players.length >= IM_MAX_PLAYERS) return s;
@@ -117,10 +122,20 @@ export function reducer(s: State, a: Action): State {
       const free = AVATARS.filter((x) => !taken.has(x));
       const avatar = a.avatar && !taken.has(a.avatar) ? a.avatar : (free[Math.floor(Math.random() * free.length)] ?? AVATARS[0]!);
       const id = `p${Math.max(0, ...s.players.map((p) => Number(p.id.slice(1)))) + 1}`;
-      return { ...s, players: [...s.players, { id, name, avatar }] };
+      // quem entra no meio da sessão já aparece no ranking com 0 ponto
+      const session = { ...s.session, scores: { ...s.session.scores, [id]: 0 }, escapes: { ...s.session.escapes, [id]: 0 } };
+      return { ...s, players: [...s.players, { id, name, avatar }], session };
     }
     case 'removePlayer':
-      return { ...s, players: s.players.filter((p) => p.id !== a.id) };
+      return {
+        ...s,
+        players: s.players.filter((p) => p.id !== a.id),
+        session: {
+          ...s.session,
+          scores: Object.fromEntries(Object.entries(s.session.scores).filter(([k]) => k !== a.id)),
+          escapes: Object.fromEntries(Object.entries(s.session.escapes).filter(([k]) => k !== a.id)),
+        },
+      };
     case 'setAvatar':
       return { ...s, players: s.players.map((p) => (p.id === a.id ? { ...p, avatar: a.avatar } : p)) };
     case 'settings':
@@ -152,21 +167,23 @@ export function reducer(s: State, a: Action): State {
       // o ranking continua igual; quem entrou agora começa do zero e quem saiu deixa o ranking
       const keep = (m: Record<string, number>) => Object.fromEntries(ids.map((id) => [id, m[id] ?? 0]));
       const session = { ...s.session, scores: keep(s.session.scores), escapes: keep(s.session.escapes) };
-      return { ...s, round, session, phase: 'reveal', back: false, seen: 0, clueRound: 1, turn: 0, voter: 0, votes: {}, result: null, guesses: {}, guessIdx: 0 };
+      return { ...s, round, session, phase: 'reveal', back: false, seen: 0, clueRound: 1, turn: 0, clueStep: 'brief', voteStep: 'pass', voter: 0, votes: {}, result: null, guesses: {}, guessIdx: 0 };
     }
     case 'seen': {
       const last = s.seen >= s.players.length - 1;
-      return last ? { ...s, phase: 'clues', back: false, clueRound: 1, turn: 0 } : { ...s, phase: 'reveal', back: false, seen: s.seen + 1 };
+      return last ? { ...s, phase: 'clues', back: false, clueRound: 1, turn: 0, clueStep: 'brief' } : { ...s, phase: 'reveal', back: false, seen: s.seen + 1 };
     }
-    case 'nextTurn': {
-      if (s.turn < s.players.length - 1) return { ...s, turn: s.turn + 1 };
-      if (s.clueRound < s.settings.rounds) return { ...s, clueRound: s.clueRound + 1, turn: 0 };
+    case 'clueNext': {
+      if (s.clueStep === 'brief') return { ...s, clueStep: 'say' };
+      if (s.clueRound < s.settings.rounds) return { ...s, clueRound: s.clueRound + 1, clueStep: 'brief' };
       return { ...s, phase: 'talk', back: false };
     }
+    case 'voteReady':
+      return { ...s, voteStep: 'pick' };
     case 'castVote': {
       const voterId = s.players[s.voter]!.id;
       const votes = { ...s.votes, [voterId]: a.target };
-      if (s.voter < s.players.length - 1) return { ...s, votes, voter: s.voter + 1, phase: 'vote', back: false };
+      if (s.voter < s.players.length - 1) return { ...s, votes, voter: s.voter + 1, voteStep: 'pass', phase: 'vote', back: false };
       const ids = s.players.map((p) => p.id);
       const result = scoreResult({ ids, round: s.round!, votes, lastChance: s.settings.lastChance });
       return { ...s, votes, result, phase: 'result', back: false, guessIdx: 0 };

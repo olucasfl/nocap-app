@@ -244,4 +244,18 @@ describe('sessão e ranking', () => {
     expect(IM_POINTS.outsiderGuessed).toBeLessThan(IM_POINTS.rightVote);
     expect(IM_POINTS.whiteGuessed).toBeLessThan(IM_POINTS.outsiderSurvived);
   });
+
+  it('o tema aparece para quem recebe palavra; a dica do impostor só com mais de 2 temas', () => {
+    const labels = { comida: 'Comida', futebol: 'Futebol', animais: 'Animais' };
+    const go = (cats: string[], hint: boolean) =>
+      drawRound({ ids, settings: base({ categories: cats, hint }), words, categoryLabels: labels, seed: 's', roundIndex: 0, history: IM_EMPTY_HISTORY });
+    const three = go(['comida', 'futebol', 'animais'], true);
+    const civ = Object.values(three.roles).find((x) => x.kind === 'civil')!;
+    expect(civ.theme).toBe(labels[words.find((w) => w.text === three.civilText)!.category as keyof typeof labels]);
+    expect(Object.values(three.roles).find((x) => x.kind === 'impostor')!.hint).toBe(civ.theme);
+    const two = go(['comida', 'futebol'], true);
+    expect(Object.values(two.roles).find((x) => x.kind === 'impostor')!.hint).toBeNull();
+    const off = go(['comida', 'futebol', 'animais'], false);
+    expect(Object.values(off.roles).find((x) => x.kind === 'impostor')!.hint).toBeNull();
+  });
 });

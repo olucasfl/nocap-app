@@ -100,12 +100,18 @@ for (const d of DEVICES.filter((x) => only.includes(x.name))) {
     await expect(page.getByRole('alertdialog')).toBeVisible();
     await check('confirmar-sair');
     await page.getByTestId('im-confirm-no').click();
-    await check('dicas');
+    await expect(page.getByTestId('im-brief')).toBeVisible();
+    await check('instrucoes');
+    await page.getByTestId('im-next').click();
+    await check('hora-de-dizer');
     for (let guard = 0; guard < 60 && (await page.getByTestId('im-next').count()); guard++) await page.getByTestId('im-next').click();
     await expect(page.getByTestId('im-talk')).toBeVisible();
     await check('debate');
     await toVote(page);
     for (let i = 0; i < n; i++) {
+      await expect(page.getByTestId('im-votepass')).toBeVisible();
+      if (i === 0) await check('passe-o-celular');
+      await page.getByTestId('im-voteready').click();
       if (i === 0) await check('voto');
       await page.locator('[data-testid^="im-vote-"]').first().click();
       await page.getByTestId('im-cast').click();
@@ -126,7 +132,7 @@ for (const d of DEVICES.filter((x) => only.includes(x.name))) {
     for (let i = 0; i < n; i++) { await hold(page); await page.getByTestId('im-seen').click(); }
     for (let guard = 0; guard < 60 && (await page.getByTestId('im-next').count()); guard++) await page.getByTestId('im-next').click();
     await toVote(page);
-    for (let i = 0; i < n; i++) { await page.locator('[data-testid^="im-vote-"]').first().click(); await page.getByTestId('im-cast').click(); }
+    for (let i = 0; i < n; i++) { await page.getByTestId('im-voteready').click(); await page.locator('[data-testid^="im-vote-"]').first().click(); await page.getByTestId('im-cast').click(); }
     if (await page.getByTestId('im-guess').count()) {
       await page.getByTestId('im-guess').click();
       for (let g = 0; g < 3 && (await page.getByTestId('im-guess-input').count()); g++) { await page.getByTestId('im-guess-input').fill('x'); await page.getByTestId('im-guess-send').click(); }

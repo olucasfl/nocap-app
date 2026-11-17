@@ -149,3 +149,7 @@ Fakeit (smak apps, 5M+ downloads, 4,5): palavra secreta, impostor sem palavra, d
 - `/mesa`: home descritiva -> "Jogar Impostor" -> Online (Criar sala / Entrar com código) ou Na mesa.
 - Sair da sala online volta para `/mesa`.
 - Modo Mesa começa sem jogadores; cada um adiciona nome e foto (aleatória se não escolher).
+- Rodada de dicas na mesa: tela de instruções por modo, depois "Hora de dizer as palavras" com a ordem de fala; o botão leva à próxima rodada ou ao debate.
+- Votação: antes de cada voto, "Passe o celular para X".
+- O tema aparece para quem recebe palavra; a dica de tema do impostor só com mais de 2 temas.
+- O som do resultado toca 0,7 s depois de a tela entrar (junto da revelação).

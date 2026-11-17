@@ -368,7 +368,7 @@ export interface MesaState {
   wantVote?: string[];
   voted?: string[];
   guessed?: string[];
-  me?: { kind: 'civil' | 'impostor' | 'white'; text: string | null; hint: string | null; knowsRole: boolean; wasSeen: boolean } | null;
+  me?: { kind: 'civil' | 'impostor' | 'white'; text: string | null; hint: string | null; theme: string | null; knowsRole: boolean; wasSeen: boolean } | null;
   myVote?: string | null;
   result?: {
     caught: string[];

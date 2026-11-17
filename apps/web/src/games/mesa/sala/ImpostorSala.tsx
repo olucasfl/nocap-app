@@ -169,12 +169,12 @@ function Lobby({ snap }: { snap: Snap }) {
                     );
                   })}
                 </div>
-                <p className="im-modedesc" key={mode}>{MODES.find((m) => m.id === mode)?.desc}{tooFew ? ` "Sem palavra" só com ${IM_WHITE_MIN_PLAYERS} ou mais.` : ''}</p>
+                <p className="im-modedesc" key={mode}>{MODES.find((m) => m.id === mode)?.desc}</p>
                 <div className="im-rows">
                   <div className="im-row"><div><b>Rodadas de dicas</b><small>Quantas vezes cada um dá sua dica. Em cada rodada, cada pessoa diz uma palavra sobre o tema, uma de cada vez.</small></div><Stepper value={cfg.rounds} label="rodadas" min={1} max={IM_MAX_ROUNDS} onChange={(n) => set({ rounds: n })} /></div>
                   <div className="im-row"><div><b>Impostores</b><small>{imp === 0 ? 'Número surpresa' : `Máximo para ${connected.length}: ${max}`}</small></div><Stepper value={imp} label="impostores" min={0} max={max} format={(n) => (n === 0 ? '?' : String(n))} onChange={(n) => set({ impostors: n })} /></div>
                   <div className="im-row"><div><b>Debate</b><small>Depois das dicas, todos conversam por esse tempo para descobrir quem é o impostor. Depois vem a votação.</small></div><Stepper value={ti} label="tempo do debate" min={0} max={TIMES.length - 1} format={(n) => fmtTime(TIMES[n]!)} onChange={(n) => set({ talkMs: TIMES[n]! * 1000 })} /></div>
-                  {mode === 'classic' && <div className="im-row"><div><b>Dica de categoria</b><small>O impostor vê o tema</small></div><Switch on={cfg.hint} label="Dica de categoria" onChange={(v) => set({ hint: v })} /></div>}
+                  {mode === 'classic' && cfg.categories.length > 2 && <div className="im-row"><div><b>Dica de categoria</b><small>O impostor vê o tema da palavra. Só aparece com mais de 2 temas.</small></div><Switch on={cfg.hint} label="Dica de categoria" onChange={(v) => set({ hint: v })} /></div>}
                   <div className="im-row"><div><b>Última chance</b><small>Se o impostor for pego, ainda tenta acertar a palavra. Acertando, ganha poucos pontos (os inocentes ganham mais). Escapar sem ser pego vale muito mais.</small></div><Switch on={cfg.lastChance} label="Última chance" onChange={(v) => set({ lastChance: v })} /></div>
                 </div>
                 <p className="im-instr" data-testid="sala-instr">Selecione os temas para sortear</p>
@@ -257,7 +257,7 @@ function SeeRole({ snap }: { snap: Snap }) {
           onPointerDown={(e) => { e.preventDefault(); show(); }} onPointerUp={hide} onPointerLeave={hide} onPointerCancel={hide} onContextMenu={(e) => e.preventDefault()}
           onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); show(); } }} onKeyUp={(e) => { if (e.key === ' ' || e.key === 'Enter') hide(); }}>
           <span className="im-lbl">Segure<br />para ver</span>
-          <span className={`im-secret${outsider ? ' bad' : ''}`} aria-live="polite"><small>{on ? tag : ''}</small><strong className={wrong ? 'q' : ''} data-testid="sala-secret">{on ? text : ''}</strong></span>
+          <span className={`im-secret${outsider ? ' bad' : ''}`} aria-live="polite"><small>{on ? tag : ''}</small><strong className={wrong ? 'q' : ''} data-testid="sala-secret">{on ? text : ''}</strong>{on && me.theme && !wrong && <em className="im-theme">Tema: {me.theme}</em>}</span>
         </button>
       </div>
       <div className="im-foot">
@@ -444,9 +444,11 @@ function Reveal({ snap }: { snap: Snap }) {
   const guessing = mesa.stage === 'guess';
   const canGuessMe = !!r?.canGuess.includes(me) && !(mesa.guessed ?? []).includes(me);
   const win = r?.innocentsWin === true;
+  // o som acompanha a revelação (depois do título entrar)
   useEffect(() => {
-    if (guessing) play('reveal');
-    else if (r) play(win ? 'win' : 'lose');
+    if (!guessing && !r) return undefined;
+    const t = window.setTimeout(() => play(guessing ? 'reveal' : win ? 'win' : 'lose'), 700);
+    return () => window.clearTimeout(t);
   }, [guessing, win, r]);
   useEffect(() => {
     if (mesa.stage !== 'score') return undefined;

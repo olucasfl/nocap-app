@@ -144,7 +144,7 @@ export function PlayersScreen({ s, d, exit }: P) {
 export const MODES: { id: ImMode; label: string; desc: string; tone: string; icon: string }[] = [
   { id: 'classic', label: 'Clássico', desc: 'Todos veem a palavra. Menos o impostor.', tone: '#ff6a2b', icon: 'modo-classico' },
   { id: 'similar', label: 'Palavra parecida', desc: 'O impostor recebe outra palavra, parecida. Ele nem sabe.', tone: '#2f5bff', icon: 'modo-parecida' },
-  { id: 'white', label: 'Sem palavra', desc: `Um jogador não recebe nada. Só de ${IM_WHITE_MIN_PLAYERS} pessoas.`, tone: '#ffd23f', icon: 'modo-semword' },
+  { id: 'white', label: 'Sem palavra', desc: 'Dois impostores: um recebe uma palavra parecida e nem sabe que é impostor; o outro não recebe nada e precisa disfarçar.', tone: '#ffd23f', icon: 'modo-semword' },
   { id: 'wrong', label: 'Resposta errada', desc: 'Todos respondem. Um recebeu outra pergunta.', tone: '#33c27f', icon: 'modo-errada' },
 ];
 
@@ -268,7 +268,7 @@ export function CfgScreen({ s, d }: P) {
       <Stepper value={imp} label="impostores" min={0} max={max} format={(n) => (n === 0 ? '?' : String(n))} onChange={(n) => d({ type: 'settings', patch: { impostors: n === 0 ? 'random' : n } })} /></div>,
     <div className="im-row" key="tm"><div><b>Debate</b><small>Depois das dicas, todos conversam por esse tempo para descobrir quem é o impostor. Depois vem a votação.</small></div><Stepper value={ti} label="tempo do debate" min={0} max={TIMES.length - 1} format={(n) => fmtTime(TIMES[n]!)} onChange={(n) => d({ type: 'settings', patch: { talkSeconds: TIMES[n]! } })} /></div>,
   ];
-  if (c.mode === 'classic') rows.push(<div className="im-row" key="hint"><div><b>Dica de categoria</b><small>O impostor vê o tema</small></div><Switch on={c.hint} label="Dica de categoria" onChange={(v) => d({ type: 'settings', patch: { hint: v } })} /></div>);
+  if (c.mode === 'classic' && c.categories.length > 2) rows.push(<div className="im-row" key="hint"><div><b>Dica de categoria</b><small>O impostor vê o tema da palavra. Só aparece com mais de 2 temas.</small></div><Switch on={c.hint} label="Dica de categoria" onChange={(v) => d({ type: 'settings', patch: { hint: v } })} /></div>);
   rows.push(<div className="im-row" key="last"><div><b>Última chance</b><small>Se o impostor for pego, ainda tenta acertar a palavra. Acertando, ganha poucos pontos (os inocentes ganham mais). Escapar sem ser pego vale muito mais.</small></div><Switch on={c.lastChance} label="Última chance" onChange={(v) => d({ type: 'settings', patch: { lastChance: v } })} /></div>);
   return (
     <div className="im-screen" data-testid="im-cfg">
@@ -286,7 +286,7 @@ export function CfgScreen({ s, d }: P) {
             );
           })}
         </div>
-        <p className="im-modedesc" key={c.mode} aria-live="polite">{cur.desc}{tooFew ? ` "Sem palavra" só com ${IM_WHITE_MIN_PLAYERS} ou mais pessoas.` : ''}</p>
+        <p className="im-modedesc" key={c.mode} aria-live="polite">{cur.desc}</p>
         <div className="im-rows">{rows.map((r, i) => <div key={i} className="im-rise" style={{ '--d': i + 1 } as CSSProperties}>{r}</div>)}</div>
         <div className="im-row themes">
           <div className="im-themes-h"><b>Temas</b><small>Escolha o que entra em cada tema</small></div>
@@ -354,6 +354,7 @@ export function RevealScreen({ s, d }: P) {
           <span className={`im-secret${outsider ? ' bad' : ''}`} aria-live="polite">
             <small>{on ? tag : ''}</small>
             <strong className={wrong ? 'q' : ''} data-testid="im-secret">{on ? text : ''}</strong>
+            {on && role.theme && !wrong && <em className="im-theme">Tema: {role.theme}</em>}
           </span>
         </button>
         <p className="im-hint" style={{ opacity: seen ? 1 : 0.55 }}>{seen ? 'Solte e passe adiante' : 'Só você olha. Ninguém mais.'}</p>
@@ -366,37 +367,80 @@ export function RevealScreen({ s, d }: P) {
 }
 
 /* ---------- Rodadas de dicas ---------- */
+/** Instruções da rodada de dicas, adaptadas ao modo sorteado e à rodada. */
+function briefText(mode: string, round: number): { head: string; body: string } {
+  const again = round > 1 ? ' Sem repetir nada do que já foi dito.' : '';
+  switch (mode) {
+    case 'similar':
+      return {
+        head: round > 1 ? 'Mais uma volta de palavras' : 'Cada um diz uma palavra',
+        body: `Cada um diz uma palavra que lembre a palavra que recebeu, sem deixar na cara qual é.${again} Cuidado: o impostor tem uma palavra parecida e nem sabe que é o impostor.`,
+      };
+    case 'white':
+      return {
+        head: round > 1 ? 'Mais uma volta de palavras' : 'Cada um diz uma palavra',
+        body: `Cada um diz uma palavra que lembre a sua, sem entregar qual é.${again} Um impostor recebeu uma palavra parecida; o outro não recebeu nada e vai tentar disfarçar escutando os outros.`,
+      };
+    case 'wrong':
+      return {
+        head: round > 1 ? 'Mais uma volta de respostas' : 'Cada um responde',
+        body: `Cada um responde em voz alta, em poucas palavras, a pergunta que recebeu.${again} Uma pessoa recebeu uma pergunta diferente: reparem em quem responde estranho.`,
+      };
+    default:
+      return {
+        head: round > 1 ? 'Mais uma volta de palavras' : 'Cada um diz uma palavra',
+        body: `Cada um diz uma palavra para fazer referência à palavra que recebeu, mas sem deixar na cara qual é.${again} O impostor não sabe a palavra e precisa disfarçar.`,
+      };
+  }
+}
+
 export function CluesScreen({ s, d }: P) {
   const leave = useLeave(d);
   const order = s.round!.order;
   const N = s.settings.rounds;
-  const lastTurn = s.turn === order.length - 1;
   const lastRound = s.clueRound >= N;
-  const label = lastTurn ? (lastRound ? 'Abrir debate' : 'Próxima rodada') : 'Próximo';
+  const mode = s.round!.mode;
+  const wrong = mode === 'wrong';
+  const status = <span className="im-status">Rodada {s.clueRound} de {N}</span>;
+  if (s.clueStep === 'brief') {
+    const b = briefText(mode, s.clueRound);
+    return (
+      <div className="im-screen im-centered" data-testid="im-clues">
+        <TopBar leave onBack={leave} center={status} />
+        <div className="im-body im-mid">
+          <Icon name="ampulheta" size={96} className="im-hourglass big" />
+          <div className="im-briefbox">
+            <span className="im-banner">Rodada {s.clueRound}</span>
+            <h2 className="im-t"><Words text={b.head} /></h2>
+            <p className="im-sub" data-testid="im-brief">{b.body}</p>
+          </div>
+        </div>
+        <div className="im-foot"><Primary testId="im-next" onClick={() => d({ type: 'clueNext' })}>Próximo <ArrowIcon /></Primary></div>
+      </div>
+    );
+  }
   return (
     <div className="im-screen" data-testid="im-clues">
-      <TopBar leave onBack={leave} center={<span className="im-status">Rodada {s.clueRound} de {N}</span>} />
+      <TopBar leave onBack={leave} center={status} />
       <div className="im-body">
         <div className="im-main">
-          <h2 className="im-t"><Words text="Cada um diz uma dica" /></h2>
-          <p className="im-sub center">Uma palavra só, sem dizer a palavra secreta{s.clueRound > 1 ? ' e diferente das anteriores' : ''}.</p>
+          <h2 className="im-t"><Words text={wrong ? 'Hora de responder' : 'Hora de dizer as palavras'} /></h2>
+          <p className="im-sub center">Um de cada vez, nesta ordem. Se todo mundo já disse, toque em continuar.</p>
           <ol className="im-order">
             {order.map((id, i) => {
               const p = by(s, id);
-              const state = i < s.turn ? 'done' : i === s.turn ? 'now' : 'next';
               return (
-                <li key={id} className={`im-prow ${state}`} style={{ '--i': i } as CSSProperties}>
+                <li key={id} className="im-prow" style={{ '--i': i } as CSSProperties}>
                   <span className="im-n">{i + 1}</span>
                   <Coin avatar={p.avatar} color={idx(s, id)} size="sm" />
                   <b>{p.name}</b>
-                  {state === 'now' && <Icon name="olhos" size={36} className="im-eyes" />}
                 </li>
               );
             })}
           </ol>
         </div>
       </div>
-      <div className="im-foot"><Primary testId="im-next" sound={lastTurn && lastRound ? 'start' : 'tap'} onClick={() => d({ type: 'nextTurn' })}>{label} <ArrowIcon /></Primary></div>
+      <div className="im-foot"><Primary testId="im-next" sound={lastRound ? 'start' : 'tap'} onClick={() => d({ type: 'clueNext' })}>{lastRound ? 'Continuar para o debate' : 'Continuar'} <ArrowIcon /></Primary></div>
     </div>
   );
 }
@@ -447,6 +491,22 @@ export function VoteScreen({ s, d }: P) {
   const [sel, setSel] = useState<string | null>(null);
   useEffect(() => { play('pass'); }, [s.voter]);
   const last = s.voter === s.players.length - 1;
+  if (s.voteStep === 'pass') {
+    return (
+      <div className="im-screen im-centered" data-testid="im-votepass">
+        <TopBar leave onBack={leave} center={<span className="im-status">Votação secreta · {s.voter + 1} de {s.players.length}</span>} />
+        <div className="im-body im-mid">
+          <Coin avatar={me.avatar} color={s.voter} size="xl" className="im-pop" />
+          <div>
+            <p className="im-hint im-rise" style={{ '--d': 2 } as CSSProperties}>Passe o celular para</p>
+            <div className="im-name"><Words text={me.name} /></div>
+          </div>
+          <p className="im-sub im-rise" style={{ '--d': 4 } as CSSProperties}>Só {me.name} olha agora. O voto é secreto.</p>
+        </div>
+        <div className="im-foot"><Primary testId="im-voteready" sound="pass" onClick={() => d({ type: 'voteReady' })}>Sou eu, votar <ArrowIcon /></Primary></div>
+      </div>
+    );
+  }
   return (
     <div className="im-screen" data-testid="im-vote">
       <TopBar leave onBack={leave} center={<span className="im-status">Votação secreta · {s.voter + 1} de {s.players.length}</span>} />
@@ -486,9 +546,10 @@ export function ResultScreen({ s, d }: P) {
   const r = s.result!;
   const guessing = r.canGuess.length > 0;
   const win = r.innocentsWin;
+  // o som vem junto com a revelação (depois do título entrar), não por cima do som do voto
   useEffect(() => {
-    if (guessing) play('reveal');
-    else play(win ? 'win' : 'lose');
+    const t = window.setTimeout(() => play(guessing ? 'reveal' : win ? 'win' : 'lose'), 700);
+    return () => window.clearTimeout(t);
   }, [guessing, win]);
   const top = Object.entries(r.counts).sort((a, b) => b[1] - a[1]).slice(0, 3);
   const head = guessing ? (r.canGuess.length === 1 ? `Pegaram ${by(s, r.canGuess[0]!).name}` : 'Pegaram os impostores') : win ? 'Impostor pego!' : r.caught.length ? 'Alguns escaparam!' : 'O impostor escapou!';

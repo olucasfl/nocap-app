@@ -740,3 +740,17 @@
 }
 
 .im-seg button { white-space: nowrap; padding: 0 6px; font-size: 14px; min-width: 0; }
+
+/* elementos de tamanho fixo numa coluna centralizada (o .im-body estica os filhos, então eles precisam se centralizar sozinhos) */
+.im-mid > .im-hold, .im-mid > .im-timer, .im-mid > .im-coin, .im-mid > .im-lupa, .im-mid > button, .im-mid > .im-iconbtn { align-self: center; }
+.im-secret .im-theme { font: 800 12px var(--body); font-style: normal; letter-spacing: 0.06em; padding: 3px 10px; border-radius: 999px; background: rgba(0, 0, 0, 0.14); max-width: 80%; overflow-wrap: anywhere; }
+.im-ways { margin-inline: auto; }
+
+/* troca de celular na votação: entrada mais demorada, para dar tempo de passar o aparelho */
+.im-pop { animation: im-bigpop 0.9s var(--ease) both; }
+@keyframes im-bigpop { from { opacity: 0; transform: scale(0.4) translateY(30px); } 60% { opacity: 1; transform: scale(1.08); } }
+@media (prefers-reduced-motion: reduce) { .im-pop { animation: none; } }
+.im-mid > .im-icon, .im-mid > .im-banner, .im-mid > .im-reveal { align-self: center; }
+.im-briefbox { display: flex; flex-direction: column; align-items: center; gap: 12px; min-width: 0; max-width: 520px; }
+.im-briefbox .im-banner { white-space: nowrap; }
+@media (max-height: 640px) and (min-width: 560px) { .im-briefbox { align-items: flex-start; text-align: left; } .im-briefbox .im-t, .im-briefbox .im-sub { text-align: left; } }

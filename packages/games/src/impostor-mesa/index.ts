@@ -109,6 +109,8 @@ export interface ImRole {
   text: string | null;
   /** Rótulo de tema para o impostor do clássico com dica. */
   hint: string | null;
+  /** Tema da palavra sorteada, mostrado a quem recebe palavra (inocente e impostor que acha que é inocente). */
+  theme: string | null;
   /** `false` nos modos em que o impostor recebe uma palavra parecida e acha que é inocente. */
   knowsRole: boolean;
 }
@@ -188,6 +190,7 @@ export function drawRound(input: ImDrawInput): ImRound {
   let civilText: string;
   let outsiderText: string | null = null;
   let wordId: string;
+  let themeId: string | null = null;
   if (mode === 'wrong') {
     const qs = (input.questions ?? []).filter((q) => settings.categories.includes(q.category));
     if (qs.length === 0) throw new Error('sem perguntas nas categorias escolhidas');
@@ -206,6 +209,7 @@ export function drawRound(input: ImDrawInput): ImRound {
     civilText = w.text;
     outsiderText = mode === 'classic' ? null : w.pair;
     wordId = w.id;
+    themeId = w.category;
   }
 
   let outsiders: string[];
@@ -218,13 +222,15 @@ export function drawRound(input: ImDrawInput): ImRound {
     outsiders = drawOutsiders(ids, Math.max(1, Math.min(asked, max)), history.dry, rng);
   }
 
-  const label = input.categoryLabels?.[settings.categories[0] ?? ''] ?? null;
+  const label = themeId ? (input.categoryLabels?.[themeId] ?? null) : null;
+  // a dica de categoria só existe com mais de dois temas (com 1 ou 2 ela entregaria quase tudo)
+  const giveHint = settings.hint && settings.categories.length > 2;
   for (const id of ids) {
-    if (id === whiteId) roles[id] = { kind: 'white', text: null, hint: null, knowsRole: true };
+    if (id === whiteId) roles[id] = { kind: 'white', text: null, hint: null, theme: null, knowsRole: true };
     else if (outsiders.includes(id)) {
-      if (mode === 'classic') roles[id] = { kind: 'impostor', text: null, hint: settings.hint ? label : null, knowsRole: true };
-      else roles[id] = { kind: 'impostor', text: outsiderText, hint: null, knowsRole: false };
-    } else roles[id] = { kind: 'civil', text: civilText, hint: null, knowsRole: false };
+      if (mode === 'classic') roles[id] = { kind: 'impostor', text: null, hint: giveHint ? label : null, theme: null, knowsRole: true };
+      else roles[id] = { kind: 'impostor', text: outsiderText, hint: null, theme: label, knowsRole: false };
+    } else roles[id] = { kind: 'civil', text: civilText, hint: null, theme: label, knowsRole: false };
   }
 
   // Ordem de fala: sorteada, sem relação com o papel; quem não tem palavra nunca abre.

@@ -469,7 +469,7 @@ export class ImpostorSalaEngine extends ColorRoomEngine {
         guessed: Object.keys(this.guesses),
         // o papel é segredo: cada pessoa recebe só o seu (todos aparecem quando o placar fecha)
         me: my
-          ? { kind: my.kind, text: my.text, hint: my.hint, knowsRole: my.knowsRole, wasSeen: this.seen.has(me!) }
+          ? { kind: my.kind, text: my.text, hint: my.hint, theme: my.theme, knowsRole: my.knowsRole, wasSeen: this.seen.has(me!) }
           : null,
         myVote: me ? (this.votes[me] ?? null) : null,
         result: this.result && (this.stage === 'guess' || finished)

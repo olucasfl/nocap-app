@@ -48,14 +48,18 @@ describe('estado do Impostor (mesa)', () => {
     expect(Object.keys(s.round!.roles)).toHaveLength(5);
     for (let i = 0; i < 5; i++) s = run(s, { type: 'seen' });
     expect(s.phase).toBe('clues');
-    // 2 rodadas x 5 jogadores = 10 vezes "próximo" até abrir o debate
-    for (let i = 0; i < 9; i++) s = run(s, { type: 'nextTurn' });
+    // 2 rodadas x (instruções + hora de dizer) = 4 toques até abrir o debate
+    expect(s.clueStep).toBe('brief');
+    for (let i = 0; i < 3; i++) s = run(s, { type: 'clueNext' });
     expect(s.phase).toBe('clues');
-    s = run(s, { type: 'nextTurn' });
+    expect(s.clueRound).toBe(2);
+    s = run(s, { type: 'clueNext' });
     expect(s.phase).toBe('talk');
     s = run(s, { type: 'go', phase: 'vote' });
     const imp = Object.entries(s.round!.roles).find(([, r]) => r.kind === 'impostor')![0];
     for (let i = 0; i < 5; i++) {
+      expect(s.voteStep).toBe('pass');
+      s = run(s, { type: 'voteReady' });
       const me = s.players[s.voter]!.id;
       const target = me === imp ? s.players.find((p) => p.id !== imp)!.id : imp;
       s = run(s, { type: 'castVote', target });
@@ -110,5 +114,14 @@ describe('estado do Impostor (mesa)', () => {
     s = run(s, { type: 'reset' });
     expect(s.session.games).toBe(0);
     expect(s.players).toHaveLength(keep);
+  });
+
+  it('quem entra no meio da sessão já aparece no ranking com 0 ponto', () => {
+    let s = base();
+    s = run(s, { type: 'addPlayer', name: 'Novo' });
+    const novo = s.players[s.players.length - 1]!;
+    expect(s.session.scores[novo.id]).toBe(0);
+    s = run(s, { type: 'removePlayer', id: novo.id });
+    expect(s.session.scores[novo.id]).toBeUndefined();
   });
 });
