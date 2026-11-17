@@ -607,6 +607,10 @@ export function ResultScreen({ s, d }: P) {
   }
 
   const names = r.outsiders.map((id) => by(s, id).name);
+  // quem escapou: para ser pego, o impostor precisa ter mais votos que o resto da mesa (empate não pega)
+  const escaped = r.outsiders.filter((id) => !r.caught.includes(id));
+  const votesOf = (id: string) => r.counts[id] ?? 0;
+  const escapedNote = escaped.length === 0 ? '' : `${escaped.map((id) => `${by(s, id).name} teve ${votesOf(id)} ${votesOf(id) === 1 ? 'voto' : 'votos'}`).join(', ')} e não foi ${escaped.length > 1 ? 'a pessoa mais votada' : 'a pessoa mais votada'}. Empate não pega: escapou.`;
   const hitOf = (id: string) => r.outsiders.includes(s.votes[id] ?? '');
   const sorted = [...voters].sort((a, b) => Number(hitOf(b.id)) - Number(hitOf(a.id)));
   return (
@@ -641,7 +645,7 @@ export function ResultScreen({ s, d }: P) {
         {stage >= 3 && (
           <div className="im-verdict" data-testid="im-verdict">
             <span className={`im-banner${win ? '' : ' bad'}`}>{win ? 'Inocentes venceram' : 'Impostor venceu'}</span>
-            <p className="im-sub">{win ? 'Os inocentes pegaram todos os impostores.' : r.caught.length ? 'Pelo menos um impostor escapou.' : 'Ninguém pegou o impostor.'}</p>
+            <p className="im-sub">{win ? 'Os inocentes pegaram todos os impostores.' : escapedNote}</p>
           </div>
         )}
       </div>
