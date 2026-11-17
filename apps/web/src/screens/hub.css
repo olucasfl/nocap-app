@@ -1455,7 +1455,4 @@ a.hz-today:active {
 .ha-guest.front { z-index: 2; }
 .ha-guest img { width: 86%; height: 86%; object-fit: contain; }
 @keyframes ha-guest { 0%, 100% { transform: translate(-50%, -50%); } 50% { transform: translate(-50%, calc(-50% - 3px)); } }
-.ha-dinner-cards { position: absolute; z-index: 3; left: 50%; top: 56%; width: clamp(26px, 17%, 40px); transform: translate(-50%, -50%) rotate(-8deg); animation: ha-cards 3.2s ease-in-out infinite; }
-@keyframes ha-cards { 0%, 100% { transform: translate(-50%, -50%) rotate(-8deg); } 50% { transform: translate(-50%, -54%) rotate(6deg); } }
-.ha-dinner-fun { position: absolute; z-index: 3; left: 64%; top: 46%; width: clamp(18px, 12%, 30px); transform: rotate(12deg); }
-@media (prefers-reduced-motion: reduce) { .ha-dinner-lamp, .ha-guest, .ha-dinner-cards { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .ha-dinner-lamp, .ha-guest { animation: none; } }

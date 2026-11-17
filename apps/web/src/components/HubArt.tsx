@@ -755,7 +755,7 @@ export function TableArt() {
   );
 }
 
-/** Capa global do Dinner Table Games no Hub: a galera toda em volta da mesa sob a lâmpada, com cartas no meio (nada de um jogo só). */
+/** Capa global do Dinner Table Games no Hub: a galera toda em volta da mesa sob a lâmpada (nada de um jogo só). */
 const GUESTS: [string, string][] = [
   ['raposa', '#ff6a2b'],
   ['detetive', '#2f5bff'],
@@ -785,8 +785,6 @@ export function DinnerArt() {
           </span>
         );
       })}
-      <img className="ha-dinner-cards" src="/impostor/ic/cartas.png" alt="" width="64" height="64" draggable={false} />
-      <img className="ha-dinner-fun" src="/impostor/ic/confete.png" alt="" width="40" height="40" draggable={false} />
     </div>
   );
 }

@@ -440,7 +440,7 @@
 .im-meter-dots i.on { background: var(--orange); transform: scaleY(1.4); }
 
 /* modos: quatro cartões compactos com o personagem 3D */
-.im-modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.im-modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .im-mode { display: flex; align-items: center; gap: 10px; min-height: 68px; padding: 8px 14px 8px 8px; border-radius: 22px; background: var(--surface); box-shadow: inset 0 0 0 2px transparent; text-align: left; transition: background 0.25s, box-shadow 0.25s, transform 0.25s var(--ease); }
 .im-mode b { font: 800 15px/1.1 var(--display); min-width: 0; }
 .im-mode-ic { flex: none; width: 52px; height: 52px; padding: 4px; border-radius: 16px; background: color-mix(in srgb, var(--c) 28%, var(--surface2)); transition: transform 0.35s var(--ease); }
@@ -819,7 +819,6 @@
 @keyframes im-flipcard { from { opacity: 0; transform: rotateX(90deg) scale(0.8); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .im-rolecard { animation: none; } }
 .im-seg button[aria-checked='true'] { background: var(--text); color: var(--bg); }
-.im-modes > .im-mode:last-child:nth-child(odd) { grid-column: 1 / -1; }
 
 /* ranking: cada pessoa abre o detalhe dos pontos */
 .im-srow.im-click { cursor: pointer; transition: background 0.2s, transform 0.2s var(--ease); }
@@ -873,3 +872,37 @@
   .im-wheel-arrow { width: 44px; height: 44px; margin-top: -22px; }
   .im-wheel-item .im-cover-text, .im-wheel-item .im-how, .im-wheel-item .im-soon-note { padding-inline: 44px; }
 }
+
+/* ===== Home do /mesa: tudo cabe na primeira tela, centralizado, em qualquer celular ===== */
+.im-gamesbody { overflow: hidden; justify-content: center; gap: 4px; padding-block: 4px; }
+.im-wheel-item .im-cover { display: flex; flex-direction: column; align-items: center; gap: clamp(6px, 1.4dvh, 14px); text-align: center; width: 100%; }
+.im-wheel-item .im-cover-art { width: min(320px, 78%, 33dvh); margin-inline: auto; }
+.im-wheel-item .im-cover-text { align-items: center; gap: clamp(4px, 1dvh, 8px); width: 100%; }
+.im-wheel-item .im-cover-t { font-size: clamp(26px, 5.2dvh, 46px); line-height: 1; }
+.im-wheel-item .im-sub { font-size: clamp(12.5px, 1.9dvh, 15px); line-height: 1.35; }
+.im-wheel-item .im-facts { gap: 6px; }
+.im-wheel-item .im-facts li { font-size: clamp(11px, 1.5dvh, 12px); padding: 4px 9px; }
+.im-wheel-item .im-how { gap: clamp(4px, 0.9dvh, 8px); width: 100%; }
+.im-wheel-item .im-how li { padding: clamp(5px, 1dvh, 10px) 10px; }
+.im-wheel-item .im-how-ic { width: clamp(28px, 4.6dvh, 40px); height: clamp(28px, 4.6dvh, 40px); }
+.im-wheel-item .im-how b { font-size: clamp(13px, 2dvh, 15px); }
+.im-wheel-item .im-how small { font-size: clamp(11.5px, 1.7dvh, 13px); }
+@media (max-height: 950px) { .im-wheel-item .im-how small { display: none; } }
+@media (max-height: 700px) { .im-wheel-item .im-how { display: none; } }
+@media (max-height: 600px) { .im-wheel-item .im-facts { display: none; } }
+@media (max-height: 560px) and (orientation: landscape) {
+  .im-wheel-item .im-cover { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 8px 20px; text-align: left; }
+  .im-wheel-item .im-cover-art { grid-row: 1 / span 2; width: min(100%, 44dvh * 1.67, 300px); }
+  .im-wheel-item .im-cover-text { align-items: flex-start; }
+  .im-wheel-item .im-facts { display: flex; justify-content: flex-start; }
+  .im-wheel-item .im-how { display: none; }
+  .im-wheel-item .im-soon-note { display: none; }
+}
+
+/* três modos lado a lado, mesmo em celular estreito */
+.im-modes .im-mode { padding-inline: 6px; min-width: 0; }
+.im-modes .im-mode b { font-size: 13px; overflow-wrap: anywhere; line-height: 1.15; text-align: center; max-width: 100%; }
+.im-wheel-item .im-cover-art { width: min(320px, 76%, 27dvh); }
+.im-wheel-item .im-cover-t { font-size: clamp(24px, 4.6dvh, 44px); }
+.im-modes .im-mode { flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 6px; min-height: 96px; padding: 10px 6px; }
+.im-modes .im-mode-ic { width: 48px; height: 48px; }

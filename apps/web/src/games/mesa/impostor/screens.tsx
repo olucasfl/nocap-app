@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import {
   imRoundView,
+  IM_QUESTIONS,
   IM_CATEGORIES, IM_ELIM_MAX_ROUNDS, IM_MAX_PLAYERS, IM_MIN_POOL, IM_MAX_ROUNDS, IM_MIN_PLAYERS, imImpostorLimit, leaders, sessionRanking,
   type ImMode,
 } from '@nocap/games';
@@ -151,10 +152,13 @@ export const MODES: { id: ImMode; label: string; desc: string; tone: string; ico
 /** Opções de uma categoria (futebol: jogadores, times, seleções, Brasil ou mundo...). Usada antes de começar e nos ajustes. */
 export function CategorySheet({ s, d, id, onClose }: { s: State; d: (a: Action) => void; id: string; onClose: () => void }) {
   const cat = IM_CATEGORIES.find((c) => c.id === id)!;
-  const size = poolSize(s);
+  // no modo de perguntas o sorteio usa perguntas (sem os filtros das palavras)
+  const wrong = s.settings.mode === 'wrong';
+  const size = wrong ? IM_QUESTIONS.filter((q) => s.settings.categories.includes(q.category)).length : poolSize(s);
   return (
     <Sheet title={cat.label} onClose={onClose} icon={<Icon name={CATEGORY_ICONS[cat.id]!} size={64} className="im-sheet-ic" />}>
-      {cat.filters.map((f) => {
+      {wrong && <p className="im-sub center">Neste modo o sorteio usa perguntas deste tema, sem filtros.</p>}
+      {(wrong ? [] : cat.filters).map((f) => {
         const cur = s.settings.filters?.[cat.id]?.[f.tag] ?? [];
         const all = cur.length === 0;
         return (
@@ -182,7 +186,7 @@ export function CategorySheet({ s, d, id, onClose }: { s: State; d: (a: Action) 
           </div>
         );
       })}
-      <p className="im-poolcount" key={size} aria-live="polite"><b>{size}</b> palavras no sorteio</p>
+      <p className="im-poolcount" key={size} aria-live="polite"><b>{size}</b> {wrong ? (size === 1 ? 'pergunta' : 'perguntas') : (size === 1 ? 'palavra' : 'palavras')} no sorteio</p>
       <Primary sound="confirm" onClick={onClose}>Pronto</Primary>
     </Sheet>
   );
@@ -688,6 +692,9 @@ export function ElimResScreen({ s, d }: P) {
   const remaining = el.alive.filter((id) => s.round!.roles[id]!.kind !== 'civil').length;
   const [revealed, setRevealed] = useState(false);
   const culprits = Object.entries(s.round!.roles).filter(([, r]) => r.kind !== 'civil').map(([id]) => id);
+  // só tem o que revelar se algum impostor ainda não apareceu: os eliminados com o papel escondido e os que ficaram na mesa
+  const shownOut = new Set(el.steps.filter((st, i) => st.role !== 'civil' && (outsidersTotal === 1 || s.settings.revealRoles || (i === el.steps.length - 1 && !!winner))).map((st) => st.out));
+  const hasToReveal = culprits.some((id) => !shownOut.has(id));
   if (revealed) {
     return (
       <div className="im-screen im-centered im-tense lit" data-testid="im-elim-culprits">
@@ -746,9 +753,9 @@ export function ElimResScreen({ s, d }: P) {
       <div className="im-foot">
         {stage < 3
           ? <button type="button" className="im-link" data-testid="im-skip" onClick={skip}>Pular</button>
-          : winner
+          : winner && hasToReveal
             ? <Primary testId="im-elim-reveal" sound="start" onClick={() => { play('reveal'); setRevealed(true); }}>{outsidersTotal > 1 ? 'Revelar os impostores' : 'Revelar o impostor'} <ArrowIcon /></Primary>
-            : <Primary testId="im-elim-next" onClick={() => d({ type: 'elimNext' })}>Próxima rodada <ArrowIcon /></Primary>}
+            : <Primary testId="im-elim-next" onClick={() => d({ type: 'elimNext' })}>{winner ? 'Ver ranking' : 'Próxima rodada'} <ArrowIcon /></Primary>}
       </div>
     </div>
   );
@@ -791,7 +798,6 @@ export function ScoreScreen({ s, d }: P) {
       <div className="im-body">
         <div>
           <h2 className="im-t"><Words text={r.innocentsWin ? 'Inocentes venceram' : 'Impostores venceram'} /></h2>
-          <p className="im-sub im-rise" style={{ '--d': 3 } as CSSProperties} data-testid="im-score-culprits">{r.outsiders.length === 1 ? 'O impostor era' : 'Os impostores eram'}: <b>{r.outsiders.map((id) => by(s, id).name).join(', ')}</b></p>
           <p className="im-sub im-rise" style={{ '--d': 2 } as CSSProperties}>A palavra era <b>{word}</b>{s.round!.outsiderText && s.round!.mode !== 'wrong' ? ` · parecida: ${s.round!.outsiderText}` : ''}</p>
         </div>
         <ol className="im-score" aria-label="Ranking da sessão">

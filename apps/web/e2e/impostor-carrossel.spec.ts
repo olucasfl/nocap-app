@@ -12,7 +12,16 @@ for (const d of DEVICES.filter((x) => only.includes(x.name))) {
     const cdp = await context.newCDPSession(page);
     await setDevice(page, cdp, d);
     await page.addInitScript(() => { localStorage.setItem('nocap-mute', '1'); localStorage.setItem('im-nosplash', '1'); });
+    /** Tudo precisa caber na primeira tela: a área dos jogos não rola. */
+    const noScroll = async (label: string) => {
+      const over = await page.evaluate(() => {
+        const b = document.querySelector('.im-gamesbody') as HTMLElement | null;
+        return b ? b.scrollHeight - b.clientHeight : -1;
+      });
+      if (over > 2) report.push(`${label}: ROLA: a primeira tela rola ${over}px`);
+    };
     const check = async (label: string) => {
+      await noScroll(label);
       await page.waitForTimeout(600);
       if (process.env.IMP_SHOTS) await page.screenshot({ path: `test-results/carrossel-${label}-${d.name}.png` });
       for (const m of await measure(page, d)) report.push(`${label}: ${m}`);

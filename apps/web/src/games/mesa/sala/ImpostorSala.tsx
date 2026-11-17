@@ -514,6 +514,8 @@ function Reveal({ snap }: { snap: Snap }) {
   }
   const rows = mesa.session.ranking;
   const outs = r.outsiders ?? [];
+  // só repete os impostores no ranking quando o papel dos eliminados ficou em segredo (o voto final e a eliminação aberta já revelaram)
+  const hiddenRoles = mesa.voteMode === 'elim' && !(snap.settings as unknown as Cfg).revealRoles && outs.length > 1;
   return (
     <div className="im-screen" data-testid="sala-score">
       <TopBar leave onBack={leave} center={<span className="im-status">Partida {mesa.session.games}</span>} />
@@ -521,7 +523,7 @@ function Reveal({ snap }: { snap: Snap }) {
         <div>
           <h2 className="im-t"><Words text={win ? 'Inocentes venceram' : 'Impostores venceram'} /></h2>
           <p className="im-sub im-rise" style={{ '--d': 2 } as CSSProperties}>A palavra era <b>{r.word}</b>{r.similar && mesa.mode !== 'wrong' ? ` · parecida: ${r.similar}` : ''}</p>
-          <p className="im-sub im-rise" style={{ '--d': 3 } as CSSProperties}>{outs.length === 1 ? 'O impostor era' : 'Os impostores eram'}: {outs.map((id) => nameOf(snap, id)).join(', ')}</p>
+          {hiddenRoles && <p className="im-sub im-rise" style={{ '--d': 3 } as CSSProperties}>{outs.length === 1 ? 'O impostor era' : 'Os impostores eram'}: {outs.map((id) => nameOf(snap, id)).join(', ')}</p>}
         </div>
         <ol className="im-score" aria-label="Ranking da sessão">
           {rows.map((row, i) => {
