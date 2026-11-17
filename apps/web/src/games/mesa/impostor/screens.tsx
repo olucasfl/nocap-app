@@ -549,7 +549,9 @@ export function ResultScreen({ s, d }: P) {
   const guessing = r.canGuess.length > 0;
   const win = r.innocentsWin;
   const many = r.outsiders.length > 1;
-  const voters = s.players.filter((p) => !r.outsiders.includes(p.id));
+  // quem acertou aparece primeiro; depois quem votou em outra pessoa
+  const hitOf = (id: string) => r.outsiders.includes(s.votes[id] ?? '');
+  const voters = s.players.filter((p) => !r.outsiders.includes(p.id)).sort((a, b) => Number(hitOf(b.id)) - Number(hitOf(a.id)));
   // 0 suspense · 1 nomes · 2 quem votou · 3 veredito e botão
   const [stage, setStage] = useState(0);
   const asking = s.resultStep === 'ask';
@@ -597,14 +599,14 @@ export function ResultScreen({ s, d }: P) {
           </div>
         )}
         {stage >= 2 && (
-          <ul className="im-voters" aria-label="Quem votou">
+          <ul className="im-voters" aria-label={many ? 'Quem votou neles' : 'Quem votou nele'}>
             {voters.map((p, i) => {
-              const hit = r.outsiders.includes(s.votes[p.id] ?? '');
+              const hit = hitOf(p.id);
               return (
                 <li key={p.id} className={`im-voter ${hit ? 'hit' : 'miss'}`} style={{ '--i': i } as CSSProperties}>
                   {coinOf(s, p.id, 'sm')}
                   <b>{p.name}</b>
-                  <span>{hit ? <><CheckIcon /> votou</> : 'não votou'}</span>
+                  <span>{hit ? <><CheckIcon /> votou nele</> : 'votou em outro'}</span>
                 </li>
               );
             })}

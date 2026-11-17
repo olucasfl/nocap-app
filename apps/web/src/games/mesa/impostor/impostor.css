@@ -780,3 +780,7 @@
 .im-verdict { display: flex; flex-direction: column; align-items: center; gap: 8px; animation: im-word 0.5s var(--ease) both; }
 .im-link { min-height: 44px; }
 @media (prefers-reduced-motion: reduce) { .im-slam, .im-voter, .im-verdict { animation: none; opacity: 1; transform: none; } .im-dots i { animation: none; opacity: 1; } }
+.im-voters { grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr)); }
+.im-voter { padding: 4px 12px 4px 4px; }
+.im-voter b { text-align: left; }
+.im-voter b { text-align: left; }
