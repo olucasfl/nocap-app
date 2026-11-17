@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CHAT_HISTORY } from './chat';
 import { ColorRoomEngine, RoomError } from './color-room.engine';
-import { ImpostorRoomEngine } from './impostor/impostor-room.engine';
+import { ImpostorSalaEngine } from './impostor/impostor-sala.engine';
 import { TimeRoomEngine } from './time-room.engine';
 
 function make<T extends ColorRoomEngine>(
@@ -78,16 +78,17 @@ describe('chat da sala', () => {
     expect(() => room.sendChat('ana', 'oi')).toThrow(/fechado/);
   });
 
-  it('no Intruso só abre fora das rodadas', () => {
+  it('no Impostor só abre fora das fases com segredo', () => {
     let t = 1_000;
-    const room = new ImpostorRoomEngine({ code: 'ABCD', now: () => t, newSeed: () => 's' });
+    const room = new ImpostorSalaEngine({ code: 'ABCD', now: () => t, newSeed: () => 's' });
     for (const id of ['ana', 'bia', 'cris']) room.join(id, id);
     expect(room.snapshot('ana').chat.open).toBe(true);
+    room.configure('ana', { categories: ['comida', 'animais'] } as never);
     room.setReady('bia', true);
     room.setReady('cris', true);
     room.start('ana');
     expect(room.snapshot('ana').chat.open).toBe(false);
     t += 1;
-    expect(() => room.sendChat('ana', 'a cor é azul')).toThrow(/fechado/);
+    expect(() => room.sendChat('ana', 'a palavra é pizza')).toThrow(/fechado/);
   });
 });

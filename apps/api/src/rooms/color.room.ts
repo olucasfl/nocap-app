@@ -3,7 +3,7 @@ import { Room, ServerError, matchMaker, type Client } from 'colyseus';
 import type { Auth } from '../auth/auth';
 import { ColorRoomEngine, MAX_PLAYERS, RoomError } from './color-room.engine';
 import { TimeRoomEngine } from './time-room.engine';
-import { ImpostorRoomEngine } from './impostor/impostor-room.engine';
+import { ImpostorSalaEngine } from './impostor/impostor-sala.engine';
 import { EcoRoomEngine } from './eco-room.engine';
 import { EcoLeaderRoomEngine } from './eco-leader-room.engine';
 import { AtravessaRoomEngine } from './atravessa-room.engine';
@@ -20,7 +20,7 @@ import {
   PP_ROOM_MAX,
   DSM_MAX_PLAYERS,
   GP_MAX_PLAYERS,
-  IMPOSTOR_MAX_PLAYERS,
+  IM_MAX_PLAYERS,
   packBolaFrame,
   GOLF_ROOM_MAX,
 } from '@nocap/games';
@@ -536,20 +536,23 @@ export class TimeRoom extends ColorRoom {
   }
 }
 
-/** Sala do Intruso: a Cor com papéis secretos e votação (de 3 a 12 pessoas). */
+/** Sala do Impostor (spec 088): papéis secretos por pessoa, dicas digitadas, debate, voto secreto e ranking da sessão (de 3 a 15 pessoas). */
 export class ImpostorRoom extends ColorRoom {
-  override maxClients = IMPOSTOR_MAX_PLAYERS;
+  override maxClients = IM_MAX_PLAYERS;
 
   protected override makeEngine(opts: ConstructorParameters<typeof ColorRoomEngine>[0]) {
-    return new ImpostorRoomEngine(opts);
+    return new ImpostorSalaEngine(opts);
   }
 
   protected override registerGameMessages() {
-    const engine = () => this.engine as ImpostorRoomEngine;
-    this.onMessage('lock', (c, m) => this.act(c, (id) => engine().lock(id, m)));
-    this.onMessage('suspect', (c, m: { id?: string | null }) =>
-      this.act(c, (id) => engine().vote(id, m?.id ? String(m.id) : null)),
-    );
+    const engine = () => this.engine as ImpostorSalaEngine;
+    this.onMessage('seen', (c) => this.act(c, (id) => engine().markSeen(id)));
+    this.onMessage('clue', (c, m: { word?: unknown }) => this.act(c, (id) => engine().submitClue(id, m?.word)));
+    this.onMessage('tovote', (c) => this.act(c, (id) => engine().readyToVote(id)));
+    this.onMessage('cast', (c, m: { id?: string }) => this.act(c, (id) => engine().castVote(id, String(m?.id ?? ''))));
+    this.onMessage('guess', (c, m: { text?: unknown }) => this.act(c, (id) => engine().guess(id, m?.text)));
+    this.onMessage('continue', (c) => this.act(c, (id) => engine().continueSession(id)));
+    this.onMessage('end', (c) => this.act(c, (id) => engine().endSession(id)));
   }
 }
 
@@ -1071,7 +1074,7 @@ export class FoxShotRoom extends ColorRoom {
 /** Nomes e limites dos jogos que a sala do Fox Cap! pode jogar. */
 const FOX_GAMES = {
   color: { name: 'Mesmíssima', make: (o: EngineOpts) => new ColorRoomEngine(o) },
-  impostor: { name: 'Intruso', make: (o: EngineOpts) => new ImpostorRoomEngine(o) },
+  impostor: { name: 'Impostor', make: (o: EngineOpts) => new ImpostorSalaEngine(o) },
   time: { name: 'Já Deu?', make: (o: EngineOpts) => new TimeRoomEngine(o) },
   eco: { name: 'Ecooo', make: (o: EngineOpts) => new EcoRoomEngine(o) },
   atravessa: { name: 'Atravessa!', make: (o: EngineOpts) => new AtravessaRoomEngine(o) },

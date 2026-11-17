@@ -87,18 +87,6 @@ export const GAME_CATEGORIES: { id: string; title: string; games: PickGame[] }[]
       },
     ],
   },
-  {
-    id: 'festa',
-    title: 'Jogos de festa',
-    games: [
-      {
-        id: 'impostor',
-        name: 'Intruso',
-        note: 'Alguns não veem a cor: ache quem é o intruso.',
-        cap: '3 a 12',
-      },
-    ],
-  },
 ];
 
 /** Compatibilidade: a lista plana de jogos. */

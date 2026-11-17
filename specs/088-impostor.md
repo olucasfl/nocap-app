@@ -1,6 +1,6 @@
 # Spec 088: Impostor (primeiro jogo da categoria "Dinner Table Games")
 
-Pedido do Lucas (17/11/2026). Status: **em andamento (17/11/2026): regras, conteúdo (659 palavras), categoria `/mesa` e modo Mesa feitos; falta o modo Sala (online) e a remoção do Intruso na sala.**
+Pedido do Lucas (17/11/2026). Status: **em andamento (17/11/2026): regras, conteúdo (659 palavras), categoria `/mesa` e modo Mesa feitos; modo Sala: servidor pronto (17/11/2026, `impostor-sala.engine.ts`), falta a tela no app; Intruso antigo removido do servidor.**
 
 ## 1. A categoria "Dinner Table Games"
 
