@@ -822,3 +822,8 @@
 .im-mid .im-name, .im-mid .im-hint { position: relative; z-index: 1; }
 @media (max-height: 640px) and (min-width: 560px) { .im-mid > .im-hold { margin: 0 14px; } }
 .im-briefbox .im-icon { align-self: center; margin: 0 auto; }
+.im-mid > .im-briefbox { align-self: center; }
+
+/* revelação e resultado do chute: sempre em coluna, mesmo em celular deitado (a lista de quem votou rola) */
+.im-body.im-revbody { flex-direction: column; align-items: center; justify-content: flex-start; text-align: center; gap: 12px; }
+.im-body.im-revbody > * { flex-shrink: 0; max-width: 100%; }
