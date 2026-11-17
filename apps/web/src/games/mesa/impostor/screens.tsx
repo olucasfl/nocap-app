@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import {
+  imRoundView,
   IM_CATEGORIES, IM_ELIM_MAX_ROUNDS, IM_MAX_PLAYERS, IM_MIN_POOL, IM_MAX_ROUNDS, IM_MIN_PLAYERS, IM_WHITE_MIN_PLAYERS, imImpostorLimit, leaders, sessionRanking,
   type ImMode,
 } from '@nocap/games';
@@ -279,7 +280,7 @@ export function CfgScreen({ s, d }: P) {
     c.mode === 'wrong' && !elim ? null : <div className="im-row" key="rd"><div><b>Rodadas de dicas</b><small>{elim ? 'Cada rodada termina com uma eliminação.' : 'Quantas vezes cada um dá sua dica. Em cada rodada, cada pessoa diz uma palavra sobre o tema, uma de cada vez.'}</small></div><Stepper value={elim ? Math.max(c.rounds, imp > 0 ? needRounds : c.rounds) : c.rounds} label="rodadas" min={1} max={elim ? IM_ELIM_MAX_ROUNDS : IM_MAX_ROUNDS} onChange={(n) => d({ type: 'settings', patch: { rounds: n } })} /></div>,
     <div className="im-row" key="im"><div><b>Impostores</b><small>{imp === 0 ? 'Número surpresa' : `Máximo para ${s.players.length}: ${max}${elim ? ' (menos da metade da mesa)' : ''}`}</small></div>
       <Stepper value={imp} label="impostores" min={0} max={max} format={(n) => (n === 0 ? '?' : String(n))} onChange={(n) => d({ type: 'settings', patch: { impostors: n === 0 ? 'random' : n } })} /></div>,
-    elim ? null : <div className="im-row" key="tm"><div><b>Debate</b><small>Depois das dicas, todos conversam por esse tempo para descobrir quem é o impostor. Depois vem a votação.</small></div><Stepper value={ti} label="tempo do debate" min={0} max={TIMES.length - 1} format={(n) => fmtTime(TIMES[n]!)} onChange={(n) => d({ type: 'settings', patch: { talkSeconds: TIMES[n]! } })} /></div>,
+    <div className="im-row" key="tm"><div><b>Debate</b><small>Depois das dicas, todos conversam por esse tempo para descobrir quem é o impostor. Depois vem a votação.</small></div><Stepper value={ti} label="tempo do debate" min={0} max={TIMES.length - 1} format={(n) => fmtTime(TIMES[n]!)} onChange={(n) => d({ type: 'settings', patch: { talkSeconds: TIMES[n]! } })} /></div>,
     elim && (c.impostors === 'random' || imp >= 2) ? <div className="im-row" key="rv"><div><b>Mostrar quem era</b><small>Ao eliminar alguém, a tela mostra se era inocente ou impostor. Desligado, o papel de quem sai fica em segredo e o jogo só revela no fim.</small></div><Switch on={c.revealRoles} label="Mostrar quem era" onChange={(v) => d({ type: 'settings', patch: { revealRoles: v } })} /></div> : null,
   ];
   if (c.mode === 'classic' && c.categories.length > 2) rows.push(<div className="im-row" key="hint"><div><b>Dica de categoria</b><small>O impostor vê o tema da palavra. Só aparece com mais de 2 temas.</small></div><Switch on={c.hint} label="Dica de categoria" onChange={(v) => d({ type: 'settings', patch: { hint: v } })} /></div>);
@@ -327,24 +328,26 @@ export function CfgScreen({ s, d }: P) {
 /* ---------- Passar o celular e revelar o papel ---------- */
 export function RevealScreen({ s, d }: P) {
   const leave = useLeave(d);
-  const p = s.players[s.seen]!;
+  const seers = voterIds(s);
+  const p = by(s, seers[s.seen]!);
   const role = s.round!.roles[p.id]!;
+  const view = imRoundView(s.round!, p.id, (s.elim?.steps.length ?? 0) + 1);
   const [on, setOn] = useState(false);
   const [seen, setSeen] = useState(false);
-  const last = s.seen === s.players.length - 1;
+  const last = s.seen === seers.length - 1;
   const wrong = s.round!.mode === 'wrong';
   useEffect(() => { play('pass'); }, [s.seen]);
   const tag = role.kind === 'white' ? 'Você está' : role.kind === 'impostor' && role.knowsRole ? (role.hint ? 'Tema' : 'Você é o') : wrong ? 'Sua pergunta' : 'A palavra é';
-  const text = role.kind === 'white' ? 'Sem palavra' : role.kind === 'impostor' && role.knowsRole ? (role.hint ?? 'Impostor') : (role.text ?? '');
+  const text = role.kind === 'white' ? 'Sem palavra' : role.kind === 'impostor' && role.knowsRole ? (role.hint ?? 'Impostor') : (view.text ?? '');
   const show = () => { if (!on) { setOn(true); play('reveal'); } };
   const hide = () => { if (on) { setOn(false); setSeen(true); } };
   const outsider = role.kind !== 'civil' && role.knowsRole;
   return (
     <div className="im-screen im-centered" data-testid="im-reveal">
-      <TopBar leave onBack={leave} center={<span className="im-status">{s.seen + 1} de {s.players.length}</span>} />
+      <TopBar leave onBack={leave} center={<span className="im-status">{s.seen + 1} de {seers.length}</span>} />
       <div className="im-body im-mid">
         <div className="im-who">
-          <Coin avatar={p.avatar} color={s.seen} size="lg" className="im-rise" />
+          <Coin avatar={p.avatar} color={idx(s, p.id)} size="lg" className="im-rise" />
           <div>
             <p className="im-hint im-rise" style={{ '--d': 2 } as CSSProperties}>Passe o celular para</p>
             <div className="im-name"><Words text={p.name} /></div>
@@ -367,7 +370,7 @@ export function RevealScreen({ s, d }: P) {
           <span className={`im-secret${outsider ? ' bad' : ''}`} aria-live="polite">
             <small>{on ? tag : ''}</small>
             <strong className={wrong ? 'q' : ''} data-testid="im-secret">{on ? text : ''}</strong>
-            {on && role.theme && <em className="im-theme">Tema: {role.theme}</em>}
+            {on && view.theme && <em className="im-theme">Tema: {view.theme}</em>}
           </span>
         </button>
         <p className="im-hint" style={{ opacity: seen ? 1 : 0.55 }}>{seen ? 'Solte e passe adiante' : 'Só você olha. Ninguém mais.'}</p>
@@ -396,8 +399,8 @@ function briefText(mode: string, round: number): { head: string; body: string } 
       };
     case 'wrong':
       return {
-        head: round > 1 ? 'Mais uma volta de respostas' : 'Cada um responde',
-        body: `Cada um responde em voz alta, em poucas palavras, a pergunta que recebeu.${again} Uma pessoa recebeu uma pergunta diferente: reparem em quem responde estranho.`,
+        head: round > 1 ? 'Nova pergunta' : 'Cada um responde',
+        body: `Cada um responde em voz alta, em poucas palavras, a${round > 1 ? ' nova' : ''} pergunta que recebeu. Uma pessoa recebeu uma pergunta diferente: reparem em quem responde estranho.`,
       };
     default:
       return {
@@ -490,7 +493,7 @@ export function TalkScreen({ s, d }: P) {
         ) : (
           <div className="im-timer free"><Icon name="ampulheta" size={120} className="im-hourglass big" /></div>
         )}
-        <p className="im-sub">{s.round!.mode === 'wrong' ? 'Todos responderam. Quem recebeu outra pergunta?' : `Fim das ${clueRounds(s)} rodadas. Quem está escondendo algo?`}</p>
+        <p className="im-sub">{s.elim ? 'Conversem e decidam quem vai ser eliminado(a).' : s.round!.mode === 'wrong' ? 'Todos responderam. Quem recebeu outra pergunta?' : `Fim das ${clueRounds(s)} rodadas. Quem está escondendo algo?`}</p>
       </div>
       <div className="im-foot"><Primary testId="im-tovote" onClick={() => (total > 0 && left > 0 ? ask({ title: 'Ainda tem tempo de debate', text: 'Todo mundo já conversou o que queria? A votação é secreta e não dá para voltar.', confirm: 'Ir votar', cancel: 'Voltar ao debate', onConfirm: () => d({ type: 'go', phase: 'vote' }) }) : d({ type: 'go', phase: 'vote' }))}>Ir para a votação <ArrowIcon /></Primary></div>
     </div>
@@ -682,6 +685,23 @@ export function ElimResScreen({ s, d }: P) {
   }, [show, winner]);
   const skip = () => { setStage(3); if (winner) play(winner === 'innocents' ? 'win' : 'lose'); };
   const last = el.steps.length >= el.total;
+  const [revealed, setRevealed] = useState(false);
+  const culprits = Object.entries(s.round!.roles).filter(([, r]) => r.kind !== 'civil').map(([id]) => id);
+  if (revealed) {
+    return (
+      <div className="im-screen im-centered im-tense lit" data-testid="im-elim-culprits">
+        <TopBar center={<span className="im-status">Resultado</span>} />
+        <div className="im-body im-mid im-revbody">
+          <p className="im-suspense">{culprits.length > 1 ? 'Os impostores eram' : 'O impostor era'}</p>
+          <div className="im-slam">
+            <div className="im-reveal">{culprits.map((id, i) => <span key={id} style={{ '--i': i } as CSSProperties}>{coinOf(s, id, culprits.length > 1 ? 'lg' : 'xl')}</span>)}</div>
+            <h2 className="im-culprit">{culprits.map((id) => by(s, id).name).join(' e ')}</h2>
+          </div>
+        </div>
+        <div className="im-foot"><Primary testId="im-elim-next" onClick={() => d({ type: 'elimNext' })}>Ver ranking <ArrowIcon /></Primary></div>
+      </div>
+    );
+  }
   return (
     <div className={`im-screen im-centered im-tense${stage >= 1 ? ' lit' : ''}`} data-testid="im-elimres" data-stage={stage}>
       {stage >= 3 && winner === 'innocents' && <Confetti />}
@@ -725,7 +745,9 @@ export function ElimResScreen({ s, d }: P) {
       <div className="im-foot">
         {stage < 3
           ? <button type="button" className="im-link" data-testid="im-skip" onClick={skip}>Pular</button>
-          : <Primary testId="im-elim-next" onClick={() => d({ type: 'elimNext' })}>{winner ? 'Ver ranking' : 'Próxima rodada'} <ArrowIcon /></Primary>}
+          : winner
+            ? <Primary testId="im-elim-reveal" sound="start" onClick={() => { play('reveal'); setRevealed(true); }}>{outsidersTotal > 1 ? 'Revelar os impostores' : 'Revelar o impostor'} <ArrowIcon /></Primary>
+            : <Primary testId="im-elim-next" onClick={() => d({ type: 'elimNext' })}>Próxima rodada <ArrowIcon /></Primary>}
       </div>
     </div>
   );
@@ -757,16 +779,17 @@ export function ScoreScreen({ s, d }: P) {
   const r = s.result!;
   const word = s.round!.civilText;
   useEffect(() => {
-    play(r.innocentsWin ? 'win' : 'lose');
-    const t = window.setTimeout(() => play(s.shift === 'brusque' ? 'rankbig' : 'rankcalm'), 1400);
+    // no ranking só toca o som padrão do ranking (nada de vitória ou derrota)
+    const t = window.setTimeout(() => play(s.shift === 'brusque' ? 'rankbig' : 'rankcalm'), 500);
     return () => window.clearTimeout(t);
-  }, [r.innocentsWin, s.shift]);
+  }, [s.shift]);
   return (
     <div className="im-screen" data-testid="im-score">
       <TopBar center={<span className="im-status">Partida {s.session.games}</span>} />
       <div className="im-body">
         <div>
           <h2 className="im-t"><Words text={r.innocentsWin ? 'Inocentes venceram' : 'Impostores venceram'} /></h2>
+          <p className="im-sub im-rise" style={{ '--d': 3 } as CSSProperties} data-testid="im-score-culprits">{r.outsiders.length === 1 ? 'O impostor era' : 'Os impostores eram'}: <b>{r.outsiders.map((id) => by(s, id).name).join(', ')}</b></p>
           <p className="im-sub im-rise" style={{ '--d': 2 } as CSSProperties}>A palavra era <b>{word}</b>{s.round!.outsiderText && s.round!.mode !== 'wrong' ? ` · parecida: ${s.round!.outsiderText}` : ''}</p>
         </div>
         <ol className="im-score" aria-label="Ranking da sessão">

@@ -50,6 +50,11 @@ for (const d of DEVICES.filter((x) => only.includes(x.name))) {
     let sawElim = false;
     for (let guard = 0; guard < 80 && !(await page.getByTestId('im-again').count()); guard++) {
       if (await page.getByTestId('im-next').count()) { await page.getByTestId('im-next').click(); continue; }
+      if (await page.getByTestId('im-tovote').count()) {
+        await page.getByTestId('im-tovote').click();
+        await page.getByTestId('im-confirm-yes').click({ timeout: 1500 }).catch(() => undefined);
+        continue;
+      }
       if (await page.getByTestId('im-voteready').count()) {
         if (!sawVote) { sawVote = true; await check('passe-o-celular'); }
         await page.getByTestId('im-voteready').click();
@@ -60,6 +65,11 @@ for (const d of DEVICES.filter((x) => only.includes(x.name))) {
         await page.getByTestId('im-cast').click();
         continue;
       }
+      if (await page.getByTestId('im-elim-culprits').count()) {
+        await check('impostores-revelados');
+        await page.getByTestId('im-elim-next').click();
+        continue;
+      }
       if (await page.getByTestId('im-elimres').count()) {
         if (!sawElim) {
           sawElim = true;
@@ -67,7 +77,8 @@ for (const d of DEVICES.filter((x) => only.includes(x.name))) {
           await check('quem-saiu');
         }
         await page.getByTestId('im-skip').click({ timeout: 2000 }).catch(() => undefined);
-        await page.getByTestId('im-elim-next').click({ timeout: 2000 }).catch(() => undefined);
+        await page.getByTestId('im-elim-reveal').click({ timeout: 1500 }).catch(() => undefined);
+        await page.getByTestId('im-elim-next').click({ timeout: 1500 }).catch(() => undefined);
         continue;
       }
       await page.waitForTimeout(200);

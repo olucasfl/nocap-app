@@ -13,6 +13,7 @@ import {
   elimResolve,
   elimStart,
   imElimRounds,
+  imRoundView,
   scoreElimination,
   drawRound,
   filterWords,
@@ -346,5 +347,22 @@ describe('eliminação', () => {
     const q: ImQuestion = { id: 'q1', category: 'comida', q: 'Qual a sua comida favorita?', qPair: 'Qual a sua bebida favorita?' };
     const r = drawRound({ ids, settings: base({ mode: 'wrong' }), words, questions: [q], categoryLabels: { comida: 'Comida' }, seed: 's', roundIndex: 0, history: IM_EMPTY_HISTORY });
     for (const role of Object.values(r.roles)) expect(role.theme).toBe('Comida');
+  });
+
+  it('perguntas com eliminação: uma pergunta nova por rodada, sem repetir', () => {
+    const qs: ImQuestion[] = Array.from({ length: 9 }, (_, i) => ({ id: `q${i}`, category: 'comida', q: `Pergunta ${i}?`, qPair: `Parecida ${i}?` }));
+    const r = drawRound({ ids, settings: base({ mode: 'wrong', voteMode: 'elim' }), words, questions: qs, categoryLabels: { comida: 'Comida' }, seed: 's', roundIndex: 0, history: IM_EMPTY_HISTORY });
+    expect(r.qa).toBeDefined();
+    expect(new Set(r.qa!.map((x) => x.id)).size).toBe(r.qa!.length);
+    expect(r.qa![0]!.civil).toBe(r.civilText);
+    const civil = ids.find((i) => r.roles[i]!.kind === 'civil')!;
+    const imp = ids.find((i) => r.roles[i]!.kind !== 'civil')!;
+    expect(imRoundView(r, civil, 1).text).toBe(r.qa![0]!.civil);
+    expect(imRoundView(r, civil, 2).text).toBe(r.qa![1]!.civil);
+    expect(imRoundView(r, imp, 2).text).toBe(r.qa![1]!.outsider);
+    expect(imRoundView(r, civil, 2).text).not.toBe(imRoundView(r, civil, 1).text);
+    // no voto final a pergunta é uma só
+    const f = drawRound({ ids, settings: base({ mode: 'wrong' }), words, questions: qs, seed: 's', roundIndex: 0, history: IM_EMPTY_HISTORY });
+    expect(f.qa).toBeUndefined();
   });
 });

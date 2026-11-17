@@ -134,7 +134,7 @@ export const poolOk = (s: Pick<State, 'settings' | 'players'>) => poolSize(s) >=
 export function reducer(s: State, a: Action): State {
   switch (a.type) {
     case 'go':
-      return { ...s, phase: a.phase, back: !!a.back, error: null, ...(a.phase === 'vote' ? { voteStep: 'pass' as const } : {}) };
+      return { ...s, phase: a.phase, back: !!a.back, error: null, ...(a.phase === 'vote' ? { voteStep: 'pass' as const, voter: 0, elimVotes: {}, elimCands: null, elimRevote: false } : {}) };
     case 'addPlayer': {
       const name = a.name.trim().slice(0, 14);
       if (!name || s.players.length >= IM_MAX_PLAYERS) return s;
@@ -200,13 +200,15 @@ export function reducer(s: State, a: Action): State {
       return { ...s, round, session, phase: 'reveal', back: false, seen: 0, clueRound: 1, turn: 0, clueStep: 'brief', voteStep: 'pass', voter: 0, votes: {}, result: null, elim: s.settings.voteMode === 'elim' ? elimStart(ids, round, s.settings.rounds) : null, elimVotes: {}, elimCands: null, elimRevote: false };
     }
     case 'seen': {
-      const last = s.seen >= s.players.length - 1;
-      return last ? { ...s, phase: 'clues', back: false, clueRound: 1, turn: 0, clueStep: 'brief' } : { ...s, phase: 'reveal', back: false, seen: s.seen + 1 };
+      const n = voterIds(s).length;
+      const last = s.seen >= n - 1;
+      const round = (s.elim?.steps.length ?? 0) + 1;
+      return last ? { ...s, phase: 'clues', back: false, clueRound: round, turn: 0, clueStep: 'brief' } : { ...s, phase: 'reveal', back: false, seen: s.seen + 1 };
     }
     case 'clueNext': {
       if (s.clueStep === 'brief') return { ...s, clueStep: 'say' };
-      // eliminação: depois das palavras de cada rodada, a mesa vota e alguém sai
-      if (s.elim) return { ...s, phase: 'vote', back: false, voteStep: 'pass', voter: 0, elimVotes: {}, elimCands: null, elimRevote: false };
+      // eliminação: depois das palavras de cada rodada vem o debate e então a votação
+      if (s.elim) return { ...s, phase: 'talk', back: false };
       if (s.clueRound < clueRounds(s)) return { ...s, clueRound: s.clueRound + 1, clueStep: 'brief' };
       return { ...s, phase: 'talk', back: false };
     }
@@ -234,6 +236,8 @@ export function reducer(s: State, a: Action): State {
     case 'elimNext': {
       if (!s.elim) return s;
       if (elimWinner(s)) return finish(s);
+      // modo de perguntas: cada rodada tem uma pergunta nova, que todo mundo vê de novo em segredo
+      if (s.round?.qa) return { ...s, phase: 'reveal', back: false, seen: 0 };
       return { ...s, phase: 'clues', back: false, clueRound: s.elim.steps.length + 1, clueStep: 'brief' };
     }
     case 'finish':

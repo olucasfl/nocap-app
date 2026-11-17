@@ -484,16 +484,10 @@ function Reveal({ snap }: { snap: Snap }) {
   const ask = useAsk();
   const isHost = snap.hostId === me;
   const win = r?.innocentsWin === true;
-  // o som do resultado acompanha o placar
-  useEffect(() => {
-    if (mesa.stage !== 'score' || !r) return undefined;
-    const t = window.setTimeout(() => play(win ? 'win' : 'lose'), 500);
-    return () => window.clearTimeout(t);
-  }, [mesa.stage, r, win]);
   const onReveal = useCallback(() => play('reveal'), []);
   useEffect(() => {
     if (mesa.stage !== 'score') return undefined;
-    const t = window.setTimeout(() => play('rankcalm'), 1200);
+    const t = window.setTimeout(() => play('rankcalm'), 500);
     return () => window.clearTimeout(t);
   }, [mesa.stage]);
   if (mesa.stage === 'elim' && mesa.elim) return <ElimView snap={snap} />;

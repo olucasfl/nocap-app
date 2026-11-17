@@ -143,6 +143,24 @@ export interface ImRound {
   /** Quem fala primeiro; a ordem é a mesma em todas as rodadas de dicas. */
   order: string[];
   wordId: string;
+  /** Modo de perguntas com eliminação: uma pergunta nova por rodada (a primeira é a de `civilText`). */
+  qa?: ImRoundQuestion[];
+}
+
+export interface ImRoundQuestion {
+  id: string;
+  civil: string;
+  outsider: string;
+  theme: string | null;
+}
+
+/** O que esta pessoa vê na rodada `n` (1, 2, ...): no modo de perguntas com eliminação a pergunta muda a cada rodada. */
+export function imRoundView(round: ImRound, id: string, n: number): { text: string | null; theme: string | null } {
+  const role = round.roles[id]!;
+  const q = round.qa?.[(n - 1) % (round.qa?.length || 1)];
+  if (!q) return { text: role.text, theme: role.theme };
+  if (role.kind === 'civil') return { text: q.civil, theme: q.theme };
+  return { text: q.outsider, theme: q.theme };
 }
 
 /**
@@ -200,6 +218,7 @@ export function drawRound(input: ImDrawInput): ImRound {
   let outsiderText: string | null = null;
   let wordId: string;
   let themeId: string | null = null;
+  let qa: ImRoundQuestion[] | undefined;
   if (mode === 'wrong') {
     const qs = (input.questions ?? []).filter((q) => settings.categories.includes(q.category));
     if (qs.length === 0) throw new Error('sem perguntas nas categorias escolhidas');
@@ -210,6 +229,16 @@ export function drawRound(input: ImDrawInput): ImRound {
     outsiderText = q.qPair;
     wordId = q.id;
     themeId = q.category;
+    if (settings.voteMode === 'elim') {
+      // uma pergunta nova por rodada, sem repetir (a primeira é a sorteada acima)
+      const rest = list.filter((x) => x.id !== q.id);
+      for (let i = rest.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [rest[i], rest[j]] = [rest[j]!, rest[i]!];
+      }
+      const others = (rest.length >= IM_ELIM_MAX_ROUNDS - 1 ? rest : [...rest, ...qs.filter((x) => x.id !== q.id && !rest.includes(x))]).slice(0, IM_ELIM_MAX_ROUNDS - 1);
+      qa = [q, ...others].map((x) => ({ id: x.id, civil: x.q, outsider: x.qPair, theme: input.categoryLabels?.[x.category] ?? null }));
+    }
   } else {
     const pool = filterWords(input.words, settings);
     if (pool.length === 0) throw new Error('sem palavras nas categorias escolhidas');
@@ -251,7 +280,7 @@ export function drawRound(input: ImDrawInput): ImRound {
   }
   if (whiteId && shuffled[0] === whiteId) shuffled.push(shuffled.shift()!);
 
-  return { mode, roles, civilText, outsiderText, order: shuffled, wordId };
+  return { mode, roles, civilText, outsiderText, order: shuffled, wordId, ...(qa ? { qa } : {}) };
 }
 
 /** Atualiza o histórico depois de uma partida: zera a fila de quem foi impostor e guarda a palavra. */

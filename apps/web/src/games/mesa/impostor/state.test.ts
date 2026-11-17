@@ -143,7 +143,7 @@ describe('estado do Impostor (mesa)', () => {
       for (let i = 0; i < players; i++) s = run(s, { type: 'seen' });
       return s;
     };
-    const toVote = (s: State) => run(s, { type: 'clueNext' }, { type: 'clueNext' });
+    const toVote = (s: State) => run(s, { type: 'clueNext' }, { type: 'clueNext' }, { type: 'go', phase: 'vote' });
     /** Todos os vivos votam no mesmo alvo (quem for o alvo vota em outra pessoa). */
     const allVote = (s: State, target: string) => {
       let st = s;
@@ -158,8 +158,10 @@ describe('estado do Impostor (mesa)', () => {
     };
     const outsiderOf = (s: State) => Object.entries(s.round!.roles).filter(([, r]) => r.kind !== 'civil').map(([id]) => id);
 
-    it('depois das palavras vem a votação (sem debate) e sai um', () => {
-      let s = toVote(elimBase(6, 1));
+    it('depois das palavras vem o debate, depois a votação, e sai um', () => {
+      let s = run(elimBase(6, 1), { type: 'clueNext' }, { type: 'clueNext' });
+      expect(s.phase).toBe('talk');
+      s = run(s, { type: 'go', phase: 'vote' });
       expect(s.phase).toBe('vote');
       expect(s.elim!.alive).toHaveLength(6);
       const civil = Object.entries(s.round!.roles).find(([, r]) => r.kind === 'civil')![0];
@@ -226,7 +228,7 @@ describe('estado do Impostor (mesa)', () => {
       const [i1, i2] = outsiderOf(s);
       s = allVote(s, i1!);
       expect(elimWinner(s)).toBeNull();
-      s = run(s, { type: 'elimNext' }, { type: 'clueNext' }, { type: 'clueNext' });
+      s = run(s, { type: 'elimNext' }, { type: 'clueNext' }, { type: 'clueNext' }, { type: 'go', phase: 'vote' });
       expect(s.phase).toBe('vote');
       s = allVote(s, i2!);
       expect(elimWinner(s)).toBe('innocents');
@@ -239,12 +241,30 @@ describe('estado do Impostor (mesa)', () => {
       let s = toVote(elimBase(6, 2));
       const civils = s.players.filter((p) => s.round!.roles[p.id]!.kind === 'civil').map((p) => p.id);
       s = allVote(s, civils[0]!);
-      s = run(s, { type: 'elimNext' }, { type: 'clueNext' }, { type: 'clueNext' });
+      s = run(s, { type: 'elimNext' }, { type: 'clueNext' }, { type: 'clueNext' }, { type: 'go', phase: 'vote' });
       s = allVote(s, civils[1]!);
       expect(elimWinner(s)).toBe('impostors');
       s = run(s, { type: 'elimNext' });
       expect(s.result!.innocentsWin).toBe(false);
     });
+
+    it('modo de perguntas: cada rodada tem uma pergunta nova e todo mundo vê de novo', () => {
+      let s = initial();
+      for (let i = 0; i < 6; i++) s = reducer(s, { type: 'addPlayer', name: `J${i + 1}` });
+      s = { ...s, settings: { ...s.settings, categories: ['comida', 'animais'], impostors: 1, rounds: 3, voteMode: 'elim', mode: 'wrong' } };
+      s = run(s, { type: 'start' });
+      expect(s.round!.qa!.length).toBeGreaterThan(2);
+      for (let i = 0; i < 6; i++) s = run(s, { type: 'seen' });
+      s = toVote(s);
+      const civil = Object.entries(s.round!.roles).find(([, r]) => r.kind === 'civil')![0];
+      s = allVote(s, civil);
+      s = run(s, { type: 'elimNext' });
+      // rodada 2: volta a ver a pergunta (agora nova), só entre os vivos
+      expect(s.phase).toBe('reveal');
+      expect(s.seen).toBe(0);
+      for (let i = 0; i < 5; i++) s = run(s, { type: 'seen' });
+      expect(s.phase).toBe('clues');
+      expect(s.clueRound).toBe(2);
+    });
   });
 });
-
