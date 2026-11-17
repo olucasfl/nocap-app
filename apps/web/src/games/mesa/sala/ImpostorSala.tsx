@@ -25,12 +25,39 @@ export function ImpostorSala({ snapshot }: { snapshot: Snap }) {
     return () => window.removeEventListener('pointerdown', first);
   }, []);
   const phase = snapshot.phase;
+  // cartelas de transição, iguais às da mesa
+  const mesaS = snapshot.mesa;
+  const games = mesaS?.session.games ?? 0;
+  const wrong = mesaS?.mode === 'wrong';
+  const sp: { key: string; title: string; sub: string } | null =
+    phase === 'show' ? { key: `show-${games}`, title: `${games + 1}ª partida`, sub: 'Cada um vê o seu papel' }
+    : phase === 'play' ? { key: `play-${games}`, title: wrong ? 'Hora de responder' : 'Hora de dizer', sub: wrong ? 'Uma resposta de cada um' : 'Uma palavra de cada um' }
+    : phase === 'pick' ? { key: `pick-${games}`, title: 'Debate', sub: 'Conversem e descubram' }
+    : phase === 'vote' ? { key: `vote-${games}`, title: 'Hora de votar', sub: 'Em segredo' }
+    : phase === 'reveal' && mesaS?.stage === 'score' ? { key: `score-${games}`, title: 'Ranking', sub: 'Os pontos desta partida' }
+    : null;
+  const [doneKey, setDoneKey] = useState<string | null>(null);
+  const noSplash = (() => { try { return localStorage.getItem('im-nosplash') === '1'; } catch { return false; } })();
+  const showSplash = !!sp && sp.key !== doneKey && !noSplash;
+  useEffect(() => {
+    if (!sp || sp.key === doneKey) return undefined;
+    const ms = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 700 : 1500;
+    const t = window.setTimeout(() => setDoneKey(sp.key), ms);
+    return () => window.clearTimeout(t);
+  }, [sp?.key, doneKey]);
   const key = `${phase}-${snapshot.mesa?.stage ?? ''}-${snapshot.mesa?.speaker ?? ''}-${snapshot.mesa?.clueRound ?? 0}`;
   return (
     <div className="im-app" data-testid="sala-app" data-phase={phase}>
       <div className="im-lamp" aria-hidden="true" />
       <AskCtx.Provider value={askFn}>
         <RankSlot.Provider value={<SalaChatButton snap={snapshot} />}>
+        {showSplash && sp ? (
+          <div className="im-splash" data-testid="sala-splash" key={sp.key} onClick={() => setDoneKey(sp.key)}>
+            <span className="im-splash-bar" aria-hidden="true" />
+            <span className="im-splash-t" role="status">{sp.title}</span>
+            <span className="im-splash-s">{sp.sub}</span>
+          </div>
+        ) : (
         <div key={key} className="im-view">
           {phase === 'lobby' && <Lobby snap={snapshot} />}
           {phase === 'show' && <SeeRole snap={snapshot} />}
@@ -40,6 +67,7 @@ export function ImpostorSala({ snapshot }: { snapshot: Snap }) {
           {phase === 'reveal' && <Reveal snap={snapshot} />}
           {phase === 'final' && <Final snap={snapshot} />}
         </div>
+        )}
         </RankSlot.Provider>
         {ask && <Confirm cfg={ask} onClose={() => setAsk(null)} />}
       </AskCtx.Provider>

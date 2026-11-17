@@ -32,10 +32,10 @@ for (const d of DEVICES.filter((x) => only.includes(x.name))) {
     test.setTimeout(300_000);
     mkdirSync(OUT, { recursive: true });
     const report: string[] = [];
-    const mk = async () => {
+    const mk = async (keepSplash = false) => {
       const ctx = await browser.newContext({ locale: 'pt-BR', viewport: { width: d.w, height: d.h } });
       const p = await ctx.newPage();
-      await p.addInitScript(() => localStorage.setItem('nocap-mute', '1'));
+      await p.addInitScript((keep) => { localStorage.setItem('nocap-mute', '1'); if (!keep) localStorage.setItem('im-nosplash', '1'); }, keepSplash);
       const cdp = await ctx.newCDPSession(p);
       await setDevice(p, cdp, d);
       return p;
@@ -59,8 +59,8 @@ for (const d of DEVICES.filter((x) => only.includes(x.name))) {
     const code = A.url().split('/sala/')[1]!.slice(0, 4);
     await expect(A.getByTestId('sala-lobby')).toBeVisible({ timeout: 25_000 });
 
-    const join = async (name: string) => {
-      const P = await mk();
+    const join = async (name: string, keepSplash = false) => {
+      const P = await mk(keepSplash);
       await P.goto('/');
       await dismiss(P);
       await P.getByTestId('hub-room-toggle').click();
@@ -72,7 +72,7 @@ for (const d of DEVICES.filter((x) => only.includes(x.name))) {
       return P;
     };
     const B = await join('Bia');
-    const C = await join('Cris');
+    const C = await join('Cris', true);
     const all = [A, B, C];
     await expect(A.getByTestId('sala-tab-mesa')).toContainText('3');
     await check('lobby-jogadores', A);
@@ -111,6 +111,8 @@ for (const d of DEVICES.filter((x) => only.includes(x.name))) {
 
     const playGame = async (label: string) => {
       await A.getByTestId('sala-start').click();
+      // quem não desligou a cartela vê "Nª partida" antes do papel (só na primeira partida, para não alongar o teste)
+      if (label === 'partida1') await expect(C.getByTestId('sala-splash')).toBeVisible({ timeout: 20_000 });
       for (const p of all) await expect(p.getByTestId('sala-role')).toBeVisible({ timeout: 20_000 });
       await check(`${label}-papel`, A);
       for (const p of all) {
