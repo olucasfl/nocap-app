@@ -1,5 +1,5 @@
 /** Imagens do Impostor (Fluent Emoji 3D, Microsoft, MIT: docs/CREDITS-IMPOSTOR.md). */
-export const PEOPLE = ["danca", "meditando", "cantora", "heroi", "vila", "mago", "astronauta", "ninja", "detetive", "cozinheiro", "artista", "fada", "genio", "vampiro", "cientista", "bombeiro", "piloto", "malabarista", "surfista", "corredor", "ciclista", "elfo", "realeza", "smoking"] as const;
+export const PEOPLE = ["cantora", "heroi", "vila", "mago", "astronauta", "ninja", "detetive", "cozinheiro", "artista", "genio", "vampiro", "cientista", "bombeiro", "piloto", "malabarista", "elfo", "realeza", "smoking"] as const;
 export const ANIMALS = ["raposa", "gato", "cachorro", "leao", "tigre", "urso", "panda", "coala", "sapo", "macaco", "coruja", "pinguim", "unicornio", "lobo", "porco", "coelho", "dragao", "alien", "robo", "fantasma"] as const;
 export const AVATARS: readonly string[] = [...PEOPLE, ...ANIMALS];
 

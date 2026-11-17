@@ -738,7 +738,7 @@ const SEATS: [string, string][] = [
   ['detetive', '#2f5bff'],
   ['mago', '#ffd23f'],
   ['ninja', '#33c27f'],
-  ['fada', '#ff9ecf'],
+  ['cantora', '#ff9ecf'],
 ];
 export function TableArt() {
   return (
