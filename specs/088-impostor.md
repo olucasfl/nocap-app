@@ -1,8 +1,8 @@
-# Spec 088: Impostor (primeiro jogo da categoria "Dinner Table Games")
+# Spec 088: Impostor (primeiro jogo da categoria "Social Table Games")
 
 Pedido do Lucas (17/11/2026). Status: **modo Mesa e modo Sala feitos (17/11/2026); falta jogar com gente de verdade e calibrar os prazos da sala.**
 
-## 1. A categoria "Dinner Table Games"
+## 1. A categoria "Social Table Games"
 
 Nova categoria no início, ao lado de Fox Cap!, Word's etc. São jogos de **roda de mesa**: família e amigos sentados juntos, **um celular passado de mão em mão** (modo Mesa, sem internet), ou cada um no seu celular numa sala (modo Sala). Cada jogo da categoria tem identidade visual própria (como o Counter Fox e o Mini Golf já têm). Próximos candidatos (fora desta spec): Cidade Dorme, Mímica, Verdade ou Desafio. **Esta spec cobre só a categoria (tela de entrada) e o Impostor.**
 
@@ -132,7 +132,7 @@ Referência: o Fakeit (limpo e característico): fundo vermelho-rosa com grade, 
 
 1. Lógica pura em `packages/games/src/impostor` (papéis, sorteio justo, fases, votos, pontos, quatro modos) com testes.
 2. Conteúdo (categorias, pares, perguntas) com testes de qualidade.
-3. Categoria "Dinner Table Games" no início + tela do jogo + modo Mesa (offline).
+3. Categoria "Social Table Games" no início + tela do jogo + modo Mesa (offline).
 4. Telas de configuração, revelar papel, voto e resultado (design, mobile).
 5. Modo Sala (servidor autoritativo + lobby).
 6. Retirar o Intruso da Mesmíssima; documentos e testes de celular.
@@ -144,7 +144,7 @@ Fakeit (smak apps, 5M+ downloads, 4,5): palavra secreta, impostor sem palavra, d
 
 ## Ajustes de 17/11/2026
 
-- O jogo se chama **Dinner Table Games** e fica no 3º lugar da seção "Palavras, cores e mente" da Home; sem categoria própria nem cartões "em breve".
+- O jogo se chama **Social Table Games** e fica no 3º lugar da seção "Palavras, cores e mente" da Home; sem categoria própria nem cartões "em breve".
 - `/mesa`: home descritiva -> "Jogar Impostor" -> Online (Criar sala / Entrar com código) ou Na mesa.
 - Sair da sala online volta para `/mesa`.
 - Modo Mesa começa sem jogadores; cada um adiciona nome e foto (aleatória se não escolher).

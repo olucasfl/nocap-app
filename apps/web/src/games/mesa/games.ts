@@ -1,4 +1,4 @@
-/** Os jogos da casa "Dinner Table Games": o que já existe e o que vem por aí (cada um vira um cartão no carrossel). */
+/** Os jogos da casa "Social Table Games": o que já existe e o que vem por aí (cada um vira um cartão no carrossel). */
 export interface MesaGameStep { icon: string; title: string; text: string }
 
 export interface MesaGameInfo {

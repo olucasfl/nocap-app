@@ -129,7 +129,7 @@ function GamesCarousel({ active, onActive }: { active: number; onActive: (i: num
 }
 
 /**
- * A casa do Dinner Table Games (spec 088). Três telas: a apresentação do Impostor, a escolha de como jogar (online ou
+ * A casa do Social Table Games (spec 088). Três telas: a apresentação do Impostor, a escolha de como jogar (online ou
  * na mesa, cada uma com a sua identidade) e a entrada online (criar sala ou colocar o código). Quem sai de uma sala ou de
  * uma partida volta para cá; só deixa o jogo quem toca em "Sair".
  */
@@ -179,7 +179,7 @@ export function MesaHome() {
       <div key={step} className={`im-view${back ? ' back' : ''}`}>
         {step === 'home' && (
           <div className="im-screen" data-testid="mesa-step-home">
-            <TopBar onBack={leave} center={<span className="im-status">Dinner Table Games</span>} />
+            <TopBar onBack={leave} center={<span className="im-status">Social Table Games</span>} />
             <div className="im-body im-gamesbody">
               <GamesCarousel active={game} onActive={setGame} />
             </div>
@@ -187,7 +187,7 @@ export function MesaHome() {
               {MESA_GAMES[game]!.soon
                 ? <Primary testId="mesa-soon" tone="ghost" disabled sound={null} onClick={() => undefined}>{MESA_GAMES[game]!.name}: em breve</Primary>
                 : <Primary testId="mesa-jogar" onClick={() => go('mode')}>Jogar {MESA_GAMES[game]!.name} <ArrowIcon /></Primary>}
-              <button type="button" className="im-link" data-testid="mesa-sair" onClick={leave}>Sair do Dinner Table Games</button>
+              <button type="button" className="im-link" data-testid="mesa-sair" onClick={leave}>Sair do Social Table Games</button>
             </div>
           </div>
         )}

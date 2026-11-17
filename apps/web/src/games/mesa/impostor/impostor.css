@@ -623,7 +623,7 @@
   .im-chatlist { max-height: 46dvh; min-height: 80px; }
 }
 
-/* casa do Dinner Table Games: apresentação, escolha de como jogar e entrada online */
+/* casa do Social Table Games: apresentação, escolha de como jogar e entrada online */
 .im-cover { align-items: center; gap: 14px; text-align: center; }
 .im-cover-art { width: min(320px, 82%); aspect-ratio: 5 / 3; border-radius: 26px; overflow: hidden; background: #1a1713; box-shadow: 0 0 0 2px var(--line), 0 16px 36px rgba(0, 0, 0, 0.45); flex: none; }
 .im-cover-art .ha-table { min-height: 0; border-radius: 0; }

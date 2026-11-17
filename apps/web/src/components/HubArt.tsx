@@ -732,7 +732,7 @@ export function FoxAvatar({ fur, cap = '#2f5bff' }: { fur: string; cap?: string 
 // as capas dos jogos soltos moram em `FoxCapCovers.tsx` (as do Palavras, Cores e Mente ficam aqui)
 export { AtravessaArt, BolaArt, CounterFoxArt, DesmoronaArt, FoxGpArt, MiniGolfArt, NightHuntArt, PingArt } from './FoxCapCovers';
 
-/** Capa do Dinner Table Games: a mesa sob a lâmpada, cinco fichas com os personagens em roda e a lupa no meio. */
+/** Capa do Social Table Games: a mesa sob a lâmpada, cinco fichas com os personagens em roda e a lupa no meio. */
 const SEATS: [string, string][] = [
   ['raposa', '#ff6a2b'],
   ['detetive', '#2f5bff'],
@@ -755,7 +755,7 @@ export function TableArt() {
   );
 }
 
-/** Capa global do Dinner Table Games no Hub: a galera toda em volta da mesa sob a lâmpada (nada de um jogo só). */
+/** Capa global do Social Table Games no Hub: a galera toda em volta da mesa sob a lâmpada (nada de um jogo só). */
 const GUESTS: [string, string][] = [
   ['raposa', '#ff6a2b'],
   ['detetive', '#2f5bff'],

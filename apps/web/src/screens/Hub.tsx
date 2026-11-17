@@ -252,7 +252,7 @@ const GAMES: GameDef[] = [
     to: '/mesa',
     cls: 'hub-card-mesa',
     art: <DinnerArt />,
-    name: 'Dinner Table Games',
+    name: 'Social Table Games',
     tag: 'Jogos para a galera',
     size: 'mid',
     badge: 'NOVO',
