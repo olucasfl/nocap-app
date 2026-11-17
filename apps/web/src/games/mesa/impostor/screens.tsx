@@ -685,6 +685,7 @@ export function ElimResScreen({ s, d }: P) {
   }, [show, winner]);
   const skip = () => { setStage(3); if (winner) play(winner === 'innocents' ? 'win' : 'lose'); };
   const last = el.steps.length >= el.total;
+  const remaining = el.alive.filter((id) => s.round!.roles[id]!.kind !== 'civil').length;
   const [revealed, setRevealed] = useState(false);
   const culprits = Object.entries(s.round!.roles).filter(([, r]) => r.kind !== 'civil').map(([id]) => id);
   if (revealed) {
@@ -720,7 +721,7 @@ export function ElimResScreen({ s, d }: P) {
         )}
         {stage >= 2 && (
           <div className={`im-rolecard ${show ? (isOutsider ? 'bad' : 'ok') : 'hidden'}`} data-testid="im-rolecard">
-            {show ? <b>{isOutsider ? 'Era impostor(a)' : 'Era inocente'}</b> : <b>O papel continua em segredo</b>}
+            {show ? <b>{out.name} {isOutsider ? 'era impostor(a)' : 'era inocente'}</b> : <b>O papel continua em segredo</b>}
           </div>
         )}
         {stage >= 3 && (
@@ -737,7 +738,7 @@ export function ElimResScreen({ s, d }: P) {
                 </p>
               </>
             ) : (
-              <p className="im-sub">{show && !isOutsider ? 'Era inocente. A caçada continua.' : 'A partida continua.'}</p>
+              <p className="im-sub" data-testid="im-remaining">{show ? `Ainda ${remaining === 1 ? 'resta' : 'restam'} ${remaining} ${remaining === 1 ? 'impostor' : 'impostores'}.` : 'A partida continua.'}</p>
             )}
           </div>
         )}

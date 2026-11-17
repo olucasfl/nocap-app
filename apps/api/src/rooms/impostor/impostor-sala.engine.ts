@@ -581,6 +581,8 @@ export class ImpostorSalaEngine extends ColorRoomEngine {
               })),
               winner: this.stage === 'elim' || finished ? elimOutcome(this.elim, r) : null,
               outsiders: this.stage === 'elim' || finished ? this.outsidersCount() : null,
+              // quantos impostores ainda estão na mesa (só aparece quando o papel de quem saiu é mostrado)
+              remaining: this.roleVisible() ? this.elim.alive.filter((id) => r.roles[id]!.kind !== 'civil').length : null,
             }
           : null,
         // o papel é segredo: cada pessoa recebe só o seu (todos aparecem quando o placar fecha)

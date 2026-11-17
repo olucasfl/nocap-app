@@ -379,6 +379,7 @@ export interface MesaState {
     steps: { round: number; out: string; role: 'civil' | 'impostor' | null; votes: Record<string, string>; revote: boolean; drawn: boolean }[];
     winner: 'innocents' | 'impostors' | null;
     outsiders: number | null;
+    remaining: number | null;
   } | null;
   me?: { kind: 'civil' | 'impostor'; text: string | null; hint: string | null; theme: string | null; knowsRole: boolean; wasSeen: boolean } | null;
   myVote?: string | null;

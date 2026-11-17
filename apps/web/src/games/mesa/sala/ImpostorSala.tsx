@@ -587,7 +587,7 @@ function ElimView({ snap }: { snap: Snap }) {
         )}
         {stage >= 2 && (
           <div className={`im-rolecard ${step.role ? (isOutsider ? 'bad' : 'ok') : 'hidden'}`} data-testid="sala-rolecard">
-            <b>{step.role ? (isOutsider ? 'Era impostor(a)' : 'Era inocente') : 'O papel continua em segredo'}</b>
+            <b>{step.role ? `${nameOf(snap, step.out)} ${isOutsider ? 'era impostor(a)' : 'era inocente'}` : 'O papel continua em segredo'}</b>
           </div>
         )}
         {stage >= 3 && (
@@ -597,7 +597,11 @@ function ElimView({ snap }: { snap: Snap }) {
                 <span className={`im-banner${winner === 'innocents' ? '' : ' bad'}`}>{winner === 'innocents' ? 'Inocentes venceram' : 'Impostores venceram'}</span>
                 <p className="im-sub">{winner === 'innocents' ? `Os inocentes acharam ${el.outsiders === 1 ? 'o impostor' : 'todos os impostores'}.` : lastOne ? 'As rodadas acabaram e ainda havia impostor na mesa.' : 'Sobraram tantos impostores quanto inocentes.'}</p>
               </>
-            ) : <p className="im-sub">A partida continua.</p>}
+            ) : (
+              <p className="im-sub" data-testid="sala-remaining">
+                {el.remaining !== null ? `Ainda ${el.remaining === 1 ? 'resta' : 'restam'} ${el.remaining} ${el.remaining === 1 ? 'impostor' : 'impostores'}.` : 'A partida continua.'}
+              </p>
+            )}
           </div>
         )}
       </div>
