@@ -151,6 +151,11 @@ describe('sorteio justo ao longo da sessão', () => {
 });
 
 describe('chute', () => {
+  it('aceita o nome original ou a tradução', () => {
+    expect(guessIsRight('hog rider', 'Hog Rider (Corredor)')).toBe(true);
+    expect(guessIsRight('Corredor', 'Hog Rider (Corredor)')).toBe(true);
+    expect(guessIsRight('Mineiro', 'Hog Rider (Corredor)')).toBe(false);
+  });
   it('ignora acento, maiúscula e pontuação', () => {
     expect(normalizeGuess('  Pizzá! ')).toBe('pizza');
     expect(guessIsRight('PIZZA', 'Pizza')).toBe(true);

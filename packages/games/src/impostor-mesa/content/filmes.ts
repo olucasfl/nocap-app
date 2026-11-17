@@ -1,0 +1,38 @@
+import { questions, words, type Row } from './build';
+
+/** tipo = filme|serie|animacao; origem = brasil|mundo. */
+const R: Row[] = [
+  ['Titanic', 'Avatar', 'tipo=filme,origem=mundo'], ['Avatar', 'Titanic', 'tipo=filme,origem=mundo'], ['Harry Potter', 'O Senhor dos Anéis', 'tipo=filme,origem=mundo'],
+  ['O Senhor dos Anéis', 'Harry Potter', 'tipo=filme,origem=mundo'], ['Star Wars', 'Star Trek', 'tipo=filme,origem=mundo'], ['Jurassic Park', 'King Kong', 'tipo=filme,origem=mundo'],
+  ['King Kong', 'Godzilla', 'tipo=filme,origem=mundo'], ['Godzilla', 'King Kong', 'tipo=filme,origem=mundo'], ['Tubarão', 'Anaconda', 'tipo=filme,origem=mundo'],
+  ['Matrix', 'Inception', 'tipo=filme,origem=mundo'], ['Inception', 'Matrix', 'tipo=filme,origem=mundo'], ['Vingadores', 'Liga da Justiça', 'tipo=filme,origem=mundo'],
+  ['Batman', 'Superman', 'tipo=filme,origem=mundo'], ['Homem-Aranha', 'Batman', 'tipo=filme,origem=mundo'], ['Pantera Negra', 'Aquaman', 'tipo=filme,origem=mundo'],
+  ['Velozes e Furiosos', 'Missão Impossível', 'tipo=filme,origem=mundo'], ['Missão Impossível', 'James Bond', 'tipo=filme,origem=mundo'], ['James Bond', 'Missão Impossível', 'tipo=filme,origem=mundo'],
+  ['Piratas do Caribe', 'Indiana Jones', 'tipo=filme,origem=mundo'], ['Indiana Jones', 'Piratas do Caribe', 'tipo=filme,origem=mundo'], ['De Volta para o Futuro', 'Exterminador do Futuro', 'tipo=filme,origem=mundo'],
+  ['Exterminador do Futuro', 'RoboCop', 'tipo=filme,origem=mundo'], ['Rocky', 'Karatê Kid', 'tipo=filme,origem=mundo'], ['Karatê Kid', 'Rocky', 'tipo=filme,origem=mundo'],
+  ['Esqueceram de Mim', 'Gente Grande', 'tipo=filme,origem=mundo'], ['Barbie', 'Oppenheimer', 'tipo=filme,origem=mundo'], ['Oppenheimer', 'Barbie', 'tipo=filme,origem=mundo'],
+  ['O Rei Leão', 'Bambi', 'tipo=animacao,origem=mundo'], ['Frozen', 'Moana', 'tipo=animacao,origem=mundo'], ['Moana', 'Frozen', 'tipo=animacao,origem=mundo'],
+  ['Toy Story', 'Carros', 'tipo=animacao,origem=mundo'], ['Carros', 'Toy Story', 'tipo=animacao,origem=mundo'], ['Procurando Nemo', 'Moana', 'tipo=animacao,origem=mundo'],
+  ['Shrek', 'Madagascar', 'tipo=animacao,origem=mundo'], ['Madagascar', 'Shrek', 'tipo=animacao,origem=mundo'], ['Os Incríveis', 'Megamente', 'tipo=animacao,origem=mundo'],
+  ['Meu Malvado Favorito', 'Minions', 'tipo=animacao,origem=mundo'], ['Divertida Mente', 'Soul', 'tipo=animacao,origem=mundo'], ['Encanto', 'Moana', 'tipo=animacao,origem=mundo'],
+  ['Branca de Neve', 'Cinderela', 'tipo=animacao,origem=mundo'], ['Cinderela', 'A Bela Adormecida', 'tipo=animacao,origem=mundo'], ['Aladdin', 'Hércules', 'tipo=animacao,origem=mundo'],
+  ['Stranger Things', 'Dark', 'tipo=serie,origem=mundo'], ['Round 6', 'La Casa de Papel', 'tipo=serie,origem=mundo'], ['La Casa de Papel', 'Round 6', 'tipo=serie,origem=mundo'],
+  ['Game of Thrones', 'The Witcher', 'tipo=serie,origem=mundo'], ['Breaking Bad', 'Narcos', 'tipo=serie,origem=mundo'], ['Friends', 'The Office', 'tipo=serie,origem=mundo'],
+  ['The Office', 'Friends', 'tipo=serie,origem=mundo'], ['The Walking Dead', 'Stranger Things', 'tipo=serie,origem=mundo'], ['Wandinha', 'Stranger Things', 'tipo=serie,origem=mundo'],
+  ['Chaves', 'Chapolin', 'tipo=serie,origem=mundo'], ['Chapolin', 'Chaves', 'tipo=serie,origem=mundo'], ['Todo Mundo Odeia o Chris', 'Um Maluco no Pedaço', 'tipo=serie,origem=mundo'],
+  ['Pokémon', 'Digimon', 'tipo=animacao,origem=mundo'], ['Naruto', 'Dragon Ball', 'tipo=animacao,origem=mundo'], ['Dragon Ball', 'Naruto', 'tipo=animacao,origem=mundo'],
+  ['Bob Esponja', 'Os Padrinhos Mágicos', 'tipo=animacao,origem=mundo'], ['Os Simpsons', 'Family Guy', 'tipo=animacao,origem=mundo'], ['Turma da Mônica', 'Sítio do Picapau Amarelo', 'tipo=animacao,origem=brasil'],
+  ['Tropa de Elite', 'Cidade de Deus', 'tipo=filme,origem=brasil'], ['Cidade de Deus', 'Tropa de Elite', 'tipo=filme,origem=brasil'], ['Central do Brasil', 'Cidade de Deus', 'tipo=filme,origem=brasil'],
+  ['Auto da Compadecida', 'Dona Flor e Seus Dois Maridos', 'tipo=filme,origem=brasil'], ['Minha Mãe É uma Peça', 'De Pernas pro Ar', 'tipo=filme,origem=brasil'],
+  ['Carrossel', 'Chiquititas', 'tipo=serie,origem=brasil'], ['Malhação', 'Rebelde', 'tipo=serie,origem=brasil'], ['A Grande Família', 'Os Normais', 'tipo=serie,origem=brasil'],
+  ['Pânico na TV', 'Zorra Total', 'tipo=serie,origem=brasil', 2],
+];
+export const filmesWords = words('filmes', R);
+export const filmesQuestions = questions('filmes', [
+  ['Qual filme você assistiria de novo?', 'Qual filme você nunca terminou de ver?'],
+  ['Qual série você maratonou?', 'Qual série você abandonou?'],
+  ['Qual filme te fez chorar?', 'Qual filme te fez rir mais?'],
+  ['Qual filme é o melhor para ver em família?', 'Qual filme dá mais medo?'],
+  ['Qual personagem de filme você seria?', 'Qual personagem de filme você não suportaria?'],
+  ['Qual desenho você via na infância?', 'Qual desenho você achava chato?'],
+]);

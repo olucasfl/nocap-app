@@ -255,9 +255,15 @@ export function normalizeGuess(s: string): string {
     .trim();
 }
 
+/** "Hog Rider (Corredor)" vale como "Hog Rider", "Corredor" ou o texto inteiro. */
+export function wordAnswers(word: string): string[] {
+  const m = /^(.*?)\s*\(([^)]+)\)\s*$/.exec(word);
+  return m ? [word, m[1]!, m[2]!] : [word];
+}
+
 export function guessIsRight(guess: string, word: string): boolean {
   const g = normalizeGuess(guess);
-  return g.length > 0 && g === normalizeGuess(word);
+  return g.length > 0 && wordAnswers(word).some((a) => normalizeGuess(a) === g);
 }
 
 export const IM_POINTS = {
@@ -379,3 +385,5 @@ export function rankingShift(before: ImSession, after: ImSession): 'calm' | 'bru
   }
   return maxUp >= 2 || changed >= 3 ? 'brusque' : 'calm';
 }
+
+export * from './content';

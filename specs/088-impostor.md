@@ -84,7 +84,7 @@ Por rodada (a partida inteira, depois das N rodadas de dicas): inocente que voto
 
 **Tamanho da primeira versão:** 60 a 100 palavras por categoria (de 600 a 1000 no total), cada uma com par e etiquetas, mais 100+ pares de perguntas.
 
-**Aprovação das listas (pedido do Lucas, 17/11/2026): antes de entrar no jogo, cada lista de palavras é enviada ao Lucas inteira, categoria por categoria, e só entra depois do OK dele.** Nada de palavra nova sem ele ver.
+**Aprovação das listas:** o Clash Royale foi aprovado pelo Lucas em 17/11/2026 (nomes originais em inglês com a tradução ao lado; saíram Night Witch, Magic Archer, Skeletons, Skeleton Army, Goblins, Spear Goblins, Goblin Gang, Minions, Minion Horde, Bandit, Phoenix, Skeleton King, Archer Queen, Golden Knight, Monk, Mighty Miner e Little Prince; "Cão de Lava" é só Lava Hound). **As outras nove categorias o Lucas deixou a cargo do Claude, sem precisar mandar as listas** (só pergunta se houver dúvida importante). O chute da última chance aceita o nome original ou a tradução.
 
 **Sem categoria apimentada/adulta.** Sem assinatura, anúncio ou pacote travado.
 

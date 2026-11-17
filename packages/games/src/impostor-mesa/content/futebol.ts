@@ -1,0 +1,45 @@
+import { questions, words, type Row } from './build';
+
+/** group = jogador-brasil | jogador-mundo | time-brasil | time-mundo | selecao. */
+const R: Row[] = [
+  ['Pelé', 'Maradona', 'group=jogador-brasil'], ['Neymar', 'Vinicius Jr', 'group=jogador-brasil'], ['Ronaldo Fenômeno', 'Romário', 'group=jogador-brasil'],
+  ['Ronaldinho Gaúcho', 'Kaká', 'group=jogador-brasil'], ['Kaká', 'Ronaldinho Gaúcho', 'group=jogador-brasil'], ['Romário', 'Ronaldo Fenômeno', 'group=jogador-brasil'],
+  ['Rivaldo', 'Ronaldinho Gaúcho', 'group=jogador-brasil'], ['Roberto Carlos', 'Cafu', 'group=jogador-brasil'], ['Cafu', 'Roberto Carlos', 'group=jogador-brasil'],
+  ['Zico', 'Sócrates', 'group=jogador-brasil'], ['Garrincha', 'Pelé', 'group=jogador-brasil'], ['Vinicius Jr', 'Neymar', 'group=jogador-brasil'],
+  ['Rodrygo', 'Vinicius Jr', 'group=jogador-brasil'], ['Casemiro', 'Fabinho', 'group=jogador-brasil'], ['Marcelo', 'Roberto Carlos', 'group=jogador-brasil'],
+  ['Thiago Silva', 'Marquinhos', 'group=jogador-brasil'], ['Marquinhos', 'Thiago Silva', 'group=jogador-brasil'], ['Dani Alves', 'Cafu', 'group=jogador-brasil'],
+  ['Gabigol', 'Pedro', 'group=jogador-brasil'], ['Alisson', 'Ederson', 'group=jogador-brasil'], ['Ederson', 'Alisson', 'group=jogador-brasil'],
+  ['Dida', 'Taffarel', 'group=jogador-brasil', 2], ['Hulk', 'Neymar', 'group=jogador-brasil', 2], ['Richarlison', 'Raphinha', 'group=jogador-brasil'],
+  ['Raphinha', 'Richarlison', 'group=jogador-brasil'], ['Endrick', 'Vinicius Jr', 'group=jogador-brasil'], ['Paulinho', 'Casemiro', 'group=jogador-brasil', 2],
+  ['Lionel Messi', 'Cristiano Ronaldo', 'group=jogador-mundo'], ['Cristiano Ronaldo', 'Lionel Messi', 'group=jogador-mundo'], ['Maradona', 'Pelé', 'group=jogador-mundo'],
+  ['Mbappé', 'Haaland', 'group=jogador-mundo'], ['Haaland', 'Mbappé', 'group=jogador-mundo'], ['Zidane', 'Beckham', 'group=jogador-mundo'],
+  ['David Beckham', 'Zidane', 'group=jogador-mundo'], ['Pogba', 'Mbappé', 'group=jogador-mundo'], ['Modrić', 'Kroos', 'group=jogador-mundo'],
+  ['Kroos', 'Modrić', 'group=jogador-mundo'], ['Benzema', 'Lewandowski', 'group=jogador-mundo'], ['Lewandowski', 'Benzema', 'group=jogador-mundo'],
+  ['Salah', 'Mané', 'group=jogador-mundo'], ['De Bruyne', 'Modrić', 'group=jogador-mundo'], ['Iniesta', 'Xavi', 'group=jogador-mundo'],
+  ['Xavi', 'Iniesta', 'group=jogador-mundo'], ['Neuer', 'Courtois', 'group=jogador-mundo'], ['Buffon', 'Casillas', 'group=jogador-mundo'],
+  ['Suárez', 'Cavani', 'group=jogador-mundo'], ['Cavani', 'Suárez', 'group=jogador-mundo'], ['Ibrahimović', 'Zlatan', 'group=jogador-mundo', 2],
+  ['Flamengo', 'Fluminense', 'group=time-brasil'], ['Corinthians', 'Palmeiras', 'group=time-brasil'], ['Palmeiras', 'Corinthians', 'group=time-brasil'],
+  ['São Paulo', 'Santos', 'group=time-brasil'], ['Santos', 'São Paulo', 'group=time-brasil'], ['Vasco', 'Botafogo', 'group=time-brasil'],
+  ['Botafogo', 'Vasco', 'group=time-brasil'], ['Fluminense', 'Flamengo', 'group=time-brasil'], ['Grêmio', 'Internacional', 'group=time-brasil'],
+  ['Internacional', 'Grêmio', 'group=time-brasil'], ['Atlético Mineiro', 'Cruzeiro', 'group=time-brasil'], ['Cruzeiro', 'Atlético Mineiro', 'group=time-brasil'],
+  ['Bahia', 'Vitória', 'group=time-brasil'], ['Fortaleza', 'Ceará', 'group=time-brasil', 2], ['Athletico Paranaense', 'Coritiba', 'group=time-brasil', 2],
+  ['Real Madrid', 'Barcelona', 'group=time-mundo'], ['Barcelona', 'Real Madrid', 'group=time-mundo'], ['Manchester United', 'Manchester City', 'group=time-mundo'],
+  ['Manchester City', 'Manchester United', 'group=time-mundo'], ['Liverpool', 'Chelsea', 'group=time-mundo'], ['Chelsea', 'Arsenal', 'group=time-mundo'],
+  ['Arsenal', 'Chelsea', 'group=time-mundo'], ['Bayern de Munique', 'Borussia Dortmund', 'group=time-mundo'], ['Juventus', 'Milan', 'group=time-mundo'],
+  ['Milan', 'Inter de Milão', 'group=time-mundo'], ['Inter de Milão', 'Milan', 'group=time-mundo'], ['PSG', 'Marseille', 'group=time-mundo'],
+  ['Boca Juniors', 'River Plate', 'group=time-mundo'], ['River Plate', 'Boca Juniors', 'group=time-mundo'], ['Atlético de Madrid', 'Real Madrid', 'group=time-mundo'],
+  ['Brasil', 'Argentina', 'group=selecao'], ['Argentina', 'Brasil', 'group=selecao'], ['Alemanha', 'Itália', 'group=selecao'],
+  ['Itália', 'Alemanha', 'group=selecao'], ['França', 'Inglaterra', 'group=selecao'], ['Inglaterra', 'França', 'group=selecao'],
+  ['Espanha', 'Portugal', 'group=selecao'], ['Portugal', 'Espanha', 'group=selecao'], ['Uruguai', 'Paraguai', 'group=selecao'],
+  ['Holanda', 'Bélgica', 'group=selecao'], ['Croácia', 'Marrocos', 'group=selecao'], ['México', 'Estados Unidos', 'group=selecao'],
+  ['Japão', 'Coreia do Sul', 'group=selecao'], ['Chile', 'Colômbia', 'group=selecao'],
+];
+export const futebolWords = words('futebol', R);
+export const futebolQuestions = questions('futebol', [
+  ['Qual time você torce?', 'Qual time você nunca torceria?'],
+  ['Qual jogador você queria no seu time?', 'Qual jogador você acha superestimado?'],
+  ['Qual seleção ganha a próxima Copa?', 'Qual seleção você não quer ver na final?'],
+  ['Qual foi o melhor gol que você viu?', 'Qual foi o pior jogo que você viu?'],
+  ['Qual camisa de time você usaria?', 'Qual camisa de time você jamais usaria?'],
+  ['Qual jogador é o melhor da história?', 'Qual jogador você acha que não merecia fama?'],
+]);
