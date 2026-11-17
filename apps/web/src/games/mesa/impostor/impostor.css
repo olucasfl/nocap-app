@@ -821,3 +821,4 @@
 .im-mid > .im-hold { margin: 30px 0; }
 .im-mid .im-name, .im-mid .im-hint { position: relative; z-index: 1; }
 @media (max-height: 640px) and (min-width: 560px) { .im-mid > .im-hold { margin: 0 14px; } }
+.im-briefbox .im-icon { align-self: center; margin: 0 auto; }

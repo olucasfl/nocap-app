@@ -408,8 +408,8 @@ export function CluesScreen({ s, d }: P) {
       <div className="im-screen im-centered" data-testid="im-clues">
         <TopBar leave onBack={leave} center={status} />
         <div className="im-body im-mid">
-          <Icon name="ampulheta" size={96} className="im-hourglass big" />
           <div className="im-briefbox">
+            <Icon name="ampulheta" size={88} className="im-hourglass big" />
             <span className="im-banner">Rodada {s.clueRound}</span>
             <h2 className="im-t"><Words text={b.head} /></h2>
             <p className="im-sub" data-testid="im-brief">{b.body}</p>
