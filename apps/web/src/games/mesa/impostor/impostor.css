@@ -815,3 +815,9 @@
 @media (max-height: 500px) { .im-splash { gap: 6px; } .im-splash-t { font-size: clamp(30px, 9vw, 52px); } .im-splash-bar { height: 4px; } }
 @media (prefers-reduced-motion: reduce) { .im-splash, .im-splash-bar, .im-splash-t, .im-splash-s { animation: none; opacity: 1; transform: none; } .im-splash-bar { width: 120px; } }
 .im-mid > .im-clues { align-self: center; }
+
+/* o anel pulsante do "segure para ver" não pode passar por cima do nome nem do texto de baixo */
+@keyframes im-ping { 0% { transform: scale(0.92); opacity: 0.6; } 100% { transform: scale(1.12); opacity: 0; } }
+.im-mid > .im-hold { margin: 30px 0; }
+.im-mid .im-name, .im-mid .im-hint { position: relative; z-index: 1; }
+@media (max-height: 640px) and (min-width: 560px) { .im-mid > .im-hold { margin: 0 14px; } }
