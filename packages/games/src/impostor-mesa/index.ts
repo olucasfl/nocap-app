@@ -308,7 +308,8 @@ export function scoreResult(input: ImResultInput): ImResult {
   const outsiders = ids.filter((id) => round.roles[id]!.kind !== 'civil');
   const tally = tallyVotes(ids, votes, outsiders.length);
   const caught = outsiders.filter((o) => tally.caught.includes(o));
-  const canGuess = input.lastChance ? caught : [];
+  // no modo de perguntas não há palavra para chutar
+  const canGuess = input.lastChance && round.mode !== 'wrong' ? caught : [];
   const guessedRight = canGuess.filter((id) => input.guesses?.[id] !== undefined && guessIsRight(input.guesses[id]!, round.civilText));
   const innocentsWin = caught.length === outsiders.length && guessedRight.length === 0;
 

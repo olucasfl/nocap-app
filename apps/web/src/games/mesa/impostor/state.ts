@@ -34,6 +34,8 @@ export interface State {
   clueStep: 'brief' | 'say';
   /** Cada voto começa com "passe o celular para..."; só depois aparece a escolha. */
   voteStep: 'pass' | 'pick';
+  /** Depois do último voto: primeiro pergunta se já revela, depois vem a revelação. */
+  resultStep: 'ask' | 'reveal';
   voter: number;
   votes: Record<string, string>;
   result: ImResult | null;
@@ -69,7 +71,7 @@ export function initial(): State {
   }
   return {
     phase: 'players', back: false, players, settings, seed: randomSeed(), game: 0, history: IM_EMPTY_HISTORY, round: null,
-    seen: 0, clueRound: 1, turn: 0, clueStep: 'brief', voteStep: 'pass', voter: 0, votes: {}, result: null, guesses: {}, guessIdx: 0,
+    seen: 0, clueRound: 1, turn: 0, clueStep: 'brief', voteStep: 'pass', resultStep: 'ask', voter: 0, votes: {}, result: null, guesses: {}, guessIdx: 0,
     session: newSession(players.map((p) => p.id)), shift: 'calm', gains: {}, error: null,
   };
 }
@@ -94,6 +96,7 @@ export type Action =
   | { type: 'seen' }
   | { type: 'clueNext' }
   | { type: 'voteReady' }
+  | { type: 'revealNow' }
   | { type: 'castVote'; target: string }
   | { type: 'guess'; text: string }
   | { type: 'finish' }
@@ -181,6 +184,8 @@ export function reducer(s: State, a: Action): State {
       if (s.clueRound < clueRounds(s)) return { ...s, clueRound: s.clueRound + 1, clueStep: 'brief' };
       return { ...s, phase: 'talk', back: false };
     }
+    case 'revealNow':
+      return { ...s, resultStep: 'reveal' };
     case 'voteReady':
       return { ...s, voteStep: 'pick' };
     case 'castVote': {
@@ -189,7 +194,7 @@ export function reducer(s: State, a: Action): State {
       if (s.voter < s.players.length - 1) return { ...s, votes, voter: s.voter + 1, voteStep: 'pass', phase: 'vote', back: false };
       const ids = s.players.map((p) => p.id);
       const result = scoreResult({ ids, round: s.round!, votes, lastChance: s.settings.lastChance });
-      return { ...s, votes, result, phase: 'result', back: false, guessIdx: 0 };
+      return { ...s, votes, result, phase: 'result', resultStep: 'ask', back: false, guessIdx: 0 };
     }
     case 'guess': {
       const caught = s.result!.canGuess;

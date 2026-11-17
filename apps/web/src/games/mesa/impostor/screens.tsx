@@ -269,7 +269,7 @@ export function CfgScreen({ s, d }: P) {
     <div className="im-row" key="tm"><div><b>Debate</b><small>Depois das dicas, todos conversam por esse tempo para descobrir quem é o impostor. Depois vem a votação.</small></div><Stepper value={ti} label="tempo do debate" min={0} max={TIMES.length - 1} format={(n) => fmtTime(TIMES[n]!)} onChange={(n) => d({ type: 'settings', patch: { talkSeconds: TIMES[n]! } })} /></div>,
   ];
   if (c.mode === 'classic' && c.categories.length > 2) rows.push(<div className="im-row" key="hint"><div><b>Dica de categoria</b><small>O impostor vê o tema da palavra. Só aparece com mais de 2 temas.</small></div><Switch on={c.hint} label="Dica de categoria" onChange={(v) => d({ type: 'settings', patch: { hint: v } })} /></div>);
-  rows.push(<div className="im-row" key="last"><div><b>Última chance</b><small>Se o impostor for pego, ainda tenta acertar a palavra. Acertando, ganha poucos pontos (os inocentes ganham mais). Escapar sem ser pego vale muito mais.</small></div><Switch on={c.lastChance} label="Última chance" onChange={(v) => d({ type: 'settings', patch: { lastChance: v } })} /></div>);
+  if (c.mode !== 'wrong') rows.push(<div className="im-row" key="last"><div><b>Última chance</b><small>Se o impostor for pego, ainda tenta acertar a palavra. Acertando, ganha poucos pontos (os inocentes ganham mais). Escapar sem ser pego vale muito mais.</small></div><Switch on={c.lastChance} label="Última chance" onChange={(v) => d({ type: 'settings', patch: { lastChance: v } })} /></div>);
   return (
     <div className="im-screen" data-testid="im-cfg">
       <TopBar onBack={() => d({ type: 'go', phase: 'cats', back: true })} center={<Steps at={3} />} />
@@ -542,33 +542,87 @@ function Confetti() {
   return <div className="im-conf" aria-hidden="true">{bits.map((b, i) => <i key={i} style={{ left: `${b.x}%`, animationDelay: `${b.dl}s`, background: cols[b.c] }} />)}</div>;
 }
 
+/** Revelação com tensão: pergunta, suspense, quem é, quem votou, veredito. */
 export function ResultScreen({ s, d }: P) {
   const r = s.result!;
+  const leave = useLeave(d);
   const guessing = r.canGuess.length > 0;
   const win = r.innocentsWin;
-  // o som vem junto com a revelação (depois do título entrar), não por cima do som do voto
+  const many = r.outsiders.length > 1;
+  const voters = s.players.filter((p) => !r.outsiders.includes(p.id));
+  // 0 suspense · 1 nomes · 2 quem votou · 3 veredito e botão
+  const [stage, setStage] = useState(0);
+  const asking = s.resultStep === 'ask';
   useEffect(() => {
-    const t = window.setTimeout(() => play(guessing ? 'reveal' : win ? 'win' : 'lose'), 700);
-    return () => window.clearTimeout(t);
-  }, [guessing, win]);
-  const top = Object.entries(r.counts).sort((a, b) => b[1] - a[1]).slice(0, 3);
-  const head = guessing ? (r.canGuess.length === 1 ? `Pegaram ${by(s, r.canGuess[0]!).name}` : 'Pegaram os impostores') : win ? 'Impostor pego!' : r.caught.length ? 'Alguns escaparam!' : 'O impostor escapou!';
-  return (
-    <div className="im-screen im-centered" data-testid="im-result">
-      {!guessing && win && <Confetti />}
-      <TopBar center={<span className="im-status">Resultado</span>} />
-      <div className="im-body im-mid">
-        <span className={`im-banner${!guessing && !win ? ' bad' : guessing ? ' warn' : ''}`}>{guessing ? 'Última chance' : win ? 'Inocentes venceram' : 'Impostor venceu'}</span>
-        <h2 className="im-t"><Words text={head} /></h2>
-        <div className="im-reveal">
-          {r.outsiders.map((id, i) => <span key={id} style={{ '--i': i } as CSSProperties}>{coinOf(s, id, 'lg')}</span>)}
+    if (asking) return undefined;
+    setStage(0);
+    const rowsMs = voters.length * 320 + 500;
+    const ts = [
+      window.setTimeout(() => { setStage(1); play('reveal'); }, 2600),
+      window.setTimeout(() => setStage(2), 4400),
+      window.setTimeout(() => { setStage(3); if (!guessing) play(win ? 'win' : 'lose'); }, 4400 + rowsMs),
+    ];
+    return () => ts.forEach((t) => window.clearTimeout(t));
+  }, [asking, voters.length, guessing, win]);
+  const skip = () => { setStage(3); play(guessing ? 'reveal' : win ? 'win' : 'lose'); };
+
+  if (asking) {
+    return (
+      <div className="im-screen im-centered" data-testid="im-result">
+        <TopBar leave onBack={leave} center={<span className="im-status">Resultado</span>} />
+        <div className="im-body im-mid">
+          <Icon name="lupa" size={120} className="im-hourglass big" />
+          <h2 className="im-t"><Words text="Todos votaram" /></h2>
+          <p className="im-sub">{many ? 'Já podem revelar os impostores desta rodada?' : 'Já podem revelar o impostor desta rodada?'}</p>
         </div>
-        <p className="im-sub">{top.map(([id, n]) => `${by(s, id).name} ${n} ${n === 1 ? 'voto' : 'votos'}`).join(' · ')}</p>
+        <div className="im-foot"><Primary testId="im-revealnow" sound="start" onClick={() => d({ type: 'revealNow' })}>{many ? 'Revelar os impostores' : 'Revelar o impostor'} <ArrowIcon /></Primary></div>
+      </div>
+    );
+  }
+
+  const names = r.outsiders.map((id) => by(s, id).name);
+  return (
+    <div className={`im-screen im-centered im-tense${stage >= 1 ? ' lit' : ''}`} data-testid="im-result" data-stage={stage}>
+      {stage >= 3 && !guessing && win && <Confetti />}
+      <TopBar center={<span className="im-status">Resultado</span>} />
+      <div className="im-body im-mid im-revbody">
+        <p className="im-suspense" aria-live="polite">
+          {many ? 'Os impostores são' : 'O impostor é'}
+          {stage === 0 && <span className="im-dots" aria-hidden="true"><i /><i /><i /></span>}
+        </p>
+        {stage >= 1 && (
+          <div className="im-slam" data-testid="im-culprits">
+            <div className="im-reveal">{r.outsiders.map((id, i) => <span key={id} style={{ '--i': i } as CSSProperties}>{coinOf(s, id, many ? 'lg' : 'xl')}</span>)}</div>
+            <h2 className="im-culprit">{names.join(' e ')}</h2>
+          </div>
+        )}
+        {stage >= 2 && (
+          <ul className="im-voters" aria-label="Quem votou">
+            {voters.map((p, i) => {
+              const hit = r.outsiders.includes(s.votes[p.id] ?? '');
+              return (
+                <li key={p.id} className={`im-voter ${hit ? 'hit' : 'miss'}`} style={{ '--i': i } as CSSProperties}>
+                  {coinOf(s, p.id, 'sm')}
+                  <b>{p.name}</b>
+                  <span>{hit ? <><CheckIcon /> votou</> : 'não votou'}</span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        {stage >= 3 && (
+          <div className="im-verdict" data-testid="im-verdict">
+            <span className={`im-banner${!guessing && !win ? ' bad' : guessing ? ' warn' : ''}`}>{guessing ? 'Última chance' : win ? 'Inocentes venceram' : 'Impostor venceu'}</span>
+            <p className="im-sub">{guessing ? (many ? 'Os impostores pegos ainda podem tentar acertar a palavra.' : `${names[0]} foi pego, mas ainda pode tentar acertar a palavra.`) : win ? 'Todos os impostores foram pegos.' : r.caught.length ? 'Pelo menos um impostor escapou.' : 'Ninguém pegou o impostor.'}</p>
+          </div>
+        )}
       </div>
       <div className="im-foot">
-        {guessing
-          ? <Primary tone="blue" testId="im-guess" onClick={() => d({ type: 'go', phase: 'guess' })}>{r.canGuess.length === 1 ? `${by(s, r.canGuess[0]!).name} vai chutar` : 'Chutar a palavra'}</Primary>
-          : <Primary testId="im-score" onClick={() => d({ type: 'finish' })}>Ver placar <ArrowIcon /></Primary>}
+        {stage < 3
+          ? <button type="button" className="im-link" data-testid="im-skip" onClick={skip}>Pular a revelação</button>
+          : guessing
+            ? <Primary tone="blue" testId="im-guess" onClick={() => d({ type: 'go', phase: 'guess' })}>{r.canGuess.length === 1 ? `${by(s, r.canGuess[0]!).name} vai chutar` : 'Chutar a palavra'}</Primary>
+            : <Primary testId="im-score" onClick={() => d({ type: 'finish' })}>Ver ranking <ArrowIcon /></Primary>}
       </div>
     </div>
   );
@@ -606,6 +660,25 @@ export function GuessScreen({ s, d }: P) {
   );
 }
 
+/** Número que sobe de `from` até `to` (só o texto muda; nada de layout animado). */
+function Count({ to, from, delay }: { to: number; from: number; delay: number }) {
+  const [v, setV] = useState(from);
+  useEffect(() => {
+    if (from === to || window.matchMedia('(prefers-reduced-motion: reduce)').matches) { setV(to); return undefined; }
+    let raf = 0;
+    const t0 = performance.now() + delay;
+    const dur = 900;
+    const tick = (now: number) => {
+      const k = Math.min(1, Math.max(0, (now - t0) / dur));
+      setV(Math.round(from + (to - from) * (1 - (1 - k) ** 3)));
+      if (k < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [to, from, delay]);
+  return <>{v}</>;
+}
+
 export function ScoreScreen({ s, d }: P) {
   const ask = useAsk();
   const rows = sessionRanking(s.session);
@@ -634,7 +707,7 @@ export function ScoreScreen({ s, d }: P) {
                 <span className="im-cw">{coinOf(s, row.id, 'sm')}{lead.has(row.id) && <Icon name="coroa" size={34} className="im-crown" />}</span>
                 <b>{by(s, row.id).name}</b>
                 {g > 0 && <span className="im-gain">+{g}</span>}
-                <span className="im-pts">{row.points}<small>pts</small></span>
+                <span className="im-pts"><Count to={row.points} from={row.points - g} delay={900} /><small>pts</small></span>
               </li>
             );
           })}

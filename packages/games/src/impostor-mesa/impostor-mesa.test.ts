@@ -258,4 +258,14 @@ describe('sessão e ranking', () => {
     const off = go(['comida', 'futebol', 'animais'], false);
     expect(Object.values(off.roles).find((x) => x.kind === 'impostor')!.hint).toBeNull();
   });
+
+  it('modo de perguntas: não existe última chance de chute', () => {
+    const q: ImQuestion = { id: 'q1', category: 'comida', q: 'Qual a sua comida favorita?', qPair: 'Qual a sua bebida favorita?' };
+    const round = drawRound({ ids, settings: base({ mode: 'wrong' }), words, questions: [q], seed: 's', roundIndex: 0, history: IM_EMPTY_HISTORY });
+    const imp = Object.entries(round.roles).find(([, r]) => r.kind === 'impostor')![0];
+    const votes = Object.fromEntries(ids.filter((i) => i !== imp).map((i) => [i, imp]));
+    const r = scoreResult({ ids, round, votes, lastChance: true });
+    expect(r.canGuess).toEqual([]);
+    expect(r.innocentsWin).toBe(true);
+  });
 });

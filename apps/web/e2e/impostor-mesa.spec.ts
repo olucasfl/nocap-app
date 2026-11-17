@@ -116,6 +116,13 @@ for (const d of DEVICES.filter((x) => only.includes(x.name))) {
       await page.locator('[data-testid^="im-vote-"]').first().click();
       await page.getByTestId('im-cast').click();
     }
+    await expect(page.getByTestId('im-revealnow')).toBeVisible();
+    await check('revelar-pergunta');
+    await page.getByTestId('im-revealnow').click();
+    await page.waitForTimeout(3000);
+    await check('revelando');
+    await page.getByTestId('im-skip').click();
+    await expect(page.getByTestId('im-verdict')).toBeVisible();
     await check('resultado');
     if (await page.getByTestId('im-guess').count()) {
       await page.getByTestId('im-guess').click();
@@ -133,6 +140,9 @@ for (const d of DEVICES.filter((x) => only.includes(x.name))) {
     for (let guard = 0; guard < 60 && (await page.getByTestId('im-next').count()); guard++) await page.getByTestId('im-next').click();
     await toVote(page);
     for (let i = 0; i < n; i++) { await page.getByTestId('im-voteready').click(); await page.locator('[data-testid^="im-vote-"]').first().click(); await page.getByTestId('im-cast').click(); }
+    await page.getByTestId('im-revealnow').click();
+    await page.getByTestId('im-skip').click();
+    await expect(page.getByTestId('im-verdict')).toBeVisible();
     if (await page.getByTestId('im-guess').count()) {
       await page.getByTestId('im-guess').click();
       for (let g = 0; g < 3 && (await page.getByTestId('im-guess-input').count()); g++) { await page.getByTestId('im-guess-input').fill('x'); await page.getByTestId('im-guess-send').click(); }

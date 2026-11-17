@@ -88,7 +88,7 @@ export function ImpostorGame() {
       <AskCtx.Provider value={askRef}>
         <RankSlot.Provider value={NO_RANK.includes(s.phase) ? null : <RankChip s={s} onOpen={() => setRank(true)} />}>
           <Guard onReset={() => d({ type: 'reset' })}>
-            <div key={`${s.phase}-${s.seen}-${s.voter}-${s.guessIdx}-${s.clueStep}-${s.clueRound}-${s.voteStep}`} className={`im-view${s.back ? ' back' : ''}`}>
+            <div key={`${s.phase}-${s.seen}-${s.voter}-${s.guessIdx}-${s.clueStep}-${s.clueRound}-${s.voteStep}-${s.resultStep}`} className={`im-view${s.back ? ' back' : ''}`}>
               <Screen s={s} d={d} exit={exit} />
             </div>
           </Guard>
