@@ -68,6 +68,10 @@ export const GROUPS: Record<string, [string, string, Act?][]> = {
   ],
   nighthunt: [['nighthunt', '/nighthunt']],
   sala: [['sala', '/sala?jogo=color']],
+  mesa: [
+    ['mesa-home', '/mesa'],
+    ['impostor-jogadores', '/mesa/impostor'],
+  ],
 };
 
 const only = process.env.AUDIT;

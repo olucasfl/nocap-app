@@ -1,6 +1,6 @@
 # Spec 088: Impostor (primeiro jogo da categoria "Dinner Table Games")
 
-Pedido do Lucas (17/11/2026). Status: **rascunho; regras e categorias aprovadas em 17/11/2026; falta o OK do design (seção 8).**
+Pedido do Lucas (17/11/2026). Status: **em andamento (17/11/2026): regras, conteúdo (659 palavras), categoria `/mesa` e modo Mesa feitos; falta o modo Sala (online) e a remoção do Intruso na sala.**
 
 ## 1. A categoria "Dinner Table Games"
 

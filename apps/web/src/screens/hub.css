@@ -1362,3 +1362,14 @@ a.hz-today:active {
   .hz-roomtop-btn { font-size: 17px; padding-bottom: 6px; }
   .hz-online-sec .hz-friend { min-height: 38px; }
 }
+
+/* Dinner Table Games: o cartão do Impostor (spec 088) */
+.hub-card-mesa {
+  background: #1a1713;
+  color: #f6f2ea;
+}
+.hub-mesa-art {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+}
