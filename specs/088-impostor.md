@@ -45,7 +45,7 @@ Por rodada: inocente que votou num impostor de verdade +2; inocentes ganham +1 s
 
 ## 7. Conteúdo
 
-- **Palavras:** categorias em pt-BR com palavras e **pares parecidos** (para o modo 2/3) e **perguntas pareadas** (modo 4). Meta da primeira versão: **10 categorias, 500+ palavras com par**, 100+ pares de perguntas. Categorias iniciais: Hora da Festa, Celebridades, Comida, Apimentado (adulto, escondido atrás de aviso), Animais, Lugares, Profissões, Filmes e Séries, Esportes, Tecnologia.
+- **Palavras:** categorias em pt-BR com palavras e **pares parecidos** (para o modo 2/3) e **perguntas pareadas** (modo 4). Meta da primeira versão: **10 categorias, 500+ palavras com par**, 100+ pares de perguntas. Categorias: **a definir com o Lucas (17/11/2026)**. Já decidido: **sem categoria apimentada/adulta**; **uma categoria de Clash Royale** com as cartas e personagens mais conhecidos (lista conferida no wiki do jogo).
 - Conteúdo só no servidor para a sala; no modo Mesa vai no app (offline). Teste barra palavra repetida, par igual à palavra e categoria vazia.
 - A palavra parecida precisa ser **boa**: parecida o bastante para confundir, diferente o bastante para as dicas diferirem (cachorro/lobo, não cachorro/foguete).
 - **Sem assinatura, anúncio ou pacote travado** (queixa número 1 dos apps).
@@ -56,7 +56,7 @@ Referência: o Fakeit (limpo e característico): fundo vermelho-rosa com grade, 
 
 ## 9. O que muda no que já existe
 
-- O **Intruso** (variante da Cor, spec 011) sai da Mesmíssima e do seletor de jogos da sala; a Mesmíssima volta a ter só os modos de cor. O código do Intruso fica até o Impostor novo passar nos testes, depois é removido em commit próprio (a lógica de papéis e votos é aproveitada).
+- O **Intruso** (variante da Cor, spec 011) **saiu da lista de modos da Mesmíssima em 17/11/2026** (pedido do Lucas). O Impostor novo reaproveita o id de sala `impostor`; o código do Intruso na sala (servidor e telas) é substituído na etapa 5 e removido em commit próprio.
 - A sala ganha o Impostor no seletor (categoria "Mesa") e atividade "jogando Impostor" na presença (spec 087).
 - Nada de migration: partidas de mesa e sala não ficam salvas no histórico nesta versão.
 

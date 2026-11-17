@@ -7,8 +7,7 @@ import { dailyMax, fetchStats, recordText } from '@/lib/stats';
 import type { Mode } from '../types';
 
 /** Modos de partida solo. O Daily é um cartão à parte, dentro do jogo. */
-/** O Intruso só existe em sala: aparece na lista como os outros, mas a ficha leva a criar uma sala. */
-type ModeId = Mode | 'impostor';
+type ModeId = Mode;
 
 const MODES: { id: ModeId; label: string; desc: string }[] = [
   { id: 'classic', label: 'Clássico', desc: '3 RODADAS · 3 S' },
@@ -16,13 +15,10 @@ const MODES: { id: ModeId; label: string; desc: string }[] = [
   { id: 'quick', label: 'Rápido', desc: '1 RODADA' },
   { id: 'blind', label: 'Às cegas', desc: 'SEM PRÉVIA' },
   { id: 'survival', label: 'Sobrevivência', desc: '3 VIDAS' },
-  { id: 'impostor', label: 'Intruso', desc: 'SÓ COM AMIGOS' },
   { id: 'daily', label: 'Daily', desc: '1 POR DIA · RANKING' },
 ];
 
 const LEAD: Record<ModeId, string> = {
-  impostor:
-    'A turma recria a mesma cor, mas alguns são intrusos: não veem a cor, só uma dica. Depois todo mundo vota em quem acha que é o intruso.',
   classic:
     'Uma cor aparece por 3 segundos. Depois some. Recrie de memória nos controles e veja o quanto você chegou perto.',
   flash: 'A cor pisca por menos de meio segundo. Sem tempo pra pensar: confie no olho.',
@@ -59,32 +55,25 @@ export function StartScreen({ initialTab, mode, onMode, onStart }: Props) {
   const daily = stats.data?.daily.color;
   const modes: HubMode[] = MODES.filter((m) => m.id !== 'daily').map((m) => {
     const id = m.id;
-    const preset = id === 'impostor' ? null : colorPresets[id as Mode]!;
+    const preset = colorPresets[id as Mode]!;
     return {
       id,
       label: m.label,
       sub: m.desc,
       lead: LEAD[id],
-      roomGame: id === 'impostor' ? 'impostor' : undefined,
-      record: id === 'impostor' ? null : recordText(stats.data, 'color', id as Mode),
+      record: recordText(stats.data, 'color', id as Mode),
       rules:
-        id === 'impostor'
+        id === 'survival'
           ? [
-              ['3-12', 'pessoas'],
-              ['1-3', 'intrusos'],
-              ['300+', 'cores'],
+              ['3', 'vidas'],
+              ['6→9', 'nota mínima'],
+              [String(SURVIVAL_MAX_ROUNDS.color), 'rodadas máx.'],
             ]
-          : id === 'survival'
-            ? [
-                ['3', 'vidas'],
-                ['6→9', 'nota mínima'],
-                [String(SURVIVAL_MAX_ROUNDS.color), 'rodadas máx.'],
-              ]
-            : [
-                [String(preset!.rounds), preset!.rounds === 1 ? 'rodada' : 'rodadas'],
-                [seconds(preset!.showMs), 'pra decorar'],
-                [String(preset!.rounds * 10), 'pontos max'],
-              ],
+          : [
+              [String(preset.rounds), preset.rounds === 1 ? 'rodada' : 'rodadas'],
+              [seconds(preset.showMs), 'pra decorar'],
+              [String(preset.rounds * 10), 'pontos max'],
+            ],
     };
   });
 
