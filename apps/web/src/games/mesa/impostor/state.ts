@@ -92,7 +92,7 @@ export type Action =
   | { type: 'removePlayer'; id: string }
   | { type: 'setAvatar'; id: string; avatar: string }
   | { type: 'settings'; patch: Partial<ImSettings> }
-  | { type: 'filter'; category: string; tag: string; value: string }
+  | { type: 'filter'; category: string; tag: string; value: string; /** todos os valores da opção (lista vazia no estado = tudo incluído) */ all: readonly string[] }
   | { type: 'toggleCategory'; id: string }
   | { type: 'start' }
   | { type: 'seen' }
@@ -155,9 +155,13 @@ export function reducer(s: State, a: Action): State {
       return { ...s, settings: { ...s.settings, categories } };
     }
     case 'filter': {
-      const cur = s.settings.filters?.[a.category]?.[a.tag] ?? [];
+      const stored = s.settings.filters?.[a.category]?.[a.tag] ?? [];
+      // lista vazia guardada = tudo incluído: o primeiro toque tira só aquele item e deixa os outros
+      const cur = stored.length === 0 ? [...a.all] : stored;
       const next = cur.includes(a.value) ? cur.filter((v) => v !== a.value) : [...cur, a.value];
-      const filters = { ...s.settings.filters, [a.category]: { ...s.settings.filters?.[a.category], [a.tag]: next } };
+      if (next.length === 0) return s; // pelo menos uma opção precisa ficar marcada
+      const value = next.length >= a.all.length ? [] : next;
+      const filters = { ...s.settings.filters, [a.category]: { ...s.settings.filters?.[a.category], [a.tag]: value } };
       return { ...s, settings: { ...s.settings, filters } };
     }
     case 'start': {

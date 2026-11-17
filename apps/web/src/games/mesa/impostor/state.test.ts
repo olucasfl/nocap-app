@@ -30,10 +30,17 @@ describe('estado do Impostor (mesa)', () => {
     expect(run(base(), { type: 'settings', patch: { rounds: 9 } }).settings.rounds).toBe(5);
     expect(run(base(), { type: 'settings', patch: { rounds: 0 } }).settings.rounds).toBe(1);
   });
-  it('filtros: marcar e desmarcar um valor', () => {
-    let s = run(base(), { type: 'filter', category: 'futebol', tag: 'group', value: 'selecao' });
-    expect(s.settings.filters!.futebol!.group).toEqual(['selecao']);
-    s = run(s, { type: 'filter', category: 'futebol', tag: 'group', value: 'selecao' });
+  it('filtros: com tudo marcado, tocar tira só aquele item; tocar de novo põe de volta', () => {
+    const all = ['a', 'b', 'c'];
+    const f = (st: State, value: string) => run(st, { type: 'filter', category: 'futebol', tag: 'group', value, all });
+    let s = f(base(), 'a');
+    expect(s.settings.filters!.futebol!.group).toEqual(['b', 'c']);
+    s = f(s, 'b');
+    expect(s.settings.filters!.futebol!.group).toEqual(['c']);
+    // o último marcado não sai (sem nada marcado não há palavra para sortear)
+    expect(f(s, 'c')).toBe(s);
+    s = f(s, 'a');
+    s = f(s, 'b');
     expect(s.settings.filters!.futebol!.group).toEqual([]);
   });
   it('poucas palavras bloqueiam o começo', () => {

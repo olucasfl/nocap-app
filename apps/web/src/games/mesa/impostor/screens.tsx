@@ -171,7 +171,7 @@ export function CategorySheet({ s, d, id, onClose }: { s: State; d: (a: Action) 
                     style={{ '--i': i } as CSSProperties}
                     aria-pressed={on}
                     data-testid={`im-f-${cat.id}-${o.value}`}
-                    onClick={() => { play(on ? 'off' : 'on'); d({ type: 'filter', category: cat.id, tag: f.tag, value: o.value }); }}
+                    onClick={() => { play(on ? 'off' : 'on'); d({ type: 'filter', category: cat.id, tag: f.tag, value: o.value, all: f.options.map((x) => x.value) }); }}
                   >
                     <span className="im-tick" aria-hidden="true"><CheckIcon /></span>
                     <span className="im-choice-t">{o.label}</span>
