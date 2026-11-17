@@ -41,9 +41,17 @@ Escolha do modo na tela de configuração, como as cartas do Fakeit.
 - **Quem ganha a rodada:** inocentes, se **todos** os impostores foram pegos e nenhum adivinhou; impostores, caso contrário.
 - **Resultado:** mostra quem era impostor, a palavra (e a parecida), os votos e os pontos.
 
+## 5b. Sessão da mesa e ranking sempre à vista (Lucas, 17/11/2026)
+
+Uma **sessão** é a mesa inteira jogando várias partidas seguidas, na mesma sala (mesa ou online):
+- Ao acabar uma partida, **todos veem o resultado e escolhem: continuar ou parar**. Ao continuar, o host pode **trocar categorias, modo e ajustes** antes da próxima.
+- O **ranking da sessão** fica **sempre à vista** (faixa pequena com os 3 primeiros no topo ou no pé da tela) e **expande ao toque** para a lista completa. Os pontos de todas as partidas **somam**.
+- Joga-se **quantas partidas quiserem**. Quando ninguém quer mais, o host encerra e aparece a **tela final do ranking** (pódio e lista) e a sessão termina.
+- Não há limite de partidas por sessão. O ranking da sessão não vai para o ranking global do NoCap.
+
 ## 6. Pontuação (placar acumulado, escolhido em 17/11/2026)
 
-Por rodada (a partida inteira, depois das N rodadas de dicas): inocente que votou num impostor de verdade +2; inocentes ganham +1 se a rodada for deles; impostor que não foi pego +4; impostor pego que adivinha a palavra +3; Mr. White que adivinha +5. Vence quem somar mais depois de N rodadas (padrão 5, o host escolhe 1 a 10). Empate no placar final: ganha quem foi impostor e sobreviveu mais vezes. Sem ranking global: partida de mesa e sala nunca entram no ranking (regra do app).
+Por rodada (a partida inteira, depois das N rodadas de dicas): inocente que votou num impostor de verdade +2; inocentes ganham +1 se a rodada for deles; impostor que não foi pego +4; impostor pego que adivinha a palavra +3; Mr. White que adivinha +5. Os pontos **somam durante toda a sessão** (seção 5b); não há número fixo de partidas. Empate no ranking final: ganha quem foi impostor e sobreviveu mais vezes. Sem ranking global: partida de mesa e sala nunca entram no ranking (regra do app).
 
 ## 7. Conteúdo
 
