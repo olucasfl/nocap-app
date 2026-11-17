@@ -11,7 +11,7 @@ for (const d of DEVICES.filter((x) => only.includes(x.name))) {
     await installApi(page);
     const cdp = await context.newCDPSession(page);
     await setDevice(page, cdp, d);
-    await page.addInitScript(() => localStorage.setItem('nocap-mute', '1'));
+    await page.addInitScript(() => { localStorage.setItem('nocap-mute', '1'); localStorage.setItem('im-nosplash', '1'); });
     const check = async (label: string) => {
       await page.waitForTimeout(600);
       if (process.env.IMP_SHOTS) await page.screenshot({ path: `test-results/carrossel-${label}-${d.name}.png` });
@@ -21,7 +21,6 @@ for (const d of DEVICES.filter((x) => only.includes(x.name))) {
     await page.getByRole('button', { name: 'Agora não' }).click({ timeout: 1500 }).catch(() => undefined);
     await page.goto('/mesa');
     await expect(page.getByTestId('mesa-jogar')).toBeVisible();
-    await expect(page.getByTestId('mesa-prev')).toBeDisabled();
     await check('impostor');
     await page.getByTestId('mesa-next').click();
     await expect(page.getByTestId('mesa-soon')).toBeVisible();
@@ -29,11 +28,32 @@ for (const d of DEVICES.filter((x) => only.includes(x.name))) {
     await check('frase-maluca');
     await page.getByTestId('mesa-next').click();
     await expect(page.getByTestId('mesa-soon')).toContainText('Mímica');
-    await expect(page.getByTestId('mesa-next')).toBeDisabled();
     await check('mimica');
+    // dá a volta: depois da Mímica vem o Impostor; e para trás também
+    await page.getByTestId('mesa-next').click();
+    await expect(page.getByTestId('mesa-jogar')).toBeVisible();
+    await page.getByTestId('mesa-prev').click();
+    await expect(page.getByTestId('mesa-soon')).toContainText('Mímica');
     await page.getByTestId('mesa-prev').click();
     await page.getByTestId('mesa-prev').click();
     await expect(page.getByTestId('mesa-jogar')).toBeVisible();
     expect(report, report.join('\n')).toEqual([]);
   });
 }
+
+/** A roda gira sozinha a cada 5 s (sem a trava dos testes) e para quando o mouse está em cima. */
+test('mesa carrossel gira sozinho', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'um projeto basta');
+  await installApi(page);
+  await page.addInitScript(() => localStorage.setItem('nocap-mute', '1'));
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Agora não' }).click({ timeout: 1500 }).catch(() => undefined);
+  await page.goto('/mesa');
+  await expect(page.getByTestId('mesa-jogar')).toBeVisible();
+  await expect(page.getByTestId('mesa-soon')).toContainText('Frase Maluca', { timeout: 8000 });
+  // com o mouse em cima, não gira
+  await page.getByTestId('mesa-carousel').hover();
+  await page.waitForTimeout(6500);
+  await expect(page.getByTestId('mesa-soon')).toContainText('Frase Maluca');
+});
+

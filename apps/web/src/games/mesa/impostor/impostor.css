@@ -838,18 +838,38 @@
 
 /* ===== Carrossel de jogos do /mesa ===== */
 .im-gamesbody { gap: 14px; align-items: stretch; }
-.im-car { display: flex; flex-direction: column; gap: 10px; outline: none; }
-.im-car-track { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; align-items: flex-start; }
-.im-car-track::-webkit-scrollbar { display: none; }
-.im-car-slide { flex: 0 0 100%; min-width: 0; scroll-snap-align: center; }
-.im-car-nav { display: flex; align-items: center; justify-content: center; gap: 14px; }
-.im-car-arrow:disabled { opacity: 0.3; }
 .im-arrow-flip { display: inline-grid; transform: scaleX(-1); }
-.im-dots { display: flex; gap: 0; align-items: center; }
+.im-dots { display: flex; gap: 0; align-items: center; justify-content: center; }
 .im-dot { width: 40px; height: 40px; min-width: 0; padding: 0; background: none; display: grid; place-items: center; }
 .im-dot::before { content: ''; width: 12px; height: 12px; border-radius: 50%; background: var(--line); transition: background 0.25s, transform 0.25s var(--ease); }
 .im-dot.on::before { background: var(--orange); transform: scale(1.3); }
+
+/* roda de jogos: centro em destaque, sombras dos vizinhos e setas nas laterais da tela */
+.im-wheel { display: flex; flex-direction: column; gap: 6px; outline: none; }
+.im-wheel-stage { display: grid; perspective: 1100px; perspective-origin: 50% 40%; overflow: hidden; padding-block: 4px; }
+.im-wheel-item { grid-area: 1 / 1; justify-self: center; width: min(100%, 520px); min-width: 0; transform-origin: 50% 40%; will-change: transform, opacity;
+  transform: translateX(calc(var(--o) * 66%)) translateZ(calc(var(--a) * -170px)) rotateY(calc(var(--o) * -32deg)) scale(calc(1 - var(--a) * 0.1));
+  opacity: calc(1 - var(--a) * 0.62); z-index: calc(3 - var(--a));
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s ease; }
+.im-wheel-item:not(.on) { pointer-events: auto; cursor: pointer; }
+.im-wheel-item:not(.on) * { pointer-events: none; }
+.im-wheel-item[style*="--a: 2"] { visibility: hidden; transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s ease, visibility 0s 0.7s; }
+.im-wheel-arrow { position: absolute; top: 50%; z-index: 6; width: 52px; height: 52px; margin-top: -26px; border-radius: 50%; display: grid; place-items: center; background: rgba(32, 28, 23, 0.82); box-shadow: 0 0 0 2px var(--line), 0 8px 20px rgba(0, 0, 0, 0.4); transition: transform 0.25s var(--ease), background 0.2s; }
+.im-wheel-arrow:hover { background: var(--surface2); }
+.im-wheel-arrow:active { transform: scale(0.92); }
+.im-wheel-arrow svg { width: 24px; height: 24px; stroke: var(--text); fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.im-wheel-arrow.left { left: calc(6px + var(--sa-left, 0px)); }
+.im-wheel-arrow.right { right: calc(6px + var(--sa-right, 0px)); }
+@media (prefers-reduced-motion: reduce) { .im-wheel-item, .im-wheel-item[style*="--a: 2"] { transition: none; } }
 .im-soon-art { position: relative; width: 100%; height: 100%; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 40%, #3a2e22, #14120f 70%); }
 .im-soon-ic { opacity: 0.5; width: 42%; height: auto; max-height: 80%; }
 .im-stamp { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-8deg); padding: 8px 18px; border-radius: 10px; border: 3px solid var(--yellow); color: var(--yellow); font: 800 clamp(18px, 6vw, 28px) var(--display); letter-spacing: 0.12em; text-transform: uppercase; background: rgba(20, 18, 15, 0.7); white-space: nowrap; }
 .im-soon-note { max-width: 380px; margin-inline: auto; }
+/* nas "sombras" dos vizinhos só a capa aparece; o texto entra quando o jogo chega ao centro */
+.im-wheel-item .im-cover-text, .im-wheel-item .im-how, .im-wheel-item .im-soon-note { transition: opacity 0.45s ease 0.15s, visibility 0s; }
+.im-wheel-item:not(.on) .im-cover-text, .im-wheel-item:not(.on) .im-how, .im-wheel-item:not(.on) .im-soon-note { opacity: 0; visibility: hidden; transition: opacity 0.35s ease, visibility 0s 0.35s; }
+/* em celular as setas ficam nas bordas: o texto ganha folga para não ficar por baixo delas */
+@media (max-width: 640px) {
+  .im-wheel-arrow { width: 44px; height: 44px; margin-top: -22px; }
+  .im-wheel-item .im-cover-text, .im-wheel-item .im-how, .im-wheel-item .im-soon-note { padding-inline: 44px; }
+}

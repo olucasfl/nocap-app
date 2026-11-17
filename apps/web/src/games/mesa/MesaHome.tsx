@@ -46,49 +46,83 @@ function GameSlide({ g, index, total }: { g: MesaGameInfo; index: number; total:
   );
 }
 
-/** Carrossel de jogos: passa com as setas, deslizando o dedo ou com as setas do teclado. */
+/**
+ * Roda de jogos: o jogo do meio em destaque, a "sombra" do anterior à esquerda e do próximo à direita, e uma seta em cada
+ * lado da tela. Girar leva o próximo ao centro (e dá a volta: depois do último vem o primeiro). Só transform e opacity.
+ */
 function GamesCarousel({ active, onActive }: { active: number; onActive: (i: number) => void }) {
-  const track = useRef<HTMLDivElement>(null);
   const total = MESA_GAMES.length;
+  const touch = useRef<number | null>(null);
   const goTo = useCallback((i: number) => {
-    const el = track.current;
-    if (!el) return;
-    const n = Math.max(0, Math.min(total - 1, i));
-    const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    el.scrollTo({ left: n * el.clientWidth, behavior: smooth ? 'smooth' : 'auto' });
-    onActive(n);
+    onActive(((i % total) + total) % total);
     play('tap');
   }, [onActive, total]);
-  const onScroll = () => {
-    const el = track.current;
-    if (!el) return;
-    const n = Math.round(el.scrollLeft / Math.max(1, el.clientWidth));
-    if (n !== active) onActive(n);
+  // a roda gira sozinha a cada 5 s (para quando a pessoa toca ou passa o mouse; nos testes automáticos e com "reduzir movimento" fica parada)
+  const [hold, setHold] = useState(false);
+  useEffect(() => {
+    if (hold) return undefined;
+    let off = false;
+    try { off = localStorage.getItem('im-nosplash') === '1'; } catch { /* sem armazenamento */ }
+    if (off || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
+    const t = window.setTimeout(() => onActive((active + 1) % total), 5000);
+    return () => window.clearTimeout(t);
+  }, [active, hold, onActive, total]);
+  /** Posição na roda em relação ao jogo do centro: -1 esquerda, 0 centro, 1 direita (os demais ficam atrás, escondidos). */
+  const offset = (i: number) => {
+    let o = (i - active + total) % total;
+    if (o > total / 2) o -= total;
+    return o;
   };
   return (
     <div
-      className="im-car"
+      className="im-wheel"
       role="region"
       aria-roledescription="carrossel"
       aria-label="Jogos de mesa"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === 'ArrowRight') { e.preventDefault(); goTo(active + 1); } else if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(active - 1); } }}
+      onMouseEnter={() => setHold(true)}
+      onMouseLeave={() => setHold(false)}
+      onFocus={() => setHold(true)}
+      onBlur={() => setHold(false)}
+      onPointerDown={(e) => { touch.current = e.clientX; setHold(true); }}
+      onPointerUp={(e) => {
+        if (e.pointerType !== 'mouse') setHold(false);
+        if (touch.current === null) return;
+        const dx = e.clientX - touch.current;
+        touch.current = null;
+        if (Math.abs(dx) > 50) goTo(active + (dx < 0 ? 1 : -1));
+      }}
+      data-testid="mesa-carousel"
     >
-      <div className="im-car-track" ref={track} onScroll={onScroll} data-testid="mesa-carousel">
-        {MESA_GAMES.map((g, i) => <GameSlide key={g.id} g={g} index={i} total={total} />)}
+      <button type="button" className="im-wheel-arrow left" aria-label="Jogo anterior" data-testid="mesa-prev" onClick={() => goTo(active - 1)}>
+        <span className="im-arrow-flip"><ArrowIcon /></span>
+      </button>
+      <div className="im-wheel-stage">
+        {MESA_GAMES.map((g, i) => {
+          const o = offset(i);
+          const shown = Math.abs(o) <= 1;
+          return (
+            <div
+              key={g.id}
+              className={`im-wheel-item${o === 0 ? ' on' : ''}`}
+              style={{ '--o': Math.max(-2, Math.min(2, o)), '--a': Math.min(2, Math.abs(o)) } as CSSProperties}
+              aria-hidden={o !== 0}
+              data-pos={o === 0 ? 'center' : o < 0 ? 'left' : 'right'}
+              onClick={() => { if (o !== 0 && shown) goTo(i); }}
+            >
+              <GameSlide g={g} index={i} total={total} />
+            </div>
+          );
+        })}
       </div>
-      <div className="im-car-nav">
-        <button type="button" className="im-iconbtn im-car-arrow" aria-label="Jogo anterior" data-testid="mesa-prev" disabled={active === 0} onClick={() => goTo(active - 1)}>
-          <span className="im-arrow-flip"><ArrowIcon /></span>
-        </button>
-        <div className="im-dots" role="tablist" aria-label="Escolher jogo">
-          {MESA_GAMES.map((g, i) => (
-            <button key={g.id} type="button" role="tab" aria-selected={i === active} aria-label={g.name} className={`im-dot${i === active ? ' on' : ''}`} onClick={() => goTo(i)} />
-          ))}
-        </div>
-        <button type="button" className="im-iconbtn im-car-arrow" aria-label="Próximo jogo" data-testid="mesa-next" disabled={active === total - 1} onClick={() => goTo(active + 1)}>
-          <ArrowIcon />
-        </button>
+      <button type="button" className="im-wheel-arrow right" aria-label="Próximo jogo" data-testid="mesa-next" onClick={() => goTo(active + 1)}>
+        <ArrowIcon />
+      </button>
+      <div className="im-dots" role="tablist" aria-label="Escolher jogo">
+        {MESA_GAMES.map((g, i) => (
+          <button key={g.id} type="button" role="tab" aria-selected={i === active} aria-label={g.name} className={`im-dot${i === active ? ' on' : ''}`} onClick={() => goTo(i)} />
+        ))}
       </div>
     </div>
   );
