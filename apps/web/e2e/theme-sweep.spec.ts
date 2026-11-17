@@ -69,7 +69,7 @@ for (const scheme of ['light', 'dark'] as const) {
           return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b);
         };
         const bgOf = (el: Element) => {
-          let acc = { r: 0, g: 0, b: 0, a: 0 };
+          const acc = { r: 0, g: 0, b: 0, a: 0 };
           const stack: { r: number; g: number; b: number; a: number }[] = [];
           for (let e: Element | null = el; e; e = e.parentElement) {
             const cs = getComputedStyle(e);
