@@ -19,7 +19,7 @@ Todos recebem uma **palavra secreta**, menos o(s) impostor(es). Cada um dá uma 
 
 1. **Clássico:** todos veem a palavra, menos o(s) impostor(es). Opção "Dica para impostores": o impostor vê a **categoria** da palavra (desligada por padrão).
 2. **Palavra parecida:** os impostores recebem uma **palavra diferente e parecida** (cachorro/lobo) e **não sabem que são impostores**. Eles só descobrem pelas dicas dos outros. Recomendado a partir de 5 pessoas.
-3. **Sem palavra (Mr. White):** a maioria vê a palavra, um tem a palavra parecida e **um não vê nenhuma palavra**. Só a partir de 6 pessoas. O Mr. White nunca começa a rodada.
+3. ~~Sem palavra (Mr. White)~~ **Removido em 17/11/2026** (pedido do Lucas: confuso). O jogo tem 3 modos: Clássico, Palavra parecida e Resposta errada.
 4. **Só uma resposta errada:** todos recebem uma **pergunta** e respondem em voz alta; os impostores receberam uma pergunta **parecida, mas diferente**. O grupo acha quem respondeu "ao lado". Mesmos votos e pontos.
 
 Escolha do modo na tela de configuração, como as cartas do Fakeit.
@@ -29,7 +29,7 @@ Escolha do modo na tela de configuração, como as cartas do Fakeit.
 - **Jogadores:** 3 a 15 (mesa) e 3 a 12 (sala; limite das salas). Nomes livres na mesa.
 - **Impostores:** o host escolhe 1, 2 ou 3, ou **"aleatório"** (1 até o máximo do grupo, o número não é revelado). Máximo = `min(3, n - 1)`, como no Intruso.
 - **Sorteio justo (reclamação número 1 dos apps):** rodízio com sorte. Quem está há mais partidas sem ser impostor tem mais chance, e quem chega a `ceil(n / k) - 1` partidas seguidas sem ser entra primeiro no próximo sorteio (com 1 impostor para 6 pessoas, ninguém espera mais que 5 partidas; é o melhor que a conta permite). Determinístico pela seed e pelo histórico, testado em `packages/games/src/impostor-mesa`.
-- **Quem começa a falar:** sorteado, **independente do papel** (queixa dos apps: "o impostor nunca começa"). Mr. White nunca começa.
+- **Quem começa a falar:** sorteado, **independente do papel** (queixa dos apps: "o impostor nunca começa").
 - **Rodadas de dicas (Lucas, 17/11/2026):** o host escolhe de **1 a 5 rodadas** (padrão 3). Em cada rodada, **todos falam uma palavra, na mesma ordem**; a rodada seguinte repete a volta e cada um diz **outra palavra** (diferente das que já disse). Só **depois da última rodada** abre o debate e a votação.
 - **Fases:** `reveal` (cada um vê seu papel) → `clues` (rodadas 1 a N, uma palavra por pessoa por rodada, a ordem e o número da rodada ficam na tela) → `talk` (debate livre, tempo configurável de 0:30 a 5:00 ou sem limite) → `vote` (**voto secreto, um por vez**) → `result` → (se pego e a regra estiver ligada) `guess` → pontos.
 - **Quem começa:** sorteado, independente do papel; a ordem é a mesma nas N rodadas.
@@ -37,7 +37,6 @@ Escolha do modo na tela de configuração, como as cartas do Fakeit.
 - **Dica:** uma palavra por rodada, sem repetir a palavra secreta nem dizer parte dela, e sem repetir uma dica já dita na partida. Quem quebrar a regra é acusado de boca pelo grupo (não é verificado pelo app).
 - **Pego:** com K impostores, é pego quem recebe estritamente mais votos que o (K+1)-ésimo mais votado e pelo menos 1. Empate na fronteira não pega ninguém. É a mesma conta do Intruso (`tallyVotes`), aproveitada.
 - **Pego, e agora (escolha do host, padrão: ligada):** o impostor pego tem **uma chance de adivinhar a palavra**. Se acertar, o impostor ganha a rodada. Se a regra estiver desligada, ser pego é perder.
-- **Mr. White:** se pego, também adivinha a palavra (mesma regra). Se for o único pego e acertar, vence sozinho.
 - **Quem ganha a rodada:** inocentes, se **todos** os impostores foram pegos e nenhum adivinhou; impostores, caso contrário.
 - **Resultado:** mostra quem era impostor, a palavra (e a parecida), os votos e os pontos.
 

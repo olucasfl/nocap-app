@@ -18,7 +18,6 @@ import {
   imRoundView,
   imImpostorLimit,
   scoreElimination,
-  imEffectiveMode,
   leaders,
   newSession,
   normalizeWord,
@@ -78,7 +77,7 @@ export const DEFAULT_IMPOSTOR_SALA: ImpostorSalaSettings = {
   filters: {},
 };
 
-const MODES: readonly ImMode[] = ['classic', 'similar', 'white', 'wrong'];
+const MODES: readonly ImMode[] = ['classic', 'similar', 'wrong'];
 const TALK_OPTIONS = [0, 30_000, 60_000, 90_000, 120_000, 180_000, 240_000, 300_000];
 
 export interface Clue {
@@ -172,10 +171,8 @@ export class ImpostorSalaEngine extends ColorRoomEngine {
   override start(id: string) {
     this.requireHost(id);
     this.requirePhase('lobby');
-    const connected = [...this.members.values()].filter((m) => m.connected);
     if (this.cfg.categories.length === 0) throw new RoomError('Escolha pelo menos 1 tema antes de começar');
-    const mode = imEffectiveMode(this.mode as ImMode, connected.length);
-    if (mode !== 'wrong' && filterWords(IM_WORDS, this.imSettings()).length < IM_MIN_POOL) {
+    if (this.mode !== 'wrong' && filterWords(IM_WORDS, this.imSettings()).length < IM_MIN_POOL) {
       throw new RoomError('Poucas palavras com esses temas e opções: escolha mais temas');
     }
     super.start(id);

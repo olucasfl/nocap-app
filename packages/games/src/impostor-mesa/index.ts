@@ -12,8 +12,6 @@ export const IM_MAX_ROUNDS = 5;
 export const IM_MAX_IMPOSTORS = 3;
 /** Menos palavras que isso depois dos filtros e a partida não começa. */
 export const IM_MIN_POOL = 30;
-/** O modo "sem palavra" só vale a partir daqui. */
-export const IM_WHITE_MIN_PLAYERS = 6;
 /**
  * Rodízio: com `k` impostores numa mesa de `n`, quem chega a `ceil(n / k) - 1` partidas seguidas sem ser entra primeiro no
  * próximo sorteio. É o melhor que a conta permite (com 1 impostor para 6, cada pessoa espera no máximo 5 partidas).
@@ -22,13 +20,13 @@ export function imDryLimit(players: number, impostors: number): number {
   return Math.max(1, Math.ceil(players / Math.max(1, impostors)) - 1);
 }
 
-export type ImMode = 'classic' | 'similar' | 'white' | 'wrong';
+export type ImMode = 'classic' | 'similar' | 'wrong';
 
 export interface ImWord {
   id: string;
   category: string;
   text: string;
-  /** Palavra parecida e do mesmo tipo (modos "parecida" e "sem palavra"). */
+  /** Palavra parecida e do mesmo tipo (modo "parecida"). */
   pair: string;
   /** Etiquetas para filtrar (ex.: `group: 'jogador-brasil'`). */
   tags: Readonly<Record<string, string>>;
@@ -90,11 +88,6 @@ export function imImpostorLimit(players: number, mode: ImVoteMode = 'final'): nu
   return Math.max(1, Math.min(IM_MAX_IMPOSTORS, players - 1));
 }
 
-/** O modo pedido, ajustado ao tamanho da mesa ("sem palavra" precisa de 6). */
-export function imEffectiveMode(mode: ImMode, players: number): ImMode {
-  return mode === 'white' && players < IM_WHITE_MIN_PLAYERS ? 'similar' : mode;
-}
-
 /** Palavras que passam nas categorias e nos filtros marcados. */
 export function filterWords(words: readonly ImWord[], s: Pick<ImSettings, 'categories' | 'filters'>): ImWord[] {
   const cats = new Set(s.categories);
@@ -110,7 +103,7 @@ export function poolIsEnough(count: number): boolean {
   return count >= IM_MIN_POOL;
 }
 
-export type ImRoleKind = 'civil' | 'impostor' | 'white';
+export type ImRoleKind = 'civil' | 'impostor';
 
 export interface ImRole {
   kind: ImRoleKind;
@@ -209,7 +202,7 @@ export function drawRound(input: ImDrawInput): ImRound {
   const n = ids.length;
   if (n < IM_MIN_PLAYERS || n > IM_MAX_PLAYERS) throw new Error(`mesa de ${IM_MIN_PLAYERS} a ${IM_MAX_PLAYERS} pessoas`);
   const rng = createRng(`${seed}:im:${roundIndex}`);
-  const mode = imEffectiveMode(settings.mode, n);
+  const mode = settings.mode;
   const max = imImpostorLimit(n, settings.voteMode);
   const asked = settings.impostors === 'random' ? randInt(rng, 1, max) : settings.impostors;
   const roles: Record<string, ImRole> = {};
@@ -251,34 +244,24 @@ export function drawRound(input: ImDrawInput): ImRound {
     themeId = w.category;
   }
 
-  let outsiders: string[];
-  let whiteId: string | null = null;
-  if (mode === 'white') {
-    outsiders = drawOutsiders(ids, 2, history.dry, rng);
-    // o primeiro sorteado leva a palavra parecida e o segundo fica sem nada
-    whiteId = outsiders[1]!;
-  } else {
-    outsiders = drawOutsiders(ids, Math.max(1, Math.min(asked, max)), history.dry, rng);
-  }
+  const outsiders = drawOutsiders(ids, Math.max(1, Math.min(asked, max)), history.dry, rng);
 
   const label = themeId ? (input.categoryLabels?.[themeId] ?? null) : null;
   // a dica de categoria só existe com mais de dois temas (com 1 ou 2 ela entregaria quase tudo)
   const giveHint = settings.hint && settings.categories.length > 2;
   for (const id of ids) {
-    if (id === whiteId) roles[id] = { kind: 'white', text: null, hint: null, theme: null, knowsRole: true };
-    else if (outsiders.includes(id)) {
+    if (outsiders.includes(id)) {
       if (mode === 'classic') roles[id] = { kind: 'impostor', text: null, hint: giveHint ? label : null, theme: null, knowsRole: true };
       else roles[id] = { kind: 'impostor', text: outsiderText, hint: null, theme: label, knowsRole: false };
     } else roles[id] = { kind: 'civil', text: civilText, hint: null, theme: label, knowsRole: false };
   }
 
-  // Ordem de fala: sorteada, sem relação com o papel; quem não tem palavra nunca abre.
+  // Ordem de fala: sorteada, sem relação com o papel.
   const shuffled = [...ids].sort();
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
     [shuffled[i], shuffled[j]] = [shuffled[j]!, shuffled[i]!];
   }
-  if (whiteId && shuffled[0] === whiteId) shuffled.push(shuffled.shift()!);
 
   return { mode, roles, civilText, outsiderText, order: shuffled, wordId, ...(qa ? { qa } : {}) };
 }

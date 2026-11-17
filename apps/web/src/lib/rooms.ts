@@ -357,7 +357,7 @@ export interface RoomSnapshot {
 export interface MesaState {
   session: { games: number; ranking: { id: string; points: number; position: number }[]; leaders: string[] };
   /** Só dentro da partida: */
-  mode?: 'classic' | 'similar' | 'white' | 'wrong';
+  mode?: 'classic' | 'similar' | 'wrong';
   stage?: 'reveal' | 'elim' | 'score' | null;
   participants?: { id: string; name: string }[];
   order?: string[];
@@ -376,11 +376,11 @@ export interface MesaState {
   revote?: boolean;
   elim?: {
     total: number;
-    steps: { round: number; out: string; role: 'civil' | 'impostor' | 'white' | null; votes: Record<string, string>; revote: boolean; drawn: boolean }[];
+    steps: { round: number; out: string; role: 'civil' | 'impostor' | null; votes: Record<string, string>; revote: boolean; drawn: boolean }[];
     winner: 'innocents' | 'impostors' | null;
     outsiders: number | null;
   } | null;
-  me?: { kind: 'civil' | 'impostor' | 'white'; text: string | null; hint: string | null; theme: string | null; knowsRole: boolean; wasSeen: boolean } | null;
+  me?: { kind: 'civil' | 'impostor'; text: string | null; hint: string | null; theme: string | null; knowsRole: boolean; wasSeen: boolean } | null;
   myVote?: string | null;
   result?: {
     caught: string[];

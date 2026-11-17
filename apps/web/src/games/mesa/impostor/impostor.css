@@ -477,7 +477,7 @@
   .im-t { font-size: 40px; }
   .im-tiles { grid-template-columns: repeat(3, 1fr); }
   .im-vgrid { grid-template-columns: repeat(3, 1fr); }
-  .im-modes { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .im-modes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .im-mode { flex-direction: column; justify-content: center; text-align: center; min-height: 112px; padding: 12px 8px; }
   .im-foot { align-items: center; }
   .im-foot .im-btn { width: 100%; max-width: 420px; }
@@ -503,7 +503,7 @@
   .im-tile { min-height: 74px; padding: 8px 10px; min-width: 0; }
   .im-tile span { min-width: 0; overflow-wrap: anywhere; }
   .im-tile-ic { width: 40px; height: 40px; }
-  .im-modes { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .im-modes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .im-mode { min-height: 62px; }
   .im-vgrid { grid-template-columns: repeat(auto-fill, minmax(min(110px, 100%), 1fr)); }
   .im-vote .im-coin.lg { width: 64px; }
@@ -819,3 +819,4 @@
 @keyframes im-flipcard { from { opacity: 0; transform: rotateX(90deg) scale(0.8); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .im-rolecard { animation: none; } }
 .im-seg button[aria-checked='true'] { background: var(--text); color: var(--bg); }
+.im-modes > .im-mode:last-child:nth-child(odd) { grid-column: 1 / -1; }

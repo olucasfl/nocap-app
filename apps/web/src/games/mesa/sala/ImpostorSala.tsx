@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react';
-import { IM_CATEGORIES, IM_ELIM_MAX_ROUNDS, IM_MAX_ROUNDS, IM_MIN_PLAYERS, IM_WHITE_MIN_PLAYERS, imImpostorLimit, type ImMode } from '@nocap/games';
+import { IM_CATEGORIES, IM_ELIM_MAX_ROUNDS, IM_MAX_ROUNDS, IM_MIN_PLAYERS, imImpostorLimit, type ImMode } from '@nocap/games';
 import { InvitePanel } from '@/screens/room/lobby/InvitePanel';
 import { leaveRoom, sendRoom } from '@/lib/rooms';
 import { RankSlot } from '../impostor/ui';
@@ -103,7 +103,6 @@ function Lobby({ snap }: { snap: Snap }) {
   const cfg = snap.settings as unknown as Cfg;
   const mode = snap.mode as ImMode;
   const connected = snap.members.filter((m) => m.connected);
-  const tooFew = connected.length < IM_WHITE_MIN_PLAYERS;
   const lacking = connected.filter((m) => !m.isHost && !m.ready).length;
   const elimMode = cfg.voteMode === 'elim';
   const max = imImpostorLimit(Math.max(connected.length, IM_MIN_PLAYERS), cfg.voteMode);
@@ -189,9 +188,8 @@ function Lobby({ snap }: { snap: Snap }) {
               <>
                 <div className="im-modes" role="radiogroup" aria-label="Modo de jogo">
                   {MODES.map((m) => {
-                    const off = m.id === 'white' && tooFew;
                     return (
-                      <button key={m.id} type="button" role="radio" aria-checked={mode === m.id} className="im-mode" style={{ '--c': m.tone } as CSSProperties} aria-disabled={off} data-testid={`sala-mode-${m.id}`} onClick={() => { if (off) { play('off'); show(`"Sem palavra" precisa de pelo menos ${IM_WHITE_MIN_PLAYERS} jogadores. Vocês são ${connected.length}.`); return; } play('select'); set({ mode: m.id }); }}>
+                      <button key={m.id} type="button" role="radio" aria-checked={mode === m.id} className="im-mode" style={{ '--c': m.tone } as CSSProperties} data-testid={`sala-mode-${m.id}`} onClick={() => { play('select'); set({ mode: m.id }); }}>
                         <Icon name={m.icon} size={64} className="im-mode-ic" />
                         <b>{m.label}</b>
                       </button>
@@ -274,8 +272,8 @@ function SeeRole({ snap }: { snap: Snap }) {
   useEffect(() => { play('pass'); }, []);
   if (!me) return <Waiting snap={snap} text="A partida já começou. Você entra na próxima." />;
   const wrong = mesa.mode === 'wrong';
-  const tag = me.kind === 'white' ? 'Você está' : me.kind === 'impostor' && me.knowsRole ? (me.hint ? 'Tema' : 'Você é o') : wrong ? 'Sua pergunta' : 'A palavra é';
-  const text = me.kind === 'white' ? 'Sem palavra' : me.kind === 'impostor' && me.knowsRole ? (me.hint ?? 'Impostor') : (me.text ?? '');
+  const tag = me.kind === 'impostor' && me.knowsRole ? (me.hint ? 'Tema' : 'Você é o') : wrong ? 'Sua pergunta' : 'A palavra é';
+  const text = me.kind === 'impostor' && me.knowsRole ? (me.hint ?? 'Impostor') : (me.text ?? '');
   const show = () => { if (!on) { setOn(true); play('reveal'); } };
   const hide = () => { if (on) { setOn(false); setLooked(true); } };
   const outsider = me.kind !== 'civil' && me.knowsRole;
@@ -589,7 +587,7 @@ function ElimView({ snap }: { snap: Snap }) {
         )}
         {stage >= 2 && (
           <div className={`im-rolecard ${step.role ? (isOutsider ? 'bad' : 'ok') : 'hidden'}`} data-testid="sala-rolecard">
-            <b>{step.role ? (isOutsider ? (step.role === 'white' ? 'Era o(a) impostor(a) sem palavra' : 'Era impostor(a)') : 'Era inocente') : 'O papel continua em segredo'}</b>
+            <b>{step.role ? (isOutsider ? 'Era impostor(a)' : 'Era inocente') : 'O papel continua em segredo'}</b>
           </div>
         )}
         {stage >= 3 && (

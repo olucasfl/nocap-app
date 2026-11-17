@@ -17,7 +17,6 @@ import {
   scoreElimination,
   drawRound,
   filterWords,
-  imEffectiveMode,
   imImpostorLimit,
   leaders,
   newSession,
@@ -55,11 +54,6 @@ describe('limites', () => {
     expect(imImpostorLimit(3)).toBe(2);
     expect(imImpostorLimit(10)).toBe(3);
   });
-  it('"sem palavra" só com 6 pessoas', () => {
-    expect(imEffectiveMode('white', 5)).toBe('similar');
-    expect(imEffectiveMode('white', 6)).toBe('white');
-    expect(imEffectiveMode('classic', 3)).toBe('classic');
-  });
 });
 
 describe('filtros de palavras', () => {
@@ -92,14 +86,6 @@ describe('sorteio da partida', () => {
     const imp = Object.values(r.roles).find((x) => x.kind === 'impostor')!;
     expect(imp.text).not.toBe(r.civilText);
     expect(imp.knowsRole).toBe(false);
-  });
-  it('sem palavra: um com o par e um sem nada, mesa de 6', () => {
-    const six = [...ids, 'f'];
-    const r = draw({ mode: 'white' }, IM_EMPTY_HISTORY, 0, six);
-    expect(Object.values(r.roles).filter((x) => x.kind === 'white')).toHaveLength(1);
-    expect(Object.values(r.roles).filter((x) => x.kind === 'impostor')).toHaveLength(1);
-    const white = Object.entries(r.roles).find(([, x]) => x.kind === 'white')![0];
-    expect(r.order[0]).not.toBe(white);
   });
   it('resposta errada: perguntas pareadas', () => {
     const q: ImQuestion = { id: 'q1', category: 'comida', q: 'Qual a sua comida favorita?', qPair: 'Qual comida você mais odeia?' };

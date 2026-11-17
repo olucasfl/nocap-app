@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import {
   imRoundView,
-  IM_CATEGORIES, IM_ELIM_MAX_ROUNDS, IM_MAX_PLAYERS, IM_MIN_POOL, IM_MAX_ROUNDS, IM_MIN_PLAYERS, IM_WHITE_MIN_PLAYERS, imImpostorLimit, leaders, sessionRanking,
+  IM_CATEGORIES, IM_ELIM_MAX_ROUNDS, IM_MAX_PLAYERS, IM_MIN_POOL, IM_MAX_ROUNDS, IM_MIN_PLAYERS, imImpostorLimit, leaders, sessionRanking,
   type ImMode,
 } from '@nocap/games';
 import { AVATARS, CATEGORY_ICONS, PEOPLE } from './assets';
@@ -145,7 +145,6 @@ export function PlayersScreen({ s, d, exit }: P) {
 export const MODES: { id: ImMode; label: string; desc: string; tone: string; icon: string }[] = [
   { id: 'classic', label: 'Clássico', desc: 'Todos veem a palavra. Menos o impostor.', tone: '#ff6a2b', icon: 'modo-classico' },
   { id: 'similar', label: 'Palavra parecida', desc: 'Todos recebem uma palavra. O impostor recebe outra, parecida (por exemplo, Pizza e Lasanha), e nem sabe que é o impostor. Cada um diz uma palavra sobre a sua, sem entregar qual é, e o grupo descobre quem falou algo fora do assunto.', tone: '#2f5bff', icon: 'modo-parecida' },
-  { id: 'white', label: 'Sem palavra', desc: 'Dois impostores: um recebe uma palavra parecida e nem sabe que é impostor; o outro não recebe nada e precisa disfarçar.', tone: '#ffd23f', icon: 'modo-semword' },
   { id: 'wrong', label: 'Resposta errada', desc: 'Todos recebem uma pergunta e respondem em voz alta, uma vez só. Menos o impostor, que recebe uma pergunta parecida e nem sabe. Escutem as respostas e descubram quem respondeu algo estranho. Não tem chute no final.', tone: '#33c27f', icon: 'modo-errada' },
 ];
 
@@ -263,7 +262,6 @@ export function CfgScreen({ s, d }: P) {
   const imp = c.impostors === 'random' ? 0 : Math.min(c.impostors, max);
   const ti = Math.max(0, TIMES.indexOf(c.talkSeconds));
   const cur = MODES.find((m) => m.id === c.mode)!;
-  const tooFew = s.players.length < IM_WHITE_MIN_PLAYERS;
   const needRounds = imp + 1;
   const rows = [
     <div className="im-row votemode" key="vm">
@@ -291,9 +289,8 @@ export function CfgScreen({ s, d }: P) {
         <h2 className="im-t"><Words text="Como vai ser?" /></h2>
         <div className="im-modes" role="radiogroup" aria-label="Modo de jogo">
           {MODES.map((m, i) => {
-            const off = m.id === 'white' && tooFew;
             return (
-              <button key={m.id} type="button" role="radio" aria-checked={c.mode === m.id} className="im-mode im-rise" style={{ '--d': i + 1, '--c': m.tone } as CSSProperties} aria-disabled={off} data-testid={`im-mode-${m.id}`} onClick={() => { if (off) { play('off'); show(`"Sem palavra" precisa de pelo menos ${IM_WHITE_MIN_PLAYERS} jogadores. Vocês são ${s.players.length}.`); return; } play('select'); d({ type: 'settings', patch: { mode: m.id } }); }}>
+              <button key={m.id} type="button" role="radio" aria-checked={c.mode === m.id} className="im-mode im-rise" style={{ '--d': i + 1, '--c': m.tone } as CSSProperties} data-testid={`im-mode-${m.id}`} onClick={() => { play('select'); d({ type: 'settings', patch: { mode: m.id } }); }}>
                 <Icon name={m.icon} size={64} className="im-mode-ic" />
                 <b>{m.label}</b>
               </button>
@@ -337,8 +334,8 @@ export function RevealScreen({ s, d }: P) {
   const last = s.seen === seers.length - 1;
   const wrong = s.round!.mode === 'wrong';
   useEffect(() => { play('pass'); }, [s.seen]);
-  const tag = role.kind === 'white' ? 'Você está' : role.kind === 'impostor' && role.knowsRole ? (role.hint ? 'Tema' : 'Você é o') : wrong ? 'Sua pergunta' : 'A palavra é';
-  const text = role.kind === 'white' ? 'Sem palavra' : role.kind === 'impostor' && role.knowsRole ? (role.hint ?? 'Impostor') : (view.text ?? '');
+  const tag = role.kind === 'impostor' && role.knowsRole ? (role.hint ? 'Tema' : 'Você é o') : wrong ? 'Sua pergunta' : 'A palavra é';
+  const text = role.kind === 'impostor' && role.knowsRole ? (role.hint ?? 'Impostor') : (view.text ?? '');
   const show = () => { if (!on) { setOn(true); play('reveal'); } };
   const hide = () => { if (on) { setOn(false); setSeen(true); } };
   const outsider = role.kind !== 'civil' && role.knowsRole;
@@ -391,11 +388,6 @@ function briefText(mode: string, round: number): { head: string; body: string } 
       return {
         head: round > 1 ? 'Mais uma volta de palavras' : 'Cada um diz uma palavra',
         body: `Cada um diz uma palavra que lembre a palavra que recebeu, sem deixar na cara qual é.${again} Cuidado: o impostor tem uma palavra parecida e nem sabe que é o impostor.`,
-      };
-    case 'white':
-      return {
-        head: round > 1 ? 'Mais uma volta de palavras' : 'Cada um diz uma palavra',
-        body: `Cada um diz uma palavra que lembre a sua, sem entregar qual é.${again} Um impostor recebeu uma palavra parecida; o outro não recebeu nada e vai tentar disfarçar escutando os outros.`,
       };
     case 'wrong':
       return {
@@ -728,7 +720,7 @@ export function ElimResScreen({ s, d }: P) {
         )}
         {stage >= 2 && (
           <div className={`im-rolecard ${show ? (isOutsider ? 'bad' : 'ok') : 'hidden'}`} data-testid="im-rolecard">
-            {show ? <b>{isOutsider ? (step.role === 'white' ? 'Era o(a) impostor(a) sem palavra' : 'Era impostor(a)') : 'Era inocente'}</b> : <b>O papel continua em segredo</b>}
+            {show ? <b>{isOutsider ? 'Era impostor(a)' : 'Era inocente'}</b> : <b>O papel continua em segredo</b>}
           </div>
         )}
         {stage >= 3 && (

@@ -1,7 +1,6 @@
 import {
   IM_DEFAULTS, IM_ELIM_MAX_ROUNDS, IM_EMPTY_HISTORY, IM_MAX_ROUNDS, IM_MIN_POOL, IM_MAX_PLAYERS, IM_MIN_PLAYERS, IM_QUESTIONS, IM_WORDS, IM_CATEGORY_LABELS,
-  addResult, advanceHistory, clampRounds, drawRound, elimApply, elimOutcome, elimResolve, elimStart, filterWords, imEffectiveMode,
-  imImpostorLimit, newSession, rankingShift, scoreElimination, scoreResult,
+  addResult, advanceHistory, clampRounds, drawRound, elimApply, elimOutcome, elimResolve, elimStart, filterWords,   imImpostorLimit, newSession, rankingShift, scoreElimination, scoreResult,
   type ImElimState, type ImHistory, type ImResult, type ImRound, type ImSession, type ImSettings, type ImWinner,
 } from '@nocap/games';
 import { AVATARS } from './assets';
@@ -112,7 +111,7 @@ export type Action =
 
 /** Palavras (ou perguntas) que sobram depois dos filtros, para avisar quando for pouco. */
 export function poolSize(s: Pick<State, 'settings' | 'players'>): number {
-  const mode = imEffectiveMode(s.settings.mode, s.players.length);
+  const mode = s.settings.mode;
   if (mode === 'wrong') return IM_QUESTIONS.filter((q) => s.settings.categories.includes(q.category)).length * 8;
   return filterWords(IM_WORDS, s.settings).length;
 }
