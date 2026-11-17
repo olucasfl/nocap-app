@@ -754,3 +754,39 @@ export function TableArt() {
     </div>
   );
 }
+
+/** Capa global do Dinner Table Games no Hub: a galera toda em volta da mesa sob a lâmpada, com cartas no meio (nada de um jogo só). */
+const GUESTS: [string, string][] = [
+  ['raposa', '#ff6a2b'],
+  ['detetive', '#2f5bff'],
+  ['mago', '#ffd23f'],
+  ['ninja', '#33c27f'],
+  ['cantora', '#ff9ecf'],
+  ['astronauta', '#8f6bff'],
+  ['robo', '#19c3e6'],
+  ['vampiro', '#ff5a3c'],
+];
+export function DinnerArt() {
+  return (
+    <div className="ha-dinner" aria-hidden="true">
+      <span className="ha-dinner-lamp" />
+      <span className="ha-dinner-top" />
+      {GUESTS.map(([a, c], i) => {
+        const t = (i / GUESTS.length) * Math.PI * 2 - Math.PI / 2;
+        const x = 50 + 41 * Math.cos(t);
+        const y = 55 + 36 * Math.sin(t);
+        return (
+          <span
+            key={a}
+            className={`ha-guest${Math.sin(t) > 0.2 ? ' front' : ''}`}
+            style={{ ['--c' as string]: c, ['--x' as string]: `${x}%`, ['--y' as string]: `${y}%`, ['--dl' as string]: `${i * 0.45}s` }}
+          >
+            <img src={`/impostor/av/${a}.png`} alt="" width="64" height="64" draggable={false} />
+          </span>
+        );
+      })}
+      <img className="ha-dinner-cards" src="/impostor/ic/cartas.png" alt="" width="64" height="64" draggable={false} />
+      <img className="ha-dinner-fun" src="/impostor/ic/confete.png" alt="" width="40" height="40" draggable={false} />
+    </div>
+  );
+}

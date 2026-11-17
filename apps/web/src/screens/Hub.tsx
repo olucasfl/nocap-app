@@ -11,7 +11,7 @@ import {
   NightHuntArt,
   PingArt,
   TimeArt,
-  TableArt,
+  DinnerArt,
 } from '@/components/HubArt';
 import { Link } from '@tanstack/react-router';
 import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
@@ -251,9 +251,9 @@ const GAMES: GameDef[] = [
     section: 'brain',
     to: '/mesa',
     cls: 'hub-card-mesa',
-    art: <TableArt />,
+    art: <DinnerArt />,
     name: 'Dinner Table Games',
-    tag: 'Impostor',
+    tag: 'Jogos para a galera',
     size: 'mid',
     badge: 'NOVO',
   },
