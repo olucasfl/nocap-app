@@ -229,7 +229,7 @@ test('impostor sala eliminação', async ({ browser }, info) => {
     await A.waitForTimeout(120);
   }
   for (const p of all) await expect(p.getByTestId('sala-vote')).toBeVisible({ timeout: 20_000 });
-  await expect(A.getByText('Quem vai ser eliminado?')).toBeVisible();
+  await expect(A.getByText('Quem vai ser eliminado(a)?')).toBeVisible();
   for (const p of all) {
     await p.locator('[data-testid^="sala-vote-"]').first().click();
     await p.getByTestId('sala-cast').click();
