@@ -30,9 +30,11 @@ Escolha do modo na tela de configuração, como as cartas do Fakeit.
 - **Impostores:** o host escolhe 1, 2 ou 3, ou **"aleatório"** (1 até o máximo do grupo, o número não é revelado). Máximo = `min(3, n - 1)`, como no Intruso.
 - **Sorteio justo (reclamação número 1 dos apps):** quem foi impostor menos vezes tem mais chance; ninguém passa mais de 2 rodadas sem ser (com 4+ pessoas). Determinístico pela seed e pelo histórico, testado.
 - **Quem começa a falar:** sorteado, **independente do papel** (queixa dos apps: "o impostor nunca começa"). Mr. White nunca começa.
-- **Fases:** `reveal` (cada um vê seu papel) → `clues` (dica falada, uma palavra por pessoa, a ordem aparece na tela) → `talk` (debate com **tempo da rodada configurável**, 0:30 a 5:00 ou sem limite) → `vote` → `result` → (se pego e a regra estiver ligada) `guess` → pontos.
-- **Dica:** uma palavra, sem repetir a palavra secreta nem dizer parte dela. Quem quebrar a regra é acusado de boca pelo grupo (não é verificado pelo app).
-- **Voto:** cada pessoa aponta uma suspeita ou se abstém; na mesa, cada um vota em sequência no mesmo aparelho (a tela esconde o voto) e na sala todos votam ao mesmo tempo. Pode trocar até enviar. Votos aparecem na revelação (o host pode ligar **voto anônimo**).
+- **Rodadas de dicas (Lucas, 17/11/2026):** o host escolhe de **1 a 5 rodadas** (padrão 3). Em cada rodada, **todos falam uma palavra, na mesma ordem**; a rodada seguinte repete a volta e cada um diz **outra palavra** (diferente das que já disse). Só **depois da última rodada** abre o debate e a votação.
+- **Fases:** `reveal` (cada um vê seu papel) → `clues` (rodadas 1 a N, uma palavra por pessoa por rodada, a ordem e o número da rodada ficam na tela) → `talk` (debate livre, tempo configurável de 0:30 a 5:00 ou sem limite) → `vote` (**voto secreto, um por vez**) → `result` → (se pego e a regra estiver ligada) `guess` → pontos.
+- **Quem começa:** sorteado, independente do papel; a ordem é a mesma nas N rodadas.
+- **Voto secreto e individual (Lucas, 17/11/2026):** cada pessoa vota **em particular**, para os pontos irem para quem votou certo. Na mesa: o celular passa de mão em mão, cada um vê só a própria tela de voto (não pode votar em si mesmo) e confirma; o voto some da tela. Na sala: cada um vota no próprio celular ao mesmo tempo. Só depois do último voto aparece o resultado, com a contagem dos mais votados (o voto de cada pessoa só é revelado se o host desligar o voto anônimo). Não existe abstenção: quem não vota no tempo da sala fica sem pontos de voto.
+- **Dica:** uma palavra por rodada, sem repetir a palavra secreta nem dizer parte dela, e sem repetir uma dica já dita na partida. Quem quebrar a regra é acusado de boca pelo grupo (não é verificado pelo app).
 - **Pego:** com K impostores, é pego quem recebe estritamente mais votos que o (K+1)-ésimo mais votado e pelo menos 1. Empate na fronteira não pega ninguém. É a mesma conta do Intruso (`tallyVotes`), aproveitada.
 - **Pego, e agora (escolha do host, padrão: ligada):** o impostor pego tem **uma chance de adivinhar a palavra**. Se acertar, o impostor ganha a rodada. Se a regra estiver desligada, ser pego é perder.
 - **Mr. White:** se pego, também adivinha a palavra (mesma regra). Se for o único pego e acertar, vence sozinho.
@@ -41,7 +43,7 @@ Escolha do modo na tela de configuração, como as cartas do Fakeit.
 
 ## 6. Pontuação (placar acumulado, escolhido em 17/11/2026)
 
-Por rodada: inocente que votou num impostor de verdade +2; inocentes ganham +1 se a rodada for deles; impostor que não foi pego +4; impostor pego que adivinha a palavra +3; Mr. White que adivinha +5. Vence quem somar mais depois de N rodadas (padrão 5, o host escolhe 1 a 10). Empate no placar final: ganha quem foi impostor e sobreviveu mais vezes. Sem ranking global: partida de mesa e sala nunca entram no ranking (regra do app).
+Por rodada (a partida inteira, depois das N rodadas de dicas): inocente que votou num impostor de verdade +2; inocentes ganham +1 se a rodada for deles; impostor que não foi pego +4; impostor pego que adivinha a palavra +3; Mr. White que adivinha +5. Vence quem somar mais depois de N rodadas (padrão 5, o host escolhe 1 a 10). Empate no placar final: ganha quem foi impostor e sobreviveu mais vezes. Sem ranking global: partida de mesa e sala nunca entram no ranking (regra do app).
 
 ## 7. Conteúdo
 
