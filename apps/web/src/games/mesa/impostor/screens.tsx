@@ -424,8 +424,8 @@ export function CluesScreen({ s, d }: P) {
       <TopBar leave onBack={leave} center={status} />
       <div className="im-body">
         <div className="im-main">
-          <h2 className="im-t"><Words text={wrong ? 'Hora de responder' : 'Hora de dizer as palavras'} /></h2>
-          <p className="im-sub center">Um de cada vez, nesta ordem. Se todo mundo já disse, toque em continuar.</p>
+          <h2 className="im-t"><Words text={wrong ? 'Agora cada um responde a sua pergunta' : 'Hora de dizer as palavras'} /></h2>
+          <p className="im-sub center">{wrong ? 'Um de cada vez, em voz alta, nesta ordem. Quando todo mundo responder, toque em próximo.' : 'Um de cada vez, nesta ordem. Quando todo mundo disser a sua, toque em próximo.'}</p>
           <ol className="im-order">
             {order.map((id, i) => {
               const p = by(s, id);
@@ -440,7 +440,7 @@ export function CluesScreen({ s, d }: P) {
           </ol>
         </div>
       </div>
-      <div className="im-foot"><Primary testId="im-next" sound={lastRound ? 'start' : 'tap'} onClick={() => d({ type: 'clueNext' })}>{lastRound ? 'Continuar para o debate' : 'Continuar'} <ArrowIcon /></Primary></div>
+      <div className="im-foot"><Primary testId="im-next" sound={lastRound ? 'start' : 'tap'} onClick={() => d({ type: 'clueNext' })}>{lastRound ? 'Ir para o debate' : 'Próximo'} <ArrowIcon /></Primary></div>
     </div>
   );
 }
