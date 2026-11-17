@@ -712,7 +712,7 @@
 .im-top { grid-template-columns: auto minmax(max-content, 1fr) auto; }
 .im-top-c > * { white-space: nowrap; }
 .im-top-r, .im-top > :first-child { min-width: 44px; }
-.im-ways { grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); max-width: 100%; }
+.im-ways { grid-template-columns: minmax(0, 1fr); max-width: 100%; }
 @media (max-height: 560px) and (orientation: landscape) {
   .im-ways { grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(640px, 100%); }
   .im-way { padding: 10px; gap: 10px; min-width: 0; }
