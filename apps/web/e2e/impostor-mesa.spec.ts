@@ -82,7 +82,7 @@ for (const d of DEVICES.filter((x) => only.includes(x.name))) {
     await page.getByTestId('im-continue').click();
     await page.getByTestId('im-mode-similar').click();
     await check('ajustes');
-    await page.getByTestId('im-cfg-theme-futebol').click();
+    await page.locator('[data-testid^="im-cfg-theme-"]').first().click();
     await expect(page.getByRole('dialog')).toBeVisible();
     await check('ajustes-tema');
     await page.getByRole('button', { name: 'Pronto' }).click();

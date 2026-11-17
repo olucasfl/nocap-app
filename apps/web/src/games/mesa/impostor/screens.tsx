@@ -253,6 +253,7 @@ export const TIMES = [0, 30, 60, 90, 120, 180, 240, 300];
 
 export function CfgScreen({ s, d }: P) {
   const [sheet, setSheet] = useState<string | null>(null);
+  const [help, setHelp] = useState(false);
   const [flash, show] = useFlash();
   const start = () => {
     if (s.settings.categories.length === 0) return show('Nenhum tema escolhido. Toque em "Trocar temas" e escolha pelo menos 1.');
@@ -267,61 +268,101 @@ export function CfgScreen({ s, d }: P) {
   const ti = Math.max(0, TIMES.indexOf(c.talkSeconds));
   const cur = MODES.find((m) => m.id === c.mode)!;
   const needRounds = imp + 1;
-  const rows = [
-    <div className="im-row votemode" key="vm">
-      <div>
-        <b>Como votar</b>
-        <small>{elim ? 'A cada rodada a mesa vota e uma pessoa é eliminada. Quem sai só assiste. Os inocentes vencem se eliminarem todos os impostores; os impostores vencem se sobrarem tantos quanto os inocentes ou se as rodadas acabarem.' : 'Todos dão as dicas nas rodadas, depois conversam e votam uma vez só em quem acham que é o impostor.'}</small>
-      </div>
-      <div className="im-seg im-seg2" role="radiogroup" aria-label="Como votar">
-        {([['final', 'Voto final'], ['elim', 'Eliminação']] as const).map(([v, label]) => (
-          <button key={v} type="button" role="radio" aria-checked={c.voteMode === v} data-testid={`im-howvote-${v}`} onClick={() => { play('select'); d({ type: 'settings', patch: { voteMode: v } }); }}>{label}</button>
-        ))}
-      </div>
-    </div>,
-    c.mode === 'wrong' && !elim ? null : <div className="im-row" key="rd"><div><b>Rodadas de dicas</b><small>{elim ? 'Cada rodada termina com uma eliminação.' : 'Quantas vezes cada um dá sua dica. Em cada rodada, cada pessoa diz uma palavra sobre o tema, uma de cada vez.'}</small></div><Stepper value={elim ? Math.max(c.rounds, imp > 0 ? needRounds : c.rounds) : c.rounds} label="rodadas" min={1} max={elim ? IM_ELIM_MAX_ROUNDS : IM_MAX_ROUNDS} onChange={(n) => d({ type: 'settings', patch: { rounds: n } })} /></div>,
-    <div className="im-row" key="im"><div><b>Impostores</b><small>{imp === 0 ? 'Número surpresa' : `Máximo para ${s.players.length}: ${max}${elim ? ' (menos da metade da mesa)' : ''}`}</small></div>
-      <Stepper value={imp} label="impostores" min={0} max={max} format={(n) => (n === 0 ? '?' : String(n))} onChange={(n) => d({ type: 'settings', patch: { impostors: n === 0 ? 'random' : n } })} /></div>,
-    <div className="im-row" key="tm"><div><b>Debate</b><small>Depois das dicas, todos conversam por esse tempo para descobrir quem é o impostor. Depois vem a votação.</small></div><Stepper value={ti} label="tempo do debate" min={0} max={TIMES.length - 1} format={(n) => fmtTime(TIMES[n]!)} onChange={(n) => d({ type: 'settings', patch: { talkSeconds: TIMES[n]! } })} /></div>,
-    elim && (c.impostors === 'random' || imp >= 2) ? <div className="im-row" key="rv"><div><b>Mostrar quem era</b><small>Ao eliminar alguém, a tela mostra se era inocente ou impostor. Desligado, o papel de quem sai fica em segredo e o jogo só revela no fim.</small></div><Switch on={c.revealRoles} label="Mostrar quem era" onChange={(v) => d({ type: 'settings', patch: { revealRoles: v } })} /></div> : null,
-  ];
-  if (c.mode === 'classic' && c.categories.length > 2) rows.push(<div className="im-row" key="hint"><div><b>Dica de categoria</b><small>O impostor vê o tema da palavra. Só aparece com mais de 2 temas.</small></div><Switch on={c.hint} label="Dica de categoria" onChange={(v) => d({ type: 'settings', patch: { hint: v } })} /></div>);
+  const showReveal = elim && (c.impostors === 'random' || imp >= 2);
+  const showHint = c.mode === 'classic' && c.categories.length > 2;
+  const showRounds = !(c.mode === 'wrong' && !elim);
+  // quantos temas cabem em uma linha: os outros ficam em "+N" (o resto se edita em "Trocar temas")
+  const shown = c.categories.slice(0, 3);
+  const more = c.categories.length - shown.length;
   return (
     <div className="im-screen" data-testid="im-cfg">
-      <TopBar onBack={() => d({ type: 'go', phase: 'cats', back: true })} center={<Steps at={3} />} />
-      <div className="im-body">
-        <h2 className="im-t"><Words text="Como vai ser?" /></h2>
-        <div className="im-modes" role="radiogroup" aria-label="Modo de jogo">
-          {MODES.map((m, i) => {
-            return (
-              <button key={m.id} type="button" role="radio" aria-checked={c.mode === m.id} className="im-mode im-rise" style={{ '--d': i + 1, '--c': m.tone } as CSSProperties} data-testid={`im-mode-${m.id}`} onClick={() => { play('select'); d({ type: 'settings', patch: { mode: m.id } }); }}>
-                <Icon name={m.icon} size={64} className="im-mode-ic" />
-                <b>{m.label}</b>
-              </button>
-            );
-          })}
+      <TopBar
+        onBack={() => d({ type: 'go', phase: 'cats', back: true })}
+        center={<Steps at={3} />}
+        right={<button type="button" className="im-help" aria-label="Entender as regras" data-testid="im-cfg-help" onClick={() => { play('tap'); setHelp(true); }}><span>?</span></button>}
+      />
+      <div className="im-body im-cfgbody">
+        <div className="im-cfgtitle">
+          <h2 className="im-t"><Words text="Como vai ser?" /></h2>
         </div>
-        <p className="im-modedesc" key={c.mode} aria-live="polite">{cur.desc}</p>
-        <div className="im-rows">{rows.filter(Boolean).map((r, i) => <div key={i} className="im-rise" style={{ '--d': i + 1 } as CSSProperties}>{r}</div>)}</div>
-        <div className="im-row themes">
-          <div className="im-themes-h"><b>Temas</b><small>Escolha o que entra em cada tema</small></div>
-          <div className="im-pills">
-            {c.categories.map((id) => {
+        <div className="im-modes" role="radiogroup" aria-label="Modo de jogo">
+          {MODES.map((m, i) => (
+            <button key={m.id} type="button" role="radio" aria-checked={c.mode === m.id} className="im-mode im-rise" style={{ '--d': i + 1, '--c': m.tone } as CSSProperties} data-testid={`im-mode-${m.id}`} onClick={() => { play('select'); d({ type: 'settings', patch: { mode: m.id } }); }}>
+              <Icon name={m.icon} size={64} className="im-mode-ic" />
+              <b>{m.label}</b>
+            </button>
+          ))}
+        </div>
+        <p className="im-modedesc im-clamp" key={c.mode} aria-live="polite">{cur.desc}</p>
+        <div className="im-cfgrid">
+          <div className="im-t2 wide">
+            <b>Como votar</b>
+            <div className="im-seg im-seg2" role="radiogroup" aria-label="Como votar">
+              {([['final', 'Voto final'], ['elim', 'Eliminação']] as const).map(([v, label]) => (
+                <button key={v} type="button" role="radio" aria-checked={c.voteMode === v} data-testid={`im-howvote-${v}`} onClick={() => { play('select'); d({ type: 'settings', patch: { voteMode: v } }); }}>{label}</button>
+              ))}
+            </div>
+          </div>
+          {showRounds && (
+            <div className="im-t2">
+              <b>Rodadas</b>
+              <Stepper value={elim ? Math.max(c.rounds, imp > 0 ? needRounds : c.rounds) : c.rounds} label="rodadas" min={1} max={elim ? IM_ELIM_MAX_ROUNDS : IM_MAX_ROUNDS} onChange={(n) => d({ type: 'settings', patch: { rounds: n } })} />
+            </div>
+          )}
+          <div className="im-t2">
+            <b>Impostores</b>
+            <Stepper value={imp} label="impostores" min={0} max={max} format={(n) => (n === 0 ? '?' : String(n))} onChange={(n) => d({ type: 'settings', patch: { impostors: n === 0 ? 'random' : n } })} />
+          </div>
+          <div className="im-t2">
+            <b>Debate</b>
+            <Stepper value={ti} label="tempo do debate" min={0} max={TIMES.length - 1} format={(n) => fmtTime(TIMES[n]!)} onChange={(n) => d({ type: 'settings', patch: { talkSeconds: TIMES[n]! } })} />
+          </div>
+          {showReveal && (
+            <div className="im-t2 sw">
+              <b>Mostrar papel</b>
+              <Switch on={c.revealRoles} label="Mostrar quem era" onChange={(v) => d({ type: 'settings', patch: { revealRoles: v } })} />
+            </div>
+          )}
+          {showHint && (
+            <div className="im-t2 sw">
+              <b>Dica de tema</b>
+              <Switch on={c.hint} label="Dica de categoria" onChange={(v) => d({ type: 'settings', patch: { hint: v } })} />
+            </div>
+          )}
+        </div>
+        <div className="im-themestrip">
+          <b>Temas</b>
+          <div className="im-themechips">
+            {shown.map((id) => {
               const cat = IM_CATEGORIES.find((x) => x.id === id)!;
               return (
-                <div key={id} className="im-themeline">
-                  <span className="im-chip static"><Icon name={CATEGORY_ICONS[id]!} size={28} />{cat.label}</span>
-                  <button type="button" className="im-edtheme" data-testid={`im-cfg-theme-${id}`} aria-label={`Editar tema ${cat.label}`} onClick={() => { play('tap'); setSheet(id); }}><GearIcon />Editar tema</button>
-                </div>
+                <button key={id} type="button" className="im-chip im-iconchip" data-testid={`im-cfg-theme-${id}`} aria-label={`Editar tema ${cat.label}`} title={`Editar tema ${cat.label}`} onClick={() => { play('tap'); setSheet(id); }}>
+                  <Icon name={CATEGORY_ICONS[id]!} size={28} />
+                </button>
               );
             })}
-            <button type="button" className="im-chip add" data-testid="im-cfg-themes-edit" onClick={() => { play('back'); d({ type: 'go', phase: 'cats', back: true }); }}>Trocar temas</button>
+            {more > 0 && <span className="im-chip static im-more">+{more}</span>}
           </div>
+          <button type="button" className="im-chip add" data-testid="im-cfg-themes-edit" aria-label="Trocar temas" onClick={() => { play('back'); d({ type: 'go', phase: 'cats', back: true }); }}>Trocar<span className="im-long">&nbsp;temas</span></button>
         </div>
       </div>
       {(flash || s.error) && <div className="im-foot-alert"><Alert n={flash?.n ?? 0}>{flash?.m ?? s.error}</Alert></div>}
       <div className="im-foot"><Primary sound={null} testId="im-start" onClick={start}>Começar <ArrowIcon /></Primary></div>
       {sheet && <CategorySheet s={s} d={d} id={sheet} onClose={() => setSheet(null)} />}
+      {help && (
+        <Sheet title="Como funcionam as regras" onClose={() => setHelp(false)}>
+          <dl className="im-helplist" data-testid="im-cfg-helpsheet">
+            <dt>{cur.label}</dt><dd>{cur.desc}</dd>
+            <dt>Como votar</dt><dd>{elim ? 'A cada rodada a mesa vota e uma pessoa é eliminada. Quem sai só assiste. Os inocentes vencem se eliminarem todos os impostores; os impostores vencem se sobrarem tantos quanto os inocentes ou se as rodadas acabarem.' : 'Todos dão as dicas nas rodadas, depois conversam e votam uma vez só em quem acham que é o impostor.'}</dd>
+            {showRounds && (<><dt>Rodadas</dt><dd>{elim ? 'Cada rodada termina com uma eliminação.' : 'Quantas vezes cada um dá sua dica. Em cada rodada, cada pessoa diz uma palavra sobre o tema, uma de cada vez.'}</dd></>)}
+            <dt>Impostores</dt><dd>{imp === 0 ? 'Número surpresa.' : `Máximo para ${s.players.length} jogadores: ${max}${elim ? ' (menos da metade da mesa)' : ''}.`}</dd>
+            <dt>Debate</dt><dd>Depois das dicas, todos conversam por esse tempo para descobrir quem é o impostor. Depois vem a votação.</dd>
+            {showReveal && (<><dt>Mostrar quem era</dt><dd>Ao eliminar alguém, a tela mostra se era inocente ou impostor. Desligado, o papel de quem sai fica em segredo e o jogo só revela no fim.</dd></>)}
+            {showHint && (<><dt>Dica de categoria</dt><dd>O impostor vê o tema da palavra. Só aparece com mais de 2 temas.</dd></>)}
+          </dl>
+          <Primary sound="confirm" onClick={() => setHelp(false)}>Entendi</Primary>
+        </Sheet>
+      )}
     </div>
   );
 }

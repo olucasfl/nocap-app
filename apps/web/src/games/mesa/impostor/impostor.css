@@ -906,3 +906,71 @@
 .im-wheel-item .im-cover-t { font-size: clamp(24px, 4.6dvh, 44px); }
 .im-modes .im-mode { flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 6px; min-height: 96px; padding: 10px 6px; }
 .im-modes .im-mode-ic { width: 48px; height: 48px; }
+
+/* ===== Regras da partida (mesa): tudo cabe na tela, em qualquer celular, com todas as opções ligadas ===== */
+.im-cfgbody { gap: 8px; overflow: hidden; justify-content: flex-start; padding-block: 2px; }
+.im-cfgtitle { position: relative; display: flex; justify-content: center; align-items: center; min-height: 44px; }
+.im-cfgtitle .im-t { font-size: clamp(22px, 4.2dvh, 32px); line-height: 1; margin: 0; }
+.im-help { width: 44px; height: 44px; display: grid; place-items: center; }
+.im-help span { width: 30px; height: 30px; border-radius: 50%; background: var(--surface2); box-shadow: inset 0 0 0 2px var(--line); display: grid; place-items: center; font: 800 16px var(--display); }
+.im-cfgbody .im-modes { gap: 8px; }
+.im-cfgbody .im-modes .im-mode { min-height: clamp(64px, 10dvh, 92px); padding: 6px 4px; gap: 4px; }
+.im-cfgbody .im-modes .im-mode-ic { width: clamp(32px, 5.6dvh, 48px); height: clamp(32px, 5.6dvh, 48px); }
+.im-clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin: 0; font-size: 12.5px; line-height: 1.35; }
+.im-cfgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.im-t2 { background: var(--surface); border-radius: 18px; padding: 4px 10px 6px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.im-t2 > b { font: 800 13px var(--display); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.im-t2.wide { grid-column: 1 / -1; flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; padding-block: 4px; }
+.im-t2.wide .im-seg { flex: 1; max-width: 290px; }
+.im-t2.sw { justify-content: space-between; }
+.im-t2 .im-stepper { justify-content: space-between; gap: 6px; }
+.im-t2 .im-stepper button { width: 40px; height: 40px; }
+.im-t2 .im-stepper output { font-size: 19px; min-width: 34px; text-align: center; }
+.im-themestrip { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.im-themestrip > b { font: 800 13px var(--display); color: var(--muted); flex: none; }
+.im-themechips { display: flex; gap: 6px; flex: 1; min-width: 0; overflow: hidden; }
+.im-themechips .im-chip { min-height: 40px; padding: 0 8px 0 4px; flex: 0 1 auto; min-width: 0; }
+.im-themechips .im-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.im-themechips .im-chip .im-icon { width: 24px; height: 24px; flex: none; }
+.im-themestrip > .im-chip { flex: none; min-height: 40px; }
+.im-helplist { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.im-helplist dt { font: 800 15px var(--display); margin-top: 8px; }
+.im-helplist dd { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.4; }
+@media (max-height: 700px) and (orientation: portrait) { .im-cfgbody .im-clamp { display: none; } }
+@media (max-height: 560px) and (orientation: landscape) {
+  .im-cfgbody { display: grid; grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.5fr); gap: 6px 16px; align-content: center; align-items: start; }
+  .im-cfgtitle { display: none; }
+  .im-cfgbody .im-modes, .im-themestrip { grid-column: 1; }
+  .im-cfgbody .im-clamp { display: none; }
+  .im-cfgtitle { min-height: 34px; }
+  .im-cfgbody .im-modes { grid-template-columns: minmax(0, 1fr); gap: 5px; }
+  .im-cfgbody .im-modes .im-mode { flex-direction: row; justify-content: flex-start; min-height: 38px; padding: 3px 10px; gap: 10px; text-align: left; }
+  .im-cfgbody .im-modes .im-mode b { text-align: left; font-size: 14px; }
+  .im-cfgbody .im-modes .im-mode-ic { width: 32px; height: 32px; }
+  .im-cfgrid { grid-column: 2; grid-row: 1 / span 2; grid-template-columns: repeat(3, minmax(0, 1fr)); align-self: center; gap: 6px; }
+  .im-t2 { padding: 2px 8px 4px; }
+  .im-t2 .im-stepper { gap: 2px; }
+  .im-t2 .im-stepper output { min-width: 30px; }
+  .im-themestrip { gap: 6px; }
+}
+.im-themechips .im-iconchip { width: 44px; min-height: 44px; padding: 0; justify-content: center; border-radius: 14px; flex: none; }
+.im-themechips .im-iconchip .im-icon { width: 30px; height: 30px; }
+.im-themechips .im-more { min-height: 44px; display: inline-flex; align-items: center; padding: 0 10px; }
+.im-cfgtitle { min-height: 40px; }
+.im-cfgbody { gap: 6px; }
+.im-cfgbody .im-modes .im-mode { min-height: clamp(58px, 8.6dvh, 88px); }
+.im-t2 .im-stepper button { flex: none; }
+@media (max-height: 560px) and (orientation: landscape) {
+  .im-t2 .im-stepper output { min-width: 24px; font-size: 17px; }
+  .im-cfgbody .im-modes .im-mode { min-height: 36px; }
+  .im-themechips .im-iconchip { width: 40px; min-height: 40px; }
+  .im-themestrip > .im-chip { min-height: 40px; }
+}
+@media (max-height: 560px) and (orientation: landscape) {
+  .im-cfgbody { gap: 4px 16px; padding-block: 0; }
+  .im-cfgbody .im-modes { gap: 3px; }
+  .im-cfgbody .im-modes .im-mode { min-height: 40px; padding-block: 0; }
+  .im-t2 { padding: 0 8px 2px; }
+  .im-t2.wide { padding-block: 2px; }
+}
+@media (max-height: 560px) and (orientation: landscape) { .im-themestrip > b, .im-themestrip .im-long { display: none; } }
