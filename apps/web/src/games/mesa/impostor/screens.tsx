@@ -263,13 +263,13 @@ export function CfgScreen({ s, d }: P) {
   const cur = MODES.find((m) => m.id === c.mode)!;
   const tooFew = s.players.length < IM_WHITE_MIN_PLAYERS;
   const rows = [
-    <div className="im-row" key="rd"><div><b>Rodadas de dicas</b><small>Uma palavra por pessoa em cada rodada</small></div><Stepper value={c.rounds} label="rodadas" min={1} max={IM_MAX_ROUNDS} onChange={(n) => d({ type: 'settings', patch: { rounds: n } })} /></div>,
+    <div className="im-row" key="rd"><div><b>Rodadas de dicas</b><small>Quantas vezes cada um dá sua dica. Em cada rodada, cada pessoa diz uma palavra sobre o tema, uma de cada vez.</small></div><Stepper value={c.rounds} label="rodadas" min={1} max={IM_MAX_ROUNDS} onChange={(n) => d({ type: 'settings', patch: { rounds: n } })} /></div>,
     <div className="im-row" key="im"><div><b>Impostores</b><small>{imp === 0 ? 'Número surpresa' : `Máximo para ${s.players.length}: ${max}`}</small></div>
       <Stepper value={imp} label="impostores" min={0} max={max} format={(n) => (n === 0 ? '?' : String(n))} onChange={(n) => d({ type: 'settings', patch: { impostors: n === 0 ? 'random' : n } })} /></div>,
-    <div className="im-row" key="tm"><div><b>Debate</b><small>Tempo para conversar</small></div><Stepper value={ti} label="tempo do debate" min={0} max={TIMES.length - 1} format={(n) => fmtTime(TIMES[n]!)} onChange={(n) => d({ type: 'settings', patch: { talkSeconds: TIMES[n]! } })} /></div>,
+    <div className="im-row" key="tm"><div><b>Debate</b><small>Depois das dicas, todos conversam por esse tempo para descobrir quem é o impostor. Depois vem a votação.</small></div><Stepper value={ti} label="tempo do debate" min={0} max={TIMES.length - 1} format={(n) => fmtTime(TIMES[n]!)} onChange={(n) => d({ type: 'settings', patch: { talkSeconds: TIMES[n]! } })} /></div>,
   ];
   if (c.mode === 'classic') rows.push(<div className="im-row" key="hint"><div><b>Dica de categoria</b><small>O impostor vê o tema</small></div><Switch on={c.hint} label="Dica de categoria" onChange={(v) => d({ type: 'settings', patch: { hint: v } })} /></div>);
-  rows.push(<div className="im-row" key="last"><div><b>Última chance</b><small>Pego, ainda pode adivinhar</small></div><Switch on={c.lastChance} label="Última chance" onChange={(v) => d({ type: 'settings', patch: { lastChance: v } })} /></div>);
+  rows.push(<div className="im-row" key="last"><div><b>Última chance</b><small>Se o impostor for pego, ainda tenta acertar a palavra. Acertando, ganha poucos pontos (os inocentes ganham mais). Escapar sem ser pego vale muito mais.</small></div><Switch on={c.lastChance} label="Última chance" onChange={(v) => d({ type: 'settings', patch: { lastChance: v } })} /></div>);
   return (
     <div className="im-screen" data-testid="im-cfg">
       <TopBar onBack={() => d({ type: 'go', phase: 'cats', back: true })} center={<Steps at={3} />} />
@@ -289,16 +289,15 @@ export function CfgScreen({ s, d }: P) {
         <p className="im-modedesc" key={c.mode} aria-live="polite">{cur.desc}{tooFew ? ` "Sem palavra" só com ${IM_WHITE_MIN_PLAYERS} ou mais pessoas.` : ''}</p>
         <div className="im-rows">{rows.map((r, i) => <div key={i} className="im-rise" style={{ '--d': i + 1 } as CSSProperties}>{r}</div>)}</div>
         <div className="im-row themes">
-          <div className="im-themes-h"><b>Temas</b><small>Toque para personalizar</small></div>
+          <div className="im-themes-h"><b>Temas</b><small>Escolha o que entra em cada tema</small></div>
           <div className="im-pills">
             {c.categories.map((id) => {
               const cat = IM_CATEGORIES.find((x) => x.id === id)!;
               return (
-                <button key={id} type="button" className="im-chip" data-testid={`im-cfg-theme-${id}`} aria-label={`Personalizar ${cat.label}`} onClick={() => { play('tap'); setSheet(id); }}>
-                  <Icon name={CATEGORY_ICONS[id]!} size={28} />
-                  {cat.label}
-                  <GearIcon />
-                </button>
+                <div key={id} className="im-themeline">
+                  <span className="im-chip static"><Icon name={CATEGORY_ICONS[id]!} size={28} />{cat.label}</span>
+                  <button type="button" className="im-edtheme" data-testid={`im-cfg-theme-${id}`} aria-label={`Editar tema ${cat.label}`} onClick={() => { play('tap'); setSheet(id); }}><GearIcon />Editar tema</button>
+                </div>
               );
             })}
             <button type="button" className="im-chip add" data-testid="im-cfg-themes-edit" onClick={() => { play('back'); d({ type: 'go', phase: 'cats', back: true }); }}>Trocar temas</button>

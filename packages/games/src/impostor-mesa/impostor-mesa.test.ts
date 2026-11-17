@@ -236,4 +236,12 @@ describe('sessão e ranking', () => {
     const jump = addResult(before, res({ a: 0, b: 0, c: 0, d: 20 }));
     expect(rankingShift(before, jump)).toBe('brusque');
   });
+
+  it('as proporções dos pontos: escapar vale muito, o chute certo vale pouco', () => {
+    const innocentBest = IM_POINTS.rightVote + IM_POINTS.innocentsWin;
+    expect(IM_POINTS.outsiderSurvived).toBeGreaterThan(innocentBest);
+    expect(IM_POINTS.outsiderGuessed).toBeGreaterThan(0);
+    expect(IM_POINTS.outsiderGuessed).toBeLessThan(IM_POINTS.rightVote);
+    expect(IM_POINTS.whiteGuessed).toBeLessThan(IM_POINTS.outsiderSurvived);
+  });
 });

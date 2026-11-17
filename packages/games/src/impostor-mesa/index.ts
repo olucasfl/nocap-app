@@ -266,12 +266,13 @@ export function guessIsRight(guess: string, word: string): boolean {
   return g.length > 0 && wordAnswers(word).some((a) => normalizeGuess(a) === g);
 }
 
+/** Proporção (pedido do Lucas, 17/11/2026): escapar vale bem mais que a vitória dos inocentes; o chute certo vale pouco, menos que acertar o voto. */
 export const IM_POINTS = {
   rightVote: 2,
-  innocentsWin: 1,
-  outsiderSurvived: 4,
-  outsiderGuessed: 3,
-  whiteGuessed: 5,
+  innocentsWin: 2,
+  outsiderSurvived: 6,
+  outsiderGuessed: 1,
+  whiteGuessed: 2,
 } as const;
 
 export interface ImResultInput {

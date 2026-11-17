@@ -9,7 +9,7 @@ import { nameOf, useLooks, type Snap } from './looks';
 import { play, preloadSounds } from '../impostor/audio';
 import { CategorySheet, MODES, TIMES, fmtTime } from '../impostor/screens';
 import type { Action, State } from '../impostor/state';
-import { Alert, AskCtx, ArrowIcon, Coin, Confirm, GearIcon, Icon, Primary, Sheet, Stepper, Switch, TopBar, Words, useAsk, useFlash, type AskCfg } from '../impostor/ui';
+import { Alert, AskCtx, ArrowIcon, Coin, Confirm, GearIcon, Icon, Primary, Stepper, Switch, TopBar, Words, useAsk, useFlash, type AskCfg } from '../impostor/ui';
 import '../impostor/impostor.css';
 
 type Cfg = { rounds: number; impostors: number; talkMs: number; hint: boolean; lastChance: boolean; categories: string[]; filters: Record<string, Record<string, string[]>> };
@@ -69,9 +69,8 @@ function Lobby({ snap }: { snap: Snap }) {
   const looks = useLooks(snap);
   const leave = useLeaveRoom();
   const ask = useAsk();
-  const [tab, setTab] = useState<'mesa' | 'regras'>('mesa');
-  const [invite, setInvite] = useState(false);
-  const [sheet, setSheet] = useState<string | null>(null);
+  const [tab, setTab] = useState<'mesa' | 'regras' | 'convidar'>('mesa');
+    const [sheet, setSheet] = useState<string | null>(null);
   const [flash, show, clear] = useFlash();
   const cfg = snap.settings as unknown as Cfg;
   const mode = snap.mode as ImMode;
@@ -127,13 +126,15 @@ function Lobby({ snap }: { snap: Snap }) {
 
   return (
     <div className="im-screen" data-testid="sala-lobby">
-      <TopBar leave onBack={leave} center={<button type="button" className="im-code" aria-label="Copiar o código da sala" data-testid="sala-code" onClick={copy}>{copied ? 'Copiado' : snap.code}</button>} right={<span className="im-toprow"><button type="button" className="im-iconbtn" aria-label="Convidar" data-testid="sala-invite" onClick={() => { play('tap'); setInvite(true); }}><Icon name="cartas" size={28} /></button><SalaChatButton snap={snap} /></span>} />
+      <TopBar leave onBack={leave} center={<button type="button" className="im-code" aria-label="Copiar o código da sala" data-testid="sala-code" onClick={copy}>{copied ? 'Copiado' : snap.code}</button>} right={<span className="im-toprow"><SalaChatButton snap={snap} /></span>} />
       <div className="im-body">
-        <h2 className="im-t"><Words text={tab === 'mesa' ? 'Sala do Impostor' : 'Como vai ser?'} /></h2>
+        <h2 className="im-t"><Words text={tab === 'mesa' ? 'Sala do Impostor' : tab === 'regras' ? 'Como vai ser?' : 'Chame a galera'} /></h2>
         <div className="im-seg" role="tablist" aria-label="Sala">
           <button type="button" role="tab" aria-selected={tab === 'mesa'} onClick={() => { play('select'); setTab('mesa'); }} data-testid="sala-tab-mesa">Jogadores · {connected.length}</button>
           <button type="button" role="tab" aria-selected={tab === 'regras'} onClick={() => { play('select'); setTab('regras'); }} data-testid="sala-tab-regras">Regras</button>
+          <button type="button" role="tab" aria-selected={tab === 'convidar'} onClick={() => { play('select'); setTab('convidar'); }} data-testid="sala-tab-convidar">Convidar</button>
         </div>
+        {tab === 'convidar' && <div className="im-invite" data-testid="sala-invite-panel"><InvitePanel snapshot={snap} /></div>}
 
         {tab === 'mesa' && (
           <ul className="im-plist">
@@ -170,11 +171,11 @@ function Lobby({ snap }: { snap: Snap }) {
                 </div>
                 <p className="im-modedesc" key={mode}>{MODES.find((m) => m.id === mode)?.desc}{tooFew ? ` "Sem palavra" só com ${IM_WHITE_MIN_PLAYERS} ou mais.` : ''}</p>
                 <div className="im-rows">
-                  <div className="im-row"><div><b>Rodadas de dicas</b><small>Uma palavra por pessoa em cada rodada</small></div><Stepper value={cfg.rounds} label="rodadas" min={1} max={IM_MAX_ROUNDS} onChange={(n) => set({ rounds: n })} /></div>
+                  <div className="im-row"><div><b>Rodadas de dicas</b><small>Quantas vezes cada um dá sua dica. Em cada rodada, cada pessoa diz uma palavra sobre o tema, uma de cada vez.</small></div><Stepper value={cfg.rounds} label="rodadas" min={1} max={IM_MAX_ROUNDS} onChange={(n) => set({ rounds: n })} /></div>
                   <div className="im-row"><div><b>Impostores</b><small>{imp === 0 ? 'Número surpresa' : `Máximo para ${connected.length}: ${max}`}</small></div><Stepper value={imp} label="impostores" min={0} max={max} format={(n) => (n === 0 ? '?' : String(n))} onChange={(n) => set({ impostors: n })} /></div>
-                  <div className="im-row"><div><b>Debate</b><small>Tempo para conversar</small></div><Stepper value={ti} label="tempo do debate" min={0} max={TIMES.length - 1} format={(n) => fmtTime(TIMES[n]!)} onChange={(n) => set({ talkMs: TIMES[n]! * 1000 })} /></div>
+                  <div className="im-row"><div><b>Debate</b><small>Depois das dicas, todos conversam por esse tempo para descobrir quem é o impostor. Depois vem a votação.</small></div><Stepper value={ti} label="tempo do debate" min={0} max={TIMES.length - 1} format={(n) => fmtTime(TIMES[n]!)} onChange={(n) => set({ talkMs: TIMES[n]! * 1000 })} /></div>
                   {mode === 'classic' && <div className="im-row"><div><b>Dica de categoria</b><small>O impostor vê o tema</small></div><Switch on={cfg.hint} label="Dica de categoria" onChange={(v) => set({ hint: v })} /></div>}
-                  <div className="im-row"><div><b>Última chance</b><small>Pego, ainda pode adivinhar</small></div><Switch on={cfg.lastChance} label="Última chance" onChange={(v) => set({ lastChance: v })} /></div>
+                  <div className="im-row"><div><b>Última chance</b><small>Se o impostor for pego, ainda tenta acertar a palavra. Acertando, ganha poucos pontos (os inocentes ganham mais). Escapar sem ser pego vale muito mais.</small></div><Switch on={cfg.lastChance} label="Última chance" onChange={(v) => set({ lastChance: v })} /></div>
                 </div>
                 <p className="im-instr" data-testid="sala-instr">Selecione os temas para sortear</p>
                 <div className="im-tiles">
@@ -186,7 +187,7 @@ function Lobby({ snap }: { snap: Snap }) {
                           <Icon name={CATEGORY_ICONS[c.id]!} size={64} className="im-tile-ic" />
                           <span>{c.label}</span>
                         </button>
-                        {on && <button type="button" className="im-gear" aria-label={`Personalizar ${c.label}`} onClick={() => { play('tap'); setSheet(c.id); }}><GearIcon /></button>}
+                        {on && <button type="button" className="im-edtheme" data-testid={`sala-edit-${c.id}`} aria-label={`Editar tema ${c.label}`} onClick={() => { play('tap'); setSheet(c.id); }}><GearIcon />Editar tema</button>}
                       </div>
                     );
                   })}
@@ -223,11 +224,6 @@ function Lobby({ snap }: { snap: Snap }) {
         )}
       </div>
       {sheet && <CategorySheet s={adapter.s} d={adapter.d} id={sheet} onClose={() => setSheet(null)} />}
-      {invite && (
-        <Sheet title="Convidar" onClose={() => setInvite(false)}>
-          <InvitePanel snapshot={snap} />
-        </Sheet>
-      )}
     </div>
   );
 }

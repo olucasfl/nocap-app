@@ -77,6 +77,12 @@ for (const d of DEVICES.filter((x) => only.includes(x.name))) {
     await expect(A.getByTestId('sala-tab-mesa')).toContainText('3');
     await check('lobby-jogadores', A);
 
+    // aba Convidar (no lugar do botão do topo)
+    await A.getByTestId('sala-tab-convidar').click();
+    await expect(A.getByTestId('sala-invite-panel')).toBeVisible();
+    await check('lobby-convidar', A);
+    await A.getByTestId('sala-tab-mesa').click();
+
     // chat do Impostor: Ana escreve e Bia lê
     await A.getByTestId('sala-chat-btn').click();
     await A.getByTestId('sala-chat-input').fill('bora jogar');

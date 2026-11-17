@@ -51,7 +51,7 @@ Uma **sessão** é a mesa inteira jogando várias partidas seguidas, na mesma sa
 
 ## 6. Pontuação (placar acumulado, escolhido em 17/11/2026)
 
-Por rodada (a partida inteira, depois das N rodadas de dicas): inocente que votou num impostor de verdade +2; inocentes ganham +1 se a rodada for deles; impostor que não foi pego +4; impostor pego que adivinha a palavra +3; Mr. White que adivinha +5. Os pontos **somam durante toda a sessão** (seção 5b); não há número fixo de partidas. Empate no ranking final: ganha quem foi impostor e sobreviveu mais vezes. Sem ranking global: partida de mesa e sala nunca entram no ranking (regra do app).
+Por rodada (a partida inteira, depois das N rodadas de dicas): inocente que votou num impostor de verdade +2; inocentes ganham +2 se a rodada for deles; impostor que não foi pego +6; impostor pego que adivinha a palavra +1; Mr. White que adivinha +2 (reajustado em 17/11/2026: escapar vale bem mais que a vitória dos inocentes e o chute certo vale pouco). Os pontos **somam durante toda a sessão** (seção 5b); não há número fixo de partidas. Empate no ranking final: ganha quem foi impostor e sobreviveu mais vezes. Sem ranking global: partida de mesa e sala nunca entram no ranking (regra do app).
 
 ## 7. Conteúdo
 

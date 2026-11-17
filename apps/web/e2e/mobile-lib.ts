@@ -160,6 +160,36 @@ export async function metrics(page: Page, d: Dev, pass: 'top' | 'end') {
       const right = tr.right - br.right;
       if (left > 1.5 || right > 1.5) add('TRANSBORDA', el, `texto passa da caixa ${Math.round(Math.max(left, right))}px (${label(box)})`);
     }
+    // texto coberto por outro bloco (cortado atrás de um cartão) e barra de rolagem visível
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      const host = n.parentElement;
+      if (!host || !(n.textContent || '').trim() || host.closest('svg, script, style, canvas')) continue;
+      const rg = document.createRange();
+      rg.selectNodeContents(n);
+      for (const r of Array.from(rg.getClientRects())) {
+        if (r.width < 4 || r.height < 6 || r.bottom < 0 || r.top > vh || r.right < 0 || r.left > vw) continue;
+        const cs = getComputedStyle(host);
+        if (cs.visibility === 'hidden' || +cs.opacity < 0.3) continue;
+        const pts = [[r.left + 3, r.top + r.height * 0.7], [r.right - 3, r.top + r.height * 0.7]] as const;
+        for (const [x, y] of pts) {
+          if (x < 0 || x > vw || y < 0 || y > vh) continue;
+          const top = document.elementFromPoint(x, y);
+          if (!top || top === host || host.contains(top) || top.contains(host)) continue;
+          // algo por cima só conta se for irmão/vizinho da mesma tela (não um painel ou modal por cima)
+          let fixedOver = false;
+          for (let e: HTMLElement | null = top as HTMLElement; e; e = e.parentElement) {
+            const pos = getComputedStyle(e).position;
+            if (pos === 'fixed' || pos === 'sticky') fixedOver = true;
+          }
+          if (fixedOver) continue;
+          add('TEXTO-COBERTO', host, `coberto por ${label(top)}`);
+        }
+      }
+    }
+    for (const e of document.querySelectorAll<HTMLElement>('.im-app *')) {
+      if (e.offsetWidth - e.clientWidth > 2 && /auto|scroll/.test(getComputedStyle(e).overflowY) && getComputedStyle(e).scrollbarWidth !== 'none') add('BARRA', e, 'barra de rolagem visível');
+    }
     return out.slice(0, 30);
   }, { d, pass });
 }

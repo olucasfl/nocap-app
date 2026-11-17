@@ -12,10 +12,14 @@ const buffers = new Map<ImSound, AudioBuffer>();
 const loading = new Map<ImSound, Promise<void>>();
 const ALL: ImSound[] = ['tap', 'select', 'on', 'off', 'back', 'start', 'confirm', 'add', 'remove', 'shuffle', 'reveal', 'pass', 'vote', 'tick', 'timeup', 'win', 'lose', 'rankcalm', 'rankbig'];
 
+/** Voltar usa o toque suave (o arquivo antigo era forte demais) e sempre mais baixo que o resto. */
+const FILE: Partial<Record<ImSound, string>> = { back: 'tap' };
+const GAIN: Partial<Record<ImSound, number>> = { back: 0.35 };
+
 function load(name: ImSound, ctx: AudioContext): Promise<void> {
   let p = loading.get(name);
   if (!p) {
-    p = fetch(`/impostor/sfx/${name}.mp3`)
+    p = fetch(`/impostor/sfx/${FILE[name] ?? name}.mp3`)
       .then((r) => r.arrayBuffer())
       .then((b) => ctx.decodeAudioData(b))
       .then((buf) => void buffers.set(name, buf))
@@ -42,7 +46,7 @@ export function play(name: ImSound, volume = 1): void {
   }
   const src = kit.ctx.createBufferSource();
   const g = kit.ctx.createGain();
-  g.gain.value = volume;
+  g.gain.value = volume * (GAIN[name] ?? 1);
   src.buffer = buf;
   src.connect(g).connect(kit.out);
   src.start();

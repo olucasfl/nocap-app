@@ -545,7 +545,7 @@
 /* sala online */
 .im-code { min-height: 44px; padding: 0 18px; border-radius: 999px; background: var(--surface); font: 800 22px var(--display); letter-spacing: 0.16em; transition: background 0.2s, transform 0.2s var(--ease); }
 .im-code:hover { background: var(--surface2); transform: translateY(-1px); }
-.im-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 999px; background: var(--surface); }
+.im-seg { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 999px; background: var(--surface); }
 .im-seg button { min-height: 44px; border-radius: 999px; font: 800 15px var(--display); color: var(--muted); transition: background 0.25s, color 0.25s; }
 .im-seg button[aria-selected='true'] { background: var(--text); color: var(--bg); }
 .im-state { font: 800 12px var(--body); letter-spacing: 0.06em; color: var(--muted); }
@@ -701,3 +701,42 @@
 .im-edit svg { width: 13px; height: 13px; stroke: var(--on-accent); fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
 .im-edit.big svg { width: 15px; height: 15px; }
 .im-coinbtn { position: relative; }
+
+/* Colunas roláveis: nada encolhe para caber (o texto não pode ser cortado), a rolagem existe mas sem barra visível */
+.im-body, .im-mid { overflow-x: hidden; scrollbar-width: none; -ms-overflow-style: none; }
+.im-body::-webkit-scrollbar, .im-mid::-webkit-scrollbar { display: none; width: 0; height: 0; }
+.im-body > *, .im-mid > * { flex-shrink: 0; min-width: 0; max-width: 100%; }
+.im-hint, .im-sub, .im-row small, .im-card small { overflow-wrap: anywhere; }
+
+/* barra do topo: o título cede, os botões das pontas nunca saem da tela */
+.im-top { grid-template-columns: auto minmax(max-content, 1fr) auto; }
+.im-top-c > * { white-space: nowrap; }
+.im-top-r, .im-top > :first-child { min-width: 44px; }
+.im-ways { grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); max-width: 100%; }
+@media (max-height: 560px) and (orientation: landscape) {
+  .im-ways { grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(640px, 100%); }
+  .im-way { padding: 10px; gap: 10px; min-width: 0; }
+  .im-way-t b { font-size: 16px; }
+}
+.im-sub { overflow-wrap: anywhere; word-break: normal; max-width: 100%; }
+
+/* telas do /mesa têm um bloco só: em paisagem continuam em coluna (a linha é só para papel/vez de jogar) */
+.im-app[data-step] .im-mid { flex-direction: column; text-align: center; gap: 14px; justify-content: flex-start; }
+
+/* "Editar tema": botão com texto, no lugar da engrenagem solta */
+.im-themeline { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; flex-wrap: wrap; }
+.im-pills:has(.im-themeline) { flex-direction: column; flex-wrap: nowrap; }
+.im-edtheme { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 0 16px; border-radius: 999px; background: var(--orange); color: var(--on-accent); font: 800 14px var(--display); transition: transform 0.2s var(--ease); }
+.im-edtheme svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.im-edtheme:hover { transform: translateY(-2px); }
+.im-edtheme:active { transform: scale(0.96); }
+.im-tilewrap { display: flex; flex-direction: column; gap: 6px; }
+.im-tilewrap .im-edtheme { min-height: 40px; font-size: 13px; width: 100%; animation: im-pop 0.35s var(--ease) both; }
+.im-invite { width: 100%; max-width: 520px; margin-inline: auto; }
+
+/* paisagem: os blocos ficam lado a lado e dividem a largura (textos longos quebram em vez de passar da caixa) */
+@media (max-height: 640px) and (min-width: 560px) {
+  .im-app:not([data-step]) .im-mid > * { flex-shrink: 1; min-width: 0; }
+}
+
+.im-seg button { white-space: nowrap; padding: 0 6px; font-size: 14px; min-width: 0; }
