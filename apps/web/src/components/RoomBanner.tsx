@@ -9,7 +9,7 @@ import './room-banner.css';
 const GAME_NAME: Record<RoomGame, string> = {
   color: 'Mesmíssima',
   time: 'Já Deu?',
-  impostor: 'Intruso',
+  impostor: 'Impostor',
   eco: 'Ecooo',
   atravessa: 'Atravessa!',
   desmorona: 'Desmorona!',

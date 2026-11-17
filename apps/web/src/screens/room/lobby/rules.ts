@@ -1,4 +1,4 @@
-import { fairLeaderRounds, impostorLimit } from '@nocap/games';
+import { fairLeaderRounds } from '@nocap/games';
 import type { RoomGame, RoomSnapshot } from '@/lib/rooms';
 
 /**
@@ -23,12 +23,8 @@ export interface RuleDef {
 const ROUNDS = [1, 3, 5, 7, 10];
 const SHOW = [400, 1000, 3000, 5000];
 const PICK = [15_000, 30_000, 60_000];
-const IMP_ROUNDS = [1, 3, 5];
 const ATR_ROUNDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
-const IMP_PICK = [30_000, 45_000, 60_000];
-const IMP_VOTE = [20_000, 30_000, 60_000];
-const IMP_COUNT = [1, 2, 3];
 
 /** Quantas pessoas cada jogo precisa para começar. */
 /** Siga o Líder: rodadas que deixam cada pessoa criar o mesmo número de vezes (e a atual, se for outra). */
@@ -64,7 +60,7 @@ export const GAME_NAME: Record<RoomGame, string> = {
   foxcap: 'Sala',
   color: 'Mesmíssima',
   time: 'Já Deu?',
-  impostor: 'Intruso',
+  impostor: 'Impostor',
   eco: 'Ecooo',
 };
 
@@ -72,7 +68,7 @@ export const GAME_NAME: Record<RoomGame, string> = {
 export const GAME_OF: Record<RoomGame, string> = {
   color: 'da Mesmíssima',
   time: 'de Já Deu?',
-  impostor: 'do Intruso',
+  impostor: 'do Impostor',
   eco: 'do Ecooo',
   atravessa: 'do Atravessa!',
   desmorona: 'do Desmorona!',
@@ -176,13 +172,7 @@ export const MODES: Record<RoomGame, { id: string; label: string; note: string }
       note: 'Todo mundo no mesmo mapa, sem checkpoint. Quem morre vira espectador. Vale a soma dos metros de cada rodada. Ficar parado por 12 s também tira você.',
     },
   ],
-  impostor: [
-    {
-      id: 'impostor',
-      label: 'Intruso',
-      note: 'Alguns não veem a cor: só uma dica. Todo mundo recria e vota em quem desconfia.',
-    },
-  ],
+  impostor: [{ id: 'classic', label: 'Impostor', note: 'Uma palavra secreta e um impostor. Dicas, debate e voto secreto.' }],
   color: [
     { id: 'classic', label: 'Clássico', note: 'A cor aparece e some. Recrie de memória.' },
     { id: 'flash', label: 'Flash', note: 'A cor pisca por 0,4 s: confie no olho.' },
@@ -380,7 +370,7 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
   const out: RuleDef[] = [];
   const cfg = s.settings;
 
-  if (s.game !== 'impostor') {
+  {
     out.push({
       id: 'mode',
       label: 'MODO',
@@ -422,67 +412,11 @@ export function rulesFor(s: RoomSnapshot): RuleDef[] {
     out.push({
       id: 'rounds',
       label: 'RODADAS',
-      values:
-        s.game === 'impostor'
-          ? IMP_ROUNDS
-          : s.game === 'eco'
-            ? leaderRoundOptions(s.members.length, cfg.rounds)
-            : ROUNDS,
+      values: s.game === 'eco' ? leaderRoundOptions(s.members.length, cfg.rounds) : ROUNDS,
       current: cfg.rounds,
       format: String,
       patch: (v) => ({ rounds: v }),
     });
-
-  if (s.game === 'impostor') {
-    const players = Math.max(s.members.length, 3);
-    const limit = impostorLimit(players);
-    out.push(
-      {
-        id: 'impostors',
-        label: 'INTRUSOS',
-        values: IMP_COUNT,
-        current: cfg.impostors,
-        format: String,
-        patch: (v) => ({ impostors: v }),
-        note: `Com ${players} pessoas: até ${limit} ${limit === 1 ? 'intruso' : 'intrusos'}. O número se ajusta a quem estiver na sala.`,
-      },
-      {
-        id: 'vote',
-        label: 'VOTO',
-        values: ['open', 'anon'],
-        current: cfg.anonymous ? 'anon' : 'open',
-        format: (v) => (v === 'anon' ? 'Anônimo' : 'Aberto'),
-        patch: (v) => ({ anonymous: v === 'anon' }),
-        note: cfg.anonymous
-          ? 'Ninguém vê em quem cada um votou, só quantos votos cada um recebeu.'
-          : 'No fim, todo mundo vê o voto de cada pessoa.',
-      },
-      {
-        id: 'show',
-        label: 'TEMPO PARA DECORAR',
-        values: SHOW.filter((v) => v >= 1000),
-        current: cfg.showMs,
-        format: seconds,
-        patch: (v) => ({ showMs: v }),
-      },
-      {
-        id: 'pick',
-        label: 'TEMPO PARA RECRIAR',
-        values: IMP_PICK,
-        current: cfg.pickMs,
-        format: seconds,
-        patch: (v) => ({ pickMs: v }),
-      },
-      {
-        id: 'voteTime',
-        label: 'TEMPO PARA VOTAR',
-        values: IMP_VOTE,
-        current: cfg.voteMs,
-        format: seconds,
-        patch: (v) => ({ voteMs: v }),
-      },
-    );
-  }
 
   if (s.game === 'color') {
     if (s.mode !== 'flash') {

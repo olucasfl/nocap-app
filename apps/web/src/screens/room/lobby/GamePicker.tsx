@@ -87,6 +87,11 @@ export const GAME_CATEGORIES: { id: string; title: string; games: PickGame[] }[]
       },
     ],
   },
+  {
+    id: 'mesa',
+    title: 'Jogos de mesa',
+    games: [{ id: 'impostor', name: 'Impostor', note: 'Uma palavra secreta, um impostor. Dicas, debate e voto.', cap: '3 a 15' }],
+  },
 ];
 
 /** Compatibilidade: a lista plana de jogos. */

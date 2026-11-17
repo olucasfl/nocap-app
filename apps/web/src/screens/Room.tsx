@@ -30,6 +30,7 @@ import { AtravessaRoomFinalPage } from '@/games/atravessa/AtravessaRoomFinalPage
 import { BolaRoomPlay } from '@/games/bola/BolaRoomPlay';
 import { PingRoomPlay } from '@/games/pingpong/PingRoomPlay';
 import { PingRoomFinal } from '@/games/pingpong/PingRoomFinal';
+import { ImpostorSala } from '@/games/mesa/sala/ImpostorSala';
 import { CounterFoxLobby } from './room/lobby/CounterFoxLobby';
 import { FoxShotRoomPlay } from '@/games/foxshot/FoxShotRoomPlay';
 import { FsMapGate } from '@/games/foxshot/FsMapGate';
@@ -82,7 +83,7 @@ const GAME_NAME: Record<RoomGame, string> = {
   foxcap: 'Sala',
   color: 'Mesmíssima',
   time: 'Já Deu?',
-  impostor: 'Intruso',
+  impostor: 'Impostor',
   eco: 'Ecooo',
   atravessa: 'Atravessa!',
 };
@@ -104,7 +105,7 @@ const ENTRY_LEAD: Record<RoomGame, string> = {
   color: 'Jogue Mesmíssima com amigos, todo mundo na mesma rodada ao mesmo tempo.',
   time: 'Jogue Já Deu? com amigos: o mesmo alvo para todos, cada um conta de cabeça.',
   impostor:
-    'O Intruso precisa de uma sala com no mínimo 3 pessoas: alguns não veem a cor, só uma dica, e todo mundo vota em quem desconfia.',
+    'Impostor com a galera, cada um no seu celular: uma palavra secreta, dicas, debate e voto secreto. De 3 a 15 pessoas.',
   atravessa:
     'Atravesse com os amigos no mesmo mapa, cada um com a sua cor: Checkpoint (corrida até o fim, voltando ao último checkpoint ao morrer) ou Infinito (vale a soma dos metros das rodadas). Até 8 pessoas.',
 };
@@ -305,6 +306,9 @@ function RoomPageInner({ code, game = 'color' }: { code?: string; game?: RoomGam
       </Page>
     );
   }
+
+  // O Impostor em sala (spec 088) tem tela própria, do lobby ao ranking final.
+  if (snapshot?.game === 'impostor') return <ImpostorSala snapshot={snapshot} />;
 
   // A corrida do Atravessa! ocupa a tela toda (sem cabeçalho nem navegação).
   if (snapshot?.game === 'atravessa' && (snapshot.phase === 'show' || snapshot.phase === 'play')) {

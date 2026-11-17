@@ -119,7 +119,7 @@ export function PlayersScreen({ s, d, exit }: P) {
 }
 
 /* ---------- Modo ---------- */
-const MODES: { id: ImMode; label: string; desc: string; tone: string; icon: string }[] = [
+export const MODES: { id: ImMode; label: string; desc: string; tone: string; icon: string }[] = [
   { id: 'classic', label: 'Clássico', desc: 'Todos veem a palavra. Menos o impostor.', tone: '#ff6a2b', icon: 'modo-classico' },
   { id: 'similar', label: 'Palavra parecida', desc: 'O impostor recebe outra palavra, parecida. Ele nem sabe.', tone: '#2f5bff', icon: 'modo-parecida' },
   { id: 'white', label: 'Sem palavra', desc: `Um jogador não recebe nada. Só de ${IM_WHITE_MIN_PLAYERS} pessoas.`, tone: '#ffd23f', icon: 'modo-semword' },
@@ -222,8 +222,8 @@ export function CatsScreen({ s, d }: P) {
 }
 
 /* ---------- Ajustes ---------- */
-const fmtTime = (n: number) => (n === 0 ? 'Livre' : `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`);
-const TIMES = [0, 30, 60, 90, 120, 180, 240, 300];
+export const fmtTime = (n: number) => (n === 0 ? 'Livre' : `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`);
+export const TIMES = [0, 30, 60, 90, 120, 180, 240, 300];
 
 export function CfgScreen({ s, d }: P) {
   const [sheet, setSheet] = useState<string | null>(null);

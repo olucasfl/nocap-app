@@ -44,11 +44,14 @@ export interface ColorRoomSettings {
   pickMs: number;
 }
 export type TimeRoomSettings = TimeSettings;
-/** Intruso: tempo de votar, quantos intrusos o host pediu e se o voto é anônimo. */
+/** Impostor (spec 088): rodadas de dicas, impostores (0 = surpresa), debate em ms (0 = livre), dica de tema, última chance, temas e filtros. */
 export interface ImpostorRoomSettings {
-  voteMs: number;
   impostors: number;
-  anonymous: boolean;
+  talkMs: number;
+  hint: boolean;
+  lastChance: boolean;
+  categories: string[];
+  filters: Record<string, Record<string, string[]>>;
 }
 /** Atravessa!: rodadas do Infinito e o tamanho do mapa do Checkpoint. */
 export interface AtravessaSettings {
@@ -338,7 +341,7 @@ export interface RoomSnapshot {
   pause?: RoomPause | null;
   /** O id desta pessoa na sala (vale também para convidados). */
   me?: string | null;
-  impostor?: ImpostorState;
+  mesa?: MesaState;
   eco?: EcoRoomState;
   atravessa?: AtravessaRoomState;
   desmorona?: DesmoronaRoomState;
@@ -349,31 +352,34 @@ export interface RoomSnapshot {
   foxshot?: FoxShotRoomState;
 }
 
-/** Estado do Intruso, por pessoa: cor, dica e papéis só chegam a quem pode vê-los. */
-export interface ImpostorState {
-  /** Quantos intrusos há (no lobby: quantos haveria com a sala de agora). */
-  count: number;
-  anonymous?: boolean;
-  participants?: string[];
-  /** Seu papel na rodada; `null` fora dela. */
-  role?: 'crew' | 'impostor' | null;
-  /** A cor: só para a tripulação ao decorar, e para todos na revelação. */
-  color?: Hsb | null;
-  /** A dica: só para os intrusos, e para todos na revelação. */
-  hint?: string | null;
-  colorName?: string | null;
-  /** Cor em que os controles começam (a mesma para todos). */
-  start?: Hsb;
-  /** Quem já votou (sem dizer em quem). */
+/** Estado do Impostor em sala (spec 088), por pessoa: o papel de cada um só chega a ele mesmo. */
+export interface MesaState {
+  session: { games: number; ranking: { id: string; points: number; position: number }[]; leaders: string[] };
+  /** Só dentro da partida: */
+  mode?: 'classic' | 'similar' | 'white' | 'wrong';
+  stage?: 'guess' | 'score' | null;
+  participants?: { id: string; name: string }[];
+  order?: string[];
+  clueRound?: number;
+  turn?: number;
+  speaker?: string | null;
+  clues?: { id: string; word: string; round: number }[];
+  seen?: string[];
+  wantVote?: string[];
   voted?: string[];
+  guessed?: string[];
+  me?: { kind: 'civil' | 'impostor' | 'white'; text: string | null; hint: string | null; knowsRole: boolean; wasSeen: boolean } | null;
   myVote?: string | null;
-  reveal?: {
-    impostors: string[];
+  result?: {
     caught: string[];
     counts: Record<string, number>;
-    points: Record<string, number>;
-    /** `null` quando o voto é anônimo. */
-    votes: { voter: string; target: string }[] | null;
+    canGuess: string[];
+    outsiders: string[];
+    innocentsWin: boolean | null;
+    guessedRight: string[];
+    word: string | null;
+    similar: string | null;
+    gains: Record<string, number> | null;
   } | null;
 }
 

@@ -5,7 +5,6 @@ import { PickScreen } from '@/games/color/screens/PickScreen';
 import { ShowScreen } from '@/games/color/screens/ShowScreen';
 import '@/games/color/color.css';
 import { Countdown } from '@/components/Countdown';
-import { ImpostorPlay } from './ImpostorPlay';
 import { TimePlay } from './TimePlay';
 import { EcoRoomPlay } from './EcoPlay';
 import { AtravessaReveal } from '@/games/atravessa/AtravessaReveal';
@@ -88,7 +87,6 @@ export function Play({ snapshot }: { snapshot: RoomSnapshot }) {
   if (snapshot.game === 'eco') return <EcoRoomPlay snapshot={snapshot} />;
   if (snapshot.game === 'atravessa') return <AtravessaReveal snapshot={snapshot} />;
   if (snapshot.game === 'time') return <TimePlay snapshot={snapshot} />;
-  if (snapshot.game === 'impostor') return <ImpostorPlay snapshot={snapshot} />;
   const me = useMeId();
   const round = snapshot.round!;
   const mine = snapshot.members.find((m) => m.id === me);

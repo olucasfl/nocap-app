@@ -10,7 +10,7 @@ const MODE_NAME: Record<string, string> = {
   escalada: 'Escalada',
   velocidade: 'Velocidade',
   reverso: 'Reverso',
-  impostor: 'Intruso',
+  impostor: 'Impostor',
   'batida-passo': 'Eco Hero: Primeiro Passo',
   'batida-mare': 'Eco Hero: Maré Alta',
   'batida-frenesi': 'Eco Hero: Frenesi',
