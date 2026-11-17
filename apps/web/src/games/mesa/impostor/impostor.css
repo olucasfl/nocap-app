@@ -448,7 +448,7 @@
 .im-mode:hover .im-mode-ic { transform: rotate(-8deg) scale(1.1); }
 .im-mode[aria-checked='true'] { background: var(--surface2); box-shadow: inset 0 0 0 2px var(--orange), 0 0 0 4px rgba(255, 106, 43, 0.14); }
 .im-mode[aria-checked='true'] .im-mode-ic { animation: im-bob 2.4s ease-in-out infinite; }
-.im-mode:disabled { opacity: 0.4; }
+.im-mode[aria-disabled='true'] { opacity: 0.5; }
 .im-modedesc { margin: 0; text-align: center; color: var(--muted); font-size: 14px; line-height: 1.4; min-height: 40px; animation: im-count 0.35s var(--ease) both; }
 
 /* erros bem visíveis e confirmações dentro do tema */

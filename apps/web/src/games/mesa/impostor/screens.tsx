@@ -279,7 +279,7 @@ export function CfgScreen({ s, d }: P) {
           {MODES.map((m, i) => {
             const off = m.id === 'white' && tooFew;
             return (
-              <button key={m.id} type="button" role="radio" aria-checked={c.mode === m.id} className="im-mode im-rise" style={{ '--d': i + 1, '--c': m.tone } as CSSProperties} disabled={off} data-testid={`im-mode-${m.id}`} onClick={() => { play('select'); d({ type: 'settings', patch: { mode: m.id } }); }}>
+              <button key={m.id} type="button" role="radio" aria-checked={c.mode === m.id} className="im-mode im-rise" style={{ '--d': i + 1, '--c': m.tone } as CSSProperties} aria-disabled={off} data-testid={`im-mode-${m.id}`} onClick={() => { if (off) { play('off'); show(`"Sem palavra" precisa de pelo menos ${IM_WHITE_MIN_PLAYERS} jogadores. Vocês são ${s.players.length}.`); return; } play('select'); d({ type: 'settings', patch: { mode: m.id } }); }}>
                 <Icon name={m.icon} size={64} className="im-mode-ic" />
                 <b>{m.label}</b>
               </button>
