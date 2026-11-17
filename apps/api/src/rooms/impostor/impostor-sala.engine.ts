@@ -353,7 +353,7 @@ export class ImpostorSalaEngine extends ColorRoomEngine {
   castVote(id: string, target: string) {
     this.requirePhase('vote');
     if (!this.participants.includes(id)) throw new RoomError('Você não está nesta partida');
-    if (!this.alive(id)) throw new RoomError('Você foi eliminado: agora só assiste');
+    if (!this.alive(id)) throw new RoomError('Você foi eliminado(a): agora só assiste');
     if (target === id) throw new RoomError('Você não pode votar em si mesmo');
     if (!this.participants.includes(target)) throw new RoomError('Essa pessoa não está na partida');
     if (!this.alive(target)) throw new RoomError('Essa pessoa já foi eliminada');

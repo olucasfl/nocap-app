@@ -56,7 +56,7 @@ export function MesaHome() {
   const join = (e: FormEvent) => {
     e.preventDefault();
     const c = code.trim().toUpperCase();
-    if (c.length < 4) return show('O código da sala tem 4 letras. Peça para o líder da sala.');
+    if (c.length < 4) return show('O código da sala tem 4 letras. Peça para quem criou a sala.');
     clear();
     void entry.join(c);
   };
@@ -121,13 +121,13 @@ export function MesaHome() {
               <h2 className="im-t"><Words text="Jogar online" /></h2>
               <section className="im-panel create im-rise" style={{ '--d': 1 } as CSSProperties}>
                 <Icon name="coroa" size={56} className="im-panel-ic" />
-                <div><b>Criar uma sala</b><small>Você é o líder: escolhe os temas e as regras e passa o código para a galera.</small></div>
+                <div><b>Criar uma sala</b><small>Você escolhe os temas e as regras e passa o código para a galera.</small></div>
                 <Primary testId="mesa-create" disabled={entry.busy} onClick={create}>{entry.busy ? 'Criando a sala...' : 'Criar sala'}</Primary>
               </section>
               <div className="im-or" aria-hidden="true"><i /><span>ou</span><i /></div>
               <form className="im-panel join im-rise" style={{ '--d': 2 } as CSSProperties} onSubmit={join}>
                 <Icon name="cartas" size={56} className="im-panel-ic" />
-                <div><b>Entrar com um código</b><small>Peça ao líder o código de 4 letras da sala.</small></div>
+                <div><b>Entrar com um código</b><small>Peça para quem criou a sala o código de 4 letras.</small></div>
                 <div className="im-add">
                   <input id="mesa-code" data-testid="mesa-code" value={code} onChange={(e) => { setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4)); clear(); }} placeholder="CÓDIGO" maxLength={4} autoComplete="off" autoCapitalize="characters" spellCheck={false} aria-label="Código da sala" aria-invalid={!!err} className="im-codein" />
                   <button className="im-iconbtn pri" aria-label="Entrar com o código" data-testid="mesa-join" disabled={entry.busy}><ArrowIcon /></button>

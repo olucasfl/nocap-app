@@ -69,7 +69,7 @@ export function PlayersScreen({ s, d, exit }: P) {
   const remove = (p: Player) => {
     const doIt = () => { play('remove'); d({ type: 'removePlayer', id: p.id }); };
     if (s.session.games > 0)
-      ask({ title: `Tirar ${p.name} da mesa?`, text: 'Ele sai do ranking e perde os pontos que fez nesta sessão.', confirm: 'Tirar da mesa', danger: true, onConfirm: doIt });
+      ask({ title: `Tirar ${p.name} da mesa?`, text: 'A pessoa sai do ranking e perde os pontos que fez nesta sessão.', confirm: 'Tirar da mesa', danger: true, onConfirm: doIt });
     else doIt();
   };
   const goOn = () => {
@@ -145,7 +145,7 @@ export const MODES: { id: ImMode; label: string; desc: string; tone: string; ico
   { id: 'classic', label: 'Clássico', desc: 'Todos veem a palavra. Menos o impostor.', tone: '#ff6a2b', icon: 'modo-classico' },
   { id: 'similar', label: 'Palavra parecida', desc: 'Todos recebem uma palavra. O impostor recebe outra, parecida (por exemplo, Pizza e Lasanha), e nem sabe que é o impostor. Cada um diz uma palavra sobre a sua, sem entregar qual é, e o grupo descobre quem falou algo fora do assunto.', tone: '#2f5bff', icon: 'modo-parecida' },
   { id: 'white', label: 'Sem palavra', desc: 'Dois impostores: um recebe uma palavra parecida e nem sabe que é impostor; o outro não recebe nada e precisa disfarçar.', tone: '#ffd23f', icon: 'modo-semword' },
-  { id: 'wrong', label: 'Resposta errada', desc: 'Todos recebem uma pergunta e respondem em voz alta, uma vez só. Menos o impostor: ele recebe uma pergunta parecida e nem sabe. Escutem as respostas e descubram quem respondeu algo estranho. Não tem chute no final.', tone: '#33c27f', icon: 'modo-errada' },
+  { id: 'wrong', label: 'Resposta errada', desc: 'Todos recebem uma pergunta e respondem em voz alta, uma vez só. Menos o impostor, que recebe uma pergunta parecida e nem sabe. Escutem as respostas e descubram quem respondeu algo estranho. Não tem chute no final.', tone: '#33c27f', icon: 'modo-errada' },
 ];
 
 /** Opções de uma categoria (futebol: jogadores, times, seleções, Brasil ou mundo...). Usada antes de começar e nos ajustes. */
@@ -509,7 +509,7 @@ export function VoteScreen({ s, d }: P) {
   const [sel, setSel] = useState<string | null>(null);
   useEffect(() => { play('pass'); }, [s.voter, s.elimRevote]);
   const last = s.voter === ids.length - 1;
-  const headline = elim ? 'Quem vai ser eliminado?' : 'Quem é o impostor?';
+  const headline = elim ? 'Quem vai ser eliminado(a)?' : 'Quem é o impostor?';
   const status = `${elim ? 'Eliminação' : 'Votação secreta'} · ${s.voter + 1} de ${ids.length}`;
   const tieNames = s.elimCands ? s.elimCands.map((id) => by(s, id).name).join(' e ') : '';
   if (s.voteStep === 'pass') {
@@ -625,14 +625,14 @@ export function ResultScreen({ s, d }: P) {
           </div>
         )}
         {stage >= 2 && (
-          <ul className="im-voters" aria-label={many ? 'Quem votou neles' : 'Quem votou nele'}>
+          <ul className="im-voters" aria-label={many ? 'Quem votou neles(as)' : 'Quem votou nele(a)'}>
             {sorted.map((p, i) => {
               const hit = hitOf(p.id);
               return (
                 <li key={p.id} className={`im-voter ${hit ? 'hit' : 'miss'}`} style={{ '--i': i } as CSSProperties}>
                   {coinOf(s, p.id, 'sm')}
                   <b>{p.name}</b>
-                  <span>{hit ? <><CheckIcon /> votou nele</> : 'votou em outro'}</span>
+                  <span>{hit ? <><CheckIcon /> votou nele(a)</> : 'votou em outro'}</span>
                 </li>
               );
             })}
@@ -641,7 +641,7 @@ export function ResultScreen({ s, d }: P) {
         {stage >= 3 && (
           <div className="im-verdict" data-testid="im-verdict">
             <span className={`im-banner${win ? '' : ' bad'}`}>{win ? 'Inocentes venceram' : 'Impostor venceu'}</span>
-            <p className="im-sub">{win ? 'Todos os impostores foram pegos.' : r.caught.length ? 'Pelo menos um impostor escapou.' : 'Ninguém pegou o impostor.'}</p>
+            <p className="im-sub">{win ? 'Os inocentes pegaram todos os impostores.' : r.caught.length ? 'Pelo menos um impostor escapou.' : 'Ninguém pegou o impostor.'}</p>
           </div>
         )}
       </div>
@@ -684,19 +684,19 @@ export function ElimResScreen({ s, d }: P) {
       <TopBar leave onBack={leave} center={<span className="im-status">Rodada {step.round} de {el.total}</span>} />
       <div className="im-body im-mid im-revbody">
         <p className="im-suspense" aria-live="polite">
-          {step.drawn ? 'Empate de novo. O sorteio escolheu' : step.revote ? 'Depois do empate, saiu' : 'Foi eliminado'}
+          {step.drawn ? 'Empate de novo. O sorteio escolheu' : step.revote ? 'Depois do empate, saiu' : 'Foi eliminado(a)'}
           {stage === 0 && <span className="im-dots" aria-hidden="true"><i /><i /><i /></span>}
         </p>
         {stage >= 1 && (
           <div className="im-slam" data-testid="im-elim-out">
             <div className="im-reveal">{coinOf(s, step.out, 'xl')}</div>
             <h2 className="im-culprit">{out.name}</h2>
-            <p className="im-sub">{voteList.length > 0 ? `Votaram nele: ${voteList.join(', ')}` : 'Ninguém votou: o sorteio decidiu'}</p>
+            <p className="im-sub">{voteList.length > 0 ? `Votaram nele(a): ${voteList.join(', ')}` : 'Ninguém votou: o sorteio decidiu'}</p>
           </div>
         )}
         {stage >= 2 && (
           <div className={`im-rolecard ${show ? (isOutsider ? 'bad' : 'ok') : 'hidden'}`} data-testid="im-rolecard">
-            {show ? <b>{isOutsider ? (step.role === 'white' ? 'Era o impostor sem palavra' : 'Era impostor') : 'Era inocente'}</b> : <b>O papel continua em segredo</b>}
+            {show ? <b>{isOutsider ? (step.role === 'white' ? 'Era o(a) impostor(a) sem palavra' : 'Era impostor(a)') : 'Era inocente'}</b> : <b>O papel continua em segredo</b>}
           </div>
         )}
         {stage >= 3 && (

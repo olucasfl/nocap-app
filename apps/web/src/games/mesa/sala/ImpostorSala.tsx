@@ -175,7 +175,7 @@ function Lobby({ snap }: { snap: Snap }) {
                   <b>{m.id === me ? `${m.username} (você)` : m.username}{m.isHost && <span className="im-tag">líder</span>}</b>
                   <span className={`im-state${m.isHost || m.ready || m.committed ? ' ok' : ''}`}>{!m.connected ? 'saiu' : m.isHost ? '' : m.ready || m.committed ? 'pronto' : 'esperando'}</span>
                   {isHost && !m.isHost && (
-                    <button type="button" className="im-x" aria-label={`Tirar ${m.username}`} onClick={() => ask({ title: `Tirar ${m.username} da sala?`, text: 'Ele sai da sala e precisa do código para voltar.', confirm: 'Tirar da sala', danger: true, onConfirm: () => sendRoom('kick', { id: m.id }) })}>×</button>
+                    <button type="button" className="im-x" aria-label={`Tirar ${m.username}`} onClick={() => ask({ title: `Tirar ${m.username} da sala?`, text: 'A pessoa sai da sala e precisa do código para voltar.', confirm: 'Tirar da sala', danger: true, onConfirm: () => sendRoom('kick', { id: m.id }) })}>×</button>
                   )}
                 </li>
               );
@@ -230,13 +230,13 @@ function Lobby({ snap }: { snap: Snap }) {
               </>
             ) : (
               <div className="im-readonly">
-                <p className="im-sub">Só o líder muda as regras.</p>
+                <p className="im-sub">Só quem criou a sala muda as regras.</p>
                 <div className="im-rows">
                   <div className="im-row"><div><b>{MODES.find((m) => m.id === mode)?.label}</b><small>{MODES.find((m) => m.id === mode)?.desc}</small></div></div>
                   <div className="im-row"><div><b>{elimMode ? 'Eliminação a cada rodada' : mode === 'wrong' ? 'Cada um responde uma vez' : `${cfg.rounds} ${cfg.rounds === 1 ? 'rodada' : 'rodadas'} de dicas`}</b><small>{cfg.impostors === 0 ? 'Impostores: surpresa' : `${cfg.impostors} ${cfg.impostors === 1 ? 'impostor' : 'impostores'}`} · debate {fmtTime(Math.round(cfg.talkMs / 1000))}</small></div></div>
                   <div className="im-row themes"><div className="im-themes-h"><b>Temas</b></div>
                     <div className="im-pills">
-                      {cfg.categories.length === 0 && <span className="im-sub">O líder ainda não escolheu.</span>}
+                      {cfg.categories.length === 0 && <span className="im-sub">Quem criou a sala ainda não escolheu.</span>}
                       {cfg.categories.map((id) => (
                         <span key={id} className="im-chip static"><Icon name={CATEGORY_ICONS[id]!} size={28} />{IM_CATEGORIES.find((c) => c.id === id)?.label}</span>
                       ))}
@@ -343,7 +343,7 @@ function Clues({ snap }: { snap: Snap }) {
     <div className="im-screen" data-testid="sala-clues">
       <TopBar leave onBack={leave} center={<span className="im-status">Rodada {mesa.clueRound} de {total}</span>} />
       <div className="im-body">
-        {out && <p className="im-sub center" data-testid="sala-out">Você foi eliminado. Agora só assiste.</p>}
+        {out && <p className="im-sub center" data-testid="sala-out">Você foi eliminado(a). Agora só assiste.</p>}
         {speaker && (
           <div className="im-whovotes">
             <Coin avatar={looks(speaker.id).avatar} color={looks(speaker.id).color} size="md" />
@@ -453,9 +453,9 @@ function Vote({ snap }: { snap: Snap }) {
     <div className="im-screen" data-testid="sala-vote">
       <TopBar leave onBack={leave} center={<span className="im-status">{elim ? 'Eliminação' : 'Votação secreta'} · {voted.length} de {alive.length}{left !== null ? ` · ${left} s` : ''}</span>} />
       <div className="im-body">
-        <h2 className="im-t im-lupa-t"><Icon name="lupa" size={52} className="im-lupa" /><Words text={elim ? 'Quem vai ser eliminado?' : 'Quem é o impostor?'} /></h2>
+        <h2 className="im-t im-lupa-t"><Icon name="lupa" size={52} className="im-lupa" /><Words text={elim ? 'Quem vai ser eliminado(a)?' : 'Quem é o impostor?'} /></h2>
         {elim && mesa.revote && <span className="im-banner warn" data-testid="sala-tie">Empate! Só vale votar em {tieNames}</span>}
-        {!canVote && <p className="im-sub center" data-testid="sala-out">Você foi eliminado. Agora só assiste à votação.</p>}
+        {!canVote && <p className="im-sub center" data-testid="sala-out">Você foi eliminado(a). Agora só assiste à votação.</p>}
         <div className="im-vgrid">
           {cands.map((id, i) => (
             <button key={id} type="button" className="im-vote im-rise" style={{ '--d': (i % 4) + 1 } as CSSProperties} aria-pressed={sel === id} disabled={!canVote} data-testid={`sala-vote-${id}`} onClick={() => { play('select'); setSel(id); }}>
@@ -550,7 +550,7 @@ function Reveal({ snap }: { snap: Snap }) {
             <Primary testId="sala-continue" onClick={() => sendRoom('continue')}>Continuar jogando <ArrowIcon /></Primary>
             <button type="button" className="im-link" data-testid="sala-end" onClick={() => ask({ title: 'Encerrar a partida?', text: 'O ranking final aparece para todos e a sessão termina.', confirm: 'Encerrar', danger: true, onConfirm: () => sendRoom('end') })}>Encerrar partida</button>
           </>
-        ) : <p className="im-sub center">Esperando o líder: continuar ou encerrar.</p>}
+        ) : <p className="im-sub center">Esperando quem criou a sala: continuar ou encerrar.</p>}
       </div>
     </div>
   );
@@ -582,19 +582,19 @@ function ElimView({ snap }: { snap: Snap }) {
       <TopBar leave onBack={leave} center={<span className="im-status">Rodada {step.round} de {el.total}</span>} />
       <div className="im-body im-mid im-revbody">
         <p className="im-suspense" aria-live="polite">
-          {step.drawn ? 'Empate de novo. O sorteio escolheu' : step.revote ? 'Depois do empate, saiu' : 'Foi eliminado'}
+          {step.drawn ? 'Empate de novo. O sorteio escolheu' : step.revote ? 'Depois do empate, saiu' : 'Foi eliminado(a)'}
           {stage === 0 && <span className="im-dots" aria-hidden="true"><i /><i /><i /></span>}
         </p>
         {stage >= 1 && (
           <div className="im-slam" data-testid="sala-elim-out">
             <div className="im-reveal"><Coin avatar={out.avatar} color={out.color} size="xl" /></div>
             <h2 className="im-culprit">{nameOf(snap, step.out)}</h2>
-            <p className="im-sub">{voteList.length > 0 ? `Votaram nele: ${voteList.join(', ')}` : 'Ninguém votou: o sorteio decidiu'}</p>
+            <p className="im-sub">{voteList.length > 0 ? `Votaram nele(a): ${voteList.join(', ')}` : 'Ninguém votou: o sorteio decidiu'}</p>
           </div>
         )}
         {stage >= 2 && (
           <div className={`im-rolecard ${step.role ? (isOutsider ? 'bad' : 'ok') : 'hidden'}`} data-testid="sala-rolecard">
-            <b>{step.role ? (isOutsider ? (step.role === 'white' ? 'Era o impostor sem palavra' : 'Era impostor') : 'Era inocente') : 'O papel continua em segredo'}</b>
+            <b>{step.role ? (isOutsider ? (step.role === 'white' ? 'Era o(a) impostor(a) sem palavra' : 'Era impostor(a)') : 'Era inocente') : 'O papel continua em segredo'}</b>
           </div>
         )}
         {stage >= 3 && (

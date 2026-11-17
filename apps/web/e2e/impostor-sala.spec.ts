@@ -104,7 +104,7 @@ for (const d of DEVICES.filter((x) => only.includes(x.name))) {
     await check('lobby-regras', A);
     // os outros veem as regras e marcam pronto
     await B.getByTestId('sala-tab-regras').click();
-    await expect(B.getByText('Só o líder muda as regras.')).toBeVisible();
+    await expect(B.getByText('Só quem criou a sala muda as regras.')).toBeVisible();
     await check('lobby-regras-membro', B);
     await B.getByTestId('sala-ready').click();
     await C.getByTestId('sala-ready').click();

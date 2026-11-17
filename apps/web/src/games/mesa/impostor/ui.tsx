@@ -226,10 +226,10 @@ export function Ceremony({ many, culprits, voters, onReveal }: CeremonyProps) {
         </div>
       )}
       {stage >= 2 && (
-        <ul className="im-voters" aria-label={many ? 'Quem votou neles' : 'Quem votou nele'}>
+        <ul className="im-voters" aria-label={many ? 'Quem votou neles(as)' : 'Quem votou nele(a)'}>
           {voters.map((v, i) => (
             <li key={v.id} className={`im-voter ${v.hit ? 'hit' : 'miss'}`} style={{ '--i': i } as CSSProperties}>
-              {v.coin}<b>{v.name}</b><span>{v.hit ? <><CheckIcon /> votou nele</> : 'votou em outro'}</span>
+              {v.coin}<b>{v.name}</b><span>{v.hit ? <><CheckIcon /> votou nele(a)</> : 'votou em outro'}</span>
             </li>
           ))}
         </ul>
