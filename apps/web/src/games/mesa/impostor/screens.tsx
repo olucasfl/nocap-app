@@ -767,8 +767,8 @@ export function ScoreScreen({ s, d }: P) {
         </ol>
       </div>
       <div className="im-foot im-endfoot">
-        <Primary testId="im-more" onClick={() => d({ type: 'go', phase: 'players' })}>Continuar jogando <ArrowIcon /></Primary>
-        <Primary tone="ghost" sound="shuffle" testId="im-again" onClick={() => d({ type: 'start' })}>Tudo igual, outra partida</Primary>
+        <Primary sound="shuffle" testId="im-again" onClick={() => d({ type: 'start' })}>Continuar jogando (Tudo igual) <ArrowIcon /></Primary>
+        <Primary tone="ghost" testId="im-more" onClick={() => d({ type: 'go', phase: 'players' })}>Alterar tema ou adicionar pessoas</Primary>
         <button type="button" className="im-link" data-testid="im-end" onClick={() => ask({ title: 'Encerrar a partida?', text: `O ranking final aparece e a sessão termina (${s.session.games} ${s.session.games === 1 ? 'partida jogada' : 'partidas jogadas'}).`, confirm: 'Encerrar', danger: true, onConfirm: () => d({ type: 'go', phase: 'final' }) })}>Encerrar partida</button>
       </div>
     </div>
