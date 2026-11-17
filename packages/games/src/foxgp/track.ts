@@ -333,8 +333,8 @@ export const GP_TRACK_INTERLAGOS: GpTrackDef = {
 export const GP_TRACKS_REAL: readonly GpTrackDef[] = [GP_TRACK_MARINA, GP_TRACK_INTERLAGOS];
 /** Arcade sem poderes. */
 export const GP_TRACKS_ARCADE: readonly GpTrackDef[] = [GP_TRACK_BALA];
-/** Arcade com poderes (spec 086): as pistas novas, de modelo. A Bala Track fica só no Arcade sem poderes. */
-export const GP_TRACKS_POWERS: readonly GpTrackDef[] = [GP_TRACK_CASTLE];
+/** Arcade com poderes (spec 086): as pistas novas, de modelo. A Bala Track também vale com poderes (a pessoa escolhe entre o Castelo e a Bala Track). */
+export const GP_TRACKS_POWERS: readonly GpTrackDef[] = [GP_TRACK_CASTLE, GP_TRACK_BALA];
 export const GP_TRACK_IDS = ['marina', 'interlagos', 'bala', 'castle'] as const;
 export type GpTrackId = (typeof GP_TRACK_IDS)[number];
 export const gpIsTrackId = (v: unknown): v is GpTrackId => GP_TRACK_IDS.includes(v as GpTrackId);

@@ -9,10 +9,12 @@ import {
   loadLaps,
   loadPhysics,
   loadPowers,
+  loadArcadeTrack,
   loadTrack,
   saveLaps,
   savePhysics,
   savePowers,
+  saveArcadeTrack,
   saveTrack,
 } from './gp-best';
 import { lapClock } from './format';
@@ -59,6 +61,11 @@ export function GpPicker({
   const [physics, setPhysics] = useState<GpPhysicsMode>(() => loadPhysics());
   const [track, setTrack] = useState(() => loadTrack());
   const [powers, setPowers] = useState(() => loadPowers());
+  const [arcadeTrack, setArcadeTrack] = useState(() => loadArcadeTrack());
+  const pickArcadeTrack = (id: string) => {
+    setArcadeTrack(id);
+    saveArcadeTrack(id);
+  };
   const pickPowers = (on: boolean) => {
     setPowers(on);
     savePowers(on);
@@ -75,7 +82,7 @@ export function GpPicker({
   const trackOf = (m: GpPhysicsMode) =>
     m === 'arcade'
       ? powers
-        ? 'castle'
+        ? arcadeTrack
         : 'bala'
       : (GP_TRACK_CHOICES.real.find((t) => t.id === track)?.id ?? 'marina');
   const select = (m: GpPhysicsMode) => {
@@ -150,7 +157,7 @@ export function GpPicker({
                     >
                       <span className="gp-pick-power-title">{on ? 'Poderes' : 'Corrida pura'}</span>
                       <span className="gp-pick-power-track">
-                        Pista: {on ? 'Castle Circuit' : 'Bala Track'}
+                        Pista: {on ? 'Castle Circuit ou Bala Track' : 'Bala Track'}
                       </span>
                       <span className="gp-pick-power-desc">
                         {on
@@ -167,7 +174,24 @@ export function GpPicker({
                     </button>
                   ))}
                 </div>
-                <TrackPreview physics="arcade" powers={powers} compact />
+                {powers && (
+                  <div className="gp-chips" role="radiogroup" aria-label="Pista do Arcade">
+                    {GP_TRACK_CHOICES.arcade.map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={arcadeTrack === t.id}
+                        className={`gp-chip${arcadeTrack === t.id ? ' is-on' : ''}`}
+                        onClick={() => pickArcadeTrack(t.id)}
+                        data-testid={`gp-track-${t.id}`}
+                      >
+                        {t.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <TrackPreview physics="arcade" track={powers ? arcadeTrack : 'bala'} powers={powers} compact />
               </section>
             )}
 

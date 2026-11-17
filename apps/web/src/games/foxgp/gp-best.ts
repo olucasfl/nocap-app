@@ -121,6 +121,24 @@ export function saveTrack(id: string) {
   gpNotify();
 }
 
+const ARCADE_TRACK_KEY = 'nocap-gp-arcade-track';
+/** A pista do Arcade com poderes: Castle Circuit (padrão) ou Bala Track. */
+export function loadArcadeTrack(): string {
+  try {
+    return localStorage.getItem(ARCADE_TRACK_KEY) === 'bala' ? 'bala' : 'castle';
+  } catch {
+    return 'castle';
+  }
+}
+export function saveArcadeTrack(id: string) {
+  try {
+    localStorage.setItem(ARCADE_TRACK_KEY, id === 'bala' ? 'bala' : 'castle');
+  } catch {
+    /* sem armazenamento */
+  }
+  gpNotify();
+}
+
 const LAPS_KEY = 'nocap-gp-laps';
 /** Voltas do treino (2 a 10, padrão 3). */
 export function loadLaps(): number {
