@@ -814,3 +814,4 @@
 @keyframes im-splashout { to { opacity: 0; } }
 @media (max-height: 500px) { .im-splash { gap: 6px; } .im-splash-t { font-size: clamp(30px, 9vw, 52px); } .im-splash-bar { height: 4px; } }
 @media (prefers-reduced-motion: reduce) { .im-splash, .im-splash-bar, .im-splash-t, .im-splash-s { animation: none; opacity: 1; transform: none; } .im-splash-bar { width: 120px; } }
+.im-mid > .im-clues { align-self: center; }
