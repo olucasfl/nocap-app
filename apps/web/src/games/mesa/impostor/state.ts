@@ -108,6 +108,9 @@ export function poolSize(s: Pick<State, 'settings' | 'players'>): number {
   return filterWords(IM_WORDS, s.settings).length;
 }
 
+/** Rodadas de dicas de verdade: no modo de perguntas é uma só (cada um responde e pronto). */
+export const clueRounds = (s: Pick<State, 'settings' | 'round'>) => (s.round?.mode === 'wrong' ? 1 : s.settings.rounds);
+
 export const poolOk = (s: Pick<State, 'settings' | 'players'>) => poolSize(s) >= IM_MIN_POOL;
 
 export function reducer(s: State, a: Action): State {
@@ -175,7 +178,7 @@ export function reducer(s: State, a: Action): State {
     }
     case 'clueNext': {
       if (s.clueStep === 'brief') return { ...s, clueStep: 'say' };
-      if (s.clueRound < s.settings.rounds) return { ...s, clueRound: s.clueRound + 1, clueStep: 'brief' };
+      if (s.clueRound < clueRounds(s)) return { ...s, clueRound: s.clueRound + 1, clueStep: 'brief' };
       return { ...s, phase: 'talk', back: false };
     }
     case 'voteReady':

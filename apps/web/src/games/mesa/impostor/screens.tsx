@@ -5,7 +5,7 @@ import {
 } from '@nocap/games';
 import { AVATARS, CATEGORY_ICONS, PEOPLE } from './assets';
 import { play } from './audio';
-import { poolOk, poolSize, type Action, type Player, type State } from './state';
+import { clueRounds, poolOk, poolSize, type Action, type Player, type State } from './state';
 import { Alert, ArrowIcon, CheckIcon, Coin, GearIcon, Icon, PlusIcon, Primary, Sheet, Steps, Stepper, Switch, TopBar, Words, useAsk, useFlash } from './ui';
 
 interface P {
@@ -263,7 +263,7 @@ export function CfgScreen({ s, d }: P) {
   const cur = MODES.find((m) => m.id === c.mode)!;
   const tooFew = s.players.length < IM_WHITE_MIN_PLAYERS;
   const rows = [
-    <div className="im-row" key="rd"><div><b>Rodadas de dicas</b><small>Quantas vezes cada um dá sua dica. Em cada rodada, cada pessoa diz uma palavra sobre o tema, uma de cada vez.</small></div><Stepper value={c.rounds} label="rodadas" min={1} max={IM_MAX_ROUNDS} onChange={(n) => d({ type: 'settings', patch: { rounds: n } })} /></div>,
+    c.mode === 'wrong' ? null : <div className="im-row" key="rd"><div><b>Rodadas de dicas</b><small>Quantas vezes cada um dá sua dica. Em cada rodada, cada pessoa diz uma palavra sobre o tema, uma de cada vez.</small></div><Stepper value={c.rounds} label="rodadas" min={1} max={IM_MAX_ROUNDS} onChange={(n) => d({ type: 'settings', patch: { rounds: n } })} /></div>,
     <div className="im-row" key="im"><div><b>Impostores</b><small>{imp === 0 ? 'Número surpresa' : `Máximo para ${s.players.length}: ${max}`}</small></div>
       <Stepper value={imp} label="impostores" min={0} max={max} format={(n) => (n === 0 ? '?' : String(n))} onChange={(n) => d({ type: 'settings', patch: { impostors: n === 0 ? 'random' : n } })} /></div>,
     <div className="im-row" key="tm"><div><b>Debate</b><small>Depois das dicas, todos conversam por esse tempo para descobrir quem é o impostor. Depois vem a votação.</small></div><Stepper value={ti} label="tempo do debate" min={0} max={TIMES.length - 1} format={(n) => fmtTime(TIMES[n]!)} onChange={(n) => d({ type: 'settings', patch: { talkSeconds: TIMES[n]! } })} /></div>,
@@ -287,7 +287,7 @@ export function CfgScreen({ s, d }: P) {
           })}
         </div>
         <p className="im-modedesc" key={c.mode} aria-live="polite">{cur.desc}</p>
-        <div className="im-rows">{rows.map((r, i) => <div key={i} className="im-rise" style={{ '--d': i + 1 } as CSSProperties}>{r}</div>)}</div>
+        <div className="im-rows">{rows.filter(Boolean).map((r, i) => <div key={i} className="im-rise" style={{ '--d': i + 1 } as CSSProperties}>{r}</div>)}</div>
         <div className="im-row themes">
           <div className="im-themes-h"><b>Temas</b><small>Escolha o que entra em cada tema</small></div>
           <div className="im-pills">
@@ -397,7 +397,7 @@ function briefText(mode: string, round: number): { head: string; body: string } 
 export function CluesScreen({ s, d }: P) {
   const leave = useLeave(d);
   const order = s.round!.order;
-  const N = s.settings.rounds;
+  const N = clueRounds(s);
   const lastRound = s.clueRound >= N;
   const mode = s.round!.mode;
   const wrong = mode === 'wrong';
@@ -477,7 +477,7 @@ export function TalkScreen({ s, d }: P) {
         ) : (
           <div className="im-timer free"><Icon name="ampulheta" size={120} className="im-hourglass big" /></div>
         )}
-        <p className="im-sub">Fim das {s.settings.rounds} rodadas. Quem está escondendo algo?</p>
+        <p className="im-sub">{s.round!.mode === 'wrong' ? 'Todos responderam. Quem recebeu outra pergunta?' : `Fim das ${clueRounds(s)} rodadas. Quem está escondendo algo?`}</p>
       </div>
       <div className="im-foot"><Primary testId="im-tovote" onClick={() => (total > 0 && left > 0 ? ask({ title: 'Ainda tem tempo de debate', text: 'Todo mundo já conversou o que queria? A votação é secreta e não dá para voltar.', confirm: 'Ir votar', cancel: 'Voltar ao debate', onConfirm: () => d({ type: 'go', phase: 'vote' }) }) : d({ type: 'go', phase: 'vote' }))}>Ir para a votação <ArrowIcon /></Primary></div>
     </div>

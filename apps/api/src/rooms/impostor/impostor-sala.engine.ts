@@ -243,10 +243,15 @@ export class ImpostorSalaEngine extends ColorRoomEngine {
     this.advanceTurn();
   }
 
+  /** No modo "resposta errada" cada um só responde a pergunta uma vez: nada de rodadas repetidas. */
+  private clueRounds(): number {
+    return this.mode === 'wrong' ? 1 : this.cfg.rounds;
+  }
+
   private advanceTurn() {
     const order = this.round!.order;
     if (this.turn < order.length - 1) this.turn += 1;
-    else if (this.clueRound < this.cfg.rounds) {
+    else if (this.clueRound < this.clueRounds()) {
       this.clueRound += 1;
       this.turn = 0;
     } else {
@@ -266,7 +271,7 @@ export class ImpostorSalaEngine extends ColorRoomEngine {
       this.clues.push({ id: s ?? '', word: '', round: this.clueRound });
       const order = this.round!.order;
       if (this.turn < order.length - 1) this.turn += 1;
-      else if (this.clueRound < this.cfg.rounds) {
+      else if (this.clueRound < this.clueRounds()) {
         this.clueRound += 1;
         this.turn = 0;
       } else {

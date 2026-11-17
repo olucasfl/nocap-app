@@ -171,7 +171,7 @@ function Lobby({ snap }: { snap: Snap }) {
                 </div>
                 <p className="im-modedesc" key={mode}>{MODES.find((m) => m.id === mode)?.desc}</p>
                 <div className="im-rows">
-                  <div className="im-row"><div><b>Rodadas de dicas</b><small>Quantas vezes cada um dá sua dica. Em cada rodada, cada pessoa diz uma palavra sobre o tema, uma de cada vez.</small></div><Stepper value={cfg.rounds} label="rodadas" min={1} max={IM_MAX_ROUNDS} onChange={(n) => set({ rounds: n })} /></div>
+                  {mode !== 'wrong' && <div className="im-row"><div><b>Rodadas de dicas</b><small>Quantas vezes cada um dá sua dica. Em cada rodada, cada pessoa diz uma palavra sobre o tema, uma de cada vez.</small></div><Stepper value={cfg.rounds} label="rodadas" min={1} max={IM_MAX_ROUNDS} onChange={(n) => set({ rounds: n })} /></div>}
                   <div className="im-row"><div><b>Impostores</b><small>{imp === 0 ? 'Número surpresa' : `Máximo para ${connected.length}: ${max}`}</small></div><Stepper value={imp} label="impostores" min={0} max={max} format={(n) => (n === 0 ? '?' : String(n))} onChange={(n) => set({ impostors: n })} /></div>
                   <div className="im-row"><div><b>Debate</b><small>Depois das dicas, todos conversam por esse tempo para descobrir quem é o impostor. Depois vem a votação.</small></div><Stepper value={ti} label="tempo do debate" min={0} max={TIMES.length - 1} format={(n) => fmtTime(TIMES[n]!)} onChange={(n) => set({ talkMs: TIMES[n]! * 1000 })} /></div>
                   {mode === 'classic' && cfg.categories.length > 2 && <div className="im-row"><div><b>Dica de categoria</b><small>O impostor vê o tema da palavra. Só aparece com mais de 2 temas.</small></div><Switch on={cfg.hint} label="Dica de categoria" onChange={(v) => set({ hint: v })} /></div>}
@@ -198,7 +198,7 @@ function Lobby({ snap }: { snap: Snap }) {
                 <p className="im-sub">Só o líder muda as regras.</p>
                 <div className="im-rows">
                   <div className="im-row"><div><b>{MODES.find((m) => m.id === mode)?.label}</b><small>{MODES.find((m) => m.id === mode)?.desc}</small></div></div>
-                  <div className="im-row"><div><b>{cfg.rounds} {cfg.rounds === 1 ? 'rodada' : 'rodadas'} de dicas</b><small>{cfg.impostors === 0 ? 'Impostores: surpresa' : `${cfg.impostors} ${cfg.impostors === 1 ? 'impostor' : 'impostores'}`} · debate {fmtTime(Math.round(cfg.talkMs / 1000))}</small></div></div>
+                  <div className="im-row"><div><b>{mode === 'wrong' ? 'Cada um responde uma vez' : `${cfg.rounds} ${cfg.rounds === 1 ? 'rodada' : 'rodadas'} de dicas`}</b><small>{cfg.impostors === 0 ? 'Impostores: surpresa' : `${cfg.impostors} ${cfg.impostors === 1 ? 'impostor' : 'impostores'}`} · debate {fmtTime(Math.round(cfg.talkMs / 1000))}</small></div></div>
                   <div className="im-row themes"><div className="im-themes-h"><b>Temas</b></div>
                     <div className="im-pills">
                       {cfg.categories.length === 0 && <span className="im-sub">O líder ainda não escolheu.</span>}
@@ -289,7 +289,7 @@ function Clues({ snap }: { snap: Snap }) {
   const [word, setWord] = useState('');
   const [flash, show] = useFlash();
   const mine = mesa.speaker === me;
-  const total = snap.settings.rounds;
+  const total = mesa.mode === 'wrong' ? 1 : snap.settings.rounds;
   const speaker = mesa.speaker ? { id: mesa.speaker, name: nameOf(snap, mesa.speaker) } : null;
   const left = useCountdown(snap.round?.endsAt ?? null);
   useEffect(() => { if (mine) play('pass'); }, [mine]);

@@ -124,4 +124,16 @@ describe('estado do Impostor (mesa)', () => {
     s = run(s, { type: 'removePlayer', id: novo.id });
     expect(s.session.scores[novo.id]).toBeUndefined();
   });
+
+  it('modo de perguntas tem uma rodada só: responder e ir para o debate', () => {
+    let s = base();
+    s = { ...s, settings: { ...s.settings, mode: 'wrong', rounds: 3 } };
+    s = run(s, { type: 'start' });
+    expect(s.round!.mode).toBe('wrong');
+    for (let i = 0; i < s.players.length; i++) s = run(s, { type: 'seen' });
+    s = run(s, { type: 'clueNext' });
+    expect(s.clueStep).toBe('say');
+    s = run(s, { type: 'clueNext' });
+    expect(s.phase).toBe('talk');
+  });
 });
