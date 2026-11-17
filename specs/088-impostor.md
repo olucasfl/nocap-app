@@ -90,7 +90,34 @@ Por rodada (a partida inteira, depois das N rodadas de dicas): inocente que voto
 
 **Onde mora:** no modo Mesa (offline) o conteúdo vai no app; na sala vai no servidor. Testes barram palavra repetida, par igual à palavra, par de outro tipo, fama fora de 1 a 2 e categoria com menos de 60 palavras.
 
-## 8. Design (decisão do Lucas pendente)
+## 7b. Sons e imagens (escolhas do Lucas, 17/11/2026)
+
+**Sons** (CC0, Kenney: Interface Sounds, Casino Audio, UI SFX e Jingles; baixados do OpenGameArt; créditos em `docs/CREDITS-IMPOSTOR.md`). O Lucas escolheu por número na página de testes; o principal toca na situação normal e o secundário quando precisar de variação. Onde não houver arquivo bom, o som é sintetizado com Web Audio.
+
+| Ação | Escolha do Lucas | Arquivo |
+|---|---|---|
+| Toque / selecionar | 1.4 (principal), 1.1 (secundário) | `click3.wav`, `select_002.ogg` |
+| Ligar / desligar | 2.1 liga, 2.2 desliga | `toggle_001.ogg`, `toggle_003.ogg` |
+| Voltar / fechar | 3.3 | `minimize_003.ogg` |
+| Começar partida / ação importante | 4.2 (principal), 4.1 (secundário) | `confirmation_002.ogg`, `confirmation_001.ogg` |
+| Adicionar jogador | 5.3 | `drop_002.ogg` |
+| Remover jogador | 6.1 | `chips-collide-2.ogg` |
+| Sorteio (embaralhar) | 7.3 | `card-fan-1.ogg` |
+| Revelar o papel | 8.4 | `glass_003.ogg` |
+| Passar o celular | 9.1 | `card-slide-1.ogg` |
+| Voto confirmado | 10.3 | `pluck_001.ogg` |
+| Tique do cronômetro | 11.2 | `tick_002.ogg` |
+| Fim do tempo | 13.2 | `jingles_PIZZA03.ogg` |
+| Vitória | 13.3 | `jingles_STEEL00.ogg` |
+| Derrota / impostor escapou | 13.5 | `jingles_NES00.ogg` |
+| Placar quase igual (poucas mudanças) | 15.3 | `question_002.ogg` |
+| Placar com mudança brusca (alguém subiu muito) | 15.1 | `maximize_005.ogg` |
+
+Regra do placar: se todos ficam nas mesmas posições ou mudam pouco, toca o 15.3; se alguém sobe muito (de baixo para cima) ou há várias trocas, toca o 15.1.
+
+**Personagens:** ícones de pessoas do **Fluent Emoji 3D (Microsoft, MIT)**, cada jogador escolhe o seu entre **mais de 15 opções** (as 24 pessoas e os 20 bichos mostrados nos quadros, a lista final sai da seleção do Lucas), com a ficha de cor fixa por jogador atrás (a cor identifica o jogador, o personagem vai por cima). Os ícones das categorias serão enviados pelo Lucas. Créditos obrigatórios (licença MIT) em `docs/CREDITS-IMPOSTOR.md`.
+
+## 8. Design (aprovado em 17/11/2026: "pode começar a fazer")
 
 Referência: o Fakeit (limpo e característico): fundo vermelho-rosa com grade, cartões escuros arredondados em moldura branca, títulos grandes em caixa alta, botão branco no pé da tela ("CONTINUAR | 4 Jogadores"), bonecos 3D coloridos como avatares na votação, cartas de categoria com ícone. **A identidade do NoCap fica própria, não é cópia**: o Impostor usa suas cores, fontes e ilustração (raposas do Fox Cap! como avatares, em vez de bonecos 3D), mas o mesmo desenho de telas: **Jogadores → Categorias → Configurações → Revelar papel → Dicas/Debate (cronômetro) → Votar → Resultado → Jogar de novo**. Só `transform`/`opacity` animam, respeitando `prefers-reduced-motion`. **Isso exige uma exceção em `RULES.md` (como as dos outros jogos), que só vale com o OK do Lucas.** Mobile conforme `docs/MOBILE-GUIDE.md`.
 
