@@ -139,15 +139,18 @@ for (const d of DEVICES.filter((x) => only.includes(x.name))) {
         await p.locator('[data-testid^="sala-vote-"]').first().click();
         await p.getByTestId('sala-cast').click();
       }
-      // última chance (se alguém foi pego): quem pode chuta
-      await A.waitForTimeout(1200);
-      for (let g = 0; g < 10 && !(await A.getByTestId('sala-score').isVisible().catch(() => false)); g++) {
+      // cerimônia da revelação (11 s no servidor), depois a última chance e a decisão do grupo
+      await expect(A.getByTestId('sala-reveal')).toBeVisible({ timeout: 20_000 });
+      await check(`${label}-revelacao`, A);
+      for (let g = 0; g < 100 && !(await A.getByTestId('sala-score').isVisible().catch(() => false)); g++) {
         for (const p of all) {
           if (await p.getByTestId('sala-guess-input').isVisible().catch(() => false)) {
-            if (g === 0) await check(`${label}-chute`, p);
+            await check(`${label}-chute`, p);
             await p.getByTestId('sala-guess-input').fill('nada a ver');
             await p.getByTestId('sala-guess-send').click();
           }
+          const no = p.locator('[data-testid^="sala-judge-no-"]').first();
+          if (await no.isVisible().catch(() => false)) await no.click().catch(() => undefined);
         }
         await A.waitForTimeout(500);
       }

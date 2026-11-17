@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import {
-  IM_CATEGORIES, IM_MAX_PLAYERS, IM_MIN_POOL, IM_MAX_ROUNDS, IM_MIN_PLAYERS, IM_WHITE_MIN_PLAYERS, imImpostorLimit, leaders, sessionRanking,
+  IM_CATEGORIES, IM_MAX_PLAYERS, IM_MIN_POOL, IM_MAX_ROUNDS, IM_MIN_PLAYERS, IM_WHITE_MIN_PLAYERS, imImpostorLimit, guessIsRight, guessNeedsJudgement, leaders, sessionRanking,
   type ImMode,
 } from '@nocap/games';
 import { AVATARS, CATEGORY_ICONS, PEOPLE } from './assets';
@@ -681,6 +681,57 @@ function Count({ to, from, delay }: { to: number; from: number; delay: number })
   return <>{v}</>;
 }
 
+/** Depois do chute: mostra se acertou ou errou; chute parecido vai para o grupo decidir. */
+export function GuessResScreen({ s, d }: P) {
+  const r = s.result!;
+  const word = s.round!.civilText;
+  const items = r.canGuess.map((id) => {
+    const text = (s.guesses[id] ?? '').trim();
+    const exact = guessIsRight(text, word);
+    const ask = guessNeedsJudgement(text, word);
+    const ok = exact || s.judged[id] === true;
+    return { id, text, exact, ask, ok, open: ask && s.judged[id] === undefined };
+  });
+  const pending = items.some((i) => i.open);
+  const anyRight = items.some((i) => i.ok);
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    const t = window.setTimeout(() => setShown(true), 900);
+    return () => window.clearTimeout(t);
+  }, []);
+  useEffect(() => { if (shown && !pending) play(anyRight ? 'win' : 'lose'); }, [shown, pending, anyRight]);
+  return (
+    <div className="im-screen im-centered" data-testid="im-guessres" data-pending={pending ? '1' : '0'}>
+      <TopBar center={<span className="im-status">Última chance</span>} />
+      <div className="im-body im-mid im-revbody">
+        <p className="im-suspense">A palavra era</p>
+        <h2 className="im-culprit">{word}</h2>
+        <ul className="im-guesslist">
+          {items.map((i) => (
+            <li key={i.id} className={`im-gcard ${i.open ? 'open' : i.ok ? 'ok' : 'no'}`}>
+              <div className="im-grow">{coinOf(s, i.id, 'md')}<div><b>{by(s, i.id).name}</b><small>{i.text ? `respondeu “${i.text}”` : 'não chutou'}</small></div></div>
+              {i.open ? (
+                <div className="im-judge" data-testid={`im-judge-${i.id}`}>
+                  <p className="im-sub">A palavra era <b>{word}</b>. {by(s, i.id).name} respondeu <b>{i.text}</b>. Para todos: vale?</p>
+                  <div className="im-judgebtns">
+                    <button type="button" className="im-chip yes" data-testid={`im-judge-yes-${i.id}`} onClick={() => { play('confirm'); d({ type: 'judge', id: i.id, ok: true }); }}>Vale</button>
+                    <button type="button" className="im-chip no" data-testid={`im-judge-no-${i.id}`} onClick={() => { play('off'); d({ type: 'judge', id: i.id, ok: false }); }}>Não vale</button>
+                  </div>
+                </div>
+              ) : (
+                <span className={`im-verdictpill ${i.ok ? 'ok' : 'no'}`} data-testid={`im-guess-${i.ok ? 'ok' : 'no'}`}>{i.ok ? (i.exact ? 'ACERTOU' : 'ACERTOU · o grupo aceitou') : 'ERROU'}</span>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="im-foot">
+        <Primary disabled={pending} testId="im-guess-done" onClick={() => d({ type: 'finish' })}>{pending ? 'Decidam se vale' : 'Ver ranking'} <ArrowIcon /></Primary>
+      </div>
+    </div>
+  );
+}
+
 export function ScoreScreen({ s, d }: P) {
   const ask = useAsk();
   const rows = sessionRanking(s.session);
@@ -741,7 +792,7 @@ export function FinalScreen({ s, d, exit }: P) {
         <div className="im-podium">
           {podium.map((row, i) => (
             <div key={row.id} className={`im-pod p${row.position}`} style={{ '--i': i } as CSSProperties}>
-              <Icon name={medal(row.position)} size={56} className="im-medal" />
+              <Icon name={medal(i + 1)} size={56} className="im-medal" />
               {coinOf(s, row.id, 'lg')}
               <b>{by(s, row.id).name}</b>
               <span className="im-pts">{row.points}<small>pts</small></span>

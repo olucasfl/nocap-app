@@ -357,7 +357,7 @@ export interface MesaState {
   session: { games: number; ranking: { id: string; points: number; position: number }[]; leaders: string[] };
   /** Só dentro da partida: */
   mode?: 'classic' | 'similar' | 'white' | 'wrong';
-  stage?: 'guess' | 'score' | null;
+  stage?: 'reveal' | 'guess' | 'judge' | 'score' | null;
   participants?: { id: string; name: string }[];
   order?: string[];
   clueRound?: number;
@@ -380,6 +380,9 @@ export interface MesaState {
     word: string | null;
     similar: string | null;
     gains: Record<string, number> | null;
+    votes?: Record<string, string>;
+    guesses?: Record<string, string> | null;
+    judge?: Record<string, { exact: boolean; needs: boolean; yes: number; no: number; mine: boolean | null; eligible: number }> | null;
   } | null;
 }
 

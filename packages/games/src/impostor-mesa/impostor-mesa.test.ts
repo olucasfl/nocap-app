@@ -10,6 +10,7 @@ import {
   drawRound,
   filterWords,
   guessIsRight,
+  guessNeedsJudgement,
   imEffectiveMode,
   imImpostorLimit,
   leaders,
@@ -267,5 +268,23 @@ describe('sessão e ranking', () => {
     const r = scoreResult({ ids, round, votes, lastChance: true });
     expect(r.canGuess).toEqual([]);
     expect(r.innocentsWin).toBe(true);
+  });
+
+  it('chute: sem acento e sem espaço vale; parecido ou sinônimo o grupo decide', () => {
+    expect(guessIsRight('joao pessoa', 'João Pessoa')).toBe(true);
+    expect(guessIsRight('  JOAOPESSOA ', 'João Pessoa')).toBe(true);
+    expect(guessNeedsJudgement('Natal', 'João Pessoa')).toBe(true);
+    expect(guessNeedsJudgement('   ', 'João Pessoa')).toBe(false);
+    expect(guessNeedsJudgement('joao pessoa', 'João Pessoa')).toBe(false);
+  });
+  it('chute aceito pelo grupo conta como acerto', () => {
+    const round = draw();
+    const imp = Object.entries(round.roles).find(([, r]) => r.kind === 'impostor')![0];
+    const votes = Object.fromEntries(ids.filter((i) => i !== imp).map((i) => [i, imp]));
+    const no = scoreResult({ ids, round, votes, lastChance: true, guesses: { [imp]: 'sinonimo' } });
+    expect(no.guessedRight).toEqual([]);
+    const yes = scoreResult({ ids, round, votes, lastChance: true, guesses: { [imp]: 'sinonimo' }, accepted: [imp] });
+    expect(yes.guessedRight).toEqual([imp]);
+    expect(yes.innocentsWin).toBe(false);
   });
 });

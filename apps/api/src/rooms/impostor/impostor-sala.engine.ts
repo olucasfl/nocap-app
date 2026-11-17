@@ -11,6 +11,8 @@ import {
   clampRounds,
   drawRound,
   filterWords,
+  guessIsRight,
+  guessNeedsJudgement,
   imEffectiveMode,
   leaders,
   newSession,
@@ -37,6 +39,11 @@ export const SALA_SHOW_MS = 90_000;
 export const SALA_CLUE_MS = 45_000;
 export const SALA_VOTE_MS = 60_000;
 export const SALA_GUESS_MS = 45_000;
+/** Cerimônia de revelação (suspense, quem é, quem votou) antes do chute. */
+export const SALA_REVEAL_MS = 11_000;
+/** O grupo decide se um chute parecido vale; sem chute para decidir, só mostra o resultado. */
+export const SALA_JUDGE_MS = 30_000;
+export const SALA_JUDGE_SHOW_MS = 5_000;
 
 export interface ImpostorSalaSettings {
   /** Rodadas de dicas (1 a 5); o motor base lê este campo. */
@@ -70,7 +77,7 @@ export interface Clue {
   round: number;
 }
 
-type Stage = 'guess' | 'score' | null;
+type Stage = 'reveal' | 'guess' | 'judge' | 'score' | null;
 
 /**
  * O Impostor em sala (spec 088): cada pessoa no seu celular. Reaproveita o ciclo da sala (entrar, líder, pronto, chat,
@@ -104,6 +111,8 @@ export class ImpostorSalaEngine extends ColorRoomEngine {
   private votes: Record<string, string> = {};
   private result: ImResult | null = null;
   private guesses: Record<string, string> = {};
+  /** Chute parecido: quem decidiu se vale (por chutador). */
+  private judgeVotes: Record<string, Record<string, boolean>> = {};
   private stage: Stage = null;
   private gains: Record<string, number> = {};
 
@@ -196,6 +205,7 @@ export class ImpostorSalaEngine extends ColorRoomEngine {
     this.votes = {};
     this.result = null;
     this.guesses = {};
+    this.judgeVotes = {};
     this.stage = null;
     this.gains = {};
     this.phase = 'show';
@@ -320,13 +330,52 @@ export class ImpostorSalaEngine extends ColorRoomEngine {
     const ids = this.participants;
     const votes = Object.fromEntries(Object.entries(this.votes).filter(([v, t]) => this.members.has(v) && this.members.has(t)));
     this.result = scoreResult({ ids, round: this.round!, votes, lastChance: this.cfg.lastChance });
-    if (this.result.canGuess.length > 0) {
-      this.phase = 'reveal';
+    this.phase = 'reveal';
+    this.stage = 'reveal';
+    this.phaseEndsAt = this.now() + SALA_REVEAL_MS;
+  }
+
+  /** Fim da cerimônia: quem foi pego pode chutar; sem chute, o placar fecha. */
+  private afterReveal() {
+    if (this.result && this.result.canGuess.length > 0) {
       this.stage = 'guess';
       this.phaseEndsAt = this.now() + SALA_GUESS_MS;
     } else {
       this.finishGame();
     }
+  }
+
+  /** Depois dos chutes: mostra acertou/errou; chute parecido vai para o grupo decidir. */
+  private toJudge() {
+    this.stage = 'judge';
+    this.phaseEndsAt = this.now() + (this.pendingGuessers().length > 0 ? SALA_JUDGE_MS : SALA_JUDGE_SHOW_MS);
+  }
+
+  private pendingGuessers(): string[] {
+    const word = this.round!.civilText;
+    return (this.result?.canGuess ?? []).filter((id) => guessNeedsJudgement(this.guesses[id] ?? '', word));
+  }
+
+  private judges(): string[] {
+    const bad = new Set(this.result?.canGuess ?? []);
+    return this.participants.filter((id) => !bad.has(id) && this.members.get(id)?.connected);
+  }
+
+  /** Voto de quem não chutou: o chute do outro vale ou não? */
+  judge(id: string, target: string, ok: unknown) {
+    this.requirePhase('reveal');
+    if (this.stage !== 'judge') throw new RoomError('Agora não dá para decidir');
+    if (!this.judges().includes(id)) throw new RoomError('Quem chutou não decide o próprio chute');
+    if (!this.pendingGuessers().includes(target)) throw new RoomError('Esse chute não precisa de decisão');
+    (this.judgeVotes[target] ??= {})[id] = ok === true;
+    this.reevaluate();
+  }
+
+  private acceptedGuessers(): string[] {
+    return this.pendingGuessers().filter((g) => {
+      const v = Object.values(this.judgeVotes[g] ?? {});
+      return v.filter(Boolean).length > v.filter((x) => !x).length;
+    });
   }
 
   /** Chute de quem foi pego (última chance). */
@@ -341,7 +390,7 @@ export class ImpostorSalaEngine extends ColorRoomEngine {
   private finishGame() {
     const ids = this.participants;
     const votes = Object.fromEntries(Object.entries(this.votes).filter(([v, t]) => this.members.has(v) && this.members.has(t)));
-    this.result = scoreResult({ ids, round: this.round!, votes, lastChance: this.cfg.lastChance, guesses: this.guesses });
+    this.result = scoreResult({ ids, round: this.round!, votes, lastChance: this.cfg.lastChance, guesses: this.guesses, accepted: this.acceptedGuessers() });
     this.session = addResult(this.session, this.result);
     this.history = advanceHistory(this.history, ids, this.round!);
     this.gains = this.result.points;
@@ -409,7 +458,10 @@ export class ImpostorSalaEngine extends ColorRoomEngine {
     else if (this.phase === 'vote' && here.every((id) => this.votes[id] !== undefined)) this.resolveVotes();
     else if (this.phase === 'reveal' && this.stage === 'guess') {
       const need = (this.result?.canGuess ?? []).filter((id) => this.members.get(id)?.connected);
-      if (need.every((id) => this.guesses[id] !== undefined)) this.finishGame();
+      if (need.every((id) => this.guesses[id] !== undefined)) this.toJudge();
+    } else if (this.phase === 'reveal' && this.stage === 'judge') {
+      const judges = this.judges();
+      if (this.pendingGuessers().every((g) => judges.every((j) => this.judgeVotes[g]?.[j] !== undefined))) this.finishGame();
     }
   }
 
@@ -421,7 +473,9 @@ export class ImpostorSalaEngine extends ColorRoomEngine {
       this.pushClue(s ?? '', '');
     } else if (this.phase === 'pick') this.toVote();
     else if (this.phase === 'vote') this.resolveVotes();
-    else if (this.phase === 'reveal' && this.stage === 'guess') this.finishGame();
+    else if (this.phase === 'reveal' && this.stage === 'reveal') this.afterReveal();
+    else if (this.phase === 'reveal' && this.stage === 'guess') this.toJudge();
+    else if (this.phase === 'reveal' && this.stage === 'judge') this.finishGame();
     else return false;
     return true;
   }
@@ -477,18 +531,29 @@ export class ImpostorSalaEngine extends ColorRoomEngine {
           ? { kind: my.kind, text: my.text, hint: my.hint, theme: my.theme, knowsRole: my.knowsRole, wasSeen: this.seen.has(me!) }
           : null,
         myVote: me ? (this.votes[me] ?? null) : null,
-        result: this.result && (this.stage === 'guess' || finished)
+        result: this.result && (this.stage !== null || finished)
           ? {
               caught: this.result.caught,
               counts: this.result.counts,
               canGuess: this.result.canGuess,
-              // quem são os impostores só aparece com o resultado fechado
-              outsiders: this.stage === 'score' ? this.result.outsiders : this.result.caught,
+              // a cerimônia de revelação mostra quem são os impostores e quem votou neles
+              outsiders: this.result.outsiders,
+              votes: this.votes,
               innocentsWin: this.stage === 'score' ? this.result.innocentsWin : null,
               guessedRight: this.stage === 'score' ? this.result.guessedRight : [],
-              word: this.stage === 'score' ? r.civilText : null,
+              word: this.stage === 'judge' || this.stage === 'score' ? r.civilText : null,
               similar: this.stage === 'score' ? r.outsiderText : null,
               gains: this.stage === 'score' ? this.gains : null,
+              guesses: this.stage === 'judge' || this.stage === 'score' ? this.guesses : null,
+              judge: this.stage === 'judge' || this.stage === 'score'
+                ? Object.fromEntries((this.result.canGuess).map((g) => {
+                    const text = this.guesses[g] ?? '';
+                    const exact = guessIsRight(text, r.civilText);
+                    const needs = guessNeedsJudgement(text, r.civilText);
+                    const v = Object.values(this.judgeVotes[g] ?? {});
+                    return [g, { exact, needs, yes: v.filter(Boolean).length, no: v.filter((x) => !x).length, mine: me ? (this.judgeVotes[g]?.[me] ?? null) : null, eligible: this.judges().length }];
+                  }))
+                : null,
             }
           : null,
       },

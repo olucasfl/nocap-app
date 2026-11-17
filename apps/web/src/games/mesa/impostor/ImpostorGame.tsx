@@ -3,7 +3,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { preloadImages } from './assets';
 import { preloadSounds } from './audio';
 import {
-  CatsScreen, CfgScreen, CluesScreen, FinalScreen, GuessScreen, PlayersScreen, RankChip, RankSheet,
+  CatsScreen, CfgScreen, CluesScreen, FinalScreen, GuessResScreen, GuessScreen, PlayersScreen, RankChip, RankSheet,
   RevealScreen, ResultScreen, ScoreScreen, TalkScreen, VoteScreen,
 } from './screens';
 import { initial, reducer, saveSetup, type Phase } from './state';
@@ -12,15 +12,15 @@ import './impostor.css';
 
 const SCREENS = {
   players: PlayersScreen, cats: CatsScreen, cfg: CfgScreen, reveal: RevealScreen,
-  clues: CluesScreen, talk: TalkScreen, vote: VoteScreen, result: ResultScreen, guess: GuessScreen,
+  clues: CluesScreen, talk: TalkScreen, vote: VoteScreen, result: ResultScreen, guess: GuessScreen, guessres: GuessResScreen,
   score: ScoreScreen, final: FinalScreen,
 } as const;
 
 /** Sem ranking na faixa onde a pessoa só vê o próprio segredo. */
-const NO_RANK: Phase[] = ['reveal', 'vote', 'guess', 'final'];
+const NO_RANK: Phase[] = ['reveal', 'vote', 'guess', 'guessres', 'final'];
 
 /** Fases em que há partida em andamento: sair sem querer perderia o que foi feito. */
-const IN_GAME: Phase[] = ['reveal', 'clues', 'talk', 'vote', 'result', 'guess'];
+const IN_GAME: Phase[] = ['reveal', 'clues', 'talk', 'vote', 'result', 'guess', 'guessres'];
 
 /** Se algo quebrar, a pessoa vê uma tela clara com saída (recomeçar), nunca uma tela em branco. */
 class Guard extends Component<{ onReset: () => void; children: ReactNode }, { err: boolean }> {

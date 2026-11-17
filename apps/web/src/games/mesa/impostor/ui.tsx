@@ -196,3 +196,44 @@ export function Confirm({ cfg, onClose }: { cfg: AskCfg; onClose: () => void }) 
     </>
   );
 }
+
+/** Cerimônia de revelação (sala online): suspense, quem é, quem votou nele. Sem botões: o servidor segue sozinho. */
+export interface CeremonyProps {
+  many: boolean;
+  culprits: { id: string; name: string; coin: ReactNode }[];
+  voters: { id: string; name: string; coin: ReactNode; hit: boolean }[];
+  onReveal?: () => void;
+}
+export function Ceremony({ many, culprits, voters, onReveal }: CeremonyProps) {
+  const [stage, setStage] = useState(0);
+  useEffect(() => {
+    const ts = [
+      window.setTimeout(() => { setStage(1); onReveal?.(); }, 2400),
+      window.setTimeout(() => setStage(2), 4000),
+    ];
+    return () => ts.forEach((t) => window.clearTimeout(t));
+  }, [onReveal]);
+  return (
+    <div className={`im-tense${stage >= 1 ? ' lit' : ''}`} style={{ display: 'contents' }}>
+      <p className="im-suspense" aria-live="polite">
+        {many ? 'Os impostores são' : 'O impostor é'}
+        {stage === 0 && <span className="im-dots" aria-hidden="true"><i /><i /><i /></span>}
+      </p>
+      {stage >= 1 && (
+        <div className="im-slam" data-testid="sala-culprits">
+          <div className="im-reveal">{culprits.map((c, i) => <span key={c.id} style={{ '--i': i } as CSSProperties}>{c.coin}</span>)}</div>
+          <h2 className="im-culprit">{culprits.map((c) => c.name).join(' e ')}</h2>
+        </div>
+      )}
+      {stage >= 2 && (
+        <ul className="im-voters" aria-label={many ? 'Quem votou neles' : 'Quem votou nele'}>
+          {voters.map((v, i) => (
+            <li key={v.id} className={`im-voter ${v.hit ? 'hit' : 'miss'}`} style={{ '--i': i } as CSSProperties}>
+              {v.coin}<b>{v.name}</b><span>{v.hit ? <><CheckIcon /> votou nele</> : 'votou em outro'}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}

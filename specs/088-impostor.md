@@ -153,3 +153,6 @@ Fakeit (smak apps, 5M+ downloads, 4,5): palavra secreta, impostor sem palavra, d
 - Votação: antes de cada voto, "Passe o celular para X".
 - O tema aparece para quem recebe palavra; a dica de tema do impostor só com mais de 2 temas.
 - O som do resultado toca 0,7 s depois de a tela entrar (junto da revelação).
+- Revelação: pergunta "já revelar?" (só na mesa), suspense, nome, quem votou nele, veredito. Na sala a cerimônia dura 11 s e segue sozinha.
+- Chute: igual sem acento/maiúscula/espaço vale; diferente vai ao grupo ("Vale?"). Modo de perguntas não tem chute.
+- Pódio: medalhas por posição na lista (1º troféu, 2º prata, 3º bronze), mesmo com empate de pontos.

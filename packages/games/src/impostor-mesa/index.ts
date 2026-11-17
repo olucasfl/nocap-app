@@ -267,9 +267,17 @@ export function wordAnswers(word: string): string[] {
   return m ? [word, m[1]!, m[2]!] : [word];
 }
 
+const squash = (s: string) => normalizeGuess(s).replace(/ /g, '');
+
+/** Certo na hora: igual sem acento, maiúscula, pontuação nem espaço ("joao pessoa" = "João Pessoa"). */
 export function guessIsRight(guess: string, word: string): boolean {
-  const g = normalizeGuess(guess);
-  return g.length > 0 && wordAnswers(word).some((a) => normalizeGuess(a) === g);
+  const g = squash(guess);
+  return g.length > 0 && wordAnswers(word).some((a) => squash(a) === g);
+}
+
+/** Chute que não bateu mas foi digitado: sinônimo ou palavra parecida, o grupo decide se vale. */
+export function guessNeedsJudgement(guess: string, word: string): boolean {
+  return squash(guess).length > 0 && !guessIsRight(guess, word);
 }
 
 /** Proporção (pedido do Lucas, 17/11/2026): escapar vale bem mais que a vitória dos inocentes; o chute certo vale pouco, menos que acertar o voto. */
@@ -289,6 +297,8 @@ export interface ImResultInput {
   lastChance: boolean;
   /** Chute de cada impostor pego (só vale com `lastChance`). */
   guesses?: Readonly<Record<string, string>>;
+  /** Impostores cujo chute o grupo aceitou como válido (sinônimo, palavra parecida). */
+  accepted?: readonly string[];
 }
 
 export interface ImResult {
@@ -310,7 +320,7 @@ export function scoreResult(input: ImResultInput): ImResult {
   const caught = outsiders.filter((o) => tally.caught.includes(o));
   // no modo de perguntas não há palavra para chutar
   const canGuess = input.lastChance && round.mode !== 'wrong' ? caught : [];
-  const guessedRight = canGuess.filter((id) => input.guesses?.[id] !== undefined && guessIsRight(input.guesses[id]!, round.civilText));
+  const guessedRight = canGuess.filter((id) => input.guesses?.[id] !== undefined && (guessIsRight(input.guesses[id]!, round.civilText) || input.accepted?.includes(id)));
   const innocentsWin = caught.length === outsiders.length && guessedRight.length === 0;
 
   const points: Record<string, number> = Object.fromEntries(ids.map((id) => [id, 0]));

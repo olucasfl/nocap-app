@@ -551,6 +551,7 @@ export class ImpostorRoom extends ColorRoom {
     this.onMessage('tovote', (c) => this.act(c, (id) => engine().readyToVote(id)));
     this.onMessage('cast', (c, m: { id?: string }) => this.act(c, (id) => engine().castVote(id, String(m?.id ?? ''))));
     this.onMessage('guess', (c, m: { text?: unknown }) => this.act(c, (id) => engine().guess(id, m?.text)));
+    this.onMessage('judge', (c, m: { id?: string; ok?: unknown }) => this.act(c, (id) => engine().judge(id, String(m?.id ?? ''), m?.ok)));
     this.onMessage('continue', (c) => this.act(c, (id) => engine().continueSession(id)));
     this.onMessage('end', (c) => this.act(c, (id) => engine().endSession(id)));
   }

@@ -9,7 +9,7 @@ import { nameOf, useLooks, type Snap } from './looks';
 import { play, preloadSounds } from '../impostor/audio';
 import { CategorySheet, MODES, TIMES, fmtTime } from '../impostor/screens';
 import type { Action, State } from '../impostor/state';
-import { Alert, AskCtx, ArrowIcon, Coin, Confirm, GearIcon, Icon, Primary, Stepper, Switch, TopBar, Words, useAsk, useFlash, type AskCfg } from '../impostor/ui';
+import { Alert, AskCtx, Ceremony, ArrowIcon, Coin, Confirm, GearIcon, Icon, Primary, Stepper, Switch, TopBar, Words, useAsk, useFlash, type AskCfg } from '../impostor/ui';
 import '../impostor/impostor.css';
 
 type Cfg = { rounds: number; impostors: number; talkMs: number; hint: boolean; lastChance: boolean; categories: string[]; filters: Record<string, Record<string, string[]>> };
@@ -444,12 +444,14 @@ function Reveal({ snap }: { snap: Snap }) {
   const guessing = mesa.stage === 'guess';
   const canGuessMe = !!r?.canGuess.includes(me) && !(mesa.guessed ?? []).includes(me);
   const win = r?.innocentsWin === true;
-  // o som acompanha a revelação (depois do título entrar)
+  // sem chute, o som do resultado acompanha o placar; com chute, acompanha o veredito
   useEffect(() => {
-    if (!guessing && !r) return undefined;
-    const t = window.setTimeout(() => play(guessing ? 'reveal' : win ? 'win' : 'lose'), 700);
+    if (mesa.stage !== 'score' || !r) return undefined;
+    const t = window.setTimeout(() => play(r.guessedRight.length > 0 || win ? 'win' : 'lose'), 500);
     return () => window.clearTimeout(t);
-  }, [guessing, win, r]);
+  }, [mesa.stage, r, win]);
+  useEffect(() => { if (mesa.stage === 'judge') play('reveal'); }, [mesa.stage]);
+  const onReveal = useCallback(() => play('reveal'), []);
   useEffect(() => {
     if (mesa.stage !== 'score') return undefined;
     const t = window.setTimeout(() => play(mesa.session.ranking.some((x) => x.position === 1 && x.points > 0) ? 'rankcalm' : 'rankcalm'), 1200);
@@ -463,6 +465,66 @@ function Reveal({ snap }: { snap: Snap }) {
     play('vote');
     sendRoom('guess', { text });
   };
+  if (mesa.stage === 'reveal') {
+    const outsiders = r.outsiders ?? [];
+    const hit = (id: string) => outsiders.includes(r.votes?.[id] ?? '');
+    const voters = (mesa.participants ?? []).filter((p) => !outsiders.includes(p.id)).sort((a, b) => Number(hit(b.id)) - Number(hit(a.id)));
+    return (
+      <div className="im-screen im-centered im-tense lit" data-testid="sala-reveal">
+        <TopBar center={<span className="im-status">Resultado</span>} />
+        <div className="im-body im-mid im-revbody">
+          <Ceremony
+            many={outsiders.length > 1}
+            onReveal={onReveal}
+            culprits={outsiders.map((id) => ({ id, name: nameOf(snap, id), coin: <Coin avatar={looks(id).avatar} color={looks(id).color} size={outsiders.length > 1 ? 'lg' : 'xl'} /> }))}
+            voters={voters.map((p) => ({ id: p.id, name: p.name, coin: <Coin avatar={looks(p.id).avatar} color={looks(p.id).color} size="sm" />, hit: hit(p.id) }))}
+          />
+        </div>
+        <div className="im-foot"><p className="im-sub center">Já já vem o próximo passo...</p></div>
+      </div>
+    );
+  }
+  if (mesa.stage === 'judge') {
+    const items = r.canGuess.map((id) => {
+      const j = r.judge?.[id];
+      const text = (r.guesses?.[id] ?? '').trim();
+      return { id, text, j };
+    });
+    const canJudge = !r.canGuess.includes(me) && (mesa.participants ?? []).some((p) => p.id === me);
+    return (
+      <div className="im-screen im-centered" data-testid="sala-judge">
+        <TopBar leave onBack={leave} center={<span className="im-status">Última chance{left !== null ? ` · ${left} s` : ''}</span>} />
+        <div className="im-body im-mid im-revbody">
+          <p className="im-suspense">A palavra era</p>
+          <h2 className="im-culprit">{r.word}</h2>
+          <ul className="im-guesslist">
+            {items.map(({ id, text, j }) => {
+              const open = !!j?.needs;
+              return (
+                <li key={id} className={`im-gcard ${open ? 'open' : j?.exact ? 'ok' : 'no'}`}>
+                  <div className="im-grow"><Coin avatar={looks(id).avatar} color={looks(id).color} size="md" /><div><b>{nameOf(snap, id)}</b><small>{text ? `respondeu “${text}”` : 'não chutou'}</small></div></div>
+                  {open ? (
+                    <div className="im-judge">
+                      <p className="im-sub">Para todos: o chute <b>{text}</b> vale como <b>{r.word}</b>? ({(j?.yes ?? 0) + (j?.no ?? 0)} de {j?.eligible ?? 0} votaram)</p>
+                      {canJudge ? (
+                        <div className="im-judgebtns">
+                          <button type="button" className={`im-chip yes${j?.mine === true ? ' on' : ''}`} data-testid={`sala-judge-yes-${id}`} aria-pressed={j?.mine === true} onClick={() => { play('confirm'); sendRoom('judge', { id, ok: true }); }}>Vale</button>
+                          <button type="button" className={`im-chip no${j?.mine === false ? ' on' : ''}`} data-testid={`sala-judge-no-${id}`} aria-pressed={j?.mine === false} onClick={() => { play('off'); sendRoom('judge', { id, ok: false }); }}>Não vale</button>
+                        </div>
+                      ) : <p className="im-sub">O grupo está decidindo...</p>}
+                    </div>
+                  ) : (
+                    <span className={`im-verdictpill ${j?.exact ? 'ok' : 'no'}`}>{j?.exact ? 'ACERTOU' : 'ERROU'}</span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+        <div className="im-foot"><p className="im-sub center">O ranking abre quando todos decidirem.</p></div>
+      </div>
+    );
+  }
   if (guessing) {
     return (
       <div className="im-screen im-centered" data-testid="sala-guess">

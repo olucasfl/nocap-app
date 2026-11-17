@@ -7,7 +7,7 @@ import { AVATARS } from './assets';
 
 export type Phase =
   | 'players' | 'cats' | 'cfg' | 'reveal' | 'clues' | 'talk' | 'vote'
-  | 'result' | 'guess' | 'score' | 'final';
+  | 'result' | 'guess' | 'guessres' | 'score' | 'final';
 
 export interface Player {
   id: string;
@@ -40,6 +40,8 @@ export interface State {
   votes: Record<string, string>;
   result: ImResult | null;
   guesses: Record<string, string>;
+  /** Chutes parecidos ou sinônimos: o grupo decide se vale (true) ou não (false). */
+  judged: Record<string, boolean>;
   guessIdx: number;
   session: ImSession;
   /** O que o último placar mexeu (escolhe o som). */
@@ -71,7 +73,7 @@ export function initial(): State {
   }
   return {
     phase: 'players', back: false, players, settings, seed: randomSeed(), game: 0, history: IM_EMPTY_HISTORY, round: null,
-    seen: 0, clueRound: 1, turn: 0, clueStep: 'brief', voteStep: 'pass', resultStep: 'ask', voter: 0, votes: {}, result: null, guesses: {}, guessIdx: 0,
+    seen: 0, clueRound: 1, turn: 0, clueStep: 'brief', voteStep: 'pass', resultStep: 'ask', voter: 0, votes: {}, result: null, guesses: {}, judged: {}, guessIdx: 0,
     session: newSession(players.map((p) => p.id)), shift: 'calm', gains: {}, error: null,
   };
 }
@@ -97,6 +99,7 @@ export type Action =
   | { type: 'clueNext' }
   | { type: 'voteReady' }
   | { type: 'revealNow' }
+  | { type: 'judge'; id: string; ok: boolean }
   | { type: 'castVote'; target: string }
   | { type: 'guess'; text: string }
   | { type: 'finish' }
@@ -173,7 +176,7 @@ export function reducer(s: State, a: Action): State {
       // o ranking continua igual; quem entrou agora começa do zero e quem saiu deixa o ranking
       const keep = (m: Record<string, number>) => Object.fromEntries(ids.map((id) => [id, m[id] ?? 0]));
       const session = { ...s.session, scores: keep(s.session.scores), escapes: keep(s.session.escapes) };
-      return { ...s, round, session, phase: 'reveal', back: false, seen: 0, clueRound: 1, turn: 0, clueStep: 'brief', voteStep: 'pass', voter: 0, votes: {}, result: null, guesses: {}, guessIdx: 0 };
+      return { ...s, round, session, phase: 'reveal', back: false, seen: 0, clueRound: 1, turn: 0, clueStep: 'brief', voteStep: 'pass', voter: 0, votes: {}, result: null, guesses: {}, judged: {}, guessIdx: 0 };
     }
     case 'seen': {
       const last = s.seen >= s.players.length - 1;
@@ -184,6 +187,8 @@ export function reducer(s: State, a: Action): State {
       if (s.clueRound < clueRounds(s)) return { ...s, clueRound: s.clueRound + 1, clueStep: 'brief' };
       return { ...s, phase: 'talk', back: false };
     }
+    case 'judge':
+      return { ...s, judged: { ...s.judged, [a.id]: a.ok } };
     case 'revealNow':
       return { ...s, resultStep: 'reveal' };
     case 'voteReady':
@@ -201,7 +206,7 @@ export function reducer(s: State, a: Action): State {
       const id = caught[s.guessIdx]!;
       const guesses = { ...s.guesses, [id]: a.text };
       if (s.guessIdx < caught.length - 1) return { ...s, guesses, guessIdx: s.guessIdx + 1 };
-      return finish({ ...s, guesses });
+      return { ...s, guesses, judged: {}, phase: 'guessres', back: false };
     }
     case 'finish':
       return finish(s);
@@ -219,7 +224,7 @@ export function reducer(s: State, a: Action): State {
 /** Fecha a partida: pontos, ranking da sessão, histórico do sorteio. */
 export function finish(s: State): State {
   const ids = s.players.map((p) => p.id);
-  const result = scoreResult({ ids, round: s.round!, votes: s.votes, lastChance: s.settings.lastChance, guesses: s.guesses });
+  const result = scoreResult({ ids, round: s.round!, votes: s.votes, lastChance: s.settings.lastChance, guesses: s.guesses, accepted: Object.keys(s.judged).filter((k) => s.judged[k]) });
   const session = addResult(s.session, result);
   return {
     ...s, result, session, phase: 'score', back: false, game: s.game + 1, history: advanceHistory(s.history, ids, s.round!),

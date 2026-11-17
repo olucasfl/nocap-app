@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { RoomError } from '../color-room.engine';
-import { ImpostorSalaEngine, SALA_CLUE_MS, SALA_SHOW_MS } from './impostor-sala.engine';
+import { ImpostorSalaEngine, SALA_CLUE_MS, SALA_REVEAL_MS, SALA_SHOW_MS } from './impostor-sala.engine';
 
 const IDS = ['ana', 'bia', 'cris', 'dani', 'edu'];
 
@@ -59,7 +59,7 @@ describe('Impostor em sala', () => {
   });
 
   it('fluxo completo: papéis, 2 rodadas de dicas, debate, voto secreto, resultado e ranking', () => {
-    const { e, ids } = setup();
+    const { e, ids, adv } = setup();
     e.start('ana');
     toDebate(e, ids);
     expect(snap(e, 'ana').phase).toBe('pick');
@@ -68,12 +68,21 @@ describe('Impostor em sala', () => {
     expect(snap(e, 'ana').phase).toBe('vote');
     const imp = ids.find((id) => (snap(e, id).mesa.me.kind as string) !== 'civil')!;
     for (const id of ids) e.castVote(id, id === imp ? ids.find((x) => x !== imp)! : imp);
+    const s0 = snap(e, 'ana');
+    expect(s0.phase).toBe('reveal');
+    // primeiro a cerimônia: quem são os impostores e quem votou neles
+    expect(s0.mesa.stage).toBe('reveal');
+    expect(s0.mesa.result.outsiders).toEqual([imp]);
+    expect(s0.mesa.result.votes[ids.find((x) => x !== imp)!]).toBe(imp);
+    adv(SALA_REVEAL_MS + 1);
     const s = snap(e, 'ana');
-    expect(s.phase).toBe('reveal');
     expect(s.mesa.stage).toBe('guess');
     expect(s.mesa.result.canGuess).toEqual([imp]);
-    // o chute errado fecha a partida e pontua
+    // chute que não bate: o grupo decide; "não vale" fecha a partida e pontua
     e.guess(imp, 'nada a ver');
+    expect(snap(e, 'ana').mesa.stage).toBe('judge');
+    expect(snap(e, 'ana').mesa.result.word).toBeTruthy();
+    for (const id of ids.filter((x) => x !== imp)) e.judge(id, imp, false);
     const done = snap(e, 'ana');
     expect(done.mesa.stage).toBe('score');
     expect(done.mesa.result.word).toBeTruthy();
@@ -82,13 +91,31 @@ describe('Impostor em sala', () => {
     expect(done.mesa.session.ranking.reduce((a: number, r: any) => a + r.points, 0)).toBeGreaterThan(0);
   });
 
-  it('o resultado não entrega a palavra enquanto o impostor ainda vai chutar', () => {
-    const { e, ids } = setup();
+  it('chute parecido que o grupo aceita faz o impostor ganhar', () => {
+    const { e, ids, adv } = setup();
     e.start('ana');
     toDebate(e, ids);
     for (const id of ids) e.readyToVote(id);
     const imp = ids.find((id) => (snap(e, id).mesa.me.kind as string) !== 'civil')!;
     for (const id of ids) e.castVote(id, id === imp ? ids.find((x) => x !== imp)! : imp);
+    adv(SALA_REVEAL_MS + 1);
+    e.guess(imp, 'sinonimo');
+    expect(() => e.judge(imp, imp, true)).toThrow(/não decide/);
+    for (const id of ids.filter((x) => x !== imp)) e.judge(id, imp, true);
+    const done = snap(e, 'ana');
+    expect(done.mesa.stage).toBe('score');
+    expect(done.mesa.result.guessedRight).toEqual([imp]);
+    expect(done.mesa.result.innocentsWin).toBe(false);
+  });
+
+  it('o resultado não entrega a palavra enquanto o impostor ainda vai chutar', () => {
+    const { e, ids, adv } = setup();
+    e.start('ana');
+    toDebate(e, ids);
+    for (const id of ids) e.readyToVote(id);
+    const imp = ids.find((id) => (snap(e, id).mesa.me.kind as string) !== 'civil')!;
+    for (const id of ids) e.castVote(id, id === imp ? ids.find((x) => x !== imp)! : imp);
+    adv(SALA_REVEAL_MS + 1);
     const r = snap(e, 'bia').mesa.result;
     expect(r.word).toBeNull();
     expect(r.gains).toBeNull();
@@ -140,11 +167,12 @@ describe('Impostor em sala', () => {
   });
 
   it('continuar mantém o ranking e o ranking final sai ao encerrar', () => {
-    const { e, ids } = setup(5, { lastChance: false });
+    const { e, ids, adv } = setup(5, { lastChance: false });
     e.start('ana');
     toDebate(e, ids);
     for (const id of ids) e.readyToVote(id);
     for (const id of ids) e.castVote(id, ids.find((x) => x !== id)!);
+    adv(SALA_REVEAL_MS + 1);
     expect(snap(e, 'ana').mesa.stage).toBe('score');
     expect(() => e.continueSession('bia')).toThrow(/Só quem criou/);
     const before = snap(e, 'ana').mesa.session.ranking;
@@ -158,11 +186,12 @@ describe('Impostor em sala', () => {
   });
 
   it('encerrar mostra o ranking final', () => {
-    const { e, ids } = setup(5, { lastChance: false });
+    const { e, ids, adv } = setup(5, { lastChance: false });
     e.start('ana');
     toDebate(e, ids);
     for (const id of ids) e.readyToVote(id);
     for (const id of ids) e.castVote(id, ids.find((x) => x !== id)!);
+    adv(SALA_REVEAL_MS + 1);
     e.endSession('ana');
     const s = e.snapshot('ana') as unknown as { phase: string; final: { userId: string }[] };
     expect(s.phase).toBe('final');

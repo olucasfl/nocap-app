@@ -784,3 +784,22 @@
 .im-voter { padding: 4px 12px 4px 4px; }
 .im-voter b { text-align: left; }
 .im-voter b { text-align: left; }
+
+/* resultado do chute */
+.im-guesslist { list-style: none; margin: 6px 0 0; padding: 0; width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 10px; }
+.im-gcard { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 22px; background: var(--surface); animation: im-word 0.5s var(--ease) both; }
+.im-gcard.ok { box-shadow: inset 0 0 0 2px var(--green); }
+.im-gcard.no { box-shadow: inset 0 0 0 2px #ff7a5c; }
+.im-gcard.open { box-shadow: inset 0 0 0 2px var(--yellow); }
+.im-grow { display: flex; align-items: center; gap: 10px; text-align: left; min-width: 0; }
+.im-grow b { display: block; font: 800 17px var(--display); overflow-wrap: anywhere; }
+.im-grow small { display: block; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.im-verdictpill { align-self: stretch; text-align: center; padding: 10px; border-radius: 999px; font: 800 17px var(--display); letter-spacing: 0.04em; animation: im-slamin 0.6s var(--ease) both; }
+.im-verdictpill.ok { background: var(--green); color: #07140d; }
+.im-verdictpill.no { background: #ff7a5c; color: #1b0a05; }
+.im-judge { display: flex; flex-direction: column; gap: 10px; }
+.im-judge .im-sub { text-align: left; font-size: 14px; margin: 0; }
+.im-judgebtns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.im-judgebtns .im-chip { justify-content: center; min-height: 48px; font-size: 16px; }
+.im-chip.yes { background: var(--green); color: #07140d; }
+.im-chip.no { background: var(--surface2); }

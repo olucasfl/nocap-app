@@ -68,6 +68,9 @@ describe('estado do Impostor (mesa)', () => {
     expect(s.result!.caught).toEqual([imp]);
     expect(s.result!.canGuess).toEqual([imp]);
     s = run(s, { type: 'guess', text: 'nada a ver' });
+    // chute errado vai para a tela de resultado do chute; "nada a ver" não é parecido, mas o grupo decide
+    expect(s.phase).toBe('guessres');
+    s = run(s, { type: 'judge', id: imp, ok: false }, { type: 'finish' });
     expect(s.phase).toBe('score');
     expect(s.session.games).toBe(1);
     expect(s.result!.innocentsWin).toBe(true);
@@ -135,5 +138,20 @@ describe('estado do Impostor (mesa)', () => {
     expect(s.clueStep).toBe('say');
     s = run(s, { type: 'clueNext' });
     expect(s.phase).toBe('talk');
+  });
+
+  it('chute aceito pelo grupo faz o impostor ganhar', () => {
+    let s = run(base(), { type: 'start' });
+    for (let i = 0; i < 5; i++) s = run(s, { type: 'seen' });
+    s = run(s, { type: 'go', phase: 'vote' });
+    const imp = Object.entries(s.round!.roles).find(([, r]) => r.kind === 'impostor')![0];
+    for (let i = 0; i < 5; i++) {
+      s = run(s, { type: 'voteReady' });
+      const me = s.players[s.voter]!.id;
+      s = run(s, { type: 'castVote', target: me === imp ? s.players.find((p) => p.id !== imp)!.id : imp });
+    }
+    s = run(s, { type: 'guess', text: 'sinonimo qualquer' }, { type: 'judge', id: imp, ok: true }, { type: 'finish' });
+    expect(s.result!.guessedRight).toEqual([imp]);
+    expect(s.result!.innocentsWin).toBe(false);
   });
 });
