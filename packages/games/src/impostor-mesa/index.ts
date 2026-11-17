@@ -284,7 +284,7 @@ export function guessNeedsJudgement(guess: string, word: string): boolean {
 export const IM_POINTS = {
   rightVote: 2,
   innocentsWin: 2,
-  outsiderSurvived: 6,
+  outsiderSurvived: 5,
   outsiderGuessed: 1,
   whiteGuessed: 2,
 } as const;

@@ -6,7 +6,7 @@ import {
   CatsScreen, CfgScreen, CluesScreen, FinalScreen, GuessResScreen, GuessScreen, PlayersScreen, RankChip, RankSheet,
   RevealScreen, ResultScreen, ScoreScreen, TalkScreen, VoteScreen,
 } from './screens';
-import { initial, reducer, saveSetup, type Phase } from './state';
+import { initial, reducer, saveSetup, type Phase, type State } from './state';
 import { AskCtx, Confirm, Primary, RankSlot, type AskCfg } from './ui';
 import './impostor.css';
 
@@ -21,6 +21,19 @@ const NO_RANK: Phase[] = ['reveal', 'vote', 'guess', 'guessres', 'final'];
 
 /** Fases em que há partida em andamento: sair sem querer perderia o que foi feito. */
 const IN_GAME: Phase[] = ['reveal', 'clues', 'talk', 'vote', 'result', 'guess', 'guessres'];
+
+/** Cartela de transição entre momentos do jogo: título grande, rápido, sem exagero. */
+function splashFor(s: State): { key: string; title: string; sub: string } | null {
+  const wrong = s.round?.mode === 'wrong';
+  if (s.phase === 'reveal' && s.seen === 0) return { key: `reveal-${s.game}`, title: `${s.game + 1}ª partida`, sub: 'Cada um vai ver o seu papel' };
+  if (s.phase === 'clues' && s.clueStep === 'say') return { key: `say-${s.game}-${s.clueRound}`, title: wrong ? 'Hora de responder' : 'Hora de dizer', sub: wrong ? 'Uma resposta de cada um' : 'Uma palavra de cada um' };
+  if (s.phase === 'talk') return { key: `talk-${s.game}`, title: 'Debate', sub: 'Conversem e descubram' };
+  if (s.phase === 'vote' && s.voter === 0 && s.voteStep === 'pass') return { key: `vote-${s.game}`, title: 'Hora de votar', sub: 'Em segredo, um de cada vez' };
+  if (s.phase === 'score') return { key: `score-${s.game}`, title: 'Ranking', sub: 'Os pontos desta partida' };
+  return null;
+}
+
+const SPLASH_MS = 1500;
 
 /** Se algo quebrar, a pessoa vê uma tela clara com saída (recomeçar), nunca uma tela em branco. */
 class Guard extends Component<{ onReset: () => void; children: ReactNode }, { err: boolean }> {
@@ -81,6 +94,16 @@ export function ImpostorGame() {
   }, []);
 
   const Screen = SCREENS[s.phase];
+  const sp = splashFor(s);
+  const [doneKey, setDoneKey] = useState<string | null>(null);
+  const noSplash = (() => { try { return localStorage.getItem('im-nosplash') === '1'; } catch { return false; } })();
+  const showSplash = !!sp && sp.key !== doneKey && !noSplash;
+  useEffect(() => {
+    if (!sp || sp.key === doneKey) return undefined;
+    const ms = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 700 : SPLASH_MS;
+    const t = window.setTimeout(() => setDoneKey(sp.key), ms);
+    return () => window.clearTimeout(t);
+  }, [sp?.key, doneKey]);
   const exit = () => void navigate({ to: '/mesa' });
   return (
     <div className="im-app" data-testid="im-app" data-phase={s.phase}>
@@ -88,9 +111,17 @@ export function ImpostorGame() {
       <AskCtx.Provider value={askRef}>
         <RankSlot.Provider value={NO_RANK.includes(s.phase) ? null : <RankChip s={s} onOpen={() => setRank(true)} />}>
           <Guard onReset={() => d({ type: 'reset' })}>
+            {showSplash && sp ? (
+              <div className="im-splash" data-testid="im-splash" onClick={() => setDoneKey(sp.key)} key={sp.key}>
+                <span className="im-splash-bar" aria-hidden="true" />
+                <span className="im-splash-t" role="status">{sp.title}</span>
+                <span className="im-splash-s">{sp.sub}</span>
+              </div>
+            ) : (
             <div key={`${s.phase}-${s.seen}-${s.voter}-${s.guessIdx}-${s.clueStep}-${s.clueRound}-${s.voteStep}-${s.resultStep}`} className={`im-view${s.back ? ' back' : ''}`}>
               <Screen s={s} d={d} exit={exit} />
             </div>
+            )}
           </Guard>
         </RankSlot.Provider>
         {rank && <RankSheet s={s} onClose={() => setRank(false)} />}

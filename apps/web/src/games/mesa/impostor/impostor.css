@@ -803,3 +803,14 @@
 .im-judgebtns .im-chip { justify-content: center; min-height: 48px; font-size: 16px; }
 .im-chip.yes { background: var(--green); color: #07140d; }
 .im-chip.no { background: var(--surface2); }
+
+/* ===== Cartela de transição ===== */
+.im-splash { position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 24px; text-align: center; background: transparent; color: var(--text); animation: im-splashout 0.3s ease 1.2s forwards; }
+.im-splash-bar { width: 0; height: 6px; border-radius: 6px; background: var(--orange); animation: im-bar 0.7s var(--ease) 0.05s forwards; }
+.im-splash-t { font: 800 clamp(38px, 13vw, 92px) / 1 var(--display); letter-spacing: -0.03em; text-transform: uppercase; opacity: 0; transform: translateY(0.4em) scale(0.92); animation: im-splashin 0.55s var(--ease) 0.1s forwards; overflow-wrap: anywhere; max-width: 100%; }
+.im-splash-s { font: 700 clamp(14px, 3.6vw, 20px) var(--body); color: var(--muted); opacity: 0; animation: im-word 0.5s var(--ease) 0.45s forwards; }
+@keyframes im-bar { to { width: min(160px, 40vw); } }
+@keyframes im-splashin { to { opacity: 1; transform: none; } }
+@keyframes im-splashout { to { opacity: 0; } }
+@media (max-height: 500px) { .im-splash { gap: 6px; } .im-splash-t { font-size: clamp(30px, 9vw, 52px); } .im-splash-bar { height: 4px; } }
+@media (prefers-reduced-motion: reduce) { .im-splash, .im-splash-bar, .im-splash-t, .im-splash-s { animation: none; opacity: 1; transform: none; } .im-splash-bar { width: 120px; } }

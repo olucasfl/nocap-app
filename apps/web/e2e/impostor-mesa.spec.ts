@@ -36,7 +36,7 @@ for (const d of DEVICES.filter((x) => only.includes(x.name))) {
     await installApi(page);
     const cdp = await context.newCDPSession(page);
     await setDevice(page, cdp, d);
-    await page.addInitScript(() => localStorage.setItem('nocap-mute', '1'));
+    await page.addInitScript(() => { localStorage.setItem('nocap-mute', '1'); localStorage.setItem('im-nosplash', '1'); });
     const check = async (label: string) => {
       await page.waitForTimeout(550);
       if (process.env.IMP_SHOTS) await page.screenshot({ path: `${OUT}/${label}-${d.name}.png` });
