@@ -7,7 +7,7 @@ import { useRoomEntry } from '@/lib/my-room';
 import { preloadImages } from './impostor/assets';
 import { play, preloadSounds } from './impostor/audio';
 import { Alert, ArrowIcon, Icon, Primary, TopBar, Words, useFlash } from './impostor/ui';
-import { MESA_FUTURE, MESA_GAMES, type MesaGameInfo } from './games';
+import { MESA_GAMES, type MesaGameInfo } from './games';
 import './impostor/impostor.css';
 
 type Step = 'home' | 'mode' | 'online';
@@ -148,14 +148,6 @@ export function MesaHome() {
             <TopBar onBack={leave} center={<span className="im-status">Dinner Table Games</span>} />
             <div className="im-body im-gamesbody">
               <GamesCarousel active={game} onActive={setGame} />
-              <section className="im-future" aria-label="Jogos que vêm por aí" data-testid="mesa-future">
-                <h2 className="im-future-t">Vem por aí</h2>
-                <ul>
-                  {MESA_FUTURE.map((f, i) => (
-                    <li key={f.name}><span className="im-future-n">{i + 1}</span><span><b>{f.name}</b><small>{f.text}</small></span></li>
-                  ))}
-                </ul>
-              </section>
             </div>
             <div className="im-foot">
               {MESA_GAMES[game]!.soon
