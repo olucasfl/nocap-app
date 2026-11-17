@@ -292,7 +292,7 @@ function SeeRole({ snap }: { snap: Snap }) {
           onPointerDown={(e) => { e.preventDefault(); show(); }} onPointerUp={hide} onPointerLeave={hide} onPointerCancel={hide} onContextMenu={(e) => e.preventDefault()}
           onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); show(); } }} onKeyUp={(e) => { if (e.key === ' ' || e.key === 'Enter') hide(); }}>
           <span className="im-lbl">Segure<br />para ver</span>
-          <span className={`im-secret${outsider ? ' bad' : ''}`} aria-live="polite"><small>{on ? tag : ''}</small><strong className={wrong ? 'q' : ''} data-testid="sala-secret">{on ? text : ''}</strong>{on && me.theme && !wrong && <em className="im-theme">Tema: {me.theme}</em>}</span>
+          <span className={`im-secret${outsider ? ' bad' : ''}`} aria-live="polite"><small>{on ? tag : ''}</small><strong className={wrong ? 'q' : ''} data-testid="sala-secret">{on ? text : ''}</strong>{on && me.theme && <em className="im-theme">Tema: {me.theme}</em>}</span>
         </button>
       </div>
       <div className="im-foot">

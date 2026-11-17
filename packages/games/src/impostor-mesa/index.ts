@@ -209,6 +209,7 @@ export function drawRound(input: ImDrawInput): ImRound {
     civilText = q.q;
     outsiderText = q.qPair;
     wordId = q.id;
+    themeId = q.category;
   } else {
     const pool = filterWords(input.words, settings);
     if (pool.length === 0) throw new Error('sem palavras nas categorias escolhidas');

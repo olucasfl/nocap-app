@@ -367,7 +367,7 @@ export function RevealScreen({ s, d }: P) {
           <span className={`im-secret${outsider ? ' bad' : ''}`} aria-live="polite">
             <small>{on ? tag : ''}</small>
             <strong className={wrong ? 'q' : ''} data-testid="im-secret">{on ? text : ''}</strong>
-            {on && role.theme && !wrong && <em className="im-theme">Tema: {role.theme}</em>}
+            {on && role.theme && <em className="im-theme">Tema: {role.theme}</em>}
           </span>
         </button>
         <p className="im-hint" style={{ opacity: seen ? 1 : 0.55 }}>{seen ? 'Solte e passe adiante' : 'Só você olha. Ninguém mais.'}</p>

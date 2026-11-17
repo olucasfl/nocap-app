@@ -341,5 +341,10 @@ describe('eliminação', () => {
     expect(r2.points[outs[0]!]).toBe(IM_POINTS.outsiderSurvived); // eliminado, mas o time ganhou
     expect(r2.points[civs[0]!]).toBe(0);
   });
-});
 
+  it('modo de perguntas também mostra o tema a quem recebe a pergunta', () => {
+    const q: ImQuestion = { id: 'q1', category: 'comida', q: 'Qual a sua comida favorita?', qPair: 'Qual a sua bebida favorita?' };
+    const r = drawRound({ ids, settings: base({ mode: 'wrong' }), words, questions: [q], categoryLabels: { comida: 'Comida' }, seed: 's', roundIndex: 0, history: IM_EMPTY_HISTORY });
+    for (const role of Object.values(r.roles)) expect(role.theme).toBe('Comida');
+  });
+});
