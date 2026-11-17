@@ -11,6 +11,7 @@ import {
   NightHuntArt,
   PingArt,
   TimeArt,
+  TableArt,
 } from '@/components/HubArt';
 import { Link } from '@tanstack/react-router';
 import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
@@ -129,7 +130,7 @@ function GameCard({
 
 interface GameDef {
   id: string;
-  section: 'action' | 'sport' | 'brain' | 'table';
+  section: 'action' | 'sport' | 'brain';
   to: string;
   search?: Record<string, string>;
   cls: string;
@@ -228,16 +229,6 @@ const GAMES: GameDef[] = [
     badge: 'NOVO',
   },
   {
-    id: 'mesa',
-    section: 'table',
-    to: '/mesa',
-    cls: 'hub-card-mesa',
-    art: <img className="hub-mesa-art" src="/impostor/ic/jogo.png" alt="" width="120" height="120" />,
-    name: 'Impostor',
-    tag: 'Jogos de mesa',
-    badge: 'NOVO',
-  },
-  {
     id: 'words',
     section: 'brain',
     to: '/words',
@@ -254,6 +245,17 @@ const GAMES: GameDef[] = [
     art: <BlocksArt />,
     name: "Block's",
     tag: 'Blocos',
+  },
+  {
+    id: 'mesa',
+    section: 'brain',
+    to: '/mesa',
+    cls: 'hub-card-mesa',
+    art: <TableArt />,
+    name: 'Dinner Table Games',
+    tag: 'Impostor',
+    size: 'mid',
+    badge: 'NOVO',
   },
   {
     id: 'color',
@@ -316,7 +318,6 @@ export function Hub() {
   const actionGames = GAMES.filter((g) => g.section === 'action' && visible(g));
   const sportGames = GAMES.filter((g) => g.section === 'sport' && visible(g));
   const brainGames = GAMES.filter((g) => g.section === 'brain' && visible(g));
-  const tableGames = GAMES.filter((g) => g.section === 'table' && visible(g));
 
   const today = useMemo(() => {
     const list = DAILIES.map((d) => ({
@@ -595,17 +596,8 @@ export function Hub() {
             <div className="hz-grid">{sportGames.map(renderCard)}</div>
           </section>
         )}
-
-        {tableGames.length > 0 && (
-          <section className="hz-sec" aria-label="Dinner Table Games">
-            <h2 className="hz-h">
-              Dinner Table Games <small className="mono">JOGOS DE RODA, COM O CELULAR NA MÃO DE TODOS</small>
-            </h2>
-            <div className="hz-grid">{tableGames.map(renderCard)}</div>
-          </section>
-        )}
       </div>
-      {q && actionGames.length === 0 && sportGames.length === 0 && brainGames.length === 0 && tableGames.length === 0 && (
+      {q && actionGames.length === 0 && sportGames.length === 0 && brainGames.length === 0 && (
         <p className="hz-empty mono" data-testid="hub-search-empty">
           NENHUM JOGO COM “{query.trim().toUpperCase()}”
         </p>

@@ -141,3 +141,11 @@ Referência: o Fakeit (limpo e característico): fundo vermelho-rosa com grade, 
 ## Pesquisa
 
 Fakeit (smak apps, 5M+ downloads, 4,5): palavra secreta, impostor sem palavra, dicas, debate, voto, dicas opcionais para impostores, duração da rodada, 1 a 3 impostores, 10 categorias e 1000+ palavras, offline. Imposter Who? (Sokak, 10M+): impostor vê só "Imposter", 3 a 15 pessoas num aparelho. Undercover: civis, undercover com palavra parecida e Mr. White sem palavra, eliminação, Mr. White pego adivinha. The Chameleon: grade de 16 palavras, uma palavra por pessoa. Reclamações dos jogadores: sorteio que repete quem é impostor, impostor nunca começa a falar, assinatura e anúncios, poucas categorias.
+
+
+## Ajustes de 17/11/2026
+
+- O jogo se chama **Dinner Table Games** e fica no 3º lugar da seção "Palavras, cores e mente" da Home; sem categoria própria nem cartões "em breve".
+- `/mesa`: home descritiva -> "Jogar Impostor" -> Online (Criar sala / Entrar com código) ou Na mesa.
+- Sair da sala online volta para `/mesa`.
+- Modo Mesa começa sem jogadores; cada um adiciona nome e foto (aleatória se não escolher).

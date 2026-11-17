@@ -731,3 +731,26 @@ export function FoxAvatar({ fur, cap = '#2f5bff' }: { fur: string; cap?: string 
 
 // as capas dos jogos soltos moram em `FoxCapCovers.tsx` (as do Palavras, Cores e Mente ficam aqui)
 export { AtravessaArt, BolaArt, CounterFoxArt, DesmoronaArt, FoxGpArt, MiniGolfArt, NightHuntArt, PingArt } from './FoxCapCovers';
+
+/** Capa do Dinner Table Games: a mesa sob a lâmpada, cinco fichas com os personagens em roda e a lupa no meio. */
+const SEATS: [string, string][] = [
+  ['raposa', '#ff6a2b'],
+  ['detetive', '#2f5bff'],
+  ['mago', '#ffd23f'],
+  ['ninja', '#33c27f'],
+  ['fada', '#ff9ecf'],
+];
+export function TableArt() {
+  return (
+    <div className="ha-table" aria-hidden="true">
+      <span className="ha-table-lamp" />
+      <span className="ha-table-top" />
+      {SEATS.map(([a, c], i) => (
+        <span key={a} className={`ha-seat s${i}`} style={{ ['--c' as string]: c }}>
+          <img src={`/impostor/av/${a}.png`} alt="" width="64" height="64" draggable={false} />
+        </span>
+      ))}
+      <img className="ha-lupa" src="/impostor/ic/lupa.png" alt="" width="64" height="64" draggable={false} />
+    </div>
+  );
+}

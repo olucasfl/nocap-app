@@ -28,6 +28,12 @@ function useLeave(d: (a: Action) => void) {
     });
 }
 
+/** Uma foto aleatória que ninguém da mesa usa. */
+function randomFree(taken: Set<string>): string {
+  const free = AVATARS.filter((a) => !taken.has(a));
+  return free[Math.floor(Math.random() * free.length)] ?? AVATARS[0]!;
+}
+
 const idx = (s: State, id: string) => Math.max(0, s.players.findIndex((p) => p.id === id));
 const by = (s: State, id: string): Player => s.players.find((p) => p.id === id) ?? s.players[0]!;
 const coinOf = (s: State, id: string, size: 'sm' | 'md' | 'lg' | 'xl' = 'sm', className = '', style?: CSSProperties) => {
@@ -41,6 +47,13 @@ export function PlayersScreen({ s, d, exit }: P) {
   const [picking, setPicking] = useState<string | null>(null);
   const [flash, show, clear] = useFlash();
   const ask = useAsk();
+  const takenNow = new Set(s.players.map((p) => p.avatar));
+  /** A foto de quem vai entrar: já vem uma aleatória sorteada; dá para trocar antes de adicionar. */
+  const [draft, setDraft] = useState(() => randomFree(takenNow));
+  const draftTaken = takenNow.has(draft);
+  useEffect(() => {
+    if (draftTaken) setDraft(randomFree(takenNow));
+  }, [draftTaken]);  
   const submit = (e: FormEvent) => {
     e.preventDefault();
     const n = name.trim();
@@ -49,7 +62,8 @@ export function PlayersScreen({ s, d, exit }: P) {
     if (s.players.some((p) => p.name.toLowerCase() === n.toLowerCase())) return show(`Já tem alguém chamado ${n}. Use outro nome para não confundir.`);
     clear();
     play('add');
-    d({ type: 'addPlayer', name: n });
+    d({ type: 'addPlayer', name: n, avatar: draft });
+    setDraft(randomFree(new Set([...takenNow, draft])));
     setName('');
   };
   const remove = (p: Player) => {
@@ -63,7 +77,6 @@ export function PlayersScreen({ s, d, exit }: P) {
     play('start');
     d({ type: 'go', phase: 'cats' });
   };
-  const taken = new Set(s.players.map((p) => p.avatar));
   const cur = s.players.find((p) => p.id === picking);
   const few = s.players.length < IM_MIN_PLAYERS;
   return (
@@ -78,6 +91,7 @@ export function PlayersScreen({ s, d, exit }: P) {
               <li key={p.id} className="im-prow" style={{ '--i': i } as CSSProperties}>
                 <button type="button" className="im-coinbtn" aria-label={`Trocar o personagem de ${p.name}`} onClick={() => { play('tap'); setPicking(p.id); }}>
                   <Coin avatar={p.avatar} color={i} size="sm" />
+                  <span className="im-edit" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4" /></svg></span>
                 </button>
                 <b>{p.name}</b>
                 <button type="button" className="im-x" aria-label={`Remover ${p.name}`} onClick={() => remove(p)}>×</button>
@@ -85,10 +99,17 @@ export function PlayersScreen({ s, d, exit }: P) {
             ))}
           </ul>
           {s.players.length < IM_MAX_PLAYERS && (
-            <form className="im-add" onSubmit={submit}>
+            <>
+            <form className="im-add im-addrow" onSubmit={submit}>
+              <button type="button" className="im-draft" aria-label="Escolher a foto de quem vai entrar" data-testid="im-draft" onClick={() => { play('tap'); setPicking('new'); }}>
+                <Coin avatar={draft} color={s.players.length} size="md" />
+                <span className="im-edit big" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4" /></svg></span>
+              </button>
               <input id="im-name" data-testid="im-name" value={name} onChange={(e) => { setName(e.target.value); clear(); }} placeholder="Nome" maxLength={14} autoComplete="off" enterKeyHint="done" aria-label="Nome do jogador" aria-invalid={!!flash} />
               <button className="im-iconbtn pri" aria-label="Adicionar jogador" data-testid="im-add"><PlusIcon /></button>
             </form>
+            <p className="im-sub center small">Toque na foto para trocar. Se não escolher, vem uma aleatória.</p>
+            </>
           )}
         </div>
       </div>
@@ -98,15 +119,16 @@ export function PlayersScreen({ s, d, exit }: P) {
           Continuar · {s.players.length} <ArrowIcon />
         </Primary>
       </div>
-      {cur && (
-        <Sheet title={`Personagem de ${cur.name}`} onClose={() => setPicking(null)}>
+      {picking && (
+        <Sheet title={cur ? `Personagem de ${cur.name}` : 'Foto de quem vai entrar'} onClose={() => setPicking(null)}>
           <div className="im-avgrid" role="listbox" aria-label="Personagens">
             {AVATARS.map((a) => {
-              const mine = a === cur.avatar;
-              const used = taken.has(a) && !mine;
+              const current = cur ? cur.avatar : draft;
+              const mine = a === current;
+              const used = takenNow.has(a) && !mine;
               return (
-                <button key={a} type="button" role="option" aria-selected={mine} disabled={used} className="im-avopt" data-on={mine} onClick={() => { play('select'); d({ type: 'setAvatar', id: cur.id, avatar: a }); setPicking(null); }}>
-                  <Coin avatar={a} color={idx(s, cur.id)} size="md" />
+                <button key={a} type="button" role="option" aria-selected={mine} disabled={used} className="im-avopt" data-on={mine} onClick={() => { play('select'); if (cur) d({ type: 'setAvatar', id: cur.id, avatar: a }); else setDraft(a); setPicking(null); }}>
+                  <Coin avatar={a} color={cur ? idx(s, cur.id) : s.players.length} size="md" />
                 </button>
               );
             })}

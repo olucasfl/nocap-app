@@ -622,3 +622,82 @@
 @media (max-height: 560px) and (orientation: landscape) {
   .im-chatlist { max-height: 46dvh; min-height: 80px; }
 }
+
+/* casa do Dinner Table Games: apresentação, escolha de como jogar e entrada online */
+.im-cover { align-items: center; gap: 14px; text-align: center; }
+.im-cover-art { width: min(320px, 82%); aspect-ratio: 5 / 3; border-radius: 26px; overflow: hidden; background: #1a1713; box-shadow: 0 0 0 2px var(--line), 0 16px 36px rgba(0, 0, 0, 0.45); flex: none; }
+.im-cover-art .ha-table { min-height: 0; border-radius: 0; }
+.im-cover-t { font-size: clamp(34px, 11vw, 46px); }
+.im-cover-text { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.im-cover-text .im-sub { max-width: 380px; }
+.im-facts { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.im-facts li { padding: 5px 12px; border-radius: 999px; background: var(--surface); color: var(--muted); font: 800 12px var(--body); letter-spacing: 0.02em; }
+.im-how { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 8px; width: min(460px, 100%); text-align: left; }
+.im-how li { display: flex; align-items: center; gap: 12px; padding: 8px 14px 8px 8px; border-radius: 22px; background: var(--surface); }
+.im-how-ic { flex: none; width: 44px; height: 44px; padding: 6px; border-radius: 16px; background: var(--surface2); }
+.im-how b { display: block; font: 800 15px var(--display); }
+.im-how small { display: block; color: var(--muted); font-size: 12.5px; line-height: 1.35; margin-top: 1px; }
+
+.im-ways { display: grid; gap: 12px; width: min(520px, 100%); }
+.im-way { position: relative; display: flex; align-items: center; gap: 14px; padding: 16px 14px 16px 14px; border-radius: 28px; text-align: left; overflow: hidden; background: var(--surface); box-shadow: inset 0 0 0 2px var(--line); transition: transform 0.25s var(--ease), box-shadow 0.25s, background 0.25s; }
+.im-way::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 0 0, color-mix(in srgb, var(--wc) 34%, transparent), transparent 62%); pointer-events: none; }
+.im-way.online { --wc: var(--blue); }
+.im-way.mesa { --wc: var(--orange); }
+.im-way:hover { transform: translateY(-3px); box-shadow: inset 0 0 0 2px var(--wc); }
+.im-way:active { transform: scale(0.98); }
+.im-way-ic { position: relative; flex: none; width: 76px; height: 76px; animation: im-bob 3s ease-in-out infinite; }
+.im-way-t { position: relative; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.im-way-t i { font-style: normal; align-self: flex-start; padding: 2px 10px; border-radius: 999px; background: var(--wc); color: #fff; font: 800 11px var(--body); letter-spacing: 0.12em; text-transform: uppercase; }
+.im-way.mesa .im-way-t i { color: var(--on-accent); }
+.im-way-t b { font: 800 19px/1.1 var(--display); }
+.im-way-t small { color: var(--muted); font-size: 13px; line-height: 1.35; }
+.im-way-go { position: relative; flex: none; margin-left: auto; width: 40px; height: 40px; border-radius: 50%; background: var(--wc); display: grid; place-items: center; transition: transform 0.25s var(--ease); }
+.im-way.mesa .im-way-go svg { stroke: var(--on-accent); }
+.im-way-go svg { width: 20px; height: 20px; stroke: #fff; fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.im-way:hover .im-way-go { transform: translateX(3px); }
+
+.im-panel { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 10px 12px; padding: 14px; border-radius: 26px; background: var(--surface); }
+.im-panel b { display: block; font: 800 18px var(--display); }
+.im-panel small { display: block; color: var(--muted); font-size: 13px; line-height: 1.35; margin-top: 2px; }
+.im-panel-ic { width: 52px; height: 52px; }
+.im-panel > .im-btn, .im-panel > .im-add { grid-column: 1 / -1; }
+.im-panel.create { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--orange) 55%, transparent); }
+.im-panel.join { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--blue) 60%, transparent); }
+.im-or { display: flex; align-items: center; gap: 12px; color: var(--muted); font: 800 12px var(--body); letter-spacing: 0.14em; text-transform: uppercase; }
+.im-or i { flex: 1; height: 2px; background: var(--line); border-radius: 2px; }
+.im-codein { text-align: center; letter-spacing: 0.4em; font: 800 22px var(--display); text-transform: uppercase; }
+.im-codein::placeholder { letter-spacing: 0.2em; font-size: 15px; }
+
+@media (min-width: 700px) and (min-height: 600px) {
+  .im-cover-art { width: 440px; }
+  .im-cover-t { font-size: 54px; }
+  .im-ways { grid-template-columns: 1fr 1fr; width: min(760px, 100%); }
+  .im-way { flex-direction: column; align-items: flex-start; min-height: 250px; }
+  .im-way-go { position: absolute; right: 14px; bottom: 14px; }
+  .im-body.im-mid > .im-panel, .im-body > .im-panel, .im-body > .im-or { width: min(520px, 100%); margin-inline: auto; }
+}
+@media (max-height: 560px) and (orientation: landscape) {
+  .im-cover { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 12px 24px; text-align: left; }
+  .im-cover-art { grid-row: 1 / span 2; width: 100%; justify-self: center; max-width: 300px; }
+  .im-cover-text { align-items: flex-start; }
+  .im-facts { justify-content: flex-start; }
+  .im-how { grid-template-columns: 1fr; gap: 6px; }
+  .im-how small { display: none; }
+  .im-ways { grid-template-columns: 1fr 1fr; }
+  .im-way { min-height: 0; }
+  .im-way-ic { width: 56px; height: 56px; }
+  .im-way-t small { display: none; }
+  .im-body > .im-panel { padding: 10px 12px; }
+}
+
+/* foto de quem entra: bem evidente que dá para trocar */
+.im-addrow { align-items: center; }
+.im-draft { position: relative; flex: none; width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; transition: transform 0.25s var(--ease); }
+.im-draft:hover { transform: rotate(-6deg) scale(1.06); }
+.im-draft:active { transform: scale(0.94); }
+.im-draft .im-coin { box-shadow: 0 0 0 3px var(--orange), inset 0 -6px 0 rgba(0, 0, 0, 0.18); }
+.im-edit { position: absolute; right: -2px; bottom: -2px; width: 22px; height: 22px; border-radius: 50%; background: var(--yellow); display: grid; place-items: center; box-shadow: 0 0 0 2px var(--surface); }
+.im-edit.big { width: 26px; height: 26px; box-shadow: 0 0 0 3px var(--table); }
+.im-edit svg { width: 13px; height: 13px; stroke: var(--on-accent); fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.im-edit.big svg { width: 15px; height: 15px; }
+.im-coinbtn { position: relative; }

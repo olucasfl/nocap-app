@@ -2,12 +2,16 @@ import { describe, expect, it } from 'vitest';
 import { poolOk, poolSize, reducer, initial, type Action, type State } from './state';
 
 const run = (s: State, ...a: Action[]) => a.reduce(reducer, s);
+const NAMES = ['Sofia', 'Alexandre', 'Lúcia', 'Diego', 'Bia'];
 const base = (): State => {
-  const s = initial();
-  return { ...s, players: s.players.slice(0, 5), settings: { ...s.settings, categories: ['comida', 'animais'], impostors: 1, rounds: 2, lastChance: true, mode: 'classic' } };
+  const s = NAMES.reduce((acc, name) => reducer(acc, { type: 'addPlayer', name }), initial());
+  return { ...s, settings: { ...s.settings, categories: ['comida', 'animais'], impostors: 1, rounds: 2, lastChance: true, mode: 'classic' } };
 };
 
 describe('estado do Impostor (mesa)', () => {
+  it('a mesa começa vazia', () => {
+    expect(initial().players).toEqual([]);
+  });
   it('adiciona e remove jogadores, no máximo 15, com personagem sem repetir', () => {
     let s = base();
     s = run(s, { type: 'addPlayer', name: '  Caio  ' });

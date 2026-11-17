@@ -45,22 +45,18 @@ export interface State {
 
 const KEY = 'nocap-impostor-setup';
 
-export function defaultPlayers(): Player[] {
-  return ['Sofia', 'Alexandre', 'Lúcia', 'Diego', 'Bia'].map((name, i) => ({ id: `p${i + 1}`, name, avatar: AVATARS[i * 5 % AVATARS.length]! }));
-}
-
 function randomSeed(): string {
   return Math.random().toString(36).slice(2, 10);
 }
 
 export function initial(): State {
-  let players = defaultPlayers();
+  // a mesa começa vazia: quem vai jogar é adicionado por quem está jogando
+  const players: Player[] = [];
   let settings: ImSettings = { ...IM_DEFAULTS, categories: [] };
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
-      const s = JSON.parse(raw) as { players?: Player[]; settings?: ImSettings };
-      if (Array.isArray(s.players) && s.players.length >= 1) players = s.players.slice(0, IM_MAX_PLAYERS);
+      const s = JSON.parse(raw) as { settings?: ImSettings };
       // os temas começam sempre vazios: a pessoa escolhe a cada sessão
       if (s.settings) settings = { ...settings, ...s.settings, categories: [], rounds: clampRounds(s.settings.rounds ?? 3) };
     }
@@ -76,7 +72,7 @@ export function initial(): State {
 
 export function saveSetup(s: State): void {
   try {
-    localStorage.setItem(KEY, JSON.stringify({ players: s.players, settings: s.settings }));
+    localStorage.setItem(KEY, JSON.stringify({ settings: s.settings }));
   } catch {
     /* sem armazenamento: tudo bem */
   }
@@ -84,7 +80,7 @@ export function saveSetup(s: State): void {
 
 export type Action =
   | { type: 'go'; phase: Phase; back?: boolean }
-  | { type: 'addPlayer'; name: string }
+  | { type: 'addPlayer'; name: string; avatar?: string }
   | { type: 'removePlayer'; id: string }
   | { type: 'setAvatar'; id: string; avatar: string }
   | { type: 'settings'; patch: Partial<ImSettings> }
@@ -117,7 +113,9 @@ export function reducer(s: State, a: Action): State {
       const name = a.name.trim().slice(0, 14);
       if (!name || s.players.length >= IM_MAX_PLAYERS) return s;
       const taken = new Set(s.players.map((p) => p.avatar));
-      const avatar = AVATARS.find((x) => !taken.has(x)) ?? AVATARS[0]!;
+      // sem foto escolhida, vem uma aleatória que ninguém da mesa está usando
+      const free = AVATARS.filter((x) => !taken.has(x));
+      const avatar = a.avatar && !taken.has(a.avatar) ? a.avatar : (free[Math.floor(Math.random() * free.length)] ?? AVATARS[0]!);
       const id = `p${Math.max(0, ...s.players.map((p) => Number(p.id.slice(1)))) + 1}`;
       return { ...s, players: [...s.players, { id, name, avatar }] };
     }

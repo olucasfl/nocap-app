@@ -228,6 +228,8 @@ function RoomPageInner({ code, game = 'color' }: { code?: string; game?: RoomGam
       // cada jogo volta para a tela própria dele (só sai do jogo quem clica em "Sair do ..." nessa tela)
       void navigate({ to: '/fox-cap', search: { jogo: lastGame } });
     else if (lastGame === 'golf') void navigate({ to: '/minigolf' });
+    // o Impostor volta para a casa do Dinner Table Games (só sai do jogo quem clica em "Sair" lá)
+    else if (lastGame === 'impostor') void navigate({ to: '/mesa' });
     else if (lastGame === 'foxcap') void navigate({ to: '/' });
     else void navigate({ to: GAME_PAGE[lastGame], search: { aba: 'friends' } });
   }, [snapshot, lastGame, message, status, navigate]);

@@ -47,7 +47,18 @@ for (const d of DEVICES.filter((x) => only.includes(x.name))) {
     await page.getByRole('button', { name: 'Agora não' }).click({ timeout: 1500 }).catch(() => undefined);
     await page.goto('/mesa');
     await check('mesa-home');
+    await page.getByTestId('mesa-jogar').click();
+    await check('mesa-como');
     await page.getByTestId('mesa-impostor').click();
+    // a mesa começa vazia: continuar sem gente dá erro visível
+    await expect(page.getByTestId('im-players')).toBeVisible();
+    await page.getByTestId('im-continue').click();
+    await expect(page.getByRole('alert')).toBeVisible();
+    await check('jogadores-vazio');
+    for (const n of ['Sofia', 'Alexandre', 'Lúcia', 'Diego', 'Bia']) {
+      await page.getByTestId('im-name').fill(n);
+      await page.getByTestId('im-add').click();
+    }
     await check('jogadores');
     // personagem e novo jogador
     await page.getByRole('button', { name: /Trocar o personagem de Sofia/ }).click();

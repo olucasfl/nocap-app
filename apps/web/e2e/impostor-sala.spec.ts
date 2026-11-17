@@ -51,7 +51,9 @@ for (const d of DEVICES.filter((x) => only.includes(x.name))) {
     const A = await mk();
     await A.goto('/mesa');
     await dismiss(A);
+    await A.getByTestId('mesa-jogar').click();
     await A.getByTestId('mesa-online').click();
+    await A.getByTestId('mesa-create').click();
     await nick(A, 'Ana');
     await A.waitForURL(/\/sala\//);
     const code = A.url().split('/sala/')[1]!.slice(0, 4);
