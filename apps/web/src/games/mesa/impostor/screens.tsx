@@ -145,7 +145,7 @@ export const MODES: { id: ImMode; label: string; desc: string; tone: string; ico
   { id: 'classic', label: 'Clássico', desc: 'Todos veem a palavra. Menos o impostor.', tone: '#ff6a2b', icon: 'modo-classico' },
   { id: 'similar', label: 'Palavra parecida', desc: 'O impostor recebe outra palavra, parecida. Ele nem sabe.', tone: '#2f5bff', icon: 'modo-parecida' },
   { id: 'white', label: 'Sem palavra', desc: 'Dois impostores: um recebe uma palavra parecida e nem sabe que é impostor; o outro não recebe nada e precisa disfarçar.', tone: '#ffd23f', icon: 'modo-semword' },
-  { id: 'wrong', label: 'Resposta errada', desc: 'Todos respondem. Um recebeu outra pergunta.', tone: '#33c27f', icon: 'modo-errada' },
+  { id: 'wrong', label: 'Resposta errada', desc: 'Todos recebem uma pergunta e respondem em voz alta, uma vez só. Menos o impostor: ele recebe uma pergunta parecida e nem sabe. Escutem as respostas e descubram quem respondeu algo estranho. Não tem chute no final.', tone: '#33c27f', icon: 'modo-errada' },
 ];
 
 /** Opções de uma categoria (futebol: jogadores, times, seleções, Brasil ou mundo...). Usada antes de começar e nos ajustes. */
