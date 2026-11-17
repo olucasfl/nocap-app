@@ -28,7 +28,7 @@ Escolha do modo na tela de configuração, como as cartas do Fakeit.
 
 - **Jogadores:** 3 a 15 (mesa) e 3 a 12 (sala; limite das salas). Nomes livres na mesa.
 - **Impostores:** o host escolhe 1, 2 ou 3, ou **"aleatório"** (1 até o máximo do grupo, o número não é revelado). Máximo = `min(3, n - 1)`, como no Intruso.
-- **Sorteio justo (reclamação número 1 dos apps):** quem foi impostor menos vezes tem mais chance; ninguém passa mais de 2 rodadas sem ser (com 4+ pessoas). Determinístico pela seed e pelo histórico, testado.
+- **Sorteio justo (reclamação número 1 dos apps):** rodízio com sorte. Quem está há mais partidas sem ser impostor tem mais chance, e quem chega a `ceil(n / k) - 1` partidas seguidas sem ser entra primeiro no próximo sorteio (com 1 impostor para 6 pessoas, ninguém espera mais que 5 partidas; é o melhor que a conta permite). Determinístico pela seed e pelo histórico, testado em `packages/games/src/impostor-mesa`.
 - **Quem começa a falar:** sorteado, **independente do papel** (queixa dos apps: "o impostor nunca começa"). Mr. White nunca começa.
 - **Rodadas de dicas (Lucas, 17/11/2026):** o host escolhe de **1 a 5 rodadas** (padrão 3). Em cada rodada, **todos falam uma palavra, na mesma ordem**; a rodada seguinte repete a volta e cada um diz **outra palavra** (diferente das que já disse). Só **depois da última rodada** abre o debate e a votação.
 - **Fases:** `reveal` (cada um vê seu papel) → `clues` (rodadas 1 a N, uma palavra por pessoa por rodada, a ordem e o número da rodada ficam na tela) → `talk` (debate livre, tempo configurável de 0:30 a 5:00 ou sem limite) → `vote` (**voto secreto, um por vez**) → `result` → (se pego e a regra estiver ligada) `guess` → pontos.

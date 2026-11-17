@@ -6,6 +6,7 @@ export * from './core/survival';
 export * from './color';
 export * from './time';
 export * from './impostor';
+export * from './impostor-mesa';
 export * from './eco';
 export * from './eco/rhythm';
 
