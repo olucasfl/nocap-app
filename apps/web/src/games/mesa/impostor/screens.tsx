@@ -497,7 +497,7 @@ export function TalkScreen({ s, d }: P) {
   );
 }
 
-/* ---------- Voto secreto (voto final e eliminação) ---------- */
+/* ---------- Voto (voto final e eliminação) ---------- */
 export function VoteScreen({ s, d }: P) {
   const leave = useLeave(d);
   const ids = voterIds(s);
@@ -510,7 +510,7 @@ export function VoteScreen({ s, d }: P) {
   useEffect(() => { play('pass'); }, [s.voter, s.elimRevote]);
   const last = s.voter === ids.length - 1;
   const headline = elim ? 'Quem vai ser eliminado(a)?' : 'Quem é o impostor?';
-  const status = `${elim ? 'Eliminação' : 'Votação secreta'} · ${s.voter + 1} de ${ids.length}`;
+  const status = `${elim ? 'Eliminação' : 'Votação'} · ${s.voter + 1} de ${ids.length}`;
   const tieNames = s.elimCands ? s.elimCands.map((id) => by(s, id).name).join(' e ') : '';
   if (s.voteStep === 'pass') {
     return (
@@ -524,7 +524,7 @@ export function VoteScreen({ s, d }: P) {
             <div className="im-name"><Words text={me.name} /></div>
           </div>
           <p className="im-sub im-rise" style={{ '--d': 4 } as CSSProperties}>
-            {elim && s.elimRevote ? `Só vale votar em ${tieNames}. ` : ''}Só {me.name} olha agora. O voto é secreto.
+            {elim && s.elimRevote ? `Só vale votar em ${tieNames}. ` : ''}É a vez de {me.name} votar.
           </p>
         </div>
         <div className="im-foot"><Primary testId="im-voteready" sound="pass" onClick={() => d({ type: 'voteReady' })}>Sou eu, votar <ArrowIcon /></Primary></div>

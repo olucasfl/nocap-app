@@ -14,7 +14,7 @@ type Step = 'home' | 'mode' | 'online';
 const STEPS: { icon: string; title: string; text: string }[] = [
   { icon: 'olhos', title: 'Veja o seu papel', text: 'Todo mundo recebe a mesma palavra secreta, menos o impostor.' },
   { icon: 'ampulheta', title: 'Deem dicas e debatam', text: 'Uma palavra por pessoa, rodada a rodada. Depois, conversem.' },
-  { icon: 'lupa', title: 'Votem em segredo', text: 'Quem acerta o impostor ganha pontos. O ranking soma as partidas.' },
+  { icon: 'lupa', title: 'Votem no impostor', text: 'Quem acerta o impostor ganha pontos. O ranking soma as partidas.' },
 ];
 const FACTS = ['3 a 15 pessoas', '4 modos de jogo', '10 temas', 'Sem anúncio'];
 

@@ -29,8 +29,8 @@ function splashFor(s: State): { key: string; title: string; sub: string } | null
   if (s.phase === 'clues' && s.clueStep === 'say') return { key: `say-${s.game}-${s.clueRound}-${s.elim?.steps.length ?? 0}`, title: wrong ? 'Hora de responder' : 'Hora de dizer', sub: wrong ? 'Uma resposta de cada um' : 'Uma palavra de cada um' };
   if (s.phase === 'talk') return { key: `talk-${s.game}`, title: 'Debate', sub: 'Conversem e descubram' };
   if (s.phase === 'vote' && s.voter === 0 && s.voteStep === 'pass') {
-    if (s.elim) return { key: `vote-${s.game}-${s.elim.steps.length}-${s.elimRevote ? 'r' : ''}`, title: s.elimRevote ? 'Desempate' : 'Hora de eliminar', sub: s.elimRevote ? 'Votem de novo, só nos empatados' : 'Em segredo, um de cada vez' };
-    return { key: `vote-${s.game}`, title: 'Hora de votar', sub: 'Em segredo, um de cada vez' };
+    if (s.elim) return { key: `vote-${s.game}-${s.elim.steps.length}-${s.elimRevote ? 'r' : ''}`, title: s.elimRevote ? 'Desempate' : 'Hora de eliminar', sub: s.elimRevote ? 'Votem de novo, só nos empatados' : 'Um de cada vez' };
+    return { key: `vote-${s.game}`, title: 'Hora de votar', sub: 'Um de cada vez' };
   }
   if (s.phase === 'score') return { key: `score-${s.game}`, title: 'Ranking', sub: 'Os pontos desta partida' };
   return null;

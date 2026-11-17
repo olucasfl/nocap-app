@@ -33,7 +33,7 @@ export function ImpostorSala({ snapshot }: { snapshot: Snap }) {
     phase === 'show' ? { key: `show-${games}`, title: `${games + 1}ª partida`, sub: 'Cada um vê o seu papel' }
     : phase === 'play' ? { key: `play-${games}-${mesaS?.clueRound ?? 1}`, title: wrong ? 'Hora de responder' : 'Hora de dizer', sub: wrong ? 'Uma resposta de cada um' : 'Uma palavra de cada um' }
     : phase === 'pick' ? { key: `pick-${games}`, title: 'Debate', sub: 'Conversem e descubram' }
-    : phase === 'vote' ? { key: `vote-${games}-${mesaS?.clueRound ?? 1}-${mesaS?.revote ? 'r' : ''}`, title: mesaS?.voteMode === 'elim' ? (mesaS.revote ? 'Desempate' : 'Hora de eliminar') : 'Hora de votar', sub: mesaS?.revote ? 'Só nos empatados' : 'Em segredo' }
+    : phase === 'vote' ? { key: `vote-${games}-${mesaS?.clueRound ?? 1}-${mesaS?.revote ? 'r' : ''}`, title: mesaS?.voteMode === 'elim' ? (mesaS.revote ? 'Desempate' : 'Hora de eliminar') : 'Hora de votar', sub: mesaS?.revote ? 'Só nos empatados' : 'Um de cada vez' }
     : phase === 'reveal' && mesaS?.stage === 'score' ? { key: `score-${games}`, title: 'Ranking', sub: 'Os pontos desta partida' }
     : null;
   const [doneKey, setDoneKey] = useState<string | null>(null);
@@ -432,7 +432,7 @@ function Debate({ snap }: { snap: Snap }) {
   );
 }
 
-/* ---------- Voto secreto ---------- */
+/* ---------- Voto ---------- */
 function Vote({ snap }: { snap: Snap }) {
   const mesa = snap.mesa!;
   const me = snap.me ?? '';
@@ -451,7 +451,7 @@ function Vote({ snap }: { snap: Snap }) {
   const tieNames = (mesa.cands ?? []).map((id) => nameOf(snap, id)).join(' e ');
   return (
     <div className="im-screen" data-testid="sala-vote">
-      <TopBar leave onBack={leave} center={<span className="im-status">{elim ? 'Eliminação' : 'Votação secreta'} · {voted.length} de {alive.length}{left !== null ? ` · ${left} s` : ''}</span>} />
+      <TopBar leave onBack={leave} center={<span className="im-status">{elim ? 'Eliminação' : 'Votação'} · {voted.length} de {alive.length}{left !== null ? ` · ${left} s` : ''}</span>} />
       <div className="im-body">
         <h2 className="im-t im-lupa-t"><Icon name="lupa" size={52} className="im-lupa" /><Words text={elim ? 'Quem vai ser eliminado(a)?' : 'Quem é o impostor?'} /></h2>
         {elim && mesa.revote && <span className="im-banner warn" data-testid="sala-tie">Empate! Só vale votar em {tieNames}</span>}
