@@ -25,7 +25,9 @@ export function words(category: string, rows: readonly Row[]): ImWord[] {
  *    entregam o impostor; sinônimos ("competitivo" x "bravo ao perder") dão a mesma resposta e ninguém descobre.
  * 4. As respostas das duas perguntas precisam poder coincidir: se as respostas possíveis de uma nunca servem para a
  *    outra ("ganhou a Copa" x "nunca ganhou"; "supervalorizado" x "injustiçado"), o impostor se entrega ao falar.
- *    Teste da revisão: "alguma resposta da pergunta A caberia também na B?". Ambas devem ter o mesmo tom
+ *    Teste da revisão: escreva as 4 respostas mais prováveis de cada pergunta; pelo menos 2 têm de servir nas duas.
+ *    Cuidado com o domínio: "a mais cara do mercado" x "a mais famosa do mundo" falha (a Nike é famosa, mas
+ *    ninguém cita a Nike para "mercado"). Pergunta de um domínio (balada) e outra de outro (churrasco) também falha. Ambas devem ter o mesmo tom
  *    (as duas elogiam, as duas criticam, as duas são neutras) e falar do mesmo conjunto de itens.
  * 5. Tem que ser algo sobre o qual a pessoa tenha opinião de verdade, não um cenário inventado.
  */
