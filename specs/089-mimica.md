@@ -71,7 +71,7 @@ Empate no fim: os empatados dividem o lugar (mesma regra do pódio do Impostor).
 
 ## 6. Conteúdo
 
-- **Clássico:** palavras maiores e variadas, em temas. Reaproveita parte do Impostor (Animais, Comida, Esportes, Filmes e Séries, Heróis e vilões, Lugares, Clash Royale, Futebol) e acrescenta temas novos feitos para mímica (ver pergunta 3). **Músicas e Marcas** ficam fora por padrão: são difíceis de mimicar.
+- **Clássico:** palavras maiores e variadas, em temas. Reaproveita parte do Impostor (Animais, Comida, Esportes, Filmes e Séries, Heróis e vilões, Clash Royale) e acrescenta temas novos feitos para mímica (Profissões, Objetos e Futebol só com lances e objetos do jogo, sem nome de jogador ou técnico). **Músicas, Marcas e Lugares** ficaram de fora (pedido do Lucas em 18/11/2026): são difíceis de mimicar.
 - **Speed (decisão do Lucas, 18/11/2026):** inclui o tema **Ações**, com situações **aleatórias e curtas, nada tão simples quanto "correr"** (jogar bola, matar um mosquito, escovar os dentes, pescar). O tema Ações fica **só no Speed**. Lista nova, cerca de 60 por tema, a confirmar (pergunta 2).
 - **Sem repetir** palavra na mesma sessão (mesmo histórico do Impostor, "jogou X partidas sem repetir").
 - A palavra **só aparece enquanto o dedo segura o botão**, para os outros não verem.

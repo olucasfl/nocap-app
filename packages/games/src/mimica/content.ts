@@ -22,12 +22,11 @@ export const MIM_CATEGORIES: readonly MimCategory[] = [
   { id: 'acoes', label: 'Ações', classic: false, speed: true },
   { id: 'filmes', label: 'Filmes e Séries', classic: true, speed: false },
   { id: 'herois', label: 'Heróis e vilões', classic: true, speed: false },
-  { id: 'lugares', label: 'Lugares', classic: true, speed: false },
   { id: 'futebol', label: 'Futebol', classic: true, speed: false },
   { id: 'clash', label: 'Clash Royale', classic: true, speed: false },
 ];
 
-const FROM_IMPOSTOR = ['animais', 'comida', 'esportes', 'filmes', 'herois', 'lugares', 'futebol', 'clash'];
+const FROM_IMPOSTOR = ['animais', 'comida', 'esportes', 'filmes', 'herois', 'clash'];
 
 /** Clash Royale vem como "Knight (Cavaleiro)": na mesa fala-se o nome em português. */
 const clean = (category: string, text: string) => {
@@ -60,6 +59,15 @@ const CLASSIC_OBJETOS = [
   'Montanha-russa', 'Roda-gigante', 'Pião', 'Cubo mágico', 'Varal de roupa', 'Despertador tocando', 'Fliperama', 'Barraca de camping',
   'Tobogã', 'Bumerangue', 'Pipoqueira', 'Trator', 'Guindaste', 'Caixa registradora', 'Elevador lotado', 'Catraca de ônibus',
   'Cadeira de balanço', 'Rede de dormir', 'Chaleira apitando', 'Churrasqueira', 'Furadeira', 'Gangorra', 'Violão', 'Bola de boliche',
+];
+
+/** Futebol só com o que dá para mimicar e acertar: lances, regras e objetos do jogo (nada de nome de jogador ou técnico). */
+const CLASSIC_FUTEBOL = [
+  'Gol', 'Pênalti', 'Escanteio', 'Impedimento', 'Goleiro', 'Cartão vermelho', 'Cartão amarelo', 'Falta', 'Bicicleta', 'Drible', 'Chapéu', 'Cabeceio',
+  'Árbitro', 'Bandeirinha', 'Torcida', 'Estádio', 'Bola', 'Chuteira', 'Apito', 'Comemoração do gol', 'Lateral', 'Zagueiro', 'Artilheiro', 'Campeão',
+  'Taça', 'Camisa do time', 'Tiro de meta', 'Cobrança de falta', 'Prorrogação', 'Banco de reservas', 'Trave', 'Rede', 'Barreira', 'Embaixadinha', 'Carrinho', 'Gol contra',
+  'Goleiro pegando pênalti', 'Substituição', 'Pelada de rua', 'Chute no ângulo', 'Passe de calcanhar', 'Tabelinha', 'Contra-ataque', 'Frango do goleiro',
+  'Jogador caindo na área', 'Torcedor chorando', 'Dar a volta olímpica', 'Gol de placa',
 ];
 
 const SPEED_ACOES = [
@@ -108,6 +116,7 @@ export const MIM_WORDS: readonly MimWord[] = [
   ...classicFromImpostor,
   ...list('classic', 'mc', 'profissoes', CLASSIC_PROFISSOES),
   ...list('classic', 'mc', 'objetos', CLASSIC_OBJETOS),
+  ...list('classic', 'mc', 'futebol', CLASSIC_FUTEBOL),
   ...list('speed', 'ms', 'acoes', SPEED_ACOES),
   ...list('speed', 'ms', 'animais', SPEED_ANIMAIS),
   ...list('speed', 'ms', 'comida', SPEED_COMIDA),

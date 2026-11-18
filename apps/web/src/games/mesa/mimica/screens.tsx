@@ -576,7 +576,7 @@ export function StealScreen({ s, d }: P) {
     );
   }
   return (
-    <div className="im-screen" data-testid="mm-steal">
+    <div className="im-screen mm-steal3" data-testid="mm-steal">
       <TopBar onBack={back} center={<span className="im-status">Hora de roubar</span>} />
       <div className="im-body">
         <h2 className="im-t" data-testid="mm-steal-who"><Words text="Algum time sabe a palavra?" /></h2>

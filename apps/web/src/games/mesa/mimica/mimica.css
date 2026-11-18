@@ -221,3 +221,15 @@
   .mm-judge .im-foot, .mm-steal-foot { flex-wrap: wrap; }
   .mm-judge .im-foot .im-btn { flex: 1 1 170px; min-width: 0; padding: 0 14px; font-size: 15px; }
 }
+
+/* roubo com 3 times ou mais em paisagem: lista em colunas, sem rolar */
+@media (max-height: 560px) and (orientation: landscape) {
+  .mm-steal3 .im-body { gap: 8px; }
+  .mm-steal3 .im-t { font-size: 24px; }
+  .mm-steal3 .im-sub { font-size: 13px; line-height: 1.3; }
+  .mm-steal3 .mm-picks { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; }
+  .mm-steal3 .im-choice { min-height: 52px; padding: 6px 12px 6px 8px; }
+  .mm-steal3 .im-foot { flex-wrap: wrap; }
+  .mm-steal3 .im-foot .im-btn { flex: 1 1 200px; min-width: 0; min-height: 48px; }
+}
+@media (max-height: 420px) and (orientation: landscape) { .mm-steal3 .im-sub { display: none; } }
