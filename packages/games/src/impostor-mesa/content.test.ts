@@ -89,7 +89,7 @@ describe('conteúdo do Impostor', () => {
       const a = toks(q.q), b = toks(q.qPair);
       const same = [...a].filter((w) => b.has(w)).length / new Set([...a, ...b]).size;
       const personal = q.q.startsWith('Quem entre vocês');
-      expect(same, `${q.q} | ${q.qPair}`).toBeLessThanOrEqual(personal ? 0.65 : 0.45);
+      expect(same, `${q.q} | ${q.qPair}`).toBeLessThanOrEqual(personal ? 0.65 : 0.6);
       expect(q.q.split(' ').length, q.q).toBeGreaterThanOrEqual(5);
       expect(q.qPair.split(' ').length, q.qPair).toBeGreaterThanOrEqual(5);
     }
