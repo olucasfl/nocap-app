@@ -23,14 +23,14 @@ const R: Row[] = [
 ];
 export const clashWords = words('clash', R);
 export const clashQuestions = questions('clash', [
-  ['Qual carta você usaria para atacar a torre?', 'Qual carta você usaria para defender a torre?'],
-  ['Qual carta você coloca primeiro na partida?', 'Qual carta você guarda para o último segundo?'],
-  ['Qual carta você nunca tiraria do seu baralho?', 'Qual carta você trocaria sem pensar?'],
-  ['Qual carta você esperaria o elixir encher para jogar?', 'Qual carta você jogaria logo no início?'],
-  ['Qual carta você usa para virar um jogo perdido?', 'Qual carta você usa para fechar um jogo ganho?'],
-  ['Qual carta você usaria contra um Gigante?', 'Qual carta você usaria contra um P.E.K.K.A?'],
-  ['Qual carta tem o visual mais bonito?', 'Qual carta tem o som mais marcante?'],
-  ['Qual carta você acha mais injusta de enfrentar?', 'Qual carta você acha mais divertida de usar?'],
-  ['Qual carta você usaria só para provocar o oponente?', 'Qual carta você daria para um amigo iniciante?'],
-  ['Qual carta você levaria num baralho de só quatro cartas?', 'Qual carta você deixaria de fora de qualquer baralho?'],
+  ['Qual carta você escolheria como a sua principal para derrubar torres?', 'Qual carta você acha a mais difícil de defender?'],
+  ['Qual carta você colocaria para defender um Corredor?', 'Qual carta você colocaria para defender um Gigante com apoio?'],
+  ['Qual feitiço você nunca deixa de fora do baralho?', 'Qual feitiço você usa para limpar um monte de tropinhas?'],
+  ['Qual carta você joga primeiro quando o elixir está cheio?', 'Qual carta você joga primeiro quando o elixir está quase no fim?'],
+  ['Qual carta você usa para defender um ataque aéreo?', 'Qual carta você usa para defender um ataque por terra?'],
+  ['Qual carta você doaria para um colega de clã?', 'Qual carta você pediria de doação no clã?'],
+  ['Qual carta você usaria na prorrogação para derrubar a última torre?', 'Qual carta você usaria na prorrogação para proteger a sua última torre?'],
+  ['Qual carta você ficou mais feliz de tirar de um baú?', 'Qual carta você mais queria evoluir primeiro?'],
+  ['Qual carta você colocaria atrás de um Gigante para apoiar?', 'Qual carta você colocaria atrás de um Corredor para apoiar?'],
+  ['Qual carta você usaria numa final para surpreender o oponente?', 'Qual carta você usaria só para provocar um amigo?'],
 ]);
