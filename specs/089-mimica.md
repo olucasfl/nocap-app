@@ -1,6 +1,6 @@
 # Spec 089: Mímica (segundo jogo da categoria "Social Table Games")
 
-Pedido do Lucas (18/11/2026). Status: **rascunho; pontuação, tempos, palavra e pulos decididos em 18/11/2026; faltam os itens da seção 10.**
+Pedido do Lucas (18/11/2026). Status: **aprovada (18/11/2026); etapa 1 (lógica em `packages/games/src/mimica`) feita; faltam conteúdo e telas.**
 
 ## 1. O que é
 
@@ -86,7 +86,7 @@ Mesmo estilo do Impostor, seguindo `docs/MOBILE-GUIDE.md`: retrato e paisagem, �
 
 ## 9. Etapas
 
-1. Lógica pura em `packages/games/src/mimica` (modos, rodadas, pontuação, roubo, histórico) + testes.
+1. **Feita (18/11/2026):** lógica pura em `packages/games/src/mimica` (lados, calendário, sorteio de 3 opções e baralho do Speed, turno do Speed com 3 pulos, 4 pontuações, ranking com empate) + 23 testes.
 2. Conteúdo: temas e palavras do Clássico e do Speed + testes de conteúdo (mínimo por tema, sem duplicadas).
 3. Telas do Clássico Times (fluxo mais completo: roubo e ranking animado).
 4. Clássico Individual.
@@ -98,8 +98,4 @@ Mesmo estilo do Impostor, seguindo `docs/MOBILE-GUIDE.md`: retrato e paisagem, �
 
 Decididas (Lucas, 18/11/2026): pontuação da seção 5; **3 opções de palavra** no Clássico e **3 pulos** no Speed; tema **Ações** no Speed; tempos padrão **90 s** (Clássico) e **60 s** (Speed); times com nome e cor sugeridos e editáveis; mínimo de **2 pessoas** no modo Individual.
 
-Em aberto:
-
-1. **Quem acertou no Speed Individual:** contador com + e − no fim do turno (proposta da 3.4) ou marcar palavra por palavra no resumo?
-2. **Temas do Speed:** além de **Ações**, o Speed usa palavras de Animais, Comida, Esportes, Profissões e Objetos do dia a dia (também situações um pouco mais criativas, não só a palavra seca)?
-3. **Pulos do Speed:** são 3 por turno de cada time/pessoa (e voltam a 3 no turno seguinte)?
+Fechadas depois (Lucas, 18/11/2026): **Speed Individual** marca quem acertou com o contador + e − no fim do turno (3.4); o Speed usa **Ações** e também palavras de Animais, Comida, Esportes, Profissões e Objetos do dia a dia, escritas com situações um pouco criativas; os **3 pulos** são por turno e voltam a 3 no turno seguinte.
