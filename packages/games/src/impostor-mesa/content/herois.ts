@@ -24,10 +24,14 @@ const R: Row[] = [
 ];
 export const heroisWords = words('herois', R);
 export const heroisQuestions = questions('herois', [
-  ['Qual super-poder você escolheria?', 'Qual super-poder você acha inútil?'],
-  ['Qual herói você seria?', 'Qual herói você nunca seria?'],
-  ['Qual vilão tem o melhor plano?', 'Qual vilão é o mais engraçado?'],
-  ['Quem ganharia uma luta entre heróis?', 'Quem perderia uma luta entre vilões?'],
-  ['Qual herói tem a roupa mais legal?', 'Qual herói tem a roupa mais estranha?'],
-  ['Qual personagem você levaria para uma ilha deserta?', 'Qual personagem você deixaria longe da ilha?'],
+  ['Qual personagem ganharia numa luta?', 'Qual personagem ganharia numa corrida?'],
+  ['Qual personagem você escolheria como chefe?', 'Qual personagem você escolheria como colega de apartamento?'],
+  ['Qual personagem seria o melhor guarda-costas?', 'Qual personagem seria o melhor professor?'],
+  ['Qual personagem você levaria numa viagem?', 'Qual personagem você levaria para um assalto?'],
+  ['Qual personagem tem o visual mais bonito?', 'Qual personagem tem a voz mais marcante?'],
+  ['Qual personagem você chamaria para te salvar?', 'Qual personagem você chamaria para te ajudar na mudança?'],
+  ['Qual personagem você teria mais medo de encontrar?', 'Qual personagem você teria mais vergonha de encontrar?'],
+  ['Qual personagem é o mais esperto?', 'Qual personagem é o mais teimoso?'],
+  ['Qual personagem você escolheria para um time de três?', 'Qual personagem você deixaria de fora do time?'],
+  ['Qual personagem seria o melhor DJ numa festa?', 'Qual personagem seria o melhor cozinheiro?'],
 ]);

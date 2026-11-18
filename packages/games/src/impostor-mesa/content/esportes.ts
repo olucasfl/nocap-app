@@ -19,10 +19,14 @@ const R: Row[] = [
 ];
 export const esportesWords = words('esportes', R);
 export const esportesQuestions = questions('esportes', [
-  ['Qual esporte você assiste com mais prazer?', 'Qual esporte você acha o mais chato de assistir?'],
-  ['Qual esporte você jogaria bem?', 'Qual esporte você jamais conseguiria praticar?'],
-  ['Qual esporte você praticava na escola?', 'Qual esporte você sempre fugia nas aulas?'],
-  ['Qual esporte merecia mais torcida?', 'Qual esporte devia sair das Olimpíadas?'],
-  ['Qual evento esportivo você iria ver ao vivo?', 'Qual evento esportivo você nem de graça iria?'],
-  ['Qual esporte é o mais radical?', 'Qual esporte é o mais calmo?'],
+  ['Qual esporte seria o mais difícil de aprender?', 'Qual esporte seria o mais difícil de ganhar dinheiro?'],
+  ['Qual esporte você toparia disputar contra um desconhecido?', 'Qual esporte você nunca toparia disputar contra um profissional?'],
+  ['Qual esporte é o mais emocionante de assistir?', 'Qual esporte é o mais cansativo de praticar?'],
+  ['Qual esporte você praticaria numa ilha?', 'Qual esporte você praticaria na neve?'],
+  ['Qual esporte você colocaria nas Olimpíadas de amanhã?', 'Qual esporte você tiraria das Olimpíadas?'],
+  ['Qual esporte combina mais com a sua personalidade?', 'Qual esporte combina mais com a personalidade do seu melhor amigo?'],
+  ['Qual esporte você praticaria com o seu pai?', 'Qual esporte você praticaria com a sua turma?'],
+  ['Qual esporte tem a torcida mais fanática?', 'Qual esporte tem a melhor festa de campeão?'],
+  ['Qual esporte deixa a pessoa mais bonita?', 'Qual esporte deixa a pessoa mais forte?'],
+  ['Qual esporte você assistiria um dia inteiro?', 'Qual esporte você não aguentaria assistir por 10 minutos?'],
 ]);

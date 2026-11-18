@@ -53,7 +53,17 @@ describe('conteúdo do Impostor', () => {
     expect(texts.some((w) => w.text.includes('Cão de Lava'))).toBe(false);
   });
   it('perguntas pareadas existem por categoria e são diferentes', () => {
-    for (const c of cats) expect(IM_QUESTIONS.filter((q) => q.category === c).length, c).toBeGreaterThanOrEqual(4);
+    for (const c of cats) expect(IM_QUESTIONS.filter((q) => q.category === c).length, c).toBeGreaterThanOrEqual(10);
     for (const q of IM_QUESTIONS) expect(q.q).not.toBe(q.qPair);
+  });
+  it('perguntas seguem as regras: decididas, sem abertas demais, terminam em ?', () => {
+    const open = /favorit|mais gosta\b|menos gosta\b|nunca comeria|nunca usaria/i;
+    for (const q of IM_QUESTIONS) {
+      for (const t of [q.q, q.qPair]) {
+        expect(t.endsWith('?'), t).toBe(true);
+        expect(open.test(t), t).toBe(false);
+      }
+    }
+    expect(new Set(IM_QUESTIONS.map((q) => q.id)).size).toBe(IM_QUESTIONS.length);
   });
 });

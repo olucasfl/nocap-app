@@ -20,10 +20,14 @@ const R: Row[] = [
 ];
 export const animaisWords = words('animais', R);
 export const animaisQuestions = questions('animais', [
-  ['Qual animal você teria de estimação?', 'Qual animal você jamais teria em casa?'],
-  ['Qual animal você escolheria para ser por um dia?', 'Qual animal você nunca queria ser?'],
-  ['Qual animal você mais gosta de ver no zoológico?', 'Qual animal você tem mais medo?'],
-  ['Qual bicho te lembra um amigo?', 'Qual bicho te lembra o professor mais chato?'],
-  ['Qual animal é o mais fofo?', 'Qual animal é o mais estranho?'],
-  ['Qual bicho você chamaria de rei da selva?', 'Qual bicho você acha o mais preguiçoso?'],
+  ['Qual animal venceria numa corrida?', 'Qual animal venceria numa luta?'],
+  ['Qual animal você acha mais inteligente?', 'Qual animal você acha mais fofo?'],
+  ['Qual animal seria o melhor guarda-costas?', 'Qual animal seria o melhor despertador?'],
+  ['Qual animal você teria mais medo de encontrar no escuro?', 'Qual animal você gostaria de ver de perto num safári?'],
+  ['Qual animal você seria numa próxima vida?', 'Qual animal representa melhor o seu melhor amigo?'],
+  ['Qual animal seria o mascote ideal de um time?', 'Qual animal seria o logo ideal de uma empresa?'],
+  ['Qual animal você levaria para uma ilha deserta?', 'Qual animal você deixaria em casa tomando conta?'],
+  ['Qual animal dorme melhor?', 'Qual animal faz mais barulho?'],
+  ['Qual animal seria o melhor professor?', 'Qual animal seria o pior motorista?'],
+  ['Qual animal você levaria numa viagem de carro?', 'Qual animal você teria como pet num apartamento?'],
 ]);

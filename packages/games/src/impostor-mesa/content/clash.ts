@@ -23,8 +23,14 @@ const R: Row[] = [
 ];
 export const clashWords = words('clash', R);
 export const clashQuestions = questions('clash', [
-  ['Qual carta do Clash Royale você usa mais?', 'Qual carta do Clash Royale você nunca usaria?'],
-  ['Qual carta é a mais forte do jogo?', 'Qual carta é a mais irritante de enfrentar?'],
-  ['Qual carta você escolheria para atacar a torre?', 'Qual carta você escolheria para defender?'],
-  ['Qual carta você chama de sua favorita?', 'Qual carta você acha a mais fraca?'],
+  ['Qual carta você usaria para atacar a torre?', 'Qual carta você usaria para defender a torre?'],
+  ['Qual carta você coloca primeiro na partida?', 'Qual carta você guarda para o último segundo?'],
+  ['Qual carta você nunca tiraria do seu baralho?', 'Qual carta você trocaria sem pensar?'],
+  ['Qual carta você esperaria o elixir encher para jogar?', 'Qual carta você jogaria logo no início?'],
+  ['Qual carta você usa para virar um jogo perdido?', 'Qual carta você usa para fechar um jogo ganho?'],
+  ['Qual carta você usaria contra um Gigante?', 'Qual carta você usaria contra um P.E.K.K.A?'],
+  ['Qual carta tem o visual mais bonito?', 'Qual carta tem o som mais marcante?'],
+  ['Qual carta você acha mais injusta de enfrentar?', 'Qual carta você acha mais divertida de usar?'],
+  ['Qual carta você usaria só para provocar o oponente?', 'Qual carta você daria para um amigo iniciante?'],
+  ['Qual carta você levaria num baralho de só quatro cartas?', 'Qual carta você deixaria de fora de qualquer baralho?'],
 ]);

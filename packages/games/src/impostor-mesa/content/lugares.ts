@@ -28,10 +28,14 @@ const R: Row[] = [
 ];
 export const lugaresWords = words('lugares', R);
 export const lugaresQuestions = questions('lugares', [
-  ['Qual lugar você levaria alguém para passear?', 'Qual lugar você nunca visitaria?'],
-  ['Para qual país você viajaria amanhã?', 'Em qual país você nunca moraria?'],
-  ['Qual cidade é a mais bonita?', 'Qual cidade é a mais barulhenta?'],
-  ['Onde você passaria as férias?', 'Onde você não passaria nem um fim de semana?'],
-  ['Qual lugar tem a melhor comida?', 'Qual lugar tem o pior trânsito?'],
-  ['Qual cidade você gostaria de conhecer?', 'Qual cidade você já cansou de ouvir falar?'],
+  ['Qual lugar você escolheria para uma lua de mel?', 'Qual lugar você escolheria para uma viagem com amigos?'],
+  ['Qual lugar você moraria por um ano com tudo pago?', 'Qual lugar você visitaria só por um fim de semana?'],
+  ['Qual lugar tem a melhor comida?', 'Qual lugar tem a melhor festa?'],
+  ['Qual lugar você escolheria para fugir do mundo?', 'Qual lugar você escolheria para passar o Réveillon?'],
+  ['Qual lugar parece o mais perigoso para um turista?', 'Qual lugar parece o mais caro para um turista?'],
+  ['Qual lugar daria a melhor foto de capa de revista?', 'Qual lugar seria o cenário de um filme de terror?'],
+  ['Qual lugar você levaria a sua família inteira?', 'Qual lugar você levaria só o seu melhor amigo?'],
+  ['Qual lugar você mandaria o seu chefe passar as férias?', 'Qual lugar você mandaria o seu melhor amigo conhecer?'],
+  ['Qual lugar você já deveria ter visitado?', 'Qual lugar você gostaria que fosse mais perto de casa?'],
+  ['Qual lugar tem o povo mais simpático?', 'Qual lugar tem a paisagem mais bonita?'],
 ]);

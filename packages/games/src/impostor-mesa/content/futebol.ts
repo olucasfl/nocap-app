@@ -36,10 +36,14 @@ const R: Row[] = [
 ];
 export const futebolWords = words('futebol', R);
 export const futebolQuestions = questions('futebol', [
-  ['Qual time você torce?', 'Qual time você nunca torceria?'],
-  ['Qual jogador você queria no seu time?', 'Qual jogador você acha superestimado?'],
-  ['Qual seleção ganha a próxima Copa?', 'Qual seleção você não quer ver na final?'],
-  ['Qual foi o melhor gol que você viu?', 'Qual foi o pior jogo que você viu?'],
-  ['Qual camisa de time você usaria?', 'Qual camisa de time você jamais usaria?'],
-  ['Qual jogador é o melhor da história?', 'Qual jogador você acha que não merecia fama?'],
+  ['Quem você escolheria para decidir um jogo no último minuto?', 'Quem você escolheria para segurar o resultado nos últimos minutos?'],
+  ['Quem tem a torcida mais apaixonada?', 'Quem tem a torcida mais engraçada?'],
+  ['Quem você chamaria para a pelada de sábado?', 'Quem você chamaria para jantar na sua casa?'],
+  ['Quem você mais queria ver jogando junto?', 'Quem você mais queria ver brigando?'],
+  ['Quem você escolheria para ser o seu craque no videogame?', 'Quem você escolheria para ser o capitão na vida real?'],
+  ['Quem fez o gol mais bonito?', 'Quem fez a comemoração mais marcante?'],
+  ['Quem você escolheria para começar um time do zero?', 'Quem você escolheria para fechar a carreira?'],
+  ['Quem é o mais difícil de marcar?', 'Quem é o mais difícil de substituir?'],
+  ['Quem tem a camisa mais bonita?', 'Quem tem o nome mais fácil de gritar?'],
+  ['Quem você mais teme enfrentar numa final?', 'Quem você adoraria enfrentar numa final?'],
 ]);

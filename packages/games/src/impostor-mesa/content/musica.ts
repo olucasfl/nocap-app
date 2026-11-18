@@ -29,10 +29,14 @@ const R: Row[] = [
 ];
 export const musicaWords = words('musica', R);
 export const musicaQuestions = questions('musica', [
-  ['Qual música você cantaria no karaokê?', 'Qual música você jamais cantaria no karaokê?'],
-  ['Qual cantor você assistiria ao vivo?', 'Qual cantor você não suporta ouvir?'],
-  ['Qual música você escuta no banho?', 'Qual música te dá vontade de pular?'],
-  ['Qual banda você levaria para uma festa?', 'Qual banda deveria acabar?'],
-  ['Qual música marcou a sua infância?', 'Qual música você ouviu tanto que enjoou?'],
-  ['Qual estilo de música você ouve mais?', 'Qual estilo de música você menos ouve?'],
+  ['Qual música você colocaria para começar uma festa?', 'Qual música você colocaria para terminar a festa?'],
+  ['Qual música tocaria no seu casamento?', 'Qual música tocaria na sua formatura?'],
+  ['Qual música você cantaria no karaokê?', 'Qual música você nunca cantaria no karaokê?'],
+  ['Qual música ou banda você ouviria numa viagem de carro?', 'Qual música ou banda você ouviria na academia?'],
+  ['Qual artista você levaria para um show de cem mil pessoas?', 'Qual artista você levaria para tocar na sua casa?'],
+  ['Qual música traz a lembrança mais forte?', 'Qual música você mais pulou na vida?'],
+  ['Qual artista teria o melhor show?', 'Qual artista teria a melhor entrevista?'],
+  ['Qual música você mandaria para um amor?', 'Qual música você mandaria para um ex?'],
+  ['Qual música você ouviria ao acordar?', 'Qual música você ouviria antes de dormir?'],
+  ['Qual é a música ou banda mais conhecida do mundo?', 'Qual é a música ou banda mais difícil de cantar?'],
 ]);

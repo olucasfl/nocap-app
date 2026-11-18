@@ -29,10 +29,14 @@ const R: Row[] = [
 ];
 export const filmesWords = words('filmes', R);
 export const filmesQuestions = questions('filmes', [
-  ['Qual filme você assistiria de novo?', 'Qual filme você nunca terminou de ver?'],
-  ['Qual série você maratonou?', 'Qual série você abandonou?'],
-  ['Qual filme te fez chorar?', 'Qual filme te fez rir mais?'],
-  ['Qual filme é o melhor para ver em família?', 'Qual filme dá mais medo?'],
-  ['Qual personagem de filme você seria?', 'Qual personagem de filme você não suportaria?'],
-  ['Qual desenho você via na infância?', 'Qual desenho você achava chato?'],
+  ['Qual filme ou série você assistiria numa maratona?', 'Qual filme ou série você assistiria num primeiro encontro?'],
+  ['Qual você recomendaria para alguém triste?', 'Qual você recomendaria para quem gosta de sustos?'],
+  ['Qual tem o melhor final?', 'Qual tem a melhor abertura?'],
+  ['Qual você já assistiu mais vezes?', 'Qual você gostaria de assistir pela primeira vez de novo?'],
+  ['Qual você levaria numa viagem longa?', 'Qual você assistiria com os avós?'],
+  ['Qual daria o melhor jogo de videogame?', 'Qual daria o melhor parque temático?'],
+  ['Qual merece uma continuação?', 'Qual deveria ter terminado antes?'],
+  ['Qual te deixou mais chocado?', 'Qual te fez chorar mais?'],
+  ['Qual faria sucesso como musical?', 'Qual faria sucesso como jogo de tabuleiro?'],
+  ['Qual você pausaria sem culpa para ir ao banheiro?', 'Qual você nunca pausaria?'],
 ]);

@@ -19,10 +19,14 @@ const R: Row[] = [
 ];
 export const marcasWords = words('marcas', R);
 export const marcasQuestions = questions('marcas', [
-  ['Qual marca você mais usa no dia a dia?', 'Qual marca você nunca compraria?'],
-  ['Qual marca de tênis você usaria?', 'Qual marca de tênis você acha cara demais?'],
-  ['Qual marca de refrigerante você pediria?', 'Qual marca de refrigerante você recusaria?'],
-  ['Qual aplicativo você abre primeiro de manhã?', 'Qual aplicativo você apagaria do celular?'],
-  ['Qual marca você mais admira?', 'Qual propaganda você achou a mais chata?'],
-  ['Qual lanchonete você escolheria?', 'Qual lanchonete você evitaria?'],
+  ['Qual marca você usaria o resto da vida sem trocar?', 'Qual marca você trocaria amanhã por uma mais barata?'],
+  ['Qual marca tem o melhor anúncio?', 'Qual marca tem o melhor logo?'],
+  ['Qual marca você escolheria para patrocinar o seu canal?', 'Qual marca você escolheria para estampar na sua camisa?'],
+  ['Qual marca dá mais status?', 'Qual marca dá mais confiança?'],
+  ['Qual marca você levaria para uma ilha deserta?', 'Qual marca você sentiria mais falta se sumisse amanhã?'],
+  ['Qual marca você compraria de olhos fechados?', 'Qual marca você acha cara demais para o que entrega?'],
+  ['Qual marca você daria de presente no Natal?', 'Qual marca você pediria de presente no Natal?'],
+  ['Qual marca seria o melhor emprego?', 'Qual marca seria o pior chefe?'],
+  ['Qual marca você vê todo dia?', 'Qual marca é a que mais leva o seu dinheiro?'],
+  ['Qual marca seria o melhor patrocinador de um time?', 'Qual marca faria o melhor filme?'],
 ]);

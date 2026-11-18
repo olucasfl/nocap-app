@@ -25,10 +25,14 @@ const R: Row[] = [
 ];
 export const comidaWords = words('comida', R);
 export const comidaQuestions = questions('comida', [
-  ['Qual é o seu prato favorito?', 'Qual prato você nunca comeria de novo?'],
-  ['Qual comida você pediria no seu aniversário?', 'Qual comida você pediria num dia de tristeza?'],
-  ['Qual lanche você come mais?', 'Qual lanche você acha o mais enjoativo?'],
-  ['Qual doce você escolheria numa festa?', 'Qual doce você nunca escolheria numa festa?'],
-  ['Qual bebida pediria num restaurante?', 'Qual bebida você acha a mais estranha?'],
-  ['Qual fruta você mais gosta?', 'Qual fruta você menos gosta?'],
+  ['Qual comida você pediria às 3 da manhã?', 'Qual comida você pediria num primeiro encontro?'],
+  ['Qual seria a sua última refeição?', 'Qual comida você faria para impressionar a sogra?'],
+  ['Qual comida você levaria para a praia?', 'Qual comida você levaria para um acampamento?'],
+  ['Qual comida você comeria todo dia por um mês sem enjoar?', 'Qual comida você aguentaria comer só por uma semana?'],
+  ['Qual doce você roubaria da mesa de uma festa?', 'Qual doce você daria de presente?'],
+  ['Qual bebida você pediria num dia muito quente?', 'Qual bebida você pediria num dia de chuva?'],
+  ['Qual fruta você levaria na mochila?', 'Qual fruta você colocaria numa salada?'],
+  ['Qual comida você mais comia na casa da sua avó?', 'Qual comida você mais pedia na lanchonete da escola?'],
+  ['Qual lanche você escolheria no cinema?', 'Qual lanche você escolheria num jogo de futebol?'],
+  ['Qual prato você pediria primeiro num rodízio?', 'Qual prato você deixaria por último num rodízio?'],
 ]);
