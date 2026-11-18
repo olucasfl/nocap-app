@@ -1,6 +1,6 @@
 # Spec 089: Mímica (segundo jogo da categoria "Social Table Games")
 
-Pedido do Lucas (18/11/2026). Status: **rascunho, aguardando as respostas da seção 10.**
+Pedido do Lucas (18/11/2026). Status: **rascunho; pontuação, tempos, palavra e pulos decididos em 18/11/2026; faltam os itens da seção 10.**
 
 ## 1. O que é
 
@@ -25,7 +25,7 @@ Primeira versão: **só modo Mesa**. Sala online fica para depois, porque a mím
 1. **Times:** de 2 a 5. Só o **nome do time** (sugestão automática com cor fixa por time, o grupo pode trocar). Cada time precisa ter no mínimo 2 pessoas (o app não lista as pessoas, o aviso fica na tela).
 2. **Regras da partida:** temas (reaproveita a tela do Impostor), **tempo da mímica** (30, 60, 90 ou 120 s, padrão 90) e **rodadas** (1 a 5).
 3. Total de mímicas = **times x rodadas** (2 times e 5 rodadas = 10 mímicas; 3 times e 5 rodadas = 15). A tela mostra o total e uma estimativa de duração.
-4. **Vez do time X.** O time escolhe quem faz a mímica (todos do time devem revezar, regra de honra). Quem faz a mímica pega o celular e **segura para ver a palavra** (tema + palavra). Pode trocar a palavra uma vez antes de começar (ver pergunta 2).
+4. **Vez do time X.** O time escolhe quem faz a mímica (todos do time devem revezar, regra de honra). Quem faz a mímica pega o celular e vê **3 opções de palavra** (decisão do Lucas, 18/11/2026), **escolhe uma** e só então começa. As outras duas somem. No Clássico não há pulo: a escolha entre 3 já é a troca.
 5. **Começar:** o tempo corre (relógio grande, aviso nos 10 s finais, som no fim). O time adivinha em voz alta. A palavra só aparece enquanto o dedo segura o botão.
 6. **Acabou o tempo (ou o time acertou antes):** quem fez a mímica toca **"Acertamos"** ou **"Não acertamos"**.
    - **Acertou:** o time ganha os pontos cheios.
@@ -37,7 +37,7 @@ Primeira versão: **só modo Mesa**. Sala online fica para depois, porque a mím
 
 1. **Jogadores:** a mesma tela do Impostor (nomes e fichas), mínimo 2.
 2. **Regras:** temas, tempo da mímica, rodadas. Total = **jogadores x rodadas**.
-3. **Vez de [nome]:** a pessoa pega o celular, **segura para ver a palavra** e faz a mímica. Todos tentam adivinhar ao mesmo tempo.
+3. **Vez de [nome]:** a pessoa pega o celular, vê **3 opções de palavra**, escolhe uma e faz a mímica. Todos tentam adivinhar ao mesmo tempo.
 4. Quando alguém acerta, quem fez a mímica toca em **quem acertou primeiro** (ou "ninguém acertou" ao fim do tempo). Não existe roubo, porque todo mundo já tentou ao mesmo tempo.
 5. Os pontos vão para **quem acertou e para quem fez a mímica**, o ranking anima e passa para a próxima pessoa.
 
@@ -45,9 +45,13 @@ Primeira versão: **só modo Mesa**. Sala online fica para depois, porque a mím
 
 1. **Regras:** temas, **tempo do turno** (padrão 60 s), rodadas.
 2. **Vez do time (ou da pessoa):** quem faz a mímica pega o celular e **começa**. A palavra simples aparece (só para ela).
-3. A cada palavra: **"Acertou"** (próxima palavra na hora) ou **"Pular"**. Um contador pequeno mostra os acertos.
-4. Em **Times**, só o time de quem faz a mímica adivinha. Em **Individual**, todos adivinham e, a cada "Acertou", aparece um **seletor rápido de quem acertou** (um toque).
+3. No Speed **não há escolha de palavra** (vem uma de cada vez). A cada palavra: **"Acertou"** (próxima palavra na hora) ou **"Pular"**, com **no máximo 3 pulos por turno** (sem perder ponto). Um contador pequeno mostra os acertos e os pulos que sobram.
+4. Em **Times**, só o time de quem faz a mímica adivinha. Em **Individual**, todos adivinham e o turno **não para** para marcar quem acertou: o celular só conta os acertos. **No fim do turno** vem a tela "Quem acertou?" (ver 3.4).
 5. Fim do tempo: resumo do turno (palavras acertadas e puladas), pontos, ranking animado e próxima vez.
+
+### 3.4 "Quem acertou?" (Speed Individual, proposta)
+
+Sem parar o turno: durante o minuto só se toca em "Acertou" e "Pular". Quando o tempo acaba aparece a lista dos jogadores com um botão **+** e um **−** para cada um, e um contador **"faltam 3 de 12"**. A pessoa distribui os acertos entre quem acertou. Se sobrar, as palavras ficam como "ninguém específico" (quem fez a mímica ganha os pontos dela do mesmo jeito, quem adivinhou perde só o ponto de quem não foi marcado). Alternativa: marcar palavra por palavra no resumo, mais exato e mais lento (ver pergunta 1).
 
 ## 4. Regras da mímica (aparecem numa tela curta antes da primeira partida)
 
@@ -68,7 +72,7 @@ Empate no fim: os empatados dividem o lugar (mesma regra do pódio do Impostor).
 ## 6. Conteúdo
 
 - **Clássico:** palavras maiores e variadas, em temas. Reaproveita parte do Impostor (Animais, Comida, Esportes, Filmes e Séries, Heróis e vilões, Lugares, Clash Royale, Futebol) e acrescenta temas novos feitos para mímica (ver pergunta 3). **Músicas e Marcas** ficam fora por padrão: são difíceis de mimicar.
-- **Speed:** lista nova de palavras **simples, de um gesto** (cachorro, pizza, correr, dormir, chutar), por tema. A estimar: cerca de 60 por tema.
+- **Speed (decisão do Lucas, 18/11/2026):** inclui o tema **Ações**, com situações **aleatórias e curtas, nada tão simples quanto "correr"** (jogar bola, matar um mosquito, escovar os dentes, pescar). O tema Ações fica **só no Speed**. Lista nova, cerca de 60 por tema, a confirmar (pergunta 2).
 - **Sem repetir** palavra na mesma sessão (mesmo histórico do Impostor, "jogou X partidas sem repetir").
 - A palavra **só aparece enquanto o dedo segura o botão**, para os outros não verem.
 
@@ -90,11 +94,12 @@ Mesmo estilo do Impostor, seguindo `docs/MOBILE-GUIDE.md`: retrato e paisagem, �
 6. Carrossel: trocar "em breve" por jogável, regras na primeira partida, estado salvo da sessão.
 7. Varredura de celular nos 11 tamanhos, testes e2e dos 4 modos, atualizar `ARCHITECTURE.md`, `docs/ROADMAP.md` e `specs/INDEX.md`.
 
-## 10. Perguntas em aberto
+## 10. Decisões e perguntas em aberto
 
-1. **Pontuação:** a tabela da seção 5 está boa?
-2. **Trocar a palavra** no Clássico: permitir 1 troca por turno antes de começar o relógio, sem custo?
-3. **Temas da Mímica:** usar os do Impostor (menos Músicas e Marcas) e acrescentar novos (Profissões, Ações, Objetos do dia a dia)? Quantas palavras por tema no Clássico?
-4. **Speed Individual:** depois de cada acerto, escolher quem acertou (1 toque), ou só contar os acertos para quem faz a mímica?
-5. **Tempos padrão:** Clássico 90 s e Speed 60 s?
-6. **Times:** os nomes sugeridos vêm prontos ("Time Laranja", "Time Azul") e dá para editar?
+Decididas (Lucas, 18/11/2026): pontuação da seção 5; **3 opções de palavra** no Clássico e **3 pulos** no Speed; tema **Ações** no Speed; tempos padrão **90 s** (Clássico) e **60 s** (Speed); times com nome e cor sugeridos e editáveis; mínimo de **2 pessoas** no modo Individual.
+
+Em aberto:
+
+1. **Quem acertou no Speed Individual:** contador com + e − no fim do turno (proposta da 3.4) ou marcar palavra por palavra no resumo?
+2. **Temas do Speed:** além de **Ações**, o Speed usa palavras de Animais, Comida, Esportes, Profissões e Objetos do dia a dia (também situações um pouco mais criativas, não só a palavra seca)?
+3. **Pulos do Speed:** são 3 por turno de cada time/pessoa (e voltam a 3 no turno seguinte)?
