@@ -6,9 +6,10 @@ import { TableArt } from '@/components/HubArt';
 import { useRoomEntry } from '@/lib/my-room';
 import { preloadImages } from './impostor/assets';
 import { play, preloadSounds } from './impostor/audio';
-import { Alert, ArrowIcon, Icon, Primary, TopBar, Words, useFlash } from './impostor/ui';
+import { Alert, ArrowIcon, Coin, Icon, Primary, TopBar, Words, useFlash } from './impostor/ui';
 import { MESA_GAMES, type MesaGameInfo } from './games';
 import './impostor/impostor.css';
+import './mimica/mimica.css';
 
 type Step = 'home' | 'mode' | 'online';
 
@@ -22,6 +23,12 @@ function GameSlide({ g, index, total }: { g: MesaGameInfo; index: number; total:
             <div className="im-soon-art" aria-hidden="true">
               <Icon name={g.icon ?? 'jogo'} size={150} className="im-soon-ic" />
               <span className="im-stamp">Em breve</span>
+            </div>
+          ) : g.id === 'mimica' ? (
+            <div className="mm-cover" aria-hidden="true">
+              <Coin avatar="malabarista" color={5} size="lg" />
+              <Coin avatar="ninja" color={0} size="xl" />
+              <Coin avatar="cantora" color={4} size="lg" />
             </div>
           ) : <TableArt />}
         </div>
@@ -174,7 +181,7 @@ export function MesaHome() {
   const err = flash?.m ?? entry.error;
 
   return (
-    <div className="im-app" data-testid="mesa-home" data-step={step}>
+    <div className="im-app" data-testid="mesa-home" data-step={step} data-game={step === 'home' ? MESA_GAMES[game]!.id : 'impostor'}>
       <div className="im-lamp" aria-hidden="true" />
       <div key={step} className={`im-view${back ? ' back' : ''}`}>
         {step === 'home' && (
@@ -186,7 +193,7 @@ export function MesaHome() {
             <div className="im-foot">
               {MESA_GAMES[game]!.soon
                 ? <Primary testId="mesa-soon" tone="ghost" disabled sound={null} onClick={() => undefined}>{MESA_GAMES[game]!.name}: em breve</Primary>
-                : <Primary testId="mesa-jogar" onClick={() => go('mode')}>Jogar {MESA_GAMES[game]!.name} <ArrowIcon /></Primary>}
+                : <Primary testId="mesa-jogar" onClick={() => (MESA_GAMES[game]!.id === 'mimica' ? void navigate({ to: '/mesa/mimica' }) : go('mode'))}>Jogar {MESA_GAMES[game]!.name} <ArrowIcon /></Primary>}
               <button type="button" className="im-link" data-testid="mesa-sair" onClick={leave}>Sair do Social Table Games</button>
             </div>
           </div>

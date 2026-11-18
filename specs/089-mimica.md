@@ -1,6 +1,6 @@
 # Spec 089: Mímica (segundo jogo da categoria "Social Table Games")
 
-Pedido do Lucas (18/11/2026). Status: **aprovada (18/11/2026); etapa 1 (lógica em `packages/games/src/mimica`) feita; faltam conteúdo e telas.**
+Pedido do Lucas (18/11/2026). Status: **feita (18/11/2026): modo Mesa completo; falta jogar com gente de verdade e calibrar palavras e pontos.**
 
 ## 1. O que é
 

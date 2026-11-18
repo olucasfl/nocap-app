@@ -21,6 +21,7 @@ export const GAME_LABELS: Record<string, string> = {
   minigolf: 'Mini Golf',
   nighthunt: 'Night Hunt',
   impostor: 'Impostor',
+  mimica: 'Mímica',
 };
 
 const PATH_GAMES: [RegExp, string][] = [
@@ -33,6 +34,7 @@ const PATH_GAMES: [RegExp, string][] = [
   [/^\/minigolf(\/|$)/, 'minigolf'],
   [/^\/nighthunt(\/|$)/, 'nighthunt'],
   [/^\/mesa\/impostor(\/|$)/, 'impostor'],
+  [/^\/mesa\/mimica(\/|$)/, 'mimica'],
   [/^\/fox-cap\/desmorona(\/|$)/, 'desmorona'],
   [/^\/fox-cap\/bola(\/|$)/, 'bola'],
   [/^\/fox-cap\/counter-fox(\/|$)/, 'counterfox'],

@@ -36,13 +36,13 @@ for (const d of DEVICES.filter((x) => only.includes(x.name))) {
     await expect(page.getByTestId('mesa-soon')).toContainText('Frase Maluca');
     await check('frase-maluca');
     await page.getByTestId('mesa-next').click();
-    await expect(page.getByTestId('mesa-soon')).toContainText('Mímica');
+    await expect(page.getByTestId('mesa-jogar')).toContainText('Mímica');
     await check('mimica');
     // dá a volta: depois da Mímica vem o Impostor; e para trás também
     await page.getByTestId('mesa-next').click();
     await expect(page.getByTestId('mesa-jogar')).toBeVisible();
     await page.getByTestId('mesa-prev').click();
-    await expect(page.getByTestId('mesa-soon')).toContainText('Mímica');
+    await expect(page.getByTestId('mesa-jogar')).toContainText('Mímica');
     await page.getByTestId('mesa-prev').click();
     await page.getByTestId('mesa-prev').click();
     await expect(page.getByTestId('mesa-jogar')).toBeVisible();

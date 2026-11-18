@@ -803,7 +803,7 @@ export function ElimResScreen({ s, d }: P) {
 }
 
 /** Número que sobe de `from` até `to` (só o texto muda; nada de layout animado). */
-function Count({ to, from, delay }: { to: number; from: number; delay: number }) {
+export function Count({ to, from, delay }: { to: number; from: number; delay: number }) {
   const [v, setV] = useState(from);
   useEffect(() => {
     if (from === to || window.matchMedia('(prefers-reduced-motion: reduce)').matches) { setV(to); return undefined; }
