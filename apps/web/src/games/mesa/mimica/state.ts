@@ -66,8 +66,8 @@ export const sideBy = (s: State, id: string): Side => sidesOf(s).find((x) => x.i
 export const mimerId = (s: State): string => s.schedule[s.turn]?.side ?? sidesOf(s)[0]!.id;
 export const settingsFull = (s: State): MimSettings => ({ format: s.format, style: s.style, ...s.settings });
 
-/** Temas que começam ligados no estilo escolhido: todos, menos os difíceis de mimicar (Músicas e Marcas). */
-export const defaultCategories = (style: MimStyle): string[] => mimCategoriesFor(style).filter((c) => !c.hard).map((c) => c.id);
+/** Temas que começam ligados no estilo escolhido: todos. */
+export const defaultCategories = (style: MimStyle): string[] => mimCategoriesFor(style).map((c) => c.id);
 
 const defaultTeams = (): Side[] => [0, 1].map((i) => ({ id: newId(), name: TEAM_NAMES[i]!, avatar: '', color: i }));
 

@@ -37,7 +37,7 @@ export const MESA_GAMES: MesaGameInfo[] = [
     id: 'mimica',
     name: 'Mímica',
     desc: 'Um faz a mímica só com gestos e a galera adivinha antes de o tempo acabar. Em times ou cada um por si.',
-    facts: ['2 a 12 pessoas', 'Clássico e Speed', '13 temas', 'Sem anúncio'],
+    facts: ['2 a 12 pessoas', 'Clássico e Speed', '11 temas', 'Sem anúncio'],
     soon: false,
     steps: [
       { icon: 'cartas', title: 'Escolha a palavra', text: 'No Clássico vêm 3 opções. No Speed as palavras passam rápido.' },

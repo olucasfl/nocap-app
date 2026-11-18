@@ -13,7 +13,7 @@ function ready(format: 'teams' | 'solo', style: 'classic' | 'speed', rounds = 2)
 }
 
 describe('estado da mímica', () => {
-  it('começa com 2 times prontos e temas sem Músicas e Marcas', () => {
+  it('começa com 2 times prontos e todos os temas ligados', () => {
     const s = initial();
     expect(s.teams).toHaveLength(2);
     expect(s.settings.categories).not.toContain('musica');

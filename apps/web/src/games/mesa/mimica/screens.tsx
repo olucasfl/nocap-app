@@ -260,7 +260,7 @@ export function CatsScreen({ s, d }: P) {
               <div key={c.id} className="im-tilewrap im-rise" style={{ '--d': (i % 6) + 1 } as CSSProperties}>
                 <button type="button" className="im-tile" aria-pressed={on} data-testid={`mm-cat-${c.id}`} onClick={() => { play('select'); clear(); d({ type: 'toggleCategory', id: c.id }); }}>
                   <Icon name={ICONS[c.id] ?? 'jogo'} size={64} className="im-tile-ic" />
-                  <span>{c.label}{c.hard && <em className="mm-hard">difícil</em>}</span>
+                  <span>{c.label}</span>
                 </button>
               </div>
             );

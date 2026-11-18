@@ -11,27 +11,23 @@ export interface MimCategory {
   /** Aparece no Clássico / no Speed. */
   classic: boolean;
   speed: boolean;
-  /** Músicas e Marcas são difíceis de mimicar: existem, mas começam desmarcados. */
-  hard: boolean;
 }
 
 export const MIM_CATEGORIES: readonly MimCategory[] = [
-  { id: 'animais', label: 'Animais', classic: true, speed: true, hard: false },
-  { id: 'comida', label: 'Comida', classic: true, speed: true, hard: false },
-  { id: 'esportes', label: 'Esportes', classic: true, speed: true, hard: false },
-  { id: 'profissoes', label: 'Profissões', classic: true, speed: true, hard: false },
-  { id: 'objetos', label: 'Objetos', classic: true, speed: true, hard: false },
-  { id: 'acoes', label: 'Ações', classic: false, speed: true, hard: false },
-  { id: 'filmes', label: 'Filmes e Séries', classic: true, speed: false, hard: false },
-  { id: 'herois', label: 'Heróis e vilões', classic: true, speed: false, hard: false },
-  { id: 'lugares', label: 'Lugares', classic: true, speed: false, hard: false },
-  { id: 'futebol', label: 'Futebol', classic: true, speed: false, hard: false },
-  { id: 'clash', label: 'Clash Royale', classic: true, speed: false, hard: false },
-  { id: 'musica', label: 'Músicas e bandas', classic: true, speed: false, hard: true },
-  { id: 'marcas', label: 'Marcas', classic: true, speed: false, hard: true },
+  { id: 'animais', label: 'Animais', classic: true, speed: true },
+  { id: 'comida', label: 'Comida', classic: true, speed: true },
+  { id: 'esportes', label: 'Esportes', classic: true, speed: true },
+  { id: 'profissoes', label: 'Profissões', classic: true, speed: true },
+  { id: 'objetos', label: 'Objetos', classic: true, speed: true },
+  { id: 'acoes', label: 'Ações', classic: false, speed: true },
+  { id: 'filmes', label: 'Filmes e Séries', classic: true, speed: false },
+  { id: 'herois', label: 'Heróis e vilões', classic: true, speed: false },
+  { id: 'lugares', label: 'Lugares', classic: true, speed: false },
+  { id: 'futebol', label: 'Futebol', classic: true, speed: false },
+  { id: 'clash', label: 'Clash Royale', classic: true, speed: false },
 ];
 
-const FROM_IMPOSTOR = ['animais', 'comida', 'esportes', 'filmes', 'herois', 'lugares', 'futebol', 'clash', 'musica', 'marcas'];
+const FROM_IMPOSTOR = ['animais', 'comida', 'esportes', 'filmes', 'herois', 'lugares', 'futebol', 'clash'];
 
 /** Clash Royale vem como "Knight (Cavaleiro)": na mesa fala-se o nome em português. */
 const clean = (category: string, text: string) => {

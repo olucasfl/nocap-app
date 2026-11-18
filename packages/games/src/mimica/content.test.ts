@@ -18,10 +18,11 @@ describe('conteúdo da mímica', () => {
       seen.add(k);
     }
   });
-  it('Ações só no Speed; Músicas e Marcas existem mas são "difíceis"', () => {
+  it('Ações só no Speed; Músicas e Marcas ficaram de fora (difíceis de mimicar)', () => {
     expect(mimCategoriesFor('classic').some((c) => c.id === 'acoes')).toBe(false);
     expect(mimCategoriesFor('speed').some((c) => c.id === 'acoes')).toBe(true);
-    expect(MIM_CATEGORIES.filter((c) => c.hard).map((c) => c.id).sort()).toEqual(['marcas', 'musica']);
+    expect(MIM_CATEGORIES.some((c) => c.id === 'musica' || c.id === 'marcas')).toBe(false);
+    expect(MIM_WORDS.some((w) => w.category === 'musica' || w.category === 'marcas')).toBe(false);
   });
   it('Clash Royale usa o nome em português, sem o nome em inglês', () => {
     const clash = MIM_WORDS.filter((w) => w.category === 'clash').map((w) => w.text);
