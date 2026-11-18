@@ -82,6 +82,17 @@ describe('conteúdo do Impostor', () => {
         expect((a.test(q.q) && b.test(q.qPair)) || (b.test(q.q) && a.test(q.qPair)), `${q.q} | ${q.qPair}`).toBe(false);
       }
     }
+    // parecidas demais dão a mesma resposta; curtas demais ficam genéricas
+    const stop = new Set('qual quem entre vocês você o a os as um uma de da do das dos para na no num numa em com que mais seria ia'.split(' '));
+    const toks = (s: string) => new Set((s.toLowerCase().match(/[a-zà-ú-]+/g) ?? []).filter((w) => !stop.has(w) && w.length > 2));
+    for (const q of IM_QUESTIONS) {
+      const a = toks(q.q), b = toks(q.qPair);
+      const same = [...a].filter((w) => b.has(w)).length / new Set([...a, ...b]).size;
+      const personal = q.q.startsWith('Quem entre vocês');
+      expect(same, `${q.q} | ${q.qPair}`).toBeLessThanOrEqual(personal ? 0.65 : 0.45);
+      expect(q.q.split(' ').length, q.q).toBeGreaterThanOrEqual(5);
+      expect(q.qPair.split(' ').length, q.qPair).toBeGreaterThanOrEqual(5);
+    }
     expect(new Set(IM_QUESTIONS.map((q) => q.id)).size).toBe(IM_QUESTIONS.length);
   });
 });
