@@ -19,9 +19,10 @@ export function words(category: string, rows: readonly Row[]): ImWord[] {
  * 1. As duas pedem UM item da mesma categoria, para a resposta do impostor parecer natural.
  * 2. Nada de "favorito/mais gosta": pergunta aberta rende qualquer resposta. Pede-se uma escolha decidida
  *    por um contexto ("para a praia", "numa luta", "às 3 da manhã").
- * 3. Distância média: o critério muda (contexto, lado, qualidade), mas as respostas podem coincidir em parte.
- *    Se as perguntas forem opostas ("mais gosta" x "menos gosta"), o impostor se entrega logo; se forem quase
- *    iguais, ninguém descobre ninguém.
+ * 3. Distância média, nem oposta nem quase igual. Itens: mesma escolha em dois cenários diferentes
+ *    ("ilha deserta" x "jantar para 40 pessoas"). Pessoais ("Quem entre vocês..."): mesma cena, duas características
+ *    diferentes ("o mais competitivo" x "o mais trapaceiro"). Antônimos (melhor x pior, começar x terminar)
+ *    entregam o impostor; sinônimos ("competitivo" x "bravo ao perder") dão a mesma resposta e ninguém descobre.
  */
 export function questions(category: string, rows: readonly (readonly [string, string])[]): ImQuestion[] {
   return rows.map(([q, qPair], i) => ({ id: `${category}-q${i + 1}`, category, q, qPair }));

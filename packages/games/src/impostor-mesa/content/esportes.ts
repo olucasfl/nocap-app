@@ -39,7 +39,7 @@ export const esportesQuestions = questions('esportes', [
   ['Qual esporte seria o mais difícil de praticar de ressaca?', 'Qual esporte seria o mais difícil de praticar com 40 graus?'],
   ['Qual esporte o seu cachorro praticaria melhor?', 'Qual esporte o seu gato praticaria melhor?'],
   ['Qual esporte te daria medalha só por participar?', 'Qual esporte você abandonaria primeiro por cansaço?'],
-  ['Quem entre vocês seria o mais competitivo num jogo?', 'Quem entre vocês ficaria mais bravo ao perder?'],
+  ['Quem entre vocês seria o mais competitivo num jogo?', 'Quem entre vocês seria o mais trapaceiro num jogo?'],
   ['Quem entre vocês chegaria mais longe como atleta profissional?', 'Quem entre vocês seria um bom técnico?'],
   ['Quem entre vocês correria uma maratona?', 'Quem entre vocês nadaria um quilômetro?'],
   ['Quem entre vocês desistiria primeiro de uma corrida?', 'Quem entre vocês chegaria atrasado no treino?'],
@@ -48,5 +48,5 @@ export const esportesQuestions = questions('esportes', [
   ['Quem entre vocês seria o melhor goleiro?', 'Quem entre vocês seria o melhor árbitro?'],
   ['Quem entre vocês ganharia uma medalha num esporte estranho?', 'Quem entre vocês seria o mascote da Olimpíada?'],
   ['Quem entre vocês levaria o time nas costas?', 'Quem entre vocês ficaria no banco de reservas?'],
-  ['Quem entre vocês comemoraria um gol dançando?', 'Quem entre vocês comemoraria um ponto gritando?'],
+  ['Quem entre vocês comemoraria um gol dançando?', 'Quem entre vocês daria a entrevista mais emocionada depois de um título?'],
 ]);

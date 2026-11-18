@@ -33,7 +33,7 @@ export const lugaresQuestions = questions('lugares', [
   ['Qual lugar tem a melhor comida?', 'Qual lugar tem a melhor festa?'],
   ['Qual lugar você escolheria para fugir do mundo?', 'Qual lugar você escolheria para passar o Réveillon?'],
   ['Qual lugar parece o mais perigoso para um turista?', 'Qual lugar parece o mais caro para um turista?'],
-  ['Qual lugar daria a melhor foto de capa de revista?', 'Qual lugar daria a melhor foto de casamento?'],
+  ['Qual lugar daria a melhor foto de capa de revista?', 'Qual lugar daria a foto mais engraçada de uma viagem?'],
   ['Qual lugar você levaria a sua família inteira?', 'Qual lugar você levaria só o seu melhor amigo?'],
   ['Qual lugar você mandaria o seu chefe passar as férias?', 'Qual lugar você mandaria o seu vizinho passar as férias?'],
   ['Qual lugar você já deveria ter visitado?', 'Qual lugar você gostaria que fosse mais perto de casa?'],
@@ -56,6 +56,6 @@ export const lugaresQuestions = questions('lugares', [
   ['Quem entre vocês já foi para o lugar mais longe?', 'Quem entre vocês mais quer ir para o lugar mais longe?'],
   ['Quem entre vocês compraria mais lembrancinhas?', 'Quem entre vocês gastaria mais numa viagem?'],
   ['Quem entre vocês seria o mais mandão na hora de escolher o destino?', 'Quem entre vocês demoraria mais para decidir o destino?'],
-  ['Quem entre vocês aguentaria mais frio?', 'Quem entre vocês aguentaria mais calor?'],
+  ['Quem entre vocês aguentaria mais frio?', 'Quem entre vocês aguentaria mais uma trilha longa?'],
   ['Quem entre vocês acordaria mais cedo na viagem?', 'Quem entre vocês atrasaria o passeio?'],
 ]);

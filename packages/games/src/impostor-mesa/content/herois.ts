@@ -52,6 +52,6 @@ export const heroisQuestions = questions('herois', [
   ['Quem entre vocês chegaria atrasado para salvar o mundo?', 'Quem entre vocês esqueceria a máscara em casa?'],
   ['Quem entre vocês seria o mais forte num grupo de heróis?', 'Quem entre vocês seria o mais esperto num grupo de heróis?'],
   ['Quem entre vocês teria a risada de vilão mais convincente?', 'Quem entre vocês teria a frase de efeito de herói mais convincente?'],
-  ['Quem entre vocês trairia o time de heróis por dinheiro?', 'Quem entre vocês entregaria o segredo do time?'],
-  ['Quem entre vocês aguentaria uma luta com um super-herói?', 'Quem entre vocês fugiria de um vilão?'],
+  ['Quem entre vocês trairia o time de heróis por dinheiro?', 'Quem entre vocês ficaria com a fama de um feito do time?'],
+  ['Quem entre vocês aguentaria uma luta com um super-herói?', 'Quem entre vocês descobriria um segredo do vilão?'],
 ]);
