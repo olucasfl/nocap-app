@@ -75,7 +75,10 @@ describe('conteúdo do Impostor', () => {
     const opposites: [RegExp, RegExp][] = [
       [/\bmelhor\b/i, /\bpior\b/i], [/\bcomeçar\b/i, /\bterminar\b/i], [/\bprimeiro\b/i, /\búltimo\b/i],
       [/\bgigante\b/i, /\bminúsculo\b/i], [/\brisada\b/i, /\bchoro\b/i], [/\bderrubar\b/i, /\bproteger\b/i],
-      [/\bgosta\b/i, /\bodeia\b/i], [/\bquente\b/i, /\bfrio\b/i], [/\bcomprou\b.*\barrependeu\b/i, /\badorou\b/i],
+      [/\bgosta\b/i, /\bodeia\b/i],
+      [/\b(jamais|nunca)\b/i, /\b(sempre|ótimo|ótima)\b/i], [/\b(superestimad|supervalorizad)/i, /\b(injustiçad|subestimad)/i],
+      [/\bmerecia\b/i, /\bnão merecia\b/i], [/(?<![\w-])vilão\b/i, /(?<![\w-])herói\b/i], [/\bamigo\b/i, /\binimigo\b/i],
+      [/\bprejudicad/i, /\bbeneficiad/i], [/\bbuff\b/i, /\bnerf\b/i], [/\bquente\b/i, /\bfrio\b/i], [/\bcomprou\b.*\barrependeu\b/i, /\badorou\b/i],
     ];
     for (const q of IM_QUESTIONS) {
       for (const [a, b] of opposites) {
