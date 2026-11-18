@@ -1,5 +1,5 @@
 import {
-  MIM_DEFAULT_SECONDS, MIM_MAX_PLAYERS, MIM_MAX_ROUNDS, MIM_MAX_TEAMS, MIM_MIN_ROUNDS, MIM_WORDS, mimApply, mimCategoriesFor, mimDrawDeck, mimDrawOptions,
+  MIM_DEFAULT_SECONDS, MIM_MAX_PLAYERS, MIM_MAX_ROUNDS, MIM_MAX_TEAMS, MIM_MIN_ROUNDS, MIM_WORDS, mimApply, mimDrawDeck, mimDrawOptions,
   mimNewSession, mimPoolSize, mimSchedule, mimScoreClassicSolo, mimScoreClassicTeams, mimScoreSpeedSolo, mimScoreSpeedTeams, mimShift, mimSidesValid,
   mimSpeedCorrect, mimSpeedSkip, mimSpeedStart,
   type MimFormat, type MimPoints, type MimSession, type MimSettings, type MimSpeedTurn, type MimStyle, type MimTurn, type MimWord,
@@ -66,10 +66,17 @@ export const sideBy = (s: State, id: string): Side => sidesOf(s).find((x) => x.i
 export const mimerId = (s: State): string => s.schedule[s.turn]?.side ?? sidesOf(s)[0]!.id;
 export const settingsFull = (s: State): MimSettings => ({ format: s.format, style: s.style, ...s.settings });
 
-/** Temas que começam ligados no estilo escolhido: todos. */
-export const defaultCategories = (style: MimStyle): string[] => mimCategoriesFor(style).map((c) => c.id);
+/** Nenhum tema vem marcado: a pessoa escolhe a cada partida. */
+export const defaultCategories = (_style: MimStyle): string[] => [];
 
-const defaultTeams = (): Side[] => [0, 1].map((i) => ({ id: newId(), name: TEAM_NAMES[i]!, avatar: '', color: i }));
+const defaultTeams = (): Side[] => {
+  const taken = new Set<string>();
+  return [0, 1].map((i) => {
+    const avatar = freeAvatar(taken);
+    taken.add(avatar);
+    return { id: newId(), name: TEAM_NAMES[i]!, avatar, color: i };
+  });
+};
 
 export function initial(): State {
   let format: MimFormat = 'teams';
@@ -119,6 +126,7 @@ export type Action =
   | { type: 'choose'; id: string }
   | { type: 'hit' }
   | { type: 'timeup' }
+  /** Fim do tempo no Clássico em Times: o time da vez acertou? Se não, vem o roubo. */
   | { type: 'judge'; guessed: boolean }
   | { type: 'steal'; ids: string[] }
   | { type: 'pick'; id: string | null }
@@ -176,7 +184,7 @@ function step(s: State, a: Action): State {
       if (s.teams.length >= MIM_MAX_TEAMS) return s;
       const used = new Set(s.teams.map((t) => t.color));
       const color = [0, 1, 2, 3, 4].find((c) => !used.has(c)) ?? s.teams.length;
-      return { ...s, teams: [...s.teams, { id: newId(), name: TEAM_NAMES[color] ?? `Time ${s.teams.length + 1}`, avatar: '', color }] };
+      return { ...s, teams: [...s.teams, { id: newId(), name: TEAM_NAMES[color] ?? `Time ${s.teams.length + 1}`, avatar: freeAvatar(new Set(s.teams.map((t) => t.avatar))), color }] };
     }
     case 'removeTeam':
       return { ...s, teams: s.teams.filter((t) => t.id !== a.id) };
@@ -190,7 +198,7 @@ function step(s: State, a: Action): State {
     case 'removePlayer':
       return { ...s, players: s.players.filter((p) => p.id !== a.id).map((p, i) => ({ ...p, color: i })) };
     case 'setAvatar':
-      return { ...s, players: s.players.map((p) => (p.id === a.id ? { ...p, avatar: a.avatar } : p)) };
+      return { ...s, teams: s.teams.map((t) => (t.id === a.id ? { ...t, avatar: a.avatar } : t)), players: s.players.map((p) => (p.id === a.id ? { ...p, avatar: a.avatar } : p)) };
     case 'toggleCategory': {
       const on = s.settings.categories.includes(a.id);
       return { ...s, settings: { ...s.settings, categories: on ? s.settings.categories.filter((c) => c !== a.id) : [...s.settings.categories, a.id] } };

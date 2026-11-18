@@ -6,30 +6,29 @@ const withPlayers = (s: State, names: string[]) => names.reduce((acc, n) => redu
 
 function ready(format: 'teams' | 'solo', style: 'classic' | 'speed', rounds = 2): State {
   let s = initial();
-  s = run(s, { type: 'mode', format, style }, { type: 'settings', patch: { rounds } });
+  s = run(s, { type: 'mode', format, style }, { type: 'settings', patch: { rounds } }, { type: 'toggleCategory', id: 'animais' }, { type: 'toggleCategory', id: 'comida' });
   if (format === 'solo') s = withPlayers(s, ['Ana', 'Beto', 'Caio']);
   else s = run(s, { type: 'addTeam' });
   return run(s, { type: 'start' }, { type: 'ready' });
 }
 
 describe('estado da mímica', () => {
-  it('começa com 2 times prontos e todos os temas ligados', () => {
+  it('começa com 2 times prontos e nenhum tema marcado', () => {
     const s = initial();
     expect(s.teams).toHaveLength(2);
-    expect(s.settings.categories).not.toContain('musica');
-    expect(s.settings.categories).not.toContain('marcas');
-    expect(s.settings.categories).toContain('animais');
+    expect(s.settings.categories).toEqual([]);
   });
-  it('trocar para Speed liga o tema Ações e o tempo padrão de 60 s', () => {
-    const s = run(initial(), { type: 'mode', format: 'teams', style: 'speed' });
+  it('trocar para Speed usa o tempo padrão de 60 s e limpa os temas', () => {
+    const marked = run(initial(), { type: 'toggleCategory', id: 'animais' });
+    const s = run(marked, { type: 'mode', format: 'teams', style: 'speed' });
     expect(s.settings.seconds).toBe(60);
-    expect(s.settings.categories).toContain('acoes');
+    expect(s.settings.categories).toEqual([]);
   });
   it('limites: no máximo 5 times, no mínimo 2 jogadores para começar', () => {
     let s = initial();
     for (let i = 0; i < 6; i++) s = run(s, { type: 'addTeam' });
     expect(s.teams).toHaveLength(5);
-    const solo = run(initial(), { type: 'mode', format: 'solo', style: 'classic' });
+    const solo = run(initial(), { type: 'mode', format: 'solo', style: 'classic' }, { type: 'toggleCategory', id: 'animais' });
     expect(run(solo, { type: 'start' }).phase).toBe('mode');
     expect(run(withPlayers(solo, ['A']), { type: 'start' }).error).toBeTruthy();
     expect(run(withPlayers(solo, ['A', 'B']), { type: 'start' }).phase).toBe('pass');
@@ -56,6 +55,18 @@ describe('estado da mímica', () => {
     expect(s.session.scores[me]).toBe(0);
     expect(s.session.scores[others[0]!]).toBe(1);
     expect(s.session.scores[others[1]!]).toBe(1);
+  });
+  it('Clássico em Times: no roubo, ninguém acertar não dá ponto a ninguém', () => {
+    let s = ready('teams', 'classic');
+    s = run(s, { type: 'choose', id: s.cur!.options[0]!.id }, { type: 'timeup' }, { type: 'judge', guessed: false }, { type: 'steal', ids: [] });
+    expect(s.phase).toBe('result');
+    expect(Object.values(s.session.scores).every((n) => n === 0)).toBe(true);
+  });
+  it('Clássico em Times: o próprio time acertou no fim do tempo dá 3', () => {
+    let s = ready('teams', 'classic');
+    const me = mimerId(s);
+    s = run(s, { type: 'choose', id: s.cur!.options[0]!.id }, { type: 'timeup' }, { type: 'judge', guessed: true });
+    expect(s.session.scores[me]).toBe(3);
   });
   it('Clássico Individual: tempo acabou vai para "quem acertou", 3 e 2 pontos', () => {
     let s = ready('solo', 'classic');
@@ -142,5 +153,17 @@ describe('toques atrasados e cartelas', () => {
     expect(late.phase).toBe('pick');
     expect(late.timedOut).toBe(true);
     expect(late.prev).toBe('play');
+  });
+});
+
+describe('personagem dos times', () => {
+  it('cada time nasce com um personagem diferente e dá para trocar', () => {
+    let s = initial();
+    s = run(s, { type: 'addTeam' });
+    expect(new Set(s.teams.map((t) => t.avatar)).size).toBe(3);
+    expect(s.teams.every((t) => t.avatar !== '')).toBe(true);
+    const id = s.teams[0]!.id;
+    s = run(s, { type: 'setAvatar', id, avatar: 'dragao' });
+    expect(s.teams[0]!.avatar).toBe('dragao');
   });
 });

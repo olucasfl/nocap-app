@@ -27,12 +27,6 @@
 .mm-app .im-choice[aria-pressed='true'] { box-shadow: inset 0 0 0 2px var(--orange), 0 0 0 4px rgba(157, 107, 255, 0.18); }
 .mm-app .im-mode[aria-checked='true'] { box-shadow: inset 0 0 0 2px var(--orange), 0 0 0 4px rgba(157, 107, 255, 0.18); }
 
-/* selo do time: círculo de cor fixa com a inicial */
-.mm-badge { position: relative; display: grid; place-items: center; flex: none; aspect-ratio: 1; border-radius: 50%; background: var(--c); color: var(--on-accent); font: 800 20px var(--display); box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.18); user-select: none; }
-.mm-badge.sm { width: 46px; font-size: 20px; }
-.mm-badge.md { width: 64px; font-size: 28px; }
-.mm-badge.lg { width: 96px; font-size: 42px; }
-.mm-badge.xl { width: 150px; font-size: 66px; }
 .mm-big { align-self: center; animation: mm-float 3.2s ease-in-out infinite, mm-pop 0.6s var(--ease) both; }
 @keyframes mm-float { 50% { transform: translateY(-8px) rotate(2deg); } }
 @keyframes mm-pop { from { opacity: 0; transform: scale(0.5); } }
@@ -52,8 +46,14 @@
 .mm-rules span { color: var(--muted); font-size: 14px; }
 
 /* times */
-.mm-trow input { flex: 1; min-width: 0; min-height: 44px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; color: var(--text); font: 700 18px var(--display); outline: none; }
-.mm-trow input:focus { box-shadow: inset 0 0 0 2px var(--orange); background: var(--surface2); }
+/* nome do time: campo com borda tracejada e lápis, para ficar claro que dá para editar */
+.mm-namefield { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.mm-namelabel { color: var(--muted); font: 700 11px var(--body); letter-spacing: 0.06em; text-transform: uppercase; padding-left: 14px; }
+.mm-nameinput { position: relative; display: block; }
+.mm-nameinput input { width: 100%; min-width: 0; min-height: 44px; padding: 0 40px 0 14px; border: 2px dashed var(--line); border-radius: 999px; background: transparent; color: var(--text); font: 700 17px var(--display); outline: none; text-overflow: ellipsis; }
+.mm-nameinput input:hover { border-color: var(--muted); }
+.mm-nameinput input:focus { border-style: solid; border-color: var(--orange); background: var(--surface2); }
+.mm-nameinput svg { position: absolute; right: 14px; top: 50%; width: 18px; height: 18px; margin-top: -9px; stroke: var(--muted); fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
 .mm-addteam { align-self: center; }
 
 
@@ -83,7 +83,7 @@
 .mm-play .im-top { grid-template-columns: 48px 1fr auto; }
 .mm-who { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
 .mm-who b { font: 800 16px var(--display); max-width: 38vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mm-who .mm-badge, .mm-who .im-coin { width: 34px; font-size: 16px; }
+.mm-who .im-coin { width: 34px; }
 .mm-clock { min-width: 74px; text-align: center; padding: 8px 14px; border-radius: 999px; background: var(--surface); font: 800 26px var(--display); font-variant-numeric: tabular-nums; }
 .mm-play.urgent .mm-clock { background: #ff5a3c; color: #111; animation: mm-pulse 1s ease-in-out infinite; }
 @keyframes mm-pulse { 50% { transform: scale(1.1); } }
@@ -93,7 +93,7 @@
 @keyframes mm-bar { to { transform: scaleX(0); } }
 .mm-stage { position: relative; }
 .mm-count321 { position: absolute; inset: 0; display: grid; place-items: center; font: 800 clamp(120px, 40vw, 260px) / 1 var(--display); color: var(--orange); animation: mm-321 0.75s var(--ease) both; pointer-events: none; }
-.mm-count321:not([data-testid]) { font-size: 80px; }
+.mm-count321.go { font-size: clamp(36px, min(15vw, 22vh), 110px); letter-spacing: -0.02em; white-space: nowrap; text-transform: uppercase; }
 @keyframes mm-321 { 0% { opacity: 0; transform: scale(1.7); } 35% { opacity: 1; transform: scale(1); } 80% { opacity: 1; transform: scale(0.96); } 100% { opacity: 0; transform: scale(0.8); } }
 .mm-peek { align-self: center; width: min(520px, 100%); min-height: clamp(190px, 34dvh, 320px); padding: 18px; border-radius: 32px; background: var(--surface); border: 3px dashed var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font: 800 20px var(--display); text-align: center; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; transition: transform 0.2s var(--ease); }
 .mm-peek small { color: var(--muted); font: 600 14px var(--body); }
@@ -140,7 +140,7 @@
 @keyframes mm-slide { from { transform: translateY(calc((var(--y) + var(--y0)) * var(--rowh))); } }
 .mm-pos { width: 22px; text-align: center; color: var(--muted); font: 800 16px var(--display); }
 .mm-brow.top .mm-pos { color: var(--orange); }
-.mm-brow .mm-badge.sm, .mm-brow .im-coin.sm { width: 40px; font-size: 18px; }
+.mm-brow .im-coin.sm { width: 40px; }
 .mm-bmid { flex: 1; min-width: 0; display: grid; gap: 5px; }
 .mm-bmid b { font: 800 16px var(--display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mm-bar { display: block; height: 8px; border-radius: 8px; background: var(--line); overflow: hidden; }
@@ -183,12 +183,11 @@
   .mm-app { --rowh: 52px; }
   .mm-stage { flex-direction: column; justify-content: center; gap: 8px; text-align: center; }
   .mm-stage .mm-kicker, .mm-stage .mm-tally { margin: 0; }
-  .mm-badge.xl { width: 104px; font-size: 46px; }
-  .mm-badge.lg { width: 76px; font-size: 32px; }
   .mm-peek { min-height: 36dvh; width: min(420px, 48vw); padding: 10px; }
   .mm-wordcard { min-height: 30dvh; width: min(480px, 56vw); font-size: clamp(28px, 7vw, 46px); padding: 10px; }
   .mm-clock { font-size: 22px; padding: 4px 12px; }
   .mm-count321 { font-size: clamp(90px, 30vh, 180px); }
+  .mm-count321.go { font-size: clamp(34px, 20vh, 90px); }
   .mm-play .mm-actions .im-btn { min-height: 52px; width: auto; min-width: 0; }
   .mm-play .mm-actions { flex-direction: row; justify-content: center; align-items: center; }
   .mm-btnrow { width: auto; }
@@ -214,4 +213,11 @@
   .mm-timebar i { animation: none; transform: none; }
   .mm-brow, .mm-bar i, .mm-gain, .mm-block, .mm-pwho, .mm-count321, .mm-confetti i, .mm-wordcard, .mm-peekword, .mm-note { animation: none; opacity: 1; }
   .mm-confetti { display: none; }
+}
+
+/* fim do tempo e roubo: botões sempre inteiros na tela (em paisagem ficam lado a lado e quebram de linha se faltar espaço) */
+.mm-judge .im-body { gap: 10px; }
+@media (max-height: 560px) and (orientation: landscape) {
+  .mm-judge .im-foot, .mm-steal-foot { flex-wrap: wrap; }
+  .mm-judge .im-foot .im-btn { flex: 1 1 170px; min-width: 0; padding: 0 14px; font-size: 15px; }
 }

@@ -29,18 +29,33 @@ export const ICONS: Readonly<Record<string, string>> = { ...CATEGORY_ICONS, prof
 
 const fmtClock = (n: number) => `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`;
 
-/** Selo do time: círculo de cor fixa com a inicial do nome. */
-export function Badge({ side, size = 'md', className = '' }: { side: Side; size?: 'sm' | 'md' | 'lg' | 'xl'; className?: string }) {
-  return (
-    <span className={`mm-badge ${size} ${className}`} style={{ '--c': COLORS[side.color % COLORS.length] } as CSSProperties} aria-hidden="true">
-      {side.name.trim().charAt(0).toUpperCase() || '?'}
-    </span>
-  );
+/** Time e pessoa são fichas redondas de cor fixa com um personagem (o mesmo conjunto do Impostor). */
+export function Chip({ side, size = 'md', className = '' }: { s?: State; side: Side; size?: 'sm' | 'md' | 'lg' | 'xl'; className?: string }) {
+  return <Coin avatar={side.avatar} color={side.color} size={size} className={className} />;
 }
 
-/** Time vira selo; pessoa vira ficha com personagem. */
-export function Chip({ s, side, size = 'md', className = '' }: { s: State; side: Side; size?: 'sm' | 'md' | 'lg' | 'xl'; className?: string }) {
-  return s.format === 'teams' ? <Badge side={side} size={size} className={className} /> : <Coin avatar={side.avatar} color={side.color} size={size} className={className} />;
+const PencilIcon = ({ big }: { big?: boolean }) => (
+  <span className={`im-edit${big ? ' big' : ''}`} aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4" /></svg></span>
+);
+
+/** Folha com os personagens: os que já estão com outro time ou pessoa ficam esmaecidos (igual ao Impostor). */
+function AvatarSheet({ title, current, taken, color, onPick, onClose }: { title: string; current: string; taken: Set<string>; color: number; onPick: (a: string) => void; onClose: () => void }) {
+  return (
+    <Sheet title={title} onClose={onClose}>
+      <div className="im-avgrid" role="listbox" aria-label="Personagens">
+        {AVATARS.map((a) => {
+          const mine = a === current;
+          const used = taken.has(a) && !mine;
+          return (
+            <button key={a} type="button" role="option" aria-selected={mine} disabled={used} className="im-avopt" data-on={mine} onClick={() => { play('select'); onPick(a); onClose(); }}>
+              <Coin avatar={a} color={color} size="md" />
+            </button>
+          );
+        })}
+      </div>
+      <p className="im-sub small">{PEOPLE.length} pessoas e {AVATARS.length - PEOPLE.length} bichos. Os esmaecidos já estão com outro jogador.</p>
+    </Sheet>
+  );
 }
 
 function useLeave(d: (a: Action) => void) {
@@ -116,13 +131,24 @@ export function ModeScreen({ s, d, exit }: P) {
 
 /* ---------- Times ou jogadores ---------- */
 function TeamsPanel({ s, d }: P) {
+  const [picking, setPicking] = useState<string | null>(null);
+  const cur = s.teams.find((t) => t.id === picking);
   return (
     <>
       <ul className="im-plist" data-testid="mm-teams">
         {s.teams.map((t, i) => (
           <li key={t.id} className="im-prow mm-trow" style={{ '--i': i } as CSSProperties}>
-            <Badge side={t} size="sm" />
-            <input value={t.name} maxLength={16} aria-label={`Nome do time ${i + 1}`} data-testid={`mm-team-${i}`} onChange={(e) => d({ type: 'renameTeam', id: t.id, name: e.target.value })} />
+            <button type="button" className="im-coinbtn" aria-label={`Trocar o personagem de ${t.name}`} data-testid={`mm-team-av-${i}`} onClick={() => { play('tap'); setPicking(t.id); }}>
+              <Coin avatar={t.avatar} color={t.color} size="sm" />
+              <PencilIcon />
+            </button>
+            <label className="mm-namefield">
+              <span className="mm-namelabel">Nome do time {i + 1}</span>
+              <span className="mm-nameinput">
+                <input value={t.name} maxLength={16} aria-label={`Nome do time ${i + 1}`} data-testid={`mm-team-${i}`} onChange={(e) => d({ type: 'renameTeam', id: t.id, name: e.target.value })} />
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4" /></svg>
+              </span>
+            </label>
             <button type="button" className="im-x" aria-label={`Remover ${t.name}`} disabled={s.teams.length <= MIM_MIN_TEAMS} onClick={() => { play('remove'); d({ type: 'removeTeam', id: t.id }); }}>×</button>
           </li>
         ))}
@@ -132,7 +158,10 @@ function TeamsPanel({ s, d }: P) {
           <PlusIcon /> Adicionar time
         </button>
       )}
-      <p className="im-sub small">Cada time precisa de pelo menos 2 pessoas. Os times se revezam em cada rodada.</p>
+      <p className="im-sub small">Toque no nome para editar e na foto para trocar o personagem. Cada time precisa de pelo menos 2 pessoas.</p>
+      {cur && (
+        <AvatarSheet title={`Personagem de ${cur.name}`} current={cur.avatar} taken={new Set(s.teams.map((t) => t.avatar))} color={cur.color} onPick={(a) => d({ type: 'setAvatar', id: cur.id, avatar: a })} onClose={() => setPicking(null)} />
+      )}
     </>
   );
 }
@@ -165,7 +194,7 @@ function PlayersPanel({ s, d }: P) {
       <ul className="im-plist" data-testid="mm-players">
         {s.players.map((p, i) => (
           <li key={p.id} className="im-prow" style={{ '--i': i } as CSSProperties}>
-            <button type="button" className="im-coinbtn" aria-label={`Trocar o personagem de ${p.name}`} onClick={() => { play('tap'); setPicking(p.id); }}><Coin avatar={p.avatar} color={i} size="sm" /></button>
+            <button type="button" className="im-coinbtn" aria-label={`Trocar o personagem de ${p.name}`} onClick={() => { play('tap'); setPicking(p.id); }}><Coin avatar={p.avatar} color={i} size="sm" /><PencilIcon /></button>
             <b>{p.name}</b>
             <button type="button" className="im-x" aria-label={`Remover ${p.name}`} onClick={() => { play('remove'); d({ type: 'removePlayer', id: p.id }); }}>×</button>
           </li>
@@ -173,27 +202,14 @@ function PlayersPanel({ s, d }: P) {
       </ul>
       {s.players.length < MIM_MAX_PLAYERS && (
         <form className="im-add im-addrow" onSubmit={submit}>
-          <button type="button" className="im-draft" aria-label="Escolher o personagem" onClick={() => { play('tap'); setPicking('new'); }}><Coin avatar={draft} color={s.players.length} size="md" /></button>
+          <button type="button" className="im-draft" aria-label="Escolher o personagem" data-testid="mm-draft" onClick={() => { play('tap'); setPicking('new'); }}><Coin avatar={draft} color={s.players.length} size="md" /><PencilIcon big /></button>
           <input data-testid="mm-name" value={name} onChange={(e) => { setName(e.target.value); clear(); }} placeholder="Nome" maxLength={14} autoComplete="off" enterKeyHint="done" aria-label="Nome do jogador" />
           <button className="im-iconbtn pri" aria-label="Adicionar jogador" data-testid="mm-add"><PlusIcon /></button>
         </form>
       )}
       {flash && <Alert n={flash.n}>{flash.m}</Alert>}
       {picking && (
-        <Sheet title={cur ? `Personagem de ${cur.name}` : 'Escolha o personagem'} onClose={() => setPicking(null)}>
-          <div className="im-avgrid" role="listbox" aria-label="Personagens">
-            {AVATARS.map((a) => {
-              const mine = a === (cur ? cur.avatar : draft);
-              const used = taken.has(a) && !mine;
-              return (
-                <button key={a} type="button" role="option" aria-selected={mine} disabled={used} className="im-avopt" data-on={mine} onClick={() => { play('select'); if (cur) d({ type: 'setAvatar', id: cur.id, avatar: a }); else setDraft(a); setPicking(null); }}>
-                  <Coin avatar={a} color={cur ? cur.color : s.players.length} size="md" />
-                </button>
-              );
-            })}
-          </div>
-          <p className="im-sub small">{PEOPLE.length} pessoas e {AVATARS.length - PEOPLE.length} bichos.</p>
-        </Sheet>
+        <AvatarSheet title={cur ? `Personagem de ${cur.name}` : 'Escolha o personagem'} current={cur ? cur.avatar : draft} taken={taken} color={cur ? cur.color : s.players.length} onPick={(a) => (cur ? d({ type: 'setAvatar', id: cur.id, avatar: a }) : setDraft(a))} onClose={() => setPicking(null)} />
       )}
     </>
   );
@@ -462,7 +478,7 @@ export function PlayScreen({ s, d }: P) {
       </div>
       <div className="im-body im-mid mm-stage">
         {!run && count !== null && (
-          <div className="mm-count321" key={count} role="status" data-testid="mm-321">{count === 0 ? 'Valendo!' : count}</div>
+          <div className={`mm-count321${count === 0 ? ' go' : ''}`} key={count} role="status" data-testid="mm-321">{count === 0 ? 'Valendo!' : count}</div>
         )}
         {run && (speed ? (
           <>
@@ -512,13 +528,15 @@ export function PlayScreen({ s, d }: P) {
 }
 
 /* ---------- Depois do tempo ---------- */
-export function JudgeScreen({ d }: P) {
+export function JudgeScreen({ s, d }: P) {
+  const side = sideBy(s, mimerId(s));
   return (
-    <div className="im-screen im-centered" data-testid="mm-judge">
+    <div className="im-screen mm-judge" data-testid="mm-judge">
       <TopBar center={<span className="im-status">Fim do tempo</span>} />
       <div className="im-body im-mid">
-        <Icon name="ampulheta" size={96} className="mm-hero" />
-        <h2 className="im-t"><Words text="O time acertou a palavra?" /></h2>
+        <Chip side={side} size="lg" className="mm-big" />
+        <p className="im-instr">Acabou o tempo de</p>
+        <h2 className="im-t" data-testid="mm-judge-who"><Words text={`${side.name} acertou a palavra?`} /></h2>
         <p className="im-sub center">Quem fez a mímica sabe a resposta e decide.</p>
       </div>
       <div className="im-foot">
@@ -529,23 +547,46 @@ export function JudgeScreen({ d }: P) {
   );
 }
 
+/**
+ * O time da vez não acertou. Com 2 times só existe um outro time, então a pergunta é sempre sobre ele (sim ou não).
+ * Com 3 ou mais, pergunta se algum time sabe a palavra e a mesa marca quais times acertaram.
+ */
 export function StealScreen({ s, d }: P) {
   const me = mimerId(s);
   const others = s.teams.filter((t) => t.id !== me);
   const [sel, setSel] = useState<string[]>([]);
   const toggle = (id: string) => { play('select'); setSel((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id])); };
+  const back = () => d({ type: 'go', phase: 'judge', back: true });
+  if (others.length === 1) {
+    const other = others[0]!;
+    return (
+      <div className="im-screen mm-judge" data-testid="mm-steal">
+        <TopBar onBack={back} center={<span className="im-status">Hora de roubar</span>} />
+        <div className="im-body im-mid">
+          <Chip side={other} size="lg" className="mm-big" />
+          <p className="im-instr">Agora é a vez de</p>
+          <h2 className="im-t" data-testid="mm-steal-who"><Words text={`${other.name} acertou a palavra?`} /></h2>
+          <p className="im-sub center">Vale {MIM_POINTS.teamsSteal} ponto para quem roubar.</p>
+        </div>
+        <div className="im-foot">
+          <Primary testId="mm-steal-yes" sound="confirm" onClick={() => d({ type: 'steal', ids: [other.id] })}>Sim, acertou <CheckIcon /></Primary>
+          <Primary testId="mm-steal-no" tone="ghost" sound="tap" onClick={() => d({ type: 'steal', ids: [] })}>Não acertou</Primary>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="im-screen" data-testid="mm-steal">
-      <TopBar center={<span className="im-status">Hora de roubar</span>} />
+      <TopBar onBack={back} center={<span className="im-status">Hora de roubar</span>} />
       <div className="im-body">
-        <h2 className="im-t"><Words text="Algum outro time sabe?" /></h2>
-        <p className="im-sub">Todos falam a resposta ao mesmo tempo. Quem fez a mímica confirma, e vocês marcam os times que acertaram. Cada um ganha {MIM_POINTS.teamsSteal} ponto.</p>
+        <h2 className="im-t" data-testid="mm-steal-who"><Words text="Algum time sabe a palavra?" /></h2>
+        <p className="im-sub">Todos falam a resposta ao mesmo tempo e quem fez a mímica confirma. Toque nos times que acertaram (pode ser mais de um). Cada um ganha {MIM_POINTS.teamsSteal} ponto.</p>
         <ul className="mm-picks">
           {others.map((t, i) => (
             <li key={t.id} className="im-rise" style={{ '--d': i + 1 } as CSSProperties}>
               <button type="button" className="im-choice mm-pickbtn" aria-pressed={sel.includes(t.id)} data-testid={`mm-steal-${t.id}`} onClick={() => toggle(t.id)}>
-                <Badge side={t} size="sm" />
-                <span className="im-choice-t">{t.name}</span>
+                <Coin avatar={t.avatar} color={t.color} size="sm" />
+                <span className="im-choice-t">{t.name} acertou</span>
                 <span className="im-tick" aria-hidden="true"><CheckIcon /></span>
               </button>
             </li>
@@ -553,9 +594,10 @@ export function StealScreen({ s, d }: P) {
         </ul>
       </div>
       <div className="im-foot">
-        <Primary testId="mm-steal-ok" sound="confirm" onClick={() => d({ type: 'steal', ids: sel })}>
-          {sel.length === 0 ? 'Ninguém acertou' : `Confirmar (${sel.length} ${sel.length === 1 ? 'time' : 'times'})`} <ArrowIcon />
+        <Primary testId="mm-steal-ok" sound="confirm" disabled={sel.length === 0} onClick={() => d({ type: 'steal', ids: sel })}>
+          {sel.length === 0 ? 'Marque o time que acertou' : `Confirmar (${sel.length} ${sel.length === 1 ? 'time' : 'times'})`} <ArrowIcon />
         </Primary>
+        <Primary testId="mm-steal-none" tone="ghost" sound="tap" onClick={() => d({ type: 'steal', ids: [] })}>Nenhum time sabe</Primary>
       </div>
     </div>
   );

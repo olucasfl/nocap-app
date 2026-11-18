@@ -58,6 +58,11 @@ for (const d of DEVICES.filter((x) => only.includes(x.name))) {
       if (format === 'teams') {
         await page.getByTestId('mm-addteam').click();
         await expect(page.getByTestId('mm-team-2')).toBeVisible();
+        // o nome e o personagem do time se editam
+        await page.getByTestId('mm-team-0').fill('Os Fortes');
+        await page.getByTestId('mm-team-av-1').click();
+        await page.getByRole('option').nth(7).click();
+        await expect(page.getByTestId('mm-team-0')).toHaveValue('Os Fortes');
       } else {
         for (const n of ['Ana', 'Beto', 'Caio']) {
           await page.getByTestId('mm-name').fill(n);
@@ -69,6 +74,12 @@ for (const d of DEVICES.filter((x) => only.includes(x.name))) {
 
       // temas e regras
       await expect(page.getByTestId('mm-cats')).toBeVisible();
+      // nenhum tema vem marcado: seguir sem escolher avisa
+      await expect(page.locator('[data-testid^="mm-cat-"][aria-pressed="true"]')).toHaveCount(0);
+      await page.getByTestId('mm-continue').click();
+      await expect(page.getByRole('alert')).toBeVisible();
+      await page.getByTestId('mm-cat-animais').click();
+      await page.getByTestId('mm-cat-comida').click();
       await check(page, d, 'temas', report, `${tag}-3temas`);
       await page.getByTestId('mm-continue').click();
       await expect(page.getByTestId('mm-cfg')).toBeVisible();
@@ -156,17 +167,60 @@ test('mimica roubo entre times', async ({ page }, info) => {
   await page.goto('/mesa/mimica');
   await page.getByTestId('mm-continue').click();
   await page.getByTestId('mm-continue').click();
+  await page.getByTestId('mm-cat-animais').click();
+  await page.getByTestId('mm-cat-comida').click();
   await page.getByTestId('mm-continue').click();
   await page.getByTestId('mm-start').click();
   await page.getByTestId('mm-ready').click();
   await page.getByTestId('mm-opt-0').click();
   await expect(page.getByTestId('mm-judge')).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByTestId('mm-judge-who')).toContainText('Time Laranja');
   await page.getByTestId('mm-judge-no').click();
-  await expect(page.getByTestId('mm-steal')).toBeVisible();
-  await page.locator('[data-testid^="mm-steal-"]').first().click();
-  await page.getByTestId('mm-steal-ok').click();
+  // com 2 times a pergunta é sempre sobre o outro time
+  await expect(page.getByTestId('mm-steal-who')).toContainText('Time Azul acertou a palavra?');
+  await page.getByTestId('mm-steal-yes').click();
   await expect(page.getByTestId('mm-result')).toBeVisible();
   // quem roubou ganha 1 ponto; o time da mímica, nenhum
   await expect(page.getByTestId('mm-brow-0')).toContainText('1');
   await expect(page.locator('.mm-gain')).toHaveText('+1');
 });
+
+/** Fim do tempo no Clássico em Times: as 3 respostas e a escolha do time que acertou, em todos os tamanhos. */
+for (const d of DEVICES.filter((x) => only.includes(x.name))) {
+  test(`mimica fim do tempo ${d.name}`, async ({ page, context }, info) => {
+    test.skip(info.project.name !== 'desktop', 'um projeto basta');
+    test.setTimeout(60_000);
+    const report: string[] = [];
+    await installApi(page);
+    const cdp = await context.newCDPSession(page);
+    await setDevice(page, cdp, d);
+    await page.addInitScript(() => {
+      localStorage.setItem('nocap-mute', '1');
+      localStorage.setItem('mm-fast', '1');
+      localStorage.setItem('mm-secs', '2');
+      localStorage.removeItem('nocap-mimica-setup');
+    });
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Agora não' }).click({ timeout: 1500 }).catch(() => undefined);
+    await page.goto('/mesa/mimica');
+    await page.getByTestId('mm-continue').click();
+    await page.getByTestId('mm-addteam').click();
+    await page.getByTestId('mm-continue').click();
+    await page.getByTestId('mm-cat-animais').click();
+    await page.getByTestId('mm-continue').click();
+    await page.getByTestId('mm-start').click();
+    await page.getByTestId('mm-ready').click();
+    await page.getByTestId('mm-opt-0').click();
+    await expect(page.getByTestId('mm-judge')).toBeVisible({ timeout: 10_000 });
+    await check(page, d, 'judge', report, `fim-${d.name}-1`);
+    await page.getByTestId('mm-judge-no').click();
+    // com 3 times: lista para marcar quais times sabem a palavra
+    await expect(page.getByTestId('mm-steal-who')).toContainText('Algum time sabe a palavra?');
+    await expect(page.getByTestId('mm-steal-ok')).toBeDisabled();
+    await page.getByRole('button', { name: /acertou$/ }).first().click();
+    await check(page, d, 'steal', report, `fim-${d.name}-2`);
+    await page.getByTestId('mm-steal-ok').click();
+    await expect(page.getByTestId('mm-result')).toBeVisible();
+    expect(report, report.join('\n')).toEqual([]);
+  });
+}
