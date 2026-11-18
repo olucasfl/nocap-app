@@ -89,6 +89,8 @@ export interface GpTrackDef {
 export type GpWallKind = 'metal' | 'tyres';
 
 /** Folga (m) entre a parede do modelo e a barreira do jogo: o kart para antes de entrar na pedra. */
+/** Diferença de altura (m) a partir da qual dois trechos da pista são andares diferentes (ponte e estrada). */
+export const GP_LEVEL_APART = 3;
 const GP_MODEL_WALL_GAP = 1.1;
 
 const PIT_DEFAULT: GpPitDef = {
@@ -633,6 +635,8 @@ export class GpTrack {
       for (let j = 0; j < n; j += 2) {
         const gap = Math.abs(i - j);
         if (Math.min(gap, n - gap) < skip) continue;
+        // ponte e estrada de baixo não se encostam: outro andar não pede muro no meio do caminho
+        if (this.def.heights && Math.abs(this.yAt(i * this.ds) - this.yAt(j * this.ds)) > GP_LEVEL_APART) continue;
         const vx = this.x[j]! - this.x[i]!;
         const vz = this.z[j]! - this.z[i]!;
         const along = vx * nx + vz * nz;
@@ -656,7 +660,8 @@ export class GpTrack {
         const s = i * this.ds;
         const mr = this.interp(this.def.wallsR, s) - GP_MODEL_WALL_GAP;
         const ml = this.interp(this.def.wallsL, s) - GP_MODEL_WALL_GAP;
-        const floor = GP_HALF_WIDTH + 0.8;
+        // com o chão do modelo na mão, a barreira pode ficar rente ao que existe (a estrada do modelo é mais estreita em alguns trechos)
+        const floor = GP_HALF_WIDTH - 1.5;
         if (mr > 0 && mr < this.wallR[i]!) this.wallR[i] = Math.max(floor, mr);
         if (ml > 0 && ml < this.wallL[i]!) this.wallL[i] = Math.max(floor, ml);
       }

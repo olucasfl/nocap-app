@@ -78,3 +78,14 @@ O box da Marina e o de Interlagos foram para a metade da volta (Marina a ~51%, I
 - Desempenho da Castle: raio da câmera só testa as peças que ele cruza; karts a mais de 150 m do foco não são desenhados; sombra só até 30 m; névoa e plano de corte em 480/520 m; pixel ratio 1,25 no médio; o pacote de detalhes só na qualidade alta.
 - Ritmo: `vmaxK` (0,62) na definição da pista reduz a velocidade máxima do Arcade só na Castle; a volta dura cerca de 40% mais.
 - Caixas de poder não aparecem na volta de classificação, só na largada da corrida.
+
+## 11. Física fiel ao visual na Castle Circuit (18/11/2026)
+
+Pedido do Lucas: paredes invisíveis na ponte e carro caindo no vazio em outros pontos. Duas causas, achadas medindo a pista:
+
+1. **Muro no meio do caminho no cruzamento.** `buildWalls` põe a barreira "no meio" quando outro trecho da pista passa perto, sem olhar a altura. Na ponte, a estrada de baixo (mais de 3 m abaixo) apertava a barreira para uns 9 m dos dois lados. Agora trechos em andares diferentes (`GP_LEVEL_APART`, 3 m) não contam um para o outro.
+2. **Barreira além do chão.** Onde o modelo não tinha parede, valia a barreira genérica de 18 m, mas o chão do mapa (`ground.bin`) acabava a 6 ou 9 m: o kart andava por cima do nada. `tools/art/track/refine-castle-walls.mjs` anda para fora da estrada a cada 0,5 m seguindo o chão (o andar mais perto da altura da estrada) e fecha `wallsL`/`wallsR` onde há 1,5 m sem chão ou um degrau de mais de 1,2 m (muro, borda de ponte, barranco). Só diminui, então rodar de novo não muda nada, e ela vale para o trecho entre pontos de controle vizinhos. O piso da barreira com o modelo na mão passou de 7,8 m para 5,5 m, porque em alguns trechos a estrada do modelo é mais estreita que a da física.
+
+Testes (`castle.test.ts`): a barreira nunca deixa o kart andar sobre um vazio de 2 m ou mais no chão real do mapa (lê `ground.bin`), e no cruzamento da ponte a barreira não cai para o muro do meio. Os 6 bots seguem completando 3 voltas.
+
+Falta: conferir jogando (o Lucas) e, se ainda houver queda no vazio, o ponto exato (a distância da volta) para olhar o chão dali.
