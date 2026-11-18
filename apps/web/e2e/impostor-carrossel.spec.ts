@@ -29,23 +29,24 @@ for (const d of DEVICES.filter((x) => only.includes(x.name))) {
     await page.goto('/');
     await page.getByRole('button', { name: 'Agora não' }).click({ timeout: 1500 }).catch(() => undefined);
     await page.goto('/mesa');
-    await expect(page.getByTestId('mesa-jogar')).toBeVisible();
+    // a roda abre no Impostor, com o Frase Maluca à esquerda e a Mímica à direita
+    await expect(page.getByTestId('mesa-jogar')).toContainText('Impostor');
     await check('impostor');
+    await page.getByTestId('mesa-next').click();
+    await expect(page.getByTestId('mesa-jogar')).toContainText('Mímica');
+    await check('mimica');
+    // dá a volta: depois da Mímica vem o Frase Maluca (em breve) e depois o Impostor
     await page.getByTestId('mesa-next').click();
     await expect(page.getByTestId('mesa-soon')).toBeVisible();
     await expect(page.getByTestId('mesa-soon')).toContainText('Frase Maluca');
     await check('frase-maluca');
     await page.getByTestId('mesa-next').click();
-    await expect(page.getByTestId('mesa-jogar')).toContainText('Mímica');
-    await check('mimica');
-    // dá a volta: depois da Mímica vem o Impostor; e para trás também
-    await page.getByTestId('mesa-next').click();
-    await expect(page.getByTestId('mesa-jogar')).toBeVisible();
+    await expect(page.getByTestId('mesa-jogar')).toContainText('Impostor');
+    // e para trás: o Impostor vem depois do Frase Maluca
+    await page.getByTestId('mesa-prev').click();
+    await expect(page.getByTestId('mesa-soon')).toContainText('Frase Maluca');
     await page.getByTestId('mesa-prev').click();
     await expect(page.getByTestId('mesa-jogar')).toContainText('Mímica');
-    await page.getByTestId('mesa-prev').click();
-    await page.getByTestId('mesa-prev').click();
-    await expect(page.getByTestId('mesa-jogar')).toBeVisible();
     expect(report, report.join('\n')).toEqual([]);
   });
 }
@@ -58,11 +59,12 @@ test('mesa carrossel gira sozinho', async ({ page }, info) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Agora não' }).click({ timeout: 1500 }).catch(() => undefined);
   await page.goto('/mesa');
-  await expect(page.getByTestId('mesa-jogar')).toBeVisible();
-  await expect(page.getByTestId('mesa-soon')).toContainText('Frase Maluca', { timeout: 8000 });
+  await expect(page.getByTestId('mesa-jogar')).toContainText('Impostor');
+  // a roda gira sozinha: do Impostor para a Mímica (a da direita)
+  await expect(page.getByTestId('mesa-jogar')).toContainText('Mímica', { timeout: 8000 });
   // com o mouse em cima, não gira
   await page.getByTestId('mesa-carousel').hover();
   await page.waitForTimeout(6500);
-  await expect(page.getByTestId('mesa-soon')).toContainText('Frase Maluca');
+  await expect(page.getByTestId('mesa-jogar')).toContainText('Mímica');
 });
 

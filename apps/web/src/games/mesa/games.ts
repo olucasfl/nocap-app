@@ -12,7 +12,18 @@ export interface MesaGameInfo {
   steps?: MesaGameStep[];
 }
 
+/** A roda abre no Impostor; o Frase Maluca fica à esquerda e a Mímica à direita. */
+export const MESA_START = 1;
+
 export const MESA_GAMES: MesaGameInfo[] = [
+  {
+    id: 'frase-maluca',
+    name: 'Frase Maluca',
+    desc: 'Complete a frase com a carta mais engraçada; um da mesa julga a melhor a cada rodada.',
+    facts: ['3 a 12 pessoas', 'Cartas de frases', 'Um juiz por rodada'],
+    soon: true,
+    icon: 'cartas',
+  },
   {
     id: 'impostor',
     name: 'Impostor',
@@ -24,14 +35,6 @@ export const MESA_GAMES: MesaGameInfo[] = [
       { icon: 'ampulheta', title: 'Deem dicas e debatam', text: 'Uma palavra por pessoa, rodada a rodada. Depois, conversem.' },
       { icon: 'lupa', title: 'Votem no impostor', text: 'Quem acerta o impostor ganha pontos. O ranking soma as partidas.' },
     ],
-  },
-  {
-    id: 'frase-maluca',
-    name: 'Frase Maluca',
-    desc: 'Complete a frase com a carta mais engraçada; um da mesa julga a melhor a cada rodada.',
-    facts: ['3 a 12 pessoas', 'Cartas de frases', 'Um juiz por rodada'],
-    soon: true,
-    icon: 'cartas',
   },
   {
     id: 'mimica',

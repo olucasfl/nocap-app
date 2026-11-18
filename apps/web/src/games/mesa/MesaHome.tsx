@@ -7,7 +7,7 @@ import { useRoomEntry } from '@/lib/my-room';
 import { preloadImages } from './impostor/assets';
 import { play, preloadSounds } from './impostor/audio';
 import { Alert, ArrowIcon, Coin, Icon, Primary, TopBar, Words, useFlash } from './impostor/ui';
-import { MESA_GAMES, type MesaGameInfo } from './games';
+import { MESA_GAMES, MESA_START, type MesaGameInfo } from './games';
 import './impostor/impostor.css';
 import './mimica/mimica.css';
 
@@ -144,7 +144,7 @@ export function MesaHome() {
   const navigate = useNavigate();
   const entry = useRoomEntry({ resume: true });
   const [step, setStep] = useState<Step>('home');
-  const [game, setGame] = useState(0);
+  const [game, setGame] = useState(MESA_START);
   const [back, setBack] = useState(false);
   const [code, setCode] = useState('');
   const [flash, show, clear] = useFlash();
