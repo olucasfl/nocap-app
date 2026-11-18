@@ -85,3 +85,4 @@ Status: rascunho → aprovada → em andamento → concluída. Criar uma nova: `
 | 086 | [Fox GP, pistas novas para o Arcade com poderes](086-fox-gp-pistas-poderes.md) | 5 | F1 feita (16/11/2026): Castle Circuit com altura, inclinação, ponte, foto na escolha e no lobby; faltam pulo guiado/turbo de andar e as outras 3 pistas |
 | 087 | [Presença com atividade](087-presenca-atividade.md) | 1 | feita (16/11/2026): "online · jogando X" no início, na lista e no perfil dos amigos, atualizando a cada 15 s |
 | 088 | [Impostor (Social Table Games)](088-impostor.md) | 5 | modo Mesa e modo Sala feitos (17/11/2026): 4 modos, 659 palavras, ranking da sessão, sons e personagens 3D; falta jogar com gente de verdade |
+| 089 | [Mímica (Social Table Games)](089-mimica.md) | 4 | rascunho (18/11/2026): 4 modos (Clássico e Speed, em Times e Individual), roubo entre times, ranking animado; aguardando respostas da seção 10 |
