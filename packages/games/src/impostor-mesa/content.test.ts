@@ -53,8 +53,15 @@ describe('conteúdo do Impostor', () => {
     expect(texts.some((w) => w.text.includes('Cão de Lava'))).toBe(false);
   });
   it('perguntas pareadas existem por categoria e são diferentes', () => {
-    for (const c of cats) expect(IM_QUESTIONS.filter((q) => q.category === c).length, c).toBeGreaterThanOrEqual(20);
+    for (const c of cats) expect(IM_QUESTIONS.filter((q) => q.category === c).length, c).toBeGreaterThanOrEqual(30);
     for (const q of IM_QUESTIONS) expect(q.q).not.toBe(q.qPair);
+  });
+  it('cada tema tem perguntas pessoais para responder com o nome de quem está na mesa', () => {
+    for (const c of cats) {
+      const own = IM_QUESTIONS.filter((q) => q.category === c && q.q.startsWith('Quem entre vocês'));
+      expect(own.length, c).toBeGreaterThanOrEqual(10);
+      for (const q of own) expect(q.qPair.startsWith('Quem entre vocês'), q.qPair).toBe(true);
+    }
   });
   it('perguntas seguem as regras: decididas, sem abertas demais, terminam em ?', () => {
     const open = /favorit|mais gosta\b|menos gosta\b|nunca comeria|nunca usaria/i;
@@ -62,6 +69,17 @@ describe('conteúdo do Impostor', () => {
       for (const t of [q.q, q.qPair]) {
         expect(t.endsWith('?'), t).toBe(true);
         expect(open.test(t), t).toBe(false);
+      }
+    }
+    // pares com antônimos entregam o impostor na hora ("melhor" x "pior", "começar" x "terminar")
+    const opposites: [RegExp, RegExp][] = [
+      [/\bmelhor\b/i, /\bpior\b/i], [/\bcomeçar\b/i, /\bterminar\b/i], [/\bprimeiro\b/i, /\búltimo\b/i],
+      [/\bgigante\b/i, /\bminúsculo\b/i], [/\brisada\b/i, /\bchoro\b/i], [/\bderrubar\b/i, /\bproteger\b/i],
+      [/\bgosta\b/i, /\bodeia\b/i], [/\bquente\b/i, /\bfrio\b/i], [/\bcomprou\b.*\barrependeu\b/i, /\badorou\b/i],
+    ];
+    for (const q of IM_QUESTIONS) {
+      for (const [a, b] of opposites) {
+        expect((a.test(q.q) && b.test(q.qPair)) || (b.test(q.q) && a.test(q.qPair)), `${q.q} | ${q.qPair}`).toBe(false);
       }
     }
     expect(new Set(IM_QUESTIONS.map((q) => q.id)).size).toBe(IM_QUESTIONS.length);
