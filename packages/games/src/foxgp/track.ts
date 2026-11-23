@@ -83,15 +83,24 @@ export interface GpTrackDef {
    */
   wallsL?: readonly number[];
   wallsR?: readonly number[];
+  /**
+   * O mesmo que `wallsL`/`wallsR`, mas com um valor por metro de pista (índice = distância em metros desde a largada).
+   * Quando existem, mandam: nos pontos de controle, que ficam a até 20 m um do outro, uma parede curta fazia a barreira
+   * começar antes e acabar depois do muro que se vê.
+   */
+  wallsLD?: readonly number[];
+  wallsRD?: readonly number[];
 }
 
 /** O tipo da barreira: muro (batida normal) ou pilha de pneus (rebate o kart para trás). */
 export type GpWallKind = 'metal' | 'tyres';
 
-/** Folga (m) entre a parede do modelo e a barreira do jogo: o kart para antes de entrar na pedra. */
 /** Diferença de altura (m) a partir da qual dois trechos da pista são andares diferentes (ponte e estrada). */
 export const GP_LEVEL_APART = 3;
+/** Folga (m) entre a parede do modelo e a barreira do jogo: o kart para antes de entrar na pedra. */
 const GP_MODEL_WALL_GAP = 1.1;
+/** Pista de modelo sem parede nem vazio por perto: até onde vai a barreira (a varredura de vazio olha até aqui). */
+export const GP_MODEL_FAR = 40;
 
 const PIT_DEFAULT: GpPitDef = {
   side: 1,
@@ -627,12 +636,15 @@ export class GpTrack {
     const n = this.n;
     const minAlong = 70;
     const skip = Math.round(minAlong / this.ds);
+    // pista de modelo (`wallsL`/`wallsR` vêm do cenário que o jogador vê): nada de muro "no meio" entre trechos que passam
+    // perto nem de lado de dentro da curva sem barreira, porque o cenário não desenha nada disso (seria parede invisível)
+    const modeled = !!(this.def.wallsL || this.def.wallsR || this.def.wallsLD || this.def.wallsRD);
     for (let i = 0; i < n; i++) {
       const nx = -this.tz[i]!;
       const nz = this.tx[i]!;
       let right = Infinity;
       let left = Infinity;
-      for (let j = 0; j < n; j += 2) {
+      for (let j = 0; j < (modeled ? 0 : n); j += 2) {
         const gap = Math.abs(i - j);
         if (Math.min(gap, n - gap) < skip) continue;
         // ponte e estrada de baixo não se encostam: outro andar não pede muro no meio do caminho
@@ -649,19 +661,23 @@ export class GpTrack {
       const rr = 1 / Math.max(1e-6, Math.abs(kk));
       const fold = rr < this.limit + 4;
       const wallMin = this.def.wallMin ?? GP_HALF_WIDTH + GP_KERB_W + 0.6;
+      // pista de modelo: o cenário vem do arquivo e não desenha barreira, então só vale parede onde o visual tem uma
+      // (muro, vazio) ou no limite da varredura; o limite genérico de 18 m viraria uma parede invisível no meio da grama
+      const cap = modeled ? Math.max(this.limit, GP_MODEL_FAR) : this.limit;
       const wall = (room: number, inside: boolean) => {
-        if (room < Infinity) return Math.max(wallMin, Math.min(this.limit, room / 2 - 0.4));
-        return inside ? Infinity : this.limit;
+        if (room < Infinity) return Math.max(wallMin, Math.min(cap, room / 2 - 0.4));
+        return inside && !modeled ? Infinity : cap;
       };
       this.wallR[i] = wall(right, fold && kk > 0);
       this.wallL[i] = wall(left, fold && kk < 0);
       // parede do modelo: o kart bate nela, não numa barreira invisível mais adiante
-      if (this.def.wallsR || this.def.wallsL) {
+      if (modeled) {
         const s = i * this.ds;
-        const mr = this.interp(this.def.wallsR, s) - GP_MODEL_WALL_GAP;
-        const ml = this.interp(this.def.wallsL, s) - GP_MODEL_WALL_GAP;
-        // com o chão do modelo na mão, a barreira pode ficar rente ao que existe (a estrada do modelo é mais estreita em alguns trechos)
-        const floor = GP_HALF_WIDTH - 1.5;
+        const dense = !!(this.def.wallsRD && this.def.wallsLD);
+        const mr = (dense ? this.dense(this.def.wallsRD, s) : this.interp(this.def.wallsR, s)) - GP_MODEL_WALL_GAP;
+        const ml = (dense ? this.dense(this.def.wallsLD, s) : this.interp(this.def.wallsL, s)) - GP_MODEL_WALL_GAP;
+        // a parede do modelo manda: o piso só impede um corredor impossível (o kart tem ~1,2 m de largura)
+        const floor = GP_HALF_WIDTH - 3.5;
         if (mr > 0 && mr < this.wallR[i]!) this.wallR[i] = Math.max(floor, mr);
         if (ml > 0 && ml < this.wallL[i]!) this.wallL[i] = Math.max(floor, ml);
       }
@@ -916,6 +932,14 @@ export class GpTrack {
     const h = this.def.heights;
     if (!h) return 0;
     return this.yAt(s) + (this.def.banks ? d * Math.tan(this.bankAt(s)) : 0);
+  }
+
+  /** Lê uma lista com um valor por metro de pista na distância `s` (com volta); entre dois metros vale o menor (a parede mais próxima). */
+  private dense(arr: readonly number[] | undefined, s: number): number {
+    if (!arr || arr.length < 2) return 0;
+    const w = this.wrap(s);
+    const i = Math.floor(w);
+    return Math.min(arr[i % arr.length]!, arr[(i + 1) % arr.length]!);
   }
 
   /** Interpola um valor por ponto de controle ao longo da pista (cp[0] = 0; o último trecho fecha no comprimento). */

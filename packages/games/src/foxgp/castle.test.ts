@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { createRng } from '../core/rng';
 import { gpBotInput, gpBotProfile, newGpBotMemory } from './bots';
@@ -150,36 +150,92 @@ describe('Castle Circuit (spec 086, F1)', () => {
   }, 60_000);
 });
 
-/** O chão do mapa (`ground.bin`): célula de 1 m, o andar de baixo e o de cima (Int16 em centímetros; -32768 = sem chão). */
-function loadGround() {
-  const dir = new URL('../../../../apps/web/public/foxgp/castle/', import.meta.url);
-  const m = JSON.parse(readFileSync(new URL('ground.json', dir), 'utf8')) as { x0: number; z0: number; w: number; h: number; cell: number };
-  const b = readFileSync(new URL('ground.bin', dir));
-  const low = new Int16Array(b.buffer.slice(b.byteOffset, b.byteOffset + m.w * m.h * 2));
-  const has = (x: number, z: number) => {
-    const cx = Math.floor((x - m.x0) / m.cell);
-    const cz = Math.floor((z - m.z0) / m.cell);
-    return cx >= 0 && cz >= 0 && cx < m.w && cz < m.h && low[cz * m.w + cx] !== -32768;
-  };
-  return has;
+type Surface = { cells: number; near: (x: number, z: number, h: number, tol?: number) => number | null };
+
+/** A superfície visível do cenário (`core.bin`): o que o jogador vê, não só o que o modelo marca como dirigível. */
+async function loadSurface(): Promise<Surface> {
+  // ferramenta em JS puro (a mesma que fecha as barreiras), sem tipos
+  // @ts-ignore
+  const mod = (await import('../../../../tools/art/track/visible-surface.mjs')) as { loadVisibleSurface: (dir: string) => Surface };
+  return mod.loadVisibleSurface(fileURLToPath(new URL('../../../../apps/web/public/foxgp/castle/', import.meta.url)));
+}
+
+type Walls = { count: number; hit: (x: number, z: number, h: number, dx: number, dz: number, max?: number) => number };
+
+/** As paredes do cenário que o jogador vê (`core.bin`): superfícies verticais ou íngremes na altura do kart. */
+async function loadWalls(): Promise<Walls> {
+  // @ts-ignore
+  const mod = (await import('../../../../tools/art/track/visible-walls.mjs')) as { loadWalls: (dir: string, packs: string[]) => Walls };
+  return mod.loadWalls(fileURLToPath(new URL('../../../../apps/web/public/foxgp/castle/', import.meta.url)), ['core']);
 }
 
 describe('Castle Circuit: física fiel ao visual (spec 086, seção 11)', () => {
-  it('a barreira nunca deixa o kart andar sobre um vazio de 2 m ou mais no chão do mapa', () => {
+  it('toda barreira da física tem um muro ou um vazio que se vê logo atrás (nada de parede invisível)', async () => {
     const t = gpTrack(GP_TRACK_CASTLE);
-    const has = loadGround();
+    const vs = await loadSurface();
+    const walls = await loadWalls();
+    expect(walls.count).toBeGreaterThan(1000);
+    // o primeiro vazio (3 m sem superfície) ou parede visível para o lado `side` a partir da amostra `i`
+    const obstacle = (i: number, side: number): number => {
+      const nx = -t.tz[i]! * side;
+      const nz = t.tx[i]! * side;
+      const h0 = t.yAt(i * t.ds);
+      let best = walls.hit(t.x[i]!, t.z[i]!, h0, nx, nz, 40);
+      let h = vs.near(t.x[i]!, t.z[i]!, h0);
+      if (h === null) return best;
+      let run = 0;
+      for (let d = 0.5; d <= 40; d += 0.5) {
+        const y = vs.near(t.x[i]! + nx * d, t.z[i]! + nz * d, h);
+        if (y === null) {
+          if (++run >= 6) return Math.min(best, d - 2.5);
+        } else {
+          h = y;
+          run = 0;
+        }
+      }
+      return best;
+    };
+    const bad: string[] = [];
+    let sides = 0;
+    for (let i = 0; i < t.n; i += 2) {
+      for (const side of [1, -1]) {
+        const wall = side > 0 ? t.wallR[i]! : t.wallL[i]!;
+        if (wall >= 39.5) continue;
+        sides++;
+        // uma coluna fina pode ficar entre dois pontos: vale o obstáculo mais próximo em ±2 m
+        let obst = 99;
+        for (let o = -2; o <= 2; o++) obst = Math.min(obst, obstacle(((i + o) % t.n + t.n) % t.n, side));
+        if (wall < obst - 4) bad.push(`${i}/${side}: barreira em ${wall.toFixed(1)} m, primeiro obstáculo visível a ${obst.toFixed(1)} m`);
+      }
+    }
+    expect(sides).toBeGreaterThan(200);
+    expect(bad.slice(0, 5), `${bad.length} lados`).toEqual([]);
+  }, 120_000);
+
+  it('a barreira nunca deixa o kart andar onde não há nada para pisar (vazio de 3 m ou mais)', async () => {
+    const t = gpTrack(GP_TRACK_CASTLE);
+    const vs = await loadSurface();
+    expect(vs.cells).toBeGreaterThan(10_000);
     const bad: string[] = [];
     for (let i = 0; i < t.n; i++) {
       for (const side of [1, -1]) {
         const nx = -t.tz[i]! * side;
         const nz = t.tx[i]! * side;
         const wall = side > 0 ? t.wallR[i]! : t.wallL[i]!;
+        let h = vs.near(t.x[i]!, t.z[i]!, t.yAt(i * t.ds));
+        if (h === null) continue;
         let run = 0;
-        for (let d = 0; d <= Math.min(wall, 40); d += 0.5) {
-          run = has(t.x[i]! + nx * d, t.z[i]! + nz * d) ? 0 : run + 1;
-          // 4 passos de 0,5 m = 2 m sem chão; a folga de 1 m cobre o piso mínimo da barreira (a pista tem 7 m de meia largura)
-          if (run >= 4 && d - 1.5 >= 5.5 && d - 1.5 < wall - 1.0) {
-            bad.push(`${i}/${side}: vazio a ${(d - 1.5).toFixed(1)} m, barreira em ${wall.toFixed(1)} m`);
+        for (let d = 0.5; d <= Math.min(wall, 40); d += 0.5) {
+          const y = vs.near(t.x[i]! + nx * d, t.z[i]! + nz * d, h);
+          if (y === null) run++;
+          else {
+            h = y;
+            run = 0;
+          }
+          // 6 passos de 0,5 m = 3 m sem superfície; a folga de 1 m cobre o piso mínimo da barreira (pista + zebra)
+          const start = d - (run - 1) * 0.5;
+          if (run >= 6 && start < wall - 1.0) {
+            bad.push(`${i}/${side}: vazio a ${start.toFixed(1)} m, barreira em ${wall.toFixed(1)} m`);
             break;
           }
         }
@@ -202,7 +258,7 @@ describe('Castle Circuit: física fiel ao visual (spec 086, seção 11)', () => 
       if (!apart) continue;
       checked++;
       // sem a regra de andares a barreira caía para ~9 m no meio do caminho; agora vale o que o modelo e o chão dizem (nunca menos que o piso da barreira)
-      expect(Math.min(t.wallL[i]!, t.wallR[i]!)).toBeGreaterThanOrEqual(GP_HALF_WIDTH - 1.5);
+      expect(Math.min(t.wallL[i]!, t.wallR[i]!)).toBeGreaterThanOrEqual(GP_HALF_WIDTH - 3.5);
     }
     expect(checked).toBeGreaterThan(0);
   });

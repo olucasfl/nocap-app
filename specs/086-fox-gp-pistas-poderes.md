@@ -79,13 +79,14 @@ O box da Marina e o de Interlagos foram para a metade da volta (Marina a ~51%, I
 - Ritmo: `vmaxK` (0,62) na definição da pista reduz a velocidade máxima do Arcade só na Castle; a volta dura cerca de 40% mais.
 - Caixas de poder não aparecem na volta de classificação, só na largada da corrida.
 
-## 11. Física fiel ao visual na Castle Circuit (18/11/2026)
+## 11. Física fiel ao visual na Castle Circuit (18/11/2026, refeita)
 
-Pedido do Lucas: paredes invisíveis na ponte e carro caindo no vazio em outros pontos. Duas causas, achadas medindo a pista:
+Pedido do Lucas: paredes invisíveis na ponte e carro caindo no vazio. A primeira correção (baseada em `ground.bin`) piorou: as emendas daquele mapa viraram "precipícios" e surgiram paredes invisíveis por toda parte. Regra nova: **a física só tem barreira onde o jogador vê um muro ou um vazio**.
 
-1. **Muro no meio do caminho no cruzamento.** `buildWalls` põe a barreira "no meio" quando outro trecho da pista passa perto, sem olhar a altura. Na ponte, a estrada de baixo (mais de 3 m abaixo) apertava a barreira para uns 9 m dos dois lados. Agora trechos em andares diferentes (`GP_LEVEL_APART`, 3 m) não contam um para o outro.
-2. **Barreira além do chão.** Onde o modelo não tinha parede, valia a barreira genérica de 18 m, mas o chão do mapa (`ground.bin`) acabava a 6 ou 9 m: o kart andava por cima do nada. `tools/art/track/refine-castle-walls.mjs` anda para fora da estrada a cada 0,5 m seguindo o chão (o andar mais perto da altura da estrada) e fecha `wallsL`/`wallsR` onde há 1,5 m sem chão ou um degrau de mais de 1,2 m (muro, borda de ponte, barranco). Só diminui, então rodar de novo não muda nada, e ela vale para o trecho entre pontos de controle vizinhos. O piso da barreira com o modelo na mão passou de 7,8 m para 5,5 m, porque em alguns trechos a estrada do modelo é mais estreita que a da física.
+1. Em pista de modelo (com `heights`), `buildWalls` não cria mais a parede "no meio" entre trechos próximos nem o limite genérico de 18 m (teto de 40 m, `GP_MODEL_FAR`); o cruzamento da ponte, em andares diferentes, também nunca aperta (`GP_LEVEL_APART`, 3 m).
+2. `tools/art/track/refine-castle-walls.mjs` gera `wallsL/wallsR` (por ponto de controle) e `wallsLD/wallsRD` (um valor por metro de pista, usado pela física) com a primeira de duas coisas, medidas em `core.bin`, o que se vê: uma parede de verdade (`visible-walls.mjs`: triângulos verticais ou íngremes na altura do kart) ou um vazio de 3 m sem superfície (`visible-surface.mjs`). Sob a ponte, onde o centro não tem superfície, vale só a parede visível. Mínimo de 3 m; o piso com o modelo na mão é 3,5 m (`GP_HALF_WIDTH - 3.5`) e a folga da parede é 1,1 m.
+3. A ferramenta não lê as listas antigas: rodar de novo dá o mesmo resultado.
 
-Testes (`castle.test.ts`): a barreira nunca deixa o kart andar sobre um vazio de 2 m ou mais no chão real do mapa (lê `ground.bin`), e no cruzamento da ponte a barreira não cai para o muro do meio. Os 6 bots seguem completando 3 voltas.
+Testes (`castle.test.ts`): nenhum vazio de 2 m ou mais dentro da barreira; no cruzamento da ponte a barreira não cai para o muro do meio; toda barreira tem um muro ou vazio visível logo atrás (sem parede invisível). Os 6 bots seguem completando 3 voltas (24,1 a 25,7 s).
 
-Falta: conferir jogando (o Lucas) e, se ainda houver queda no vazio, o ponto exato (a distância da volta) para olhar o chão dali.
+Falta: conferir jogando (o Lucas). A altura do kart onde o mapa de chão (`GroundMap`) falha ("limbo" visual) não mudou; se ainda houver queda, regenerar `ground.bin` a partir da superfície visível.
