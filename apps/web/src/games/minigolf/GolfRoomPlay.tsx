@@ -8,7 +8,6 @@ import {
   GOLF_ROOM_DEFAULTS,
   GolfPredictWorld,
   GOLF_TIER_LABEL,
-  golfParOf,
   golfScoreName,
   golfTierOf,
   parseGolfBall,
@@ -20,6 +19,7 @@ import { at, leaveRoom, sendRoom, sendRoomQuiet, serverNow, subscribeRoom, useMe
 import { golfSfx } from '@/lib/minigolf-audio';
 import { useTouchGuard } from '../foxgp/touch-guard';
 import { GolfScene } from './GolfScene';
+import { GolfSheet } from './GolfSheet';
 import { loadLevel } from './level-loader';
 import './minigolf.css';
 
@@ -425,7 +425,6 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   const lvTier = info.level ? GOLF_TIER_LABEL[golfTierOf(info.level)] : '';
   const members = snapshot.members;
   const showBoard = board || held;
-  const ranked = [...members].sort((a, b) => (info.totals[a.id] ?? 0) - (info.totals[b.id] ?? 0));
   const last = info.results[info.results.length - 1];
   const myName = info.names[me] as GolfScoreName | undefined;
   const live = members.filter((m) => m.id !== me && (info.status[m.id] ?? 0) < 2);
@@ -439,51 +438,7 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   };
   const lastHole = hole + 1 >= info.levels.length;
   const closing = stage === 'cleared' && !lastHole && left < 900;
-  const sheet = (
-    <div className="mg-sheet" data-testid="golf-sheet">
-      <table>
-        <thead>
-          <tr>
-            <th className="mg-sheet-name">Buraco</th>
-            {info.levels.map((lv, k) => (
-              <th key={k} className={k === hole ? 'now' : ''}>{k + 1}</th>
-            ))}
-            <th className="mg-sheet-total">Total</th>
-          </tr>
-          <tr className="mg-sheet-par">
-            <th className="mg-sheet-name">Par</th>
-            {info.levels.map((lv, k) => (
-              <th key={k} className={k === hole ? 'now' : ''}>{info.results[k]?.par ?? golfParOf(lv)}</th>
-            ))}
-            <th className="mg-sheet-total">{info.levels.reduce((n, lv, k) => n + (info.results[k]?.par ?? golfParOf(lv)), 0)}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {ranked.map((m, i) => (
-            <tr key={m.id} className={m.id === me ? 'me' : ''}>
-              <td className="mg-sheet-name">
-                <span className="mg-num">{i + 1}</span>
-                <span className="mg-lobby-ball" style={{ background: hex(info.looks[m.id]?.color ?? 0xffc83d) }} aria-hidden="true" />
-                <span className="mg-lobby-name">{nameOf(m.id, m.username)}</span>
-              </td>
-              {info.levels.map((lv, k) => {
-                const r = info.results[k];
-                const row = r?.rows[m.id];
-                if (row) {
-                  const n = golfScoreName(row.s, r!.par, row.h);
-                  return <td key={k} className={`mg-cell ${nameClass(n)}`}>{row.h ? row.s : 'X'}</td>;
-                }
-                // o buraco em andamento mostra as tacadas de agora, apagadas, até fechar
-                const live = k === hole && !r && info.stage === 'play' ? info.strokes[m.id] : 0;
-                return <td key={k} className="mg-cell mg-mut">{live ? live : ''}</td>;
-              })}
-              <td className="mg-sheet-total">{info.totals[m.id] ?? 0}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
+  const sheet = <GolfSheet info={info} members={members} me={me} hole={hole} />;
   const leave = () => void navigate({ to: '/minigolf' }).then(() => leaveRoom());
 
   return (

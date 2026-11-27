@@ -3,6 +3,7 @@ import { closeRoom, leaveRoom, sendRoom, useMeId, useRoom, at, type RoomSnapshot
 import { GOLF_SCORE_LABEL, golfScoreName } from '@nocap/games';
 import { RematchBoard } from '@/components/final/RematchBoard';
 import { useTouchGuard } from '../foxgp/touch-guard';
+import { GolfSheet } from './GolfSheet';
 import './minigolf.css';
 
 const hex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
@@ -70,6 +71,12 @@ export function GolfRoomFinal({ snapshot }: { snapshot: RoomSnapshot }) {
               </div>
             ))}
           </div>
+        )}
+        {info && results.length > 0 && (
+          <section className="mgh-card" aria-label="Placar completo" data-testid="golf-final-sheet">
+            <div className="mg-kick">Placar completo</div>
+            <GolfSheet info={info} members={[...snapshot.members].sort((a, b) => (rows.find((r) => r.userId === a.id)?.placement ?? 99) - (rows.find((r) => r.userId === b.id)?.placement ?? 99))} me={me ?? ''} hole={null} />
+          </section>
         )}
         {message && <p className="mgh-mut" role="alert">{message}</p>}
         <RematchBoard

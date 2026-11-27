@@ -101,3 +101,5 @@ Agora (`packages/games/src/minigolf/predict.ts`, `GolfPredictWorld`, 5 testes): 
 - Minha tacada sai na hora e bate nas outras bolas no ponto certo; a bola atingida reage no mesmo instante e fica poupada da correção por 0,4 s (o quadro do servidor ainda não sabe da batida).
 - Cada quadro do servidor (idade estimada = jitter medido + 40 ms) puxa a bola 30% do erro, e a velocidade também; erro acima de 1,5 m salta (volta ao ponto da tacada, água). Durante a minha previsão compara-se com o ponto mais perto do caminho previsto, para o atraso da rede não contar como erro; o servidor só vale como "parada" depois de 1,2 s da tacada. Bolas no buraco ou sem tacadas ficam paradas onde o servidor diz.
 - Nomes: o elemento que guarda os nomes sobrevivia à troca de buraco e deixava nomes velhos parados; agora é limpo ao trocar de fase e ao sair.
+
+O fim da partida online (`GolfRoomFinal`) já tinha pódio, lista, resumo e revanche; agora também mostra o placar completo (buraco a buraco, com o par) no mesmo componente do placar da partida (`GolfSheet`).
