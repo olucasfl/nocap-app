@@ -6,7 +6,7 @@ import { GOLF_BALL_RADIUS, GOLF_DT, GolfLevel, golfHit, golfNewBall, golfStep, t
 export const GOLF_ROOM_MAX = 8;
 /** Contagem antes de cada buraco e pausa mostrando o resultado, em ms. */
 export const GOLF_INTRO_MS = 3500;
-export const GOLF_CLEARED_MS = 3800;
+export const GOLF_CLEARED_MS = 6500;
 /** Quantos buracos a sala aceita, quais dificuldades e quanto tempo cada buraco dura (s). */
 export const GOLF_ROOM_HOLES = [3, 6, 9, 12, 18, 25] as const;
 export const GOLF_ROOM_TIERS = ['mix', 'easy', 'medium', 'hard'] as const;

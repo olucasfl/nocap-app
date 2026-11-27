@@ -73,6 +73,12 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   const [held, setHeld] = useState(false);
   const [, setTick] = useState(0);
   const [loading, setLoading] = useState(true);
+  // a cena "ACERTOU" da minha bola (alguns segundos) e quem estou assistindo depois dela
+  const [cele, setCele] = useState<{ kind: 'holed' | 'failed'; name: GolfScoreName | null; strokes: number } | null>(null);
+  const [watch, setWatch] = useState<string | null>(null);
+  const watchRef = useRef<string | null>(null);
+  const celeRef = useRef(false);
+  celeRef.current = cele !== null;
 
   useEffect(() => {
     const i = window.setInterval(() => setTick((t) => t + 1), 250);
@@ -107,10 +113,36 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   useEffect(() => {
     if (info.stage === 'cleared' && lastStage.current !== 'cleared') {
       const n = info.names[me];
-      if (n) golfSfx.score(n);
+      // quem encaçapou já ouviu o resultado na cena "Acertou"
+      if (n && info.status[me] !== 2) golfSfx.score(n);
     }
     lastStage.current = info.stage;
   }, [info.stage, info.names, me]);
+
+  // minha bola entrou (ou acabaram as tacadas): cena de resultado e depois vira espectador. Só dispara na virada de estado
+  // durante o jogo, não ao abrir a tela já com a bola no buraco.
+  const prevMine = useRef<{ hole: number; st: number } | null>(null);
+  useEffect(() => {
+    const st = info.status[me] ?? 0;
+    const prev = prevMine.current;
+    prevMine.current = { hole: info.hole, st };
+    if (info.stage !== 'play') {
+      setCele(null);
+      return;
+    }
+    if (!prev || prev.hole !== info.hole) {
+      setCele(null);
+      return;
+    }
+    if (prev.st < 2 && st >= 2) {
+      const strokes = info.strokes[me] ?? 0;
+      const name = st === 2 && info.par ? golfScoreName(strokes, info.par, true) : null;
+      if (name) golfSfx.score(name);
+      setCele({ kind: st === 2 ? 'holed' : 'failed', name, strokes });
+      const t = window.setTimeout(() => setCele(null), 3000);
+      return () => window.clearTimeout(t);
+    }
+  }, [info.status, info.stage, info.hole, info.strokes, info.par, me]);
 
   const level = info.level;
   const hole = info.hole;
@@ -385,6 +417,15 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
           }
           balls.push({ slot, look: parseGolfBall(inf.looks[id]), pos, vel });
         }
+        // espectador: depois da cena do resultado, a câmera acompanha quem ainda joga
+        const spec = watchRef.current ? inf.slots[watchRef.current] : undefined;
+        if ((inf.status[me] ?? 0) >= 2 && !celeRef.current && spec !== undefined) {
+          const wb = balls.find((b) => b.slot === spec);
+          if (wb) {
+            focus = wb.pos;
+            sc.focusHole = false;
+          }
+        }
         myPos = focus;
         sc.setAim({ pos: focus } as GolfBall, canAim() ? aim : null);
         sc.readyHint = canAim();
@@ -440,6 +481,62 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   const ranked = [...members].sort((a, b) => (info.totals[a.id] ?? 0) - (info.totals[b.id] ?? 0));
   const last = info.results[info.results.length - 1];
   const myName = info.names[me] as GolfScoreName | undefined;
+  const live = members.filter((m) => m.id !== me && (info.status[m.id] ?? 0) < 2);
+  const watching = live.find((m) => m.id === watch) ?? live[0] ?? null;
+  watchRef.current = watching?.id ?? null;
+  const spectating = stage === 'play' && myStatus >= 2 && !cele;
+  const cycle = (d: number) => {
+    if (live.length < 2) return;
+    const i = Math.max(0, live.findIndex((m) => m.id === watching?.id));
+    setWatch(live[(i + d + live.length) % live.length]!.id);
+  };
+  const lastHole = hole + 1 >= info.levels.length;
+  const closing = stage === 'cleared' && !lastHole && left < 900;
+  const sheet = (
+    <div className="mg-sheet" data-testid="golf-sheet">
+      <table>
+        <thead>
+          <tr>
+            <th className="mg-sheet-name">Buraco</th>
+            {info.levels.map((lv, k) => (
+              <th key={k} className={k === hole ? 'now' : ''}>{k + 1}</th>
+            ))}
+            <th className="mg-sheet-total">Total</th>
+          </tr>
+          <tr className="mg-sheet-par">
+            <th className="mg-sheet-name">Par</th>
+            {info.levels.map((lv, k) => (
+              <th key={k} className={k === hole ? 'now' : ''}>{info.results[k]?.par ?? golfParOf(lv)}</th>
+            ))}
+            <th className="mg-sheet-total">{info.levels.reduce((n, lv, k) => n + (info.results[k]?.par ?? golfParOf(lv)), 0)}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {ranked.map((m, i) => (
+            <tr key={m.id} className={m.id === me ? 'me' : ''}>
+              <td className="mg-sheet-name">
+                <span className="mg-num">{i + 1}</span>
+                <span className="mg-lobby-ball" style={{ background: hex(info.looks[m.id]?.color ?? 0xffc83d) }} aria-hidden="true" />
+                <span className="mg-lobby-name">{nameOf(m.id, m.username)}</span>
+              </td>
+              {info.levels.map((lv, k) => {
+                const r = info.results[k];
+                const row = r?.rows[m.id];
+                if (row) {
+                  const n = golfScoreName(row.s, r!.par, row.h);
+                  return <td key={k} className={`mg-cell ${nameClass(n)}`}>{row.h ? row.s : 'X'}</td>;
+                }
+                // o buraco em andamento mostra as tacadas de agora, apagadas, até fechar
+                const live = k === hole && !r && info.stage === 'play' ? info.strokes[m.id] : 0;
+                return <td key={k} className="mg-cell mg-mut">{live ? live : ''}</td>;
+              })}
+              <td className="mg-sheet-total">{info.totals[m.id] ?? 0}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
   const leave = () => void navigate({ to: '/minigolf' }).then(() => leaveRoom());
 
   return (
@@ -486,7 +583,29 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       </div>
 
       {stage === 'play' && power === null && myStatus === 0 && !loading && <div className="mg-hint">{HINT}</div>}
-      {stage === 'play' && myStatus >= 2 && <div className="mg-hint">{myStatus === 2 ? 'No buraco! Esperando os outros...' : 'Fim das tacadas neste buraco. Esperando os outros...'}</div>}
+      {cele && (
+        <div className="mg-score mg-cele" data-testid="golf-holed" role="status">
+          <span className="mg-tag">{cele.kind === 'holed' ? `${cele.strokes} ${cele.strokes === 1 ? 'tacada' : 'tacadas'} · Par ${info.par ?? ''}` : 'Limite de tacadas'}</span>
+          <h1 className={`mg-disp ${cele.kind === 'holed' ? (cele.name ? nameClass(cele.name) : 'mg-ok') : 'mg-calm'}`}>{cele.kind === 'holed' ? 'Acertou!' : 'Acabou!'}</h1>
+          <div className="sub">{cele.kind === 'holed' ? (cele.name ? GOLF_SCORE_LABEL[cele.name] : '') : 'Sem tacadas neste buraco'}</div>
+        </div>
+      )}
+      {spectating && (
+        <div className="mg-spec" data-testid="golf-spectate">
+          {watching ? (
+            <>
+              <button type="button" className="mg-pill ghost" onClick={() => cycle(-1)} disabled={live.length < 2} aria-label="Jogador anterior">‹</button>
+              <div className="mg-spec-who">
+                <span className="mg-kick">{myStatus === 2 ? 'No buraco! Assistindo' : 'Assistindo'}</span>
+                <b>{nameOf(watching.id, watching.username)}</b>
+              </div>
+              <button type="button" className="mg-pill ghost" onClick={() => cycle(1)} disabled={live.length < 2} aria-label="Próximo jogador">›</button>
+            </>
+          ) : (
+            <div className="mg-spec-who"><span className="mg-kick">Esperando o buraco fechar</span></div>
+          )}
+        </div>
+      )}
       {power !== null && (
         <div className="mg-power" aria-hidden="true">
           <div className="mg-kick" style={{ textAlign: 'center' }}>Força {Math.round(power * 100)}%</div>
@@ -504,29 +623,18 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       )}
 
       {stage === 'cleared' && last && (
-        <div className="mg-score" data-testid="golf-cleared">
-          <div style={{ display: 'flex', gap: 10 }}>
+        <div className="mg-score mg-cleared" data-testid="golf-cleared">
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
             <span className="mg-tag">Buraco {hole + 1} · Par {last.par}</span>
             {last.rows[me] && <span className="mg-tag">{last.rows[me]!.h ? `${last.rows[me]!.s} ${last.rows[me]!.s === 1 ? 'tacada' : 'tacadas'}` : `Conta ${last.rows[me]!.s}`}</span>}
           </div>
           {myName && <h1 className={`mg-disp ${nameClass(myName)}`}>{GOLF_SCORE_LABEL[myName]}</h1>}
-          <div className="mg-cleared-list">
-            {members.map((m) => {
-              const r = last.rows[m.id];
-              const n = info.names[m.id] as GolfScoreName | undefined;
-              return r ? (
-                <div key={m.id} className="mg-restrow">
-                  <span className="mg-lobby-ball" style={{ background: hex(info.looks[m.id]?.color ?? 0xffc83d) }} aria-hidden="true" />
-                  <span className="mg-lobby-name">{nameOf(m.id, m.username)}</span>
-                  <span className={n ? nameClass(n) : ''}>{n ? GOLF_SCORE_LABEL[n] : ''}</span>
-                  <span className="mono">{r.s}</span>
-                </div>
-              ) : null;
-            })}
-          </div>
-          <div className="sub">{hole + 1 < info.levels.length ? 'Próximo buraco já já...' : 'Fim da partida'}</div>
+          <div className="mg-cleared-sheet" data-testid="golf-cleared-sheet">{sheet}</div>
+          <div className="sub">{lastHole ? 'Fim da partida: o ranking vem já' : 'Próximo buraco já já...'}</div>
         </div>
       )}
+      {closing && <div className="mg-wipe in" aria-hidden="true" />}
+      {stage === 'intro' && hole > 0 && <div key={hole} className="mg-wipe out" aria-hidden="true" />}
 
       {showBoard && (
         <div className="mg-board" data-testid="golf-board">
@@ -538,49 +646,7 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
               </div>
               <button type="button" className="mg-pill" onClick={() => setBoard(false)}>Fechar</button>
             </div>
-            <div className="mg-sheet" data-testid="golf-sheet">
-              <table>
-                <thead>
-                  <tr>
-                    <th className="mg-sheet-name">Buraco</th>
-                    {info.levels.map((lv, k) => (
-                      <th key={k} className={k === hole ? 'now' : ''}>{k + 1}</th>
-                    ))}
-                    <th className="mg-sheet-total">Total</th>
-                  </tr>
-                  <tr className="mg-sheet-par">
-                    <th className="mg-sheet-name">Par</th>
-                    {info.levels.map((lv, k) => (
-                      <th key={k} className={k === hole ? 'now' : ''}>{info.results[k]?.par ?? golfParOf(lv)}</th>
-                    ))}
-                    <th className="mg-sheet-total">{info.levels.reduce((n, lv, k) => n + (info.results[k]?.par ?? golfParOf(lv)), 0)}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ranked.map((m, i) => (
-                    <tr key={m.id} className={m.id === me ? 'me' : ''}>
-                      <td className="mg-sheet-name">
-                        <span className="mg-num">{i + 1}</span>
-                        <span className="mg-lobby-ball" style={{ background: hex(info.looks[m.id]?.color ?? 0xffc83d) }} aria-hidden="true" />
-                        <span className="mg-lobby-name">{nameOf(m.id, m.username)}</span>
-                      </td>
-                      {info.levels.map((lv, k) => {
-                        const r = info.results[k];
-                        const row = r?.rows[m.id];
-                        if (row) {
-                          const n = golfScoreName(row.s, r!.par, row.h);
-                          return <td key={k} className={`mg-cell ${nameClass(n)}`}>{row.h ? row.s : 'X'}</td>;
-                        }
-                        // o buraco em andamento mostra as tacadas de agora, apagadas, até fechar
-                        const live = k === hole && !r && info.stage === 'play' ? info.strokes[m.id] : 0;
-                        return <td key={k} className="mg-cell mg-mut">{live ? live : ''}</td>;
-                      })}
-                      <td className="mg-sheet-total">{info.totals[m.id] ?? 0}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            {sheet}
             <div className="mg-board-foot">
               <span className="mg-tag">Verde: abaixo do par · X: acabaram as tacadas</span>
               <span className="mg-board-gap" />

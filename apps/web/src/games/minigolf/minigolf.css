@@ -1351,3 +1351,120 @@
 .mg-board {
   padding: max(16px, var(--sa-top, 0px)) max(16px, var(--sa-right, 0px)) max(16px, var(--sa-bottom, 0px)) max(16px, var(--sa-left, 0px));
 }
+
+/* Cena "Acertou!" da minha bola: não bloqueia a tela, o buraco continua visível atrás */
+.mg-cele {
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 45%, rgba(10, 21, 16, 0) 10%, rgba(10, 21, 16, 0.7) 90%);
+}
+.mg-cele h1 {
+  font-size: clamp(72px, 19vw, 240px);
+}
+@media (max-height: 520px) and (orientation: landscape) {
+  .mg-cele h1 {
+    font-size: clamp(56px, 22vh, 140px);
+  }
+}
+
+/* Espectador: barra com quem está sendo assistido e os botões para trocar */
+.mg-spec {
+  position: absolute;
+  left: 50%;
+  bottom: max(20px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100vw - 32px);
+  padding: 6px;
+  border-radius: 16px;
+  background: rgba(10, 21, 16, 0.86);
+  border: 1px solid var(--mg-line);
+}
+.mg-spec .mg-pill {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  justify-content: center;
+  font-size: 24px;
+}
+.mg-spec-who {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 140px;
+  padding: 0 6px;
+}
+.mg-spec-who b {
+  font-family: var(--mg-disp);
+  font-size: 20px;
+  max-width: 46vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 520px) {
+  .mg-spec {
+    bottom: 88px;
+  }
+}
+
+/* Pausa do buraco: o resultado e o placar em tabela */
+.mg-cleared {
+  justify-content: flex-start;
+  padding: calc(env(safe-area-inset-top) + 56px) 12px max(16px, env(safe-area-inset-bottom));
+  overflow-y: auto;
+  gap: 8px;
+}
+.mg-cleared h1 {
+  font-size: clamp(48px, 11vw, 120px);
+}
+.mg-cleared-sheet {
+  width: min(96vw, 920px);
+}
+@media (max-height: 520px) and (orientation: landscape) {
+  .mg-cleared {
+    padding-top: 52px;
+    gap: 2px;
+  }
+  .mg-cleared h1 {
+    font-size: clamp(36px, 15vh, 80px);
+  }
+}
+
+/* Troca de buraco: um painel cobre a tela no fim da pausa e descobre quando o próximo começa (só transform) */
+.mg-wipe {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+  background: var(--mg-lime);
+  will-change: transform;
+}
+.mg-wipe.in {
+  animation: mg-wipe-in 0.6s cubic-bezier(0.7, 0, 0.3, 1) both;
+}
+.mg-wipe.out {
+  animation: mg-wipe-out 0.7s cubic-bezier(0.7, 0, 0.3, 1) both;
+}
+@keyframes mg-wipe-in {
+  from {
+    transform: translateX(-101%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@keyframes mg-wipe-out {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(101%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mg-wipe {
+    display: none;
+  }
+}

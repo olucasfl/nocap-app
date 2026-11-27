@@ -72,3 +72,12 @@ Relato do Lucas: na sala online a bola voltava depois da primeira tacada e não 
 
 1. **Servidor.** Quando a bola parava, o estado dela voltava a "pronta" (`aim`) sem nenhum evento, então o estado da sala não era republicado e o aparelho ficava preso em "rolando": uma tacada por buraco. `GolfRoomEngine.tick` agora compara o estado de todas as bolas a cada passo e republica quando muda (teste: "republica o estado quando a bola para").
 2. **Aparelho.** A previsão da própria tacada durava 380 ms e depois trocava para a posição do servidor, que chega atrasada (rede mais os 90 ms de interpolação), e a bola dava um pulo para trás. Agora a previsão vale até a bola parar; só cede ao servidor se ele disser, depois de 1,2 s, que a bola não rola (tacada recusada, buraco, volta ao ponto). A mira usa o estado do quadro mais recente (`st`), não só o do estado da sala, e não mira durante a previsão.
+
+## Fim de buraco na sala online (27/11/2026)
+
+Pedido do Lucas: quando a bola entra, mostrar a cena de acerto e depois deixar assistir; sem ninguém jogando, mostrar a tabela e animar a troca de fase; no último buraco só ir ao ranking ao acabar.
+
+- Minha bola encaçapa (ou acabam as tacadas): cena "Acertou!" (ou "Acabou!") com a nota do buraco por 3 s (`mg-cele`), com o som do resultado. Só dispara na virada de estado durante o jogo.
+- Depois vira **espectador**: a câmera acompanha quem ainda joga, com barra "Assistindo X" e botões para trocar (44 px). Sem ninguém jogando, espera o buraco fechar.
+- Pausa do buraco (`GOLF_CLEARED_MS`, 6,5 s): nota de cada um e o placar em tabela na própria tela. Fora do último buraco, um painel lima cobre a tela no fim (`mg-wipe in`) e descobre quando o próximo buraco começa (`mg-wipe out`), só `transform`, desligado com `prefers-reduced-motion`.
+- Último buraco: a pausa mostra a tabela e o ranking só vem quando o buraco fecha e a pausa acaba.
