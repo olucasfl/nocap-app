@@ -2,15 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import {
   GOLF_BALL_DEFAULT,
-  GOLF_DT,
   GOLF_SCORE_LABEL,
   GOLF_STROKE_LIMIT,
+  GOLF_PREDICT,
+  GOLF_ROOM_DEFAULTS,
+  GolfPredictWorld,
   GOLF_TIER_LABEL,
-  golfHit,
-  golfNewBall,
   golfParOf,
   golfScoreName,
-  golfStep,
   golfTierOf,
   parseGolfBall,
   type GolfBall,
@@ -25,19 +24,6 @@ import { loadLevel } from './level-loader';
 import './minigolf.css';
 
 type V3 = [number, number, number];
-interface Sample {
-  /** Hora do servidor no quadro (ms): é o eixo da interpolação, não a hora em que o pacote chegou (a rede chega em rajadas). */
-  at: number;
-  pos: V3;
-  vel: V3;
-  st: number;
-}
-/** Os quadros chegam a ~31 por segundo; desenhamos um pouco no passado para mover sem trancos. */
-const DELAY_MS = 90;
-/** Teto da previsão da minha tacada (ela termina quando a bola para). */
-const PRED_MAX_MS = 9000;
-/** Só depois disto um quadro do servidor dizendo "parada" vale mais que a previsão (antes ele pode ser de antes da tacada). */
-const PRED_TRUST_MS = 1200;
 /** No PC a câmera gira com o botão direito do mouse; no celular, pelas setas da tela. */
 const HINT =
   typeof window !== 'undefined' && window.matchMedia?.('(pointer: fine)').matches
@@ -54,7 +40,7 @@ const nameClass = (n: GolfScoreName) => (n === 'ace' ? 'mg-ace' : n === 'albatro
 
 /**
  * O Mini Golf em sala (spec 082). O servidor simula todas as bolas; aqui desenhamos: as bolas dos quadros do servidor
- * (interpoladas), a minha tacada prevista na hora pela mesma física (para não esperar a rede) e o placar.
+ * (corrigidas pela mesma física rodando aqui para todas, inclusive a batida entre elas) e o placar.
  */
 export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
   useTouchGuard();
@@ -156,6 +142,7 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
     const offs: (() => void)[] = [];
     setLoading(true);
     setPower(null);
+    namesRef.current?.replaceChildren();
 
     void loadLevel(level).then((lv) => {
       if (!alive || !canvasRef.current || !boxRef.current) return;
@@ -174,13 +161,13 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       fit();
       setLoading(false);
 
-      const samples = new Map<number, Sample[]>();
+      // o mundo do buraco aqui: a mesma física do servidor para todas as bolas, corrigida pelos quadros dele
+      const world = new GolfPredictWorld(lv, (snapRef.current.settings as { collide?: boolean } | undefined)?.collide ?? GOLF_ROOM_DEFAULTS.collide);
       // relógio do servidor no aparelho: o menor atraso visto (chegada − hora do quadro); sobe devagar para acompanhar a deriva
       let off = Number.NaN;
       const serverMs = (now: number) => (Number.isNaN(off) ? 0 : now - off);
-      let pred: { ball: GolfBall; until: number; t: number; acc: number; hist: { at: number; x: number; z: number }[]; fixedAt: number } | null = null;
-      let blend: { from: V3; start: number } | null = null;
       let lastShot = 0;
+      let lastTs = -1;
       const start = lv.data.ballStart;
       const startPos: V3 = [start[0], start[1] + 0.12, start[2]];
 
@@ -189,14 +176,12 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
           const f = m as { t: number; balls: number[][] };
           const now = performance.now();
           const ts = f.t * 1000;
+          if (ts <= lastTs) return;
+          lastTs = ts;
           off = Number.isNaN(off) ? now - ts : Math.min(off + 0.5, now - ts);
-          for (const b of f.balls) {
-            const arr = samples.get(b[0]!) ?? [];
-            if (arr.length > 0 && ts <= arr[arr.length - 1]!.at) continue;
-            arr.push({ at: ts, pos: [b[1]!, b[2]!, b[3]!], vel: [b[4]!, b[5]!, b[6]!], st: b[7]! });
-            if (arr.length > 8) arr.shift();
-            samples.set(b[0]!, arr);
-          }
+          // a idade do quadro: o jitter acima do melhor caso mais a ida pela rede
+          const age = Math.max(0, (now - off - ts) / 1000) + GOLF_PREDICT.LATENCY;
+          for (const b of f.balls) world.apply(b[0]!, { pos: [b[1]!, b[2]!, b[3]!], vel: [b[4]!, b[5]!, b[6]!], st: b[7]!, age });
         }),
       );
       offs.push(
@@ -219,24 +204,6 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         }),
       );
 
-      const sampleAt = (slot: number, t: number): Sample | null => {
-        const arr = samples.get(slot);
-        if (!arr || arr.length === 0) return null;
-        const last = arr[arr.length - 1]!;
-        if (t >= last.at) {
-          const dt = Math.min(0.25, (t - last.at) / 1000);
-          return { ...last, pos: [last.pos[0] + last.vel[0] * dt, last.pos[1], last.pos[2] + last.vel[2] * dt] };
-        }
-        for (let i = arr.length - 1; i > 0; i--) {
-          const a = arr[i - 1]!, b = arr[i]!;
-          if (t >= a.at) {
-            const k = (t - a.at) / Math.max(1, b.at - a.at);
-            return { at: t, st: b.st, vel: b.vel, pos: [a.pos[0] + (b.pos[0] - a.pos[0]) * k, a.pos[1] + (b.pos[1] - a.pos[1]) * k, a.pos[2] + (b.pos[2] - a.pos[2]) * k] };
-          }
-        }
-        return arr[0]!;
-      };
-
       // ---- mira (arrastar para trás e soltar) ----
       let drag: { x: number; y: number; id: number } | null = null;
       let right = false;
@@ -244,10 +211,10 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       let aim: { dir: [number, number]; power: number } | null = null;
       // o estado da minha bola vem do quadro mais recente (chega ~31 vezes por segundo); o da sala só serve antes do primeiro quadro
       const myStatus = () => {
-        const arr = samples.get(infoRef.current.slots[me] ?? -1);
-        return arr && arr.length > 0 ? arr[arr.length - 1]!.st : (infoRef.current.status[me] ?? 0);
+        const slot = infoRef.current.slots[me];
+        return slot !== undefined && world.has(slot) ? world.status(slot) : (infoRef.current.status[me] ?? 0);
       };
-      const canAim = () => infoRef.current.stage === 'play' && !pred && myStatus() === 0 && performance.now() - lastShot > 400;
+      const canAim = () => infoRef.current.stage === 'play' && !world.predicting(infoRef.current.slots[me] ?? -1) && myStatus() === 0 && performance.now() - lastShot > 400;
       // botão direito no meio da puxada cancela a tacada (sem bater e sem girar a câmera)
       const cancelAim = () => {
         if (!drag || right) return false;
@@ -341,17 +308,13 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         aim = null;
         setPower(null);
         if (!a || a.power < 0.07 || !canAim()) return;
-        const arr = samples.get(infoRef.current.slots[me] ?? -1);
-        const from = arr?.[arr.length - 1]?.pos ?? startPos;
+        const mySlot = infoRef.current.slots[me] ?? -1;
+        if (!world.has(mySlot)) return;
         sendRoomQuiet('gshot', { x: a.dir[0], z: a.dir[1], p: a.power });
         golfSfx.hit(a.power);
         lastShot = performance.now();
-        // prevê a minha tacada pela mesma física, até o servidor responder
-        const ball = golfNewBall(lv.data);
-        ball.pos = [...from];
-        golfHit(ball, a.dir, a.power);
-        pred = { ball, until: performance.now() + PRED_MAX_MS, t: serverMs(performance.now()) / 1000, acc: 0, hist: [], fixedAt: -1 };
-        blend = null;
+        // sai na hora, pela mesma física do servidor, e bate nas outras bolas no ponto certo
+        world.shoot(mySlot, a.dir, a.power);
       };
       const noMenu = (e: Event) => {
         e.preventDefault();
@@ -387,60 +350,12 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         const balls: { slot: number; look: GolfBallLook; pos: V3; vel: V3; hidden?: boolean }[] = [];
         let focus: V3 = startPos;
         const mySlot = inf.slots[me];
+        world.advance(dt, holeT);
         for (const [id, slot] of Object.entries(inf.slots)) {
-          const sm = sampleAt(slot, serverMs(nowMs) - DELAY_MS);
-          if (!sm) continue;
-          let pos = sm.pos;
-          let vel = sm.vel;
+          const pos = world.pos(slot);
+          const vel = world.vel(slot);
+          if (!pos || !vel) continue;
           if (slot === mySlot) {
-            if (pred) {
-              // avança a minha bola prevista em passos fixos
-              pred.acc += dt;
-              while (pred.acc >= GOLF_DT) {
-                pred.acc -= GOLF_DT;
-                pred.t += GOLF_DT;
-                golfStep(lv, pred.ball, pred.t);
-              }
-              // guarda o caminho previsto e, a cada quadro novo do servidor, corrige só o DESVIO real (batida em outra bola,
-              // obstáculo em outra fase): o atraso da rede some ao comparar com o ponto mais próximo do caminho
-              pred.hist.push({ at: nowMs, x: pred.ball.pos[0], z: pred.ball.pos[2] });
-              while (pred.hist.length > 0 && nowMs - pred.hist[0]!.at > 2500) pred.hist.shift();
-              const srvArr = samples.get(slot);
-              const sv = srvArr?.[srvArr.length - 1];
-              if (sv && sv.at !== pred.fixedAt && sv.st === 1 && pred.hist.length > 4) {
-                pred.fixedAt = sv.at;
-                const age = Math.min(0.25, Math.max(0, (serverMs(nowMs) - sv.at) / 1000));
-                const ex = sv.pos[0] + sv.vel[0] * age, ez = sv.pos[2] + sv.vel[2] * age;
-                let bi = 0, bd = Infinity;
-                for (let i = 0; i < pred.hist.length; i++) {
-                  const d = Math.hypot(pred.hist[i]!.x - ex, pred.hist[i]!.z - ez);
-                  if (d < bd) {
-                    bd = d;
-                    bi = i;
-                  }
-                }
-                const h = pred.hist[bi]!;
-                if (bd > 0.04) {
-                  const k = bd > 2 ? 1 : 0.3;
-                  pred.ball.pos[0] += (ex - h.x) * k;
-                  pred.ball.pos[2] += (ez - h.z) * k;
-                }
-              }
-              pos = pred.ball.pos;
-              vel = pred.ball.vel;
-              // a minha bola prevista vale até parar (o servidor chega ~RTT atrasado: trocar antes puxava a bola de volta);
-              // se o servidor já diz que ela não rola (tacada recusada, buraco ou volta ao ponto), segue o servidor
-              const srv = samples.get(mySlot ?? -1);
-              const srvIdle = !!srv && srv.length > 0 && srv[srv.length - 1]!.st !== 1 && nowMs - lastShot > PRED_TRUST_MS;
-              if (!pred.ball.moving || srvIdle || nowMs >= pred.until) {
-                blend = { from: [...pred.ball.pos] as V3, start: nowMs };
-                pred = null;
-              }
-            } else if (blend) {
-              const k = Math.min(1, (nowMs - blend.start) / 320);
-              pos = [blend.from[0] + (sm.pos[0] - blend.from[0]) * k, blend.from[1] + (sm.pos[1] - blend.from[1]) * k, blend.from[2] + (sm.pos[2] - blend.from[2]) * k];
-              if (k >= 1) blend = null;
-            }
             focus = pos;
             // câmera de perto no copo quando a minha bola cai nele
             sc.focusHole = Math.hypot(pos[0] - holePos[0], pos[2] - holePos[2]) < 0.45 && pos[1] < holePos[1] + 0.05;
@@ -499,6 +414,8 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       offs.forEach((f) => f());
       ro?.disconnect();
       scene?.dispose();
+      // os nomes ficam num elemento que sobrevive à troca de fase: sem isto sobravam nomes parados na tela
+      namesRef.current?.replaceChildren();
     };
   }, [level, hole, me]);
 

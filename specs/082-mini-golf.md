@@ -90,3 +90,14 @@ Duas causas no aparelho, ambas de reconciliação com o servidor:
 2. Depois da correção da primeira tacada, a previsão da minha bola vale até parar, e uma batida em outra bola (ou qualquer divergência) só aparecia no fim, como um pulo. Agora, a cada quadro novo do servidor, compara-se a posição dele com o ponto mais próximo do caminho previsto (assim o atraso da rede não conta) e só o desvio real é corrigido, aos poucos (30% por quadro; desvio acima de 2 m corrige de uma vez); a troca final para o servidor dura 320 ms.
 
 Volta ao ponto da tacada (água ou fora do campo) continua sendo um salto de verdade, decidido pelo servidor.
+
+## Colisão e rede refeitas no aparelho (27/11/2026)
+
+Relato do Lucas: a bola bate na outra sem parecer que bate, entra dentro dela e só depois empurra; teletransporte; nomes parados na tela.
+
+Causa: o aparelho previa só a minha bola (sem as outras) e desenhava as outras do servidor, interpoladas ~100 ms no passado. Minha bola atravessava uma bola parada, o servidor empurrava depois e a correção chegava como pulo.
+
+Agora (`packages/games/src/minigolf/predict.ts`, `GolfPredictWorld`, 5 testes): o aparelho roda a MESMA física do servidor (`golfStep` e `golfBallCollide`, 120 Hz) para TODAS as bolas, sem atraso de interpolação.
+- Minha tacada sai na hora e bate nas outras bolas no ponto certo; a bola atingida reage no mesmo instante e fica poupada da correção por 0,4 s (o quadro do servidor ainda não sabe da batida).
+- Cada quadro do servidor (idade estimada = jitter medido + 40 ms) puxa a bola 30% do erro, e a velocidade também; erro acima de 1,5 m salta (volta ao ponto da tacada, água). Durante a minha previsão compara-se com o ponto mais perto do caminho previsto, para o atraso da rede não contar como erro; o servidor só vale como "parada" depois de 1,2 s da tacada. Bolas no buraco ou sem tacadas ficam paradas onde o servidor diz.
+- Nomes: o elemento que guarda os nomes sobrevivia à troca de buraco e deixava nomes velhos parados; agora é limpo ao trocar de fase e ao sair.
