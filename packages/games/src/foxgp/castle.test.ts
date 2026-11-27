@@ -163,17 +163,17 @@ async function loadSurface(): Promise<Surface> {
 type Walls = { count: number; hit: (x: number, z: number, h: number, dx: number, dz: number, max?: number) => number };
 
 /** As paredes do cenário que o jogador vê (`core.bin`): superfícies verticais ou íngremes na altura do kart. */
-async function loadWalls(): Promise<Walls> {
+async function loadWalls(surface: unknown): Promise<Walls> {
   // @ts-ignore
-  const mod = (await import('../../../../tools/art/track/visible-walls.mjs')) as { loadWalls: (dir: string, packs: string[]) => Walls };
-  return mod.loadWalls(fileURLToPath(new URL('../../../../apps/web/public/foxgp/castle/', import.meta.url)), ['core']);
+  const mod = (await import('../../../../tools/art/track/visible-walls.mjs')) as { loadWalls: (dir: string, packs: string[], surface: unknown) => Walls };
+  return mod.loadWalls(fileURLToPath(new URL('../../../../apps/web/public/foxgp/castle/', import.meta.url)), ['core'], surface);
 }
 
 describe('Castle Circuit: física fiel ao visual (spec 086, seção 11)', () => {
   it('toda barreira da física tem um muro ou um vazio que se vê logo atrás (nada de parede invisível)', async () => {
     const t = gpTrack(GP_TRACK_CASTLE);
     const vs = await loadSurface();
-    const walls = await loadWalls();
+    const walls = await loadWalls(vs);
     expect(walls.count).toBeGreaterThan(1000);
     // o primeiro vazio (3 m sem superfície) ou parede visível para o lado `side` a partir da amostra `i`
     const obstacle = (i: number, side: number): number => {

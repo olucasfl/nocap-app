@@ -85,7 +85,10 @@ Pedido do Lucas: paredes invisíveis na ponte e carro caindo no vazio. A primeir
 
 1. Em pista de modelo (com `heights`), `buildWalls` não cria mais a parede "no meio" entre trechos próximos nem o limite genérico de 18 m (teto de 40 m, `GP_MODEL_FAR`); o cruzamento da ponte, em andares diferentes, também nunca aperta (`GP_LEVEL_APART`, 3 m).
 2. `tools/art/track/refine-castle-walls.mjs` gera `wallsL/wallsR` (por ponto de controle) e `wallsLD/wallsRD` (um valor por metro de pista, usado pela física) com a primeira de duas coisas, medidas em `core.bin`, o que se vê: uma parede de verdade (`visible-walls.mjs`: triângulos verticais ou íngremes na altura do kart) ou um vazio de 3 m sem superfície (`visible-surface.mjs`). Sob a ponte, onde o centro não tem superfície, vale só a parede visível. Mínimo de 3 m; o piso com o modelo na mão é 3,5 m (`GP_HALF_WIDTH - 3.5`) e a folga da parede é 1,1 m.
-3. A ferramenta não lê as listas antigas: rodar de novo dá o mesmo resultado.
+3. A faixa de altura do kart acompanha o chão que há no caminho (vale, barranco, rampa), não a altura da estrada: um muro suspenso não conta.
+4. Só entram trechos contínuos de parede (8 m ou mais, sem saltos de mais de 2 m entre metros vizinhos, aceitando falhas de 2 m para colunas): árvore, poste ou caixa solta não vira barreira (antes criava uma "parede" inteira ao lado).
+5. A folga entre a barreira e a parede visível caiu de 1,1 m para 0,15 m (`GP_MODEL_WALL_GAP`): o carro já para a meia largura dele antes, e com 1,1 m sobrava um metro de ar entre a lataria e a pedra ("bate longe da parede").
+6. A ferramenta não lê as listas antigas: rodar de novo dá o mesmo resultado. Para conferir olhando, renderizar a cena com as barreiras em vermelho semitransparente (foi assim que as paredes soltas foram achadas).
 
 Testes (`castle.test.ts`): nenhum vazio de 2 m ou mais dentro da barreira; no cruzamento da ponte a barreira não cai para o muro do meio; toda barreira tem um muro ou vazio visível logo atrás (sem parede invisível). Os 6 bots seguem completando 3 voltas (24,1 a 25,7 s).
 

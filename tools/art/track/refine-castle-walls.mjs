@@ -5,7 +5,7 @@
  * cada lado, a barreira é a primeira entre:
  *  1. uma parede de verdade em `core.bin` (superfície vertical ou íngreme demais, na altura do kart): `visible-walls.mjs`;
  *  2. um vazio de verdade: 3 m seguidos sem superfície para pisar (`visible-surface.mjs`), onde o carro flutuaria.
- * Vale para o trecho até os pontos de controle vizinhos (a pior amostra de 1 m). Não lê as listas antigas, então rodar de
+ * Só entram trechos contínuos de parede (objetos soltos como árvores e postes não viram barreira). Não lê as listas antigas, então rodar de
  * novo dá o mesmo resultado. `99` = nada até 40 m.
  * Uso (na raiz, depois de `pnpm --filter @nocap/games build`): node tools/art/track/refine-castle-walls.mjs
  */
@@ -27,7 +27,7 @@ const TOL = 2.5;
 const t = g.gpTrack(g.GP_TRACK_CASTLE);
 const def = g.GP_TRACK_CASTLE;
 const surface = loadVisibleSurface(DIR);
-const walls = loadWalls(DIR, ['core']);
+const walls = loadWalls(DIR, ['core'], surface);
 
 /** O começo do primeiro vazio para o lado `side` a partir da amostra `i` (ou 99). null se o centro não tem superfície. */
 function voidAt(i, side) {
@@ -51,34 +51,67 @@ function voidAt(i, side) {
   return 99;
 }
 
-/** A primeira barreira para o lado `side` a partir da amostra `i`. */
-function stopAt(i, side) {
-  // centro da estrada sem superfície visível (sob a ponte): não dá para medir vazio, vale só a parede visível
-  const v = voidAt(i, side) ?? 99;
+/** Parede visível para o lado `side` a partir da amostra `i` (99 = nenhuma em 40 m). */
+function wallAt(i, side) {
   const nx = -t.tz[i] * side;
   const nz = t.tx[i] * side;
-  const w = walls.hit(t.x[i], t.z[i], t.yAt(i * t.ds), nx, nz, MAX);
-  return Math.round(Math.min(v, w) * 10) / 10;
+  return Math.round(walls.hit(t.x[i], t.z[i], t.yAt(i * t.ds), nx, nz, MAX) * 10) / 10;
+}
+
+/** Um objeto solto (árvore, poste, caixa) não é parede: só valem os trechos contínuos de pelo menos RUN m. */
+const RUN = 8;
+/** Salto máximo (m) da distância da parede entre amostras vizinhas para continuar o mesmo trecho. */
+const JUMP = 2;
+/** Falhas de até GAPS amostras seguidas não cortam o trecho (colunas e janelas). */
+const GAPS = 2;
+function onlyRuns(raw) {
+  const n = raw.length;
+  const keep = new Array(n).fill(false);
+  // anda pelo anel; começa onde não há parede para o trecho não ser cortado pela emenda da volta
+  let start = raw.findIndex((v) => v >= 99);
+  if (start < 0) start = 0;
+  let run = [];
+  let last = null;
+  let miss = 0;
+  const flush = () => {
+    if (run.length >= RUN) for (const k of run) keep[k] = true;
+    run = [];
+    last = null;
+    miss = 0;
+  };
+  for (let o = 0; o < n; o++) {
+    const k = (start + o) % n;
+    const v = raw[k];
+    if (v >= 99) {
+      if (last !== null && ++miss > GAPS) flush();
+      continue;
+    }
+    if (last !== null && Math.abs(v - last) > JUMP) flush();
+    run.push(k);
+    last = v;
+    miss = 0;
+  }
+  flush();
+  return raw.map((v, k) => (keep[k] ? v : 99));
 }
 
 /**
  * Uma barreira por metro de pista: a pior entre a amostra e as duas vizinhas (±1 m, para não deixar frestas).
- * Sob a ponte (centro sem superfície) vale só a parede visível.
+ * Sob a ponte (centro sem superfície) não se mede vazio, vale só a parede visível.
  */
 function dense(side) {
   const len = Math.ceil(t.length);
+  const at = (m) => ((Math.round(m / t.ds) % t.n) + t.n) % t.n;
+  const wall = onlyRuns(Array.from({ length: len }, (_, m) => wallAt(at(m), side)));
   const out = [];
-  let prev = 99;
   for (let m = 0; m < len; m++) {
-    const c = Math.round(m / t.ds);
-    let worst = null;
+    let worst = 99;
     for (let o = -1; o <= 1; o++) {
-      const v = stopAt(((c + o) % t.n + t.n) % t.n, side);
-      if (v !== null) worst = worst === null ? v : Math.min(worst, v);
+      const k = (m + o + len) % len;
+      worst = Math.min(worst, wall[k], voidAt(at(k), side) ?? 99);
     }
     // nunca menos que 3 m: a pista subtrai a folga da parede e trata zero ou negativo como "sem parede"; o piso real vem de lá
-    prev = worst === null ? prev : Math.max(3, worst);
-    out.push(prev);
+    out.push(Math.round(Math.max(3, worst) * 10) / 10);
   }
   return out;
 }

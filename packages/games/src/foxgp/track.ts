@@ -97,8 +97,8 @@ export type GpWallKind = 'metal' | 'tyres';
 
 /** Diferença de altura (m) a partir da qual dois trechos da pista são andares diferentes (ponte e estrada). */
 export const GP_LEVEL_APART = 3;
-/** Folga (m) entre a parede do modelo e a barreira do jogo: o kart para antes de entrar na pedra. */
-const GP_MODEL_WALL_GAP = 1.1;
+/** Folga (m) entre a parede do modelo e a barreira do jogo. Pequena de propósito: o carro já para a meia largura dele antes (GP_CAR_WALL_IN), então a lataria encosta na pedra e não bate longe dela (antes 1,1 m deixava um metro de ar). */
+const GP_MODEL_WALL_GAP = 0.15;
 /** Pista de modelo sem parede nem vazio por perto: até onde vai a barreira (a varredura de vazio olha até aqui). */
 export const GP_MODEL_FAR = 40;
 
