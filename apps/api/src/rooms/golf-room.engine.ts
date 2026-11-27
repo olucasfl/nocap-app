@@ -152,6 +152,7 @@ export class GolfRoomEngine extends ColorRoomEngine {
     this.sim = new GolfHoleSim(golfServerLevel(level), ids, { collide: this.cfg.collide, seconds: this.cfg.seconds });
     this.simAt = this.gnow();
     this.acc = 0;
+    this.lastStatusSig = '';
     this.stage = 'play';
     this.stageEndsAt = this.gnow() + this.cfg.seconds * 1000;
     this.dirty = true;
@@ -163,6 +164,13 @@ export class GolfRoomEngine extends ColorRoomEngine {
     const m = v as { x?: unknown; z?: unknown; p?: unknown } | null;
     if (!m || !finite(m.x) || !finite(m.z) || !finite(m.p)) return;
     if (this.sim.shoot(id, [m.x, m.z], m.p)) this.dirty = true;
+  }
+
+  private lastStatusSig = '';
+  private statusSig(): string {
+    let out = '';
+    if (this.sim) for (const p of this.sim.players.values()) out += STATUS[p.status];
+    return out;
   }
 
   private closeHole() {
@@ -211,6 +219,13 @@ export class GolfRoomEngine extends ColorRoomEngine {
         this.sim.step();
       }
       this.flushEvents();
+      // a bola que PAROU volta a poder ser tacada sem nenhum evento: sem republicar, o aparelho ficava preso em "rolando"
+      // e a pessoa só conseguia dar uma tacada por buraco
+      const sig = this.statusSig();
+      if (sig !== this.lastStatusSig) {
+        this.lastStatusSig = sig;
+        this.dirty = true;
+      }
       if (this.sim.finished) this.closeHole();
     } else if (this.stage === 'cleared' && now >= this.stageEndsAt) {
       this.holeIdx++;

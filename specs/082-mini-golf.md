@@ -65,3 +65,10 @@ As dificuldades agrupam as fases em 7, 7 e 7 (fácil 1 a 7, média 8 a 14, difí
 - **Redemoinho:** disco de água em que cada fatia empurra a bola em volta (corrente tangencial) e um pouco para o centro; usa a água do Open Golf.
 - **Tubo:** a bola rola por dentro de um cilindro de 12 lados (faces viradas para dentro), reto ou descendo.
 - **Gangorra e ponte:** tábua que levanta e desce (peça `ramp` do Open Golf), com muretas juntas; a ponte fica aberta 2,4 s e fechada 2,4 s.
+
+## Correção da sala online (27/11/2026)
+
+Relato do Lucas: na sala online a bola voltava depois da primeira tacada e não dava para tacar de novo. Duas causas:
+
+1. **Servidor.** Quando a bola parava, o estado dela voltava a "pronta" (`aim`) sem nenhum evento, então o estado da sala não era republicado e o aparelho ficava preso em "rolando": uma tacada por buraco. `GolfRoomEngine.tick` agora compara o estado de todas as bolas a cada passo e republica quando muda (teste: "republica o estado quando a bola para").
+2. **Aparelho.** A previsão da própria tacada durava 380 ms e depois trocava para a posição do servidor, que chega atrasada (rede mais os 90 ms de interpolação), e a bola dava um pulo para trás. Agora a previsão vale até a bola parar; só cede ao servidor se ele disser, depois de 1,2 s, que a bola não rola (tacada recusada, buraco, volta ao ponto). A mira usa o estado do quadro mais recente (`st`), não só o do estado da sala, e não mira durante a previsão.

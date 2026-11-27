@@ -33,6 +33,10 @@ interface Sample {
 }
 /** Os quadros chegam a ~31 por segundo; desenhamos um pouco no passado para mover sem trancos. */
 const DELAY_MS = 90;
+/** Teto da previsão da minha tacada (ela termina quando a bola para). */
+const PRED_MAX_MS = 9000;
+/** Só depois disto um quadro do servidor dizendo "parada" vale mais que a previsão (antes ele pode ser de antes da tacada). */
+const PRED_TRUST_MS = 1200;
 /** No PC a câmera gira com o botão direito do mouse; no celular, pelas setas da tela. */
 const HINT =
   typeof window !== 'undefined' && window.matchMedia?.('(pointer: fine)').matches
@@ -201,8 +205,12 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       let right = false;
       let myPos: V3 = startPos;
       let aim: { dir: [number, number]; power: number } | null = null;
-      const myStatus = () => infoRef.current.status[me] ?? 0;
-      const canAim = () => infoRef.current.stage === 'play' && myStatus() === 0 && performance.now() - lastShot > 400;
+      // o estado da minha bola vem do quadro mais recente (chega ~31 vezes por segundo); o da sala só serve antes do primeiro quadro
+      const myStatus = () => {
+        const arr = samples.get(infoRef.current.slots[me] ?? -1);
+        return arr && arr.length > 0 ? arr[arr.length - 1]!.st : (infoRef.current.status[me] ?? 0);
+      };
+      const canAim = () => infoRef.current.stage === 'play' && !pred && myStatus() === 0 && performance.now() - lastShot > 400;
       // botão direito no meio da puxada cancela a tacada (sem bater e sem girar a câmera)
       const cancelAim = () => {
         if (!drag || right) return false;
@@ -305,7 +313,7 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         const ball = golfNewBall(lv.data);
         ball.pos = [...from];
         golfHit(ball, a.dir, a.power);
-        pred = { ball, until: performance.now() + 380, t: holeClock ? holeClock.t + (performance.now() - holeClock.at) / 1000 : 0, acc: 0 };
+        pred = { ball, until: performance.now() + PRED_MAX_MS, t: holeClock ? holeClock.t + (performance.now() - holeClock.at) / 1000 : 0, acc: 0 };
         blend = null;
       };
       const noMenu = (e: Event) => {
@@ -358,7 +366,11 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
               }
               pos = pred.ball.pos;
               vel = pred.ball.vel;
-              if (nowMs >= pred.until) {
+              // a minha bola prevista vale até parar (o servidor chega ~RTT atrasado: trocar antes puxava a bola de volta);
+              // se o servidor já diz que ela não rola (tacada recusada, buraco ou volta ao ponto), segue o servidor
+              const srv = samples.get(mySlot ?? -1);
+              const srvIdle = !!srv && srv.length > 0 && srv[srv.length - 1]!.st !== 1 && nowMs - lastShot > PRED_TRUST_MS;
+              if (!pred.ball.moving || srvIdle || nowMs >= pred.until) {
                 blend = { from: [...pred.ball.pos] as V3, start: nowMs };
                 pred = null;
               }

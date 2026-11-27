@@ -78,6 +78,36 @@ describe('sala do Mini Golf', () => {
     expect(snap().golf.stage).toBe('intro');
   });
 
+  it('republica o estado quando a bola para: sem isso só dava para tacar uma vez por buraco', () => {
+    const ctx = make();
+    const { room, snap } = ctx;
+    room.configure('ana', { holes: 3, seconds: 180 } as never);
+    room.setReady('bia', true);
+    room.start('ana');
+    run(ctx, GOLF_INTRO_MS + 100);
+    const status = () => (room.snapshot('ana') as unknown as { golf: { status: Record<string, number> } }).golf.status.ana;
+    expect(status()).toBe(0);
+    room.shoot('ana', { x: 0, z: -1, p: 0.12 });
+    expect(snap().golf.strokes.ana).toBe(1);
+    // a tacada é publicada (a bola rola) e, quando ela para, o estado volta a ser publicado como "pronta para tacar"
+    let published = 0;
+    let rolled = false;
+    for (let i = 0; i < 600; i++) {
+      ctx.adv(16);
+      const changed = room.tick();
+      if (status() === 1) rolled = true;
+      if (rolled && status() === 0) {
+        expect(changed).toBe(true);
+        published++;
+        break;
+      }
+    }
+    expect(rolled).toBe(true);
+    expect(published).toBe(1);
+    room.shoot('ana', { x: 0, z: -1, p: 0.12 });
+    expect(snap().golf.strokes.ana).toBe(2);
+  });
+
   it('o resultado final soma os buracos e ordena (menos tacadas ganha)', () => {
     const ctx = make();
     const { room, snap } = ctx;
