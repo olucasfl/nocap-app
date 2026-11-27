@@ -26,6 +26,7 @@ import './minigolf.css';
 
 type V3 = [number, number, number];
 interface Sample {
+  /** Hora do servidor no quadro (ms): é o eixo da interpolação, não a hora em que o pacote chegou (a rede chega em rajadas). */
   at: number;
   pos: V3;
   vel: V3;
@@ -174,8 +175,10 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
       setLoading(false);
 
       const samples = new Map<number, Sample[]>();
-      let holeClock: { t: number; at: number } | null = null;
-      let pred: { ball: GolfBall; until: number; t: number; acc: number } | null = null;
+      // relógio do servidor no aparelho: o menor atraso visto (chegada − hora do quadro); sobe devagar para acompanhar a deriva
+      let off = Number.NaN;
+      const serverMs = (now: number) => (Number.isNaN(off) ? 0 : now - off);
+      let pred: { ball: GolfBall; until: number; t: number; acc: number; hist: { at: number; x: number; z: number }[]; fixedAt: number } | null = null;
       let blend: { from: V3; start: number } | null = null;
       let lastShot = 0;
       const start = lv.data.ballStart;
@@ -185,10 +188,12 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         subscribeRoom('gb', (m) => {
           const f = m as { t: number; balls: number[][] };
           const now = performance.now();
-          holeClock = { t: f.t, at: now };
+          const ts = f.t * 1000;
+          off = Number.isNaN(off) ? now - ts : Math.min(off + 0.5, now - ts);
           for (const b of f.balls) {
             const arr = samples.get(b[0]!) ?? [];
-            arr.push({ at: now, pos: [b[1]!, b[2]!, b[3]!], vel: [b[4]!, b[5]!, b[6]!], st: b[7]! });
+            if (arr.length > 0 && ts <= arr[arr.length - 1]!.at) continue;
+            arr.push({ at: ts, pos: [b[1]!, b[2]!, b[3]!], vel: [b[4]!, b[5]!, b[6]!], st: b[7]! });
             if (arr.length > 8) arr.shift();
             samples.set(b[0]!, arr);
           }
@@ -219,7 +224,7 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         if (!arr || arr.length === 0) return null;
         const last = arr[arr.length - 1]!;
         if (t >= last.at) {
-          const dt = Math.min(0.1, (t - last.at) / 1000);
+          const dt = Math.min(0.25, (t - last.at) / 1000);
           return { ...last, pos: [last.pos[0] + last.vel[0] * dt, last.pos[1], last.pos[2] + last.vel[2] * dt] };
         }
         for (let i = arr.length - 1; i > 0; i--) {
@@ -345,7 +350,7 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         const ball = golfNewBall(lv.data);
         ball.pos = [...from];
         golfHit(ball, a.dir, a.power);
-        pred = { ball, until: performance.now() + PRED_MAX_MS, t: holeClock ? holeClock.t + (performance.now() - holeClock.at) / 1000 : 0, acc: 0 };
+        pred = { ball, until: performance.now() + PRED_MAX_MS, t: serverMs(performance.now()) / 1000, acc: 0, hist: [], fixedAt: -1 };
         blend = null;
       };
       const noMenu = (e: Event) => {
@@ -378,12 +383,12 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
         if (keys.current.l) sc.yaw -= dt * 1.8;
         if (keys.current.r) sc.yaw += dt * 1.8;
         const inf = infoRef.current;
-        const holeT = holeClock ? holeClock.t + (nowMs - holeClock.at) / 1000 : 0;
+        const holeT = serverMs(nowMs) / 1000;
         const balls: { slot: number; look: GolfBallLook; pos: V3; vel: V3; hidden?: boolean }[] = [];
         let focus: V3 = startPos;
         const mySlot = inf.slots[me];
         for (const [id, slot] of Object.entries(inf.slots)) {
-          const sm = sampleAt(slot, nowMs - DELAY_MS);
+          const sm = sampleAt(slot, serverMs(nowMs) - DELAY_MS);
           if (!sm) continue;
           let pos = sm.pos;
           let vel = sm.vel;
@@ -396,6 +401,31 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
                 pred.t += GOLF_DT;
                 golfStep(lv, pred.ball, pred.t);
               }
+              // guarda o caminho previsto e, a cada quadro novo do servidor, corrige só o DESVIO real (batida em outra bola,
+              // obstáculo em outra fase): o atraso da rede some ao comparar com o ponto mais próximo do caminho
+              pred.hist.push({ at: nowMs, x: pred.ball.pos[0], z: pred.ball.pos[2] });
+              while (pred.hist.length > 0 && nowMs - pred.hist[0]!.at > 2500) pred.hist.shift();
+              const srvArr = samples.get(slot);
+              const sv = srvArr?.[srvArr.length - 1];
+              if (sv && sv.at !== pred.fixedAt && sv.st === 1 && pred.hist.length > 4) {
+                pred.fixedAt = sv.at;
+                const age = Math.min(0.25, Math.max(0, (serverMs(nowMs) - sv.at) / 1000));
+                const ex = sv.pos[0] + sv.vel[0] * age, ez = sv.pos[2] + sv.vel[2] * age;
+                let bi = 0, bd = Infinity;
+                for (let i = 0; i < pred.hist.length; i++) {
+                  const d = Math.hypot(pred.hist[i]!.x - ex, pred.hist[i]!.z - ez);
+                  if (d < bd) {
+                    bd = d;
+                    bi = i;
+                  }
+                }
+                const h = pred.hist[bi]!;
+                if (bd > 0.04) {
+                  const k = bd > 2 ? 1 : 0.3;
+                  pred.ball.pos[0] += (ex - h.x) * k;
+                  pred.ball.pos[2] += (ez - h.z) * k;
+                }
+              }
               pos = pred.ball.pos;
               vel = pred.ball.vel;
               // a minha bola prevista vale até parar (o servidor chega ~RTT atrasado: trocar antes puxava a bola de volta);
@@ -407,7 +437,7 @@ export function GolfRoomPlay({ snapshot }: { snapshot: RoomSnapshot }) {
                 pred = null;
               }
             } else if (blend) {
-              const k = Math.min(1, (nowMs - blend.start) / 160);
+              const k = Math.min(1, (nowMs - blend.start) / 320);
               pos = [blend.from[0] + (sm.pos[0] - blend.from[0]) * k, blend.from[1] + (sm.pos[1] - blend.from[1]) * k, blend.from[2] + (sm.pos[2] - blend.from[2]) * k];
               if (k >= 1) blend = null;
             }

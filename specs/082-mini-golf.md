@@ -81,3 +81,12 @@ Pedido do Lucas: quando a bola entra, mostrar a cena de acerto e depois deixar a
 - Depois vira **espectador**: a câmera acompanha quem ainda joga, com barra "Assistindo X" e botões para trocar (44 px). Sem ninguém jogando, espera o buraco fechar.
 - Pausa do buraco (`GOLF_CLEARED_MS`, 6,5 s): nota de cada um e o placar em tabela na própria tela. Fora do último buraco, um painel lima cobre a tela no fim (`mg-wipe in`) e descobre quando o próximo buraco começa (`mg-wipe out`), só `transform`, desligado com `prefers-reduced-motion`.
 - Último buraco: a pausa mostra a tabela e o ranking só vem quando o buraco fecha e a pausa acaba.
+
+## Bola teletransportando (27/11/2026)
+
+Duas causas no aparelho, ambas de reconciliação com o servidor:
+
+1. As posições eram interpoladas pela hora em que o pacote chegou; a rede entrega em rajadas e a bola parava e pulava. Agora o eixo é a hora do servidor que vem em cada quadro (`t`), com um relógio estimado pelo menor atraso visto (`off`), e a extrapolação aguenta até 250 ms de falta de quadros.
+2. Depois da correção da primeira tacada, a previsão da minha bola vale até parar, e uma batida em outra bola (ou qualquer divergência) só aparecia no fim, como um pulo. Agora, a cada quadro novo do servidor, compara-se a posição dele com o ponto mais próximo do caminho previsto (assim o atraso da rede não conta) e só o desvio real é corrigido, aos poucos (30% por quadro; desvio acima de 2 m corrige de uma vez); a troca final para o servidor dura 320 ms.
+
+Volta ao ponto da tacada (água ou fora do campo) continua sendo um salto de verdade, decidido pelo servidor.
